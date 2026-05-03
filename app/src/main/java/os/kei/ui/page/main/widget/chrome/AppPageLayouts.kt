@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.layout.RowScope
@@ -37,6 +37,21 @@ fun appPageBottomPaddingWithFloatingOverlay(contentBottomPadding: Dp): Dp {
 }
 
 @Composable
+fun AppScaffold(
+    modifier: Modifier = Modifier,
+    topBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit
+) {
+    MiuixScaffold(
+        modifier = modifier,
+        topBar = topBar,
+        bottomBar = bottomBar,
+        content = content
+    )
+}
+
+@Composable
 fun AppPageScaffold(
     title: String,
     modifier: Modifier = Modifier,
@@ -52,7 +67,7 @@ fun AppPageScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     Box(modifier = modifier) {
-        Scaffold(
+        AppScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 AppTopBarSection(

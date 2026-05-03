@@ -33,7 +33,6 @@ private val HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP = 128.dp
 
 internal data class HomePageHeroMotionState(
     val scrollProgress: Float,
-    val topBarProgress: Float,
     val bgAlpha: Float,
     val hdrSweepProgress: Float,
     val logoHeightDp: Dp,
@@ -77,10 +76,6 @@ internal fun rememberHomePageHeroMotionState(
             }
         }
     }
-    val topBarProgress by appMotionFloatState(
-        targetValue = scrollProgress,
-        label = "home_top_bar_progress"
-    )
     val bgAlpha by appMotionFloatState(
         targetValue = 1f - scrollProgress,
         label = "home_bg_alpha"
@@ -162,7 +157,6 @@ internal fun rememberHomePageHeroMotionState(
 
     return remember(
         scrollProgress,
-        topBarProgress,
         bgAlpha,
         hdrSweepProgress,
         logoHeightDp,
@@ -174,7 +168,6 @@ internal fun rememberHomePageHeroMotionState(
     ) {
         HomePageHeroMotionState(
             scrollProgress = scrollProgress,
-            topBarProgress = topBarProgress,
             bgAlpha = bgAlpha,
             hdrSweepProgress = hdrSweepProgress,
             logoHeightDp = logoHeightDp,

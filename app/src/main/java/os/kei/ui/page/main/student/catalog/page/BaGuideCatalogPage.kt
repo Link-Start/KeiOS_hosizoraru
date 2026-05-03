@@ -46,8 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.shouldReduceBottomBarEffectsDuringMotion
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -83,7 +82,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -165,7 +164,7 @@ fun BaGuideCatalogPage(
             drawContent()
         }
     }
-    val topBarMaterialBackdrop = rememberMiuixBlurBackdrop(enableBlur = true)
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val scrollBehavior = MiuixScrollBehavior()
 
     val loadFailedText = stringResource(R.string.ba_catalog_load_failed)
@@ -291,7 +290,7 @@ fun BaGuideCatalogPage(
         }
     }
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
+        AppScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.background)
@@ -301,7 +300,7 @@ fun BaGuideCatalogPage(
                     title = "",
                     largeTitle = pageTitle,
                     scrollBehavior = scrollBehavior,
-                    color = topBarMaterialBackdrop.getMiuixAppBarColor(),
+                    color = topBarMaterialBackdrop,
                     navigationIcon = {
                         AppLiquidNavigationButton(
                             icon = appLucideBackIcon(),

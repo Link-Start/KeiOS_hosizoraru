@@ -121,7 +121,6 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme

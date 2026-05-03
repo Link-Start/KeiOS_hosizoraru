@@ -73,7 +73,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import top.yukonga.miuix.kmp.basic.Scaffold
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -156,7 +156,7 @@ internal fun MainPagerLayout(
         }
     }
 
-    Scaffold(
+    AppScaffold(
         modifier = Modifier
             .fillMaxSize()
             .appGripAwareDockTouchObserver(

@@ -10,6 +10,10 @@ object AppChromeTokens {
     val pageBottomInsetExtra: Dp = 16.dp
     val pageFloatingOverlayBottomExtra: Dp = 64.dp
 
+    val topBarExpandedHeight: Dp = 128.dp
+    val topBarCollapsedHeight: Dp = 64.dp
+    val topBarHorizontalPadding: Dp = 14.dp
+
     val searchBarHostHeight: Dp = 54.dp
     val searchFieldHorizontalPadding: Dp = 14.dp
     val searchFieldBottomSpacing: Dp = 6.dp

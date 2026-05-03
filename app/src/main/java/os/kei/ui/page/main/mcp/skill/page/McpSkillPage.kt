@@ -10,8 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.mcp.skill.McpSkillPageContentRequest
 import os.kei.ui.page.main.mcp.skill.McpSkillPageViewModel
@@ -36,7 +35,7 @@ fun McpSkillPage(
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant
     val accentColor = MiuixTheme.colorScheme.primary
     val codeColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)
-    val topBarMaterialBackdrop = rememberMiuixBlurBackdrop(enableBlur = true)
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val topBarBackdrop = rememberLayerBackdrop()
     val viewModel: McpSkillPageViewModel = viewModel()
     val contentRequest = McpSkillPageContentRequest(
@@ -58,7 +57,7 @@ fun McpSkillPage(
         title = textBundle.pageTitle,
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = topBarMaterialBackdrop.getMiuixAppBarColor(),
+        topBarColor = topBarMaterialBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = MiuixIcons.Regular.Back,

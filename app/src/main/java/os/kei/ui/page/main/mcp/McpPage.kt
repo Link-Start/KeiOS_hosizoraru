@@ -45,8 +45,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -308,7 +307,7 @@ fun McpPage(
         refreshOnCompositionEnter = true,
         distinctLayers = fullBackdropEffectsEnabled
     )
-    val topBarMaterialBackdrop = rememberMiuixBlurBackdrop(enableBlur = pageBackdropEffectsEnabled)
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     DisposableEffect(Unit) {
         onDispose { onActionBarInteractingChanged(false) }
     }
@@ -416,7 +415,7 @@ fun McpPage(
         largeTitle = mcpTitle,
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = topBarMaterialBackdrop.getMiuixAppBarColor(),
+        topBarColor = topBarMaterialBackdrop,
         actions = {
             LiquidActionBar(
                 backdrop = backdrops.topBar,

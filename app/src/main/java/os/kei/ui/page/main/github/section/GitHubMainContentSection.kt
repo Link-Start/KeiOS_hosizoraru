@@ -41,7 +41,7 @@ import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import top.yukonga.miuix.kmp.basic.Scaffold
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
@@ -129,7 +129,7 @@ internal fun GitHubMainContent(
     val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
+        AppScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 GitHubTopBarSection(

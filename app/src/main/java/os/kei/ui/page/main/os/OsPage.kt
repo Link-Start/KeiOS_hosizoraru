@@ -9,8 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -279,7 +278,7 @@ fun OsPage(
     CompositionLocalProvider(LocalGlassEffectRuntime provides osGlassRuntime) {
         OsPageScaffoldShell(
             scrollBehavior = scrollBehavior,
-            topBarColor = topBarMaterialBackdrop.getMiuixAppBarColor(),
+            topBarColor = topBarMaterialBackdrop,
             topBarBackdrop = backdrops.topBar,
             layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             reduceEffectsDuringPagerScroll = false,

@@ -9,12 +9,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import kotlinx.coroutines.CoroutineScope
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
 internal data class OsPageUiContext(
     val context: Context,
@@ -22,7 +21,7 @@ internal data class OsPageUiContext(
     val scope: CoroutineScope,
     val textBundle: OsPageTextBundle,
     val backdrops: MainPageBackdropSet,
-    val topBarMaterialBackdrop: LayerBackdrop?,
+    val topBarMaterialBackdrop: Color,
     val isDark: Boolean,
     val inactiveColor: Color,
     val titleColor: Color,
@@ -48,7 +47,7 @@ internal fun rememberOsPageUiContext(
         refreshOnCompositionEnter = true,
         distinctLayers = enableFullBackdropEffects
     )
-    val topBarMaterialBackdrop = rememberMiuixBlurBackdrop(enableBlur = enableTopBarBackdropEffects)
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = enableTopBarBackdropEffects)
     val searchBarHideThresholdPx = with(density) { 28.dp.toPx() }
     return OsPageUiContext(
         context = context,

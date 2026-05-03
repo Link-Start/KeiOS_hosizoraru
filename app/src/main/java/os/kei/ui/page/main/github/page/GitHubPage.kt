@@ -31,8 +31,7 @@ import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackImportDialog
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.github.page.BindGitHubPageEffects
 import os.kei.ui.page.main.github.page.GitHubPageActions
 import os.kei.ui.page.main.github.page.rememberGitHubPageState
@@ -74,9 +73,9 @@ fun GitHubPage(
         keyPrefix = "github",
         distinctLayers = fullBackdropEffectsEnabled
     )
-    val topBarColor = rememberMiuixBlurBackdrop(
-        enableBlur = topBarBackdropEffectsEnabled
-    ).getMiuixAppBarColor()
+    val topBarColor = rememberAppTopBarColor(
+        enableBackdropEffects = topBarBackdropEffectsEnabled
+    )
 
     val state = rememberGitHubPageState(githubPageViewModel)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }

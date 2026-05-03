@@ -60,23 +60,20 @@ import os.kei.ui.page.main.student.page.state.BindBaStudentGuideVoiceProgressEff
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.perf.ReportPagerPerformanceState
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -124,7 +121,7 @@ fun BaStudentGuidePage(
             drawContent()
         }
     }
-    val topBarMaterialBackdrop = rememberMiuixBlurBackdrop(enableBlur = true)
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val scrollBehavior = MiuixScrollBehavior()
 
     val guideViewModel: BaStudentGuideViewModel = viewModel()
@@ -323,22 +320,18 @@ fun BaStudentGuidePage(
         onShareSource = pageActions.shareSource,
         onRefresh = pageActions.requestRefresh
     )
-    val topBarCollapsedFraction = scrollBehavior.state.collapsedFraction.coerceIn(0f, 1f)
-    val topBarTitleAlpha = 1f - topBarCollapsedFraction
-
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
+        AppScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MiuixTheme.colorScheme.background)
                 .nestedScroll(bottomBarNestedScrollConnection),
             topBar = {
-                TopAppBar(
+                AppTopBarSection(
                     title = pageTitle,
                     largeTitle = pageTitle,
                     scrollBehavior = scrollBehavior,
-                    color = topBarMaterialBackdrop.getMiuixAppBarColor(),
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = topBarTitleAlpha),
+                    color = topBarMaterialBackdrop,
                     navigationIcon = {
                         AppLiquidNavigationButton(
                             icon = appLucideBackIcon(),

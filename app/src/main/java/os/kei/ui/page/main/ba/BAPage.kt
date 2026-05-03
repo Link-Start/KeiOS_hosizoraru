@@ -33,12 +33,11 @@ import os.kei.ui.page.main.ba.buildBaSettingsSheetState
 import os.kei.ui.page.main.ba.openBaExternalLink
 import os.kei.ui.page.main.ba.rememberBaPageUiController
 import os.kei.ui.page.main.ba.saveBaPageSettings
-import os.kei.core.ui.effect.getMiuixAppBarColor
-import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -61,7 +60,7 @@ fun BAPage(
         refreshOnCompositionEnter = true,
         distinctLayers = fullBackdropEffectsEnabled
     )
-    val topBarMaterialBackdrop = rememberMiuixBlurBackdrop(enableBlur = pageBackdropEffectsEnabled)
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val serverOptions = listOf(
         stringResource(R.string.ba_server_cn),
         stringResource(R.string.ba_server_global),
@@ -212,11 +211,11 @@ fun BAPage(
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
+            AppScaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     BaTopBar(
-                        topBarColor = topBarMaterialBackdrop.getMiuixAppBarColor(),
+                        topBarColor = topBarMaterialBackdrop,
                         scrollBehavior = scrollBehavior,
                     )
                 },

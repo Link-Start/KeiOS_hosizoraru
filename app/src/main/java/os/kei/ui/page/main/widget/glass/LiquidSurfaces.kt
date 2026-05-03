@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -64,6 +65,7 @@ fun LiquidSurface(
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
+    exportedBackdrop: LayerBackdrop? = null,
     interactionSource: MutableInteractionSource? = null,
     contentAlignment: Alignment = Alignment.TopStart,
     onClick: (() -> Unit)? = null,
@@ -137,6 +139,7 @@ fun LiquidSurface(
                 } else {
                     null
                 },
+                exportedBackdrop = exportedBackdrop,
                 onDrawSurface = {
                     if (tint.isSpecified) {
                         drawRect(tint, blendMode = BlendMode.Hue)

@@ -48,6 +48,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
@@ -339,6 +340,15 @@ private fun LiquidTrackSlider(
                 dampedDragAnimation.updateValue(currentValue)
             }
         }
+        val thumbBackdrop = rememberCombinedBackdrop(
+            backdrop,
+            rememberBackdrop(trackBackdrop) { drawBackdrop ->
+                val progress = dampedDragAnimation.pressProgress
+                val scaleX = lerp(2f / 3f, 1f, progress)
+                val scaleY = lerp(0f, 1f, progress)
+                scale(scaleX, scaleY) { drawBackdrop() }
+            }
+        )
 
         Box(Modifier.layerBackdrop(trackBackdrop)) {
             Box(
@@ -419,22 +429,16 @@ private fun LiquidTrackSlider(
                         if (isLtr) 1f else -1f
                 }
                 .drawBackdrop(
-                    backdrop = rememberCombinedBackdrop(
-                        backdrop,
-                        rememberBackdrop(trackBackdrop) { drawBackdrop ->
-                            val progress = dampedDragAnimation.pressProgress
-                            val scaleX = lerp(2f / 3f, 1f, progress)
-                            val scaleY = lerp(0f, 1f, progress)
-                            scale(scaleX, scaleY) { drawBackdrop() }
-                        }
-                    ),
+                    backdrop = thumbBackdrop,
                     shape = { ContinuousCapsule },
                     effects = {
                         val progress = dampedDragAnimation.pressProgress
+                        vibrancy()
                         blur(UiPerformanceBudget.backdropBlur.toPx() * (1f - progress))
                         lens(
                             10.dp.toPx() * progress,
                             14.dp.toPx() * progress,
+                            chromaticAberration = true,
                             depthEffect = true
                         )
                     },
@@ -464,7 +468,13 @@ private fun LiquidTrackSlider(
                         scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                     },
                     onDrawSurface = {
-                        drawRect(Color.White.copy(alpha = 1f - dampedDragAnimation.pressProgress))
+                        val progress = dampedDragAnimation.pressProgress
+                        val surfaceAlpha = lerp(
+                            SliderThumbRestingSurfaceAlpha,
+                            SliderThumbPressedSurfaceAlpha,
+                            progress
+                        )
+                        drawRect(Color.White.copy(alpha = surfaceAlpha))
                     }
                 )
                 .width(style.thumbWidth)
@@ -538,3 +548,6 @@ private data class LiquidTrackSliderStyle(
     val thumbHeight: Dp,
     val pressedScale: Float
 )
+
+private const val SliderThumbRestingSurfaceAlpha = 0.42f
+private const val SliderThumbPressedSurfaceAlpha = 0.08f

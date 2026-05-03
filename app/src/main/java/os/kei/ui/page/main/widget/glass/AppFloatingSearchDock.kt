@@ -66,22 +66,15 @@ fun AppFloatingSearchDock(
     iconSize: Dp = 27.dp,
     gap: Dp = 8.dp,
     focusedLift: Dp = 36.dp,
+    keyboardLift: Dp? = null,
     accent: Color = MiuixTheme.colorScheme.primary
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
-    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val imeVisible = imeBottom > navigationBottom
+    val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
     val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
-    val focusBottomOffset = if (imeVisible) focusedLift else 0.dp
-    val bottomOffset by animateDpAsState(
-        targetValue = focusBottomOffset,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
-        label = "app_floating_search_bottom_offset"
-    )
     val fieldWidth by animateDpAsState(
         targetValue = if (expanded) fieldTargetWidth else 0.dp,
         animationSpec = androidx.compose.animation.core.tween(
@@ -143,7 +136,7 @@ fun AppFloatingSearchDock(
 
     Row(
         modifier = modifier
-            .offset(y = -bottomOffset)
+            .offset(y = -resolvedKeyboardLift)
             .width(totalWidth)
             .height(size),
         horizontalArrangement = Arrangement.spacedBy(
@@ -160,6 +153,22 @@ fun AppFloatingSearchDock(
             buttonContent()
         }
     }
+}
+
+@Composable
+fun rememberAppFloatingKeyboardLift(
+    focusedLift: Dp = 36.dp,
+    label: String = "app_floating_keyboard_lift"
+): Dp {
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val targetLift = if (imeBottom > navigationBottom) focusedLift else 0.dp
+    val lift by animateDpAsState(
+        targetValue = targetLift,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
+        label = label
+    )
+    return lift
 }
 
 @Composable

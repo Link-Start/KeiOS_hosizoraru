@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,12 +28,10 @@ import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.prefersApiAssetTransport
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
+import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
@@ -73,8 +70,6 @@ internal fun GitHubTrackedItemAssetRow(
         fileName = asset.name,
         supportedAbis = supportedAbis
     )
-    val assetDownloadButtonMinWidth = 100.dp
-    val assetShareButtonSize = 40.dp
     AppSurfaceCard(
         containerColor = summaryContainerColor,
         borderColor = summaryBorderColor
@@ -137,34 +132,31 @@ internal fun GitHubTrackedItemAssetRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.weight(1f))
-                AppLiquidTextButton(
-                    backdrop = contentBackdrop,
+                Text(
                     text = sizeLabel,
-                    leadingIcon = appLucideDownloadIcon(),
-                    onClick = { onOpenApkInDownloader(asset) },
-                    modifier = Modifier.widthIn(min = assetDownloadButtonMinWidth),
-                    variant = GlassVariant.SheetAction,
-                    textColor = actionButtonColor,
-                    iconTint = actionButtonColor,
-                    horizontalPadding = 10.dp,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Clip,
-                    textSoftWrap = false
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Supporting.fontSize,
+                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                AppLiquidIconButton(
-                    backdrop = contentBackdrop,
+                Spacer(modifier = Modifier.weight(1f))
+                AppCompactIconAction(
+                    icon = appLucideDownloadIcon(),
+                    contentDescription = sizeLabel,
+                    tint = actionButtonColor,
+                    onClick = { onOpenApkInDownloader(asset) },
+                    minSize = 36.dp
+                )
+                AppCompactIconAction(
                     icon = appLucideShareIcon(),
                     contentDescription = context.getString(
                         R.string.github_cd_share_asset,
                         asset.name
                     ),
+                    tint = actionButtonColor,
                     onClick = { onShareApkLink(asset) },
-                    modifier = Modifier,
-                    width = assetShareButtonSize,
-                    height = assetShareButtonSize,
-                    variant = GlassVariant.SheetAction,
-                    iconTint = actionButtonColor
+                    minSize = 36.dp
                 )
             }
         }

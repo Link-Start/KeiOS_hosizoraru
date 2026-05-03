@@ -37,6 +37,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
 import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -112,8 +113,14 @@ internal fun GitHubMainContent(
         targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
         label = "github_floating_search_bottom"
     )
+    val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
+        label = "github_floating_keyboard_lift"
+    )
     val addButtonBottom by animateDpAsState(
-        targetValue = searchDockBottom + AppChromeTokens.floatingBottomBarOuterHeight + 6.dp,
+        targetValue = searchDockBottom +
+            floatingKeyboardLift +
+            AppChromeTokens.floatingBottomBarOuterHeight +
+            6.dp,
         label = "github_floating_add_bottom"
     )
     val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
@@ -225,6 +232,7 @@ internal fun GitHubMainContent(
                     contentDescription = stringResource(R.string.github_topbar_search_label),
                     placeholder = stringResource(R.string.github_topbar_search_label),
                     dockSide = floatingDockSide,
+                    keyboardLift = floatingKeyboardLift,
                     modifier = Modifier
                         .align(dockAlignment)
                         .padding(start = dockStartPadding, end = dockEndPadding, bottom = searchDockBottom)

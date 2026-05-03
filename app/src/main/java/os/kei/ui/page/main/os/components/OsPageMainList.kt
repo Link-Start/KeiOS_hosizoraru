@@ -45,6 +45,7 @@ import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
 import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
@@ -144,8 +145,14 @@ internal fun OsPageMainList(
         targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
         label = "os_floating_search_bottom"
     )
+    val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
+        label = "os_floating_keyboard_lift"
+    )
     val addButtonBottom by animateDpAsState(
-        targetValue = searchDockBottom + AppChromeTokens.floatingBottomBarOuterHeight + 6.dp,
+        targetValue = searchDockBottom +
+            floatingKeyboardLift +
+            AppChromeTokens.floatingBottomBarOuterHeight +
+            6.dp,
         label = "os_floating_add_bottom"
     )
     val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
@@ -460,6 +467,7 @@ internal fun OsPageMainList(
             contentDescription = searchLabel,
             placeholder = searchLabel,
             dockSide = floatingDockSide,
+            keyboardLift = floatingKeyboardLift,
             modifier = Modifier
                 .align(dockAlignment)
                 .padding(start = dockStartPadding, end = dockEndPadding, bottom = searchDockBottom)

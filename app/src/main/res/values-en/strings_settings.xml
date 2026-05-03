@@ -65,6 +65,10 @@
     <string name="settings_card_feedback_summary_enabled">Enable all cards that support PressFeedback.</string>
     <string name="settings_card_feedback_summary_disabled">Disable Sink / Tilt and other card press feedback globally.</string>
     <string name="settings_card_feedback_scope">System / MCP / GitHub / BA and other cards that support press feedback</string>
+    <string name="settings_grip_aware_floating_dock_title">Grip-aware floating buttons</string>
+    <string name="settings_grip_aware_floating_dock_summary_enabled">Use side tilt with a small touch fallback to place floating buttons on the easier side.</string>
+    <string name="settings_grip_aware_floating_dock_summary_disabled">Keep floating buttons on the right side to avoid position jumps from false positives.</string>
+    <string name="settings_grip_aware_floating_dock_scope">Affects OS / GitHub add and search buttons, plus the MCP start-stop button. Off by default.</string>
     <string name="settings_preloading_title">Preloading</string>
     <string name="settings_preloading_summary_enabled">Preload adjacent pages and guide resources for faster common page switches and returns.</string>
     <string name="settings_preloading_summary_disabled">Use the current lower-cost strategy to prioritize memory and burst-load control.</string>

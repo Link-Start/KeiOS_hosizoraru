@@ -50,6 +50,7 @@ internal fun rememberSettingsSectionContractBundle(
     liquidBottomBarEnabled: Boolean,
     bottomBarScrollEffectReductionEnabled: Boolean,
     cardPressFeedbackEnabled: Boolean,
+    gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
     superIslandBypassRestrictionEnabled: Boolean,
     superIslandRestoreDelayMs: Int,
@@ -79,6 +80,7 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidBottomBarChanged: (Boolean) -> Unit,
     onBottomBarScrollEffectReductionChanged: (Boolean) -> Unit,
     onCardPressFeedbackChanged: (Boolean) -> Unit,
+    onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     onSuperIslandRestoreDelayMsChanged: (Int) -> Unit,
@@ -195,14 +197,16 @@ internal fun rememberSettingsSectionContractBundle(
         liquidSwitchEnabled,
         liquidBottomBarEnabled,
         bottomBarScrollEffectReductionEnabled,
-        cardPressFeedbackEnabled
+        cardPressFeedbackEnabled,
+        gripAwareFloatingDockEnabled
     ) {
         SettingsComponentEffectsSectionState(
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             liquidSwitchEnabled = liquidSwitchEnabled,
             liquidBottomBarEnabled = liquidBottomBarEnabled,
             bottomBarFullEffectDuringScrollEnabled = !bottomBarScrollEffectReductionEnabled,
-            cardPressFeedbackEnabled = cardPressFeedbackEnabled
+            cardPressFeedbackEnabled = cardPressFeedbackEnabled,
+            gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
         )
     }
     val componentEffectsActions = remember(
@@ -210,7 +214,8 @@ internal fun rememberSettingsSectionContractBundle(
         onLiquidSwitchChanged,
         onLiquidBottomBarChanged,
         onBottomBarScrollEffectReductionChanged,
-        onCardPressFeedbackChanged
+        onCardPressFeedbackChanged,
+        onGripAwareFloatingDockChanged
     ) {
         SettingsComponentEffectsSectionActions(
             onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
@@ -219,7 +224,8 @@ internal fun rememberSettingsSectionContractBundle(
             onBottomBarFullEffectDuringScrollChanged = { enabled ->
                 onBottomBarScrollEffectReductionChanged(!enabled)
             },
-            onCardPressFeedbackChanged = onCardPressFeedbackChanged
+            onCardPressFeedbackChanged = onCardPressFeedbackChanged,
+            onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
         )
     }
     val notifyState = remember(

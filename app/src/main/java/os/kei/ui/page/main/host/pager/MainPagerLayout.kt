@@ -57,9 +57,10 @@ import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
-import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockSide
+import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
@@ -83,6 +84,7 @@ internal fun MainPagerLayout(
     bottomBarScrollEffectReductionEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     cardPressFeedbackEnabled: Boolean,
+    gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean,
     preloadingEnabled: Boolean,
@@ -103,7 +105,12 @@ internal fun MainPagerLayout(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val context = LocalContext.current
     val insets = rememberMainPagerInsets()
-    val floatingDockSideState = rememberAppFloatingDockSide()
+    val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
+    val floatingDockSide = if (gripAwareFloatingDockEnabled) {
+        floatingDockState.side
+    } else {
+        AppFloatingDockSide.End
+    }
     val coordinator = rememberMainPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
         transitionAnimationsEnabled = transitionAnimationsEnabled,
@@ -158,7 +165,10 @@ internal fun MainPagerLayout(
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .appGripAwareDockTouchObserver { side -> floatingDockSideState.value = side }
+            .appGripAwareDockTouchObserver(
+                enabled = gripAwareFloatingDockEnabled,
+                onDockSideTouch = floatingDockState::recordTouchSide
+            )
             .background(MiuixTheme.colorScheme.background)
             .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
@@ -221,7 +231,7 @@ internal fun MainPagerLayout(
                     homeBottomInset = insets.homeBottomInset,
                     bottomOverlayPadding = insets.bottomOverlayPadding,
                     bottomBarVisible = coordinator.showBottomBar,
-                    floatingDockSide = floatingDockSideState.value,
+                    floatingDockSide = floatingDockSide,
                     requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                     osScrollToTopSignal = coordinator.osScrollToTopSignal,
                     baScrollToTopSignal = coordinator.baScrollToTopSignal,

@@ -65,6 +65,10 @@
     <string name="settings_card_feedback_summary_enabled">启用所有支持 PressFeedback 的卡片反馈</string>
     <string name="settings_card_feedback_summary_disabled">全局禁用 Sink / Tilt 等卡片按压反馈</string>
     <string name="settings_card_feedback_scope">System / MCP / GitHub / BA 等支持按压反馈的卡片</string>
+    <string name="settings_grip_aware_floating_dock_title">智能握姿浮动按钮</string>
+    <string name="settings_grip_aware_floating_dock_summary_enabled">根据手机横向倾斜和少量触控辅助，把浮动按钮放到更顺手的一侧。</string>
+    <string name="settings_grip_aware_floating_dock_summary_disabled">浮动按钮固定在右侧，避免误判导致位置跳动。</string>
+    <string name="settings_grip_aware_floating_dock_scope">影响 OS / GitHub 的添加与搜索按钮，以及 MCP 启停按钮。默认关闭。</string>
     <string name="settings_preloading_title">预加载</string>
     <string name="settings_preloading_summary_enabled">开启后会预载相邻分页与图鉴资源，提升常用切页和回访速度。</string>
     <string name="settings_preloading_summary_disabled">关闭后使用当前低开销策略，优先控制内存与瞬时负载。</string>

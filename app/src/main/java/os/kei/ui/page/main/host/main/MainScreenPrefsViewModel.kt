@@ -69,6 +69,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateGripAwareFloatingDockEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setGripAwareFloatingDockEnabled(value)
+        }
+    }
+
     fun updateHomeIconHdrEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setHomeIconHdrEnabled(value)

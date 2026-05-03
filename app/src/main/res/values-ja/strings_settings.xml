@@ -65,6 +65,10 @@
     <string name="settings_card_feedback_summary_enabled">PressFeedback 対応カードをすべて有効にします。</string>
     <string name="settings_card_feedback_summary_disabled">Sink / Tilt などのカード押下フィードバックを全体で無効にします。</string>
     <string name="settings_card_feedback_scope">System / MCP / GitHub / BA など PressFeedback 対応カード</string>
+    <string name="settings_grip_aware_floating_dock_title">握り方に応じたフローティングボタン</string>
+    <string name="settings_grip_aware_floating_dock_summary_enabled">端末の横方向の傾きと少量のタッチ補助で、押しやすい側へ配置します。</string>
+    <string name="settings_grip_aware_floating_dock_summary_disabled">誤判定による位置ジャンプを避けるため、右側に固定します。</string>
+    <string name="settings_grip_aware_floating_dock_scope">OS / GitHub の追加・検索ボタンと MCP の開始停止ボタンに影響します。初期状態はオフです。</string>
     <string name="settings_preloading_title">プリロード</string>
     <string name="settings_preloading_summary_enabled">隣接ページと生徒情報リソースを事前読み込みし、よく使う切替と戻りを高速化します。</string>
     <string name="settings_preloading_summary_disabled">メモリと瞬間的な読み込みを抑えるため、低コスト戦略を使用します。</string>

@@ -23,6 +23,7 @@ internal class MainScreenUiPrefsState(
     val transitionAnimationsEnabled: Boolean get() = snapshot.transitionAnimationsEnabled
     val predictiveBackAnimationsEnabled: Boolean get() = snapshot.predictiveBackAnimationsEnabled
     val cardPressFeedbackEnabled: Boolean get() = snapshot.cardPressFeedbackEnabled
+    val gripAwareFloatingDockEnabled: Boolean get() = snapshot.gripAwareFloatingDockEnabled
     val homeIconHdrEnabled: Boolean get() = snapshot.homeIconHdrEnabled
     val homeDynamicFullEffectEnabled: Boolean get() = snapshot.homeDynamicFullEffectEnabled
     val preloadingEnabled: Boolean get() = snapshot.preloadingEnabled
@@ -63,6 +64,10 @@ internal class MainScreenUiPrefsState(
 
     fun updateCardPressFeedbackEnabled(value: Boolean) {
         viewModel.updateCardPressFeedbackEnabled(value)
+    }
+
+    fun updateGripAwareFloatingDockEnabled(value: Boolean) {
+        viewModel.updateGripAwareFloatingDockEnabled(value)
     }
 
     fun updateHomeIconHdrEnabled(value: Boolean) {

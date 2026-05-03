@@ -63,6 +63,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setGripAwareFloatingDockEnabled(value: Boolean) {
+        updateAndPersist({ copy(gripAwareFloatingDockEnabled = value) }) {
+            UiPrefs.setGripAwareFloatingDockEnabled(value)
+        }
+    }
+
     suspend fun setHomeIconHdrEnabled(value: Boolean) {
         updateAndPersist({ copy(homeIconHdrEnabled = value) }) {
             UiPrefs.setHomeIconHdrEnabled(value)

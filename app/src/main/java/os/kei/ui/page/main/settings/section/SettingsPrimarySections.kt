@@ -481,7 +481,8 @@ internal fun SettingsComponentEffectsSection(
         state.liquidSwitchEnabled ||
         state.liquidBottomBarEnabled ||
         state.bottomBarFullEffectDuringScrollEnabled ||
-        state.cardPressFeedbackEnabled
+        state.cardPressFeedbackEnabled ||
+        state.gripAwareFloatingDockEnabled
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_component_effects_header),
         title = stringResource(R.string.settings_group_component_effects_title),
@@ -541,6 +542,18 @@ internal fun SettingsComponentEffectsSection(
             onCheckedChange = actions.onCardPressFeedbackChanged,
             infoKey = stringResource(R.string.common_scope),
             infoValue = stringResource(R.string.settings_card_feedback_scope)
+        )
+        SettingsToggleItem(
+            title = stringResource(R.string.settings_grip_aware_floating_dock_title),
+            summary = if (state.gripAwareFloatingDockEnabled) {
+                stringResource(R.string.settings_grip_aware_floating_dock_summary_enabled)
+            } else {
+                stringResource(R.string.settings_grip_aware_floating_dock_summary_disabled)
+            },
+            checked = state.gripAwareFloatingDockEnabled,
+            onCheckedChange = actions.onGripAwareFloatingDockChanged,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_grip_aware_floating_dock_scope)
         )
     }
 }

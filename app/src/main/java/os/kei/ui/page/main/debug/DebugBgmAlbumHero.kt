@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -52,6 +50,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
@@ -73,7 +72,7 @@ internal fun DebugBgmAlbumHero(
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
     onVolumeSliderInteractionChanged: (Boolean) -> Unit,
-    volumeSliderBackdrop: Backdrop
+    contentBackdrop: Backdrop
 ) {
     var volumeControlVisible by rememberSaveable { mutableStateOf(true) }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -134,7 +133,10 @@ internal fun DebugBgmAlbumHero(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        DebugBgmAlbumArtwork(accent = accent)
+        DebugBgmAlbumArtwork(
+            accent = accent,
+            backdrop = contentBackdrop
+        )
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -194,7 +196,7 @@ internal fun DebugBgmAlbumHero(
                     onVolumeChange = onVolumeChange,
                     onVolumeChangeFinished = onVolumeChangeFinished,
                     onInteractionChanged = onVolumeSliderInteractionChanged,
-                    backdrop = volumeSliderBackdrop,
+                    backdrop = contentBackdrop,
                     modifier = Modifier
                         .fillMaxWidth()
                         .graphicsLayer {
@@ -210,37 +212,52 @@ internal fun DebugBgmAlbumHero(
 }
 
 @Composable
-private fun DebugBgmAlbumArtwork(accent: Color) {
-    val shape = RoundedCornerShape(24.dp)
-    Box(
+private fun DebugBgmAlbumArtwork(
+    accent: Color,
+    backdrop: Backdrop
+) {
+    val shape = RoundedCornerShape(28.dp)
+    val innerShape = RoundedCornerShape(23.dp)
+    val artworkSurfaceBackdrop = rememberLayerBackdrop()
+    val iconBackdrop = rememberCombinedBackdrop(backdrop, artworkSurfaceBackdrop)
+    LiquidSurface(
+        backdrop = backdrop,
+        shape = shape,
+        tint = accent.copy(alpha = 0.14f),
+        surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.18f),
+        chromaticAberration = true,
+        isInteractive = false,
+        exportedBackdrop = artworkSurfaceBackdrop,
         modifier = Modifier
             .fillMaxWidth(0.72f)
-            .aspectRatio(1f)
-            .shadow(
-                elevation = 18.dp,
-                shape = shape,
-                clip = false
-            )
-            .clip(shape)
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFFF4D6D),
-                        Color(0xFFFFC857),
-                        Color(0xFF35C2FF),
-                        accent,
-                        Color(0xFF2ED573)
-                    )
-                )
-            )
-            .border(8.dp, Color.White.copy(alpha = 0.78f), shape),
+            .aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(88.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.25f)),
+                .matchParentSize()
+                .padding(12.dp)
+                .clip(innerShape)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFFFF4D6D),
+                            Color(0xFFFFC857),
+                            Color(0xFF35C2FF),
+                            accent,
+                            Color(0xFF2ED573)
+                        )
+                    )
+                )
+        )
+        LiquidSurface(
+            backdrop = iconBackdrop,
+            shape = CircleShape,
+            tint = Color.White.copy(alpha = 0.12f),
+            surfaceColor = Color.White.copy(alpha = 0.12f),
+            chromaticAberration = true,
+            isInteractive = false,
+            modifier = Modifier.size(88.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(

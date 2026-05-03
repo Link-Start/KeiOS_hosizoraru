@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.os.appLucideSkipForwardIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -82,17 +84,27 @@ internal fun DebugBgmMiniPlayer(
         horizontalArrangement = Arrangement.spacedBy(itemGap),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(artworkSize)
-                .clip(RoundedCornerShape(artworkCornerRadius))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D))
-                    )
-                ),
+        LiquidSurface(
+            backdrop = backdrop,
+            shape = RoundedCornerShape(artworkCornerRadius),
+            tint = accent.copy(alpha = 0.14f),
+            surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.12f),
+            chromaticAberration = true,
+            isInteractive = false,
+            modifier = Modifier.size(artworkSize),
             contentAlignment = Alignment.Center
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D))
+                        )
+                    )
+            )
             Icon(
                 imageVector = appLucideMusicIcon(),
                 contentDescription = null,

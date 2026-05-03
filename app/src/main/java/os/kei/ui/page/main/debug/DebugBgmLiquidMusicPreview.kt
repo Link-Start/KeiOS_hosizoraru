@@ -227,7 +227,7 @@ internal fun DebugBgmLiquidMusicPreview(
                 userScrollEnabled = !sliderInteractionActive,
                 topPadding = contentTopPadding,
                 bottomPadding = contentBottomPadding,
-                volumeSliderBackdrop = pageChromeBackdrop,
+                contentBackdrop = pageChromeBackdrop,
                 modifier = Modifier
             )
             DebugBgmAlbumTopBar(

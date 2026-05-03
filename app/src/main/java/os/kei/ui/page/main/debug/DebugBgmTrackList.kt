@@ -7,6 +7,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMoreIcon
@@ -54,6 +57,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -68,6 +72,7 @@ internal fun DebugBgmTrackList(
     currentTrackId: String,
     isPlaying: Boolean,
     accent: Color,
+    backdrop: Backdrop,
     isTrackFavorite: (String) -> Boolean,
     isTrackOfflineSaved: (String) -> Boolean,
     onTrackClick: (String) -> Unit,
@@ -76,36 +81,44 @@ internal fun DebugBgmTrackList(
     onTrackShareClick: (DebugBgmTrack) -> Unit,
 ) {
     if (tracks.isEmpty()) {
-        DebugBgmEmptyTrackResult(accent = accent)
+        DebugBgmEmptyTrackResult(
+            accent = accent,
+            backdrop = backdrop
+        )
         return
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
+    val isDark = isSystemInDarkTheme()
+    val listShape = RoundedCornerShape(24.dp)
+    LiquidSurface(
+        backdrop = backdrop,
+        shape = listShape,
+        tint = accent.copy(alpha = if (isDark) 0.10f else 0.07f),
+        surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.16f else 0.22f),
+        chromaticAberration = true,
+        isInteractive = false,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        tracks.forEachIndexed { index, track ->
-            val active = track.id == currentTrackId
-            DebugBgmTrackRow(
-                index = index,
-                track = track,
-                active = active,
-                isPlaying = isPlaying,
-                favorite = isTrackFavorite(track.id),
-                offlineSaved = isTrackOfflineSaved(track.id),
-                accent = accent,
-                onClick = { onTrackClick(track.id) },
-                onFavoriteClick = { onTrackFavoriteClick(track.id) },
-                onOfflineClick = { onTrackOfflineClick(track.id) },
-                onShareClick = { onTrackShareClick(track) }
-            )
-            if (index < tracks.lastIndex) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 30.dp, end = 32.dp)
-                        .height(1.dp)
-                        .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            tracks.forEachIndexed { index, track ->
+                val active = track.id == currentTrackId
+                DebugBgmTrackRow(
+                    index = index,
+                    track = track,
+                    active = active,
+                    isPlaying = isPlaying,
+                    favorite = isTrackFavorite(track.id),
+                    offlineSaved = isTrackOfflineSaved(track.id),
+                    accent = accent,
+                    onClick = { onTrackClick(track.id) },
+                    onFavoriteClick = { onTrackFavoriteClick(track.id) },
+                    onOfflineClick = { onTrackOfflineClick(track.id) },
+                    onShareClick = { onTrackShareClick(track) }
                 )
             }
         }
@@ -113,43 +126,63 @@ internal fun DebugBgmTrackList(
 }
 
 @Composable
-private fun DebugBgmEmptyTrackResult(accent: Color) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 30.dp, vertical = 28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+private fun DebugBgmEmptyTrackResult(
+    accent: Color,
+    backdrop: Backdrop
+) {
+    val isDark = isSystemInDarkTheme()
+    val resultSurfaceBackdrop = rememberLayerBackdrop()
+    val iconBackdrop = rememberCombinedBackdrop(backdrop, resultSurfaceBackdrop)
+    LiquidSurface(
+        backdrop = backdrop,
+        shape = RoundedCornerShape(24.dp),
+        tint = accent.copy(alpha = if (isDark) 0.10f else 0.07f),
+        surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.16f else 0.22f),
+        chromaticAberration = true,
+        isInteractive = false,
+        exportedBackdrop = resultSurfaceBackdrop,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(accent.copy(alpha = 0.14f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = 30.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = appLucideMusicIcon(),
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(26.dp)
+            LiquidSurface(
+                backdrop = iconBackdrop,
+                shape = CircleShape,
+                tint = accent.copy(alpha = 0.16f),
+                surfaceColor = accent.copy(alpha = 0.08f),
+                chromaticAberration = true,
+                isInteractive = false,
+                modifier = Modifier.size(52.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = appLucideMusicIcon(),
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            Text(
+                text = stringResource(R.string.debug_component_lab_search_empty_title),
+                color = MiuixTheme.colorScheme.onBackground,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = stringResource(R.string.debug_component_lab_search_empty_subtitle),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                textAlign = TextAlign.Center
             )
         }
-        Text(
-            text = stringResource(R.string.debug_component_lab_search_empty_title),
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = stringResource(R.string.debug_component_lab_search_empty_subtitle),
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            textAlign = TextAlign.Center
-        )
     }
 }
 

@@ -46,7 +46,7 @@ internal fun DebugBgmAlbumContent(
     userScrollEnabled: Boolean,
     topPadding: Dp,
     bottomPadding: Dp,
-    volumeSliderBackdrop: Backdrop,
+    contentBackdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
     val sliderLockedScrollConnection = remember(userScrollEnabled, bottomBarScrollConnection) {
@@ -91,7 +91,7 @@ internal fun DebugBgmAlbumContent(
                 onVolumeChange = onVolumeChange,
                 onVolumeChangeFinished = onVolumeChangeFinished,
                 onVolumeSliderInteractionChanged = onSliderInteractionChanged,
-                volumeSliderBackdrop = volumeSliderBackdrop
+                contentBackdrop = contentBackdrop
             )
         }
         item {
@@ -100,6 +100,7 @@ internal fun DebugBgmAlbumContent(
                 currentTrackId = currentTrackId,
                 isPlaying = isPlaying,
                 accent = accent,
+                backdrop = contentBackdrop,
                 isTrackFavorite = isTrackFavorite,
                 isTrackOfflineSaved = isTrackOfflineSaved,
                 onTrackClick = onTrackClick,

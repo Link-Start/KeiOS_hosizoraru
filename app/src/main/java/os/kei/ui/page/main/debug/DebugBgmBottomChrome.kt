@@ -74,7 +74,6 @@ internal fun DebugBgmFloatingBottomChrome(
     onSearchQueryChange: (String) -> Unit,
     onSearchInputActiveChange: (Boolean) -> Unit,
     selectedDockKey: String,
-    selectedDockPosition: Float,
     onSelectedDockKeyChange: (String) -> Unit,
     onCompactDockClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -325,7 +324,6 @@ internal fun DebugBgmFloatingBottomChrome(
             DebugBgmDockGroupContent(
                 tabs = tabs,
                 selectedDockKey = selectedDockKey,
-                selectedDockPosition = selectedDockPosition,
                 accent = accent,
                 expandedProgress = dockExpandedProgress,
                 compactProgress = dockCompactProgress,

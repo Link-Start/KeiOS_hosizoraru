@@ -26,6 +26,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.launch
 import os.kei.R
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -86,7 +88,7 @@ internal fun DebugBgmLiquidMusicPreview(
         initialPage = initialDockPage,
         pageCount = { dockTabs.size }
     )
-    val debugPagerState = rememberDebugBgmPagerState(pagerState)
+    val pagerScope = rememberCoroutineScope()
     val pageListStates = remember(dockTabs) {
         List(dockTabs.size) { LazyListState() }
     }
@@ -115,10 +117,10 @@ internal fun DebugBgmLiquidMusicPreview(
         }
     }
     val shareChooserTitle = stringResource(R.string.debug_component_lab_share_chooser_title)
-    val selectedDockKey = dockTabs.getOrNull(debugPagerState.selectedIndex)?.key ?: musicState.selectedDockKey
-    val settledDockKey = dockTabs.getOrNull(debugPagerState.settledIndex)?.key ?: selectedDockKey
+    val selectedDockKey = dockTabs.getOrNull(pagerState.currentPage)?.key ?: musicState.selectedDockKey
+    val settledDockKey = dockTabs.getOrNull(pagerState.settledPage)?.key ?: selectedDockKey
     val activeListState = pageListStates[pagerState.currentPage.coerceIn(pageListStates.indices)]
-    LaunchedEffect(debugPagerState.settledIndex, settledDockKey) {
+    LaunchedEffect(settledDockKey) {
         if (musicState.selectedDockKey != settledDockKey) {
             musicState.selectDockKey(settledDockKey)
         }
@@ -299,11 +301,12 @@ internal fun DebugBgmLiquidMusicPreview(
             onSearchQueryChange = musicState::updateSearchQuery,
             onSearchInputActiveChange = musicState::updateSearchInputActive,
             selectedDockKey = selectedDockKey,
-            selectedDockPosition = debugPagerState.selectionPosition,
             onSelectedDockKeyChange = { key ->
                 val targetPage = dockTabs.indexOfFirst { it.key == key }
-                if (targetPage >= 0) {
-                    debugPagerState.navigateToPage(targetPage)
+                if (targetPage >= 0 && targetPage != pagerState.currentPage) {
+                    pagerScope.launch {
+                        pagerState.animateScrollToPage(targetPage)
+                    }
                 }
             },
             onCompactDockClick = {

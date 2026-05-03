@@ -321,7 +321,6 @@ internal fun OsCardVisibilityManagerSheet(
     SnapshotWindowBottomSheet(
         show = show,
         title = title,
-        enableNestedScroll = false,
         onDismissRequest = onDismissRequest,
         startAction = {
             AppLiquidIconButton(
@@ -398,7 +397,6 @@ internal fun OsActivityVisibilityManagerSheet(
     SnapshotWindowBottomSheet(
         show = show,
         title = title,
-        enableNestedScroll = false,
         onDismissRequest = onDismissRequest,
         startAction = {
             AppLiquidIconButton(

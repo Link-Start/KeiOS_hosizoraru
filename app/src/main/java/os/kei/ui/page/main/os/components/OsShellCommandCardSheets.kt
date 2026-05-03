@@ -147,7 +147,6 @@ internal fun OsShellCommandVisibilityManagerSheet(
     SnapshotWindowBottomSheet(
         show = show,
         title = title,
-        enableNestedScroll = false,
         onDismissRequest = onDismissRequest,
         startAction = {
             AppLiquidIconButton(

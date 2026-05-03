@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
@@ -314,11 +315,18 @@ private fun DebugBgmAlbumVolumeControl(
     backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
+    val volumeBackdrop = rememberLayerBackdrop()
+    val sliderBackdrop = rememberCombinedBackdrop(backdrop, volumeBackdrop)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(DebugBgmVolumeControlHeight)
     ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .layerBackdrop(volumeBackdrop)
+        )
         Row(
             modifier = Modifier
                 .matchParentSize()
@@ -339,7 +347,8 @@ private fun DebugBgmAlbumVolumeControl(
                 onInteractionChanged = onInteractionChanged,
                 valueRange = 0f..1f,
                 visibilityThreshold = 0.001f,
-                backdrop = backdrop,
+                backdrop = sliderBackdrop,
+                activeColor = accent,
                 modifier = Modifier
                     .weight(1f)
                     .height(30.dp)

@@ -10,9 +10,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -57,6 +59,7 @@ internal fun MainLoadedPager(
                     modifier = Modifier
                         .fillMaxSize()
                         .loadedPagerPageOffset(pageIndex, state, pageWidthPx)
+                        .drawLoadedPagerPage(pageIndex, state)
                         .then(semanticsModifier)
                 ) {
                     pageContent(pageIndex)
@@ -77,3 +80,20 @@ private fun Modifier.loadedPagerPageOffset(
         placeable.placeRelative(pageOffset, 0)
     }
 }
+
+private fun Modifier.drawLoadedPagerPage(
+    pageIndex: Int,
+    state: MainLoadedPagerState
+): Modifier = drawWithContent {
+    val drawDistance = if (state.isScrollInProgress) {
+        MainLoadedPagerActiveDrawDistance
+    } else {
+        MainLoadedPagerSettledDrawDistance
+    }
+    if (abs(pageIndex - state.pagePosition) <= drawDistance) {
+        drawContent()
+    }
+}
+
+private const val MainLoadedPagerSettledDrawDistance = 0.05f
+private const val MainLoadedPagerActiveDrawDistance = 1.05f

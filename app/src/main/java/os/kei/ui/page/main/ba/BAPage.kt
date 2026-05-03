@@ -52,6 +52,8 @@ fun BAPage(
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
+    val reduceBackdropEffects = runtime.isPagerScrollInProgress ||
+        listState.isScrollInProgress
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress
     val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
@@ -104,7 +106,7 @@ fun BAPage(
         baPoolEntries = poolUiState.entries,
     )
     val syncPageActive = if (preloadingEnabled) runtime.isPageActive else runtime.isDataActive
-    val baGlassRuntime = LocalGlassEffectRuntime.current
+    val baGlassRuntime = LocalGlassEffectRuntime.current.reducedDuring(reduceBackdropEffects)
 
     fun openSettingsSheet() {
         ui.openSettingsSheet(office)

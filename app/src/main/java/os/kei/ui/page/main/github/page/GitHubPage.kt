@@ -63,6 +63,9 @@ fun GitHubPage(
     val isListScrolling by remember(listState) {
         derivedStateOf { listState.isScrollInProgress }
     }
+    val reduceBackdropEffects =
+        runtime.isPagerScrollInProgress ||
+            isListScrolling
     val fullBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
@@ -210,7 +213,7 @@ fun GitHubPage(
     val hasKeiOsSelfTrack by remember {
         derivedStateOf { state.trackedItems.any { it.isKeiOsSelfTrack() } }
     }
-    val githubGlassRuntime = LocalGlassEffectRuntime.current
+    val githubGlassRuntime = LocalGlassEffectRuntime.current.reducedDuring(reduceBackdropEffects)
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
         GitHubMainContent(
             contentBottomPadding = runtime.contentBottomPadding,

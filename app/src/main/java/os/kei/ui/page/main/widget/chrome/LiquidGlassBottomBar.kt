@@ -313,6 +313,7 @@ fun LiquidGlassBottomBar(
     val tactileScaleX = lerp(1f, 1.006f, combinedPressProgress)
     val tactileScaleY = lerp(1f, 0.996f, combinedPressProgress)
     val useLightweightBackdrop = false
+    val captureActiveLayer = !reduceEffectsDuringPagerScroll
 
     val selectionProgressProvider: (Int) -> Float = remember(displaySelectionValue) {
         { tabIndex ->
@@ -343,6 +344,7 @@ fun LiquidGlassBottomBar(
         null
     }
     val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
+    val selectionBackdrop = if (captureActiveLayer) combinedBackdrop else backdrop
 
     CompositionLocalProvider(
         LocalLiquidGlassBottomBarTabScale provides {
@@ -380,8 +382,6 @@ fun LiquidGlassBottomBar(
                     .graphicsLayer {
                         translationX = panelOffset
                         translationY = -tactileLiftPx
-                        scaleX = tactileScaleX
-                        scaleY = tactileScaleY
                     }
                     .then(
                         if (useLightweightBackdrop) {
@@ -407,6 +407,12 @@ fun LiquidGlassBottomBar(
                                         color = Color.Black.copy(if (isInLightTheme) 0.10f else 0.20f)
                                     )
                                 },
+                                layerBlock = {
+                                    if (isLiquidEffectEnabled) {
+                                        scaleX = tactileScaleX
+                                        scaleY = tactileScaleY
+                                    }
+                                },
                                 onDrawSurface = { drawRect(palette.baseFillColor) }
                             )
                         }
@@ -418,51 +424,57 @@ fun LiquidGlassBottomBar(
                 content = content
             )
 
-            CompositionLocalProvider(
-                LocalLiquidGlassBottomBarContentColor provides { palette.activeContentColor },
-                LocalLiquidGlassBottomBarItemInteractive provides false
-            ) {
-                Row(
-                    Modifier
-                        .clearAndSetSemantics {}
-                        .alpha(0f)
-                        .then(if (useLightweightBackdrop) Modifier else Modifier.layerBackdrop(tabsBackdrop))
-                        .graphicsLayer {
-                            translationX = panelOffset
-                            translationY = -tactileLiftPx
-                            scaleX = tactileScaleX
-                            scaleY = tactileScaleY
-                        }
-                        .then(
-                            if (useLightweightBackdrop) {
-                                Modifier
-                            } else {
-                                Modifier.drawBackdrop(
-                                    backdrop = backdrop,
-                                    shape = { ContinuousCapsule },
-                                    effects = {
-                                        if (isLiquidEffectEnabled) {
-                                            val progress = combinedPressProgress
-                                            vibrancy()
-                                            blur(effectBlurDp.toPx())
-                                            lens(
-                                                effectLensDp.toPx() * progress,
-                                                effectLensDp.toPx() * progress
-                                            )
-                                        }
-                                    },
-                                    highlight = {
-                                        Highlight.Default.copy(alpha = if (isLiquidEffectEnabled) combinedPressProgress else 0f)
-                                    },
-                                    onDrawSurface = { drawRect(palette.baseFillColor) }
-                                )
+            if (captureActiveLayer) {
+                CompositionLocalProvider(
+                    LocalLiquidGlassBottomBarContentColor provides { palette.activeContentColor },
+                    LocalLiquidGlassBottomBarItemInteractive provides false
+                ) {
+                    Row(
+                        Modifier
+                            .clearAndSetSemantics {}
+                            .alpha(0f)
+                            .then(if (useLightweightBackdrop) Modifier else Modifier.layerBackdrop(tabsBackdrop))
+                            .graphicsLayer {
+                                translationX = panelOffset
+                                translationY = -tactileLiftPx
                             }
-                        )
-                        .height(AppChromeTokens.floatingBottomBarInnerHeight)
-                        .padding(horizontal = horizontalPadding),
-                    verticalAlignment = Alignment.CenterVertically,
-                    content = content
-                )
+                            .then(
+                                if (useLightweightBackdrop) {
+                                    Modifier
+                                } else {
+                                    Modifier.drawBackdrop(
+                                        backdrop = backdrop,
+                                        shape = { ContinuousCapsule },
+                                        effects = {
+                                            if (isLiquidEffectEnabled) {
+                                                val progress = combinedPressProgress
+                                                vibrancy()
+                                                blur(effectBlurDp.toPx())
+                                                lens(
+                                                    effectLensDp.toPx() * progress,
+                                                    effectLensDp.toPx() * progress
+                                                )
+                                            }
+                                        },
+                                        highlight = {
+                                            Highlight.Default.copy(alpha = if (isLiquidEffectEnabled) combinedPressProgress else 0f)
+                                        },
+                                        layerBlock = {
+                                            if (isLiquidEffectEnabled) {
+                                                scaleX = tactileScaleX
+                                                scaleY = tactileScaleY
+                                            }
+                                        },
+                                        onDrawSurface = { drawRect(palette.baseFillColor) }
+                                    )
+                                }
+                            )
+                            .height(AppChromeTokens.floatingBottomBarInnerHeight)
+                            .padding(horizontal = horizontalPadding),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = content
+                    )
+                }
             }
 
             if (tabWidthPx > 0f) {
@@ -481,8 +493,6 @@ fun LiquidGlassBottomBar(
                                 -progressOffset + panelOffset
                             }
                             translationY = -tactileLiftPx
-                            scaleX = tactileScaleX
-                            scaleY = tactileScaleY
                         }
                         .then(if (interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
                         .then(dampedDragAnimation.modifier)
@@ -500,7 +510,7 @@ fun LiquidGlassBottomBar(
                                     )
                             } else {
                                 Modifier.drawBackdrop(
-                                    backdrop = combinedBackdrop,
+                                    backdrop = selectionBackdrop,
                                     shape = { ContinuousCapsule },
                                     effects = {
                                         if (isLiquidEffectEnabled && combinedPressProgress > 0f) {
@@ -525,10 +535,12 @@ fun LiquidGlassBottomBar(
                                         )
                                     },
                                     layerBlock = {
+                                        scaleX = tactileScaleX
+                                        scaleY = tactileScaleY
                                         if (isLiquidEffectEnabled) {
                                             val clickScale = lerp(1f, 1.045f, itemPressProgress)
-                                            scaleX = dampedDragAnimation.scaleX * clickScale
-                                            scaleY = dampedDragAnimation.scaleY * clickScale
+                                            scaleX *= dampedDragAnimation.scaleX * clickScale
+                                            scaleY *= dampedDragAnimation.scaleY * clickScale
                                             val velocity = dampedDragAnimation.velocity / 10f
                                             scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
                                             scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)

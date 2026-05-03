@@ -6,11 +6,18 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.lerp
+import kotlin.math.max
 
 @Immutable
 data class GlassEffectRuntime(
     val reducedProgress: Float = 0f
 ) {
+    fun reducedDuring(active: Boolean, progress: Float = 1f): GlassEffectRuntime {
+        if (!active) return this
+        val resolvedProgress = progress.coerceIn(0f, 1f)
+        return copy(reducedProgress = max(reducedProgress, resolvedProgress))
+    }
+
     fun blurScaleFor(variant: GlassVariant): Float = lerp(
         start = 1f,
         stop = when (variant) {

@@ -42,10 +42,12 @@ fun OsPage(
     onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
+    val reduceBackdropEffects = runtime.isPagerScrollInProgress ||
+        listState.isScrollInProgress
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress
     val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
-    val osGlassRuntime = LocalGlassEffectRuntime.current
+    val osGlassRuntime = LocalGlassEffectRuntime.current.reducedDuring(reduceBackdropEffects)
     val uiContext = rememberOsPageUiContext(
         enableFullBackdropEffects = fullBackdropEffectsEnabled,
         enableTopBarBackdropEffects = pageBackdropEffectsEnabled

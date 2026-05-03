@@ -50,7 +50,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun GitHubPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     externalRefreshTriggerToken: Int = 0,
-    cardPressFeedbackEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
@@ -253,7 +252,6 @@ fun GitHubPage(
             lastRefreshMs = state.lastRefreshMs,
             lookupConfig = state.lookupConfig,
             overviewMetrics = contentDerivedState.trackedUi.overviewMetrics,
-            cardPressFeedbackEnabled = cardPressFeedbackEnabled,
             trackedItems = state.trackedItems,
             filteredTracked = contentDerivedState.trackedUi.filteredTracked,
             sortedTracked = contentDerivedState.trackedUi.sortedTracked,

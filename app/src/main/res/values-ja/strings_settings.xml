@@ -60,11 +60,6 @@
     <string name="settings_liquid_switch_summary_enabled">v2 Liquid Glass のスイッチ、ボタン、カプセル型コントロールで操作感を統一します。</string>
     <string name="settings_liquid_switch_summary_disabled">ソリッドなカプセル fallback と Miuix スイッチで低負荷時の見た目をそろえます。</string>
     <string name="settings_liquid_switch_scope">設定、シート、業務ページのボタングループ、ページ設定コントロールに影響します。</string>
-    <string name="settings_card_feedback_header">カードフィードバック</string>
-    <string name="settings_card_feedback_title">カード押下フィードバック</string>
-    <string name="settings_card_feedback_summary_enabled">PressFeedback 対応カードをすべて有効にします。</string>
-    <string name="settings_card_feedback_summary_disabled">Sink / Tilt などのカード押下フィードバックを全体で無効にします。</string>
-    <string name="settings_card_feedback_scope">System / MCP / GitHub / BA など PressFeedback 対応カード</string>
     <string name="settings_grip_aware_floating_dock_title">握り方に応じたフローティングボタン</string>
     <string name="settings_grip_aware_floating_dock_summary_enabled">端末の横方向の傾きと少量のタッチ補助で、押しやすい側へ配置します。</string>
     <string name="settings_grip_aware_floating_dock_summary_disabled">誤判定による位置ジャンプを避けるため、右側に固定します。</string>

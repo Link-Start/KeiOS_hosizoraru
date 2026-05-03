@@ -35,7 +35,6 @@ internal fun McpOverviewCardSection(
     isDark: Boolean,
     running: Boolean,
     overviewMetrics: List<McpOverviewMetric>,
-    cardPressFeedbackEnabled: Boolean,
     onToggleServer: () -> Unit,
     onOpenEditSheet: () -> Unit,
 ) {
@@ -45,7 +44,6 @@ internal fun McpOverviewCardSection(
         containerColor = overviewCardColor,
         borderColor = overviewBorderColor,
         contentColor = titleColor,
-        showIndication = cardPressFeedbackEnabled,
         onClick = onToggleServer,
         onLongClick = onOpenEditSheet,
         headerEndActions = {

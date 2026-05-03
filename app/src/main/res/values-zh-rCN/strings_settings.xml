@@ -60,11 +60,6 @@
     <string name="settings_liquid_switch_summary_enabled">使用 v2 Liquid Glass 开关、按钮与胶囊控件，统一液态交互质感。</string>
     <string name="settings_liquid_switch_summary_disabled">使用实体胶囊 fallback 与 Miuix 开关样式，保持低负载观感一致。</string>
     <string name="settings_liquid_switch_scope">影响设置、弹窗、业务页按钮组与页面配置控件。</string>
-    <string name="settings_card_feedback_header">卡片反馈</string>
-    <string name="settings_card_feedback_title">卡片按压反馈</string>
-    <string name="settings_card_feedback_summary_enabled">启用所有支持 PressFeedback 的卡片反馈</string>
-    <string name="settings_card_feedback_summary_disabled">全局禁用 Sink / Tilt 等卡片按压反馈</string>
-    <string name="settings_card_feedback_scope">System / MCP / GitHub / BA 等支持按压反馈的卡片</string>
     <string name="settings_grip_aware_floating_dock_title">智能握姿浮动按钮</string>
     <string name="settings_grip_aware_floating_dock_summary_enabled">根据手机横向倾斜和少量触控辅助，把浮动按钮放到更顺手的一侧。</string>
     <string name="settings_grip_aware_floating_dock_summary_disabled">浮动按钮固定在右侧，避免误判导致位置跳动。</string>

@@ -61,7 +61,6 @@ internal fun OsPageMainList(
     contentBackdrop: LayerBackdrop,
     isDark: Boolean,
     titleColor: Color,
-    cardPressFeedbackEnabled: Boolean,
     refreshing: Boolean,
     overviewState: SystemOverviewState,
     indicatorProgress: Float,
@@ -180,7 +179,6 @@ internal fun OsPageMainList(
                     containerColor = overviewCardColor,
                     borderColor = overviewBorderColor,
                     contentColor = titleColor,
-                    showIndication = cardPressFeedbackEnabled,
                     onClick = {
                         if (refreshing) return@AppOverviewCard
                         onRefreshAll()

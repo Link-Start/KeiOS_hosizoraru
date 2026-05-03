@@ -60,11 +60,6 @@
     <string name="settings_liquid_switch_summary_enabled">Use v2 Liquid Glass switches, buttons, and capsule controls for consistent liquid interaction.</string>
     <string name="settings_liquid_switch_summary_disabled">Use solid capsule fallback and the Miuix switch style for consistent low-load visuals.</string>
     <string name="settings_liquid_switch_scope">Affects Settings, sheets, business-page button groups, and page configuration controls.</string>
-    <string name="settings_card_feedback_header">Card feedback</string>
-    <string name="settings_card_feedback_title">Card press feedback</string>
-    <string name="settings_card_feedback_summary_enabled">Enable all cards that support PressFeedback.</string>
-    <string name="settings_card_feedback_summary_disabled">Disable Sink / Tilt and other card press feedback globally.</string>
-    <string name="settings_card_feedback_scope">System / MCP / GitHub / BA and other cards that support press feedback</string>
     <string name="settings_grip_aware_floating_dock_title">Grip-aware floating buttons</string>
     <string name="settings_grip_aware_floating_dock_summary_enabled">Use side tilt with a small touch fallback to place floating buttons on the easier side.</string>
     <string name="settings_grip_aware_floating_dock_summary_disabled">Keep floating buttons on the right side to avoid position jumps from false positives.</string>

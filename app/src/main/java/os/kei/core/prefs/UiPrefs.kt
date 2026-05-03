@@ -19,7 +19,6 @@ data class UiPrefsSnapshot(
     val liquidSwitchEnabled: Boolean,
     val transitionAnimationsEnabled: Boolean,
     val predictiveBackAnimationsEnabled: Boolean,
-    val cardPressFeedbackEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
@@ -45,7 +44,6 @@ object UiPrefs {
     private const val KEY_LIQUID_SWITCH = "liquid_switch"
     private const val KEY_TRANSITION_ANIMATIONS = "transition_animations"
     private const val KEY_PREDICTIVE_BACK_ANIMATIONS = "predictive_back_animations"
-    private const val KEY_CARD_PRESS_FEEDBACK = "card_press_feedback"
     private const val KEY_GRIP_AWARE_FLOATING_DOCK = "grip_aware_floating_dock"
     private const val KEY_HOME_ICON_HDR = "home_icon_hdr"
     private const val KEY_HOME_DYNAMIC_FULL_EFFECT = "home_dynamic_full_effect"
@@ -125,14 +123,6 @@ object UiPrefs {
 
     fun setPredictiveBackAnimationsEnabled(value: Boolean) {
         kv().encode(KEY_PREDICTIVE_BACK_ANIMATIONS, value)
-    }
-
-    fun isCardPressFeedbackEnabled(defaultValue: Boolean = true): Boolean {
-        return kv().decodeBool(KEY_CARD_PRESS_FEEDBACK, defaultValue)
-    }
-
-    fun setCardPressFeedbackEnabled(value: Boolean) {
-        kv().encode(KEY_CARD_PRESS_FEEDBACK, value)
     }
 
     fun isGripAwareFloatingDockEnabled(defaultValue: Boolean = false): Boolean {
@@ -303,7 +293,6 @@ object UiPrefs {
             liquidSwitchEnabled = true,
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
-            cardPressFeedbackEnabled = false,
             gripAwareFloatingDockEnabled = false,
             homeIconHdrEnabled = false,
             homeDynamicFullEffectEnabled = true,
@@ -334,7 +323,6 @@ object UiPrefs {
             liquidSwitchEnabled = store.decodeBool(KEY_LIQUID_SWITCH, true),
             transitionAnimationsEnabled = store.decodeBool(KEY_TRANSITION_ANIMATIONS, true),
             predictiveBackAnimationsEnabled = store.decodeBool(KEY_PREDICTIVE_BACK_ANIMATIONS, true),
-            cardPressFeedbackEnabled = store.decodeBool(KEY_CARD_PRESS_FEEDBACK, false),
             gripAwareFloatingDockEnabled = store.decodeBool(KEY_GRIP_AWARE_FLOATING_DOCK, false),
             homeIconHdrEnabled = store.decodeBool(KEY_HOME_ICON_HDR, false),
             homeDynamicFullEffectEnabled = store.decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, true),

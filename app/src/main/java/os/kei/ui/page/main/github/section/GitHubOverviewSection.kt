@@ -63,7 +63,6 @@ internal fun GitHubOverviewCard(
     refreshProgress: Float,
     lastRefreshMs: Long,
     metrics: GitHubOverviewMetrics,
-    cardPressFeedbackEnabled: Boolean,
     onRefreshAllTracked: () -> Unit,
     onOpenTrackSheetForAdd: () -> Unit
 ) {
@@ -90,7 +89,6 @@ internal fun GitHubOverviewCard(
             neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
         ),
         contentColor = MiuixTheme.colorScheme.onBackground,
-        showIndication = cardPressFeedbackEnabled,
         onClick = onRefreshAllTracked,
         onLongClick = onOpenTrackSheetForAdd,
         headerEndActions = {
@@ -296,7 +294,6 @@ private fun GitHubOverviewCardPreview() {
                 preReleaseUpdateCount = 2,
                 failedCount = 1
             ),
-            cardPressFeedbackEnabled = true,
             onRefreshAllTracked = {},
             onOpenTrackSheetForAdd = {}
         )

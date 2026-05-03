@@ -75,7 +75,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun McpPage(
     mcpServerManager: McpServerManager,
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
-    cardPressFeedbackEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenSkill: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
@@ -472,7 +471,6 @@ fun McpPage(
                         isDark = isDark,
                         running = uiState.running,
                         overviewMetrics = overviewState.overviewMetrics,
-                        cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         onToggleServer = toggleServer,
                         onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) }
                     )

@@ -49,7 +49,6 @@ internal fun rememberSettingsSectionContractBundle(
     liquidSwitchEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
     bottomBarScrollEffectReductionEnabled: Boolean,
-    cardPressFeedbackEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
     superIslandBypassRestrictionEnabled: Boolean,
@@ -79,7 +78,6 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidSwitchChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
     onBottomBarScrollEffectReductionChanged: (Boolean) -> Unit,
-    onCardPressFeedbackChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
@@ -197,7 +195,6 @@ internal fun rememberSettingsSectionContractBundle(
         liquidSwitchEnabled,
         liquidBottomBarEnabled,
         bottomBarScrollEffectReductionEnabled,
-        cardPressFeedbackEnabled,
         gripAwareFloatingDockEnabled
     ) {
         SettingsComponentEffectsSectionState(
@@ -205,7 +202,6 @@ internal fun rememberSettingsSectionContractBundle(
             liquidSwitchEnabled = liquidSwitchEnabled,
             liquidBottomBarEnabled = liquidBottomBarEnabled,
             bottomBarFullEffectDuringScrollEnabled = !bottomBarScrollEffectReductionEnabled,
-            cardPressFeedbackEnabled = cardPressFeedbackEnabled,
             gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
         )
     }
@@ -214,7 +210,6 @@ internal fun rememberSettingsSectionContractBundle(
         onLiquidSwitchChanged,
         onLiquidBottomBarChanged,
         onBottomBarScrollEffectReductionChanged,
-        onCardPressFeedbackChanged,
         onGripAwareFloatingDockChanged
     ) {
         SettingsComponentEffectsSectionActions(
@@ -224,7 +219,6 @@ internal fun rememberSettingsSectionContractBundle(
             onBottomBarFullEffectDuringScrollChanged = { enabled ->
                 onBottomBarScrollEffectReductionChanged(!enabled)
             },
-            onCardPressFeedbackChanged = onCardPressFeedbackChanged,
             onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
         )
     }

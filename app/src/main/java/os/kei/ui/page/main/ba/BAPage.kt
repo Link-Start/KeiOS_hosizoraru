@@ -48,7 +48,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun BAPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     preloadingEnabled: Boolean = false,
-    cardPressFeedbackEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},

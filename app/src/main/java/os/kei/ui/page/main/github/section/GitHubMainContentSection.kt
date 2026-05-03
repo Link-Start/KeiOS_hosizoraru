@@ -70,7 +70,6 @@ internal fun GitHubMainContent(
     lastRefreshMs: Long,
     lookupConfig: GitHubLookupConfig,
     overviewMetrics: GitHubOverviewMetrics,
-    cardPressFeedbackEnabled: Boolean,
     trackedItems: List<GitHubTrackedApp>,
     filteredTracked: List<GitHubTrackedApp>,
     sortedTracked: List<GitHubTrackedApp>,
@@ -164,7 +163,6 @@ internal fun GitHubMainContent(
                             refreshProgress = refreshProgress,
                             lastRefreshMs = lastRefreshMs,
                             metrics = overviewMetrics,
-                            cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                             onRefreshAllTracked = onRefreshAllTracked,
                             onOpenTrackSheetForAdd = onOpenTrackSheetForAdd
                         )

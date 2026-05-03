@@ -103,7 +103,6 @@ internal fun BaOverviewCard(
         onClick = {
             if (initState == BAInitState.Empty) onInitStateChange(BAInitState.Draft)
         },
-        onLongClick = { onInitStateChange(BAInitState.Empty) },
     ) {
         BaCardHeader(
             title = overviewTitle,

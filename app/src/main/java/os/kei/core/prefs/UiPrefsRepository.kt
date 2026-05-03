@@ -57,12 +57,6 @@ class UiPrefsRepository(
         }
     }
 
-    suspend fun setCardPressFeedbackEnabled(value: Boolean) {
-        updateAndPersist({ copy(cardPressFeedbackEnabled = value) }) {
-            UiPrefs.setCardPressFeedbackEnabled(value)
-        }
-    }
-
     suspend fun setGripAwareFloatingDockEnabled(value: Boolean) {
         updateAndPersist({ copy(gripAwareFloatingDockEnabled = value) }) {
             UiPrefs.setGripAwareFloatingDockEnabled(value)

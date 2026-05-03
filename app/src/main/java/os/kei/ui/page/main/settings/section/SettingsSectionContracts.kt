@@ -70,7 +70,6 @@ internal data class SettingsComponentEffectsSectionState(
     val liquidSwitchEnabled: Boolean,
     val liquidBottomBarEnabled: Boolean,
     val bottomBarFullEffectDuringScrollEnabled: Boolean,
-    val cardPressFeedbackEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean
 )
 
@@ -79,7 +78,6 @@ internal data class SettingsComponentEffectsSectionActions(
     val onLiquidSwitchChanged: (Boolean) -> Unit,
     val onLiquidBottomBarChanged: (Boolean) -> Unit,
     val onBottomBarFullEffectDuringScrollChanged: (Boolean) -> Unit,
-    val onCardPressFeedbackChanged: (Boolean) -> Unit,
     val onGripAwareFloatingDockChanged: (Boolean) -> Unit
 )
 

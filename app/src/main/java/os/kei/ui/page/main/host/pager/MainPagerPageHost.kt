@@ -33,7 +33,6 @@ internal fun MainPagerPageHost(
     visibleBottomPages: Set<BottomPage>,
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
-    cardPressFeedbackEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean,
@@ -113,7 +112,6 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         shizukuStatus = shizukuStatus,
                         shizukuApiUtils = shizukuApiUtils,
-                        cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                         onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
@@ -124,7 +122,6 @@ internal fun MainPagerPageHost(
                     BAPage(
                         runtime = runtime,
                         preloadingEnabled = preloadingEnabled,
-                        cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenPoolStudentGuide = onOpenPoolGuideDetail,
                         onOpenGuideCatalog = onOpenBaGuideCatalog,
@@ -137,7 +134,6 @@ internal fun MainPagerPageHost(
                     McpPage(
                         mcpServerManager = mcpServerManager,
                         runtime = runtime,
-                        cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenSkill = onOpenMcpSkill,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
@@ -149,7 +145,6 @@ internal fun MainPagerPageHost(
                     GitHubPage(
                         runtime = runtime,
                         externalRefreshTriggerToken = requestedGitHubRefreshToken,
-                        cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                         onListScrollInProgressChanged = onActivePageListScrollInProgressChanged

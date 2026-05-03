@@ -63,12 +63,6 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
-    fun updateCardPressFeedbackEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setCardPressFeedbackEnabled(value)
-        }
-    }
-
     fun updateGripAwareFloatingDockEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setGripAwareFloatingDockEnabled(value)

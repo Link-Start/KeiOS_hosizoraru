@@ -65,7 +65,6 @@ internal fun DebugLiquidCatalogIntroCard(accent: Color) {
         subtitle = stringResource(R.string.debug_component_lab_liquid_catalog_subtitle),
         sectionIcon = appLucideFlaskIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f)
     ) {
         Text(
@@ -83,14 +82,12 @@ internal fun DebugLiquidButtonsCard(
     backdrop: Backdrop
 ) {
     val contentColor = MiuixTheme.colorScheme.onBackground
-    val buttonSurface = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.22f)
 
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_button_shapes_label),
         subtitle = stringResource(R.string.debug_component_lab_liquid_catalog_subtitle),
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {
@@ -105,7 +102,6 @@ internal fun DebugLiquidButtonsCard(
                 onClick = {},
                 modifier = Modifier.weight(1f),
                 textColor = contentColor,
-                containerColor = buttonSurface,
                 leadingIcon = appLucidePlayIcon(),
                 iconTint = contentColor,
                 variant = GlassVariant.SheetPrimaryAction,
@@ -118,7 +114,6 @@ internal fun DebugLiquidButtonsCard(
                 onClick = {},
                 modifier = Modifier.weight(1f),
                 textColor = contentColor,
-                containerColor = buttonSurface,
                 leadingIcon = appLucideShuffleIcon(),
                 iconTint = contentColor,
                 variant = GlassVariant.SheetAction,
@@ -137,7 +132,6 @@ internal fun DebugLiquidButtonsCard(
                 onClick = {},
                 modifier = Modifier.weight(1f),
                 textColor = contentColor,
-                containerColor = buttonSurface,
                 leadingIcon = appLucideHeartIcon(),
                 iconTint = contentColor,
                 variant = GlassVariant.Compact,
@@ -153,7 +147,6 @@ internal fun DebugLiquidButtonsCard(
                 enabled = false,
                 modifier = Modifier.weight(1f),
                 textColor = contentColor,
-                containerColor = buttonSurface,
                 leadingIcon = appLucideDownloadIcon(),
                 iconTint = contentColor,
                 variant = GlassVariant.Compact,
@@ -232,7 +225,6 @@ internal fun DebugLiquidGlassDropdownCard(
     var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var selectedIntervalIndex by remember { mutableIntStateOf(1) }
     val contentColor = MiuixTheme.colorScheme.onBackground
-    val buttonSurface = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.20f)
     val intervalIcon = appLucideTimeIcon()
     val intervalOptions = listOf(
         stringResource(R.string.github_refresh_interval_1h),
@@ -246,7 +238,6 @@ internal fun DebugLiquidGlassDropdownCard(
         subtitle = stringResource(R.string.debug_component_lab_liquid_dropdown_subtitle),
         sectionIcon = appLucideMoreIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {
@@ -319,7 +310,6 @@ internal fun DebugLiquidGlassDropdownCard(
                 text = stringResource(R.string.debug_component_lab_liquid_dropdown_open),
                 onClick = { expanded = true },
                 textColor = contentColor,
-                containerColor = buttonSurface,
                 leadingIcon = appLucideMoreIcon(),
                 iconTint = contentColor,
                 variant = GlassVariant.SheetAction,
@@ -380,7 +370,6 @@ internal fun DebugLiquidBackdropCard(accent: Color) {
         subtitle = stringResource(R.string.debug_component_lab_liquid_large_clear_card_body),
         sectionIcon = appLucideFlaskIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {
@@ -403,7 +392,6 @@ internal fun DebugLiquidTransparentButtonsCard(
         subtitle = stringResource(R.string.debug_component_lab_liquid_clear_capsule),
         sectionIcon = appLucidePlayIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {
@@ -426,7 +414,6 @@ internal fun DebugLiquidSurfaceCardsCard(
         subtitle = stringResource(R.string.debug_component_lab_liquid_cluster_card_body),
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {
@@ -463,7 +450,6 @@ internal fun DebugLiquidParameterCard(
         subtitle = stringResource(R.string.debug_component_lab_liquid_parameter_preview_body),
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {
@@ -512,7 +498,6 @@ internal fun DebugLiquidControlsCard(
         subtitle = stringResource(R.string.debug_component_lab_liquid_key_points_slider_label),
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.58f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap
     ) {

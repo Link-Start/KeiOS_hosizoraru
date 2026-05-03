@@ -171,8 +171,8 @@ fun SettingsPage(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val settingsTitle = stringResource(R.string.settings_title)
-    val enabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.46f)
-    val disabledCardColor = Color(0x2264748B)
+    val enabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
+    val disabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
     val scope = rememberCoroutineScope()
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
     val latestShizukuStatus = rememberUpdatedState(shizukuStatus)

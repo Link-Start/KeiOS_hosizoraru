@@ -382,14 +382,8 @@ private fun DebugBgmRoundAction(
         height = 52.dp,
         shape = CircleShape,
         iconTint = contentTint,
-        containerColor = DebugBgmRoundActionButtonSurfaceColor(),
         variant = GlassVariant.Floating
     )
-}
-
-@Composable
-private fun DebugBgmRoundActionButtonSurfaceColor(): Color {
-    return MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.16f)
 }
 
 @Composable

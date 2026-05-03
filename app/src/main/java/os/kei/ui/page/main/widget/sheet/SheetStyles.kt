@@ -150,7 +150,7 @@ fun SheetDescriptionText(
 @Composable
 fun SheetSurfaceCard(
     modifier: Modifier = Modifier,
-    containerColor: Color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f),
+    containerColor: Color? = null,
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
     verticalSpacing: Dp = 8.dp,
@@ -160,7 +160,7 @@ fun SheetSurfaceCard(
 ) {
     AppSurfaceCard(
         modifier = modifier,
-        containerColor = containerColor,
+        containerColor = containerColor ?: MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
         borderColor = borderColor,
         contentColor = contentColor,
         captureLocalBackdrop = false,
@@ -270,7 +270,7 @@ fun SheetSummaryCard(
     accentColor: Color = MiuixTheme.colorScheme.primary,
     badgeLabel: String? = null,
     badgeColor: Color = accentColor,
-    containerColor: Color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f),
+    containerColor: Color? = null,
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
     headerTrailing: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,

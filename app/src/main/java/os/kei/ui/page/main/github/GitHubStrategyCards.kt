@@ -128,7 +128,11 @@ internal fun GitHubStrategyDraftSummaryCard(
             stringResource(R.string.github_strategy_badge_same)
         },
         badgeColor = if (changed) accent else MiuixTheme.colorScheme.onBackgroundVariant,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (changed) 0.82f else 0.66f),
+        containerColor = if (changed) {
+            MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f)
+        } else {
+            null
+        },
         modifier = androidx.compose.ui.Modifier.fillMaxWidth()
     ) {
         GitHubCompactInfoRow(
@@ -272,8 +276,7 @@ internal fun GitHubCredentialStatusCard(
         accentColor = accent,
         badgeLabel = status.localizedSummaryLabel(),
         badgeColor = accent,
-        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.72f)
+        modifier = androidx.compose.ui.Modifier.fillMaxWidth()
     ) {
         GitHubCompactInfoRow(
             label = stringResource(R.string.github_strategy_label_mode),

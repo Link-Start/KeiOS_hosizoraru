@@ -97,7 +97,7 @@ internal fun GitHubAppCandidateRow(
         containerColor = if (selected) {
             GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark)
         } else {
-            MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.48f)
+            null
         },
         borderColor = if (selected) {
             GitHubStatusPalette.Update.copy(alpha = 0.3f)

@@ -130,7 +130,6 @@ private fun DebugLiquidPreviewCard(
         subtitle = stringResource(R.string.debug_component_lab_liquid_catalog_subtitle),
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.70f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
         onClick = onOpenLiquidCatalog,
@@ -229,7 +228,6 @@ private fun DebugBgmPreviewCard(
         subtitle = stringResource(R.string.debug_component_lab_bgm_subtitle),
         sectionIcon = appLucideMusicIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.70f),
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
         onClick = onOpenBgmMusic,
@@ -283,7 +281,6 @@ private fun DebugIterationQueueCard(accent: Color) {
         subtitle = stringResource(R.string.debug_component_lab_iterations_subtitle),
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.66f),
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
         headerEndActions = {
             StatusPill(

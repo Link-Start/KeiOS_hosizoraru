@@ -106,7 +106,6 @@ private fun DebugBgmTopBackAction(
         height = DebugBgmTopBarVisualSize,
         shape = CircleShape,
         iconTint = MiuixTheme.colorScheme.onBackground,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.18f),
         variant = GlassVariant.Floating
     )
 }

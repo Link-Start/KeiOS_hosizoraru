@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,23 +72,11 @@ fun HomePage(
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
-    onListScrollInProgressChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
     val topAppBarScrollBehavior = MiuixScrollBehavior()
-    val isListScrolling by remember(lazyListState) {
-        derivedStateOf { lazyListState.isScrollInProgress }
-    }
-    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
-        if (runtime.isPageActive) {
-            onListScrollInProgressChanged(isListScrolling)
-        }
-    }
-    DisposableEffect(onListScrollInProgressChanged) {
-        onDispose { onListScrollInProgressChanged(false) }
-    }
 
     val blurEnabled = isRenderEffectSupported()
     val shaderSupported = isRuntimeShaderSupported()
@@ -102,7 +89,7 @@ fun HomePage(
     val fullBackdropEffectsEnabled = runtime.isPageActive &&
         (
             homeDynamicFullEffectEnabled ||
-                (!runtime.isPagerScrollInProgress && !isListScrolling)
+                !runtime.isPagerScrollInProgress
             )
     val surfaceColor = MiuixTheme.colorScheme.surface
     val actionBarBackdrop = rememberActionBarBackdrop {

@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -39,7 +37,6 @@ import os.kei.core.ui.effect.getMiuixAppBarColor
 import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.rememberListScrollGlassRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -51,27 +48,14 @@ fun BAPage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
-    onListScrollInProgressChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
-    val isListScrolling by remember(listState) {
-        derivedStateOf { listState.isScrollInProgress }
-    }
-    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
-        if (runtime.isPageActive) {
-            onListScrollInProgressChanged(isListScrolling)
-        }
-    }
-    DisposableEffect(onListScrollInProgressChanged) {
-        onDispose { onListScrollInProgressChanged(false) }
-    }
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress
-    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled &&
-        !isListScrolling
+    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
     val backdrops = rememberMainPageBackdropSet(
         keyPrefix = "ba",
         refreshOnCompositionEnter = true,
@@ -121,10 +105,7 @@ fun BAPage(
         baPoolEntries = poolUiState.entries,
     )
     val syncPageActive = if (preloadingEnabled) runtime.isPageActive else runtime.isDataActive
-    val baGlassRuntime = rememberListScrollGlassRuntime(
-        isListScrolling = isListScrolling,
-        label = "baListGlassEffectProgress"
-    )
+    val baGlassRuntime = LocalGlassEffectRuntime.current
 
     fun openSettingsSheet() {
         ui.openSettingsSheet(office)

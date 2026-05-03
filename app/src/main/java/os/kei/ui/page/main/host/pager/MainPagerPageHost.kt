@@ -52,7 +52,6 @@ internal fun MainPagerPageHost(
     baScrollToTopSignal: Int,
     mcpScrollToTopSignal: Int,
     githubScrollToTopSignal: Int,
-    onActivePageListScrollInProgressChanged: (Boolean) -> Unit,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
     onOpenSettings: () -> Unit,
@@ -102,8 +101,7 @@ internal fun MainPagerPageHost(
                         onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
-                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged
                     )
                 }
 
@@ -113,8 +111,7 @@ internal fun MainPagerPageHost(
                         shizukuStatus = shizukuStatus,
                         shizukuApiUtils = shizukuApiUtils,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
-                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged
                     )
                 }
 
@@ -125,8 +122,7 @@ internal fun MainPagerPageHost(
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenPoolStudentGuide = onOpenPoolGuideDetail,
                         onOpenGuideCatalog = onOpenBaGuideCatalog,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
-                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged
                     )
                 }
 
@@ -136,8 +132,7 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenSkill = onOpenMcpSkill,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
-                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged
                     )
                 }
 
@@ -146,8 +141,7 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         externalRefreshTriggerToken = requestedGitHubRefreshToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
-                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged
                     )
                 }
             }

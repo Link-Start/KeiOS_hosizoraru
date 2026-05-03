@@ -56,7 +56,6 @@ internal fun GitHubMainContent(
     bottomBarVisible: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     reduceEffectsDuringPagerScroll: Boolean,
-    reduceEffectsDuringListScroll: Boolean,
     searchExpanded: Boolean,
     trackedSearch: String,
     sortMode: GitHubSortMode,
@@ -184,7 +183,6 @@ internal fun GitHubMainContent(
                         checkStates = checkStates,
                         itemRefreshLoading = itemRefreshLoading,
                         contentBackdrop = contentBackdrop,
-                        reduceEffectsDuringListScroll = reduceEffectsDuringListScroll,
                         isDark = isDark,
                         apkAssetBundles = apkAssetBundles,
                         apkAssetLoading = apkAssetLoading,
@@ -213,7 +211,7 @@ internal fun GitHubMainContent(
                     modifier = Modifier.align(dockAlignment)
                 ) {
                     AppFloatingLiquidActionButton(
-                        backdrop = if (reduceEffectsDuringListScroll) null else contentBackdrop,
+                        backdrop = contentBackdrop,
                         icon = appLucideAddIcon(),
                         contentDescription = stringResource(R.string.github_cd_add_track),
                         onClick = onOpenTrackSheetForAdd,
@@ -221,7 +219,7 @@ internal fun GitHubMainContent(
                     )
                 }
                 AppFloatingSearchDock(
-                    backdrop = if (reduceEffectsDuringListScroll) null else contentBackdrop,
+                    backdrop = contentBackdrop,
                     expanded = searchExpanded,
                     query = trackedSearch,
                     onQueryChange = onTrackedSearchChange,

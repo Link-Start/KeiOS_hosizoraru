@@ -31,7 +31,6 @@ import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.rememberListScrollGlassRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @Composable
@@ -41,29 +40,13 @@ fun OsPage(
     shizukuApiUtils: ShizukuApiUtils,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
-    onListScrollInProgressChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
-    val isListScrolling by remember(listState) {
-        derivedStateOf { listState.isScrollInProgress }
-    }
-    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
-        if (runtime.isPageActive) {
-            onListScrollInProgressChanged(isListScrolling)
-        }
-    }
-    DisposableEffect(onListScrollInProgressChanged) {
-        onDispose { onListScrollInProgressChanged(false) }
-    }
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress
-    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled &&
-        !isListScrolling
-    val osGlassRuntime = rememberListScrollGlassRuntime(
-        isListScrolling = isListScrolling,
-        label = "osListGlassEffectProgress"
-    )
+    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
+    val osGlassRuntime = LocalGlassEffectRuntime.current
     val uiContext = rememberOsPageUiContext(
         enableFullBackdropEffects = fullBackdropEffectsEnabled,
         enableTopBarBackdropEffects = pageBackdropEffectsEnabled

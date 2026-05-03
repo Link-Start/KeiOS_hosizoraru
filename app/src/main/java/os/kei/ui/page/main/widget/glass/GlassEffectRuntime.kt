@@ -13,7 +13,6 @@ import androidx.compose.ui.util.lerp
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
-import kotlin.math.max
 
 @Immutable
 data class GlassEffectRuntime(
@@ -92,25 +91,4 @@ internal fun rememberGlassReductionProgress(
         }
     }
     return progress.value
-}
-
-@Composable
-internal fun rememberListScrollGlassRuntime(
-    isListScrolling: Boolean,
-    label: String,
-    reductionScale: Float = UiPerformanceBudget.listScrollGlassReductionScale
-): GlassEffectRuntime {
-    val upstreamRuntime = glassEffectRuntime()
-    val listScrollProgress = rememberGlassReductionProgress(
-        reduceEffectsDuringMotion = isListScrolling,
-        label = label
-    )
-    return remember(upstreamRuntime, listScrollProgress, reductionScale) {
-        upstreamRuntime.copy(
-            reducedProgress = max(
-                upstreamRuntime.reducedProgress,
-                listScrollProgress * reductionScale
-            )
-        )
-    }
 }

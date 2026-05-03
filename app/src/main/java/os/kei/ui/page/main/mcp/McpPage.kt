@@ -15,7 +15,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +50,6 @@ import os.kei.core.ui.effect.rememberMiuixBlurBackdrop
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.rememberListScrollGlassRuntime
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -77,8 +75,7 @@ fun McpPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenSkill: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
-    onListScrollInProgressChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val mcpTitle = stringResource(R.string.page_mcp_title)
     val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
@@ -136,17 +133,6 @@ fun McpPage(
         }
     }
     val listState = rememberLazyListState()
-    val isListScrolling by remember(listState) {
-        derivedStateOf { listState.isScrollInProgress }
-    }
-    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
-        if (runtime.isPageActive) {
-            onListScrollInProgressChanged(isListScrolling)
-        }
-    }
-    DisposableEffect(onListScrollInProgressChanged) {
-        onDispose { onListScrollInProgressChanged(false) }
-    }
     val scrollBehavior = MiuixScrollBehavior()
     val currentUiState by rememberUpdatedState(uiState)
     val serverNameHint = context.getString(R.string.mcp_input_service_name_hint)
@@ -210,12 +196,8 @@ fun McpPage(
     }
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress
-    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled &&
-        !isListScrolling
-    val mcpGlassRuntime = rememberListScrollGlassRuntime(
-        isListScrolling = isListScrolling,
-        label = "mcpListGlassEffectProgress"
-    )
+    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
+    val mcpGlassRuntime = LocalGlassEffectRuntime.current
     val toggleServer: () -> Unit = toggleServer@{
         localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
         if (!uiState.running && allowExternal && !localNetworkPermissionGranted) {

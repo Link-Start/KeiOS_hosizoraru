@@ -38,7 +38,6 @@ import os.kei.ui.page.main.github.page.GitHubPageActions
 import os.kei.ui.page.main.github.page.rememberGitHubPageState
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.rememberListScrollGlassRuntime
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -52,8 +51,7 @@ fun GitHubPage(
     externalRefreshTriggerToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
-    onListScrollInProgressChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val openLinkFailureMessage = context.getString(R.string.github_error_open_link)
@@ -68,8 +66,7 @@ fun GitHubPage(
     }
     val fullBackdropEffectsEnabled =
         runtime.isPageActive &&
-            !runtime.isPagerScrollInProgress &&
-            !isListScrolling
+            !runtime.isPagerScrollInProgress
     val topBarBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
@@ -91,14 +88,6 @@ fun GitHubPage(
         if (!isListScrolling) {
             state.settleScrollChromeVisibility()
         }
-    }
-    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
-        if (runtime.isPageActive) {
-            onListScrollInProgressChanged(isListScrolling)
-        }
-    }
-    DisposableEffect(onListScrollInProgressChanged) {
-        onDispose { onListScrollInProgressChanged(false) }
     }
     LaunchedEffect(context, state) {
         githubPageViewModel.bindContextObservers(
@@ -222,10 +211,7 @@ fun GitHubPage(
     val hasKeiOsSelfTrack by remember {
         derivedStateOf { state.trackedItems.any { it.isKeiOsSelfTrack() } }
     }
-    val githubGlassRuntime = rememberListScrollGlassRuntime(
-        isListScrolling = isListScrolling,
-        label = "githubListGlassEffectProgress"
-    )
+    val githubGlassRuntime = LocalGlassEffectRuntime.current
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
         GitHubMainContent(
             contentBottomPadding = runtime.contentBottomPadding,
@@ -238,7 +224,6 @@ fun GitHubPage(
             bottomBarVisible = runtime.bottomBarVisible,
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             reduceEffectsDuringPagerScroll = runtime.isPagerScrollInProgress,
-            reduceEffectsDuringListScroll = isListScrolling,
             searchExpanded = enableSearchBar && searchExpanded,
             trackedSearch = state.trackedSearch,
             sortMode = state.sortMode,

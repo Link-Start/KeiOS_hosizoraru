@@ -123,10 +123,6 @@ internal fun MainPagerLayout(
         requestedBottomPageToken = requestedBottomPageToken,
         onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
     )
-    var activePageListScrollInProgress by remember { mutableStateOf(false) }
-    LaunchedEffect(coordinator.pagerState.targetPage, coordinator.pagerState.settledPage) {
-        activePageListScrollInProgress = false
-    }
     DisposableEffect(
         context,
         homeIconHdrEnabled,
@@ -193,8 +189,7 @@ internal fun MainPagerLayout(
                 selectedPagePosition = pagerSelectionPosition,
                 backdrop = coordinator.backdrop,
                 reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
-                    scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                    activePageListScrollInProgress = activePageListScrollInProgress
+                    scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled
                 ),
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
                 onPageSelected = coordinator.onPageSelected
@@ -239,7 +234,6 @@ internal fun MainPagerLayout(
                     baScrollToTopSignal = coordinator.baScrollToTopSignal,
                     mcpScrollToTopSignal = coordinator.mcpScrollToTopSignal,
                     githubScrollToTopSignal = coordinator.githubScrollToTopSignal,
-                    onActivePageListScrollInProgressChanged = { activePageListScrollInProgress = it },
                     onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
                     onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
                     onOpenSettings = { navigator.pushSingleTop(KeiosRoute.Settings) },

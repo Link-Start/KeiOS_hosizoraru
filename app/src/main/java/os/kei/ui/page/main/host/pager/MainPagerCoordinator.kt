@@ -5,13 +5,8 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -36,7 +31,7 @@ internal data class MainPagerInsets(
 internal data class MainPagerCoordinatorState(
     val tabs: List<BottomPage>,
     val visibleTabsSnapshot: Set<BottomPage>,
-    val pagerState: PagerState,
+    val pagerState: MainLoadedPagerState,
     val pagerRuntime: MainPagerRuntimeSnapshot,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
@@ -104,11 +99,10 @@ internal fun rememberMainPagerCoordinator(
     )
     val tabs = tabsState.tabs
     val visibleTabsSnapshot = tabsState.visibleTabsSnapshot
-    val pagerState = rememberPagerState(
+    val pagerState = rememberMainLoadedPagerState(
         initialPage = tabsState.initialPageIndex,
-        pageCount = { tabs.size }
+        pageCount = tabs.size
     )
-    var temporaryBeyondViewportCount by remember { mutableStateOf<Int?>(null) }
     val homeOverviewState = rememberMainPagerHomeOverviewState(
         mcpServerManager = mcpServerManager,
         settingsReturnToken = settingsReturnToken
@@ -122,15 +116,11 @@ internal fun rememberMainPagerCoordinator(
         settledPageIndex = pagerState.settledPage,
         isPagerScrollInProgress = pagerState.isScrollInProgress,
         preloadPolicy = preloadPolicy,
-        temporaryBeyondViewportCount = temporaryBeyondViewportCount,
         hasNonHomeBackground = backgroundState.hasNonHomeBackground
     )
     BindMainPagerCoordinatorEffects(
-        settingsReturnToken = settingsReturnToken,
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
         tabsSize = tabs.size,
-        pagerState = pagerState,
-        onTemporaryBeyondViewportCountChange = { temporaryBeyondViewportCount = it }
+        pagerState = pagerState
     )
     val tabJumpController = rememberMainPagerTabJumpController(
         tabs = tabs,

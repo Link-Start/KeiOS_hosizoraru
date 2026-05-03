@@ -343,13 +343,18 @@ private fun calculateDropdownVerticalOffset(
 
 fun Modifier.capturePopupAnchor(onBoundsChange: (IntRect) -> Unit): Modifier {
     return this.onGloballyPositioned { coordinates ->
+        if (!coordinates.isAttached) return@onGloballyPositioned
         val position = coordinates.positionInWindow()
+        if (!position.x.isFinite() || !position.y.isFinite()) return@onGloballyPositioned
+        val right = position.x + coordinates.size.width
+        val bottom = position.y + coordinates.size.height
+        if (!right.isFinite() || !bottom.isFinite()) return@onGloballyPositioned
         onBoundsChange(
             IntRect(
                 left = position.x.roundToInt(),
                 top = position.y.roundToInt(),
-                right = (position.x + coordinates.size.width).roundToInt(),
-                bottom = (position.y + coordinates.size.height).roundToInt()
+                right = right.roundToInt(),
+                bottom = bottom.roundToInt()
             )
         )
     }

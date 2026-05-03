@@ -29,7 +29,6 @@ internal data class MainPagerRuntimeSnapshot(
     val settledPageIndex: Int,
     val isPagerScrollInProgress: Boolean,
     val includeTargetPageInHeavyRender: Boolean,
-    val resolvedBeyondViewportPageCount: Int,
     val shouldRenderNonHomeBackground: Boolean,
     val homePageBottomBarPinned: Boolean,
 ) {
@@ -59,7 +58,7 @@ internal data class MainPagerRuntimeSnapshot(
         val isTarget = pageIndex == targetPageIndex
         val isSettled = pageIndex == settledPageIndex
         return if (isPagerScrollInProgress) {
-            isCurrent || isTarget
+            isSettled || isTarget
         } else {
             isCurrent || isSettled || (includeTargetPageInHeavyRender && isTarget)
         }
@@ -75,35 +74,23 @@ internal fun buildMainPagerRuntimeSnapshot(
     settledPageIndex: Int,
     isPagerScrollInProgress: Boolean,
     preloadPolicy: UiPerformanceBudget.PreloadPolicy,
-    temporaryBeyondViewportCount: Int?,
     hasNonHomeBackground: Boolean,
 ): MainPagerRuntimeSnapshot {
     fun pageAt(index: Int): BottomPage = tabs.getOrElse(index) { BottomPage.Home }
 
-    val currentPage = pageAt(currentPageIndex)
     val targetPage = pageAt(targetPageIndex)
     val settledPage = pageAt(settledPageIndex)
-    val resolvedBeyondViewportPageCount = if (
-        temporaryBeyondViewportCount == null && isPagerScrollInProgress
-    ) {
-        preloadPolicy.mainPagerActiveScrollBeyondViewportPageCount
-    } else {
-        temporaryBeyondViewportCount ?: preloadPolicy.mainPagerBeyondViewportPageCount
-    }
     return MainPagerRuntimeSnapshot(
         currentPageIndex = currentPageIndex,
         targetPageIndex = targetPageIndex,
         settledPageIndex = settledPageIndex,
         isPagerScrollInProgress = isPagerScrollInProgress,
         includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
-        resolvedBeyondViewportPageCount = resolvedBeyondViewportPageCount,
         shouldRenderNonHomeBackground = hasNonHomeBackground && (
-            currentPage != BottomPage.Home ||
-                targetPage != BottomPage.Home ||
+            targetPage != BottomPage.Home ||
                 settledPage != BottomPage.Home
             ),
-        homePageBottomBarPinned = currentPage == BottomPage.Home ||
-            targetPage == BottomPage.Home ||
+        homePageBottomBarPinned = targetPage == BottomPage.Home ||
             settledPage == BottomPage.Home
     )
 }

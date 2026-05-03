@@ -1,9 +1,5 @@
 package os.kei.ui.page.main.host.pager
 
-import androidx.compose.animation.core.EaseInOut
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,7 +19,6 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 internal data class MainPagerTabJumpControllerState(
     val pagerScrollEnabled: Boolean,
@@ -39,7 +34,7 @@ internal data class MainPagerTabJumpControllerState(
 @Composable
 internal fun rememberMainPagerTabJumpController(
     tabs: List<BottomPage>,
-    pagerState: PagerState,
+    pagerState: MainLoadedPagerState,
     pagerRuntime: MainPagerRuntimeSnapshot,
     transitionAnimationsEnabled: Boolean,
     requestedBottomPage: String?,
@@ -92,29 +87,11 @@ internal fun rememberMainPagerTabJumpController(
         val nextJob = coroutineScope.launch(start = CoroutineStart.LAZY) {
             val runningJob = coroutineContext.job
             try {
-                if (!transitionAnimationsEnabled) {
-                    pagerState.scrollToPage(targetPageIndex)
-                    return@launch
-                }
-
-                val layoutInfo = pagerState.layoutInfo
-                val pageStridePx = layoutInfo.pageSize + layoutInfo.pageSpacing
-                if (pageStridePx <= 0) {
-                    pagerState.scrollToPage(targetPageIndex)
-                    return@launch
-                }
-
-                val currentDistanceInPages = targetPageIndex -
-                    pagerState.currentPage -
-                    pagerState.currentPageOffsetFraction
-                val scrollPixels = currentDistanceInPages * pageStridePx
-                val distance = abs(targetPageIndex - pagerState.currentPage).coerceAtLeast(2)
-                pagerState.animateScrollBy(
-                    value = scrollPixels,
-                    animationSpec = tween(
-                        easing = EaseInOut,
-                        durationMillis = 100 * distance + 100
-                    )
+                val distance = kotlin.math.abs(targetPageIndex - pagerState.currentPage).coerceAtLeast(2)
+                pagerState.animateToPage(
+                    target = targetPageIndex,
+                    animationsEnabled = transitionAnimationsEnabled,
+                    durationMillis = 100 * distance + 100
                 )
             } finally {
                 if (tabJumpJob == runningJob) {

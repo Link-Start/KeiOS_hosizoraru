@@ -7,8 +7,6 @@ object UiPerformanceBudget {
     val maxGlassBlur: Dp = 11.dp
     val backdropBlur: Dp = 8.dp
     val backdropLens: Dp = 24.dp
-    const val mainPagerBeyondViewportPageCount: Int = 0
-    const val mainPagerActiveScrollBeyondViewportPageCount: Int = 0
     const val catalogPagerBeyondViewportPageCount: Int = 0
     const val guidePagerBeyondViewportPageCount: Int = 0
     const val guideStaticPrefetchInitialCount: Int = 5
@@ -18,8 +16,6 @@ object UiPerformanceBudget {
     const val baCalendarPoolDeferredWarmDelayMs: Long = 220L
 
     data class PreloadPolicy(
-        val mainPagerBeyondViewportPageCount: Int,
-        val mainPagerActiveScrollBeyondViewportPageCount: Int,
         val catalogPagerBeyondViewportPageCount: Int,
         val guidePagerBeyondViewportPageCount: Int,
         val guideStaticPrefetchInitialCount: Int,
@@ -33,8 +29,6 @@ object UiPerformanceBudget {
     ): PreloadPolicy {
         if (!preloadingEnabled) {
             return PreloadPolicy(
-                mainPagerBeyondViewportPageCount = mainPagerBeyondViewportPageCount,
-                mainPagerActiveScrollBeyondViewportPageCount = mainPagerActiveScrollBeyondViewportPageCount,
                 catalogPagerBeyondViewportPageCount = catalogPagerBeyondViewportPageCount,
                 guidePagerBeyondViewportPageCount = guidePagerBeyondViewportPageCount,
                 guideStaticPrefetchInitialCount = guideStaticPrefetchInitialCount,
@@ -44,8 +38,6 @@ object UiPerformanceBudget {
             )
         }
         return PreloadPolicy(
-            mainPagerBeyondViewportPageCount = 1,
-            mainPagerActiveScrollBeyondViewportPageCount = 1,
             catalogPagerBeyondViewportPageCount = 1,
             guidePagerBeyondViewportPageCount = 1,
             guideStaticPrefetchInitialCount = 10,

@@ -1,9 +1,11 @@
 package os.kei.ui.page.main.os.shell.page
 
+import androidx.activity.ExperimentalActivityApi
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -60,11 +62,14 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
+import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -347,13 +352,13 @@ fun OsShellRunnerPage(
         onClose()
     }
 
-    BackHandler(enabled = showSaveSheet) { showSaveSheet = false }
-    BackHandler(enabled = !showSaveSheet && showSettingsSheet) { showSettingsSheet = false }
-    BackHandler(enabled = !showSaveSheet && !showSettingsSheet && showDangerousCommandConfirm) {
+    OsShellBackHandler(enabled = showSaveSheet) { showSaveSheet = false }
+    OsShellBackHandler(enabled = !showSaveSheet && showSettingsSheet) { showSettingsSheet = false }
+    OsShellBackHandler(enabled = !showSaveSheet && !showSettingsSheet && showDangerousCommandConfirm) {
         showDangerousCommandConfirm = false
         pendingDangerousCommand = ""
     }
-    BackHandler(
+    OsShellBackHandler(
         enabled = !showSaveSheet && !showSettingsSheet && !showDangerousCommandConfirm,
         onBack = { requestClose() }
     )
@@ -539,6 +544,34 @@ fun OsShellRunnerPage(
             }
         }
     )
+}
+
+@OptIn(ExperimentalActivityApi::class)
+@Composable
+private fun OsShellBackHandler(
+    enabled: Boolean,
+    onBack: () -> Unit
+) {
+    val predictiveBackEnabled = LocalTransitionAnimationsEnabled.current &&
+        LocalPredictiveBackAnimationsEnabled.current
+    BackHandler(enabled = enabled) {
+        onBack()
+    }
+    PredictiveBackHandler(enabled = enabled && predictiveBackEnabled) { backEvents ->
+        var handledByProgress = false
+        try {
+            backEvents.collect { event ->
+                if (!handledByProgress && event.progress >= 0.995f) {
+                    handledByProgress = true
+                    onBack()
+                }
+            }
+            if (!handledByProgress) {
+                onBack()
+            }
+        } catch (_: CancellationException) {
+        }
+    }
 }
 
 @Composable

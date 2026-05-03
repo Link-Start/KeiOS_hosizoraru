@@ -2,7 +2,7 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
@@ -65,7 +65,7 @@ fun AppSwitch(
     enabled: Boolean = true
 ) {
     val touchModifier = modifier
-        .defaultMinSize(minWidth = 64.dp, minHeight = 48.dp)
+        .requiredSize(width = 64.dp, height = 48.dp)
 
     if (!LocalLiquidControlsEnabled.current) {
         AppFallbackSwitchToggle(

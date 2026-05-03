@@ -9,14 +9,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
+import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -42,17 +46,26 @@ class OsShellRunnerActivity : ComponentActivity() {
                 AppThemeMode.DARK -> ColorSchemeMode.Dark
             }
             val controller = ThemeController(colorSchemeMode)
+            val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = chromePrefs.transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = chromePrefs.predictiveBackAnimationsEnabled
+            )
 
             MiuixTheme(controller = controller) {
-                OsShellRunnerPage(
-                    canRunShellCommand = shizukuStatus.contains("granted", ignoreCase = true) ||
-                        shizukuApiUtils.canUseCommand(),
-                    onRequestShizukuPermission = { shizukuApiUtils.requestPermissionIfNeeded() },
-                    onRunShellCommand = { command, timeoutMs ->
-                        shizukuApiUtils.execCommandCancellable(command = command, timeoutMs = timeoutMs)
-                    },
-                    onClose = { finish() }
-                )
+                CompositionLocalProvider(
+                    LocalTransitionAnimationsEnabled provides chromePrefs.transitionAnimationsEnabled,
+                    LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled
+                ) {
+                    OsShellRunnerPage(
+                        canRunShellCommand = shizukuStatus.contains("granted", ignoreCase = true) ||
+                            shizukuApiUtils.canUseCommand(),
+                        onRequestShizukuPermission = { shizukuApiUtils.requestPermissionIfNeeded() },
+                        onRunShellCommand = { command, timeoutMs ->
+                            shizukuApiUtils.execCommandCancellable(command = command, timeoutMs = timeoutMs)
+                        },
+                        onClose = { finish() }
+                    )
+                }
             }
         }
     }

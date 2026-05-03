@@ -94,7 +94,9 @@ fun GitHubPage(
         }
     }
     LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
-        onListScrollInProgressChanged(if (runtime.isPageActive) isListScrolling else false)
+        if (runtime.isPageActive) {
+            onListScrollInProgressChanged(isListScrolling)
+        }
     }
     DisposableEffect(onListScrollInProgressChanged) {
         onDispose { onListScrollInProgressChanged(false) }

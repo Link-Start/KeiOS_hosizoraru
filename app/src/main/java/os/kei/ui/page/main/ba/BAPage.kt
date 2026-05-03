@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -51,13 +52,22 @@ fun BAPage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
+    onListScrollInProgressChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val isListScrolling by remember(listState) {
         derivedStateOf { listState.isScrollInProgress }
+    }
+    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
+        if (runtime.isPageActive) {
+            onListScrollInProgressChanged(isListScrolling)
+        }
+    }
+    DisposableEffect(onListScrollInProgressChanged) {
+        onDispose { onListScrollInProgressChanged(false) }
     }
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress

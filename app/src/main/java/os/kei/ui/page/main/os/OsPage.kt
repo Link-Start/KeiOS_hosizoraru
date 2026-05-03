@@ -42,11 +42,20 @@ fun OsPage(
     cardPressFeedbackEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
+    onListScrollInProgressChanged: (Boolean) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
     val isListScrolling by remember(listState) {
         derivedStateOf { listState.isScrollInProgress }
+    }
+    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
+        if (runtime.isPageActive) {
+            onListScrollInProgressChanged(isListScrolling)
+        }
+    }
+    DisposableEffect(onListScrollInProgressChanged) {
+        onDispose { onListScrollInProgressChanged(false) }
     }
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress

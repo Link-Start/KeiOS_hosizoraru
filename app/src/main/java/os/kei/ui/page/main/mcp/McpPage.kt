@@ -78,7 +78,8 @@ fun McpPage(
     cardPressFeedbackEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenSkill: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
+    onListScrollInProgressChanged: (Boolean) -> Unit = {}
 ) {
     val mcpTitle = stringResource(R.string.page_mcp_title)
     val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
@@ -138,6 +139,14 @@ fun McpPage(
     val listState = rememberLazyListState()
     val isListScrolling by remember(listState) {
         derivedStateOf { listState.isScrollInProgress }
+    }
+    LaunchedEffect(isListScrolling, runtime.isPageActive, onListScrollInProgressChanged) {
+        if (runtime.isPageActive) {
+            onListScrollInProgressChanged(isListScrolling)
+        }
+    }
+    DisposableEffect(onListScrollInProgressChanged) {
+        onDispose { onListScrollInProgressChanged(false) }
     }
     val scrollBehavior = MiuixScrollBehavior()
     val currentUiState by rememberUpdatedState(uiState)

@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,10 +54,8 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
-import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.rememberGlassReductionProgress
-import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import com.kyant.backdrop.Backdrop
@@ -211,9 +210,8 @@ fun LiquidGlassBottomBar(
     var currentIndex by remember(safeTabsCount) {
         mutableIntStateOf(selectedIndex.fastCoerceIn(0, safeTabsCount - 1))
     }
-    var programmaticSelectionVersion by remember(safeTabsCount) { mutableIntStateOf(0) }
-    var consumedProgrammaticSelectionVersion by remember(safeTabsCount) { mutableIntStateOf(0) }
     var pressedTabIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
+    val currentOnSelected by rememberUpdatedState(onSelected)
 
     class DampedDragAnimationHolder {
         var instance: DampedDragAnimation? = null
@@ -233,7 +231,7 @@ fun LiquidGlassBottomBar(
             canDrag = { offset ->
                 val animation = holder.instance ?: return@DampedDragAnimation true
                 if (tabWidthPx <= 0f || totalWidthPx <= 0f) return@DampedDragAnimation false
-                val paddingPx = with(density) { 4.dp.toPx() }
+                val paddingPx = with(density) { horizontalPadding.toPx() }
                 val indicatorX = animation.value * tabWidthPx
                 val globalTouchX = if (isLtr) {
                     paddingPx + indicatorX + offset.x
@@ -246,11 +244,7 @@ fun LiquidGlassBottomBar(
             onDragStopped = {
                 val targetIndex = targetValue.fastRoundToInt().fastCoerceIn(0, safeTabsCount - 1)
                 currentIndex = targetIndex
-                if (transitionAnimationsEnabled) {
-                    animateToValue(targetIndex.toFloat())
-                } else {
-                    snapToValue(targetIndex.toFloat())
-                }
+                currentOnSelected(targetIndex)
                 animationScope.launch {
                     if (transitionAnimationsEnabled) {
                         offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
@@ -262,28 +256,26 @@ fun LiquidGlassBottomBar(
             onDrag = { _, dragAmount ->
                 if (tabWidthPx > 0f) {
                     val progressDelta = dragAmount.x / tabWidthPx * if (isLtr) 1f else -1f
-                    snapToValue(
-                        (value + progressDelta).fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
+                    updateValue(
+                        (targetValue + progressDelta).fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
                     )
                     animationScope.launch {
                         offsetAnimation.snapTo(offsetAnimation.value + dragAmount.x)
                     }
                 }
             }
-        )
+        ).also { holder.instance = it }
     }
-    holder.instance = dampedDragAnimation
-    val displaySelectionValue = selectedPosition
-        ?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
-        ?: dampedDragAnimation.value
+    val externalSelectionPosition = selectedPosition?.fastCoerceIn(
+        0f,
+        (safeTabsCount - 1).toFloat()
+    )
+    val displaySelectionValue = externalSelectionPosition ?: dampedDragAnimation.value
     val currentDisplaySelectionValue by rememberUpdatedState(displaySelectionValue)
     val currentPanelOffset by rememberUpdatedState(panelOffset)
 
-    LaunchedEffect(selectedPosition, safeTabsCount) {
-        val pagerDrivenPosition = selectedPosition?.fastCoerceIn(
-            0f,
-            (safeTabsCount - 1).toFloat()
-        ) ?: return@LaunchedEffect
+    LaunchedEffect(externalSelectionPosition, safeTabsCount) {
+        val pagerDrivenPosition = externalSelectionPosition ?: return@LaunchedEffect
         dampedDragAnimation.snapToValue(
             value = pagerDrivenPosition,
             updateVelocity = false
@@ -291,29 +283,19 @@ fun LiquidGlassBottomBar(
     }
 
     LaunchedEffect(selectedIndex, safeTabsCount) {
-        val targetIndex = selectedIndex.fastCoerceIn(0, safeTabsCount - 1)
-        if (selectedPosition == null && currentIndex != targetIndex) {
-            programmaticSelectionVersion += 1
-            currentIndex = targetIndex
-        }
+        snapshotFlow { selectedIndex.fastCoerceIn(0, safeTabsCount - 1) }
+            .collectLatest { currentIndex = it }
     }
 
-    val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    LaunchedEffect(dampedDragAnimation, snapshotFlowManager) {
-        snapshotFlowManager.snapshotFlow { currentIndex to programmaticSelectionVersion }
+    LaunchedEffect(dampedDragAnimation, transitionAnimationsEnabled, safeTabsCount) {
+        snapshotFlow { currentIndex }
             .drop(1)
-            .collectLatest { (index, selectionVersion) ->
-                val fromProgrammaticSelection = selectionVersion > consumedProgrammaticSelectionVersion
-                if (fromProgrammaticSelection) {
-                    consumedProgrammaticSelectionVersion = selectionVersion
-                }
+            .collectLatest { index ->
+                val target = index.fastCoerceIn(0, safeTabsCount - 1).toFloat()
                 if (transitionAnimationsEnabled) {
-                    dampedDragAnimation.animateToValue(index.toFloat())
+                    dampedDragAnimation.animateToValue(target)
                 } else {
-                    dampedDragAnimation.snapToValue(index.toFloat())
-                }
-                if (!fromProgrammaticSelection) {
-                    onSelected(index)
+                    dampedDragAnimation.snapToValue(target)
                 }
             }
     }

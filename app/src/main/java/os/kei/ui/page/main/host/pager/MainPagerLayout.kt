@@ -176,18 +176,15 @@ internal fun MainPagerLayout(
                 0,
                 (coordinator.tabs.size - 1).coerceAtLeast(0)
             )
-            val pagerMotionActive = coordinator.pagerState.isScrollInProgress ||
-                coordinator.navigationActive
-            val pagerSelectionPosition = if (pagerMotionActive) {
-                (
+            val pagerSelectionPosition = when {
+                coordinator.pagerState.isScrollInProgress && !coordinator.navigationActive -> (
                     coordinator.pagerState.currentPage +
                         coordinator.pagerState.currentPageOffsetFraction
                     ).coerceIn(
                     0f,
                     (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
                 )
-            } else {
-                safeSelectedPageIndex.toFloat()
+                else -> null
             }
             MainPagerBottomBar(
                 visible = coordinator.showBottomBar,

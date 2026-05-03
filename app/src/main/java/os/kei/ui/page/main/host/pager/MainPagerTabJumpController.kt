@@ -1,7 +1,8 @@
 package os.kei.ui.page.main.host.pager
 
-import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,12 +19,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
-import os.kei.ui.page.main.widget.motion.AppMotionTokens
-import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 internal data class MainPagerTabJumpControllerState(
     val pagerScrollEnabled: Boolean,
@@ -54,44 +54,12 @@ internal fun rememberMainPagerTabJumpController(
     var selectedPageIndex by remember(tabs) {
         mutableIntStateOf(pagerState.currentPage.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)))
     }
-    val farJumpAlpha = remember { Animatable(1f) }
     val density = LocalDensity.current
     val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
     val bottomBarVisibilityController = remember(bottomBarVisibilityThresholdPx) {
         ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
     }
 
-    val farJumpBefore: suspend () -> Unit = {
-        if (!transitionAnimationsEnabled) {
-            farJumpAlpha.snapTo(1f)
-        } else {
-            farJumpAlpha.snapTo(1f)
-            farJumpAlpha.animateTo(
-                targetValue = 0.92f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(
-                        AppMotionTokens.farJumpDimMs,
-                        transitionAnimationsEnabled
-                    )
-                )
-            )
-        }
-    }
-    val farJumpAfter: suspend () -> Unit = {
-        if (!transitionAnimationsEnabled) {
-            farJumpAlpha.snapTo(1f)
-        } else {
-            farJumpAlpha.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(
-                        AppMotionTokens.farJumpRestoreMs,
-                        transitionAnimationsEnabled
-                    )
-                )
-            )
-        }
-    }
     val nestedScrollConnection = remember(pagerRuntime.homePageBottomBarPinned, bottomBarVisibilityController) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -116,34 +84,42 @@ internal fun rememberMainPagerTabJumpController(
         if (index !in tabs.indices) return@onPageSelected
         showBottomBar = true
         val targetPageIndex = index.coerceIn(0, tabs.lastIndex)
-        val settledPageIndex = pagerState.settledPage.coerceIn(0, tabs.lastIndex)
-        val alreadySettled = targetPageIndex == settledPageIndex &&
-            !pagerState.isScrollInProgress &&
-            !navigationActive
-        val alreadyNavigatingToTarget = navigationActive && selectedPageIndex == targetPageIndex
-        if (alreadySettled || alreadyNavigatingToTarget) {
-            selectedPageIndex = targetPageIndex
-            return@onPageSelected
-        }
+        if (targetPageIndex == selectedPageIndex) return@onPageSelected
 
         selectedPageIndex = targetPageIndex
         navigationActive = true
         tabJumpJob?.cancel()
-        val fromPageIndex = pagerState.currentPage.coerceIn(0, tabs.lastIndex)
         val nextJob = coroutineScope.launch(start = CoroutineStart.LAZY) {
             val runningJob = coroutineContext.job
             try {
-                pagerState.animateTabSwitch(
-                    fromIndex = fromPageIndex,
-                    targetIndex = targetPageIndex,
-                    animationsEnabled = transitionAnimationsEnabled,
-                    onFarJumpBefore = farJumpBefore,
-                    onFarJumpAfter = farJumpAfter
+                if (!transitionAnimationsEnabled) {
+                    pagerState.scrollToPage(targetPageIndex)
+                    return@launch
+                }
+
+                val layoutInfo = pagerState.layoutInfo
+                val pageStridePx = layoutInfo.pageSize + layoutInfo.pageSpacing
+                if (pageStridePx <= 0) {
+                    pagerState.scrollToPage(targetPageIndex)
+                    return@launch
+                }
+
+                val currentDistanceInPages = targetPageIndex -
+                    pagerState.currentPage -
+                    pagerState.currentPageOffsetFraction
+                val scrollPixels = currentDistanceInPages * pageStridePx
+                val distance = abs(targetPageIndex - pagerState.currentPage).coerceAtLeast(2)
+                pagerState.animateScrollBy(
+                    value = scrollPixels,
+                    animationSpec = tween(
+                        easing = EaseInOut,
+                        durationMillis = 100 * distance + 100
+                    )
                 )
             } finally {
                 if (tabJumpJob == runningJob) {
                     navigationActive = false
-                    selectedPageIndex = pagerState.settledPage.coerceIn(
+                    selectedPageIndex = pagerState.currentPage.coerceIn(
                         0,
                         tabs.lastIndex.coerceAtLeast(0)
                     )
@@ -184,7 +160,6 @@ internal fun rememberMainPagerTabJumpController(
         selectedPageIndex,
         navigationActive,
         nestedScrollConnection,
-        farJumpAlpha.value,
         onActionBarInteractingChanged,
         onPageSelected
     ) {
@@ -194,7 +169,7 @@ internal fun rememberMainPagerTabJumpController(
             selectedPageIndex = selectedPageIndex,
             navigationActive = navigationActive,
             nestedScrollConnection = nestedScrollConnection,
-            farJumpAlpha = farJumpAlpha.value,
+            farJumpAlpha = 1f,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
             onPageSelected = onPageSelected
         )

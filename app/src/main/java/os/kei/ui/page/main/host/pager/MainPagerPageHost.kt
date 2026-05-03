@@ -103,7 +103,8 @@ internal fun MainPagerPageHost(
                         onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
+                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
                     )
                 }
 
@@ -114,7 +115,8 @@ internal fun MainPagerPageHost(
                         shizukuApiUtils = shizukuApiUtils,
                         cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
+                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
                     )
                 }
 
@@ -126,7 +128,8 @@ internal fun MainPagerPageHost(
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenPoolStudentGuide = onOpenPoolGuideDetail,
                         onOpenGuideCatalog = onOpenBaGuideCatalog,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
+                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
                     )
                 }
 
@@ -137,7 +140,8 @@ internal fun MainPagerPageHost(
                         cardPressFeedbackEnabled = cardPressFeedbackEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenSkill = onOpenMcpSkill,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
+                        onListScrollInProgressChanged = onActivePageListScrollInProgressChanged
                     )
                 }
 

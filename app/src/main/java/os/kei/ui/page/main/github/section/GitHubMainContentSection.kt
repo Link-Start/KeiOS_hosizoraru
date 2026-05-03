@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.section
 
 import android.os.Build
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +27,7 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.os.appLucideAddIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
@@ -35,11 +35,8 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
-import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
-import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
+import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
-import os.kei.ui.page.main.widget.motion.appFloatingEnter
-import os.kei.ui.page.main.widget.motion.appFloatingExit
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -112,13 +109,6 @@ internal fun GitHubMainContent(
     )
     val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
         label = "github_floating_keyboard_lift"
-    )
-    val addButtonBottom by animateDpAsState(
-        targetValue = searchDockBottom +
-            floatingKeyboardLift +
-            AppChromeTokens.floatingBottomBarOuterHeight +
-            6.dp,
-        label = "github_floating_add_bottom"
     )
     val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
         androidx.compose.ui.Alignment.BottomStart
@@ -203,29 +193,23 @@ internal fun GitHubMainContent(
                     )
                 }
 
-                AnimatedVisibility(
-                    visible = showFloatingAddButton,
-                    enter = appFloatingEnter(),
-                    exit = appFloatingExit(),
-                    modifier = Modifier.align(dockAlignment)
-                ) {
-                    AppFloatingLiquidActionButton(
-                        backdrop = contentBackdrop,
-                        icon = appLucideAddIcon(),
-                        contentDescription = stringResource(R.string.github_cd_add_track),
-                        onClick = onOpenTrackSheetForAdd,
-                        modifier = Modifier.padding(start = dockStartPadding, end = dockEndPadding, bottom = addButtonBottom),
-                    )
-                }
-                AppFloatingSearchDock(
+                AppFloatingVerticalSearchActionDock(
                     backdrop = contentBackdrop,
                     expanded = searchExpanded,
                     query = trackedSearch,
                     onQueryChange = onTrackedSearchChange,
                     onExpandedChange = onSearchExpandedChange,
                     searchIcon = appLucideSearchIcon(),
-                    contentDescription = stringResource(R.string.github_topbar_search_label),
+                    searchContentDescription = stringResource(R.string.github_topbar_search_label),
                     placeholder = stringResource(R.string.github_topbar_search_label),
+                    addIcon = appLucideAddIcon(),
+                    addContentDescription = stringResource(R.string.github_cd_add_track),
+                    onAddClick = onOpenTrackSheetForAdd,
+                    refreshIcon = appLucideRefreshIcon(),
+                    refreshContentDescription = stringResource(R.string.github_topbar_cd_check),
+                    onRefreshClick = onRefreshAllTracked,
+                    showAddAction = showFloatingAddButton,
+                    refreshEnabled = !deleteInProgress,
                     dockSide = floatingDockSide,
                     keyboardLift = floatingKeyboardLift,
                     modifier = Modifier

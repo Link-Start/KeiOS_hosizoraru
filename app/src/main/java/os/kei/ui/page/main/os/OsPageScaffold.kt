@@ -33,17 +33,13 @@ internal fun OsPageScaffoldShell(
     val manageCardsIcon = appLucideLayersIcon()
     val manageActivitiesIcon = appLucideAppWindowIcon()
     val manageShellCardsIcon = osLucideShellIcon()
-    val refreshIcon = appLucideRefreshIcon()
     val actionItems = remember(
         manageCardsContentDescription,
         manageActivitiesContentDescription,
         manageShellCardsContentDescription,
-        refreshParamsContentDescription,
-        refreshing,
         onOpenCardManager,
         onOpenActivityVisibilityManager,
         onOpenShellCardVisibilityManager,
-        onRefresh
     ) {
         listOf(
             LiquidActionItem(
@@ -60,14 +56,6 @@ internal fun OsPageScaffoldShell(
                 icon = manageShellCardsIcon,
                 contentDescription = manageShellCardsContentDescription,
                 onClick = onOpenShellCardVisibilityManager
-            ),
-            LiquidActionItem(
-                icon = refreshIcon,
-                contentDescription = refreshParamsContentDescription,
-                onClick = {
-                    if (refreshing) return@LiquidActionItem
-                    onRefresh()
-                }
             )
         )
     }

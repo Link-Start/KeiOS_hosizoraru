@@ -10,7 +10,6 @@ import os.kei.R
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
@@ -54,22 +53,17 @@ internal fun GitHubTopBarActions(
     val editStrategyIcon = appLucideEditIcon()
     val checkLogicIcon = appLucideConfigIcon()
     val sortIcon = appLucideSortIcon()
-    val refreshIcon = appLucideRefreshIcon()
     val editStrategyContentDescription = stringResource(R.string.github_topbar_cd_edit_strategy)
     val checkLogicContentDescription = stringResource(R.string.github_topbar_cd_check_logic)
     val sortContentDescription = stringResource(R.string.github_topbar_cd_sort)
-    val refreshContentDescription = stringResource(R.string.github_topbar_cd_check)
     val actionItems = remember(
         editStrategyContentDescription,
         checkLogicContentDescription,
         sortContentDescription,
-        refreshContentDescription,
         showSortPopup,
-        deleteInProgress,
         onOpenStrategySheet,
         onOpenCheckLogicSheet,
         onShowSortPopupChange,
-        onRefreshAllTracked
     ) {
         listOf(
             LiquidActionItem(
@@ -86,12 +80,6 @@ internal fun GitHubTopBarActions(
                 icon = sortIcon,
                 contentDescription = sortContentDescription,
                 onClick = { onShowSortPopupChange(!showSortPopup) }
-            ),
-            LiquidActionItem(
-                icon = refreshIcon,
-                contentDescription = refreshContentDescription,
-                onClick = onRefreshAllTracked,
-                enabled = !deleteInProgress
             )
         )
     }
@@ -103,7 +91,7 @@ internal fun GitHubTopBarActions(
             onInteractionChanged = onActionBarInteractingChanged
         )
 
-        LiquidActionBarPopupAnchors(itemCount = 4) { slotIndex, popupAnchorBounds ->
+        LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
             when (slotIndex) {
                 2 -> if (showSortPopup) {
                     SnapshotWindowListPopup(

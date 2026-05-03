@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -28,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -152,6 +154,184 @@ fun AppFloatingSearchDock(
             fieldContent()
             buttonContent()
         }
+    }
+}
+
+@Composable
+fun AppFloatingVerticalSearchActionDock(
+    backdrop: Backdrop?,
+    expanded: Boolean,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onExpandedChange: (Boolean) -> Unit,
+    searchIcon: ImageVector,
+    searchContentDescription: String,
+    placeholder: String,
+    addIcon: ImageVector,
+    addContentDescription: String,
+    onAddClick: () -> Unit,
+    refreshIcon: ImageVector,
+    refreshContentDescription: String,
+    onRefreshClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    dockSide: AppFloatingDockSide = AppFloatingDockSide.End,
+    showAddAction: Boolean = true,
+    refreshEnabled: Boolean = true,
+    horizontalInset: Dp = 14.dp,
+    size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
+    iconSize: Dp = 27.dp,
+    gap: Dp = 8.dp,
+    focusedLift: Dp = 36.dp,
+    keyboardLift: Dp? = null,
+    accent: Color = MiuixTheme.colorScheme.primary
+) {
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val configuration = LocalConfiguration.current
+    val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
+    val visibleActionCount = if (showAddAction) 3 else 2
+    val dockHeight = size * visibleActionCount
+    val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
+    val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
+    val fieldWidth by animateDpAsState(
+        targetValue = if (expanded) fieldTargetWidth else 0.dp,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 260),
+        label = "app_vertical_floating_search_field_width"
+    )
+    val totalWidth by animateDpAsState(
+        targetValue = size + if (expanded) gap + fieldTargetWidth else 0.dp,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 260),
+        label = "app_vertical_floating_search_total_width"
+    )
+
+    LaunchedEffect(expanded) {
+        if (!expanded) {
+            focusManager.clearFocus()
+        }
+    }
+
+    val fieldContent: @Composable () -> Unit = {
+        if (fieldWidth > 1.dp) {
+            AppLiquidFloatingSurface(
+                modifier = Modifier
+                    .width(fieldWidth)
+                    .height(size),
+                shape = ContinuousCapsule,
+                backdrop = backdrop,
+                pressDurationMillis = 120,
+                pressLabel = "app_vertical_floating_search_field_press"
+            ) {
+                AppFloatingSearchField(
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    focusRequester = focusRequester,
+                    autoFocus = expanded,
+                    onFocusActiveChange = { active ->
+                        if (active) onExpandedChange(true)
+                    },
+                    placeholder = placeholder,
+                    accent = accent,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+    val dockContent: @Composable () -> Unit = {
+        AppLiquidFloatingSurface(
+            modifier = Modifier
+                .width(size)
+                .height(dockHeight),
+            shape = ContinuousCapsule,
+            backdrop = backdrop,
+            pressDurationMillis = 120,
+            pressLabel = "app_vertical_floating_action_dock_press"
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (showAddAction) {
+                    AppFloatingVerticalDockAction(
+                        icon = addIcon,
+                        contentDescription = addContentDescription,
+                        onClick = onAddClick,
+                        size = size,
+                        iconSize = iconSize,
+                        iconTint = accent
+                    )
+                }
+                AppFloatingVerticalDockAction(
+                    icon = refreshIcon,
+                    contentDescription = refreshContentDescription,
+                    onClick = onRefreshClick,
+                    size = size,
+                    iconSize = iconSize,
+                    iconTint = MiuixTheme.colorScheme.onBackgroundVariant,
+                    enabled = refreshEnabled
+                )
+                AppFloatingVerticalDockAction(
+                    icon = searchIcon,
+                    contentDescription = searchContentDescription,
+                    onClick = { onExpandedChange(!expanded) },
+                    size = size,
+                    iconSize = iconSize,
+                    iconTint = accent
+                )
+            }
+        }
+    }
+
+    Row(
+        modifier = modifier
+            .offset(y = -resolvedKeyboardLift)
+            .width(totalWidth)
+            .height(dockHeight),
+        horizontalArrangement = Arrangement.spacedBy(
+            gap,
+            if (dockSide == AppFloatingDockSide.Start) Alignment.Start else Alignment.End
+        ),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        if (dockSide == AppFloatingDockSide.Start) {
+            dockContent()
+            fieldContent()
+        } else {
+            fieldContent()
+            dockContent()
+        }
+    }
+}
+
+@Composable
+private fun AppFloatingVerticalDockAction(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    size: Dp,
+    iconSize: Dp,
+    iconTint: Color,
+    enabled: Boolean = true
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .size(size)
+            .then(if (enabled) Modifier else Modifier.alpha(AppInteractiveTokens.disabledContentAlpha))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(iconSize),
+            tint = iconTint
+        )
     }
 }
 

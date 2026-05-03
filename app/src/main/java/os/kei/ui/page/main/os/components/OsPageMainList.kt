@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.os.components
 
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +32,7 @@ import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.SystemOverviewState
 import os.kei.ui.page.main.os.appLucideAddIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.os.osLucideEnterIcon
@@ -42,13 +42,10 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
-import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
-import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
+import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.status.StatusPill
-import os.kei.ui.page.main.widget.motion.appFloatingEnter
-import os.kei.ui.page.main.widget.motion.appFloatingExit
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -146,13 +143,6 @@ internal fun OsPageMainList(
     )
     val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
         label = "os_floating_keyboard_lift"
-    )
-    val addButtonBottom by animateDpAsState(
-        targetValue = searchDockBottom +
-            floatingKeyboardLift +
-            AppChromeTokens.floatingBottomBarOuterHeight +
-            6.dp,
-        label = "os_floating_add_bottom"
     )
     val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
         Alignment.BottomStart
@@ -440,30 +430,23 @@ internal fun OsPageMainList(
             )
         }
 
-        AnimatedVisibility(
-            visible = showFloatingAddButton,
-            enter = appFloatingEnter(),
-            exit = appFloatingExit(),
-            modifier = Modifier.align(dockAlignment)
-        ) {
-            AppFloatingLiquidActionButton(
-                backdrop = contentBackdrop,
-                icon = appLucideAddIcon(),
-                contentDescription = stringResource(R.string.os_cd_add_activity_card),
-                onClick = onOpenAddActivityShortcutCard,
-                modifier = Modifier.padding(start = dockStartPadding, end = dockEndPadding, bottom = addButtonBottom),
-                iconTint = MiuixTheme.colorScheme.primary
-            )
-        }
-        AppFloatingSearchDock(
+        AppFloatingVerticalSearchActionDock(
             backdrop = contentBackdrop,
             expanded = searchExpanded,
             query = queryInput,
             onQueryChange = onQueryInputChange,
             onExpandedChange = onSearchExpandedChange,
             searchIcon = appLucideSearchIcon(),
-            contentDescription = searchLabel,
+            searchContentDescription = searchLabel,
             placeholder = searchLabel,
+            addIcon = appLucideAddIcon(),
+            addContentDescription = stringResource(R.string.os_cd_add_activity_card),
+            onAddClick = onOpenAddActivityShortcutCard,
+            refreshIcon = appLucideRefreshIcon(),
+            refreshContentDescription = stringResource(R.string.common_refresh),
+            onRefreshClick = onRefreshAll,
+            showAddAction = showFloatingAddButton,
+            refreshEnabled = !refreshing,
             dockSide = floatingDockSide,
             keyboardLift = floatingKeyboardLift,
             modifier = Modifier

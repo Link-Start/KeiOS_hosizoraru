@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os.components
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -121,6 +123,7 @@ internal fun OsPageMainList(
     contentBottomPadding: Dp,
     showFloatingAddButton: Boolean,
     onOpenAddActivityShortcutCard: () -> Unit,
+    bottomBarVisible: Boolean,
     searchExpanded: Boolean,
     queryInput: String,
     onQueryInputChange: (String) -> Unit,
@@ -134,6 +137,15 @@ internal fun OsPageMainList(
     fun metricValueWeight(label: String): Float {
         return if (label == topMetricLabel) 0.70f else 0.44f
     }
+    val bottomBarOffset = if (bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
+    val searchDockBottom by animateDpAsState(
+        targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
+        label = "os_floating_search_bottom"
+    )
+    val addButtonBottom by animateDpAsState(
+        targetValue = searchDockBottom + AppChromeTokens.floatingBottomBarOuterHeight + 6.dp,
+        label = "os_floating_add_bottom"
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         AppPageLazyColumn(
@@ -425,7 +437,7 @@ internal fun OsPageMainList(
                 icon = appLucideAddIcon(),
                 contentDescription = stringResource(R.string.os_cd_add_activity_card),
                 onClick = onOpenAddActivityShortcutCard,
-                modifier = Modifier.padding(end = 14.dp, bottom = contentBottomPadding + 44.dp),
+                modifier = Modifier.padding(end = 14.dp, bottom = addButtonBottom),
                 iconTint = MiuixTheme.colorScheme.primary
             )
         }
@@ -440,7 +452,7 @@ internal fun OsPageMainList(
             placeholder = searchLabel,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 14.dp, bottom = contentBottomPadding - 24.dp)
+                .padding(end = 14.dp, bottom = searchDockBottom)
         )
     }
 }

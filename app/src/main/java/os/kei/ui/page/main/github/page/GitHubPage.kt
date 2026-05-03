@@ -234,6 +234,7 @@ fun GitHubPage(
             topBarBackdrop = backdrops.topBar,
             contentBackdrop = backdrops.content,
             topBarColor = topBarColor,
+            bottomBarVisible = runtime.bottomBarVisible,
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             reduceEffectsDuringPagerScroll = runtime.isPagerScrollInProgress,
             reduceEffectsDuringListScroll = isListScrolling,

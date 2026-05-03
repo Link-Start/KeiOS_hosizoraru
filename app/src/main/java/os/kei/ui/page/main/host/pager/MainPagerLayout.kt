@@ -207,6 +207,7 @@ internal fun MainPagerLayout(
                     homeTopInset = insets.homeTopInset,
                     homeBottomInset = insets.homeBottomInset,
                     bottomOverlayPadding = insets.bottomOverlayPadding,
+                    bottomBarVisible = coordinator.showBottomBar,
                     requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                     osScrollToTopSignal = coordinator.osScrollToTopSignal,
                     baScrollToTopSignal = coordinator.baScrollToTopSignal,

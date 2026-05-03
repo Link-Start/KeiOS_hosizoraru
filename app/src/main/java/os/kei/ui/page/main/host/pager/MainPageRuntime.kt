@@ -14,6 +14,7 @@ data class MainPageRuntime(
     val isWarmActive: Boolean = true,
     val isDataActive: Boolean = true,
     val isPagerScrollInProgress: Boolean = false,
+    val bottomBarVisible: Boolean = true,
 ) {
     val isPageActive: Boolean
         get() = isWarmActive
@@ -38,13 +39,15 @@ internal data class MainPagerRuntimeSnapshot(
         scrollToTopSignal: Int = 0,
         contentTopPadding: Dp = 0.dp,
         contentBottomPadding: Dp = 72.dp,
+        bottomBarVisible: Boolean = true,
     ): MainPageRuntime = MainPageRuntime(
         scrollToTopSignal = scrollToTopSignal,
         contentTopPadding = contentTopPadding,
         contentBottomPadding = contentBottomPadding,
         isWarmActive = isWarmActive(pageIndex),
         isDataActive = isDataActive(pageIndex),
-        isPagerScrollInProgress = isPagerScrollInProgress
+        isPagerScrollInProgress = isPagerScrollInProgress,
+        bottomBarVisible = bottomBarVisible
     )
 
     fun isWarmActive(pageIndex: Int): Boolean {

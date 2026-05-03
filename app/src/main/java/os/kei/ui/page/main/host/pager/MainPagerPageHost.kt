@@ -45,6 +45,7 @@ internal fun MainPagerPageHost(
     homeTopInset: Dp,
     homeBottomInset: Dp,
     bottomOverlayPadding: Dp,
+    bottomBarVisible: Boolean,
     requestedGitHubRefreshToken: Int,
     osScrollToTopSignal: Int,
     baScrollToTopSignal: Int,
@@ -64,6 +65,7 @@ internal fun MainPagerPageHost(
         pageIndex = pageIndex,
         contentTopPadding = if (pageType == BottomPage.Home) homeTopInset else 0.dp,
         contentBottomPadding = if (pageType == BottomPage.Home) homeBottomInset else bottomOverlayPadding,
+        bottomBarVisible = bottomBarVisible,
         scrollToTopSignal = when (pageType) {
             BottomPage.Home -> 0
             BottomPage.Os -> osScrollToTopSignal

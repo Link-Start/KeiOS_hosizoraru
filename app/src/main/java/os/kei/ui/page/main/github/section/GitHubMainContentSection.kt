@@ -2,11 +2,13 @@ package os.kei.ui.page.main.github.section
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +31,7 @@ import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
@@ -48,6 +51,7 @@ internal fun GitHubMainContent(
     topBarBackdrop: LayerBackdrop,
     contentBackdrop: LayerBackdrop,
     topBarColor: Color,
+    bottomBarVisible: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     reduceEffectsDuringPagerScroll: Boolean,
     reduceEffectsDuringListScroll: Boolean,
@@ -101,6 +105,15 @@ internal fun GitHubMainContent(
 ) {
     val context = LocalContext.current
     val supportedAbis = Build.SUPPORTED_ABIS?.toList().orEmpty()
+    val bottomBarOffset = if (bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
+    val searchDockBottom by animateDpAsState(
+        targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
+        label = "github_floating_search_bottom"
+    )
+    val addButtonBottom by animateDpAsState(
+        targetValue = searchDockBottom + AppChromeTokens.floatingBottomBarOuterHeight + 6.dp,
+        label = "github_floating_add_bottom"
+    )
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -190,7 +203,7 @@ internal fun GitHubMainContent(
                         icon = appLucideAddIcon(),
                         contentDescription = stringResource(R.string.github_cd_add_track),
                         onClick = onOpenTrackSheetForAdd,
-                        modifier = Modifier.padding(end = 14.dp, bottom = contentBottomPadding + 44.dp),
+                        modifier = Modifier.padding(end = 14.dp, bottom = addButtonBottom),
                     )
                 }
                 AppFloatingSearchDock(
@@ -204,7 +217,7 @@ internal fun GitHubMainContent(
                     placeholder = stringResource(R.string.github_topbar_search_label),
                     modifier = Modifier
                         .align(androidx.compose.ui.Alignment.BottomEnd)
-                        .padding(end = 14.dp, bottom = contentBottomPadding - 24.dp)
+                        .padding(end = 14.dp, bottom = searchDockBottom)
                 )
             }
         }

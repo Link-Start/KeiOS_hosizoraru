@@ -462,6 +462,7 @@ fun OsPage(
                     )
                     overlayState.onShowActivityShortcutEditorChange(true)
                 },
+                bottomBarVisible = runtime.bottomBarVisible,
                 searchExpanded = enableSearchBar && searchExpanded,
                 queryInput = queryInput,
                 onQueryInputChange = osPageViewModel::updateQueryInput,

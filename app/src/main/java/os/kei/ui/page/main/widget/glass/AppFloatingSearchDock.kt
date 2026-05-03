@@ -6,13 +6,19 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -39,7 +46,6 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import androidx.compose.foundation.text.BasicText
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -54,23 +60,36 @@ fun AppFloatingSearchDock(
     contentDescription: String,
     placeholder: String,
     modifier: Modifier = Modifier,
-    width: Dp = 276.dp,
+    horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
     gap: Dp = 8.dp,
+    focusedLift: Dp = 36.dp,
     accent: Color = MiuixTheme.colorScheme.primary
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val configuration = LocalConfiguration.current
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val imeVisible = imeBottom > navigationBottom
+    val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
+    val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
+    val focusBottomOffset = if (imeVisible) focusedLift else 0.dp
+    val bottomOffset by animateDpAsState(
+        targetValue = focusBottomOffset,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
+        label = "app_floating_search_bottom_offset"
+    )
     val fieldWidth by animateDpAsState(
-        targetValue = if (expanded) width else 0.dp,
+        targetValue = if (expanded) fieldTargetWidth else 0.dp,
         animationSpec = androidx.compose.animation.core.tween(
             durationMillis = 260
         ),
         label = "app_floating_search_field_width"
     )
     val totalWidth by animateDpAsState(
-        targetValue = size + if (expanded) gap + width else 0.dp,
+        targetValue = size + if (expanded) gap + fieldTargetWidth else 0.dp,
         animationSpec = androidx.compose.animation.core.tween(
             durationMillis = 260
         ),
@@ -78,15 +97,14 @@ fun AppFloatingSearchDock(
     )
 
     LaunchedEffect(expanded) {
-        if (expanded) {
-            focusRequester.requestFocus()
-        } else {
+        if (!expanded) {
             focusManager.clearFocus()
         }
     }
 
     Row(
         modifier = modifier
+            .offset(y = -bottomOffset)
             .width(totalWidth)
             .height(size),
         horizontalArrangement = Arrangement.spacedBy(gap, Alignment.End),
@@ -106,10 +124,10 @@ fun AppFloatingSearchDock(
                     query = query,
                     onQueryChange = onQueryChange,
                     focusRequester = focusRequester,
+                    autoFocus = expanded,
                     onFocusActiveChange = { active ->
                         if (active) onExpandedChange(true)
                     },
-                    searchIcon = searchIcon,
                     placeholder = placeholder,
                     accent = accent,
                     modifier = Modifier.fillMaxSize()
@@ -133,8 +151,8 @@ private fun AppFloatingSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
+    autoFocus: Boolean,
     onFocusActiveChange: (Boolean) -> Unit,
-    searchIcon: ImageVector,
     placeholder: String,
     accent: Color,
     modifier: Modifier = Modifier
@@ -149,6 +167,11 @@ private fun AppFloatingSearchField(
         lineHeight = AppTypographyTokens.CardHeader.lineHeight,
         platformStyle = PlatformTextStyle(includeFontPadding = false)
     )
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+        }
+    }
     Row(
         modifier = modifier
             .clickable(
@@ -159,15 +182,8 @@ private fun AppFloatingSearchField(
                 focusRequester.requestFocus()
             }
             .padding(horizontal = 18.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = searchIcon,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = accent
-        )
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,

@@ -94,6 +94,7 @@ import kotlin.math.sign
 internal fun DebugBgmDockGroupContent(
     tabs: List<DebugBgmDockTab>,
     selectedDockKey: String,
+    selectedDockPosition: Float,
     accent: Color,
     expandedProgress: Float,
     compactProgress: Float,
@@ -217,6 +218,11 @@ internal fun DebugBgmDockGroupContent(
         }
         holder.instance = dampedDragAnimation
         val pressProgress = dampedDragAnimation.pressProgress
+        val indicatorPosition = if (pressProgress > 0.01f) {
+            dampedDragAnimation.value
+        } else {
+            selectedDockPosition.fastCoerceIn(0f, (safeTabCount - 1).toFloat())
+        }
         val combinedInteractionProgress = max(pressProgress, itemPressProgress)
         val dockLiftPx = with(density) { 1.25.dp.toPx() } * combinedInteractionProgress
         val dockScaleX = lerpFloat(1f, 1.006f, combinedInteractionProgress)
@@ -236,10 +242,10 @@ internal fun DebugBgmDockGroupContent(
                     position = { size, _ ->
                         Offset(
                             if (isLtr) {
-                                (dampedDragAnimation.value + 0.5f) *
+                                (indicatorPosition + 0.5f) *
                                     (tabWidthPx.takeIf { it > 0f } ?: fallbackTabWidthPx) + panelOffset
                             } else {
-                                size.width - (dampedDragAnimation.value + 0.5f) *
+                                size.width - (indicatorPosition + 0.5f) *
                                     (tabWidthPx.takeIf { it > 0f } ?: fallbackTabWidthPx) + panelOffset
                             },
                             size.height / 2f
@@ -271,7 +277,7 @@ internal fun DebugBgmDockGroupContent(
                 }
         }
         val selectedPillOffset = contentHorizontalPadding +
-            tabSlotWidth * dampedDragAnimation.value + selectedPillInset
+            tabSlotWidth * indicatorPosition + selectedPillInset
 
         Row(
             modifier = Modifier
@@ -304,7 +310,7 @@ internal fun DebugBgmDockGroupContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             tabs.forEachIndexed { tabIndex, tab ->
-                val selectionProgress = (1f - abs(dampedDragAnimation.value - tabIndex))
+                val selectionProgress = (1f - abs(indicatorPosition - tabIndex))
                     .coerceIn(0f, 1f)
                 DebugBgmExpandedDockTab(
                     tab = tab,
@@ -349,7 +355,7 @@ internal fun DebugBgmDockGroupContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             tabs.forEachIndexed { tabIndex, tab ->
-                val selectionProgress = (1f - abs(dampedDragAnimation.value - tabIndex))
+                val selectionProgress = (1f - abs(indicatorPosition - tabIndex))
                     .coerceIn(0f, 1f)
                 DebugBgmExpandedDockTab(
                     tab = tab,

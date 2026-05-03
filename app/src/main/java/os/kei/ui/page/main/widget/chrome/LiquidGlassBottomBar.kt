@@ -209,6 +209,8 @@ fun LiquidGlassBottomBar(
     var currentIndex by remember(safeTabsCount) {
         mutableIntStateOf(selectedIndex.fastCoerceIn(0, safeTabsCount - 1))
     }
+    var programmaticSelectionVersion by remember(safeTabsCount) { mutableIntStateOf(0) }
+    var consumedProgrammaticSelectionVersion by remember(safeTabsCount) { mutableIntStateOf(0) }
     var pressedTabIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
 
     class DampedDragAnimationHolder {
@@ -271,20 +273,30 @@ fun LiquidGlassBottomBar(
     holder.instance = dampedDragAnimation
 
     LaunchedEffect(selectedIndex, safeTabsCount) {
-        currentIndex = selectedIndex.fastCoerceIn(0, safeTabsCount - 1)
+        val targetIndex = selectedIndex.fastCoerceIn(0, safeTabsCount - 1)
+        if (currentIndex != targetIndex) {
+            programmaticSelectionVersion += 1
+            currentIndex = targetIndex
+        }
     }
 
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(dampedDragAnimation, snapshotFlowManager) {
-        snapshotFlowManager.snapshotFlow { currentIndex }
+        snapshotFlowManager.snapshotFlow { currentIndex to programmaticSelectionVersion }
             .drop(1)
-            .collectLatest { index ->
+            .collectLatest { (index, selectionVersion) ->
+                val fromProgrammaticSelection = selectionVersion > consumedProgrammaticSelectionVersion
+                if (fromProgrammaticSelection) {
+                    consumedProgrammaticSelectionVersion = selectionVersion
+                }
                 if (transitionAnimationsEnabled) {
                     dampedDragAnimation.animateToValue(index.toFloat())
                 } else {
                     dampedDragAnimation.snapToValue(index.toFloat())
                 }
-                onSelected(index)
+                if (!fromProgrammaticSelection) {
+                    onSelected(index)
+                }
             }
     }
 

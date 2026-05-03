@@ -44,6 +44,7 @@ internal data class MainPagerCoordinatorState(
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val pagerScrollEnabled: Boolean,
     val showBottomBar: Boolean,
+    val selectedPageIndex: Int,
     val nestedScrollConnection: NestedScrollConnection,
     val backdrop: LayerBackdrop,
     val farJumpAlpha: Float,
@@ -171,6 +172,7 @@ internal fun rememberMainPagerCoordinator(
         scrollSignalController,
         backdrop,
         tabJumpController.farJumpAlpha,
+        tabJumpController.selectedPageIndex,
         backgroundState.hasNonHomeBackground,
         backgroundState.effectiveNonHomeBackgroundUri,
         onBottomPageVisibilityChange
@@ -186,6 +188,7 @@ internal fun rememberMainPagerCoordinator(
             visibleOverviewCards = homeOverviewState.visibleOverviewCards,
             pagerScrollEnabled = tabJumpController.pagerScrollEnabled,
             showBottomBar = tabJumpController.showBottomBar,
+            selectedPageIndex = tabJumpController.selectedPageIndex,
             nestedScrollConnection = tabJumpController.nestedScrollConnection,
             backdrop = backdrop,
             farJumpAlpha = tabJumpController.farJumpAlpha,

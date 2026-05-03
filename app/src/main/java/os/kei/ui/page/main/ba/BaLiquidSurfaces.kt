@@ -2,10 +2,10 @@ package os.kei.ui.page.main.ba
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,26 +13,29 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.glassStyle
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.Shadow
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.glassStyle
+import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
+import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -40,15 +43,21 @@ private val BaLiquidCardShape = RoundedCornerShape(24.dp)
 private val BaLiquidPanelShape = RoundedCornerShape(18.dp)
 
 @Composable
-private fun Modifier.baLiquidSurface(
+private fun BaLiquidSurfaceColumn(
     backdrop: Backdrop?,
+    modifier: Modifier,
     shape: RoundedCornerShape,
     cornerRadius: Dp,
     accentColor: Color,
     accentAlpha: Float,
     variant: GlassVariant,
     effectsEnabled: Boolean,
-): Modifier {
+    contentPadding: PaddingValues,
+    verticalSpacing: Dp,
+    onClick: (() -> Unit)?,
+    onLongClick: (() -> Unit)?,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val isDark = isSystemInDarkTheme()
     val glass = glassStyle(
         isDark = isDark,
@@ -62,52 +71,95 @@ private fun Modifier.baLiquidSurface(
         alpha = if (isDark) accentAlpha * 1.1f else accentAlpha * 0.95f
     )
     val accentTint = accentColor.copy(alpha = (accentAlpha * 0.35f).coerceIn(0f, 0.05f))
-
-    val surfaceModifier = if (backdrop != null && effectsEnabled) {
-        Modifier.drawBackdrop(
-            backdrop = backdrop,
-            shape = { RoundedRectangle(cornerRadius) },
-            effects = {
-                vibrancy()
-                blur(glass.blur.toPx())
-                lens(glass.lensStart.toPx(), glass.lensEnd.toPx())
-            },
-            highlight = {
-                Highlight.Default.copy(alpha = glass.highlightAlpha)
-            },
-            shadow = {
-                Shadow.Default.copy(
-                    color = Color.Black.copy(alpha = glass.shadowAlpha),
-                )
-            },
-            onDrawSurface = {
-                drawRect(glass.baseColor)
-                if (glass.overlayColor != Color.Transparent) {
-                    drawRect(glass.overlayColor)
-                }
-                if (accentTint.alpha > 0f) {
-                    drawRect(accentTint)
-                }
-            },
+    val interactionSource = remember { MutableInteractionSource() }
+    val hasInteraction = onClick != null || onLongClick != null
+    val useLiquidClick = onClick != null && onLongClick == null
+    val clickModifier = if (hasInteraction && !useLiquidClick) {
+        Modifier.combinedClickable(
+            interactionSource = interactionSource,
+            indication = null,
+            role = Role.Button,
+            onClick = { onClick?.invoke() },
+            onLongClick = onLongClick,
         )
     } else {
-        Modifier.background(fallbackSurface, shape)
+        Modifier
     }
-
-    return this
-        .clip(shape)
-        .then(surfaceModifier)
-        .then(
-            if (borderColor.alpha > 0.01f && glass.borderWidth > 0.dp) {
-                Modifier.border(
-                    width = glass.borderWidth,
-                    color = borderColor,
-                    shape = shape,
-                )
-            } else {
-                Modifier
-            }
+    val fallbackClickModifier = if (hasInteraction) {
+        Modifier.combinedClickable(
+            interactionSource = interactionSource,
+            indication = null,
+            role = Role.Button,
+            onClick = { onClick?.invoke() },
+            onLongClick = onLongClick,
         )
+    } else {
+        Modifier
+    }
+    val localBackdrop = rememberLayerBackdrop()
+    val activeBackdrop = when {
+        !effectsEnabled -> null
+        backdrop != null -> backdrop
+        else -> localBackdrop
+    }
+    val liquidShape = RoundedRectangle(cornerRadius)
+
+    if (activeBackdrop != null) {
+        Box(modifier = modifier) {
+            if (backdrop == null) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .layerBackdrop(localBackdrop)
+                )
+            }
+            LiquidSurface(
+                backdrop = activeBackdrop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(clickModifier),
+                shape = liquidShape,
+                isInteractive = hasInteraction,
+                surfaceColor = accentTint
+                    .compositeOver(glass.overlayColor)
+                    .compositeOver(glass.baseColor),
+                blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, variant),
+                lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, variant),
+                shadow = glass.shadowAlpha > 0f,
+                interactionSource = interactionSource,
+                onClick = if (useLiquidClick) onClick else null,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(contentPadding),
+                    verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                    content = content,
+                )
+            }
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .clip(shape)
+                .background(fallbackSurface, shape)
+                .then(
+                    if (borderColor.alpha > 0.01f && glass.borderWidth > 0.dp) {
+                        Modifier.border(
+                            width = glass.borderWidth,
+                            color = borderColor,
+                            shape = shape,
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .then(fallbackClickModifier)
+                .padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+            content = content,
+        )
+    }
 }
 
 @Composable
@@ -123,33 +175,20 @@ internal fun BaLiquidCard(
     onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val interactionModifier = when {
-        onLongClick != null -> {
-            Modifier.combinedClickable(
-                onClick = { onClick?.invoke() },
-                onLongClick = onLongClick,
-            )
-        }
-
-        onClick != null -> Modifier.clickable(onClick = onClick)
-        else -> Modifier
-    }
-
-    Column(
+    BaLiquidSurfaceColumn(
+        backdrop = backdrop,
         modifier = modifier
-            .fillMaxWidth()
-            .baLiquidSurface(
-                backdrop = backdrop,
-                shape = BaLiquidCardShape,
-                cornerRadius = 24.dp,
-                accentColor = accentColor,
-                accentAlpha = accentAlpha,
-                variant = GlassVariant.Bar,
-                effectsEnabled = effectsEnabled,
-            )
-            .then(interactionModifier)
-            .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+            .fillMaxWidth(),
+        shape = BaLiquidCardShape,
+        cornerRadius = 24.dp,
+        accentColor = accentColor,
+        accentAlpha = accentAlpha,
+        variant = GlassVariant.Bar,
+        effectsEnabled = effectsEnabled,
+        contentPadding = contentPadding,
+        verticalSpacing = verticalSpacing,
+        onClick = onClick,
+        onLongClick = onLongClick,
         content = content,
     )
 }
@@ -168,32 +207,20 @@ internal fun BaLiquidPanel(
     onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val interactionModifier = when {
-        onLongClick != null -> {
-            Modifier.combinedClickable(
-                onClick = { onClick?.invoke() },
-                onLongClick = onLongClick,
-            )
-        }
-
-        onClick != null -> Modifier.clickable(onClick = onClick)
-        else -> Modifier
-    }
-
-    Column(
+    BaLiquidSurfaceColumn(
+        backdrop = backdrop,
         modifier = modifier
-            .baLiquidSurface(
-                backdrop = backdrop,
-                shape = BaLiquidPanelShape,
-                cornerRadius = 18.dp,
-                accentColor = accentColor,
-                accentAlpha = accentAlpha,
-                variant = variant,
-                effectsEnabled = effectsEnabled,
-            )
-            .then(interactionModifier)
-            .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+            .fillMaxWidth(),
+        shape = BaLiquidPanelShape,
+        cornerRadius = 18.dp,
+        accentColor = accentColor,
+        accentAlpha = accentAlpha,
+        variant = variant,
+        effectsEnabled = effectsEnabled,
+        contentPadding = contentPadding,
+        verticalSpacing = verticalSpacing,
+        onClick = onClick,
+        onLongClick = onLongClick,
         content = content,
     )
 }

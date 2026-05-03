@@ -58,6 +58,8 @@ import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockSide
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
@@ -101,6 +103,7 @@ internal fun MainPagerLayout(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val context = LocalContext.current
     val insets = rememberMainPagerInsets()
+    val floatingDockSideState = rememberAppFloatingDockSide()
     val coordinator = rememberMainPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
         transitionAnimationsEnabled = transitionAnimationsEnabled,
@@ -155,15 +158,25 @@ internal fun MainPagerLayout(
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
+            .appGripAwareDockTouchObserver { side -> floatingDockSideState.value = side }
             .background(MiuixTheme.colorScheme.background)
             .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
+            val safeSelectedPageIndex = coordinator.pagerState.targetPage.coerceIn(
+                0,
+                (coordinator.tabs.size - 1).coerceAtLeast(0)
+            )
             MainPagerBottomBar(
                 visible = coordinator.showBottomBar,
                 navigationBarBottom = insets.navigationBarBottom,
                 tabs = coordinator.tabs,
-                selectedPageIndex = coordinator.pagerState.targetPage,
-                selectedPageIndexProvider = { coordinator.pagerState.targetPage },
+                selectedPageIndex = safeSelectedPageIndex,
+                selectedPageIndexProvider = {
+                    coordinator.pagerState.targetPage.coerceIn(
+                        0,
+                        (coordinator.tabs.size - 1).coerceAtLeast(0)
+                    )
+                },
                 backdrop = coordinator.backdrop,
                 reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
                     scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
@@ -208,6 +221,7 @@ internal fun MainPagerLayout(
                     homeBottomInset = insets.homeBottomInset,
                     bottomOverlayPadding = insets.bottomOverlayPadding,
                     bottomBarVisible = coordinator.showBottomBar,
+                    floatingDockSide = floatingDockSideState.value,
                     requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                     osScrollToTopSignal = coordinator.osScrollToTopSignal,
                     baScrollToTopSignal = coordinator.baScrollToTopSignal,

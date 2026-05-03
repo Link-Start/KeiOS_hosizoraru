@@ -43,6 +43,7 @@ fun AppSurfaceCard(
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
     showIndication: Boolean = true,
+    captureLocalBackdrop: Boolean = true,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
@@ -84,7 +85,7 @@ fun AppSurfaceCard(
                 scaleY = pressedScale
             }
     ) {
-        if (backdrop == null) {
+        if (backdrop == null && captureLocalBackdrop) {
             Box(
                 modifier = Modifier
                     .matchParentSize()

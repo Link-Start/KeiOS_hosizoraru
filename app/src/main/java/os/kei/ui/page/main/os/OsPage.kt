@@ -469,7 +469,8 @@ fun OsPage(
                 onSearchExpandedChange = { expanded ->
                     searchExpanded = enableSearchBar && expanded
                 },
-                searchLabel = textBundle.searchLabel
+                searchLabel = textBundle.searchLabel,
+                floatingDockSide = runtime.floatingDockSide
             )
         }
     }

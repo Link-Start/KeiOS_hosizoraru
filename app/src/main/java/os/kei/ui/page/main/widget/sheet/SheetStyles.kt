@@ -163,6 +163,7 @@ fun SheetSurfaceCard(
         containerColor = containerColor,
         borderColor = borderColor,
         contentColor = contentColor,
+        captureLocalBackdrop = false,
         onClick = onClick
     ) {
         AppCardBodyColumn(

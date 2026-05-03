@@ -60,6 +60,7 @@ fun AppFloatingSearchDock(
     contentDescription: String,
     placeholder: String,
     modifier: Modifier = Modifier,
+    dockSide: AppFloatingDockSide = AppFloatingDockSide.End,
     horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
@@ -102,14 +103,7 @@ fun AppFloatingSearchDock(
         }
     }
 
-    Row(
-        modifier = modifier
-            .offset(y = -bottomOffset)
-            .width(totalWidth)
-            .height(size),
-        horizontalArrangement = Arrangement.spacedBy(gap, Alignment.End),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    val fieldContent: @Composable () -> Unit = {
         if (fieldWidth > 1.dp) {
             AppLiquidFloatingSurface(
                 modifier = Modifier
@@ -134,6 +128,8 @@ fun AppFloatingSearchDock(
                 )
             }
         }
+    }
+    val buttonContent: @Composable () -> Unit = {
         AppFloatingLiquidActionButton(
             backdrop = backdrop,
             icon = searchIcon,
@@ -143,6 +139,26 @@ fun AppFloatingSearchDock(
             iconSize = iconSize,
             iconTint = if (expanded) accent else MiuixTheme.colorScheme.onBackground
         )
+    }
+
+    Row(
+        modifier = modifier
+            .offset(y = -bottomOffset)
+            .width(totalWidth)
+            .height(size),
+        horizontalArrangement = Arrangement.spacedBy(
+            gap,
+            if (dockSide == AppFloatingDockSide.Start) Alignment.Start else Alignment.End
+        ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (dockSide == AppFloatingDockSide.Start) {
+            buttonContent()
+            fieldContent()
+        } else {
+            fieldContent()
+            buttonContent()
+        }
     }
 }
 

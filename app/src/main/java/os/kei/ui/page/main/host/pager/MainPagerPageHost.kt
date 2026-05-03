@@ -21,6 +21,7 @@ import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.mcp.McpPage
 import os.kei.ui.page.main.os.OsPage
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
+import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.rememberGlassReductionProgress
 
@@ -46,6 +47,7 @@ internal fun MainPagerPageHost(
     homeBottomInset: Dp,
     bottomOverlayPadding: Dp,
     bottomBarVisible: Boolean,
+    floatingDockSide: AppFloatingDockSide,
     requestedGitHubRefreshToken: Int,
     osScrollToTopSignal: Int,
     baScrollToTopSignal: Int,
@@ -66,6 +68,7 @@ internal fun MainPagerPageHost(
         contentTopPadding = if (pageType == BottomPage.Home) homeTopInset else 0.dp,
         contentBottomPadding = if (pageType == BottomPage.Home) homeBottomInset else bottomOverlayPadding,
         bottomBarVisible = bottomBarVisible,
+        floatingDockSide = floatingDockSide,
         scrollToTopSignal = when (pageType) {
             BottomPage.Home -> 0
             BottomPage.Os -> osScrollToTopSignal

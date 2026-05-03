@@ -141,7 +141,7 @@ object UiPrefs {
         kv().encode(KEY_HOME_ICON_HDR, value)
     }
 
-    fun isHomeDynamicFullEffectEnabled(defaultValue: Boolean = false): Boolean {
+    fun isHomeDynamicFullEffectEnabled(defaultValue: Boolean = true): Boolean {
         return kv().decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, defaultValue)
     }
 
@@ -295,7 +295,7 @@ object UiPrefs {
             predictiveBackAnimationsEnabled = true,
             cardPressFeedbackEnabled = false,
             homeIconHdrEnabled = false,
-            homeDynamicFullEffectEnabled = false,
+            homeDynamicFullEffectEnabled = true,
             preloadingEnabled = true,
             nonHomeBackgroundEnabled = false,
             nonHomeBackgroundUri = "",
@@ -325,7 +325,7 @@ object UiPrefs {
             predictiveBackAnimationsEnabled = store.decodeBool(KEY_PREDICTIVE_BACK_ANIMATIONS, true),
             cardPressFeedbackEnabled = store.decodeBool(KEY_CARD_PRESS_FEEDBACK, false),
             homeIconHdrEnabled = store.decodeBool(KEY_HOME_ICON_HDR, false),
-            homeDynamicFullEffectEnabled = store.decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, false),
+            homeDynamicFullEffectEnabled = store.decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, true),
             preloadingEnabled = store.decodeBool(KEY_PRELOADING_ENABLED, true),
             nonHomeBackgroundEnabled = store.decodeBool(KEY_NON_HOME_BACKGROUND_ENABLED, false),
             nonHomeBackgroundUri = store.decodeString(KEY_NON_HOME_BACKGROUND_URI, "").orEmpty().trim(),

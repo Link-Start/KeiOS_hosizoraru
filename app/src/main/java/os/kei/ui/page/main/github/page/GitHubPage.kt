@@ -243,6 +243,7 @@ fun GitHubPage(
             sortMode = state.sortMode,
             showSortPopup = state.showSortPopup,
             showFloatingAddButton = state.showFloatingAddButton,
+            floatingDockSide = runtime.floatingDockSide,
             deleteInProgress = state.deleteInProgress,
             isDark = isDark,
             overviewRefreshState = state.overviewRefreshState,

@@ -40,6 +40,7 @@ import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
+import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
@@ -225,6 +226,13 @@ fun McpPage(
         startAfterLocalNetworkPermission = false
         launchServerToggle()
     }
+    val floatingToggleAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
+        Alignment.BottomStart
+    } else {
+        Alignment.BottomEnd
+    }
+    val floatingToggleStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
+    val floatingToggleEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
     val saveServiceConfig: () -> Unit = {
         scope.launch {
             when (val result = mcpPageViewModel.saveConfig(mcpServerManager)) {
@@ -514,7 +522,7 @@ fun McpPage(
                 visible = pageUiState.showFloatingToggleButton,
                 enter = appFloatingEnter(),
                 exit = appFloatingExit(),
-                modifier = Modifier.align(Alignment.BottomEnd)
+                modifier = Modifier.align(floatingToggleAlignment)
             ) {
                 AppFloatingLiquidActionButton(
                     backdrop = backdrops.content,
@@ -525,7 +533,11 @@ fun McpPage(
                         stringResource(R.string.mcp_action_start_service)
                     },
                     onClick = toggleServer,
-                    modifier = Modifier.padding(end = 14.dp, bottom = runtime.contentBottomPadding - 24.dp),
+                    modifier = Modifier.padding(
+                        start = floatingToggleStartPadding,
+                        end = floatingToggleEndPadding,
+                        bottom = runtime.contentBottomPadding - 24.dp
+                    ),
                     iconTint = if (uiState.running) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary
                 )
             }

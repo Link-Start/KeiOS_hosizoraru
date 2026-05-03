@@ -41,6 +41,7 @@ import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
 import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
@@ -128,7 +129,8 @@ internal fun OsPageMainList(
     queryInput: String,
     onQueryInputChange: (String) -> Unit,
     onSearchExpandedChange: (Boolean) -> Unit,
-    searchLabel: String
+    searchLabel: String,
+    floatingDockSide: AppFloatingDockSide
 ) {
     val topMetricLabel = stringResource(R.string.os_overview_metric_top_info)
     fun metricLabelWeight(label: String): Float {
@@ -146,6 +148,13 @@ internal fun OsPageMainList(
         targetValue = searchDockBottom + AppChromeTokens.floatingBottomBarOuterHeight + 6.dp,
         label = "os_floating_add_bottom"
     )
+    val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
+        Alignment.BottomStart
+    } else {
+        Alignment.BottomEnd
+    }
+    val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
+    val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         AppPageLazyColumn(
@@ -154,7 +163,7 @@ internal fun OsPageMainList(
                 .nestedScroll(scrollBehaviorConnection),
             state = listState,
             innerPadding = innerPadding,
-            topExtra = 0.dp,
+            topExtra = 8.dp,
             sectionSpacing = 0.dp
         ) {
             item {
@@ -430,14 +439,14 @@ internal fun OsPageMainList(
             visible = showFloatingAddButton,
             enter = appFloatingEnter(),
             exit = appFloatingExit(),
-            modifier = Modifier.align(Alignment.BottomEnd)
+            modifier = Modifier.align(dockAlignment)
         ) {
             AppFloatingLiquidActionButton(
                 backdrop = contentBackdrop,
                 icon = appLucideAddIcon(),
                 contentDescription = stringResource(R.string.os_cd_add_activity_card),
                 onClick = onOpenAddActivityShortcutCard,
-                modifier = Modifier.padding(end = 14.dp, bottom = addButtonBottom),
+                modifier = Modifier.padding(start = dockStartPadding, end = dockEndPadding, bottom = addButtonBottom),
                 iconTint = MiuixTheme.colorScheme.primary
             )
         }
@@ -450,9 +459,10 @@ internal fun OsPageMainList(
             searchIcon = appLucideSearchIcon(),
             contentDescription = searchLabel,
             placeholder = searchLabel,
+            dockSide = floatingDockSide,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 14.dp, bottom = searchDockBottom)
+                .align(dockAlignment)
+                .padding(start = dockStartPadding, end = dockEndPadding, bottom = searchDockBottom)
         )
     }
 }

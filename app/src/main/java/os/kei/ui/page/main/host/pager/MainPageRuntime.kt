@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 
 @Immutable
@@ -15,6 +16,7 @@ data class MainPageRuntime(
     val isDataActive: Boolean = true,
     val isPagerScrollInProgress: Boolean = false,
     val bottomBarVisible: Boolean = true,
+    val floatingDockSide: AppFloatingDockSide = AppFloatingDockSide.End,
 ) {
     val isPageActive: Boolean
         get() = isWarmActive
@@ -40,6 +42,7 @@ internal data class MainPagerRuntimeSnapshot(
         contentTopPadding: Dp = 0.dp,
         contentBottomPadding: Dp = 72.dp,
         bottomBarVisible: Boolean = true,
+        floatingDockSide: AppFloatingDockSide = AppFloatingDockSide.End,
     ): MainPageRuntime = MainPageRuntime(
         scrollToTopSignal = scrollToTopSignal,
         contentTopPadding = contentTopPadding,
@@ -47,7 +50,8 @@ internal data class MainPagerRuntimeSnapshot(
         isWarmActive = isWarmActive(pageIndex),
         isDataActive = isDataActive(pageIndex),
         isPagerScrollInProgress = isPagerScrollInProgress,
-        bottomBarVisible = bottomBarVisible
+        bottomBarVisible = bottomBarVisible,
+        floatingDockSide = floatingDockSide
     )
 
     fun isWarmActive(pageIndex: Int): Boolean {

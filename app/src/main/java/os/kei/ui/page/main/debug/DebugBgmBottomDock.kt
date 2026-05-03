@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.debug
 
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -97,7 +96,7 @@ internal fun DebugBgmDockGroupContent(
     accent: Color,
     expandedProgress: Float,
     compactProgress: Float,
-    backdrop: Backdrop? = null,
+    backdrop: Backdrop,
     compactInteractionSource: MutableInteractionSource? = null,
     onSelectedDockKeyChange: (String) -> Unit,
     onCompactDockClick: () -> Unit
@@ -117,7 +116,7 @@ internal fun DebugBgmDockGroupContent(
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val isDark = isSystemInDarkTheme()
     val tabsBackdrop = rememberLayerBackdrop()
-    val combinedBackdrop = if (backdrop != null) rememberCombinedBackdrop(backdrop, tabsBackdrop) else null
+    val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
     val offsetAnimation = remember { Animatable(0f) }
     var tabWidthPx by remember { mutableFloatStateOf(0f) }
     var totalWidthPx by remember { mutableFloatStateOf(0f) }
@@ -226,32 +225,25 @@ internal fun DebugBgmDockGroupContent(
             DebugBgmDockSelectedContentPressedScale,
             combinedInteractionProgress
         )
-        val interactiveHighlight = if (
-            backdrop != null &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-        ) {
-            remember(animationScope, dampedDragAnimation, tabWidthPx, isLtr) {
-                InteractiveHighlight(
-                    animationScope = animationScope,
-                    position = { size, _ ->
-                        Offset(
-                            if (isLtr) {
-                                (dampedDragAnimation.value + 0.5f) *
-                                    (tabWidthPx.takeIf { it > 0f } ?: fallbackTabWidthPx) + panelOffset
-                            } else {
-                                size.width - (dampedDragAnimation.value + 0.5f) *
-                                    (tabWidthPx.takeIf { it > 0f } ?: fallbackTabWidthPx) + panelOffset
-                            },
-                            size.height / 2f
-                        )
-                    },
-                    highlightColor = Color.White,
-                    highlightStrength = if (isDark) 0.90f else 0.60f,
-                    highlightRadiusScale = if (isDark) 1.08f else 0.90f
-                )
-            }
-        } else {
-            null
+        val interactiveHighlight = remember(animationScope, dampedDragAnimation, tabWidthPx, isLtr) {
+            InteractiveHighlight(
+                animationScope = animationScope,
+                position = { size, _ ->
+                    Offset(
+                        if (isLtr) {
+                            (dampedDragAnimation.value + 0.5f) *
+                                (tabWidthPx.takeIf { it > 0f } ?: fallbackTabWidthPx) + panelOffset
+                        } else {
+                            size.width - (dampedDragAnimation.value + 0.5f) *
+                                (tabWidthPx.takeIf { it > 0f } ?: fallbackTabWidthPx) + panelOffset
+                        },
+                        size.height / 2f
+                    )
+                },
+                highlightColor = Color.White,
+                highlightStrength = if (isDark) 0.90f else 0.60f,
+                highlightRadiusScale = if (isDark) 1.08f else 0.90f
+            )
         }
 
         LaunchedEffect(selectedIndex, safeTabCount) {
@@ -298,7 +290,7 @@ internal fun DebugBgmDockGroupContent(
                     scaleY = (0.96f + 0.04f * expanded) * dockScaleY
                 }
                 .clip(ContinuousCapsule)
-                .then(interactiveHighlight?.modifier ?: Modifier)
+                .then(interactiveHighlight.modifier)
                 .padding(horizontal = contentHorizontalPadding),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
@@ -336,7 +328,7 @@ internal fun DebugBgmDockGroupContent(
                 .alpha(0f)
                 .zIndex(if (expanded >= compact) 1.5f else 0f)
                 .clip(ContinuousCapsule)
-                .then(if (backdrop != null) Modifier.layerBackdrop(tabsBackdrop) else Modifier)
+                .layerBackdrop(tabsBackdrop)
                 .graphicsLayer {
                     alpha = expanded
                     translationX = panelOffset
@@ -381,9 +373,9 @@ internal fun DebugBgmDockGroupContent(
                     scaleX = (0.96f + 0.04f * expanded) * dockScaleX
                     scaleY = (0.96f + 0.04f * expanded) * dockScaleY
                 }
-                .then(interactiveHighlight?.gestureModifier ?: Modifier)
+                .then(interactiveHighlight.gestureModifier)
                 .then(if (expandedEnabled) dampedDragAnimation.modifier else Modifier),
-            backdrop = combinedBackdrop ?: backdrop,
+            backdrop = combinedBackdrop,
             isDark = isDark,
             pressProgress = combinedInteractionProgress,
             itemPressProgress = itemPressProgress,
@@ -428,7 +420,7 @@ internal fun DebugBgmDockGroupContent(
 
 @Composable
 private fun DebugBgmDockSelectionPill(
-    backdrop: Backdrop?,
+    backdrop: Backdrop,
     isDark: Boolean,
     pressProgress: Float,
     itemPressProgress: Float,
@@ -459,42 +451,36 @@ private fun DebugBgmDockSelectionPill(
     Box(
         modifier = modifier
             .then(
-                if (backdrop != null) {
-                    Modifier.drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { ContinuousCapsule },
-                        effects = {
-                            if (clampedPress > 0f) {
-                                lens(
-                                    5.dp.toPx() * clampedPress,
-                                    7.dp.toPx() * clampedPress,
-                                    true
-                                )
-                            }
-                        },
-                        highlight = {
-                            Highlight.Default.copy(alpha = clampedPress)
-                        },
-                        shadow = {
-                            Shadow(alpha = clampedPress)
-                        },
-                        innerShadow = {
-                            InnerShadow(radius = 8.dp * clampedPress, alpha = clampedPress)
-                        },
-                        layerBlock = {
-                            scaleX = deformationScaleX
-                            scaleY = deformationScaleY
-                        },
-                        onDrawSurface = {
-                            drawRect(neutralFill, alpha = 1f - clampedPress)
-                            drawRect(Color.Black.copy(alpha = 0.03f * clampedPress))
+                Modifier.drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { ContinuousCapsule },
+                    effects = {
+                        if (clampedPress > 0f) {
+                            lens(
+                                5.dp.toPx() * clampedPress,
+                                7.dp.toPx() * clampedPress,
+                                true
+                            )
                         }
-                    )
-                } else {
-                    Modifier
-                        .clip(ContinuousCapsule)
-                        .background(neutralFill, ContinuousCapsule)
-                }
+                    },
+                    highlight = {
+                        Highlight.Default.copy(alpha = clampedPress)
+                    },
+                    shadow = {
+                        Shadow(alpha = clampedPress)
+                    },
+                    innerShadow = {
+                        InnerShadow(radius = 8.dp * clampedPress, alpha = clampedPress)
+                    },
+                    layerBlock = {
+                        scaleX = deformationScaleX
+                        scaleY = deformationScaleY
+                    },
+                    onDrawSurface = {
+                        drawRect(neutralFill, alpha = 1f - clampedPress)
+                        drawRect(Color.Black.copy(alpha = 0.03f * clampedPress))
+                    }
+                )
             )
     ) {
         Box(

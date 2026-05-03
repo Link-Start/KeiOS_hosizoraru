@@ -37,7 +37,6 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.os.appLucideSkipForwardIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.LiquidMusicProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -58,7 +57,7 @@ internal fun DebugBgmMiniPlayer(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     controlInteractionSource: MutableInteractionSource? = null,
-    backdrop: Backdrop? = null,
+    backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
     val expanded = expandedProgress.coerceIn(0f, 1f)
@@ -76,7 +75,6 @@ internal fun DebugBgmMiniPlayer(
     val progressTopPadding = debugBgmLerpDp(0.dp, 5.dp, expanded)
     val progressHostHeight = debugBgmLerpDp(0.dp, 20.dp, expanded)
     val sideControlSlotWidth = debugBgmLerpDp(0.dp, 32.dp, expanded)
-    val sideControlsEnabled = expanded > 0.56f
     val playButtonScale = 1f - compact * 0.02f
 
     Row(
@@ -124,29 +122,19 @@ internal fun DebugBgmMiniPlayer(
                     .graphicsLayer { alpha = expanded },
                 contentAlignment = Alignment.CenterStart
             ) {
-                if (backdrop != null) {
-                    LiquidMusicProgressSlider(
-                        value = { playbackProgress.coerceIn(0f, 1f) },
-                        onValueChange = onPlaybackProgressChange,
-                        onValueChangeFinished = onPlaybackProgressChangeFinished,
-                        onInteractionChanged = onPlaybackSliderInteractionChanged,
-                        valueRange = 0f..1f,
-                        visibilityThreshold = 0.001f,
-                        backdrop = backdrop,
-                        enabled = sideControlsEnabled,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .height(18.dp)
-                    )
-                } else {
-                    LiquidMusicProgressBar(
-                        progress = { playbackProgress.coerceIn(0f, 1f) },
-                        activeColor = accent,
-                        inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.20f),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                LiquidMusicProgressSlider(
+                    value = { playbackProgress.coerceIn(0f, 1f) },
+                    onValueChange = onPlaybackProgressChange,
+                    onValueChangeFinished = onPlaybackProgressChangeFinished,
+                    onInteractionChanged = onPlaybackSliderInteractionChanged,
+                    valueRange = 0f..1f,
+                    visibilityThreshold = 0.001f,
+                    backdrop = backdrop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .height(18.dp)
+                )
             }
         }
         DebugBgmMiniPlayerSideControl(
@@ -159,7 +147,6 @@ internal fun DebugBgmMiniPlayer(
                 tint = MiuixTheme.colorScheme.onBackground,
                 size = 32.dp,
                 iconSize = 22.dp,
-                enabled = sideControlsEnabled,
                 interactionSource = controlInteractionSource,
                 onClick = onPreviousClick
             )
@@ -199,7 +186,6 @@ internal fun DebugBgmMiniPlayer(
                 tint = MiuixTheme.colorScheme.onBackground,
                 size = 32.dp,
                 iconSize = 22.dp,
-                enabled = sideControlsEnabled,
                 interactionSource = controlInteractionSource,
                 onClick = onNextClick
             )

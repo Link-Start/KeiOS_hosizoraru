@@ -77,7 +77,7 @@ internal fun DebugBgmFloatingBottomChrome(
     onSelectedDockKeyChange: (String) -> Unit,
     onCompactDockClick: () -> Unit,
     onSearchClick: () -> Unit,
-    backdrop: Backdrop? = null,
+    backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
     val tabs = rememberDebugBgmDockTabs()

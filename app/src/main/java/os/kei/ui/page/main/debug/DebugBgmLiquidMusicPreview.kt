@@ -194,6 +194,11 @@ internal fun DebugBgmLiquidMusicPreview(
                 .fillMaxSize()
                 .layerBackdrop(bottomChromeBackdrop)
         ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .layerBackdrop(pageChromeBackdrop)
+            )
             DebugBgmAlbumContent(
                 accent = accent,
                 tracks = displayedTracks,
@@ -222,7 +227,8 @@ internal fun DebugBgmLiquidMusicPreview(
                 userScrollEnabled = !sliderInteractionActive,
                 topPadding = contentTopPadding,
                 bottomPadding = contentBottomPadding,
-                modifier = Modifier.layerBackdrop(pageChromeBackdrop)
+                volumeSliderBackdrop = pageChromeBackdrop,
+                modifier = Modifier
             )
             DebugBgmAlbumTopBar(
                 accent = accent,

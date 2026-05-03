@@ -447,7 +447,7 @@ private fun DebugBgmPlayingBar(
 internal fun DebugBgmSearchPanel(
     query: String,
     onQueryChange: (String) -> Unit,
-    backdrop: Backdrop? = null
+    backdrop: Backdrop
 ) {
     val focusRequester = remember { FocusRequester() }
 

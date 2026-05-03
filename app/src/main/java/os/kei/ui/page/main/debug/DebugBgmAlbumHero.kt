@@ -71,7 +71,8 @@ internal fun DebugBgmAlbumHero(
     onPlayPauseClick: () -> Unit,
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
-    onVolumeSliderInteractionChanged: (Boolean) -> Unit
+    onVolumeSliderInteractionChanged: (Boolean) -> Unit,
+    volumeSliderBackdrop: Backdrop
 ) {
     var volumeControlVisible by rememberSaveable { mutableStateOf(true) }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -192,6 +193,7 @@ internal fun DebugBgmAlbumHero(
                     onVolumeChange = onVolumeChange,
                     onVolumeChangeFinished = onVolumeChangeFinished,
                     onInteractionChanged = onVolumeSliderInteractionChanged,
+                    backdrop = volumeSliderBackdrop,
                     modifier = Modifier
                         .fillMaxWidth()
                         .graphicsLayer {
@@ -309,19 +311,14 @@ private fun DebugBgmAlbumVolumeControl(
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
+    backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
-    val volumeBackdrop = rememberLayerBackdrop()
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(DebugBgmVolumeControlHeight)
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(volumeBackdrop)
-        )
         Row(
             modifier = Modifier
                 .matchParentSize()
@@ -342,7 +339,7 @@ private fun DebugBgmAlbumVolumeControl(
                 onInteractionChanged = onInteractionChanged,
                 valueRange = 0f..1f,
                 visibilityThreshold = 0.001f,
-                backdrop = volumeBackdrop,
+                backdrop = backdrop,
                 modifier = Modifier
                     .weight(1f)
                     .height(30.dp)

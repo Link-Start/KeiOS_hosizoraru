@@ -15,6 +15,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 
 @Composable
 internal fun DebugBgmAlbumContent(
@@ -45,6 +46,7 @@ internal fun DebugBgmAlbumContent(
     userScrollEnabled: Boolean,
     topPadding: Dp,
     bottomPadding: Dp,
+    volumeSliderBackdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
     val sliderLockedScrollConnection = remember(userScrollEnabled, bottomBarScrollConnection) {
@@ -88,7 +90,8 @@ internal fun DebugBgmAlbumContent(
                 onPlayPauseClick = onPlayPauseClick,
                 onVolumeChange = onVolumeChange,
                 onVolumeChangeFinished = onVolumeChangeFinished,
-                onVolumeSliderInteractionChanged = onSliderInteractionChanged
+                onVolumeSliderInteractionChanged = onSliderInteractionChanged,
+                volumeSliderBackdrop = volumeSliderBackdrop
             )
         }
         item {

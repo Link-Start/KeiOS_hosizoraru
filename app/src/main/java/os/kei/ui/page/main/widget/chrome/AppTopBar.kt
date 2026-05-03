@@ -15,10 +15,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,6 +45,7 @@ fun AppTopBarSection(
     searchBarContent: (@Composable BoxScope.() -> Unit)? = null
 ) {
     val collapsedFraction = scrollBehavior?.state?.collapsedFraction ?: 0f
+    val density = LocalDensity.current
     val titleAlpha by animateFloatAsState(
         targetValue = 1f - collapsedFraction.coerceIn(0f, 1f),
         label = "appTopBarTitleAlpha"
@@ -61,6 +64,22 @@ fun AppTopBarSection(
                 (AppChromeTokens.topBarCollapsedHeight.value - AppChromeTokens.topBarExpandedHeight.value) *
                 progress
             ).dp
+    }
+    SideEffect {
+        val collapseRangePx = with(density) {
+            if (largeTitle.isBlank() && title.isBlank()) {
+                0f
+            } else {
+                (AppChromeTokens.topBarExpandedHeight - AppChromeTokens.topBarCollapsedHeight).toPx()
+            }
+        }
+        scrollBehavior?.state?.let { state ->
+            val limit = -collapseRangePx
+            if (state.heightOffsetLimit != limit) {
+                state.heightOffsetLimit = limit
+                state.heightOffset = state.heightOffset
+            }
+        }
     }
     Column(modifier = modifier) {
         androidx.compose.foundation.layout.Box(

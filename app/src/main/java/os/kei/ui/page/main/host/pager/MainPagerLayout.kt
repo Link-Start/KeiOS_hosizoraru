@@ -187,7 +187,6 @@ internal fun MainPagerLayout(
                 selectedPageIndex = safeSelectedPageIndex,
                 selectedPagePosition = pagerSelectionPosition,
                 backdrop = coordinator.backdrop,
-                reduceEffectsDuringPagerScroll = coordinator.pagerRuntime.isPagerScrollInProgress,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
                 onPageSelected = coordinator.onPageSelected
             )

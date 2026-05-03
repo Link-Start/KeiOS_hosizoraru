@@ -45,7 +45,6 @@ internal fun SettingsCategoryBottomBar(
     selectedPage: Int,
     selectedPageProvider: () -> Int,
     backdrop: LayerBackdrop,
-    reduceEffectsDuringPagerScroll: Boolean,
     isLiquidEffectEnabled: Boolean,
     onSelectCategory: (Int) -> Unit
 ) {
@@ -106,7 +105,6 @@ internal fun SettingsCategoryBottomBar(
                 },
                 backdrop = backdrop,
                 tabsCount = categories.size,
-                reduceEffectsDuringPagerScroll = reduceEffectsDuringPagerScroll,
                 isLiquidEffectEnabled = isLiquidEffectEnabled,
                 content = bottomBarTabs
             )

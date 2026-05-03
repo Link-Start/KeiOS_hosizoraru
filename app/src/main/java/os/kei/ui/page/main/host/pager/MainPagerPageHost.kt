@@ -76,7 +76,6 @@ internal fun MainPagerPageHost(
     )
     CompositionLocalProvider(
         LocalGlassEffectRuntime provides GlassEffectRuntime()
-            .reducedDuring(runtime.isPagerScrollInProgress)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (pageType) {

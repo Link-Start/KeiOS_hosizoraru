@@ -509,7 +509,6 @@ fun SettingsPage(
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
                 selectedPageProvider = { pagerState.targetPage },
                 backdrop = bottomBarBackdrop,
-                reduceEffectsDuringPagerScroll = false,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
                 onSelectCategory = selectSettingsCategoryAction
             )

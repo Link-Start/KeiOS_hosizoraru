@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.exoplayer.ExoPlayer
 import os.kei.R
-import os.kei.ui.page.main.host.pager.shouldReduceBottomBarEffectsDuringMotion
 import os.kei.ui.page.main.student.createGameKeeMediaSourceFactory
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
@@ -79,7 +78,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun BaStudentGuidePage(
     liquidBottomBarEnabled: Boolean = true,
-    bottomBarScrollEffectReductionEnabled: Boolean = false,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     onBack: () -> Unit
@@ -185,7 +183,6 @@ fun BaStudentGuidePage(
     )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     var showBottomBar by remember { mutableStateOf(true) }
-    var activeListScrollInProgress by remember { mutableStateOf(false) }
     val farJumpAlpha = remember { Animatable(1f) }
     val selectBottomTabAction = rememberBaStudentGuideTabSelectCoordinator(
         bottomTabs = bottomTabsList,
@@ -220,9 +217,6 @@ fun BaStudentGuidePage(
                 return Offset.Zero
             }
         }
-    }
-    LaunchedEffect(selectedBottomTabIndex) {
-        activeListScrollInProgress = false
     }
     val pageTitle = info?.title?.ifBlank { defaultPageTitle } ?: defaultPageTitle
     val voicePlayer = remember(context, sourceUrl) {
@@ -350,10 +344,6 @@ fun BaStudentGuidePage(
                     selectedPage = pagerState.targetPage,
                     selectedPageProvider = { pagerState.targetPage },
                     backdrop = navBackdrop,
-                    reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
-                        scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                        activePageListScrollInProgress = activeListScrollInProgress
-                    ),
                     isLiquidEffectEnabled = liquidBottomBarEnabled,
                     onSelectTab = selectBottomTabAction
                 )
@@ -386,9 +376,7 @@ fun BaStudentGuidePage(
                 onSaveMedia = pageActions.saveGuideMedia,
                 onSaveMediaPack = pageActions.saveGuideMediaPack,
                 onToggleVoicePlayback = pageActions.toggleVoicePlayback,
-                onListScrollInProgressChange = { scrolling ->
-                    activeListScrollInProgress = scrolling
-                },
+                onListScrollInProgressChange = {},
                 onSelectedVoiceLanguageChange = { selectedVoiceLanguage = it }
             )
         }

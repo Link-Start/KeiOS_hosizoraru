@@ -339,7 +339,6 @@ fun HomePage(
             LiquidActionBar(
                 backdrop = actionBarBackdrop,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                reduceEffectsDuringPagerScroll = false,
                 items = homeActionItems,
                 selectedIndex = actionBarSelectedIndex,
                 onInteractionChanged = onActionBarInteractingChanged

@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.ui.page.main.host.pager.shouldReduceBottomBarEffectsDuringMotion
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
@@ -131,7 +130,6 @@ fun BaGuideCatalogPage(
     onBack: () -> Unit,
     onOpenGuide: (String) -> Unit,
     liquidBottomBarEnabled: Boolean = true,
-    bottomBarScrollEffectReductionEnabled: Boolean = false,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     enableSearchBar: Boolean = true,
@@ -243,7 +241,6 @@ fun BaGuideCatalogPage(
     }
     var activeListCanScrollBackward by remember { mutableStateOf(false) }
     var activeListCanScrollForward by remember { mutableStateOf(false) }
-    var activeListScrollInProgress by remember { mutableStateOf(false) }
     var bgmNowPlayingVisible by remember { mutableStateOf(false) }
     var bgmSliderInteractionActive by remember { mutableStateOf(false) }
     val chromeActivePageIndex = if (pagerState.isScrollInProgress) {
@@ -260,7 +257,6 @@ fun BaGuideCatalogPage(
     LaunchedEffect(selectedTabIndex) {
         activeListCanScrollBackward = false
         activeListCanScrollForward = false
-        activeListScrollInProgress = false
         bgmSliderInteractionActive = false
         if (tabs.getOrNull(selectedTabIndex)?.catalogTab == null) {
             filterSortState.showSortPopup = false
@@ -384,10 +380,6 @@ fun BaGuideCatalogPage(
                             },
                             backdrop = bottomBarBackdrop,
                             tabsCount = tabs.size,
-                            reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
-                                scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                                activePageListScrollInProgress = activeListScrollInProgress
-                            ),
                             isLiquidEffectEnabled = liquidBottomBarEnabled,
                             content = bottomBarTabs
                         )
@@ -439,9 +431,7 @@ fun BaGuideCatalogPage(
                             activeListCanScrollBackward = canScrollBackward
                             activeListCanScrollForward = canScrollForward
                         },
-                        onListScrollInProgressChange = { scrolling ->
-                            activeListScrollInProgress = scrolling
-                        },
+                        onListScrollInProgressChange = {},
                         onOpenGuide = onOpenGuide
                     )
                 } else if (renderHeavyContent && pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm) {
@@ -456,9 +446,7 @@ fun BaGuideCatalogPage(
                             activeListCanScrollBackward = canScrollBackward
                             activeListCanScrollForward = canScrollForward
                         },
-                        onListScrollInProgressChange = { scrolling ->
-                            activeListScrollInProgress = scrolling
-                        },
+                        onListScrollInProgressChange = {},
                         onSliderInteractionChanged = { active ->
                             bgmSliderInteractionActive = active
                         },
@@ -478,9 +466,7 @@ fun BaGuideCatalogPage(
                             activeListCanScrollBackward = canScrollBackward
                             activeListCanScrollForward = canScrollForward
                         },
-                        onListScrollInProgressChange = { scrolling ->
-                            activeListScrollInProgress = scrolling
-                        },
+                        onListScrollInProgressChange = {},
                         onSliderInteractionChanged = { active ->
                             bgmSliderInteractionActive = active
                         },
@@ -515,7 +501,6 @@ fun BaGuideCatalogPage(
                 LiquidActionBar(
                     backdrop = topBarBackdrop,
                     layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    reduceEffectsDuringPagerScroll = false,
                     items = actionItems
                 )
                 LiquidActionBarPopupAnchors(itemCount = 2) { slotIndex, popupAnchorBounds ->

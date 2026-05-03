@@ -132,8 +132,6 @@ fun McpPage(
         }
     }
     val listState = rememberLazyListState()
-    val reduceBackdropEffects = runtime.isPagerScrollInProgress ||
-        listState.isScrollInProgress
     val scrollBehavior = MiuixScrollBehavior()
     val currentUiState by rememberUpdatedState(uiState)
     val serverNameHint = context.getString(R.string.mcp_input_service_name_hint)
@@ -198,7 +196,7 @@ fun McpPage(
     val pageBackdropEffectsEnabled = runtime.isPageActive &&
         !runtime.isPagerScrollInProgress
     val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
-    val mcpGlassRuntime = LocalGlassEffectRuntime.current.reducedDuring(reduceBackdropEffects)
+    val mcpGlassRuntime = LocalGlassEffectRuntime.current
     val toggleServer: () -> Unit = toggleServer@{
         localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
         if (!uiState.running && allowExternal && !localNetworkPermissionGranted) {
@@ -422,7 +420,6 @@ fun McpPage(
             LiquidActionBar(
                 backdrop = backdrops.topBar,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                reduceEffectsDuringPagerScroll = false,
                 items = actionItems,
                 onInteractionChanged = onActionBarInteractingChanged
             )

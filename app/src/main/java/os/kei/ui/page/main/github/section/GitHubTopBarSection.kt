@@ -41,7 +41,6 @@ internal fun GitHubTopBarSection(
 internal fun GitHubTopBarActions(
     backdrop: LayerBackdrop,
     liquidActionBarLayeredStyleEnabled: Boolean,
-    reduceEffectsDuringPagerScroll: Boolean,
     sortMode: GitHubSortMode,
     showSortPopup: Boolean,
     deleteInProgress: Boolean,
@@ -100,7 +99,6 @@ internal fun GitHubTopBarActions(
         LiquidActionBar(
             backdrop = backdrop,
             layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-            reduceEffectsDuringPagerScroll = reduceEffectsDuringPagerScroll,
             items = actionItems,
             onInteractionChanged = onActionBarInteractingChanged
         )

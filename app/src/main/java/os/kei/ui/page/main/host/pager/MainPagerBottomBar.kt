@@ -35,7 +35,6 @@ internal fun MainPagerBottomBar(
     selectedPageIndex: Int,
     selectedPagePosition: Float?,
     backdrop: LayerBackdrop,
-    reduceEffectsDuringPagerScroll: Boolean,
     liquidBottomBarEnabled: Boolean,
     onPageSelected: (Int) -> Unit
 ) {
@@ -103,7 +102,6 @@ internal fun MainPagerBottomBar(
                 onSelected = onPageSelected,
                 backdrop = backdrop,
                 tabsCount = tabs.size,
-                reduceEffectsDuringPagerScroll = reduceEffectsDuringPagerScroll,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
                 content = bottomBarTabs
             )

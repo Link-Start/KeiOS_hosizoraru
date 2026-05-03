@@ -40,7 +40,6 @@ internal fun BaTopBar(
 internal fun BaTopBarActions(
     backdrop: LayerBackdrop,
     liquidActionBarLayeredStyleEnabled: Boolean,
-    reduceEffectsDuringPagerScroll: Boolean,
     showCalendarIntervalPopup: Boolean,
     calendarRefreshIntervalHours: Int,
     onShowSettings: () -> Unit,
@@ -97,7 +96,6 @@ internal fun BaTopBarActions(
         LiquidActionBar(
             backdrop = backdrop,
             layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-            reduceEffectsDuringPagerScroll = reduceEffectsDuringPagerScroll,
             items = actionItems,
             onInteractionChanged = onInteractionChanged,
         )

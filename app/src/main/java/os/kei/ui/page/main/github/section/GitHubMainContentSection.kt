@@ -55,7 +55,6 @@ internal fun GitHubMainContent(
     topBarColor: Color,
     bottomBarVisible: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
-    reduceEffectsDuringPagerScroll: Boolean,
     searchExpanded: Boolean,
     trackedSearch: String,
     sortMode: GitHubSortMode,
@@ -239,7 +238,6 @@ internal fun GitHubMainContent(
             GitHubTopBarActions(
                 backdrop = topBarBackdrop,
                 liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                reduceEffectsDuringPagerScroll = reduceEffectsDuringPagerScroll,
                 sortMode = sortMode,
                 showSortPopup = showSortPopup,
                 deleteInProgress = deleteInProgress,

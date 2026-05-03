@@ -181,7 +181,6 @@ fun LiquidActionBar(
     items: List<LiquidActionItem>,
     isBlurEnabled: Boolean = true,
     layeredStyleEnabled: Boolean = true,
-    reduceEffectsDuringPagerScroll: Boolean = false,
     compactSingleItem: Boolean = false,
     selectedIndex: Int = 0,
     onInteractionChanged: (Boolean) -> Unit = {}

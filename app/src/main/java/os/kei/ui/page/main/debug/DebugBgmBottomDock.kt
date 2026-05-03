@@ -42,7 +42,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -65,6 +64,11 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
@@ -75,8 +79,6 @@ import os.kei.ui.page.main.os.appLucideHomeIcon
 import os.kei.ui.page.main.os.appLucideLibraryIcon
 import os.kei.ui.page.main.os.appLucideRadioIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
@@ -295,7 +297,6 @@ internal fun DebugBgmDockGroupContent(
                     scaleX = (0.96f + 0.04f * expanded) * dockScaleX
                     scaleY = (0.96f + 0.04f * expanded) * dockScaleY
                 }
-                .zIndex(if (expanded >= compact) 3f else 0f)
                 .clip(ContinuousCapsule)
                 .then(interactiveHighlight?.modifier ?: Modifier)
                 .padding(horizontal = contentHorizontalPadding),
@@ -455,37 +456,47 @@ private fun DebugBgmDockSelectionPill(
     } else {
         Color.White.copy(alpha = 0.38f)
     }
-    val liquidFill = if (clampedPress > 0f) {
-        Color.Black.copy(alpha = 0.03f * clampedPress).compositeOver(neutralFill)
-    } else {
-        neutralFill
-    }
     Box(
         modifier = modifier
-            .graphicsLayer {
-                scaleX = deformationScaleX
-                scaleY = deformationScaleY
-            }
+            .then(
+                if (backdrop != null) {
+                    Modifier.drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { ContinuousCapsule },
+                        effects = {
+                            if (clampedPress > 0f) {
+                                lens(
+                                    5.dp.toPx() * clampedPress,
+                                    7.dp.toPx() * clampedPress,
+                                    true
+                                )
+                            }
+                        },
+                        highlight = {
+                            Highlight.Default.copy(alpha = clampedPress)
+                        },
+                        shadow = {
+                            Shadow(alpha = clampedPress)
+                        },
+                        innerShadow = {
+                            InnerShadow(radius = 8.dp * clampedPress, alpha = clampedPress)
+                        },
+                        layerBlock = {
+                            scaleX = deformationScaleX
+                            scaleY = deformationScaleY
+                        },
+                        onDrawSurface = {
+                            drawRect(neutralFill, alpha = 1f - clampedPress)
+                            drawRect(Color.Black.copy(alpha = 0.03f * clampedPress))
+                        }
+                    )
+                } else {
+                    Modifier
+                        .clip(ContinuousCapsule)
+                        .background(neutralFill, ContinuousCapsule)
+                }
+            )
     ) {
-        if (backdrop != null) {
-            LiquidSurface(
-                backdrop = backdrop,
-                modifier = Modifier.matchParentSize(),
-                shape = ContinuousCapsule,
-                isInteractive = false,
-                surfaceColor = liquidFill,
-                blurRadius = UiPerformanceBudget.backdropBlur,
-                lensRadius = UiPerformanceBudget.backdropLens * (0.34f + 0.22f * clampedPress),
-                shadow = clampedPress > 0f
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(ContinuousCapsule)
-                    .background(neutralFill, ContinuousCapsule)
-            )
-        }
         Box(
             modifier = Modifier
                 .matchParentSize()

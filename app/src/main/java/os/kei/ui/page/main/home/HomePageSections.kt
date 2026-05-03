@@ -30,15 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -94,7 +89,6 @@ internal fun HomeInfoCard(
     blurEnabled: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val isInLightTheme = !isSystemInDarkTheme()
     val blurRadius = resolvedGlassBlurDp(8.dp, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(24.dp, GlassVariant.Content)
     val containerColor = if (blurEnabled) {
@@ -106,42 +100,42 @@ internal fun HomeInfoCard(
     val cardModifier = Modifier
         .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
         .padding(bottom = 6.dp)
-        .let { baseModifier ->
-            if (backdrop != null && blurEnabled) {
-                baseModifier.drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { RoundedRectangle(20.dp) },
-                    effects = {
-                        vibrancy()
-                        blur(blurRadius.toPx())
-                        lens(lensRadius.toPx(), lensRadius.toPx())
-                    },
-                    highlight = {
-                        Highlight.Default.copy(alpha = 1f)
-                    },
-                    shadow = {
-                        Shadow.Default.copy(
-                            color = Color.Black.copy(if (isInLightTheme) 0.1f else 0.2f)
-                        )
-                    },
-                    onDrawSurface = { drawRect(containerColor) }
-                )
-            } else {
-                baseModifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainer)
-            }
-        }
 
-    Box(modifier = cardModifier) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+    if (backdrop != null && blurEnabled) {
+        LiquidSurface(
+            backdrop = backdrop,
+            modifier = cardModifier.fillMaxWidth(),
+            shape = RoundedRectangle(20.dp),
+            isInteractive = false,
+            surfaceColor = containerColor,
+            blurRadius = blurRadius,
+            lensRadius = lensRadius
         ) {
-            content()
+            HomeInfoCardContent(content)
         }
+    } else {
+        Box(
+            modifier = cardModifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainer)
+        ) {
+            HomeInfoCardContent(content)
+        }
+    }
+}
+
+@Composable
+private fun HomeInfoCardContent(
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        content()
     }
 }
 

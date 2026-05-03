@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -165,6 +166,7 @@ fun RowScope.LiquidGlassBottomBarItem(
 fun LiquidGlassBottomBar(
     modifier: Modifier = Modifier,
     selectedIndex: Int,
+    selectedPosition: Float? = null,
     onSelected: (index: Int) -> Unit,
     backdrop: Backdrop,
     tabsCount: Int,
@@ -271,10 +273,26 @@ fun LiquidGlassBottomBar(
         )
     }
     holder.instance = dampedDragAnimation
+    val displaySelectionValue = selectedPosition
+        ?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
+        ?: dampedDragAnimation.value
+    val currentDisplaySelectionValue by rememberUpdatedState(displaySelectionValue)
+    val currentPanelOffset by rememberUpdatedState(panelOffset)
+
+    LaunchedEffect(selectedPosition, safeTabsCount) {
+        val pagerDrivenPosition = selectedPosition?.fastCoerceIn(
+            0f,
+            (safeTabsCount - 1).toFloat()
+        ) ?: return@LaunchedEffect
+        dampedDragAnimation.snapToValue(
+            value = pagerDrivenPosition,
+            updateVelocity = false
+        )
+    }
 
     LaunchedEffect(selectedIndex, safeTabsCount) {
         val targetIndex = selectedIndex.fastCoerceIn(0, safeTabsCount - 1)
-        if (currentIndex != targetIndex) {
+        if (selectedPosition == null && currentIndex != targetIndex) {
             programmaticSelectionVersion += 1
             currentIndex = targetIndex
         }
@@ -322,9 +340,9 @@ fun LiquidGlassBottomBar(
     val useLightweightBackdrop = reducedEffectsProgress >= 0.98f &&
         combinedPressProgress <= 0.001f
 
-    val selectionProgressProvider: (Int) -> Float = remember(dampedDragAnimation) {
+    val selectionProgressProvider: (Int) -> Float = remember(displaySelectionValue) {
         { tabIndex ->
-            (1f - abs(dampedDragAnimation.value - tabIndex)).fastCoerceIn(0f, 1f)
+            (1f - abs(displaySelectionValue - tabIndex)).fastCoerceIn(0f, 1f)
         }
     }
 
@@ -333,13 +351,13 @@ fun LiquidGlassBottomBar(
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
         !reduceEffectsDuringPagerScroll
     ) {
-        remember(animationScope, dampedDragAnimation, tabWidthPx, isLtr) {
+        remember(animationScope, tabWidthPx, isLtr) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 position = { size, _ ->
                     Offset(
-                        if (isLtr) (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset
-                        else size.width - (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset,
+                        if (isLtr) (currentDisplaySelectionValue + 0.5f) * tabWidthPx + currentPanelOffset
+                        else size.width - (currentDisplaySelectionValue + 0.5f) * tabWidthPx + currentPanelOffset,
                         size.height / 2f
                     )
                 },
@@ -483,7 +501,7 @@ fun LiquidGlassBottomBar(
                                 (horizontalPadding * 2).toPx()
                             }
                             val singleTabWidth = contentWidth / safeTabsCount
-                            val progressOffset = dampedDragAnimation.value * singleTabWidth
+                            val progressOffset = displaySelectionValue * singleTabWidth
                             translationX = if (isLtr) {
                                 progressOffset + panelOffset
                             } else {

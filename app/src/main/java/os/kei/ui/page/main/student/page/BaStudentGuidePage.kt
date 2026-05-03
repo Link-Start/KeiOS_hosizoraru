@@ -359,7 +359,6 @@ fun BaStudentGuidePage(
                     backdrop = navBackdrop,
                     reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
                         scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                        pagerScrollInProgress = pagerState.isScrollInProgress,
                         activePageListScrollInProgress = activeListScrollInProgress
                     ),
                     isLiquidEffectEnabled = liquidBottomBarEnabled,

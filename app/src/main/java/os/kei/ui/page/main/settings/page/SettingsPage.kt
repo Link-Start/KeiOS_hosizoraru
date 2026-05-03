@@ -521,7 +521,6 @@ fun SettingsPage(
                 backdrop = bottomBarBackdrop,
                 reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
                     scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                    pagerScrollInProgress = pagerState.isScrollInProgress,
                     activePageListScrollInProgress = activePageListScrollInProgress
                 ),
                 isLiquidEffectEnabled = liquidBottomBarEnabled,

@@ -389,7 +389,6 @@ fun BaGuideCatalogPage(
                             tabsCount = tabs.size,
                             reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
                                 scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                                pagerScrollInProgress = pagerState.isScrollInProgress,
                                 activePageListScrollInProgress = activeListScrollInProgress
                             ),
                             isLiquidEffectEnabled = liquidBottomBarEnabled,

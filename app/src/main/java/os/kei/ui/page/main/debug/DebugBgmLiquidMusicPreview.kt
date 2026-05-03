@@ -115,11 +115,10 @@ internal fun DebugBgmLiquidMusicPreview(
         }
     }
     val shareChooserTitle = stringResource(R.string.debug_component_lab_share_chooser_title)
-    val selectedDockKey = dockTabs.getOrNull(debugPagerState.selectedPage)?.key ?: musicState.selectedDockKey
-    val settledDockKey = dockTabs.getOrNull(pagerState.settledPage)?.key ?: selectedDockKey
+    val selectedDockKey = dockTabs.getOrNull(debugPagerState.selectedIndex)?.key ?: musicState.selectedDockKey
+    val settledDockKey = dockTabs.getOrNull(debugPagerState.settledIndex)?.key ?: selectedDockKey
     val activeListState = pageListStates[pagerState.currentPage.coerceIn(pageListStates.indices)]
-    LaunchedEffect(pagerState.settledPage, settledDockKey) {
-        debugPagerState.syncPage()
+    LaunchedEffect(debugPagerState.settledIndex, settledDockKey) {
         if (musicState.selectedDockKey != settledDockKey) {
             musicState.selectDockKey(settledDockKey)
         }
@@ -300,11 +299,11 @@ internal fun DebugBgmLiquidMusicPreview(
             onSearchQueryChange = musicState::updateSearchQuery,
             onSearchInputActiveChange = musicState::updateSearchInputActive,
             selectedDockKey = selectedDockKey,
-            selectedDockPosition = debugPagerState.selectedPagePosition,
+            selectedDockPosition = debugPagerState.selectionPosition,
             onSelectedDockKeyChange = { key ->
                 val targetPage = dockTabs.indexOfFirst { it.key == key }
                 if (targetPage >= 0) {
-                    debugPagerState.animateToPage(targetPage)
+                    debugPagerState.navigateToPage(targetPage)
                 }
             },
             onCompactDockClick = {

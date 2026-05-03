@@ -421,7 +421,7 @@ fun McpPage(
             LiquidActionBar(
                 backdrop = backdrops.topBar,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                reduceEffectsDuringPagerScroll = runtime.isPagerScrollInProgress,
+                reduceEffectsDuringPagerScroll = false,
                 items = actionItems,
                 onInteractionChanged = onActionBarInteractingChanged
             )

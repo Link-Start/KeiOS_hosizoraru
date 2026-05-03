@@ -23,7 +23,6 @@ import os.kei.ui.page.main.os.OsPage
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.rememberGlassReductionProgress
 
 @Composable
 internal fun MainPagerPageHost(
@@ -75,13 +74,8 @@ internal fun MainPagerPageHost(
             BottomPage.GitHub -> githubScrollToTopSignal
         }
     )
-    val reducedGlassProgress = rememberGlassReductionProgress(
-        reduceEffectsDuringMotion = runtime.isPagerScrollInProgress &&
-            !(pageType == BottomPage.Home && homeDynamicFullEffectEnabled),
-        label = "mainPagerGlassEffectProgress"
-    )
     CompositionLocalProvider(
-        LocalGlassEffectRuntime provides GlassEffectRuntime(reducedProgress = reducedGlassProgress)
+        LocalGlassEffectRuntime provides GlassEffectRuntime()
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (pageType) {

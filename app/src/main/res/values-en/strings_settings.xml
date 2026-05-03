@@ -47,10 +47,6 @@
     <string name="settings_bottom_bar_header">Bottom bar</string>
     <string name="settings_bottom_bar_title">Liquid Glass bottom bar</string>
     <string name="settings_bottom_bar_summary">Capsule bottom bar, selected highlight, and lightweight glass texture</string>
-    <string name="settings_bottom_bar_full_effect_title">Full Liquid Glass bottom bar</string>
-    <string name="settings_bottom_bar_full_effect_summary_enabled">Keep the full Liquid Glass look while lists or pages scroll, for steadier bottom-bar interaction.</string>
-    <string name="settings_bottom_bar_full_effect_summary_disabled">Use lightweight bottom-bar effects during scrolling or paging to prioritize weaker devices.</string>
-    <string name="settings_bottom_bar_full_effect_scope">Affects the main pager, Settings, Guide catalog, and student-detail bottom bars during scroll.</string>
     <string name="settings_actionbar_style_header">Action bar</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus action bar</string>
     <string name="settings_actionbar_style_summary_enabled">Use the layered liquid style: capsule base, sliding highlight, and selected-state motion.</string>

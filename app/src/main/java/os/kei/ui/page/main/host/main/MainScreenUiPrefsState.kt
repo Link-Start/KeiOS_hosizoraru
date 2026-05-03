@@ -17,7 +17,6 @@ internal class MainScreenUiPrefsState(
     private val viewModel: MainScreenPrefsViewModel
 ) {
     val liquidBottomBarEnabled: Boolean get() = snapshot.liquidBottomBarEnabled
-    val bottomBarScrollEffectReductionEnabled: Boolean get() = snapshot.bottomBarScrollEffectReductionEnabled
     val liquidActionBarLayeredStyleEnabled: Boolean get() = snapshot.liquidActionBarLayeredStyleEnabled
     val liquidSwitchEnabled: Boolean get() = snapshot.liquidSwitchEnabled
     val transitionAnimationsEnabled: Boolean get() = snapshot.transitionAnimationsEnabled
@@ -39,10 +38,6 @@ internal class MainScreenUiPrefsState(
 
     fun updateLiquidBottomBarEnabled(value: Boolean) {
         viewModel.updateLiquidBottomBarEnabled(value)
-    }
-
-    fun updateBottomBarScrollEffectReductionEnabled(value: Boolean) {
-        viewModel.updateBottomBarScrollEffectReductionEnabled(value)
     }
 
     fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {

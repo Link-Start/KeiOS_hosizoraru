@@ -55,7 +55,6 @@ import androidx.compose.ui.util.lerp
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.rememberGlassReductionProgress
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import com.kyant.backdrop.Backdrop
@@ -307,20 +306,13 @@ fun LiquidGlassBottomBar(
         label = "liquid_bottom_bar_item_press"
     )
     val combinedPressProgress = max(pressProgress, itemPressProgress)
-    val reducedEffectsProgress = rememberGlassReductionProgress(
-        reduceEffectsDuringMotion = reduceEffectsDuringPagerScroll,
-        label = "liquidBottomBarGlassReduce"
-    )
-    val effectBlurScale = lerp(1f, 0.70f, reducedEffectsProgress)
-    val effectLensScale = lerp(1f, 0.66f, reducedEffectsProgress)
-    val interactionLensScale = lerp(1f, 0.84f, reducedEffectsProgress)
-    val effectBlurDp = UiPerformanceBudget.backdropBlur * effectBlurScale
-    val effectLensDp = UiPerformanceBudget.backdropLens * effectLensScale
+    val interactionLensScale = 1f
+    val effectBlurDp = UiPerformanceBudget.backdropBlur
+    val effectLensDp = UiPerformanceBudget.backdropLens
     val tactileLiftPx = with(density) { 1.25.dp.toPx() } * combinedPressProgress
     val tactileScaleX = lerp(1f, 1.006f, combinedPressProgress)
     val tactileScaleY = lerp(1f, 0.996f, combinedPressProgress)
-    val useLightweightBackdrop = reducedEffectsProgress >= 0.98f &&
-        combinedPressProgress <= 0.001f
+    val useLightweightBackdrop = false
 
     val selectionProgressProvider: (Int) -> Float = remember(displaySelectionValue) {
         { tabIndex ->
@@ -330,8 +322,7 @@ fun LiquidGlassBottomBar(
 
     val interactiveHighlight = if (
         isLiquidEffectEnabled &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        !reduceEffectsDuringPagerScroll
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     ) {
         remember(animationScope, tabWidthPx, isLtr) {
             InteractiveHighlight(

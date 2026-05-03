@@ -223,7 +223,7 @@ fun GitHubPage(
             topBarColor = topBarColor,
             bottomBarVisible = runtime.bottomBarVisible,
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-            reduceEffectsDuringPagerScroll = runtime.isPagerScrollInProgress,
+            reduceEffectsDuringPagerScroll = false,
             searchExpanded = enableSearchBar && searchExpanded,
             trackedSearch = state.trackedSearch,
             sortMode = state.sortMode,

@@ -282,7 +282,7 @@ fun OsPage(
             topBarColor = topBarMaterialBackdrop.getMiuixAppBarColor(),
             topBarBackdrop = backdrops.topBar,
             layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-            reduceEffectsDuringPagerScroll = runtime.isPagerScrollInProgress,
+            reduceEffectsDuringPagerScroll = false,
             manageCardsContentDescription = textBundle.manageCardsContentDescription,
             manageActivitiesContentDescription = textBundle.manageActivitiesContentDescription,
             manageShellCardsContentDescription = textBundle.manageShellCardsContentDescription,

@@ -47,10 +47,6 @@
     <string name="settings_bottom_bar_header">下部バー</string>
     <string name="settings_bottom_bar_title">Liquid Glass 下部バー</string>
     <string name="settings_bottom_bar_summary">カプセル型下部バー、選択ハイライト、軽量ガラス質感</string>
-    <string name="settings_bottom_bar_full_effect_title">下部バーの Liquid Glass フル効果</string>
-    <string name="settings_bottom_bar_full_effect_summary_enabled">リストやページのスクロール中も Liquid Glass の見た目を維持します。</string>
-    <string name="settings_bottom_bar_full_effect_summary_disabled">スクロールやページング中は軽量効果を使用し、弱い端末を優先します。</string>
-    <string name="settings_bottom_bar_full_effect_scope">メインページャ、設定、生徒名簿、生徒詳細の下部バーに影響します。</string>
     <string name="settings_actionbar_style_header">アクションバー</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus アクションバー</string>
     <string name="settings_actionbar_style_summary_enabled">レイヤード液体スタイルを使用します: カプセルベース、スライドハイライト、選択状態モーション。</string>

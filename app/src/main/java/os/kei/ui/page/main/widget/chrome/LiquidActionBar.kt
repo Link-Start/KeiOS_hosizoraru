@@ -48,7 +48,6 @@ import androidx.compose.ui.util.fastRoundToInt
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.rememberGlassReductionProgress
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import com.kyant.backdrop.Backdrop
@@ -329,18 +328,11 @@ fun LiquidActionBar(
     val interactionProgress by remember {
         derivedStateOf { dampedDragAnimation.pressProgress.fastCoerceIn(0f, 1f) }
     }
-    val reducedEffectsProgress = rememberGlassReductionProgress(
-        reduceEffectsDuringMotion = reduceEffectsDuringPagerScroll,
-        label = "liquidActionBarGlassReduce"
-    )
-    val effectBlurScale = androidx.compose.ui.util.lerp(1f, 0.70f, reducedEffectsProgress)
-    val effectLensScale = androidx.compose.ui.util.lerp(1f, 0.66f, reducedEffectsProgress)
-    val interactionLensScale = androidx.compose.ui.util.lerp(1f, 0.84f, reducedEffectsProgress)
-    val effectBlurDp = UiPerformanceBudget.backdropBlur * effectBlurScale
-    val effectLensDp = UiPerformanceBudget.backdropLens * effectLensScale
+    val interactionLensScale = 1f
+    val effectBlurDp = UiPerformanceBudget.backdropBlur
+    val effectLensDp = UiPerformanceBudget.backdropLens
     val interactiveHighlightEnabled = isBlurEnabled &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        !reduceEffectsDuringPagerScroll &&
         (layeredStyleEnabled || isInLightTheme)
     val interactiveHighlight = if (interactiveHighlightEnabled) {
         remember(

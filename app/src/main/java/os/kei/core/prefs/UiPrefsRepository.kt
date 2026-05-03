@@ -27,12 +27,6 @@ class UiPrefsRepository(
         }
     }
 
-    suspend fun setBottomBarScrollEffectReductionEnabled(value: Boolean) {
-        updateAndPersist({ copy(bottomBarScrollEffectReductionEnabled = value) }) {
-            UiPrefs.setBottomBarScrollEffectReductionEnabled(value)
-        }
-    }
-
     suspend fun setLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         updateAndPersist({ copy(liquidActionBarLayeredStyleEnabled = value) }) {
             UiPrefs.setLiquidActionBarLayeredStyleEnabled(value)

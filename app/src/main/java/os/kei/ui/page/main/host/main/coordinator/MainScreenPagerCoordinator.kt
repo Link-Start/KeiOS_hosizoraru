@@ -6,7 +6,6 @@ import os.kei.mcp.server.McpServerManager
 internal data class MainScreenPagerCoordinator(
     val settingsReturnToken: Int,
     val liquidBottomBarEnabled: Boolean,
-    val bottomBarScrollEffectReductionEnabled: Boolean,
     val liquidActionBarLayeredStyleEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
     val homeIconHdrEnabled: Boolean,
@@ -42,7 +41,6 @@ internal fun buildMainScreenPagerCoordinator(
     return MainScreenPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
         liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-        bottomBarScrollEffectReductionEnabled = prefsState.bottomBarScrollEffectReductionEnabled,
         liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
         gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
         homeIconHdrEnabled = prefsState.homeIconHdrEnabled,

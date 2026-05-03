@@ -48,7 +48,6 @@ internal fun rememberSettingsSectionContractBundle(
     liquidActionBarLayeredStyleEnabled: Boolean,
     liquidSwitchEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
-    bottomBarScrollEffectReductionEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
     superIslandBypassRestrictionEnabled: Boolean,
@@ -77,7 +76,6 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     onLiquidSwitchChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
-    onBottomBarScrollEffectReductionChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
@@ -194,14 +192,12 @@ internal fun rememberSettingsSectionContractBundle(
         liquidActionBarLayeredStyleEnabled,
         liquidSwitchEnabled,
         liquidBottomBarEnabled,
-        bottomBarScrollEffectReductionEnabled,
         gripAwareFloatingDockEnabled
     ) {
         SettingsComponentEffectsSectionState(
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             liquidSwitchEnabled = liquidSwitchEnabled,
             liquidBottomBarEnabled = liquidBottomBarEnabled,
-            bottomBarFullEffectDuringScrollEnabled = !bottomBarScrollEffectReductionEnabled,
             gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
         )
     }
@@ -209,16 +205,12 @@ internal fun rememberSettingsSectionContractBundle(
         onLiquidActionBarLayeredStyleChanged,
         onLiquidSwitchChanged,
         onLiquidBottomBarChanged,
-        onBottomBarScrollEffectReductionChanged,
         onGripAwareFloatingDockChanged
     ) {
         SettingsComponentEffectsSectionActions(
             onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
             onLiquidSwitchChanged = onLiquidSwitchChanged,
             onLiquidBottomBarChanged = onLiquidBottomBarChanged,
-            onBottomBarFullEffectDuringScrollChanged = { enabled ->
-                onBottomBarScrollEffectReductionChanged(!enabled)
-            },
             onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
         )
     }

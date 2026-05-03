@@ -81,7 +81,6 @@ internal fun MainPagerLayout(
     navigator: Navigator,
     settingsReturnToken: Int,
     liquidBottomBarEnabled: Boolean,
-    bottomBarScrollEffectReductionEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
@@ -188,9 +187,7 @@ internal fun MainPagerLayout(
                 selectedPageIndex = safeSelectedPageIndex,
                 selectedPagePosition = pagerSelectionPosition,
                 backdrop = coordinator.backdrop,
-                reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
-                    scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled
-                ),
+                reduceEffectsDuringPagerScroll = false,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
                 onPageSelected = coordinator.onPageSelected
             )

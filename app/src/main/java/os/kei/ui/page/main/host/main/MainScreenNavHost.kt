@@ -54,7 +54,6 @@ internal fun MainScreenNavHost(
                 navigator = navigator,
                 settingsReturnToken = pagerCoordinator.settingsReturnToken,
                 liquidBottomBarEnabled = pagerCoordinator.liquidBottomBarEnabled,
-                bottomBarScrollEffectReductionEnabled = pagerCoordinator.bottomBarScrollEffectReductionEnabled,
                 liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
                 gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
                 homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
@@ -81,8 +80,6 @@ internal fun MainScreenNavHost(
                 onRequestNotificationPermission = onRequestNotificationPermission,
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                 onLiquidBottomBarChanged = prefsState::updateLiquidBottomBarEnabled,
-                bottomBarScrollEffectReductionEnabled = prefsState.bottomBarScrollEffectReductionEnabled,
-                onBottomBarScrollEffectReductionChanged = prefsState::updateBottomBarScrollEffectReductionEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
                 liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
@@ -145,7 +142,6 @@ internal fun MainScreenNavHost(
         entry<KeiosRoute.BaStudentGuide> {
             BaStudentGuidePage(
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                bottomBarScrollEffectReductionEnabled = prefsState.bottomBarScrollEffectReductionEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 preloadingEnabled = prefsState.preloadingEnabled,
                 onBack = { navigator.pop() }
@@ -154,7 +150,6 @@ internal fun MainScreenNavHost(
         entry<KeiosRoute.BaGuideCatalog> {
             BaGuideCatalogPage(
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                bottomBarScrollEffectReductionEnabled = prefsState.bottomBarScrollEffectReductionEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 preloadingEnabled = prefsState.preloadingEnabled,
                 onBack = { navigator.pop() },

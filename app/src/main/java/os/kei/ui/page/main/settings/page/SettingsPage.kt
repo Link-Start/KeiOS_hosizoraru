@@ -47,7 +47,6 @@ import os.kei.R
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.animateTabSwitch
-import os.kei.ui.page.main.host.pager.shouldReduceBottomBarEffectsDuringMotion
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.settings.section.SettingsAnimationSection
 import os.kei.ui.page.main.settings.section.SettingsBackgroundSection
@@ -128,8 +127,6 @@ fun SettingsPage(
     onRequestNotificationPermission: () -> Unit,
     liquidBottomBarEnabled: Boolean,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
-    bottomBarScrollEffectReductionEnabled: Boolean,
-    onBottomBarScrollEffectReductionChanged: (Boolean) -> Unit,
     liquidActionBarLayeredStyleEnabled: Boolean,
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     liquidSwitchEnabled: Boolean,
@@ -256,7 +253,6 @@ fun SettingsPage(
         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
         liquidSwitchEnabled = liquidSwitchEnabled,
         liquidBottomBarEnabled = liquidBottomBarEnabled,
-        bottomBarScrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
         gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
         superIslandNotificationEnabled = superIslandNotificationEnabled,
         superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
@@ -303,7 +299,6 @@ fun SettingsPage(
         onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
         onLiquidSwitchChanged = onLiquidSwitchChanged,
         onLiquidBottomBarChanged = onLiquidBottomBarChanged,
-        onBottomBarScrollEffectReductionChanged = onBottomBarScrollEffectReductionChanged,
         onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
         onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
         onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
@@ -413,7 +408,6 @@ fun SettingsPage(
         SettingsCategory.Notify -> notifyListState
         SettingsCategory.Data -> dataListState
     }
-    val activePageListScrollInProgress = activePageListState.isScrollInProgress
     val currentActivePageListState = rememberUpdatedState(activePageListState)
     val currentActiveCategory = rememberUpdatedState(activeCategory)
     val bottomBarNestedScrollConnection = remember(bottomBarVisibilityController) {
@@ -515,10 +509,7 @@ fun SettingsPage(
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
                 selectedPageProvider = { pagerState.targetPage },
                 backdrop = bottomBarBackdrop,
-                reduceEffectsDuringPagerScroll = shouldReduceBottomBarEffectsDuringMotion(
-                    scrollEffectReductionEnabled = bottomBarScrollEffectReductionEnabled,
-                    activePageListScrollInProgress = activePageListScrollInProgress
-                ),
+                reduceEffectsDuringPagerScroll = false,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
                 onSelectCategory = selectSettingsCategoryAction
             )

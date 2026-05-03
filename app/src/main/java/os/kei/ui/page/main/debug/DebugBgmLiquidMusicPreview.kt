@@ -13,16 +13,20 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,6 +43,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.launch
 import os.kei.R
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -73,9 +78,20 @@ internal fun DebugBgmLiquidMusicPreview(
     onClose: () -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
-    val listState = rememberLazyListState()
+    val dockTabs = rememberDebugBgmDockTabs()
     val bottomBarScrollConnection = rememberDebugBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val musicState = rememberDebugBgmMusicUiState()
+    val initialDockPage = remember(dockTabs) {
+        dockTabs.indexOfFirst { it.key == musicState.selectedDockKey }.coerceAtLeast(0)
+    }
+    val pagerState = rememberPagerState(
+        initialPage = initialDockPage,
+        pageCount = { dockTabs.size }
+    )
+    val pagerScope = rememberCoroutineScope()
+    val pageListStates = remember(dockTabs) {
+        List(dockTabs.size) { LazyListState() }
+    }
     var sliderInteractionActive by remember { mutableStateOf(false) }
     val currentTrack = musicState.currentTrack
     val context = LocalContext.current
@@ -101,7 +117,14 @@ internal fun DebugBgmLiquidMusicPreview(
         }
     }
     val shareChooserTitle = stringResource(R.string.debug_component_lab_share_chooser_title)
-    val sectionText = rememberDebugBgmDockSectionText(selectedDockKey = musicState.selectedDockKey)
+    val selectedDockKey = dockTabs.getOrNull(pagerState.currentPage)?.key ?: musicState.selectedDockKey
+    val settledDockKey = dockTabs.getOrNull(pagerState.settledPage)?.key ?: selectedDockKey
+    val activeListState = pageListStates[pagerState.currentPage.coerceIn(pageListStates.indices)]
+    LaunchedEffect(settledDockKey) {
+        if (musicState.selectedDockKey != settledDockKey) {
+            musicState.selectDockKey(settledDockKey)
+        }
+    }
     val onShareTrack: (DebugBgmTrack) -> Unit = remember(context, shareChooserTitle) {
         { track ->
             context.launchDebugBgmTrackShare(
@@ -110,10 +133,10 @@ internal fun DebugBgmLiquidMusicPreview(
             )
         }
     }
-    val albumScrollOffset by remember {
+    val albumScrollOffset by remember(activeListState) {
         derivedStateOf {
-            val indexOffset = listState.firstVisibleItemIndex * 720f
-            indexOffset + listState.firstVisibleItemScrollOffset
+            val indexOffset = activeListState.firstVisibleItemIndex * 720f
+            indexOffset + activeListState.firstVisibleItemScrollOffset
         }
     }
     val collapseProgress by remember {
@@ -194,36 +217,45 @@ internal fun DebugBgmLiquidMusicPreview(
                 .fillMaxSize()
                 .layerBackdrop(bottomChromeBackdrop)
         ) {
-            DebugBgmAlbumContent(
-                accent = accent,
-                tracks = displayedTracks,
-                currentTrackId = currentTrack.id,
-                isPlaying = musicState.isPlaying,
-                repeatEnabled = musicState.repeatEnabled,
-                playbackVolume = musicState.playbackVolume,
-                isTrackFavorite = musicState::isTrackFavorite,
-                onRepeatClick = musicState::toggleRepeat,
-                onPlayPauseClick = musicState::togglePlayPause,
-                onVolumeChange = musicState::changeVolume,
-                onVolumeChangeFinished = musicState::changeVolume,
-                onSliderInteractionChanged = { sliderInteractionActive = it },
-                onTrackClick = musicState::playTrack,
-                onTrackFavoriteClick = musicState::toggleTrackFavorite,
-                onTrackOfflineClick = musicState::toggleTrackOffline,
-                onTrackShareClick = onShareTrack,
-                isTrackOfflineSaved = musicState::isTrackOfflineSaved,
-                sectionTitle = sectionText.heroTitle,
-                sectionMeta = sectionText.heroMeta,
-                sectionFooterTitle = sectionText.footerTitle,
-                offlineTrackCount = musicState.offlineTrackCount,
-                listState = listState,
-                collapseProgress = collapseProgress,
-                bottomBarScrollConnection = bottomBarScrollConnection,
-                userScrollEnabled = !sliderInteractionActive,
-                topPadding = contentTopPadding,
-                bottomPadding = contentBottomPadding,
-                modifier = Modifier.layerBackdrop(pageChromeBackdrop)
-            )
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(pageChromeBackdrop),
+                userScrollEnabled = !sliderInteractionActive && !musicState.searchInputActive
+            ) { page ->
+                val pageDockKey = dockTabs.getOrNull(page)?.key ?: DebugBgmDockKeys.Library
+                val pageSectionText = rememberDebugBgmDockSectionText(selectedDockKey = pageDockKey)
+                DebugBgmAlbumContent(
+                    accent = accent,
+                    tracks = displayedTracks,
+                    currentTrackId = currentTrack.id,
+                    isPlaying = musicState.isPlaying,
+                    repeatEnabled = musicState.repeatEnabled,
+                    playbackVolume = musicState.playbackVolume,
+                    isTrackFavorite = musicState::isTrackFavorite,
+                    onRepeatClick = musicState::toggleRepeat,
+                    onPlayPauseClick = musicState::togglePlayPause,
+                    onVolumeChange = musicState::changeVolume,
+                    onVolumeChangeFinished = musicState::changeVolume,
+                    onSliderInteractionChanged = { sliderInteractionActive = it },
+                    onTrackClick = musicState::playTrack,
+                    onTrackFavoriteClick = musicState::toggleTrackFavorite,
+                    onTrackOfflineClick = musicState::toggleTrackOffline,
+                    onTrackShareClick = onShareTrack,
+                    isTrackOfflineSaved = musicState::isTrackOfflineSaved,
+                    sectionTitle = pageSectionText.heroTitle,
+                    sectionMeta = pageSectionText.heroMeta,
+                    sectionFooterTitle = pageSectionText.footerTitle,
+                    offlineTrackCount = musicState.offlineTrackCount,
+                    listState = pageListStates[page],
+                    collapseProgress = if (page == pagerState.currentPage) collapseProgress else 0f,
+                    bottomBarScrollConnection = bottomBarScrollConnection,
+                    userScrollEnabled = !sliderInteractionActive,
+                    topPadding = contentTopPadding,
+                    bottomPadding = contentBottomPadding
+                )
+            }
             DebugBgmAlbumTopBar(
                 accent = accent,
                 titleProgress = topBarTitleProgress,
@@ -268,8 +300,15 @@ internal fun DebugBgmLiquidMusicPreview(
             searchQuery = musicState.searchQuery,
             onSearchQueryChange = musicState::updateSearchQuery,
             onSearchInputActiveChange = musicState::updateSearchInputActive,
-            selectedDockKey = musicState.selectedDockKey,
-            onSelectedDockKeyChange = musicState::selectDockKey,
+            selectedDockKey = selectedDockKey,
+            onSelectedDockKeyChange = { key ->
+                val targetPage = dockTabs.indexOfFirst { it.key == key }
+                if (targetPage >= 0 && targetPage != pagerState.currentPage) {
+                    pagerScope.launch {
+                        pagerState.animateScrollToPage(targetPage)
+                    }
+                }
+            },
             onCompactDockClick = {
                 musicState.closeSearch()
                 bottomBarScrollConnection.expand()

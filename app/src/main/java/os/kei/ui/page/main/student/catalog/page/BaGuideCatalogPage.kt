@@ -290,8 +290,6 @@ fun BaGuideCatalogPage(
             }
         }
     }
-    val actionBarEffectsReduced = pagerState.isScrollInProgress
-
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier
@@ -518,7 +516,7 @@ fun BaGuideCatalogPage(
                 LiquidActionBar(
                     backdrop = topBarBackdrop,
                     layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    reduceEffectsDuringPagerScroll = actionBarEffectsReduced,
+                    reduceEffectsDuringPagerScroll = false,
                     items = actionItems
                 )
                 LiquidActionBarPopupAnchors(itemCount = 2) { slotIndex, popupAnchorBounds ->

@@ -235,7 +235,7 @@ fun BAPage(
                 BaTopBarActions(
                     backdrop = backdrops.topBar,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    reduceEffectsDuringPagerScroll = runtime.isPagerScrollInProgress,
+                    reduceEffectsDuringPagerScroll = false,
                     showCalendarIntervalPopup = ui.showCalendarIntervalPopup,
                     calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
                     onShowSettings = ::openSettingsSheet,

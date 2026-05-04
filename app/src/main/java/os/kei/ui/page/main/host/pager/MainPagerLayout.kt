@@ -72,6 +72,18 @@ internal fun MainPagerLayout(
     } else {
         AppFloatingDockSide.End
     }
+    val onOpenSettings = remember(navigator) {
+        { navigator.pushSingleTop(KeiosRoute.Settings) }
+    }
+    val onOpenAbout = remember(navigator) {
+        { navigator.pushSingleTop(KeiosRoute.About) }
+    }
+    val onOpenBaGuideCatalog = remember(navigator) {
+        { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog) }
+    }
+    val onOpenMcpSkill = remember(navigator) {
+        { navigator.pushSingleTop(KeiosRoute.McpSkill) }
+    }
     val coordinator = rememberMainPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
         transitionAnimationsEnabled = transitionAnimationsEnabled,
@@ -163,11 +175,29 @@ internal fun MainPagerLayout(
                     .graphicsLayer { alpha = coordinator.farJumpAlpha }
                     .layerBackdrop(coordinator.backdrop)
             ) { pageIndex ->
-                key(coordinator.tabs[pageIndex].name) {
+                val pageType = coordinator.tabs[pageIndex]
+                val pageRuntime = coordinator.pagerRuntime.pageRuntime(
+                    pageIndex = pageIndex,
+                    contentTopPadding = if (pageType == BottomPage.Home) insets.homeTopInset else 0.dp,
+                    contentBottomPadding = if (pageType == BottomPage.Home) {
+                        insets.homeBottomInset
+                    } else {
+                        insets.bottomOverlayPadding
+                    },
+                    bottomBarVisible = coordinator.showBottomBar,
+                    floatingDockSide = floatingDockSide,
+                    scrollToTopSignal = when (pageType) {
+                        BottomPage.Home -> 0
+                        BottomPage.Os -> coordinator.osScrollToTopSignal
+                        BottomPage.Ba -> coordinator.baScrollToTopSignal
+                        BottomPage.Mcp -> coordinator.mcpScrollToTopSignal
+                        BottomPage.GitHub -> coordinator.githubScrollToTopSignal
+                    }
+                )
+                key(pageType.name) {
                     MainPagerPageHost(
-                        pageType = coordinator.tabs[pageIndex],
-                        pageIndex = pageIndex,
-                        pagerRuntime = coordinator.pagerRuntime,
+                        pageType = pageType,
+                        runtime = pageRuntime,
                         visibleBottomPages = coordinator.visibleTabsSnapshot,
                         shizukuStatus = shizukuStatus,
                         shizukuApiUtils = shizukuApiUtils,
@@ -180,23 +210,14 @@ internal fun MainPagerLayout(
                         homeGitHubOverview = coordinator.homeGitHubOverview,
                         homeBaOverview = coordinator.homeBaOverview,
                         visibleOverviewCards = coordinator.visibleOverviewCards,
-                        homeTopInset = insets.homeTopInset,
-                        homeBottomInset = insets.homeBottomInset,
-                        bottomOverlayPadding = insets.bottomOverlayPadding,
-                        bottomBarVisible = coordinator.showBottomBar,
-                        floatingDockSide = floatingDockSide,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
-                        osScrollToTopSignal = coordinator.osScrollToTopSignal,
-                        baScrollToTopSignal = coordinator.baScrollToTopSignal,
-                        mcpScrollToTopSignal = coordinator.mcpScrollToTopSignal,
-                        githubScrollToTopSignal = coordinator.githubScrollToTopSignal,
                         onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
                         onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
-                        onOpenSettings = { navigator.pushSingleTop(KeiosRoute.Settings) },
-                        onOpenAbout = { navigator.pushSingleTop(KeiosRoute.About) },
+                        onOpenSettings = onOpenSettings,
+                        onOpenAbout = onOpenAbout,
                         onOpenPoolGuideDetail = onOpenGuideDetail,
-                        onOpenBaGuideCatalog = { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog) },
-                        onOpenMcpSkill = { navigator.pushSingleTop(KeiosRoute.McpSkill) },
+                        onOpenBaGuideCatalog = onOpenBaGuideCatalog,
+                        onOpenMcpSkill = onOpenMcpSkill,
                         onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged
                     )
                 }

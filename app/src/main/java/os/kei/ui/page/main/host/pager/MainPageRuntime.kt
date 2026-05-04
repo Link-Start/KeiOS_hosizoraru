@@ -29,9 +29,9 @@ internal data class MainPagerRuntimeSnapshot(
     val currentPageIndex: Int,
     val targetPageIndex: Int,
     val settledPageIndex: Int,
-    val pagePosition: Float,
     val isPagerScrollInProgress: Boolean,
     val includeTargetPageInHeavyRender: Boolean,
+    val targetWarmDataActive: Boolean,
     val shouldRenderNonHomeBackground: Boolean,
     val homePageBottomBarPinned: Boolean,
 ) {
@@ -72,17 +72,13 @@ internal data class MainPagerRuntimeSnapshot(
         val isTarget = pageIndex == targetPageIndex
         val isSettled = pageIndex == settledPageIndex
         return if (isPagerScrollInProgress) {
-            isSettled || (isTarget && isTargetNearSettle())
+            isSettled || (isTarget && targetWarmDataActive)
         } else {
             isWarmActive(pageIndex)
         }
     }
 
     fun isDataActive(pageIndex: Int): Boolean = pageIndex == settledPageIndex
-
-    private fun isTargetNearSettle(): Boolean {
-        return abs(pagePosition - targetPageIndex) <= MainPagerTargetWarmDataActivationDistance
-    }
 }
 
 internal fun buildMainPagerRuntimeSnapshot(
@@ -103,9 +99,9 @@ internal fun buildMainPagerRuntimeSnapshot(
         currentPageIndex = currentPageIndex,
         targetPageIndex = targetPageIndex,
         settledPageIndex = settledPageIndex,
-        pagePosition = pagePosition,
         isPagerScrollInProgress = isPagerScrollInProgress,
         includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
+        targetWarmDataActive = abs(pagePosition - targetPageIndex) <= MainPagerTargetWarmDataActivationDistance,
         shouldRenderNonHomeBackground = hasNonHomeBackground && (
             targetPage != BottomPage.Home ||
                 settledPage != BottomPage.Home
@@ -115,4 +111,4 @@ internal fun buildMainPagerRuntimeSnapshot(
     )
 }
 
-private const val MainPagerTargetWarmDataActivationDistance = 0.50f
+private const val MainPagerTargetWarmDataActivationDistance = 0.75f

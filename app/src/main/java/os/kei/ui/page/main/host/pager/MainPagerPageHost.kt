@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import os.kei.mcp.server.McpServerManager
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.feature.home.model.HomeBaOverview
@@ -21,14 +19,12 @@ import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.mcp.McpPage
 import os.kei.ui.page.main.os.OsPage
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 
 @Composable
 internal fun MainPagerPageHost(
     pageType: BottomPage,
-    pageIndex: Int,
-    pagerRuntime: MainPagerRuntimeSnapshot,
+    runtime: MainPageRuntime,
     visibleBottomPages: Set<BottomPage>,
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
@@ -41,16 +37,7 @@ internal fun MainPagerPageHost(
     homeGitHubOverview: HomeGitHubOverview,
     homeBaOverview: HomeBaOverview,
     visibleOverviewCards: Set<HomeOverviewCard>,
-    homeTopInset: Dp,
-    homeBottomInset: Dp,
-    bottomOverlayPadding: Dp,
-    bottomBarVisible: Boolean,
-    floatingDockSide: AppFloatingDockSide,
     requestedGitHubRefreshToken: Int,
-    osScrollToTopSignal: Int,
-    baScrollToTopSignal: Int,
-    mcpScrollToTopSignal: Int,
-    githubScrollToTopSignal: Int,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
     onOpenSettings: () -> Unit,
@@ -60,22 +47,9 @@ internal fun MainPagerPageHost(
     onOpenMcpSkill: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit
 ) {
-    val runtime = pagerRuntime.pageRuntime(
-        pageIndex = pageIndex,
-        contentTopPadding = if (pageType == BottomPage.Home) homeTopInset else 0.dp,
-        contentBottomPadding = if (pageType == BottomPage.Home) homeBottomInset else bottomOverlayPadding,
-        bottomBarVisible = bottomBarVisible,
-        floatingDockSide = floatingDockSide,
-        scrollToTopSignal = when (pageType) {
-            BottomPage.Home -> 0
-            BottomPage.Os -> osScrollToTopSignal
-            BottomPage.Ba -> baScrollToTopSignal
-            BottomPage.Mcp -> mcpScrollToTopSignal
-            BottomPage.GitHub -> githubScrollToTopSignal
-        }
-    )
+    val glassRuntime = remember { GlassEffectRuntime() }
     CompositionLocalProvider(
-        LocalGlassEffectRuntime provides GlassEffectRuntime()
+        LocalGlassEffectRuntime provides glassRuntime
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (pageType) {

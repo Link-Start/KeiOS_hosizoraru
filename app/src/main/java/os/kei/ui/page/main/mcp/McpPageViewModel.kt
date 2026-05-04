@@ -20,7 +20,6 @@ internal data class McpPageUiState(
     val allowExternal: Boolean = false,
     val serverName: String = "KeiOS MCP",
     val showEditSheet: Boolean = false,
-    val showFloatingToggleButton: Boolean = true,
     val controlExpanded: Boolean = true,
     val configExpanded: Boolean = false,
     val logsExpanded: Boolean = false,
@@ -70,10 +69,6 @@ internal class McpPageViewModel : ViewModel() {
 
     fun updateEditSheetVisible(value: Boolean) {
         _uiState.update { state -> state.copy(showEditSheet = value) }
-    }
-
-    fun updateFloatingToggleButtonVisible(value: Boolean) {
-        _uiState.update { state -> state.copy(showFloatingToggleButton = value) }
     }
 
     fun updateControlExpanded(value: Boolean) {

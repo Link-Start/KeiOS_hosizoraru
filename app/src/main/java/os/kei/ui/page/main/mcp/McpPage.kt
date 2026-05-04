@@ -199,13 +199,13 @@ fun McpPage(
         startAfterLocalNetworkPermission = false
         launchServerToggle()
     }
-    val floatingToggleAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
+    val dockAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
         Alignment.BottomStart
     } else {
         Alignment.BottomEnd
     }
-    val floatingToggleStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
-    val floatingToggleEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
+    val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
     val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
     val floatingDockBottom by animateDpAsState(
         targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
@@ -520,10 +520,10 @@ fun McpPage(
                 backdrop = backdrops.content,
                 actions = dockActions,
                 modifier = Modifier
-                    .align(floatingToggleAlignment)
+                    .align(dockAlignment)
                     .padding(
-                        start = floatingToggleStartPadding,
-                        end = floatingToggleEndPadding,
+                        start = dockStartPadding,
+                        end = dockEndPadding,
                         bottom = floatingDockBottom
                     )
                 )

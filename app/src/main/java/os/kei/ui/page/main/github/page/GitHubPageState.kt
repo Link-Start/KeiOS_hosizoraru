@@ -129,7 +129,6 @@ internal class GitHubPageState(
     var assetSourceSignature by mutableStateOf("")
     var refreshAllJob by mutableStateOf<Job?>(null)
     var deleteInProgress by mutableStateOf(false)
-    var showFloatingAddButton by mutableStateOf(true)
     var showSearchBar by mutableStateOf(true)
     private var pendingShowSearchBar: Boolean? = null
     private var canScrollBackward by mutableStateOf(false)

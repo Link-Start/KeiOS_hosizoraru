@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private const val CatalogFavoritesExportType = "keios.ba.catalog_favorites"
+private const val CatalogAllFavoritesExportType = "keios.ba.catalog_all_favorites"
 private const val CatalogFavoritesExportVersion = 1
 
 internal fun buildCatalogFavoritesExportJson(
@@ -31,6 +32,22 @@ internal fun buildCatalogFavoritesExportJson(
                 }
             }
         )
+    }.toString()
+}
+
+internal fun buildCatalogAllFavoritesExportJson(
+    favorites: Map<Long, Long>,
+    bgmFavoritesJson: String,
+    nowMs: Long = System.currentTimeMillis()
+): String {
+    val catalogRoot = JSONObject(buildCatalogFavoritesExportJson(favorites, nowMs))
+    val bgmRoot = runCatching { JSONObject(bgmFavoritesJson) }.getOrDefault(JSONObject())
+    return JSONObject().apply {
+        put("type", CatalogAllFavoritesExportType)
+        put("version", CatalogFavoritesExportVersion)
+        put("exportedAtMs", nowMs.coerceAtLeast(1L))
+        put("catalogFavorites", catalogRoot.optJSONArray("favorites") ?: JSONArray())
+        put("bgmFavorites", bgmRoot.optJSONArray("favorites") ?: JSONArray())
     }.toString()
 }
 

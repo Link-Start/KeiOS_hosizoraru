@@ -152,7 +152,7 @@ internal fun MainScreenNavHost(
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 preloadingEnabled = prefsState.preloadingEnabled,
-                onBack = { navigator.pop() },
+                onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
                 onOpenGuide = pagerCoordinator.onOpenGuideDetail
             )
         }
@@ -185,15 +185,26 @@ internal fun MainScreenNavHost(
     ) {
         NavDisplay(
             entries = entries,
-            onBack = { navigator.pop() },
+            onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
             predictivePopTransitionSpec = predictivePopTransitionSpec,
             transitionEffects = transitionEffects,
             modifier = Modifier.fillMaxSize()
         )
         BackHandler(enabled = !predictiveBackPreviewEnabled && backStack.size > 1) {
-            navigator.pop()
+            handleMainScreenBack(backStack, navigator, pagerCoordinator)
         }
     }
+}
+
+private fun handleMainScreenBack(
+    backStack: List<NavKey>,
+    navigator: Navigator,
+    pagerCoordinator: MainScreenPagerCoordinator
+) {
+    if (backStack.lastOrNull() == KeiosRoute.BaGuideCatalog) {
+        pagerCoordinator.onBaGuideCatalogBack()
+    }
+    navigator.pop()
 }
 
 private fun <T : Any> disabledPredictiveBackTransitionSpec():

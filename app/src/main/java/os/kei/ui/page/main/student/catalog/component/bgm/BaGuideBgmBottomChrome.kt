@@ -112,8 +112,8 @@ internal fun BaGuideBgmFloatingBottomChrome(
         label = "debug_bgm_chrome_height"
     ) { mode ->
         when (mode) {
-            BaGuideBgmBottomChromeMode.SearchInput,
             BaGuideBgmBottomChromeMode.Compact -> BaGuideBgmCompactChromeHeight
+            BaGuideBgmBottomChromeMode.SearchInput,
             BaGuideBgmBottomChromeMode.Expanded,
             BaGuideBgmBottomChromeMode.SearchExpanded -> BaGuideBgmExpandedChromeHeight
         }
@@ -130,20 +130,16 @@ internal fun BaGuideBgmFloatingBottomChrome(
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Expanded,
-            BaGuideBgmBottomChromeMode.SearchExpanded -> BaGuideBgmExpandedDockY
-            BaGuideBgmBottomChromeMode.Compact,
-            BaGuideBgmBottomChromeMode.SearchInput -> BaGuideBgmCompactControlInset
+            BaGuideBgmBottomChromeMode.SearchExpanded,
+            BaGuideBgmBottomChromeMode.SearchInput -> BaGuideBgmExpandedDockY
+            BaGuideBgmBottomChromeMode.Compact -> BaGuideBgmCompactControlInset
         }
     }
     val miniPlayerHeight by transition.animateDp(
         transitionSpec = { animationSpec },
         label = "debug_bgm_mini_height"
     ) { mode ->
-        if (mode == BaGuideBgmBottomChromeMode.SearchInput) {
-            0.dp
-        } else {
-            BaGuideBgmExpandedMiniHeight
-        }
+        BaGuideBgmExpandedMiniHeight
     }
     val miniPlayerY by transition.animateDp(
         transitionSpec = { animationSpec },
@@ -163,9 +159,9 @@ internal fun BaGuideBgmFloatingBottomChrome(
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Expanded,
-            BaGuideBgmBottomChromeMode.SearchExpanded -> BaGuideBgmExpandedDockY
-            BaGuideBgmBottomChromeMode.Compact,
-            BaGuideBgmBottomChromeMode.SearchInput -> BaGuideBgmCompactControlInset
+            BaGuideBgmBottomChromeMode.SearchExpanded,
+            BaGuideBgmBottomChromeMode.SearchInput -> BaGuideBgmExpandedDockY
+            BaGuideBgmBottomChromeMode.Compact -> BaGuideBgmCompactControlInset
         }
     }
     val dockExpandedAlpha by transition.animateFloat(
@@ -208,7 +204,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
         transitionSpec = { floatAnimationSpec },
         label = "debug_bgm_mini_alpha"
     ) { mode ->
-        if (mode == BaGuideBgmBottomChromeMode.SearchInput) 0f else 1f
+        if (mode == BaGuideBgmBottomChromeMode.SearchInput) 0.96f else 1f
     }
     val dockExpandedProgress = dockExpandedAlpha.coerceIn(0f, 1f)
     val dockCompactProgress = dockCompactAlpha.coerceIn(0f, 1f)
@@ -236,7 +232,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
         ) { mode ->
             when (mode) {
                 BaGuideBgmBottomChromeMode.Compact -> compactMiniWidth
-                BaGuideBgmBottomChromeMode.SearchInput -> 0.dp
+                BaGuideBgmBottomChromeMode.SearchInput -> maxWidth
                 BaGuideBgmBottomChromeMode.Expanded,
                 BaGuideBgmBottomChromeMode.SearchExpanded -> maxWidth
             }

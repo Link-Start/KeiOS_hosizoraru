@@ -6,11 +6,13 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,6 +44,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -50,9 +53,6 @@ import os.kei.ui.page.main.os.appLucideRepeatIcon
 import os.kei.ui.page.main.os.appLucideVolume2Icon
 import os.kei.ui.page.main.os.appLucideVolumeOffIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -431,23 +431,25 @@ private fun BaGuideBgmRoundAction(
     onClick: () -> Unit = {},
     backdrop: Backdrop
 ) {
-    var pressed by rememberSaveable { mutableStateOf(false) }
-    val contentTint = if (pressed || active) accent.copy(alpha = 0.98f) else neutralTint
-    val actionSurfaceColor = Color.White.copy(alpha = 0.18f)
-    AppLiquidIconButton(
+    val contentTint = if (active) accent.copy(alpha = 0.98f) else neutralTint
+    val actionSurfaceColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.14f else 0.34f)
+    LiquidSurface(
         backdrop = backdrop,
-        icon = icon,
-        contentDescription = contentDescription,
-        onClick = onClick,
         modifier = Modifier.size(52.dp),
-        width = 52.dp,
-        height = 52.dp,
         shape = CircleShape,
-        iconTint = contentTint,
-        containerColor = actionSurfaceColor,
-        variant = GlassVariant.Floating,
-        onPressedChange = { pressed = it }
-    )
+        tint = Color.Unspecified,
+        surfaceColor = actionSurfaceColor,
+        chromaticAberration = true,
+        onClick = onClick,
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = contentTint,
+            modifier = Modifier.size(23.dp)
+        )
+    }
 }
 
 @Composable
@@ -458,29 +460,50 @@ private fun BaGuideBgmPlayAction(
     onClick: () -> Unit,
     backdrop: Backdrop
 ) {
-    var pressed by rememberSaveable { mutableStateOf(false) }
-    val contentTint = if (pressed || isPlaying) accent.copy(alpha = 0.98f) else neutralTint
-    val actionSurfaceColor = Color.White.copy(alpha = 0.18f)
-    AppLiquidTextButton(
+    val contentTint = if (isPlaying) accent.copy(alpha = 0.98f) else neutralTint
+    val actionSurfaceColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.14f else 0.34f)
+    LiquidSurface(
         backdrop = backdrop,
-        text = stringResource(
-            if (isPlaying) R.string.debug_component_lab_action_pause else R.string.debug_component_lab_action_play
-        ),
-        onClick = onClick,
         modifier = Modifier
             .height(52.dp)
             .widthIn(min = 116.dp),
-        textColor = contentTint,
-        containerColor = actionSurfaceColor,
-        leadingIcon = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
-        iconTint = contentTint,
-        variant = GlassVariant.Floating,
-        minHeight = 52.dp,
-        horizontalPadding = 24.dp,
-        textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis,
-        onPressedChange = { pressed = it }
-    )
+        shape = ContinuousCapsule,
+        tint = Color.Unspecified,
+        surfaceColor = actionSurfaceColor,
+        chromaticAberration = true,
+        onClick = onClick,
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
+                contentDescription = null,
+                tint = contentTint,
+                modifier = Modifier.size(22.dp)
+            )
+            Text(
+                text = stringResource(
+                    if (isPlaying) {
+                        R.string.debug_component_lab_action_pause
+                    } else {
+                        R.string.debug_component_lab_action_play
+                    }
+                ),
+                color = contentTint,
+                fontSize = AppTypographyTokens.CardHeader.fontSize,
+                lineHeight = AppTypographyTokens.CardHeader.lineHeight,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
 }
 
 private fun defaultAlbumArtworkBrush(accent: Color): Brush {

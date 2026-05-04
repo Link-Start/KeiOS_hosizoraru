@@ -80,6 +80,11 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val progressHostHeight = debugBgmLerpDp(0.dp, 20.dp, expanded)
     val sideControlSlotWidth = debugBgmLerpDp(0.dp, 32.dp, expanded)
     val playButtonScale = 1f - compact * 0.02f
+    val playPauseTint = if (isPlaying) {
+        accent.copy(alpha = 0.98f)
+    } else {
+        MiuixTheme.colorScheme.onBackground
+    }
 
     Row(
         modifier = modifier.padding(contentPadding),
@@ -193,7 +198,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 contentDescription = stringResource(
                     if (isPlaying) R.string.debug_component_lab_action_pause else R.string.debug_component_lab_action_play
                 ),
-                tint = MiuixTheme.colorScheme.onBackground,
+                tint = playPauseTint,
                 modifier = Modifier.size(playIconSize)
             )
         }

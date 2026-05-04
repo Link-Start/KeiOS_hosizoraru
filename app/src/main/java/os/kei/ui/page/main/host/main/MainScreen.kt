@@ -9,9 +9,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -23,6 +27,7 @@ import os.kei.core.system.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
+import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.student.BaStudentGuideStore
 
 @Composable
@@ -54,14 +59,27 @@ fun MainScreen(
     val currentOnCheckOrRequestShizuku by rememberUpdatedState(onCheckOrRequestShizuku)
     val currentOnAppThemeModeChanged by rememberUpdatedState(onAppThemeModeChanged)
     val prefsViewModel: MainScreenPrefsViewModel = viewModel()
+    var localRequestedBottomPage by rememberSaveable { mutableStateOf<String?>(null) }
+    var localRequestedBottomPageToken by rememberSaveable { mutableIntStateOf(0) }
+    val externalBottomPageRequested = !requestedBottomPage.isNullOrBlank()
+    val effectiveRequestedBottomPage = if (externalBottomPageRequested) {
+        requestedBottomPage
+    } else {
+        localRequestedBottomPage
+    }
+    val effectiveRequestedBottomPageToken = if (externalBottomPageRequested) {
+        requestedBottomPageToken
+    } else {
+        localRequestedBottomPageToken
+    }
     LaunchedEffect(prefsViewModel) {
         prefsViewModel.loadInitialSnapshot()
     }
     val uiPrefsSnapshot by prefsViewModel.snapshot.collectAsState()
     val mainReturnState = rememberMainScreenSettingsReturnState(backStack)
     BindMainScreenBottomPageReturnEffect(
-        requestedBottomPageToken = requestedBottomPageToken,
-        requestedBottomPage = requestedBottomPage,
+        requestedBottomPageToken = effectiveRequestedBottomPageToken,
+        requestedBottomPage = effectiveRequestedBottomPage,
         onReturnToMain = {
             navigator.popUntil { it == KeiosRoute.Main }
         }
@@ -89,10 +107,19 @@ fun MainScreen(
         shizukuApiUtils = shizukuApiUtils,
         mcpServerManager = mcpServerManager,
         onOpenGuideDetail = openGuideDetail,
-        requestedBottomPage = requestedBottomPage,
-        requestedBottomPageToken = requestedBottomPageToken,
+        requestedBottomPage = effectiveRequestedBottomPage,
+        requestedBottomPageToken = effectiveRequestedBottomPageToken,
         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
-        onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
+        onRequestedBottomPageConsumed = {
+            if (externalBottomPageRequested) {
+                onRequestedBottomPageConsumed()
+            }
+            localRequestedBottomPage = null
+        },
+        onBaGuideCatalogBack = {
+            localRequestedBottomPage = BottomPage.Ba.name
+            localRequestedBottomPageToken += 1
+        }
     )
     MainScreenNavHost(
         backStack = backStack,

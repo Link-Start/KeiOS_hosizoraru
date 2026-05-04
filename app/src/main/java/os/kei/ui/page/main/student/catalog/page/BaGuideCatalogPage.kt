@@ -163,6 +163,7 @@ fun BaGuideCatalogPage(
     val exportDoneText = stringResource(R.string.ba_catalog_transfer_export_done)
     val exportFailedText = stringResource(R.string.ba_catalog_transfer_export_failed)
     val studentExportSuccessText = stringResource(R.string.ba_catalog_transfer_student_export_success)
+    val allExportSuccessText = stringResource(R.string.ba_catalog_transfer_all_export_success)
     val bgmExportSuccessText = stringResource(R.string.ba_catalog_bgm_export_success)
     val catalogViewModel: BaGuideCatalogViewModel = viewModel()
     val catalogDataState by catalogViewModel.dataState.collectAsState()
@@ -320,6 +321,55 @@ fun BaGuideCatalogPage(
                 }
         }
     }
+    val importAllFavoritesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        pageScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val raw = context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        .orEmpty()
+                    parseCatalogFavoritesExport(raw) to GuideBgmFavoriteStore.importFavoritesJsonMerged(raw)
+                }
+            }
+            result
+                .onSuccess { (studentFavorites, bgmFavorites) ->
+                    if (studentFavorites.isEmpty() && bgmFavorites.importedCount <= 0) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.ba_catalog_transfer_import_failed),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        if (studentFavorites.isNotEmpty()) {
+                            filterSortState.replaceFavorites(
+                                filterSortState.favoriteCatalogEntries + studentFavorites
+                            )
+                        }
+                        Toast.makeText(
+                            context,
+                            context.getString(
+                                R.string.ba_catalog_transfer_all_import_success,
+                                studentFavorites.size,
+                                bgmFavorites.addedCount,
+                                bgmFavorites.updatedCount
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                .onFailure {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.ba_catalog_transfer_import_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -468,6 +518,19 @@ fun BaGuideCatalogPage(
             BaGuideCatalogTransferSheet(
                 show = showTransferSheet,
                 onDismissRequest = { showTransferSheet = false },
+                onExportAllFavorites = {
+                    showTransferSheet = false
+                    pendingExportPayload = buildCatalogAllFavoritesExportJson(
+                        favorites = filterSortState.favoriteCatalogEntries,
+                        bgmFavoritesJson = GuideBgmFavoriteStore.buildFavoritesExportJson()
+                    )
+                    pendingExportToast = allExportSuccessText
+                    exportLauncher.launch("keios-ba-favorites.json")
+                },
+                onImportAllFavorites = {
+                    showTransferSheet = false
+                    importAllFavoritesLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                },
                 onExportStudentFavorites = {
                     showTransferSheet = false
                     pendingExportPayload = buildCatalogFavoritesExportJson(filterSortState.favoriteCatalogEntries)

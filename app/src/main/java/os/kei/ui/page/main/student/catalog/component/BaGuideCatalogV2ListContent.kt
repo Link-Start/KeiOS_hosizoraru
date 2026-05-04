@@ -25,6 +25,7 @@ internal fun BaGuideCatalogV2ListContent(
     tab: BaGuideCatalogTab,
     catalog: BaGuideCatalogBundle,
     filterSortState: BaGuideCatalogFilterSortState,
+    searchQuery: String,
     loading: Boolean,
     error: String?,
     accent: Color,
@@ -38,13 +39,13 @@ internal fun BaGuideCatalogV2ListContent(
         catalog = catalog,
         sortMode = filterSortState.sortMode,
         favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
-        searchQuery = filterSortState.searchQuery,
+        searchQuery = searchQuery,
         loading = loading,
         isPageActive = isPageActive
     )
     val uiState = rememberBaGuideCatalogTabContentUiState(
         tab = tab,
-        searchQuery = filterSortState.searchQuery,
+        searchQuery = searchQuery,
         loading = loading,
         error = error,
         filteredEntriesEmpty = tabListState.filteredEntries.isEmpty()

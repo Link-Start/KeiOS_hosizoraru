@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -37,14 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -61,7 +58,7 @@ import os.kei.ui.page.main.debug.DebugBgmDockTab
 import os.kei.ui.page.main.debug.DebugBgmFloatingBottomChrome
 import os.kei.ui.page.main.debug.DebugBgmTrack
 import os.kei.ui.page.main.debug.rememberDebugBgmBottomChromeScrollState
-import os.kei.ui.page.main.os.appLucideChevronLeftIcon
+import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
@@ -92,11 +89,10 @@ import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
@@ -204,6 +200,7 @@ fun BaGuideCatalogPage(
         pageCount = { tabs.size }
     )
     val filterSortState = rememberBaGuideCatalogFilterSortState()
+    var searchQueries by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberDebugBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
@@ -225,7 +222,8 @@ fun BaGuideCatalogPage(
     }.coerceIn(0, tabs.lastIndex)
     val chromeActiveTab = tabs.getOrElse(chromeActivePageIndex) { BaGuideCatalogPageTab.Student }
     val chromeCurrentTitle = stringResource(id = chromeActiveTab.labelRes)
-    val chromeCurrentMeta = filterSortState.searchQuery.ifBlank { searchLabel }
+    val chromeSearchQuery = searchQueries[chromeActiveTab.name].orEmpty()
+    val chromeCurrentMeta = chromeSearchQuery.ifBlank { searchLabel }
     val chromePlaybackFavorite = favoriteBgms.firstOrNull { it.audioUrl == playbackSnapshot.selectedAudioUrl }
         ?: favoriteBgms.firstOrNull()
     val chromeQueueMode = remember(playbackSnapshot.queueModeName) {
@@ -326,6 +324,7 @@ fun BaGuideCatalogPage(
                 val renderHeavyContent = pageIndex == pagerState.currentPage ||
                     pageIndex == pagerState.settledPage ||
                     (preloadPolicy.includeTargetPageInHeavyRender && pageIndex == pagerState.targetPage)
+                val pageSearchQuery = searchQueries[pageTab.name].orEmpty()
                 if (!renderHeavyContent) {
                     BaGuideCatalogMusicPlaceholder(
                         label = stringResource(pageTab.labelRes),
@@ -338,6 +337,7 @@ fun BaGuideCatalogPage(
                             tab = pageTab.catalogTab,
                             catalog = catalogDataState.catalog,
                             filterSortState = filterSortState,
+                            searchQuery = pageSearchQuery,
                             loading = catalogDataState.loading,
                             error = catalogDataState.error,
                             accent = accent,
@@ -351,7 +351,7 @@ fun BaGuideCatalogPage(
                         )
                         pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> BaGuideStudentBgmTabContent(
                             catalog = catalogDataState.catalog,
-                            searchQuery = filterSortState.searchQuery,
+                            searchQuery = pageSearchQuery,
                             innerPadding = PaddingValues(
                                 top = CatalogMusicContentTopPadding,
                                 bottom = CatalogMusicContentBottomPadding
@@ -367,7 +367,7 @@ fun BaGuideCatalogPage(
                             onOpenGuide = onOpenGuide
                         )
                         pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> BaGuideFavoriteBgmMusicContent(
-                            searchQuery = filterSortState.searchQuery,
+                            searchQuery = pageSearchQuery,
                             accent = accent,
                             listBackdrop = pageChromeBackdrop,
                             bottomBarScrollConnection = chromeScrollState,
@@ -412,7 +412,7 @@ fun BaGuideCatalogPage(
             scrollState = chromeScrollState,
             dockTabs = chromeTabs,
             currentTrackTitle = chromePlaybackFavorite
-                ?.title
+                ?.studentTitle
                 ?.ifBlank { chromeCurrentTitle }
                 ?: chromeCurrentTitle,
             isPlaying = chromePlaybackState.isPlaying,
@@ -467,8 +467,10 @@ fun BaGuideCatalogPage(
             },
             searchVisible = enableSearchBar && searchVisible,
             searchInputActive = enableSearchBar && searchInputActive,
-            searchQuery = filterSortState.searchQuery,
-            onSearchQueryChange = { filterSortState.searchQuery = it },
+            searchQuery = chromeSearchQuery,
+            onSearchQueryChange = { query ->
+                searchQueries = searchQueries + (chromeActiveTab.name to query)
+            },
             onSearchInputActiveChange = { active ->
                 searchInputActive = active
                 if (active) searchVisible = true
@@ -621,11 +623,11 @@ private fun BaGuideFavoriteBgmMusicContent(
         displayedFavorites.associateBy { it.audioUrl }
     }
     val sectionTitle = selectedFavorite
-        ?.title
+        ?.studentTitle
         ?.ifBlank { stringResource(R.string.ba_catalog_bgm_track_fallback) }
         ?: stringResource(R.string.ba_catalog_bgm_empty_title)
     val sectionMeta = selectedFavorite
-        ?.studentTitle
+        ?.title
         ?.ifBlank { stringResource(R.string.ba_catalog_bgm_student_unknown) }
         ?: stringResource(
             R.string.ba_catalog_bgm_library_summary,
@@ -788,6 +790,9 @@ private fun BaGuideFavoriteBgmMusicContent(
         topPadding = topPadding,
         bottomPadding = bottomPadding,
         contentBackdrop = listBackdrop,
+        artworkImageUrl = selectedFavorite?.studentImageUrl
+            ?.ifBlank { selectedFavorite.imageUrl }
+            .orEmpty(),
         modifier = Modifier.fillMaxSize()
     )
 }
@@ -818,8 +823,8 @@ private fun BaGuideCatalogMusicTopBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BaGuideCatalogTopIconButton(
-                icon = appLucideChevronLeftIcon(),
+            AppLiquidNavigationButton(
+                icon = appLucideBackIcon(),
                 contentDescription = stringResource(R.string.common_close),
                 onClick = onBack,
                 backdrop = backdrop
@@ -861,38 +866,17 @@ private fun BaGuideCatalogMusicTopBar(
         Text(
             text = title,
             color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            fontWeight = FontWeight.Medium,
+            fontSize = AppTypographyTokens.SectionTitle.fontSize,
+            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 150.dp)
-                .graphicsLayer { alpha = 0.92f }
+                .align(Alignment.CenterStart)
+                .padding(start = 64.dp, end = 172.dp)
+                .fillMaxWidth()
         )
     }
-}
-
-@Composable
-private fun BaGuideCatalogTopIconButton(
-    icon: ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit,
-    backdrop: Backdrop
-) {
-    AppLiquidIconButton(
-        backdrop = backdrop,
-        icon = icon,
-        contentDescription = contentDescription,
-        onClick = onClick,
-        modifier = Modifier.height(AppChromeTokens.liquidActionBarOuterHeight),
-        width = AppChromeTokens.liquidActionBarOuterHeight,
-        height = AppChromeTokens.liquidActionBarOuterHeight,
-        shape = CircleShape,
-        iconTint = MiuixTheme.colorScheme.onBackground,
-        variant = GlassVariant.Floating
-    )
 }
 
 @Composable

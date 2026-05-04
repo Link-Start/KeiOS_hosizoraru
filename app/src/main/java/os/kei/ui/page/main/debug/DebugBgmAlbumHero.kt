@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import coil3.compose.AsyncImage
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -72,7 +74,8 @@ internal fun DebugBgmAlbumHero(
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
     onVolumeSliderInteractionChanged: (Boolean) -> Unit,
-    contentBackdrop: Backdrop
+    contentBackdrop: Backdrop,
+    artworkImageUrl: String = ""
 ) {
     var volumeControlVisible by rememberSaveable { mutableStateOf(true) }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -135,7 +138,8 @@ internal fun DebugBgmAlbumHero(
     ) {
         DebugBgmAlbumArtwork(
             accent = accent,
-            backdrop = contentBackdrop
+            backdrop = contentBackdrop,
+            imageUrl = artworkImageUrl
         )
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -214,7 +218,8 @@ internal fun DebugBgmAlbumHero(
 @Composable
 private fun DebugBgmAlbumArtwork(
     accent: Color,
-    backdrop: Backdrop
+    backdrop: Backdrop,
+    imageUrl: String = ""
 ) {
     val shape = RoundedCornerShape(28.dp)
     val innerShape = RoundedCornerShape(23.dp)
@@ -250,6 +255,17 @@ private fun DebugBgmAlbumArtwork(
                     )
                 )
         )
+        if (imageUrl.isNotBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(16.dp)
+                    .clip(innerShape)
+            )
+        }
         LiquidSurface(
             backdrop = iconBackdrop,
             shape = CircleShape,
@@ -257,7 +273,9 @@ private fun DebugBgmAlbumArtwork(
             surfaceColor = Color.White.copy(alpha = 0.12f),
             chromaticAberration = true,
             isInteractive = false,
-            modifier = Modifier.size(88.dp),
+            modifier = Modifier
+                .size(88.dp)
+                .graphicsLayer { alpha = if (imageUrl.isBlank()) 1f else 0f },
             contentAlignment = Alignment.Center
         ) {
             Icon(

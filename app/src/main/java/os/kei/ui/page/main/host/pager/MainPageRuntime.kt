@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import kotlin.math.abs
 
 @Immutable
 data class MainPageRuntime(
@@ -13,6 +14,7 @@ data class MainPageRuntime(
     val contentTopPadding: Dp = 0.dp,
     val contentBottomPadding: Dp = 72.dp,
     val isWarmActive: Boolean = true,
+    val isWarmDataActive: Boolean = true,
     val isDataActive: Boolean = true,
     val isPagerScrollInProgress: Boolean = false,
     val bottomBarVisible: Boolean = true,
@@ -27,6 +29,7 @@ internal data class MainPagerRuntimeSnapshot(
     val currentPageIndex: Int,
     val targetPageIndex: Int,
     val settledPageIndex: Int,
+    val pagePosition: Float,
     val isPagerScrollInProgress: Boolean,
     val includeTargetPageInHeavyRender: Boolean,
     val shouldRenderNonHomeBackground: Boolean,
@@ -47,6 +50,7 @@ internal data class MainPagerRuntimeSnapshot(
         contentTopPadding = contentTopPadding,
         contentBottomPadding = contentBottomPadding,
         isWarmActive = isWarmActive(pageIndex),
+        isWarmDataActive = isWarmDataActive(pageIndex),
         isDataActive = isDataActive(pageIndex),
         isPagerScrollInProgress = isPagerScrollInProgress,
         bottomBarVisible = bottomBarVisible,
@@ -64,7 +68,21 @@ internal data class MainPagerRuntimeSnapshot(
         }
     }
 
+    fun isWarmDataActive(pageIndex: Int): Boolean {
+        val isTarget = pageIndex == targetPageIndex
+        val isSettled = pageIndex == settledPageIndex
+        return if (isPagerScrollInProgress) {
+            isSettled || (isTarget && isTargetNearSettle())
+        } else {
+            isWarmActive(pageIndex)
+        }
+    }
+
     fun isDataActive(pageIndex: Int): Boolean = pageIndex == settledPageIndex
+
+    private fun isTargetNearSettle(): Boolean {
+        return abs(pagePosition - targetPageIndex) <= MainPagerTargetWarmDataActivationDistance
+    }
 }
 
 internal fun buildMainPagerRuntimeSnapshot(
@@ -72,6 +90,7 @@ internal fun buildMainPagerRuntimeSnapshot(
     currentPageIndex: Int,
     targetPageIndex: Int,
     settledPageIndex: Int,
+    pagePosition: Float,
     isPagerScrollInProgress: Boolean,
     preloadPolicy: UiPerformanceBudget.PreloadPolicy,
     hasNonHomeBackground: Boolean,
@@ -84,6 +103,7 @@ internal fun buildMainPagerRuntimeSnapshot(
         currentPageIndex = currentPageIndex,
         targetPageIndex = targetPageIndex,
         settledPageIndex = settledPageIndex,
+        pagePosition = pagePosition,
         isPagerScrollInProgress = isPagerScrollInProgress,
         includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
         shouldRenderNonHomeBackground = hasNonHomeBackground && (
@@ -94,3 +114,5 @@ internal fun buildMainPagerRuntimeSnapshot(
             settledPage == BottomPage.Home
     )
 }
+
+private const val MainPagerTargetWarmDataActivationDistance = 0.50f

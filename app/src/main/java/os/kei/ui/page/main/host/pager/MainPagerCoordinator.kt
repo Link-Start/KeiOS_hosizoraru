@@ -114,6 +114,7 @@ internal fun rememberMainPagerCoordinator(
         currentPageIndex = pagerState.currentPage,
         targetPageIndex = pagerState.targetPage,
         settledPageIndex = pagerState.settledPage,
+        pagePosition = pagerState.pagePosition,
         isPagerScrollInProgress = pagerState.isScrollInProgress,
         preloadPolicy = preloadPolicy,
         hasNonHomeBackground = backgroundState.hasNonHomeBackground

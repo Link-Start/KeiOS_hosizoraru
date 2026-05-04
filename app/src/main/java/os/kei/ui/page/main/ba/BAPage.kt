@@ -103,7 +103,7 @@ fun BAPage(
         baCalendarEntries = calendarUiState.entries,
         baPoolEntries = poolUiState.entries,
     )
-    val syncPageActive = if (preloadingEnabled) runtime.isPageActive else runtime.isDataActive
+    val syncPageActive = if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
     val baGlassRuntime = LocalGlassEffectRuntime.current
 
     fun openSettingsSheet() {

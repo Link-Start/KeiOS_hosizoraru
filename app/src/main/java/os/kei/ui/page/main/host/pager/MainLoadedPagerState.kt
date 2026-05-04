@@ -39,6 +39,8 @@ internal class MainLoadedPagerState internal constructor(
     var isScrollInProgress by mutableStateOf(false)
         private set
 
+    private var navigationEpoch by mutableIntStateOf(0)
+
     private var userScrollStartPage: Int = initialPage
 
     val accessibilityPage: Int
@@ -60,12 +62,14 @@ internal class MainLoadedPagerState internal constructor(
     }
 
     suspend fun scrollToPage(page: Int) {
+        val epoch = nextNavigationEpoch()
         val target = coercePage(page)
-        updatePosition(target.toFloat(), target = target, scrolling = false, settle = true)
+        snapToPage(target, epoch)
     }
 
     internal fun startUserScroll() {
         if (pageCount <= 1) return
+        nextNavigationEpoch()
         isScrollInProgress = true
         userScrollStartPage = pagePosition.roundToInt().coerceIn(0, lastIndex())
         targetPage = userScrollStartPage
@@ -108,36 +112,62 @@ internal class MainLoadedPagerState internal constructor(
         animateToPage(
             target = velocityTarget.coerceIn(minTarget, maxTarget),
             animationsEnabled = animationsEnabled,
-            durationMillis = MainLoadedPagerSettleDurationMillis
+            durationMillis = MainLoadedPagerSettleDurationMillis,
+            epoch = navigationEpoch
         )
     }
 
     internal suspend fun animateToPage(
         target: Int,
         animationsEnabled: Boolean,
-        durationMillis: Int
+        durationMillis: Int,
+        epoch: Int = nextNavigationEpoch()
     ) {
         val coercedTarget = coercePage(target)
         if (!animationsEnabled) {
-            scrollToPage(coercedTarget)
+            snapToPage(coercedTarget, epoch)
             return
         }
         val startPosition = pagePosition
         if (startPosition == coercedTarget.toFloat()) {
-            scrollToPage(coercedTarget)
+            snapToPage(coercedTarget, epoch)
             return
         }
         isScrollInProgress = true
         targetPage = coercedTarget
-        animateLoadedPagerPosition(
-            start = startPosition,
-            target = coercedTarget.toFloat(),
-            durationMillis = durationMillis,
-            onFrame = { value ->
-                updatePosition(value, target = coercedTarget, scrolling = true, settle = false)
+        try {
+            animateLoadedPagerPosition(
+                start = startPosition,
+                target = coercedTarget.toFloat(),
+                durationMillis = durationMillis,
+                onFrame = { value ->
+                    if (isNavigationCurrent(epoch)) {
+                        updatePosition(value, target = coercedTarget, scrolling = true, settle = false)
+                    }
+                }
+            )
+            snapToPage(coercedTarget, epoch)
+        } finally {
+            if (isNavigationCurrent(epoch) && isScrollInProgress) {
+                val fallbackPage = pagePosition.roundToInt().coerceIn(0, lastIndex().coerceAtLeast(0))
+                snapToPage(fallbackPage, epoch)
             }
-        )
-        scrollToPage(coercedTarget)
+        }
+    }
+
+    private fun snapToPage(page: Int, epoch: Int) {
+        if (!isNavigationCurrent(epoch)) return
+        val target = coercePage(page)
+        updatePosition(target.toFloat(), target = target, scrolling = false, settle = true)
+    }
+
+    private fun nextNavigationEpoch(): Int {
+        navigationEpoch += 1
+        return navigationEpoch
+    }
+
+    private fun isNavigationCurrent(epoch: Int): Boolean {
+        return epoch == navigationEpoch
     }
 
     private fun updatePosition(

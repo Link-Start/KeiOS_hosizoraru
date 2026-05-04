@@ -198,7 +198,7 @@ fun GitHubPage(
         context = context,
         listState = listState,
         scrollToTopSignal = runtime.scrollToTopSignal,
-        isPageWarmActive = runtime.isPageActive,
+        isPageWarmActive = runtime.isWarmDataActive,
         isPageDataActive = runtime.isDataActive,
         state = state,
         actions = actions,

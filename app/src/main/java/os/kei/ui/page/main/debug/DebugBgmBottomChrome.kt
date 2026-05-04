@@ -78,9 +78,11 @@ internal fun DebugBgmFloatingBottomChrome(
     onCompactDockClick: () -> Unit,
     onSearchClick: () -> Unit,
     backdrop: Backdrop,
+    dockTabs: List<DebugBgmDockTab>? = null,
     modifier: Modifier = Modifier
 ) {
-    val tabs = rememberDebugBgmDockTabs()
+    val defaultTabs = rememberDebugBgmDockTabs()
+    val tabs = dockTabs ?: defaultTabs
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val miniPlayerInteractionSource = remember { MutableInteractionSource() }
     val dockSurfaceInteractionSource = remember { MutableInteractionSource() }

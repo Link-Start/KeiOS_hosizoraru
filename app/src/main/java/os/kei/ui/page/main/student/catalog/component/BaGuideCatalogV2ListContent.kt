@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -13,32 +12,48 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogTabContentUiState
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
+import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
+import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 
 @Composable
-internal fun BaGuideCatalogTabListLayout(
-    listState: LazyListState,
-    nestedScrollConnection: NestedScrollConnection,
-    innerPadding: PaddingValues,
-    uiState: BaGuideCatalogTabContentUiState,
-    progress: Float,
-    progressColor: Color,
+internal fun BaGuideCatalogV2ListContent(
+    tab: BaGuideCatalogTab,
+    catalog: BaGuideCatalogBundle,
+    filterSortState: BaGuideCatalogFilterSortState,
+    loading: Boolean,
+    error: String?,
     accent: Color,
-    displayedEntries: List<BaGuideCatalogEntry>,
-    hasMoreEntries: Boolean,
-    favoriteCatalogEntries: Map<Long, Long>,
-    onOpenGuide: (String) -> Unit,
-    onToggleFavorite: (Long) -> Unit
+    innerPadding: PaddingValues,
+    nestedScrollConnection: NestedScrollConnection,
+    isPageActive: Boolean,
+    onOpenGuide: (String) -> Unit
 ) {
-    val loadAvatarImages by remember(listState) {
-        derivedStateOf { !listState.isScrollInProgress }
+    val tabListState = rememberBaGuideCatalogTabListState(
+        tab = tab,
+        catalog = catalog,
+        sortMode = filterSortState.sortMode,
+        favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
+        searchQuery = filterSortState.searchQuery,
+        loading = loading,
+        isPageActive = isPageActive
+    )
+    val uiState = rememberBaGuideCatalogTabContentUiState(
+        tab = tab,
+        searchQuery = filterSortState.searchQuery,
+        loading = loading,
+        error = error,
+        filteredEntriesEmpty = tabListState.filteredEntries.isEmpty()
+    )
+    val loadAvatarImages by remember(tabListState.listState) {
+        derivedStateOf { !tabListState.listState.isScrollInProgress }
     }
     LazyColumn(
-        state = listState,
+        state = tabListState.listState,
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection),
@@ -72,14 +87,14 @@ internal fun BaGuideCatalogTabListLayout(
             }
         } else {
             renderBaGuideCatalogEntryListAdapter(
-                displayedEntries = displayedEntries,
-                hasMoreEntries = hasMoreEntries,
-                favoriteCatalogEntries = favoriteCatalogEntries,
+                displayedEntries = tabListState.displayedEntries,
+                hasMoreEntries = tabListState.hasMoreEntries,
+                favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
                 loadAvatarImages = loadAvatarImages,
                 accent = accent,
                 loadingMoreText = uiState.loadingMoreText,
                 onOpenGuide = onOpenGuide,
-                onToggleFavorite = onToggleFavorite
+                onToggleFavorite = filterSortState::toggleFavorite
             )
         }
     }

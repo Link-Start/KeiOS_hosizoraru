@@ -74,6 +74,7 @@ internal fun BaGuideStudentBgmTabContent(
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
     onNowPlayingVisibilityChange: (Boolean) -> Unit,
+    showNowPlayingOverlay: Boolean = true,
     onOpenGuide: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -328,7 +329,7 @@ internal fun BaGuideStudentBgmTabContent(
             playbackRuntimeState
         }
     }
-    val showNowPlaying = selectedFavorite != null && nowPlayingVisible
+    val showNowPlaying = showNowPlayingOverlay && selectedFavorite != null && nowPlayingVisible
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomChromePadding = if (showNowPlaying) {
         navigationBarBottom

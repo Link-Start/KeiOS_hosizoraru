@@ -169,7 +169,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideSkipBackIcon(),
-                contentDescription = stringResource(R.string.debug_component_lab_action_previous),
+                contentDescription = stringResource(R.string.ba_catalog_bgm_action_previous),
                 tint = MiuixTheme.colorScheme.onBackground,
                 size = 32.dp,
                 iconSize = 22.dp,
@@ -196,7 +196,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
             Icon(
                 imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
                 contentDescription = stringResource(
-                    if (isPlaying) R.string.debug_component_lab_action_pause else R.string.debug_component_lab_action_play
+                    if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play
                 ),
                 tint = playPauseTint,
                 modifier = Modifier.size(playIconSize)
@@ -208,7 +208,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideSkipForwardIcon(),
-                contentDescription = stringResource(R.string.debug_component_lab_action_next),
+                contentDescription = stringResource(R.string.ba_catalog_bgm_action_next),
                 tint = MiuixTheme.colorScheme.onBackground,
                 size = 32.dp,
                 iconSize = 22.dp,

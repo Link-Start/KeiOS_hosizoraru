@@ -91,14 +91,14 @@ internal fun BaGuideBgmAlbumHero(
     val density = LocalDensity.current
     val volumeTransition = updateTransition(
         targetState = volumeControlVisible,
-        label = "debug_bgm_volume_control"
+        label = "ba_catalog_bgm_volume_control"
     )
     val volumeMotionDuration = resolvedMotionDuration(BaGuideBgmVolumeControlMotionMs, animationsEnabled)
     val volumeHeight by volumeTransition.animateDp(
         transitionSpec = {
             tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
         },
-        label = "debug_bgm_volume_height"
+        label = "ba_catalog_bgm_volume_height"
     ) { visible ->
         if (visible) BaGuideBgmVolumeControlHeight else 0.dp
     }
@@ -106,7 +106,7 @@ internal fun BaGuideBgmAlbumHero(
         transitionSpec = {
             tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
         },
-        label = "debug_bgm_volume_alpha"
+        label = "ba_catalog_bgm_volume_alpha"
     ) { visible ->
         if (visible) 1f else 0f
     }
@@ -114,7 +114,7 @@ internal fun BaGuideBgmAlbumHero(
         transitionSpec = {
             tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
         },
-        label = "debug_bgm_volume_offset"
+        label = "ba_catalog_bgm_volume_offset"
     ) { visible ->
         if (visible) 0.dp else (-6).dp
     }
@@ -122,7 +122,7 @@ internal fun BaGuideBgmAlbumHero(
         transitionSpec = {
             tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
         },
-        label = "debug_bgm_volume_scale"
+        label = "ba_catalog_bgm_volume_scale"
     ) { visible ->
         if (visible) 1f else 0.98f
     }
@@ -130,7 +130,7 @@ internal fun BaGuideBgmAlbumHero(
         transitionSpec = {
             tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
         },
-        label = "debug_bgm_volume_spacing"
+        label = "ba_catalog_bgm_volume_spacing"
     ) { visible ->
         if (visible) 12.dp else 0.dp
     }
@@ -157,7 +157,7 @@ internal fun BaGuideBgmAlbumHero(
         ) {
             if (showAlbumTitle) {
                 Text(
-                    text = stringResource(R.string.debug_component_lab_album_title),
+                    text = stringResource(R.string.ba_catalog_bgm_album_title),
                     color = MiuixTheme.colorScheme.onBackground,
                     fontSize = 25.sp,
                     lineHeight = 30.sp,
@@ -319,7 +319,7 @@ private fun BaGuideBgmAlbumPrimaryActions(
         ) {
             BaGuideBgmRoundAction(
                 icon = appLucideRepeatIcon(),
-                contentDescription = stringResource(R.string.debug_component_lab_action_repeat),
+                contentDescription = stringResource(R.string.ba_catalog_bgm_action_repeat),
                 accent = accent,
                 neutralTint = neutralTint,
                 active = repeatEnabled,
@@ -335,7 +335,7 @@ private fun BaGuideBgmAlbumPrimaryActions(
             )
             BaGuideBgmRoundAction(
                 icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
-                contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
+                contentDescription = stringResource(R.string.ba_catalog_bgm_volume_slider_label),
                 accent = accent,
                 neutralTint = neutralTint,
                 active = volumeControlVisible,
@@ -387,7 +387,7 @@ private fun BaGuideBgmAlbumVolumeControl(
         ) {
             BaGuideBgmInlineIcon(
                 icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
-                contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
+                contentDescription = stringResource(R.string.ba_catalog_bgm_volume_slider_label),
                 tint = sliderTint,
                 size = 32.dp,
                 iconSize = 22.dp,
@@ -411,7 +411,7 @@ private fun BaGuideBgmAlbumVolumeControl(
                     .height(30.dp)
             )
             Text(
-                text = stringResource(R.string.debug_component_lab_volume_value, (volume * 100).toInt()),
+                text = stringResource(R.string.ba_catalog_bgm_volume_value, (volume * 100).toInt()),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
@@ -490,9 +490,9 @@ private fun BaGuideBgmPlayAction(
             Text(
                 text = stringResource(
                     if (isPlaying) {
-                        R.string.debug_component_lab_action_pause
+                        R.string.ba_catalog_bgm_action_pause
                     } else {
-                        R.string.debug_component_lab_action_play
+                        R.string.ba_catalog_bgm_action_play
                     }
                 ),
                 color = contentTint,

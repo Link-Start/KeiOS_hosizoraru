@@ -168,7 +168,7 @@ private fun BaGuideBgmEmptyTrackResult(
                 )
             }
             Text(
-                text = stringResource(R.string.debug_component_lab_search_empty_title),
+                text = stringResource(R.string.ba_catalog_bgm_search_empty_title),
                 color = MiuixTheme.colorScheme.onBackground,
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
@@ -176,7 +176,7 @@ private fun BaGuideBgmEmptyTrackResult(
                 textAlign = TextAlign.Center
             )
             Text(
-                text = stringResource(R.string.debug_component_lab_search_empty_subtitle),
+                text = stringResource(R.string.ba_catalog_bgm_search_empty_subtitle),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
@@ -203,7 +203,7 @@ private fun BaGuideBgmTrackRow(
     var moreExpanded by remember(track.id) { mutableStateOf(false) }
     var moreAnchorBounds by remember(track.id) { mutableStateOf<IntRect?>(null) }
     val rowShape = RoundedCornerShape(14.dp)
-    val offlineBadgeLabel = stringResource(R.string.debug_component_lab_track_badge_offline)
+    val offlineBadgeLabel = stringResource(R.string.ba_catalog_bgm_track_badge_offline)
     val rowStatusDescription = if (offlineSaved) {
         "${track.durationLabel}, $offlineBadgeLabel"
     } else {
@@ -260,7 +260,7 @@ private fun BaGuideBgmTrackRow(
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideMoreIcon(),
-                contentDescription = stringResource(R.string.debug_component_lab_action_more),
+                contentDescription = stringResource(R.string.ba_catalog_bgm_action_more),
                 tint = MiuixTheme.colorScheme.onBackgroundVariant,
                 size = 40.dp,
                 iconSize = 22.dp,
@@ -316,7 +316,7 @@ private fun BaGuideBgmTrackMorePopup(
     ) {
         LiquidGlassDropdownColumn {
             BaGuideBgmTrackMenuItem(
-                text = stringResource(R.string.debug_component_lab_action_play),
+                text = stringResource(R.string.ba_catalog_bgm_action_play),
                 leadingIcon = appLucidePlayIcon(),
                 index = 0,
                 optionSize = BaGuideBgmTrackMenuItemCount,
@@ -325,9 +325,9 @@ private fun BaGuideBgmTrackMorePopup(
             BaGuideBgmTrackMenuItem(
                 text = stringResource(
                     if (favorite) {
-                        R.string.debug_component_lab_action_unfavorite
+                        R.string.ba_catalog_bgm_action_unfavorite
                     } else {
-                        R.string.debug_component_lab_action_favorite
+                        R.string.ba_catalog_bgm_action_favorite
                     }
                 ),
                 leadingIcon = appLucideHeartIcon(),
@@ -338,9 +338,9 @@ private fun BaGuideBgmTrackMorePopup(
             BaGuideBgmTrackMenuItem(
                 text = stringResource(
                     if (offlineSaved) {
-                        R.string.debug_component_lab_action_remove_offline
+                        R.string.ba_catalog_bgm_action_remove_offline
                     } else {
-                        R.string.debug_component_lab_action_save_offline
+                        R.string.ba_catalog_bgm_action_save_offline
                     }
                 ),
                 leadingIcon = appLucideDownloadIcon(),
@@ -420,7 +420,7 @@ private fun BaGuideBgmPlayingBars(
     accent: Color,
     animated: Boolean
 ) {
-    val transition = rememberInfiniteTransition(label = "debug_bgm_playing_bars")
+    val transition = rememberInfiniteTransition(label = "ba_catalog_bgm_playing_bars")
     val firstHeight by transition.animateFloat(
         initialValue = 0.42f,
         targetValue = 0.88f,
@@ -428,7 +428,7 @@ private fun BaGuideBgmPlayingBars(
             animation = tween(durationMillis = 520),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "debug_bgm_playing_bar_first"
+        label = "ba_catalog_bgm_playing_bar_first"
     )
     val secondHeight by transition.animateFloat(
         initialValue = 0.92f,
@@ -437,7 +437,7 @@ private fun BaGuideBgmPlayingBars(
             animation = tween(durationMillis = 640),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "debug_bgm_playing_bar_second"
+        label = "ba_catalog_bgm_playing_bar_second"
     )
     val thirdHeight by transition.animateFloat(
         initialValue = 0.56f,
@@ -446,7 +446,7 @@ private fun BaGuideBgmPlayingBars(
             animation = tween(durationMillis = 580),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "debug_bgm_playing_bar_third"
+        label = "ba_catalog_bgm_playing_bar_third"
     )
 
     Row(
@@ -497,7 +497,7 @@ internal fun BaGuideBgmSearchPanel(
         AppLiquidSearchField(
             value = query,
             onValueChange = onQueryChange,
-            label = stringResource(R.string.debug_component_lab_search_placeholder),
+            label = stringResource(R.string.ba_catalog_bgm_search_placeholder),
             backdrop = backdrop,
             modifier = Modifier.fillMaxSize(),
             textColor = MiuixTheme.colorScheme.onBackground,

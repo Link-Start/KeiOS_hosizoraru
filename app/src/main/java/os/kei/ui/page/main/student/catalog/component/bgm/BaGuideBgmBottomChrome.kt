@@ -96,7 +96,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     )
     val transition = updateTransition(
         targetState = searchMode,
-        label = "debug_bgm_bottom_chrome"
+        label = "ba_catalog_bgm_bottom_chrome"
     )
     val animationSpec = tween<Dp>(
         durationMillis = resolvedMotionDuration(BaGuideBgmBottomChromeSizeMotionMs, animationsEnabled),
@@ -108,7 +108,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     )
     val containerHeight by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_chrome_height"
+        label = "ba_catalog_bgm_chrome_height"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Compact -> BaGuideBgmCompactChromeHeight
@@ -119,13 +119,13 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val tabGroupHeight by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_tab_height"
+        label = "ba_catalog_bgm_tab_height"
     ) {
         BaGuideBgmExpandedDockHeight
     }
     val tabGroupY by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_tab_y"
+        label = "ba_catalog_bgm_tab_y"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Expanded,
@@ -136,25 +136,25 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val miniPlayerHeight by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_mini_height"
+        label = "ba_catalog_bgm_mini_height"
     ) { mode ->
         BaGuideBgmExpandedMiniHeight
     }
     val miniPlayerY by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_mini_y"
+        label = "ba_catalog_bgm_mini_y"
     ) {
         BaGuideBgmCompactMiniY
     }
     val searchSize by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_search_size"
+        label = "ba_catalog_bgm_search_size"
     ) {
         BaGuideBgmExpandedDockHeight
     }
     val searchY by transition.animateDp(
         transitionSpec = { animationSpec },
-        label = "debug_bgm_search_y"
+        label = "ba_catalog_bgm_search_y"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Expanded,
@@ -165,7 +165,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val dockExpandedAlpha by transition.animateFloat(
         transitionSpec = { floatAnimationSpec },
-        label = "debug_bgm_expanded_alpha"
+        label = "ba_catalog_bgm_expanded_alpha"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Expanded -> 1f
@@ -174,7 +174,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val dockCompactAlpha by transition.animateFloat(
         transitionSpec = { floatAnimationSpec },
-        label = "debug_bgm_compact_alpha"
+        label = "ba_catalog_bgm_compact_alpha"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Expanded -> 0f
@@ -183,7 +183,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val miniExpandedAlpha by transition.animateFloat(
         transitionSpec = { floatAnimationSpec },
-        label = "debug_bgm_mini_expanded_alpha"
+        label = "ba_catalog_bgm_mini_expanded_alpha"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Compact -> 0f
@@ -192,7 +192,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val miniCompactAlpha by transition.animateFloat(
         transitionSpec = { floatAnimationSpec },
-        label = "debug_bgm_mini_compact_alpha"
+        label = "ba_catalog_bgm_mini_compact_alpha"
     ) { mode ->
         when (mode) {
             BaGuideBgmBottomChromeMode.Compact -> 1f
@@ -201,7 +201,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     }
     val miniPlayerAlpha by transition.animateFloat(
         transitionSpec = { floatAnimationSpec },
-        label = "debug_bgm_mini_alpha"
+        label = "ba_catalog_bgm_mini_alpha"
     ) { mode ->
         if (mode == BaGuideBgmBottomChromeMode.SearchInput) 0.96f else 1f
     }
@@ -227,7 +227,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
             .coerceAtLeast(196.dp)
         val miniPlayerWidth by transition.animateDp(
             transitionSpec = { animationSpec },
-            label = "debug_bgm_mini_width"
+            label = "ba_catalog_bgm_mini_width"
         ) { mode ->
             when (mode) {
                 BaGuideBgmBottomChromeMode.Compact -> compactMiniWidth
@@ -238,7 +238,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
         }
         val miniPlayerX by transition.animateDp(
             transitionSpec = { animationSpec },
-            label = "debug_bgm_mini_x"
+            label = "ba_catalog_bgm_mini_x"
         ) { mode ->
             if (mode == BaGuideBgmBottomChromeMode.Compact) {
                 (maxWidth - compactMiniWidth) / 2f
@@ -248,7 +248,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
         }
         val tabGroupWidth by transition.animateDp(
             transitionSpec = { animationSpec },
-            label = "debug_bgm_tab_width"
+            label = "ba_catalog_bgm_tab_width"
         ) { mode ->
             when (mode) {
                 BaGuideBgmBottomChromeMode.Expanded -> tabGroupExpandedWidth
@@ -259,13 +259,13 @@ internal fun BaGuideBgmFloatingBottomChrome(
         }
         val searchWidth by transition.animateDp(
             transitionSpec = { animationSpec },
-            label = "debug_bgm_search_width"
+            label = "ba_catalog_bgm_search_width"
         ) { mode ->
             if (mode.isSearchMode) searchFieldWidth else BaGuideBgmExpandedDockHeight
         }
         val searchX by transition.animateDp(
             transitionSpec = { animationSpec },
-            label = "debug_bgm_search_x"
+            label = "ba_catalog_bgm_search_x"
         ) { mode ->
             if (mode.isSearchMode) {
                 BaGuideBgmCompactControlSize + BaGuideBgmSearchFieldSpacing
@@ -286,7 +286,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
                 interactionSource = miniPlayerInteractionSource,
                 consumeTouches = true,
                 pressDurationMillis = BaGuideBgmBottomPressMotionMs,
-                pressLabel = "debug_bgm_bottom_surface_press"
+                pressLabel = "ba_catalog_bgm_bottom_surface_press"
             ) {
                 BaGuideBgmChromeMiniPlayer(
                     accent = accent,
@@ -319,7 +319,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
             interactionSource = dockSurfaceInteractionSource,
             clipContent = false,
             pressDurationMillis = BaGuideBgmBottomPressMotionMs,
-            pressLabel = "debug_bgm_bottom_surface_press"
+            pressLabel = "ba_catalog_bgm_bottom_surface_press"
         ) {
             BaGuideBgmDockGroupContent(
                 tabs = tabs,
@@ -343,7 +343,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
             backdrop = backdrop,
             onClick = if (searchFieldVisible) null else onSearchClick,
             pressDurationMillis = BaGuideBgmBottomPressMotionMs,
-            pressLabel = "debug_bgm_bottom_surface_press"
+            pressLabel = "ba_catalog_bgm_bottom_surface_press"
         ) {
             if (searchFieldVisible) {
                 BaGuideBgmBottomSearchField(
@@ -358,7 +358,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
             } else {
                 BaGuideBgmDockTabIcon(
                     icon = appLucideSearchIcon(),
-                    label = stringResource(R.string.debug_component_lab_nav_search),
+                    label = stringResource(R.string.ba_catalog_bgm_nav_search),
                     selected = searchVisible,
                     accent = accent,
                     iconSize = 27.dp
@@ -379,7 +379,7 @@ private fun BaGuideBgmBottomSearchField(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    val resolvedPlaceholder = placeholder ?: stringResource(R.string.debug_component_lab_search_placeholder)
+    val resolvedPlaceholder = placeholder ?: stringResource(R.string.ba_catalog_bgm_search_placeholder)
     val contentColor = MiuixTheme.colorScheme.onBackground
     val placeholderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
     val interactionSource = remember { MutableInteractionSource() }
@@ -405,7 +405,7 @@ private fun BaGuideBgmBottomSearchField(
     ) {
         BaGuideBgmDockTabIcon(
             icon = appLucideSearchIcon(),
-            label = stringResource(R.string.debug_component_lab_nav_search),
+            label = stringResource(R.string.ba_catalog_bgm_nav_search),
             selected = true,
             accent = accent,
             iconSize = 25.dp

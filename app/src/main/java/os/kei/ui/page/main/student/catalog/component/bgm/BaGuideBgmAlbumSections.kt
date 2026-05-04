@@ -26,14 +26,14 @@ internal fun BaGuideBgmAlbumFooter(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = stringResource(R.string.debug_component_lab_section_footer_current, sectionTitle),
+            text = stringResource(R.string.ba_catalog_bgm_section_footer_current, sectionTitle),
             color = MiuixTheme.colorScheme.onBackgroundVariant,
             fontSize = AppTypographyTokens.Body.fontSize,
             lineHeight = AppTypographyTokens.Body.lineHeight
         )
         Text(
             text = stringResource(
-                R.string.debug_component_lab_section_footer_state,
+                R.string.ba_catalog_bgm_section_footer_state,
                 trackCount,
                 offlineTrackCount
             ),
@@ -46,26 +46,26 @@ internal fun BaGuideBgmAlbumFooter(
 
 @Composable
 internal fun rememberBaGuideBgmDockSectionText(selectedDockKey: String): BaGuideBgmDockSectionText {
-    val libraryLabel = stringResource(R.string.debug_component_lab_nav_library)
+    val libraryLabel = stringResource(R.string.ba_catalog_bgm_nav_library)
     return when (selectedDockKey) {
         BaGuideBgmDockKeys.Home -> BaGuideBgmDockSectionText(
-            heroTitle = stringResource(R.string.debug_component_lab_section_home_title),
-            heroMeta = stringResource(R.string.debug_component_lab_section_home_meta),
-            footerTitle = stringResource(R.string.debug_component_lab_nav_home)
+            heroTitle = stringResource(R.string.ba_catalog_bgm_section_home_title),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_section_home_meta),
+            footerTitle = stringResource(R.string.ba_catalog_bgm_nav_home)
         )
         BaGuideBgmDockKeys.Discover -> BaGuideBgmDockSectionText(
-            heroTitle = stringResource(R.string.debug_component_lab_section_discover_title),
-            heroMeta = stringResource(R.string.debug_component_lab_section_discover_meta),
-            footerTitle = stringResource(R.string.debug_component_lab_nav_discover)
+            heroTitle = stringResource(R.string.ba_catalog_bgm_section_discover_title),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_section_discover_meta),
+            footerTitle = stringResource(R.string.ba_catalog_bgm_nav_discover)
         )
         BaGuideBgmDockKeys.Radio -> BaGuideBgmDockSectionText(
-            heroTitle = stringResource(R.string.debug_component_lab_section_radio_title),
-            heroMeta = stringResource(R.string.debug_component_lab_section_radio_meta),
-            footerTitle = stringResource(R.string.debug_component_lab_nav_radio)
+            heroTitle = stringResource(R.string.ba_catalog_bgm_section_radio_title),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_section_radio_meta),
+            footerTitle = stringResource(R.string.ba_catalog_bgm_nav_radio)
         )
         else -> BaGuideBgmDockSectionText(
-            heroTitle = stringResource(R.string.debug_component_lab_album_artist),
-            heroMeta = stringResource(R.string.debug_component_lab_album_meta),
+            heroTitle = stringResource(R.string.ba_catalog_bgm_album_artist),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_album_meta),
             footerTitle = libraryLabel
         )
     }

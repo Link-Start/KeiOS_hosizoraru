@@ -139,7 +139,7 @@ internal fun BaGuideBgmDockGroupContent(
     val itemPressProgress by animateFloatAsState(
         targetValue = if (pressedTabIndex >= 0) 1f else 0f,
         animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
-        label = "debug_bgm_dock_item_press"
+        label = "ba_catalog_bgm_dock_item_press"
     )
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val contentHorizontalPadding = AppChromeTokens.floatingBottomBarHorizontalPadding
@@ -530,7 +530,7 @@ private fun BaGuideBgmExpandedDockTab(
             else -> 1f
         },
         animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
-        label = "debug_bgm_dock_tab_press_scale"
+        label = "ba_catalog_bgm_dock_tab_press_scale"
     )
     LaunchedEffect(pressed, enabled) {
         if (enabled) onPressedChange(pressed)
@@ -607,10 +607,10 @@ internal fun BaGuideBgmDockTabIcon(
 
 @Composable
 internal fun rememberBaGuideBgmDockTabs(): List<BaGuideBgmDockTab> {
-    val homeLabel = stringResource(R.string.debug_component_lab_nav_home)
-    val discoverLabel = stringResource(R.string.debug_component_lab_nav_discover)
-    val radioLabel = stringResource(R.string.debug_component_lab_nav_radio)
-    val libraryLabel = stringResource(R.string.debug_component_lab_nav_library)
+    val homeLabel = stringResource(R.string.ba_catalog_bgm_nav_home)
+    val discoverLabel = stringResource(R.string.ba_catalog_bgm_nav_discover)
+    val radioLabel = stringResource(R.string.ba_catalog_bgm_nav_radio)
+    val libraryLabel = stringResource(R.string.ba_catalog_bgm_nav_library)
     val homeIcon = appLucideHomeIcon()
     val discoverIcon = appLucideGridIcon()
     val radioIcon = appLucideRadioIcon()

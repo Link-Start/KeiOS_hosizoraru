@@ -75,7 +75,9 @@ internal fun DebugBgmAlbumHero(
     onVolumeChangeFinished: (Float) -> Unit,
     onVolumeSliderInteractionChanged: (Boolean) -> Unit,
     contentBackdrop: Backdrop,
-    artworkImageUrl: String = ""
+    artworkImageUrl: String = "",
+    showAlbumTitle: Boolean = true,
+    promoteSectionTitle: Boolean = false
 ) {
     var volumeControlVisible by rememberSaveable { mutableStateOf(true) }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -146,32 +148,36 @@ internal fun DebugBgmAlbumHero(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(
-                text = stringResource(R.string.debug_component_lab_album_title),
-                color = MiuixTheme.colorScheme.onBackground,
-                fontSize = 25.sp,
-                lineHeight = 30.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (showAlbumTitle) {
+                Text(
+                    text = stringResource(R.string.debug_component_lab_album_title),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = 25.sp,
+                    lineHeight = 30.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
                 text = sectionTitle,
                 color = MiuixTheme.colorScheme.onBackground,
-                fontSize = AppTypographyTokens.SectionTitle.fontSize,
-                lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                fontWeight = FontWeight.Medium,
+                fontSize = if (promoteSectionTitle) 25.sp else AppTypographyTokens.SectionTitle.fontSize,
+                lineHeight = if (promoteSectionTitle) 30.sp else AppTypographyTokens.SectionTitle.lineHeight,
+                fontWeight = if (promoteSectionTitle) FontWeight.SemiBold else FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = sectionMeta,
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (sectionMeta.isNotBlank()) {
+                Text(
+                    text = sectionMeta,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Supporting.fontSize,
+                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         Column(
             modifier = Modifier

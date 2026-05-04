@@ -58,6 +58,15 @@ internal class BaGuideCatalogFilterSortState(
         favoriteCatalogEntries = frozen
         BaGuideCatalogStore.saveFavorites(frozen)
     }
+
+    fun replaceFavorites(favorites: Map<Long, Long>) {
+        val normalized = favorites
+            .filterKeys { it > 0L }
+            .filterValues { it > 0L }
+            .toMap()
+        favoriteCatalogEntries = normalized
+        BaGuideCatalogStore.saveFavorites(normalized)
+    }
 }
 
 @Composable

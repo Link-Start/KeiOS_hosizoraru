@@ -151,6 +151,7 @@ internal fun BaGuideStudentBgmCard(
     }
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
     val neutralContainer = MiuixTheme.colorScheme.surfaceContainer
+    val subtitle = entry.aliasDisplay.takeIf { it.isNotBlank() }
     AppSurfaceCard(
         containerColor = containerColor,
         borderColor = borderColor,
@@ -193,45 +194,37 @@ internal fun BaGuideStudentBgmCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (favorite) {
-                        StatusPill(
-                            label = stringResource(R.string.ba_catalog_student_bgm_status_favorite),
-                            color = Color(0xFFEC4899),
-                            size = AppStatusPillSize.Compact
-                        )
-                    }
                 }
-                Text(
-                    text = ready?.item?.favorite?.title?.takeIf { it.isNotBlank() }
-                        ?: entry.aliasDisplay.takeIf { it.isNotBlank() }
-                        ?: stringResource(R.string.ba_catalog_student_bgm_card_subtitle),
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                subtitle?.let { value ->
+                    Text(
+                        text = value,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    StatusPill(
-                        label = when {
-                            isLoading -> stringResource(R.string.ba_catalog_student_bgm_status_resolving)
-                            isMissing -> stringResource(R.string.ba_catalog_student_bgm_status_missing)
-                            ready?.item?.fromFavorite == true -> stringResource(R.string.ba_catalog_student_bgm_status_from_favorite)
-                            ready?.item?.fromCache == true -> stringResource(R.string.ba_catalog_student_bgm_status_cached_detail)
-                            ready != null -> stringResource(R.string.ba_catalog_student_bgm_status_ready)
-                            else -> stringResource(R.string.ba_catalog_student_bgm_status_idle)
-                        },
-                        color = when {
-                            isMissing -> Color(0xFFEF4444)
-                            isLoading -> Color(0xFFF59E0B)
-                            ready != null -> Color(0xFF22C55E)
-                            else -> accent
-                        },
-                        size = AppStatusPillSize.Compact
-                    )
+                    if (isLoading || isMissing || ready != null) {
+                        StatusPill(
+                            label = when {
+                                isLoading -> stringResource(R.string.ba_catalog_student_bgm_status_resolving)
+                                isMissing -> stringResource(R.string.ba_catalog_student_bgm_status_missing)
+                                ready?.item?.fromCache == true -> stringResource(R.string.ba_catalog_student_bgm_status_cached_detail)
+                                else -> stringResource(R.string.ba_catalog_student_bgm_status_ready)
+                            },
+                            color = when {
+                                isMissing -> Color(0xFFEF4444)
+                                isLoading -> Color(0xFFF59E0B)
+                                else -> Color(0xFF22C55E)
+                            },
+                            size = AppStatusPillSize.Compact
+                        )
+                    }
                     StatusPill(
                         label = "ID ${entry.contentId}",
                         color = MiuixTheme.colorScheme.primary,

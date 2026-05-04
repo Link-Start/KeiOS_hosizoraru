@@ -3,12 +3,12 @@ package os.kei.ui.page.main.student.catalog.page
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,18 +49,16 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.ui.page.main.debug.DebugBgmAlbumContent
 import os.kei.ui.page.main.debug.DebugBgmDockTab
 import os.kei.ui.page.main.debug.DebugBgmFloatingBottomChrome
 import os.kei.ui.page.main.debug.DebugBgmTrack
 import os.kei.ui.page.main.debug.rememberDebugBgmBottomChromeScrollState
-import os.kei.ui.page.main.os.appLucideBackIcon
-import os.kei.ui.page.main.os.appLucideMoreIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
@@ -82,21 +79,14 @@ import os.kei.ui.page.main.student.catalog.component.seekFavoriteBgmPlayback
 import os.kei.ui.page.main.student.catalog.component.toggleFavoriteBgmPlayback
 import os.kei.ui.page.main.student.catalog.component.updateFavoriteBgmVolume
 import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
-import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private enum class BaGuideCatalogPageTab(
@@ -176,6 +166,10 @@ fun BaGuideCatalogPage(
 
     val loadFailedText = stringResource(R.string.ba_catalog_load_failed)
     val refreshFailedKeepCacheText = stringResource(R.string.ba_catalog_refresh_failed_keep_cached)
+    val exportDoneText = stringResource(R.string.ba_catalog_transfer_export_done)
+    val exportFailedText = stringResource(R.string.ba_catalog_transfer_export_failed)
+    val studentExportSuccessText = stringResource(R.string.ba_catalog_transfer_student_export_success)
+    val bgmExportSuccessText = stringResource(R.string.ba_catalog_bgm_export_success)
     val catalogViewModel: BaGuideCatalogViewModel = viewModel()
     val catalogDataState by catalogViewModel.dataState.collectAsState()
     LaunchedEffect(
@@ -201,6 +195,9 @@ fun BaGuideCatalogPage(
     )
     val filterSortState = rememberBaGuideCatalogFilterSortState()
     var searchQueries by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var showTransferSheet by rememberSaveable { mutableStateOf(false) }
+    var pendingExportPayload by remember { mutableStateOf("") }
+    var pendingExportToast by remember { mutableStateOf("") }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberDebugBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
@@ -231,6 +228,96 @@ fun BaGuideCatalogPage(
             ?: BaGuideBgmQueueMode.Continuous
     }
     val chromePlaybackProgress = playbackSliderPreview ?: chromePlaybackState.progress
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        val payload = pendingExportPayload
+        val toast = pendingExportToast
+        pendingExportPayload = ""
+        pendingExportToast = ""
+        if (uri == null || payload.isBlank()) return@rememberLauncherForActivityResult
+        pageScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.bufferedWriter().use { writer ->
+                        if (writer == null) return@runCatching false
+                        writer.write(payload)
+                        true
+                    }
+                }.getOrDefault(false)
+            }
+            Toast.makeText(
+                context,
+                if (success) toast.ifBlank { exportDoneText } else exportFailedText,
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    val importStudentFavoritesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        pageScope.launch {
+            val imported = withContext(Dispatchers.IO) {
+                runCatching {
+                    val raw = context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        .orEmpty()
+                    parseCatalogFavoritesExport(raw)
+                }.getOrDefault(emptyMap())
+            }
+            if (imported.isEmpty()) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.ba_catalog_transfer_import_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                filterSortState.replaceFavorites(filterSortState.favoriteCatalogEntries + imported)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.ba_catalog_transfer_student_import_success, imported.size),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+    val importBgmFavoritesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        pageScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val raw = context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        .orEmpty()
+                    GuideBgmFavoriteStore.importFavoritesJsonMerged(raw)
+                }
+            }
+            result
+                .onSuccess { imported ->
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.ba_catalog_bgm_import_success,
+                            imported.addedCount,
+                            imported.updatedCount
+                        ),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                .onFailure {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.ba_catalog_bgm_import_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -383,13 +470,42 @@ fun BaGuideCatalogPage(
                 title = pageTitle,
                 accent = accent,
                 onBack = onBack,
-                onSort = { filterSortState.selectSortMode(filterSortState.sortMode.next()) },
+                showSortPopup = filterSortState.showSortPopup,
+                sortMode = filterSortState.sortMode,
+                onSort = { filterSortState.showSortPopup = true },
+                onDismissSort = { filterSortState.showSortPopup = false },
+                onSelectSortMode = filterSortState::selectSortMode,
+                onTransfer = { showTransferSheet = true },
                 onRefresh = catalogViewModel::requestRefresh,
                 backdrop = pageChromeBackdrop,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+            )
+            BaGuideCatalogTransferSheet(
+                show = showTransferSheet,
+                onDismissRequest = { showTransferSheet = false },
+                onExportStudentFavorites = {
+                    showTransferSheet = false
+                    pendingExportPayload = buildCatalogFavoritesExportJson(filterSortState.favoriteCatalogEntries)
+                    pendingExportToast = studentExportSuccessText
+                    exportLauncher.launch("keios-ba-student-favorites.json")
+                },
+                onImportStudentFavorites = {
+                    showTransferSheet = false
+                    importStudentFavoritesLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                },
+                onExportBgmFavorites = {
+                    showTransferSheet = false
+                    pendingExportPayload = GuideBgmFavoriteStore.buildFavoritesExportJson()
+                    pendingExportToast = bgmExportSuccessText
+                    exportLauncher.launch("keios-ba-bgm-favorites.json")
+                },
+                onImportBgmFavorites = {
+                    showTransferSheet = false
+                    importBgmFavoritesLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                }
             )
             Box(
                 modifier = Modifier
@@ -626,14 +742,15 @@ private fun BaGuideFavoriteBgmMusicContent(
         ?.studentTitle
         ?.ifBlank { stringResource(R.string.ba_catalog_bgm_track_fallback) }
         ?: stringResource(R.string.ba_catalog_bgm_empty_title)
-    val sectionMeta = selectedFavorite
-        ?.title
-        ?.ifBlank { stringResource(R.string.ba_catalog_bgm_student_unknown) }
-        ?: stringResource(
+    val sectionMeta = if (selectedFavorite != null) {
+        ""
+    } else {
+        stringResource(
             R.string.ba_catalog_bgm_library_summary,
             favorites.size,
             displayedFavorites.count { isFavoriteBgmCached(appContext, it) }
         )
+    }
     val cacheSuccessText = stringResource(R.string.ba_catalog_bgm_cache_success)
     val cacheFailedText = stringResource(R.string.ba_catalog_bgm_cache_failed)
 
@@ -793,121 +910,10 @@ private fun BaGuideFavoriteBgmMusicContent(
         artworkImageUrl = selectedFavorite?.studentImageUrl
             ?.ifBlank { selectedFavorite.imageUrl }
             .orEmpty(),
+        showAlbumTitle = false,
+        promoteSectionTitle = true,
         modifier = Modifier.fillMaxSize()
     )
-}
-
-@Composable
-private fun BaGuideCatalogMusicTopBar(
-    title: String,
-    accent: Color,
-    onBack: () -> Unit,
-    onSort: () -> Unit,
-    onRefresh: () -> Unit,
-    backdrop: Backdrop,
-    modifier: Modifier = Modifier
-) {
-    val sortContentDescription = stringResource(R.string.ba_catalog_action_sort)
-    val refreshContentDescription = stringResource(R.string.ba_catalog_action_refresh)
-    val moreContentDescription = stringResource(R.string.debug_component_lab_action_more)
-    val sortIcon = appLucideSortIcon()
-    val refreshIcon = appLucideRefreshIcon()
-    val moreIcon = appLucideMoreIcon()
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(AppChromeTokens.liquidActionBarOuterHeight)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AppLiquidNavigationButton(
-                icon = appLucideBackIcon(),
-                contentDescription = stringResource(R.string.common_close),
-                onClick = onBack,
-                backdrop = backdrop
-            )
-            LiquidActionBar(
-                modifier = Modifier.height(AppChromeTokens.liquidActionBarOuterHeight),
-                backdrop = backdrop,
-                selectedIndex = 0,
-                items = remember(
-                    sortContentDescription,
-                    refreshContentDescription,
-                    moreContentDescription,
-                    sortIcon,
-                    refreshIcon,
-                    moreIcon,
-                    onSort,
-                    onRefresh
-                ) {
-                    listOf(
-                        LiquidActionItem(
-                            icon = sortIcon,
-                            contentDescription = sortContentDescription,
-                            onClick = onSort
-                        ),
-                        LiquidActionItem(
-                            icon = refreshIcon,
-                            contentDescription = refreshContentDescription,
-                            onClick = onRefresh
-                        ),
-                        LiquidActionItem(
-                            icon = moreIcon,
-                            contentDescription = moreContentDescription,
-                            onClick = {}
-                        )
-                    )
-                }
-            )
-        }
-        Text(
-            text = title,
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.SectionTitle.fontSize,
-            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 64.dp, end = 172.dp)
-                .fillMaxWidth()
-        )
-    }
-}
-
-@Composable
-private fun BaGuideCatalogMusicPlaceholder(
-    label: String,
-    topPadding: Dp,
-    bottomPadding: Dp
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                top = topPadding,
-                bottom = bottomPadding,
-                start = AppChromeTokens.pageHorizontalPadding,
-                end = AppChromeTokens.pageHorizontalPadding
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight
-        )
-    }
-}
-
-private fun BaGuideCatalogSortMode.next(): BaGuideCatalogSortMode {
-    val modes = BaGuideCatalogSortMode.entries
-    return modes[(modes.indexOf(this).coerceAtLeast(0) + 1) % modes.size]
 }
 
 private fun GuideBgmFavoriteItem.toDebugTrack(): DebugBgmTrack {

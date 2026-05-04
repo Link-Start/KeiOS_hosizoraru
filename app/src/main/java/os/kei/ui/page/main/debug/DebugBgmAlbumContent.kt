@@ -48,6 +48,8 @@ internal fun DebugBgmAlbumContent(
     bottomPadding: Dp,
     contentBackdrop: Backdrop,
     artworkImageUrl: String = "",
+    showAlbumTitle: Boolean = true,
+    promoteSectionTitle: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val sliderLockedScrollConnection = remember(userScrollEnabled, bottomBarScrollConnection) {
@@ -93,7 +95,9 @@ internal fun DebugBgmAlbumContent(
                 onVolumeChangeFinished = onVolumeChangeFinished,
                 onVolumeSliderInteractionChanged = onSliderInteractionChanged,
                 contentBackdrop = contentBackdrop,
-                artworkImageUrl = artworkImageUrl
+                artworkImageUrl = artworkImageUrl,
+                showAlbumTitle = showAlbumTitle,
+                promoteSectionTitle = promoteSectionTitle
             )
         }
         item {

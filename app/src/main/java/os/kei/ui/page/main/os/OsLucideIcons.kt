@@ -67,6 +67,9 @@ internal fun appLucideAddIcon(): ImageVector = osLucideVector(LucideR.drawable.l
 internal fun appLucideDownloadIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_download)
 
 @Composable
+internal fun appLucideUploadIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_upload)
+
+@Composable
 internal fun appLucideHeartIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_heart)
 
 @Composable

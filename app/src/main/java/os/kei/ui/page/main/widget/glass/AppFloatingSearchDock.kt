@@ -1,6 +1,13 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +34,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -35,6 +44,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalConfiguration
@@ -50,6 +60,14 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+enum class AppFloatingRefreshStatus {
+    Idle,
+    Cached,
+    Refreshing,
+    Success,
+    Danger
+}
 
 @Composable
 fun AppFloatingSearchDock(
@@ -177,6 +195,7 @@ fun AppFloatingVerticalSearchActionDock(
     dockSide: AppFloatingDockSide = AppFloatingDockSide.End,
     showAddAction: Boolean = true,
     refreshEnabled: Boolean = true,
+    refreshStatus: AppFloatingRefreshStatus = AppFloatingRefreshStatus.Idle,
     horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
@@ -193,16 +212,25 @@ fun AppFloatingVerticalSearchActionDock(
     val dockHeight = size * visibleActionCount
     val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
-    val fieldWidth by animateDpAsState(
-        targetValue = if (expanded) fieldTargetWidth else 0.dp,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 260),
+    val transition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
+    val fieldWidth by transition.animateDp(
+        transitionSpec = { tween(durationMillis = 280) },
         label = "app_vertical_floating_search_field_width"
-    )
-    val totalWidth by animateDpAsState(
-        targetValue = size + if (expanded) gap + fieldTargetWidth else 0.dp,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 260),
+    ) { targetExpanded ->
+        if (targetExpanded) fieldTargetWidth else 0.dp
+    }
+    val totalWidth by transition.animateDp(
+        transitionSpec = { tween(durationMillis = 280) },
         label = "app_vertical_floating_search_total_width"
-    )
+    ) { targetExpanded ->
+        size + if (targetExpanded) gap + fieldTargetWidth else 0.dp
+    }
+    val fieldAlpha by transition.animateFloat(
+        transitionSpec = { tween(durationMillis = 180) },
+        label = "app_vertical_floating_search_field_alpha"
+    ) { targetExpanded ->
+        if (targetExpanded) 1f else 0f
+    }
 
     LaunchedEffect(expanded) {
         if (!expanded) {
@@ -211,31 +239,39 @@ fun AppFloatingVerticalSearchActionDock(
     }
 
     val fieldContent: @Composable () -> Unit = {
-        if (fieldWidth > 1.dp) {
-            AppLiquidFloatingSurface(
-                modifier = Modifier
-                    .width(fieldWidth)
-                    .height(size),
-                shape = ContinuousCapsule,
-                backdrop = backdrop,
-                pressDurationMillis = 120,
-                pressLabel = "app_vertical_floating_search_field_press"
-            ) {
-                AppFloatingSearchField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    focusRequester = focusRequester,
-                    autoFocus = expanded,
-                    onFocusActiveChange = { active ->
-                        if (active) onExpandedChange(true)
-                    },
-                    placeholder = placeholder,
-                    accent = accent,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+        AppLiquidFloatingSurface(
+            modifier = Modifier
+                .width(fieldWidth)
+                .height(size)
+                .alpha(fieldAlpha),
+            shape = ContinuousCapsule,
+            backdrop = backdrop,
+            pressDurationMillis = 120,
+            pressLabel = "app_vertical_floating_search_field_press"
+        ) {
+            AppFloatingSearchField(
+                query = query,
+                onQueryChange = onQueryChange,
+                focusRequester = focusRequester,
+                autoFocus = expanded,
+                onFocusActiveChange = { active ->
+                    if (active) onExpandedChange(true)
+                },
+                placeholder = placeholder,
+                accent = accent,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
+    val refreshTint = appFloatingRefreshTint(
+        status = refreshStatus,
+        enabled = refreshEnabled,
+        neutral = MiuixTheme.colorScheme.onBackground,
+        muted = MiuixTheme.colorScheme.onBackgroundVariant,
+        success = Color(0xFF22C55E),
+        danger = MiuixTheme.colorScheme.error,
+        active = accent
+    )
     val dockContent: @Composable () -> Unit = {
         AppLiquidFloatingSurface(
             modifier = Modifier
@@ -267,8 +303,9 @@ fun AppFloatingVerticalSearchActionDock(
                     onClick = onRefreshClick,
                     size = size,
                     iconSize = iconSize,
-                    iconTint = MiuixTheme.colorScheme.onBackgroundVariant,
-                    enabled = refreshEnabled
+                    iconTint = refreshTint,
+                    enabled = refreshEnabled && refreshStatus != AppFloatingRefreshStatus.Refreshing,
+                    rotating = refreshStatus == AppFloatingRefreshStatus.Refreshing
                 )
                 AppFloatingVerticalDockAction(
                     icon = searchIcon,
@@ -311,13 +348,35 @@ private fun AppFloatingVerticalDockAction(
     size: Dp,
     iconSize: Dp,
     iconTint: Color,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    rotating: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val animatedTint by animateColorAsState(
+        targetValue = iconTint,
+        animationSpec = tween(durationMillis = 180),
+        label = "app_floating_vertical_dock_action_tint"
+    )
+    val infiniteTransition = rememberInfiniteTransition(label = "app_floating_vertical_dock_action_rotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 820, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "app_floating_vertical_dock_action_rotation"
+    )
     Box(
         modifier = Modifier
             .size(size)
-            .then(if (enabled) Modifier else Modifier.alpha(AppInteractiveTokens.disabledContentAlpha))
+            .then(
+                if (enabled || rotating) {
+                    Modifier
+                } else {
+                    Modifier.alpha(AppInteractiveTokens.disabledContentAlpha)
+                }
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -329,9 +388,32 @@ private fun AppFloatingVerticalDockAction(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize),
-            tint = iconTint
+            modifier = Modifier
+                .size(iconSize)
+                .graphicsLayer {
+                    rotationZ = if (rotating) rotation else 0f
+                },
+            tint = animatedTint
         )
+    }
+}
+
+@Composable
+private fun appFloatingRefreshTint(
+    status: AppFloatingRefreshStatus,
+    enabled: Boolean,
+    neutral: Color,
+    muted: Color,
+    success: Color,
+    danger: Color,
+    active: Color
+): Color {
+    return when (status) {
+        AppFloatingRefreshStatus.Refreshing -> active
+        AppFloatingRefreshStatus.Success -> success
+        AppFloatingRefreshStatus.Danger -> danger
+        AppFloatingRefreshStatus.Cached -> Color(0xFFF59E0B)
+        AppFloatingRefreshStatus.Idle -> if (enabled) neutral else muted
     }
 }
 

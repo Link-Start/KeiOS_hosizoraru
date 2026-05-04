@@ -42,6 +42,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
+import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
@@ -151,6 +152,13 @@ internal fun OsPageMainList(
     }
     val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val refreshStatus = when (overviewState) {
+        SystemOverviewState.Refreshing -> AppFloatingRefreshStatus.Refreshing
+        SystemOverviewState.Completed -> AppFloatingRefreshStatus.Success
+        SystemOverviewState.Failed -> AppFloatingRefreshStatus.Danger
+        SystemOverviewState.Cached -> AppFloatingRefreshStatus.Cached
+        SystemOverviewState.Idle -> AppFloatingRefreshStatus.Idle
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AppPageLazyColumn(
@@ -447,6 +455,7 @@ internal fun OsPageMainList(
             onRefreshClick = onRefreshAll,
             showAddAction = showFloatingAddButton,
             refreshEnabled = !refreshing,
+            refreshStatus = refreshStatus,
             dockSide = floatingDockSide,
             keyboardLift = floatingKeyboardLift,
             modifier = Modifier

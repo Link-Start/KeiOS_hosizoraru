@@ -76,7 +76,8 @@ internal enum class OverviewRefreshState {
     Idle,
     Cached,
     Refreshing,
-    Completed
+    Completed,
+    Failed
 }
 
 internal enum class RefreshIntervalOption(

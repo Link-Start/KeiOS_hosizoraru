@@ -35,6 +35,7 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
+import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -117,6 +118,13 @@ internal fun GitHubMainContent(
     }
     val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val refreshStatus = when (overviewRefreshState) {
+        OverviewRefreshState.Refreshing -> AppFloatingRefreshStatus.Refreshing
+        OverviewRefreshState.Completed -> AppFloatingRefreshStatus.Success
+        OverviewRefreshState.Failed -> AppFloatingRefreshStatus.Danger
+        OverviewRefreshState.Cached -> AppFloatingRefreshStatus.Cached
+        OverviewRefreshState.Idle -> AppFloatingRefreshStatus.Idle
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         AppScaffold(
             modifier = Modifier.fillMaxSize(),
@@ -210,6 +218,7 @@ internal fun GitHubMainContent(
                     onRefreshClick = onRefreshAllTracked,
                     showAddAction = showFloatingAddButton,
                     refreshEnabled = !deleteInProgress,
+                    refreshStatus = refreshStatus,
                     dockSide = floatingDockSide,
                     keyboardLift = floatingKeyboardLift,
                     modifier = Modifier

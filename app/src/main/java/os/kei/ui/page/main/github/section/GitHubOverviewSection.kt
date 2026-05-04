@@ -102,6 +102,7 @@ internal fun GitHubOverviewCard(
                 val progressValue = when (displayRefreshState) {
                     OverviewRefreshState.Refreshing -> refreshProgress.coerceIn(0f, 1f)
                     OverviewRefreshState.Completed,
+                    OverviewRefreshState.Failed,
                     OverviewRefreshState.Cached -> 1f
                     OverviewRefreshState.Idle -> 0f
                 }
@@ -127,6 +128,7 @@ internal fun GitHubOverviewCard(
                     OverviewRefreshState.Cached -> stringResource(R.string.common_status_cached)
                     OverviewRefreshState.Refreshing -> stringResource(R.string.common_status_checking)
                     OverviewRefreshState.Completed -> stringResource(R.string.common_status_checked)
+                    OverviewRefreshState.Failed -> stringResource(R.string.common_status_failed)
                     OverviewRefreshState.Idle -> stringResource(R.string.common_status_pending_check)
                 },
                 color = displayRefreshState.color(

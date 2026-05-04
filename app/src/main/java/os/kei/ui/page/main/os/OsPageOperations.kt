@@ -54,7 +54,7 @@ internal suspend fun ensureOsSectionLoaded(
             if (forceRefresh) {
                 inFlight?.cancel()
             }
-            updateSection(section) { it.copy(loading = true) }
+            updateSection(section) { it.copy(loading = true, loadFailed = false) }
             loadDeferred = scope.async(Dispatchers.IO) {
                 buildSectionRows(section, context, shizukuStatus, shizukuApiUtils)
             }
@@ -68,7 +68,9 @@ internal suspend fun ensureOsSectionLoaded(
     }
     try {
         val fresh = loadDeferred.await()
-        updateSection(section) { it.copy(rows = fresh, loading = false, loadedFresh = true) }
+        updateSection(section) {
+            it.copy(rows = fresh, loading = false, loadedFresh = true, loadFailed = false)
+        }
         val hasPersistedCache = withContext(Dispatchers.IO) {
             OsInfoCache.write(section, fresh)
             OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
@@ -76,7 +78,7 @@ internal suspend fun ensureOsSectionLoaded(
         onCachePersistedChanged(hasPersistedCache)
     } catch (throwable: Throwable) {
         if (throwable is CancellationException) throw throwable
-        updateSection(section) { it.copy(loading = false) }
+        updateSection(section) { it.copy(loading = false, loadFailed = true) }
     } finally {
         sectionLoadMutex.withLock {
             if (sectionLoadDeferreds[section] === loadDeferred) {

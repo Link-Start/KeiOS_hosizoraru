@@ -43,7 +43,8 @@ internal enum class SystemOverviewState {
     Idle,
     Cached,
     Refreshing,
-    Completed
+    Completed,
+    Failed
 }
 
 internal data class OsUiSnapshot(
@@ -97,7 +98,8 @@ internal data class CachedSectionsSnapshot(
 internal data class SectionState(
     val rows: List<InfoRow> = emptyList(),
     val loading: Boolean = false,
-    val loadedFresh: Boolean = false
+    val loadedFresh: Boolean = false,
+    val loadFailed: Boolean = false
 )
 
 internal data class CachedSections(

@@ -104,10 +104,12 @@ internal fun buildOsOverviewUiState(
     val visibleSectionStates = currentVisibleSectionKinds.mapNotNull { sectionStates[it] }
     val loadedFreshCount = visibleSectionStates.count { it.loadedFresh }
     val cachedSectionCount = visibleSectionStates.count { !it.loadedFresh && it.rows.isNotEmpty() }
+    val failedSectionCount = visibleSectionStates.count { it.loadFailed }
     val sectionCount = currentVisibleSectionKinds.size
     val hasTopInfoCard = visibleCards.contains(OsSectionCard.TOP_INFO)
     val overviewState = when {
         refreshing -> SystemOverviewState.Refreshing
+        failedSectionCount > 0 -> SystemOverviewState.Failed
         loadedFreshCount == sectionCount && sectionCount > 0 -> SystemOverviewState.Completed
         cachePersisted || cachedSectionCount > 0 -> SystemOverviewState.Cached
         sectionCount == 0 && hasTopInfoCard -> SystemOverviewState.Completed
@@ -117,12 +119,14 @@ internal fun buildOsOverviewUiState(
         SystemOverviewState.Cached -> context.getString(R.string.common_status_cached)
         SystemOverviewState.Refreshing -> context.getString(R.string.common_status_syncing)
         SystemOverviewState.Completed -> context.getString(R.string.common_synced)
+        SystemOverviewState.Failed -> context.getString(R.string.common_status_failed)
         SystemOverviewState.Idle -> context.getString(R.string.common_status_pending_sync)
     }
     val statusColor = when (overviewState) {
         SystemOverviewState.Cached -> cachedColor
         SystemOverviewState.Refreshing -> refreshingColor
         SystemOverviewState.Completed -> syncedColor
+        SystemOverviewState.Failed -> Color(0xFFEF4444)
         SystemOverviewState.Idle -> inactiveColor
     }
     val overviewCardColor = if (isDark) {
@@ -138,12 +142,14 @@ internal fun buildOsOverviewUiState(
     val indicatorProgress = when (overviewState) {
         SystemOverviewState.Refreshing -> refreshProgress.coerceIn(0f, 1f)
         SystemOverviewState.Completed,
+        SystemOverviewState.Failed,
         SystemOverviewState.Cached -> 1f
         SystemOverviewState.Idle -> 0f
     }
     val indicatorBg = when (overviewState) {
         SystemOverviewState.Refreshing -> Color(0x553B82F6)
         SystemOverviewState.Completed -> Color(0x5522C55E)
+        SystemOverviewState.Failed -> Color(0x55EF4444)
         SystemOverviewState.Cached -> Color(0x55F59E0B)
         SystemOverviewState.Idle -> surfaceColor
     }

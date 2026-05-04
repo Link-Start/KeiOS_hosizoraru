@@ -38,6 +38,7 @@ internal fun OverviewRefreshState.color(neutralColor: Color): Color {
     return when (this) {
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.Active
         OverviewRefreshState.Completed -> GitHubStatusPalette.Update
+        OverviewRefreshState.Failed -> GitHubStatusPalette.Error
         OverviewRefreshState.Cached -> GitHubStatusPalette.PreRelease
         OverviewRefreshState.Idle -> neutralColor
     }
@@ -50,6 +51,7 @@ internal fun OverviewRefreshState.surfaceColor(
     return when (this) {
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Active, isDark)
         OverviewRefreshState.Completed -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark)
+        OverviewRefreshState.Failed -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Error, isDark)
         OverviewRefreshState.Cached -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.PreRelease, isDark)
         OverviewRefreshState.Idle -> neutralSurface.copy(alpha = 0.66f)
     }
@@ -62,6 +64,7 @@ internal fun OverviewRefreshState.borderColor(
     val accent = when (this) {
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.Active
         OverviewRefreshState.Completed -> GitHubStatusPalette.Update
+        OverviewRefreshState.Failed -> GitHubStatusPalette.Error
         OverviewRefreshState.Cached -> GitHubStatusPalette.PreRelease
         OverviewRefreshState.Idle -> neutralColor
     }
@@ -76,6 +79,7 @@ internal fun OverviewRefreshState.indicatorBackground(neutralSurface: Color): Co
     return when (this) {
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.Active.copy(alpha = 0.33f)
         OverviewRefreshState.Completed -> GitHubStatusPalette.Update.copy(alpha = 0.33f)
+        OverviewRefreshState.Failed -> GitHubStatusPalette.Error.copy(alpha = 0.33f)
         OverviewRefreshState.Cached -> GitHubStatusPalette.PreRelease.copy(alpha = 0.33f)
         OverviewRefreshState.Idle -> neutralSurface
     }

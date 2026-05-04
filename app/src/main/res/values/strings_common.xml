@@ -40,6 +40,7 @@
     <string name="common_status_cached">缓存</string>
     <string name="common_status_checking">检查中</string>
     <string name="common_status_checked">已检查</string>
+    <string name="common_status_failed">失败</string>
     <string name="common_status_pending_check">待检查</string>
     <string name="common_status_syncing">同步中</string>
     <string name="common_status_pending_sync">待同步</string>

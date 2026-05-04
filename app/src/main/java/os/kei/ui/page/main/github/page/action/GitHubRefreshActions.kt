@@ -354,7 +354,11 @@ internal class GitHubRefreshActions(
                     }
                 }.joinAll()
             }
-            state.overviewRefreshState = OverviewRefreshState.Completed
+            state.overviewRefreshState = if (failedCount > 0) {
+                OverviewRefreshState.Failed
+            } else {
+                OverviewRefreshState.Completed
+            }
             state.lastRefreshMs = System.currentTimeMillis()
             state.refreshProgress = 1f
             persistCheckCacheNow(state.lastRefreshMs)

@@ -20,7 +20,6 @@ internal fun LazyListScope.renderBaGuideCatalogEntryListAdapter(
     displayedEntries: List<BaGuideCatalogEntry>,
     hasMoreEntries: Boolean,
     favoriteCatalogEntries: Map<Long, Long>,
-    loadAvatarImages: Boolean,
     accent: Color,
     loadingMoreText: String,
     onOpenGuide: (String) -> Unit,
@@ -33,7 +32,6 @@ internal fun LazyListScope.renderBaGuideCatalogEntryListAdapter(
         BaGuideCatalogEntryCard(
             entry = entry,
             isFavorite = favoriteCatalogEntries.containsKey(entry.contentId),
-            loadAvatarImage = loadAvatarImages,
             onOpenGuide = onOpenGuide,
             onToggleFavorite = onToggleFavorite
         )

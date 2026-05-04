@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_TICK_MS
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
@@ -87,12 +88,25 @@ internal fun BaPageCommonEffects(
         }
     }
 
-    LaunchedEffect(isPageActive) {
+    LaunchedEffect(isPageActive, listState) {
         while (true) {
-            val tick = if (isPageActive) 1_000L else 3_000L
-            delay(tick)
+            if (isPageActive && listState.isScrollInProgress) {
+                delay(250L)
+                continue
+            }
+            delay(if (isPageActive) 1_000L else 3_000L)
+            if (isPageActive && listState.isScrollInProgress) continue
             onUiNowMsChange(System.currentTimeMillis())
         }
+    }
+    LaunchedEffect(isPageActive, listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .distinctUntilChanged()
+            .collectLatest { scrolling ->
+                if (isPageActive && !scrolling) {
+                    onUiNowMsChange(System.currentTimeMillis())
+                }
+            }
     }
 
     LaunchedEffect(office.apCurrent) {

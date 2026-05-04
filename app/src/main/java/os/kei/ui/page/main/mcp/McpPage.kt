@@ -38,8 +38,9 @@ import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.glass.AppFloatingLiquidActionButton
+import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
+import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
@@ -139,6 +140,7 @@ fun McpPage(
         mutableStateOf(hasMcpLocalNetworkPermission(context))
     }
     var startAfterLocalNetworkPermission by remember { mutableStateOf(false) }
+    var refreshRunning by remember { mutableStateOf(false) }
     fun launchServerToggle() {
         scope.launch {
             when (val result = mcpPageViewModel.toggleServer(mcpServerManager)) {
@@ -222,6 +224,37 @@ fun McpPage(
     }
     val floatingToggleStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val floatingToggleEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val copyCurrentConfig: () -> Unit = {
+        scope.launch {
+            val json = mcpPageViewModel.buildConfigJson(
+                manager = mcpServerManager,
+                serverState = uiState
+            )
+            copyToClipboard(context, "mcp-config", json)
+            Toast.makeText(
+                context,
+                context.getString(R.string.mcp_toast_config_copied),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    val refreshMcpNow: () -> Unit = {
+        if (!refreshRunning) {
+            scope.launch {
+                refreshRunning = true
+                try {
+                    mcpPageViewModel.refreshNow(mcpServerManager)
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.common_refreshed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } finally {
+                    refreshRunning = false
+                }
+            }
+        }
+    }
     val saveServiceConfig: () -> Unit = {
         scope.launch {
             when (val result = mcpPageViewModel.saveConfig(mcpServerManager)) {
@@ -351,17 +384,41 @@ fun McpPage(
         }
     }
     val onOpenSkillState = rememberUpdatedState(onOpenSkill)
-    val uiStateSnapshot = rememberUpdatedState(uiState)
-    val contextSnapshot = rememberUpdatedState(context)
     val editIcon = appLucideEditIcon()
     val notesIcon = appLucideNotesIcon()
     val copyIcon = osLucideCopyIcon()
     val refreshIcon = appLucideRefreshIcon()
+    val toggleIcon = if (uiState.running) appLucidePauseIcon() else osLucideRunIcon()
+    val toggleContentDescription = if (uiState.running) {
+        stringResource(R.string.mcp_action_stop_service)
+    } else {
+        stringResource(R.string.mcp_action_start_service)
+    }
+    val dockActions = listOf(
+        AppFloatingDockAction(
+            icon = copyIcon,
+            contentDescription = copyConfigContentDescription,
+            iconTint = MiuixTheme.colorScheme.primary,
+            onClick = copyCurrentConfig
+        ),
+        AppFloatingDockAction(
+            icon = refreshIcon,
+            contentDescription = refreshContentDescription,
+            iconTint = if (refreshRunning) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+            enabled = !refreshRunning,
+            rotating = refreshRunning,
+            onClick = refreshMcpNow
+        ),
+        AppFloatingDockAction(
+            icon = toggleIcon,
+            contentDescription = toggleContentDescription,
+            iconTint = if (uiState.running) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary,
+            onClick = toggleServer
+        )
+    )
     val actionItems = remember(
         editServiceParamsContentDescription,
-        openSkillContentDescription,
-        copyConfigContentDescription,
-        refreshContentDescription
+        openSkillContentDescription
     ) {
         listOf(
             LiquidActionItem(
@@ -373,38 +430,6 @@ fun McpPage(
                 icon = notesIcon,
                 contentDescription = openSkillContentDescription,
                 onClick = { onOpenSkillState.value() }
-            ),
-            LiquidActionItem(
-                icon = copyIcon,
-                contentDescription = copyConfigContentDescription,
-                onClick = {
-                    scope.launch {
-                        val json = mcpPageViewModel.buildConfigJson(
-                            manager = mcpServerManager,
-                            serverState = uiStateSnapshot.value
-                        )
-                        copyToClipboard(contextSnapshot.value, "mcp-config", json)
-                        Toast.makeText(
-                            contextSnapshot.value,
-                            contextSnapshot.value.getString(R.string.mcp_toast_config_copied),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            ),
-            LiquidActionItem(
-                icon = refreshIcon,
-                contentDescription = refreshContentDescription,
-                onClick = {
-                    scope.launch {
-                        mcpPageViewModel.refreshNow(mcpServerManager)
-                        Toast.makeText(
-                            contextSnapshot.value,
-                            contextSnapshot.value.getString(R.string.common_refreshed),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
             )
         )
     }
@@ -511,21 +536,14 @@ fun McpPage(
                 exit = appFloatingExit(),
                 modifier = Modifier.align(floatingToggleAlignment)
             ) {
-                AppFloatingLiquidActionButton(
+                AppFloatingVerticalActionDock(
                     backdrop = backdrops.content,
-                    icon = if (uiState.running) appLucidePauseIcon() else osLucideRunIcon(),
-                    contentDescription = if (uiState.running) {
-                        stringResource(R.string.mcp_action_stop_service)
-                    } else {
-                        stringResource(R.string.mcp_action_start_service)
-                    },
-                    onClick = toggleServer,
+                    actions = dockActions,
                     modifier = Modifier.padding(
                         start = floatingToggleStartPadding,
                         end = floatingToggleEndPadding,
                         bottom = runtime.contentBottomPadding - 24.dp
-                    ),
-                    iconTint = if (uiState.running) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary
+                    )
                 )
             }
         }

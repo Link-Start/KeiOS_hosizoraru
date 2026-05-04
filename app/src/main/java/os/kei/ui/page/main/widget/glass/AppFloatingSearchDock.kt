@@ -69,6 +69,15 @@ enum class AppFloatingRefreshStatus {
     Danger
 }
 
+data class AppFloatingDockAction(
+    val icon: ImageVector,
+    val contentDescription: String,
+    val iconTint: Color,
+    val enabled: Boolean = true,
+    val rotating: Boolean = false,
+    val onClick: () -> Unit
+)
+
 @Composable
 fun AppFloatingSearchDock(
     backdrop: Backdrop?,
@@ -336,6 +345,45 @@ fun AppFloatingVerticalSearchActionDock(
         } else {
             fieldContent()
             dockContent()
+        }
+    }
+}
+
+@Composable
+fun AppFloatingVerticalActionDock(
+    backdrop: Backdrop?,
+    actions: List<AppFloatingDockAction>,
+    modifier: Modifier = Modifier,
+    size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
+    iconSize: Dp = 27.dp
+) {
+    if (actions.isEmpty()) return
+    AppLiquidFloatingSurface(
+        modifier = modifier
+            .width(size)
+            .height(size * actions.size),
+        shape = ContinuousCapsule,
+        backdrop = backdrop,
+        pressDurationMillis = 120,
+        pressLabel = "app_vertical_floating_action_dock_press"
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            actions.forEach { action ->
+                AppFloatingVerticalDockAction(
+                    icon = action.icon,
+                    contentDescription = action.contentDescription,
+                    onClick = action.onClick,
+                    size = size,
+                    iconSize = iconSize,
+                    iconTint = action.iconTint,
+                    enabled = action.enabled,
+                    rotating = action.rotating
+                )
+            }
         }
     }
 }

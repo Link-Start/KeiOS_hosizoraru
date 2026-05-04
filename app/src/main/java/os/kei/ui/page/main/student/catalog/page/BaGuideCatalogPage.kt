@@ -71,6 +71,7 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
 import os.kei.ui.page.main.student.catalog.component.applyFavoriteBgmQueueMode
+import os.kei.ui.page.main.student.catalog.component.clearFavoriteBgmCache
 import os.kei.ui.page.main.student.catalog.component.favoriteBgmRuntimeState
 import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
 import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
@@ -758,6 +759,7 @@ private fun BaGuideFavoriteBgmMusicContent(
     }
     val cacheSuccessText = stringResource(R.string.ba_catalog_bgm_cache_success)
     val cacheFailedText = stringResource(R.string.ba_catalog_bgm_cache_failed)
+    val cacheRemovedText = stringResource(R.string.ba_catalog_bgm_cache_removed)
 
     fun playFavorite(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
         selectedAudioUrl = favorite.audioUrl
@@ -794,6 +796,16 @@ private fun BaGuideFavoriteBgmMusicContent(
                 if (success) cacheSuccessText else cacheFailedText,
                 Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+
+    fun toggleFavoriteCache(favorite: GuideBgmFavoriteItem) {
+        if (isFavoriteBgmCached(appContext, favorite)) {
+            clearFavoriteBgmCache(appContext, favorite)
+            cacheRevision += 1
+            Toast.makeText(context, cacheRemovedText, Toast.LENGTH_SHORT).show()
+        } else {
+            cacheFavorite(favorite)
         }
     }
 
@@ -896,7 +908,7 @@ private fun BaGuideFavoriteBgmMusicContent(
                 if (selectedAudioUrl == id) selectedAudioUrl = ""
             },
             onTrackOfflineClick = { id ->
-                favoritesByTrackId[id]?.let(::cacheFavorite)
+                favoritesByTrackId[id]?.let(::toggleFavoriteCache)
             },
             onTrackShareClick = { track ->
                 favoritesByTrackId[track.id]?.let { favorite ->

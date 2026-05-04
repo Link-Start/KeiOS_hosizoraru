@@ -26,12 +26,6 @@ internal fun DebugBgmAlbumFooter(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = stringResource(R.string.debug_component_lab_album_footer_date),
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight
-        )
-        Text(
             text = stringResource(R.string.debug_component_lab_section_footer_current, sectionTitle),
             color = MiuixTheme.colorScheme.onBackgroundVariant,
             fontSize = AppTypographyTokens.Body.fontSize,

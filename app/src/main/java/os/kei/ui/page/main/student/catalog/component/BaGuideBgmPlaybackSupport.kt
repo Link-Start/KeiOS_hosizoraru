@@ -62,6 +62,17 @@ internal fun favoriteBgmCachedBytes(
     )
 }
 
+internal fun clearFavoriteBgmCache(
+    context: Context,
+    favorite: GuideBgmFavoriteItem
+) {
+    BaGuideTempMediaCache.clearMediaCache(
+        context = context,
+        sourceUrl = favoriteCacheScope(favorite),
+        rawUrl = favorite.audioUrl
+    )
+}
+
 internal fun favoriteBgmRuntimeState(
     context: Context,
     favorite: GuideBgmFavoriteItem

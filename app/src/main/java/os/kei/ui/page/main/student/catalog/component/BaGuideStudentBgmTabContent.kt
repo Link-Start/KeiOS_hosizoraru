@@ -256,6 +256,22 @@ internal fun BaGuideStudentBgmTabContent(
         )
     }
 
+    fun togglePlayback(favorite: GuideBgmFavoriteItem) {
+        selectedAudioUrl = favorite.audioUrl
+        setNowPlayingVisible(true)
+        val resumePosition = GuideBgmFavoritePlaybackStore
+            .progressFor(favorite.audioUrl)
+            ?.resumePositionMs
+            ?: 0L
+        toggleFavoriteBgmPlayback(
+            context = appContext,
+            favorite = favorite,
+            queueMode = queueMode,
+            startPositionMs = resumePosition
+        )
+        playbackRuntimeState = favoriteBgmRuntimeState(appContext, favorite)
+    }
+
     fun playEntry(entry: BaGuideCatalogEntry) {
         val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
         stateWithFavoriteFallback(entry, lookupState).readyFavoriteOrNull()?.let { favorite ->
@@ -268,7 +284,11 @@ internal fun BaGuideStudentBgmTabContent(
                     )
                 )
             }
-            startPlayback(favorite)
+            if (selectedAudioUrl == favorite.audioUrl) {
+                togglePlayback(favorite)
+            } else {
+                startPlayback(favorite)
+            }
             return
         }
         resolveEntry(entry = entry, allowNetwork = true) { resolved ->
@@ -276,7 +296,11 @@ internal fun BaGuideStudentBgmTabContent(
             if (favorite == null) {
                 Toast.makeText(context, bgmMissingText, Toast.LENGTH_SHORT).show()
             } else {
-                startPlayback(favorite)
+                if (selectedAudioUrl == favorite.audioUrl) {
+                    togglePlayback(favorite)
+                } else {
+                    startPlayback(favorite)
+                }
             }
         }
     }

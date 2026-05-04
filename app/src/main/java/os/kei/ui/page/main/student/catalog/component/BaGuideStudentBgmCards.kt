@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -203,44 +204,50 @@ internal fun BaGuideStudentBgmCard(
                     }
                 }
             }
-            AppCompactIconAction(
-                icon = if (playing) appLucidePauseIcon() else appLucidePlayIcon(),
-                contentDescription = stringResource(
-                    if (playing) {
-                        R.string.ba_catalog_bgm_action_pause
-                    } else {
-                        R.string.ba_catalog_student_bgm_action_resolve_play
-                    }
-                ),
-                onClick = onPlay,
-                modifier = Modifier.size(44.dp),
-                tint = if (playing || selected) accent else neutralTint,
-                minSize = 44.dp,
-                enabled = !isLoading
-            )
-            AppCompactIconAction(
-                icon = appLucideHeartIcon(),
-                contentDescription = stringResource(
-                    if (favorite) {
-                        R.string.guide_bgm_cd_unfavorite
-                    } else {
-                        R.string.guide_bgm_cd_favorite
-                    }
-                ),
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(42.dp),
-                tint = if (favorite) Color(0xFFEC4899) else neutralTint,
-                minSize = 42.dp,
-                enabled = !isLoading
-            )
-            AppCompactIconAction(
-                icon = appLucideExternalLinkIcon(),
-                contentDescription = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
-                onClick = onOpenGuide,
-                modifier = Modifier.size(42.dp),
-                tint = neutralTint,
-                minSize = 42.dp
-            )
+            Row(
+                modifier = Modifier.width(118.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AppCompactIconAction(
+                    icon = if (playing) appLucidePauseIcon() else appLucidePlayIcon(),
+                    contentDescription = stringResource(
+                        if (playing) {
+                            R.string.ba_catalog_bgm_action_pause
+                        } else {
+                            R.string.ba_catalog_student_bgm_action_resolve_play
+                        }
+                    ),
+                    onClick = onPlay,
+                    modifier = Modifier.size(38.dp),
+                    tint = if (playing || selected) accent else neutralTint,
+                    minSize = 38.dp,
+                    enabled = !isLoading
+                )
+                AppCompactIconAction(
+                    icon = appLucideHeartIcon(),
+                    contentDescription = stringResource(
+                        if (favorite) {
+                            R.string.guide_bgm_cd_unfavorite
+                        } else {
+                            R.string.guide_bgm_cd_favorite
+                        }
+                    ),
+                    onClick = onToggleFavorite,
+                    modifier = Modifier.size(38.dp),
+                    tint = if (favorite) Color(0xFFEC4899) else neutralTint,
+                    minSize = 38.dp,
+                    enabled = !isLoading
+                )
+                AppCompactIconAction(
+                    icon = appLucideExternalLinkIcon(),
+                    contentDescription = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
+                    onClick = onOpenGuide,
+                    modifier = Modifier.size(38.dp),
+                    tint = neutralTint,
+                    minSize = 38.dp
+                )
+            }
         }
     }
 }

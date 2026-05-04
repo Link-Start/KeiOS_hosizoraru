@@ -46,12 +46,12 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
+import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
-import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -284,7 +284,7 @@ private fun DebugBgmTrackRow(
                     moreExpanded = false
                     onOfflineClick()
                 },
-                onShareClick = {
+                onOpenGuideClick = {
                     moreExpanded = false
                     onShareClick()
                 }
@@ -303,7 +303,7 @@ private fun DebugBgmTrackMorePopup(
     onPlayClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onOfflineClick: () -> Unit,
-    onShareClick: () -> Unit
+    onOpenGuideClick: () -> Unit
 ) {
     if (!show) return
     SnapshotWindowListPopup(
@@ -349,11 +349,11 @@ private fun DebugBgmTrackMorePopup(
                 onClick = onOfflineClick
             )
             DebugBgmTrackMenuItem(
-                text = stringResource(R.string.debug_component_lab_action_share),
-                leadingIcon = appLucideShareIcon(),
+                text = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
+                leadingIcon = appLucideExternalLinkIcon(),
                 index = 3,
                 optionSize = DebugBgmTrackMenuItemCount,
-                onClick = onShareClick
+                onClick = onOpenGuideClick
             )
         }
     }

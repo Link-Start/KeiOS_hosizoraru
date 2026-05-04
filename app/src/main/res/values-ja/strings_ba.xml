@@ -244,6 +244,7 @@
     <string name="ba_catalog_bgm_removed_message">削除しました: %1$s / %2$s</string>
     <string name="ba_catalog_bgm_restore_success">%1$s の BGM お気に入りを復元しました</string>
     <string name="ba_catalog_bgm_cache_success">BGM をキャッシュしました</string>
+    <string name="ba_catalog_bgm_cache_removed">BGM キャッシュを削除しました</string>
     <string name="ba_catalog_bgm_cache_failed">BGM のキャッシュに失敗しました</string>
     <string name="ba_catalog_bgm_cache_all_ready">現在のリストはすべてキャッシュ済みです。</string>
     <string name="ba_catalog_bgm_cache_batch_done">一括キャッシュ完了: %1$d 曲</string>

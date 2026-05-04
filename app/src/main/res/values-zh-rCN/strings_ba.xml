@@ -245,6 +245,7 @@
     <string name="ba_catalog_bgm_removed_message">已移除：%1$s · %2$s</string>
     <string name="ba_catalog_bgm_restore_success">已恢复：%1$s 的 BGM 收藏</string>
     <string name="ba_catalog_bgm_cache_success">BGM 已缓存</string>
+    <string name="ba_catalog_bgm_cache_removed">BGM 缓存已移除</string>
     <string name="ba_catalog_bgm_cache_failed">BGM 缓存失败</string>
     <string name="ba_catalog_bgm_cache_all_ready">当前列表已全部缓存</string>
     <string name="ba_catalog_bgm_cache_batch_done">批量缓存完成：%1$d 首</string>

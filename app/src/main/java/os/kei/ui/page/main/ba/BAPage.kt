@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +37,7 @@ import os.kei.ui.page.main.ba.openBaExternalLink
 import os.kei.ui.page.main.ba.rememberBaPageUiController
 import os.kei.ui.page.main.ba.saveBaPageSettings
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
@@ -229,12 +231,17 @@ fun BAPage(
     }
     val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
+    val floatingDockBottom by animateDpAsState(
+        targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
+        label = "ba_floating_action_dock_bottom"
+    )
     val baRefreshRunning = ui.baCalendarLoading || ui.baPoolLoading
     val baDockActions = listOf(
         AppFloatingDockAction(
             icon = osLucideCopyIcon(),
             contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
-            iconTint = MiuixTheme.colorScheme.onBackground,
+            iconTint = MiuixTheme.colorScheme.primary,
             onClick = { office.copyFriendCodeToClipboard(context) },
         ),
         AppFloatingDockAction(
@@ -295,7 +302,7 @@ fun BAPage(
                     .padding(
                         start = dockStartPadding,
                         end = dockEndPadding,
-                        bottom = runtime.contentBottomPadding - 24.dp,
+                        bottom = floatingDockBottom,
                     )
             )
         }

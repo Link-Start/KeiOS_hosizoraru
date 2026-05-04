@@ -4,7 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,10 +23,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
 import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.mcp.server.McpServerManager
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
@@ -43,8 +41,6 @@ import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import os.kei.ui.page.main.widget.motion.appFloatingEnter
-import os.kei.ui.page.main.widget.motion.appFloatingExit
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -118,20 +114,6 @@ fun McpPage(
     val portText = pageUiState.portText
     val allowExternal = pageUiState.allowExternal
     val serverName = pageUiState.serverName
-    val floatingToggleButtonVisible = rememberUpdatedState(pageUiState.showFloatingToggleButton)
-    val toggleButtonScrollConnection = remember(mcpPageViewModel, floatingToggleButtonVisible) {
-        object : NestedScrollConnection {
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if (consumed.y < -1f && floatingToggleButtonVisible.value) {
-                    mcpPageViewModel.updateFloatingToggleButtonVisible(false)
-                }
-                if (consumed.y > 1f && !floatingToggleButtonVisible.value) {
-                    mcpPageViewModel.updateFloatingToggleButtonVisible(true)
-                }
-                return Offset.Zero
-            }
-        }
-    }
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val currentUiState by rememberUpdatedState(uiState)
@@ -224,6 +206,11 @@ fun McpPage(
     }
     val floatingToggleStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val floatingToggleEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
+    val floatingDockBottom by animateDpAsState(
+        targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
+        label = "mcp_floating_action_dock_bottom"
+    )
     val copyCurrentConfig: () -> Unit = {
         scope.launch {
             val json = mcpPageViewModel.buildConfigJson(
@@ -398,7 +385,7 @@ fun McpPage(
         AppFloatingDockAction(
             icon = copyIcon,
             contentDescription = copyConfigContentDescription,
-            iconTint = MiuixTheme.colorScheme.onBackground,
+            iconTint = MiuixTheme.colorScheme.primary,
             onClick = copyCurrentConfig
         ),
         AppFloatingDockAction(
@@ -453,7 +440,6 @@ fun McpPage(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(toggleButtonScrollConnection)
         ) {
             AppPageLazyColumn(
                 innerPadding = innerPadding,
@@ -530,22 +516,17 @@ fun McpPage(
                 }
             }
 
-            AnimatedVisibility(
-                visible = pageUiState.showFloatingToggleButton,
-                enter = appFloatingEnter(),
-                exit = appFloatingExit(),
-                modifier = Modifier.align(floatingToggleAlignment)
-            ) {
-                AppFloatingVerticalActionDock(
-                    backdrop = backdrops.content,
-                    actions = dockActions,
-                    modifier = Modifier.padding(
+            AppFloatingVerticalActionDock(
+                backdrop = backdrops.content,
+                actions = dockActions,
+                modifier = Modifier
+                    .align(floatingToggleAlignment)
+                    .padding(
                         start = floatingToggleStartPadding,
                         end = floatingToggleEndPadding,
-                        bottom = runtime.contentBottomPadding - 24.dp
+                        bottom = floatingDockBottom
                     )
                 )
-            }
         }
     }
 

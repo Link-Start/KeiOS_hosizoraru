@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
+import androidx.core.net.toUri
 
 internal data class BaGuideCatalogTransferSaveLocationState(
     val mediaSaveCustomEnabled: Boolean,
@@ -120,21 +121,17 @@ internal fun rememberBaGuideCatalogJsonExportAction(
     fun launchFixedExportFolderPicker() {
         val currentTreeUri = mediaSaveFixedTreeUri
             .takeIf { it.isNotBlank() }
-            ?.let { raw -> runCatching { Uri.parse(raw) }.getOrNull() }
+            ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
         val pickerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
             addFlags(
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                putExtra(
-                    DocumentsContract.EXTRA_INITIAL_URI,
-                    currentTreeUri ?: Uri.parse(
-                        "content://com.android.externalstorage.documents/tree/primary%3ADownload"
-                    )
-                )
-            }
+            putExtra(
+                DocumentsContract.EXTRA_INITIAL_URI,
+                currentTreeUri ?: "content://com.android.externalstorage.documents/tree/primary%3ADownload".toUri()
+            )
         }
         fixedExportFolderLauncher.launch(pickerIntent)
     }
@@ -164,7 +161,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
             }
             val fixedTreeUri = mediaSaveFixedTreeUri
                 .takeIf { it.isNotBlank() }
-                ?.let { raw -> runCatching { Uri.parse(raw) }.getOrNull() }
+                ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
             if (fixedTreeUri == null) {
                 pendingFixedExportRequest = request
                 launchFixedExportFolderPicker()

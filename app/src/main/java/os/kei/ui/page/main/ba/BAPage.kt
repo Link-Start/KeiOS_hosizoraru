@@ -1,10 +1,10 @@
 package os.kei.ui.page.main.ba
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -18,35 +18,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
-import os.kei.ui.page.main.host.pager.MainPageRuntime
-import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.ba.BaCalendarPoolViewModel
-import os.kei.ui.page.main.ba.BaOfficeViewModel
-import os.kei.ui.page.main.ba.BaPageCommonEffects
-import os.kei.ui.page.main.ba.BaPageContent
-import os.kei.ui.page.main.ba.BaSettingsSheet
-import os.kei.ui.page.main.ba.BaTopBar
-import os.kei.ui.page.main.ba.applyBaCalendarRefreshInterval
-import os.kei.ui.page.main.ba.buildBaPageContentActions
-import os.kei.ui.page.main.ba.buildBaPageContentState
-import os.kei.ui.page.main.ba.buildBaSettingsSheetState
-import os.kei.ui.page.main.ba.openBaExternalLink
-import os.kei.ui.page.main.ba.rememberBaPageUiController
-import os.kei.ui.page.main.ba.saveBaPageSettings
-import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.host.pager.MainPageRuntime
+import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.os.osLucideCopyIcon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable

@@ -5,12 +5,7 @@ import android.content.pm.ActivityInfo
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
@@ -26,17 +21,17 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import com.kyant.backdrop.backdrops.layerBackdrop
-import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable

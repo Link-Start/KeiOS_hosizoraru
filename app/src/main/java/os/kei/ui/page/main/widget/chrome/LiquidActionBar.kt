@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -28,46 +27,37 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
-import os.kei.ui.animation.DampedDragAnimation
-import os.kei.ui.animation.InteractiveHighlight
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.motion.AppMotionTokens
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import kotlinx.coroutines.launch
+import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sign
-import kotlinx.coroutines.launch
 
 data class LiquidActionItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -330,9 +320,7 @@ fun LiquidActionBar(
     val interactionLensScale = 1f
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val effectLensDp = UiPerformanceBudget.backdropLens
-    val interactiveHighlightEnabled = isBlurEnabled &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        (layeredStyleEnabled || isInLightTheme)
+    val interactiveHighlightEnabled = isBlurEnabled && (layeredStyleEnabled || isInLightTheme)
     val interactiveHighlight = if (interactiveHighlightEnabled) {
         remember(
             animationScope,

@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,12 +44,12 @@ import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.osLucideSettingsIcon
+import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.blur.isRenderEffectSupported
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme

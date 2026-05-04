@@ -320,8 +320,7 @@ fun LiquidGlassBottomBar(
     }
 
     val interactiveHighlight = if (
-        isLiquidEffectEnabled &&
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        isLiquidEffectEnabled
     ) {
         remember(animationScope, tabWidthPx, isLtr) {
             InteractiveHighlight(

@@ -314,7 +314,7 @@ private fun BaGuideBgmAlbumPrimaryActions(
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
             BaGuideBgmRoundAction(
@@ -435,7 +435,7 @@ private fun BaGuideBgmRoundAction(
     val actionSurfaceColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.14f else 0.34f)
     LiquidSurface(
         backdrop = backdrop,
-        modifier = Modifier.size(52.dp),
+        modifier = Modifier.size(50.dp),
         shape = CircleShape,
         tint = Color.Unspecified,
         surfaceColor = actionSurfaceColor,
@@ -447,7 +447,7 @@ private fun BaGuideBgmRoundAction(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = contentTint,
-            modifier = Modifier.size(23.dp)
+            modifier = Modifier.size(22.dp)
         )
     }
 }
@@ -465,8 +465,8 @@ private fun BaGuideBgmPlayAction(
     LiquidSurface(
         backdrop = backdrop,
         modifier = Modifier
-            .height(52.dp)
-            .widthIn(min = 116.dp),
+            .height(50.dp)
+            .widthIn(min = 92.dp, max = 104.dp),
         shape = ContinuousCapsule,
         tint = Color.Unspecified,
         surfaceColor = actionSurfaceColor,
@@ -477,15 +477,15 @@ private fun BaGuideBgmPlayAction(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
                 contentDescription = null,
                 tint = contentTint,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(20.dp)
             )
             Text(
                 text = stringResource(
@@ -496,8 +496,8 @@ private fun BaGuideBgmPlayAction(
                     }
                 ),
                 color = contentTint,
-                fontSize = AppTypographyTokens.CardHeader.fontSize,
-                lineHeight = AppTypographyTokens.CardHeader.lineHeight,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

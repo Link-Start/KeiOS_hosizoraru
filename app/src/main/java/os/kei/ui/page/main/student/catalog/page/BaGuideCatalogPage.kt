@@ -191,8 +191,6 @@ fun BaGuideCatalogPage(
     val filterSortState = rememberBaGuideCatalogFilterSortState()
     var searchQueries by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
     var showTransferSheet by rememberSaveable { mutableStateOf(false) }
-    var pendingExportPayload by remember { mutableStateOf("") }
-    var pendingExportToast by remember { mutableStateOf("") }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
@@ -231,31 +229,9 @@ fun BaGuideCatalogPage(
             ?: BaGuideBgmQueueMode.Continuous
     }
     val chromePlaybackProgress = playbackSliderPreview ?: chromePlaybackState.progress
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        val payload = pendingExportPayload
-        val toast = pendingExportToast
-        pendingExportPayload = ""
-        pendingExportToast = ""
-        if (uri == null || payload.isBlank()) return@rememberLauncherForActivityResult
-        pageScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openOutputStream(uri)?.bufferedWriter().use { writer ->
-                        if (writer == null) return@runCatching false
-                        writer.write(payload)
-                        true
-                    }
-                }.getOrDefault(false)
-            }
-            Toast.makeText(
-                context,
-                if (success) toast.ifBlank { exportDoneText } else exportFailedText,
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
+    val transferExportAction = rememberBaGuideCatalogJsonExportAction(
+        context, pageScope, exportDoneText, exportFailedText
+    )
     val importStudentFavoritesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -518,14 +494,20 @@ fun BaGuideCatalogPage(
             BaGuideCatalogTransferSheet(
                 show = showTransferSheet,
                 onDismissRequest = { showTransferSheet = false },
+                mediaSaveCustomEnabled = transferExportAction.saveLocationState.mediaSaveCustomEnabled,
+                mediaSaveFixedTreeUri = transferExportAction.saveLocationState.mediaSaveFixedTreeUri,
+                onMediaSaveCustomEnabledChange = transferExportAction.saveLocationState.onMediaSaveCustomEnabledChange,
+                onPickMediaSaveLocation = transferExportAction.saveLocationState.onPickMediaSaveLocation,
                 onExportAllFavorites = {
                     showTransferSheet = false
-                    pendingExportPayload = buildCatalogAllFavoritesExportJson(
-                        favorites = filterSortState.favoriteCatalogEntries,
-                        bgmFavoritesJson = GuideBgmFavoriteStore.buildFavoritesExportJson()
+                    transferExportAction.exportJson(
+                        buildCatalogAllFavoritesExportJson(
+                            favorites = filterSortState.favoriteCatalogEntries,
+                            bgmFavoritesJson = GuideBgmFavoriteStore.buildFavoritesExportJson()
+                        ),
+                        "keios-ba-favorites.json",
+                        allExportSuccessText
                     )
-                    pendingExportToast = allExportSuccessText
-                    exportLauncher.launch("keios-ba-favorites.json")
                 },
                 onImportAllFavorites = {
                     showTransferSheet = false
@@ -533,9 +515,10 @@ fun BaGuideCatalogPage(
                 },
                 onExportStudentFavorites = {
                     showTransferSheet = false
-                    pendingExportPayload = buildCatalogFavoritesExportJson(filterSortState.favoriteCatalogEntries)
-                    pendingExportToast = studentExportSuccessText
-                    exportLauncher.launch("keios-ba-student-favorites.json")
+                    transferExportAction.exportJson(
+                        buildCatalogFavoritesExportJson(filterSortState.favoriteCatalogEntries),
+                        "keios-ba-student-favorites.json", studentExportSuccessText
+                    )
                 },
                 onImportStudentFavorites = {
                     showTransferSheet = false
@@ -543,9 +526,10 @@ fun BaGuideCatalogPage(
                 },
                 onExportBgmFavorites = {
                     showTransferSheet = false
-                    pendingExportPayload = GuideBgmFavoriteStore.buildFavoritesExportJson()
-                    pendingExportToast = bgmExportSuccessText
-                    exportLauncher.launch("keios-ba-bgm-favorites.json")
+                    transferExportAction.exportJson(
+                        GuideBgmFavoriteStore.buildFavoritesExportJson(),
+                        "keios-ba-bgm-favorites.json", bgmExportSuccessText
+                    )
                 },
                 onImportBgmFavorites = {
                     showTransferSheet = false

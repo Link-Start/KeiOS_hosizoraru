@@ -140,6 +140,11 @@
     <string name="ba_catalog_transfer_recommended_summary">Use one favorites bundle for device migration or backup. Students and BGM sync together.</string>
     <string name="ba_catalog_transfer_export_all">Export all</string>
     <string name="ba_catalog_transfer_import_all">Import all</string>
+    <string name="ba_catalog_transfer_save_location">Save location</string>
+    <string name="ba_catalog_transfer_save_location_fixed">Fixed folder</string>
+    <string name="ba_catalog_transfer_save_location_saf">Off: choose a file location through SAF each time.</string>
+    <string name="ba_catalog_transfer_save_location_fixed_empty">On: choose a fixed folder first, then exports save there directly.</string>
+    <string name="ba_catalog_transfer_save_location_fixed_ready">On: exports save directly to the selected fixed folder.</string>
     <string name="ba_catalog_transfer_student_favorites">Favorited students</string>
     <string name="ba_catalog_transfer_student_favorites_summary">Sync only student archive favorites.</string>
     <string name="ba_catalog_transfer_bgm_favorites">Favorited Memorial Lobby BGM</string>

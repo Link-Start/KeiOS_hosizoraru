@@ -139,6 +139,11 @@
     <string name="ba_catalog_transfer_recommended_summary">端末移行やバックアップには、お気に入り一括パックを使います。生徒と BGM をまとめて同期します。</string>
     <string name="ba_catalog_transfer_export_all">すべて書き出し</string>
     <string name="ba_catalog_transfer_import_all">すべて読み込み</string>
+    <string name="ba_catalog_transfer_save_location">保存先</string>
+    <string name="ba_catalog_transfer_save_location_fixed">固定フォルダ</string>
+    <string name="ba_catalog_transfer_save_location_saf">オフ: 書き出しごとに SAF でファイル位置を選択します。</string>
+    <string name="ba_catalog_transfer_save_location_fixed_empty">オン: 最初に固定フォルダを選び、以降は直接保存します。</string>
+    <string name="ba_catalog_transfer_save_location_fixed_ready">オン: 選択済みの固定フォルダに直接保存します。</string>
     <string name="ba_catalog_transfer_student_favorites">お気に入りの生徒</string>
     <string name="ba_catalog_transfer_student_favorites_summary">生徒名簿のお気に入りだけを同期します。</string>
     <string name="ba_catalog_transfer_bgm_favorites">お気に入りのメモリアルロビー BGM</string>

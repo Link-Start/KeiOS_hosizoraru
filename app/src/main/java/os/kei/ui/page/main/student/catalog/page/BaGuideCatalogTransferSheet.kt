@@ -18,8 +18,10 @@ import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideUploadIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
+import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
@@ -30,6 +32,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun BaGuideCatalogTransferSheet(
     show: Boolean,
     onDismissRequest: () -> Unit,
+    mediaSaveCustomEnabled: Boolean,
+    mediaSaveFixedTreeUri: String,
+    onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
+    onPickMediaSaveLocation: () -> Unit,
     onExportAllFavorites: () -> Unit,
     onImportAllFavorites: () -> Unit,
     onExportStudentFavorites: () -> Unit,
@@ -57,6 +63,12 @@ internal fun BaGuideCatalogTransferSheet(
                 onExport = onExportAllFavorites,
                 onImport = onImportAllFavorites
             )
+            BaGuideCatalogTransferSaveLocationGroup(
+                mediaSaveCustomEnabled = mediaSaveCustomEnabled,
+                mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
+                onMediaSaveCustomEnabledChange = onMediaSaveCustomEnabledChange,
+                onPickMediaSaveLocation = onPickMediaSaveLocation
+            )
             BaGuideCatalogTransferGroup(
                 title = stringResource(R.string.ba_catalog_transfer_student_favorites),
                 summary = stringResource(R.string.ba_catalog_transfer_student_favorites_summary),
@@ -74,6 +86,44 @@ internal fun BaGuideCatalogTransferSheet(
                 accent = Color(0xFF22C55E),
                 onExport = onExportBgmFavorites,
                 onImport = onImportBgmFavorites
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaGuideCatalogTransferSaveLocationGroup(
+    mediaSaveCustomEnabled: Boolean,
+    mediaSaveFixedTreeUri: String,
+    onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
+    onPickMediaSaveLocation: () -> Unit
+) {
+    SheetSectionTitle(stringResource(R.string.ba_catalog_transfer_save_location))
+    SheetSectionCard(verticalSpacing = 10.dp) {
+        SheetControlRow(
+            label = stringResource(R.string.ba_catalog_transfer_save_location_fixed),
+            summary = when {
+                !mediaSaveCustomEnabled -> stringResource(R.string.ba_catalog_transfer_save_location_saf)
+                mediaSaveFixedTreeUri.isBlank() -> stringResource(R.string.ba_catalog_transfer_save_location_fixed_empty)
+                else -> stringResource(R.string.ba_catalog_transfer_save_location_fixed_ready)
+            }
+        ) {
+            AppSwitch(
+                checked = mediaSaveCustomEnabled,
+                onCheckedChange = onMediaSaveCustomEnabledChange
+            )
+        }
+        if (mediaSaveCustomEnabled) {
+            AppStandaloneLiquidTextButton(
+                text = stringResource(R.string.ba_settings_action_pick_media_save_location),
+                onClick = onPickMediaSaveLocation,
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = appLucideUploadIcon(),
+                textColor = MiuixTheme.colorScheme.primary,
+                iconTint = MiuixTheme.colorScheme.primary,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
             )
         }
     }

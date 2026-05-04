@@ -8,9 +8,7 @@ import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.ba.support.BaCalendarRefreshIntervalOption
-import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
@@ -44,29 +42,19 @@ internal fun BaTopBarActions(
     calendarRefreshIntervalHours: Int,
     onShowSettings: () -> Unit,
     onShowCalendarIntervalPopupChange: (Boolean) -> Unit,
-    onCopyFriendCode: () -> Unit,
-    onRefreshAll: () -> Unit,
     onCalendarRefreshIntervalSelected: (Int) -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
 ) {
     val editIcon = appLucideEditIcon()
     val refreshIntervalIcon = appLucideConfigIcon()
-    val copyFriendCodeIcon = osLucideCopyIcon()
-    val refreshIcon = appLucideRefreshIcon()
     val editContentDescription = stringResource(R.string.ba_cd_edit)
     val refreshIntervalContentDescription = stringResource(R.string.ba_cd_refresh_interval)
-    val copyFriendCodeContentDescription = stringResource(R.string.ba_cd_copy_friend_code)
-    val refreshContentDescription = stringResource(R.string.ba_cd_refresh)
     val actionItems = remember(
         editContentDescription,
         refreshIntervalContentDescription,
-        copyFriendCodeContentDescription,
-        refreshContentDescription,
         showCalendarIntervalPopup,
         onShowSettings,
         onShowCalendarIntervalPopupChange,
-        onCopyFriendCode,
-        onRefreshAll
     ) {
         listOf(
             LiquidActionItem(
@@ -79,16 +67,6 @@ internal fun BaTopBarActions(
                 contentDescription = refreshIntervalContentDescription,
                 onClick = { onShowCalendarIntervalPopupChange(!showCalendarIntervalPopup) },
             ),
-            LiquidActionItem(
-                icon = copyFriendCodeIcon,
-                contentDescription = copyFriendCodeContentDescription,
-                onClick = onCopyFriendCode,
-            ),
-            LiquidActionItem(
-                icon = refreshIcon,
-                contentDescription = refreshContentDescription,
-                onClick = onRefreshAll,
-            ),
         )
     }
 
@@ -100,7 +78,7 @@ internal fun BaTopBarActions(
             onInteractionChanged = onInteractionChanged,
         )
 
-        LiquidActionBarPopupAnchors(itemCount = 4) { slotIndex, popupAnchorBounds ->
+        LiquidActionBarPopupAnchors(itemCount = 2) { slotIndex, popupAnchorBounds ->
             if (slotIndex == 1 && showCalendarIntervalPopup) {
                 SnapshotWindowListPopup(
                     show = showCalendarIntervalPopup,

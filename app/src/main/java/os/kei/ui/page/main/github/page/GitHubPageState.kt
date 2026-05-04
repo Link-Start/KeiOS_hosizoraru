@@ -131,12 +131,10 @@ internal class GitHubPageState(
     var deleteInProgress by mutableStateOf(false)
     var showFloatingAddButton by mutableStateOf(true)
     var showSearchBar by mutableStateOf(true)
-    private var pendingShowFloatingAddButton: Boolean? = null
     private var pendingShowSearchBar: Boolean? = null
     private var canScrollBackward by mutableStateOf(false)
     private var canScrollForward by mutableStateOf(false)
     private val searchBarVisibilityController = ScrollChromeVisibilityController(searchBarHideThresholdPx)
-    private val addButtonVisibilityController = ScrollChromeVisibilityController(searchBarHideThresholdPx)
 
     val trackedItems = mutableStateListOf<GitHubTrackedApp>()
     val checkStates = mutableStateMapOf<String, VersionCheckUi>()
@@ -153,14 +151,6 @@ internal class GitHubPageState(
 
     val addButtonScrollConnection = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            addButtonVisibilityController.updateWithinScrollBounds(
-                deltaY = available.y,
-                visible = pendingShowFloatingAddButton ?: showFloatingAddButton,
-                canScrollBackward = canScrollBackward,
-                canScrollForward = canScrollForward
-            ) {
-                pendingShowFloatingAddButton = it
-            }
             searchBarVisibilityController.updateWithinScrollBounds(
                 deltaY = available.y,
                 visible = pendingShowSearchBar ?: showSearchBar,
@@ -182,19 +172,12 @@ internal class GitHubPageState(
     }
 
     fun settleScrollChromeVisibility() {
-        pendingShowFloatingAddButton?.let { target ->
-            if (showFloatingAddButton != target) {
-                showFloatingAddButton = target
-            }
-        }
         pendingShowSearchBar?.let { target ->
             if (showSearchBar != target) {
                 showSearchBar = target
             }
         }
-        pendingShowFloatingAddButton = null
         pendingShowSearchBar = null
-        addButtonVisibilityController.reset()
         searchBarVisibilityController.reset()
     }
 

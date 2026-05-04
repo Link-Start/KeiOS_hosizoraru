@@ -398,13 +398,13 @@ fun McpPage(
         AppFloatingDockAction(
             icon = copyIcon,
             contentDescription = copyConfigContentDescription,
-            iconTint = MiuixTheme.colorScheme.primary,
+            iconTint = MiuixTheme.colorScheme.onBackground,
             onClick = copyCurrentConfig
         ),
         AppFloatingDockAction(
             icon = refreshIcon,
             contentDescription = refreshContentDescription,
-            iconTint = if (refreshRunning) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+            iconTint = MiuixTheme.colorScheme.primary,
             enabled = !refreshRunning,
             rotating = refreshRunning,
             onClick = refreshMcpNow

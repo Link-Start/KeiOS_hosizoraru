@@ -437,9 +437,7 @@ fun OsPage(
                 },
                 onRefreshAll = { scope.launch { actionState.refreshAllSections() } },
                 contentBottomPadding = runtime.contentBottomPadding,
-                showFloatingAddButton = !overlayState.showActivityShortcutEditor &&
-                    !overlayState.showActivitySuggestionSheet &&
-                    !overlayState.showShellCommandCardEditor &&
+                showFloatingAddButton = !overlayState.showActivitySuggestionSheet &&
                     !overlayState.showShellCardVisibilityManager,
                 onOpenAddActivityShortcutCard = {
                     overlayState.onActivityCardEditModeChange(OsActivityCardEditMode.Add)

@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -9,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,7 +37,12 @@ import os.kei.ui.page.main.ba.rememberBaPageUiController
 import os.kei.ui.page.main.ba.saveBaPageSettings
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
+import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
+import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
+import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.osLucideCopyIcon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -120,6 +127,13 @@ fun BAPage(
 
     fun refreshPool(force: Boolean = false) {
         ui.refreshPool(force)
+    }
+
+    fun refreshAllBaData() {
+        office.applyCafeStorage()
+        office.applyApRegen()
+        refreshCalendar(force = true)
+        refreshPool(force = true)
     }
 
     fun saveSettings() {
@@ -208,6 +222,30 @@ fun BAPage(
         ui.baPoolError = poolUiState.error
         ui.baPoolLastSyncMs = poolUiState.lastSyncMs
     }
+    val dockAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
+        Alignment.BottomStart
+    } else {
+        Alignment.BottomEnd
+    }
+    val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
+    val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val baRefreshRunning = ui.baCalendarLoading || ui.baPoolLoading
+    val baDockActions = listOf(
+        AppFloatingDockAction(
+            icon = osLucideCopyIcon(),
+            contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
+            iconTint = MiuixTheme.colorScheme.onBackground,
+            onClick = { office.copyFriendCodeToClipboard(context) },
+        ),
+        AppFloatingDockAction(
+            icon = appLucideRefreshIcon(),
+            contentDescription = stringResource(R.string.ba_cd_refresh),
+            iconTint = MiuixTheme.colorScheme.primary,
+            enabled = !baRefreshRunning,
+            rotating = baRefreshRunning,
+            onClick = ::refreshAllBaData,
+        ),
+    )
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -238,13 +276,6 @@ fun BAPage(
                     calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
                     onShowSettings = ::openSettingsSheet,
                     onShowCalendarIntervalPopupChange = { ui.showCalendarIntervalPopup = it },
-                    onCopyFriendCode = { office.copyFriendCodeToClipboard(context) },
-                    onRefreshAll = {
-                        office.applyCafeStorage()
-                        office.applyApRegen()
-                        refreshCalendar(force = true)
-                        refreshPool(force = true)
-                    },
                     onCalendarRefreshIntervalSelected = { hours ->
                         applyBaCalendarRefreshInterval(
                             ui = ui,
@@ -256,6 +287,17 @@ fun BAPage(
                     onInteractionChanged = onActionBarInteractingChanged,
                 )
             }
+            AppFloatingVerticalActionDock(
+                backdrop = backdrops.content,
+                actions = baDockActions,
+                modifier = Modifier
+                    .align(dockAlignment)
+                    .padding(
+                        start = dockStartPadding,
+                        end = dockEndPadding,
+                        bottom = runtime.contentBottomPadding - 24.dp,
+                    )
+            )
         }
 
         BaSettingsSheet(

@@ -137,7 +137,9 @@
     <string name="ba_catalog_action_transfer">Favorites data</string>
     <string name="ba_catalog_transfer_sheet_title">Favorites data</string>
     <string name="ba_catalog_transfer_student_favorites">Favorited students</string>
+    <string name="ba_catalog_transfer_student_favorites_summary">Sync student archive favorites for device migration or saved filtering preferences.</string>
     <string name="ba_catalog_transfer_bgm_favorites">Favorited Memorial Lobby BGM</string>
+    <string name="ba_catalog_transfer_bgm_favorites_summary">Sync music favorites, source students, and audio metadata for the player library.</string>
     <string name="ba_catalog_transfer_export_student_favorites">Export student favorites</string>
     <string name="ba_catalog_transfer_import_student_favorites">Import student favorites</string>
     <string name="ba_catalog_transfer_export_bgm_favorites">Export Memorial Lobby BGM favorites</string>
@@ -148,6 +150,10 @@
     <string name="ba_catalog_transfer_student_import_success">Student favorites imported: %1$d.</string>
     <string name="ba_catalog_transfer_import_failed">Import failed</string>
     <string name="ba_catalog_search_label">Search name / alias / ID</string>
+    <string name="ba_catalog_search_placeholder_student">Search student name, alias, or ID</string>
+    <string name="ba_catalog_search_placeholder_npc_satellite">Search NPC, upcoming student, or ID</string>
+    <string name="ba_catalog_search_placeholder_music">Search student, alias, or resolved BGM</string>
+    <string name="ba_catalog_search_placeholder_playback">Search favorite BGM, student, or source</string>
     <string name="ba_catalog_sync_status_title">Sync status</string>
     <string name="ba_catalog_sync_status_body_retry">Use the refresh button in the upper-right corner to try again.</string>
     <string name="ba_catalog_load_failed">Archive list failed to load.</string>
@@ -157,6 +163,12 @@
     <string name="ba_catalog_empty_subtitle_search">No matching entries.</string>
     <string name="ba_catalog_loading_more">Loading more entries...</string>
     <string name="ba_catalog_student_bgm_title">Student Memorial Lobby BGM</string>
+    <string name="ba_catalog_student_bgm_overview_subtitle">Favorited students stay on top. Tap a student to fetch and preview.</string>
+    <string name="ba_catalog_student_bgm_overview_search_subtitle">%1$d / %2$d students matched</string>
+    <string name="ba_catalog_student_bgm_metric_students">Students</string>
+    <string name="ba_catalog_student_bgm_metric_matched">Matched</string>
+    <string name="ba_catalog_student_bgm_metric_resolved">Resolved</string>
+    <string name="ba_catalog_student_bgm_metric_favorites">Favorites</string>
     <string name="ba_catalog_student_bgm_summary">%1$d students / %2$d resolved / %3$d favorites</string>
     <string name="ba_catalog_student_bgm_summary_search">%1$d / %2$d students matched / %3$d resolved / %4$d favorites</string>
     <string name="ba_catalog_student_bgm_hint">Tap a student card to fetch Memorial Lobby BGM from archive JS data, then preview or favorite it.</string>

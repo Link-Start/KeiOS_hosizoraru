@@ -136,7 +136,9 @@
     <string name="ba_catalog_action_transfer">お気に入りデータ</string>
     <string name="ba_catalog_transfer_sheet_title">お気に入りデータ</string>
     <string name="ba_catalog_transfer_student_favorites">お気に入りの生徒</string>
+    <string name="ba_catalog_transfer_student_favorites_summary">生徒名簿のお気に入り状態を同期し、端末移行や絞り込み設定の保存に使えます。</string>
     <string name="ba_catalog_transfer_bgm_favorites">お気に入りのメモリアルロビー BGM</string>
+    <string name="ba_catalog_transfer_bgm_favorites_summary">音楽のお気に入り、元の生徒、音声情報を同期して再生ライブラリを保ちます。</string>
     <string name="ba_catalog_transfer_export_student_favorites">生徒のお気に入りをエクスポート</string>
     <string name="ba_catalog_transfer_import_student_favorites">生徒のお気に入りをインポート</string>
     <string name="ba_catalog_transfer_export_bgm_favorites">メモリアルロビー BGM お気に入りをエクスポート</string>
@@ -147,6 +149,10 @@
     <string name="ba_catalog_transfer_student_import_success">生徒のお気に入りをインポートしました: %1$d 件。</string>
     <string name="ba_catalog_transfer_import_failed">インポートに失敗しました</string>
     <string name="ba_catalog_search_label">名前 / 別名 / ID を検索</string>
+    <string name="ba_catalog_search_placeholder_student">生徒名、別名、ID を検索</string>
+    <string name="ba_catalog_search_placeholder_npc_satellite">NPC、未実装生徒、ID を検索</string>
+    <string name="ba_catalog_search_placeholder_music">生徒、別名、解析済み BGM を検索</string>
+    <string name="ba_catalog_search_placeholder_playback">お気に入り BGM、生徒、元データを検索</string>
     <string name="ba_catalog_sync_status_title">同期状態</string>
     <string name="ba_catalog_sync_status_body_retry">右上の更新ボタンから再試行できます。</string>
     <string name="ba_catalog_load_failed">生徒名簿の読み込みに失敗しました。</string>
@@ -156,6 +162,12 @@
     <string name="ba_catalog_empty_subtitle_search">一致する項目はありません。</string>
     <string name="ba_catalog_loading_more">さらに読み込み中...</string>
     <string name="ba_catalog_student_bgm_title">生徒メモリアルロビー BGM</string>
+    <string name="ba_catalog_student_bgm_overview_subtitle">お気に入りの生徒を上部に表示し、タップで取得と試聴ができます。</string>
+    <string name="ba_catalog_student_bgm_overview_search_subtitle">%1$d / %2$d 人が一致</string>
+    <string name="ba_catalog_student_bgm_metric_students">生徒</string>
+    <string name="ba_catalog_student_bgm_metric_matched">一致</string>
+    <string name="ba_catalog_student_bgm_metric_resolved">解析済み</string>
+    <string name="ba_catalog_student_bgm_metric_favorites">お気に入り</string>
     <string name="ba_catalog_student_bgm_summary">%1$d 人 / 解析済み %2$d 曲 / お気に入り %3$d 曲</string>
     <string name="ba_catalog_student_bgm_summary_search">一致 %1$d / %2$d 人 / 解析済み %3$d 曲 / お気に入り %4$d 曲</string>
     <string name="ba_catalog_student_bgm_hint">生徒カードを押すと名簿 JS データからメモリアルロビー BGM を取得し、試聴やお気に入り登録ができます。</string>

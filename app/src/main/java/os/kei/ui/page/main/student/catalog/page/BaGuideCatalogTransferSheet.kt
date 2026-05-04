@@ -1,10 +1,11 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -16,6 +17,9 @@ import os.kei.ui.page.main.os.appLucideUploadIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.sheet.SheetContentColumn
+import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -34,14 +38,15 @@ internal fun BaGuideCatalogTransferSheet(
         title = stringResource(R.string.ba_catalog_transfer_sheet_title),
         onDismissRequest = onDismissRequest
     ) {
-        Column(
+        SheetContentColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalSpacing = 12.dp
         ) {
             BaGuideCatalogTransferGroup(
                 title = stringResource(R.string.ba_catalog_transfer_student_favorites),
+                summary = stringResource(R.string.ba_catalog_transfer_student_favorites_summary),
                 exportText = stringResource(R.string.ba_catalog_transfer_export_student_favorites),
                 importText = stringResource(R.string.ba_catalog_transfer_import_student_favorites),
                 accent = MiuixTheme.colorScheme.primary,
@@ -50,6 +55,7 @@ internal fun BaGuideCatalogTransferSheet(
             )
             BaGuideCatalogTransferGroup(
                 title = stringResource(R.string.ba_catalog_transfer_bgm_favorites),
+                summary = stringResource(R.string.ba_catalog_transfer_bgm_favorites_summary),
                 exportText = stringResource(R.string.ba_catalog_transfer_export_bgm_favorites),
                 importText = stringResource(R.string.ba_catalog_transfer_import_bgm_favorites),
                 accent = Color(0xFF22C55E),
@@ -63,46 +69,50 @@ internal fun BaGuideCatalogTransferSheet(
 @Composable
 private fun BaGuideCatalogTransferGroup(
     title: String,
+    summary: String,
     exportText: String,
     importText: String,
     accent: Color,
     onExport: () -> Unit,
     onImport: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    SheetSectionTitle(title)
+    SheetSectionCard(verticalSpacing = 10.dp) {
         Text(
-            text = title,
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight,
-            fontWeight = AppTypographyTokens.CardHeader.fontWeight,
-            maxLines = 1,
+            text = summary,
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        AppStandaloneLiquidTextButton(
-            text = exportText,
-            onClick = onExport,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = appLucideDownloadIcon(),
-            textColor = accent,
-            iconTint = accent,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis
-        )
-        AppStandaloneLiquidTextButton(
-            text = importText,
-            onClick = onImport,
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = appLucideUploadIcon(),
-            textColor = accent,
-            iconTint = accent,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AppStandaloneLiquidTextButton(
+                text = exportText,
+                onClick = onExport,
+                modifier = Modifier.weight(1f),
+                leadingIcon = appLucideDownloadIcon(),
+                textColor = accent,
+                iconTint = accent,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+            AppStandaloneLiquidTextButton(
+                text = importText,
+                onClick = onImport,
+                modifier = Modifier.weight(1f),
+                leadingIcon = appLucideUploadIcon(),
+                textColor = accent,
+                iconTint = accent,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

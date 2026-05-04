@@ -111,8 +111,17 @@ internal fun BaGuideStudentBgmTabContent(
     val allStudentEntries = remember(catalog) {
         catalog.entries(BaGuideCatalogTab.Student).sortedBy { it.order }
     }
-    val filteredEntries = remember(allStudentEntries, searchQuery) {
-        allStudentEntries.filterByQuery(searchQuery)
+    val favoriteSourceUrls = remember(favorites) {
+        favorites.mapTo(mutableSetOf()) { favorite -> normalizeGuideUrl(favorite.sourceUrl) }
+    }
+    val filteredEntries = remember(allStudentEntries, searchQuery, favoriteSourceUrls) {
+        allStudentEntries
+            .filterByQuery(searchQuery)
+            .sortedWith(
+                compareByDescending<BaGuideCatalogEntry> { entry ->
+                    normalizeGuideUrl(entry.detailUrl) in favoriteSourceUrls
+                }.thenBy { entry -> entry.order }
+            )
     }
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()

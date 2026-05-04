@@ -71,6 +71,7 @@ internal fun DebugBgmFloatingBottomChrome(
     searchVisible: Boolean,
     searchInputActive: Boolean,
     searchQuery: String,
+    searchPlaceholder: String? = null,
     onSearchQueryChange: (String) -> Unit,
     onSearchInputActiveChange: (Boolean) -> Unit,
     selectedDockKey: String,
@@ -350,6 +351,7 @@ internal fun DebugBgmFloatingBottomChrome(
             if (searchFieldVisible) {
                 DebugBgmBottomSearchField(
                     query = searchQuery,
+                    placeholder = searchPlaceholder,
                     onQueryChange = onSearchQueryChange,
                     focusRequester = searchFocusRequester,
                     onFocusActiveChange = onSearchInputActiveChange,
@@ -372,6 +374,7 @@ internal fun DebugBgmFloatingBottomChrome(
 @Composable
 private fun DebugBgmBottomSearchField(
     query: String,
+    placeholder: String?,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
     onFocusActiveChange: (Boolean) -> Unit,
@@ -379,7 +382,7 @@ private fun DebugBgmBottomSearchField(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    val placeholder = stringResource(R.string.debug_component_lab_search_placeholder)
+    val resolvedPlaceholder = placeholder ?: stringResource(R.string.debug_component_lab_search_placeholder)
     val contentColor = MiuixTheme.colorScheme.onBackground
     val placeholderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
     val interactionSource = remember { MutableInteractionSource() }
@@ -437,7 +440,7 @@ private fun DebugBgmBottomSearchField(
                 ) {
                     if (query.isBlank()) {
                         BasicText(
-                            text = placeholder,
+                            text = resolvedPlaceholder,
                             style = textStyle.copy(color = placeholderColor),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis

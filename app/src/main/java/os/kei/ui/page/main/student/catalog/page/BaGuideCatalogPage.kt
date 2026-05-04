@@ -141,7 +141,6 @@ fun BaGuideCatalogPage(
         UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
     }
     val pageTitle = stringResource(R.string.ba_catalog_page_title)
-    val searchLabel = stringResource(R.string.ba_catalog_search_label)
     val accent = MiuixTheme.colorScheme.primary
     val isDark = isSystemInDarkTheme()
     val density = LocalDensity.current
@@ -152,16 +151,10 @@ fun BaGuideCatalogPage(
         onDispose { }
     }
     val pageChromeBackdrop: LayerBackdrop = key("ba-catalog-page-$activationCount-$isDark") {
-        rememberLayerBackdrop {
-            drawRect(panelBackground)
-            drawContent()
-        }
+        rememberLayerBackdrop()
     }
     val bottomChromeBackdrop: LayerBackdrop = key("ba-catalog-bottom-$activationCount-$isDark") {
-        rememberLayerBackdrop {
-            drawRect(panelBackground)
-            drawContent()
-        }
+        rememberLayerBackdrop()
     }
 
     val loadFailedText = stringResource(R.string.ba_catalog_load_failed)
@@ -220,7 +213,14 @@ fun BaGuideCatalogPage(
     val chromeActiveTab = tabs.getOrElse(chromeActivePageIndex) { BaGuideCatalogPageTab.Student }
     val chromeCurrentTitle = stringResource(id = chromeActiveTab.labelRes)
     val chromeSearchQuery = searchQueries[chromeActiveTab.name].orEmpty()
-    val chromeCurrentMeta = chromeSearchQuery.ifBlank { searchLabel }
+    val chromeSearchPlaceholder = stringResource(
+        when (chromeActiveTab) {
+            BaGuideCatalogPageTab.Student -> R.string.ba_catalog_search_placeholder_student
+            BaGuideCatalogPageTab.NpcSatellite -> R.string.ba_catalog_search_placeholder_npc_satellite
+            BaGuideCatalogPageTab.StudentBgm -> R.string.ba_catalog_search_placeholder_music
+            BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
+        }
+    )
     val chromePlaybackFavorite = favoriteBgms.firstOrNull { it.audioUrl == playbackSnapshot.selectedAudioUrl }
         ?: favoriteBgms.firstOrNull()
     val chromeQueueMode = remember(playbackSnapshot.queueModeName) {
@@ -386,11 +386,6 @@ fun BaGuideCatalogPage(
                 .fillMaxSize()
                 .layerBackdrop(bottomChromeBackdrop)
         ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(pageChromeBackdrop)
-            )
             val progress = rememberCatalogSyncProgress(
                 loading = catalogDataState.loading,
                 animationsEnabled = transitionAnimationsEnabled
@@ -405,7 +400,9 @@ fun BaGuideCatalogPage(
                 key = { index -> tabs[index].name },
                 userScrollEnabled = !sliderInteractionActive,
                 beyondViewportPageCount = preloadPolicy.catalogPagerBeyondViewportPageCount,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(pageChromeBackdrop)
             ) { pageIndex ->
                 val pageTab = tabs.getOrElse(pageIndex) { BaGuideCatalogPageTab.Student }
                 val renderHeavyContent = pageIndex == pagerState.currentPage ||
@@ -456,7 +453,6 @@ fun BaGuideCatalogPage(
                         pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> BaGuideFavoriteBgmMusicContent(
                             searchQuery = pageSearchQuery,
                             accent = accent,
-                            listBackdrop = pageChromeBackdrop,
                             bottomBarScrollConnection = chromeScrollState,
                             topPadding = CatalogMusicContentTopPadding,
                             bottomPadding = CatalogMusicContentBottomPadding,
@@ -584,6 +580,7 @@ fun BaGuideCatalogPage(
             searchVisible = enableSearchBar && searchVisible,
             searchInputActive = enableSearchBar && searchInputActive,
             searchQuery = chromeSearchQuery,
+            searchPlaceholder = chromeSearchPlaceholder,
             onSearchQueryChange = { query ->
                 searchQueries = searchQueries + (chromeActiveTab.name to query)
             },
@@ -694,7 +691,6 @@ private fun selectChromeFavoriteOffset(
 private fun BaGuideFavoriteBgmMusicContent(
     searchQuery: String,
     accent: Color,
-    listBackdrop: Backdrop,
     bottomBarScrollConnection: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
     topPadding: Dp,
     bottomPadding: Dp,
@@ -723,6 +719,7 @@ private fun BaGuideFavoriteBgmMusicContent(
     }
     var cacheRevision by remember { mutableIntStateOf(0) }
     var cachingAudioUrls by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val contentBackdrop = rememberLayerBackdrop()
     val displayedFavorites = remember(favorites, searchQuery) {
         filterAndSortBgmFavorites(
             favorites = favorites,
@@ -832,88 +829,95 @@ private fun BaGuideFavoriteBgmMusicContent(
         }
     }
 
-    DebugBgmAlbumContent(
-        accent = accent,
-        tracks = tracks,
-        currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
-        isPlaying = runtimeState.isPlaying,
-        repeatEnabled = queueMode == BaGuideBgmQueueMode.SingleLoop,
-        playbackVolume = runtimeState.volume,
-        isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
-        onRepeatClick = {
-            val favorite = selectedFavorite ?: return@DebugBgmAlbumContent
-            val nextMode = if (queueMode == BaGuideBgmQueueMode.Continuous) {
-                BaGuideBgmQueueMode.SingleLoop
-            } else {
-                BaGuideBgmQueueMode.Continuous
-            }
-            queueModeName = nextMode.name
-            GuideBgmFavoritePlaybackStore.saveSelection(favorite.audioUrl, nextMode.name)
-            applyFavoriteBgmQueueMode(appContext, favorite, nextMode)
-        },
-        onPlayPauseClick = {
-            val favorite = selectedFavorite ?: displayedFavorites.firstOrNull() ?: return@DebugBgmAlbumContent
-            selectedAudioUrl = favorite.audioUrl
-            toggleFavoriteBgmPlayback(
-                context = appContext,
-                favorite = favorite,
-                queueMode = queueMode,
-                startPositionMs = GuideBgmFavoritePlaybackStore
-                    .progressFor(favorite.audioUrl)
-                    ?.resumePositionMs
-                    ?: 0L
-            )
-        },
-        onVolumeChange = { volume ->
-            selectedFavorite?.let { favorite ->
-                runtimeState = updateFavoriteBgmVolume(appContext, favorite, volume)
-            }
-        },
-        onVolumeChangeFinished = { volume ->
-            selectedFavorite?.let { favorite ->
-                runtimeState = updateFavoriteBgmVolume(appContext, favorite, volume)
-            }
-        },
-        onSliderInteractionChanged = onSliderInteractionChanged,
-        onTrackClick = { id ->
-            favoritesByTrackId[id]?.let { favorite ->
-                playFavorite(favorite, restart = id == selectedAudioUrl)
-            }
-        },
-        onTrackFavoriteClick = { id ->
-            GuideBgmFavoriteStore.removeFavorite(id)
-            if (selectedAudioUrl == id) selectedAudioUrl = ""
-        },
-        onTrackOfflineClick = { id ->
-            favoritesByTrackId[id]?.let(::cacheFavorite)
-        },
-        onTrackShareClick = { track ->
-            favoritesByTrackId[track.id]?.let { favorite ->
-                GuideDetailTabRequestStore.request(favorite.sourceUrl, GuideBottomTab.Gallery)
-                onOpenGuide(favorite.sourceUrl)
-            }
-        },
-        isTrackOfflineSaved = { id ->
-            favoritesByTrackId[id]?.let { isFavoriteBgmCached(appContext, it) } == true
-        },
-        sectionTitle = sectionTitle,
-        sectionMeta = sectionMeta,
-        sectionFooterTitle = stringResource(R.string.ba_catalog_tab_bgm),
-        offlineTrackCount = displayedFavorites.count { isFavoriteBgmCached(appContext, it) },
-        listState = rememberLazyListState(),
-        collapseProgress = 0f,
-        bottomBarScrollConnection = bottomBarScrollConnection,
-        userScrollEnabled = true,
-        topPadding = topPadding,
-        bottomPadding = bottomPadding,
-        contentBackdrop = listBackdrop,
-        artworkImageUrl = selectedFavorite?.studentImageUrl
-            ?.ifBlank { selectedFavorite.imageUrl }
-            .orEmpty(),
-        showAlbumTitle = false,
-        promoteSectionTitle = true,
-        modifier = Modifier.fillMaxSize()
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .layerBackdrop(contentBackdrop)
+        )
+        DebugBgmAlbumContent(
+            accent = accent,
+            tracks = tracks,
+            currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
+            isPlaying = runtimeState.isPlaying,
+            repeatEnabled = queueMode == BaGuideBgmQueueMode.SingleLoop,
+            playbackVolume = runtimeState.volume,
+            isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
+            onRepeatClick = {
+                val favorite = selectedFavorite ?: return@DebugBgmAlbumContent
+                val nextMode = if (queueMode == BaGuideBgmQueueMode.Continuous) {
+                    BaGuideBgmQueueMode.SingleLoop
+                } else {
+                    BaGuideBgmQueueMode.Continuous
+                }
+                queueModeName = nextMode.name
+                GuideBgmFavoritePlaybackStore.saveSelection(favorite.audioUrl, nextMode.name)
+                applyFavoriteBgmQueueMode(appContext, favorite, nextMode)
+            },
+            onPlayPauseClick = {
+                val favorite = selectedFavorite ?: displayedFavorites.firstOrNull() ?: return@DebugBgmAlbumContent
+                selectedAudioUrl = favorite.audioUrl
+                toggleFavoriteBgmPlayback(
+                    context = appContext,
+                    favorite = favorite,
+                    queueMode = queueMode,
+                    startPositionMs = GuideBgmFavoritePlaybackStore
+                        .progressFor(favorite.audioUrl)
+                        ?.resumePositionMs
+                        ?: 0L
+                )
+            },
+            onVolumeChange = { volume ->
+                selectedFavorite?.let { favorite ->
+                    runtimeState = updateFavoriteBgmVolume(appContext, favorite, volume)
+                }
+            },
+            onVolumeChangeFinished = { volume ->
+                selectedFavorite?.let { favorite ->
+                    runtimeState = updateFavoriteBgmVolume(appContext, favorite, volume)
+                }
+            },
+            onSliderInteractionChanged = onSliderInteractionChanged,
+            onTrackClick = { id ->
+                favoritesByTrackId[id]?.let { favorite ->
+                    playFavorite(favorite, restart = id == selectedAudioUrl)
+                }
+            },
+            onTrackFavoriteClick = { id ->
+                GuideBgmFavoriteStore.removeFavorite(id)
+                if (selectedAudioUrl == id) selectedAudioUrl = ""
+            },
+            onTrackOfflineClick = { id ->
+                favoritesByTrackId[id]?.let(::cacheFavorite)
+            },
+            onTrackShareClick = { track ->
+                favoritesByTrackId[track.id]?.let { favorite ->
+                    GuideDetailTabRequestStore.request(favorite.sourceUrl, GuideBottomTab.Gallery)
+                    onOpenGuide(favorite.sourceUrl)
+                }
+            },
+            isTrackOfflineSaved = { id ->
+                favoritesByTrackId[id]?.let { isFavoriteBgmCached(appContext, it) } == true
+            },
+            sectionTitle = sectionTitle,
+            sectionMeta = sectionMeta,
+            sectionFooterTitle = stringResource(R.string.ba_catalog_tab_bgm),
+            offlineTrackCount = displayedFavorites.count { isFavoriteBgmCached(appContext, it) },
+            listState = rememberLazyListState(),
+            collapseProgress = 0f,
+            bottomBarScrollConnection = bottomBarScrollConnection,
+            userScrollEnabled = true,
+            topPadding = topPadding,
+            bottomPadding = bottomPadding,
+            contentBackdrop = contentBackdrop,
+            artworkImageUrl = selectedFavorite?.studentImageUrl
+                ?.ifBlank { selectedFavorite.imageUrl }
+                .orEmpty(),
+            showAlbumTitle = false,
+            promoteSectionTitle = true,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }
 
 private fun GuideBgmFavoriteItem.toDebugTrack(): DebugBgmTrack {

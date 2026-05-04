@@ -20,12 +20,13 @@ import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.core.AppOverviewCard
+import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -50,75 +51,46 @@ internal fun BaGuideStudentBgmHeader(
     searchActive: Boolean,
     accent: Color
 ) {
-    AppSurfaceCard(
-        containerColor = Color(0x123B82F6),
-        borderColor = accent.copy(alpha = 0.16f)
+    val matchedCount = if (searchActive) displayedCount else totalCount
+    AppOverviewCard(
+        title = stringResource(R.string.ba_catalog_student_bgm_title),
+        subtitle = if (searchActive) {
+            stringResource(R.string.ba_catalog_student_bgm_overview_search_subtitle, matchedCount, totalCount)
+        } else {
+            stringResource(R.string.ba_catalog_student_bgm_overview_subtitle)
+        },
+        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.62f),
+        borderColor = accent.copy(alpha = 0.18f),
+        contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.ba_catalog_student_bgm_title),
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = AppTypographyTokens.Body.fontSize,
-                        lineHeight = AppTypographyTokens.Body.lineHeight,
-                        fontWeight = AppTypographyTokens.CardHeader.fontWeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = if (searchActive) {
-                            stringResource(
-                                R.string.ba_catalog_student_bgm_summary_search,
-                                displayedCount.coerceAtLeast(0),
-                                totalCount.coerceAtLeast(0),
-                                resolvedCount.coerceAtLeast(0),
-                                favoriteCount.coerceAtLeast(0)
-                            )
-                        } else {
-                            stringResource(
-                                R.string.ba_catalog_student_bgm_summary,
-                                totalCount.coerceAtLeast(0),
-                                resolvedCount.coerceAtLeast(0),
-                                favoriteCount.coerceAtLeast(0)
-                            )
-                        },
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        fontSize = AppTypographyTokens.Supporting.fontSize,
-                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                StatusPill(
-                    label = if (loadingCount > 0) {
-                        stringResource(R.string.ba_catalog_student_bgm_resolving_count, loadingCount)
+            AppOverviewMetricTile(
+                label = stringResource(
+                    if (searchActive) {
+                        R.string.ba_catalog_student_bgm_metric_matched
                     } else {
-                        stringResource(R.string.ba_catalog_student_bgm_ready_count, resolvedCount)
-                    },
-                    color = accent,
-                    size = AppStatusPillSize.Compact
-                )
-            }
-            Text(
-                text = stringResource(R.string.ba_catalog_student_bgm_hint),
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                        R.string.ba_catalog_student_bgm_metric_students
+                    }
+                ),
+                value = matchedCount.coerceAtLeast(0).toString(),
+                valueColor = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
+            )
+            AppOverviewMetricTile(
+                label = stringResource(R.string.ba_catalog_student_bgm_metric_resolved),
+                value = resolvedCount.coerceAtLeast(0).toString(),
+                valueColor = if (loadingCount > 0) Color(0xFFF59E0B) else accent,
+                modifier = Modifier.weight(1f)
+            )
+            AppOverviewMetricTile(
+                label = stringResource(R.string.ba_catalog_student_bgm_metric_favorites),
+                value = favoriteCount.coerceAtLeast(0).toString(),
+                valueColor = Color(0xFFEC4899),
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -150,7 +122,6 @@ internal fun BaGuideStudentBgmCard(
         else -> MiuixTheme.colorScheme.surface.copy(alpha = 0.58f)
     }
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
-    val neutralContainer = MiuixTheme.colorScheme.surfaceContainer
     val subtitle = entry.aliasDisplay.takeIf { it.isNotBlank() }
     AppSurfaceCard(
         containerColor = containerColor,
@@ -232,7 +203,7 @@ internal fun BaGuideStudentBgmCard(
                     )
                 }
             }
-            AppStandaloneLiquidIconButton(
+            AppCompactIconAction(
                 icon = if (playing) appLucidePauseIcon() else appLucidePlayIcon(),
                 contentDescription = stringResource(
                     if (playing) {
@@ -242,14 +213,12 @@ internal fun BaGuideStudentBgmCard(
                     }
                 ),
                 onClick = onPlay,
-                width = 38.dp,
-                height = 38.dp,
-                variant = GlassVariant.Compact,
-                iconTint = if (playing || selected) Color.White else neutralTint,
-                containerColor = if (playing || selected) accent else neutralContainer,
+                modifier = Modifier.size(44.dp),
+                tint = if (playing || selected) accent else neutralTint,
+                minSize = 44.dp,
                 enabled = !isLoading
             )
-            AppStandaloneLiquidIconButton(
+            AppCompactIconAction(
                 icon = appLucideHeartIcon(),
                 contentDescription = stringResource(
                     if (favorite) {
@@ -259,22 +228,18 @@ internal fun BaGuideStudentBgmCard(
                     }
                 ),
                 onClick = onToggleFavorite,
-                width = 34.dp,
-                height = 34.dp,
-                variant = GlassVariant.Compact,
-                iconTint = if (favorite) Color(0xFFEC4899) else neutralTint,
-                containerColor = if (favorite) Color(0x33EC4899) else neutralContainer,
+                modifier = Modifier.size(42.dp),
+                tint = if (favorite) Color(0xFFEC4899) else neutralTint,
+                minSize = 42.dp,
                 enabled = !isLoading
             )
-            AppStandaloneLiquidIconButton(
+            AppCompactIconAction(
                 icon = appLucideExternalLinkIcon(),
                 contentDescription = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
                 onClick = onOpenGuide,
-                width = 34.dp,
-                height = 34.dp,
-                variant = GlassVariant.Compact,
-                iconTint = neutralTint,
-                containerColor = neutralContainer
+                modifier = Modifier.size(42.dp),
+                tint = neutralTint,
+                minSize = 42.dp
             )
         }
     }

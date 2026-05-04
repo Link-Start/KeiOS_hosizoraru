@@ -58,6 +58,9 @@ internal fun appLucideSortIcon(): ImageVector = osLucideVector(LucideR.drawable.
 internal fun appLucideRefreshIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_refresh_cw)
 
 @Composable
+internal fun appLucideCalendarIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_calendar_days)
+
+@Composable
 internal fun appLucideNotesIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_notebook_text)
 
 @Composable

@@ -41,6 +41,8 @@
     <string name="ba_id_nickname_suffix">Sensei</string>
     <string name="ba_id_label_friend_code">Friend Code</string>
     <string name="ba_calendar_title_format">Event Calendar | %1$s</string>
+    <string name="ba_calendar_activity_title">Event Calendar</string>
+    <string name="ba_calendar_cd_open_activity">Open event calendar</string>
     <string name="ba_calendar_cd_refresh">Refresh event calendar</string>
     <string name="ba_calendar_empty_all">No events</string>
     <string name="ba_calendar_empty_active">No active or upcoming events</string>

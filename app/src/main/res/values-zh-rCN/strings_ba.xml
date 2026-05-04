@@ -41,6 +41,8 @@
     <string name="ba_id_nickname_suffix">老师</string>
     <string name="ba_id_label_friend_code">好友码</string>
     <string name="ba_calendar_title_format">活动日历 · %1$s</string>
+    <string name="ba_calendar_activity_title">活动日历</string>
+    <string name="ba_calendar_cd_open_activity">打开活动日历</string>
     <string name="ba_calendar_cd_refresh">刷新活动日历</string>
     <string name="ba_calendar_empty_all">暂无活动</string>
     <string name="ba_calendar_empty_active">暂无进行中或即将开始的活动</string>

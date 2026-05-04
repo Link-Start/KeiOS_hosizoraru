@@ -22,6 +22,7 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -230,6 +231,12 @@ fun BAPage(
             contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
             iconTint = MiuixTheme.colorScheme.primary,
             onClick = { office.copyFriendCodeToClipboard(context) },
+        ),
+        AppFloatingDockAction(
+            icon = appLucideCalendarIcon(),
+            contentDescription = stringResource(R.string.ba_calendar_cd_open_activity),
+            iconTint = MiuixTheme.colorScheme.primary,
+            onClick = { BaActivityCalendarActivity.launch(context) },
         ),
         AppFloatingDockAction(
             icon = appLucideRefreshIcon(),

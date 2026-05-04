@@ -14,12 +14,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.ba.card.BaCafeCard
-import os.kei.ui.page.main.ba.card.BaCalendarCard
 import os.kei.ui.page.main.ba.card.BaDebugCard
 import os.kei.ui.page.main.ba.card.BaIdCard
 import os.kei.ui.page.main.ba.card.BaOverviewCard
 import os.kei.ui.page.main.ba.card.BaPoolCard
-import os.kei.ui.page.main.ba.card.filterVisibleCalendarEntries
 import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
 import os.kei.ui.page.main.ba.support.BAInitState
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
@@ -102,17 +100,6 @@ internal fun BaPageContent(
         (state.uiNowMs / sectionTickMs).coerceAtLeast(0L) * sectionTickMs
     }
     val calendarPoolEffectsEnabled = true
-    val visibleCalendarEntries = remember(
-        state.baCalendarEntries,
-        state.showEndedActivities,
-        calendarPoolNowMs
-    ) {
-        filterVisibleCalendarEntries(
-            entries = state.baCalendarEntries,
-            showEndedActivities = state.showEndedActivities,
-            nowMs = calendarPoolNowMs
-        )
-    }
     val visiblePoolEntries = remember(
         state.baPoolEntries,
         state.showEndedPools,
@@ -193,25 +180,6 @@ internal fun BaPageContent(
                 onForceResetInviteTicket1Cooldown = actions.onForceResetInviteTicket1Cooldown,
                 onUseInviteTicket2 = actions.onUseInviteTicket2,
                 onForceResetInviteTicket2Cooldown = actions.onForceResetInviteTicket2Cooldown,
-            )
-        }
-
-        item {
-            BaCalendarCard(
-                backdrop = backdrop,
-                isPageActive = state.isPageActive,
-                serverOptions = state.serverOptions,
-                serverIndex = state.serverIndex,
-                baCalendarLoading = state.baCalendarLoading,
-                baCalendarLastSyncMs = state.baCalendarLastSyncMs,
-                baCalendarError = state.baCalendarError,
-                visibleCalendarEntries = visibleCalendarEntries,
-                nowMs = calendarPoolNowMs,
-                showEndedActivities = state.showEndedActivities,
-                showCalendarPoolImages = state.showCalendarPoolImages,
-                effectsEnabled = calendarPoolEffectsEnabled,
-                onRefreshCalendar = actions.onRefreshCalendar,
-                onOpenCalendarLink = actions.onOpenCalendarLink
             )
         }
 

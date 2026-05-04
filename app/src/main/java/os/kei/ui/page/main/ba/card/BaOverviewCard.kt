@@ -168,11 +168,6 @@ internal fun BaOverviewCard(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(stringResource(R.string.ba_overview_server_label), color = MiuixTheme.colorScheme.onBackground)
-                            Image(
-                                painter = painterResource(id = R.drawable.lobby_icon_work),
-                                contentDescription = stringResource(R.string.ba_overview_cd_server_icon),
-                                modifier = Modifier.size(18.dp),
-                            )
                         }
                     }
                     AppDropdownSelector(

@@ -41,6 +41,8 @@
     <string name="ba_id_nickname_suffix">先生</string>
     <string name="ba_id_label_friend_code">フレンドコード</string>
     <string name="ba_calendar_title_format">イベントカレンダー | %1$s</string>
+    <string name="ba_calendar_activity_title">イベントカレンダー</string>
+    <string name="ba_calendar_cd_open_activity">イベントカレンダーを開く</string>
     <string name="ba_calendar_cd_refresh">イベントカレンダーを更新</string>
     <string name="ba_calendar_empty_all">イベントはありません</string>
     <string name="ba_calendar_empty_active">開催中または開催予定のイベントはありません</string>

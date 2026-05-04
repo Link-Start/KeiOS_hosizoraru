@@ -299,6 +299,7 @@ private fun DebugBgmAlbumPrimaryActions(
                 contentDescription = stringResource(R.string.debug_component_lab_action_repeat),
                 accent = accent,
                 neutralTint = neutralTint,
+                active = repeatEnabled,
                 onClick = onRepeatClick,
                 backdrop = actionsBackdrop
             )
@@ -314,6 +315,7 @@ private fun DebugBgmAlbumPrimaryActions(
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
                 accent = accent,
                 neutralTint = neutralTint,
+                active = volumeControlVisible,
                 onClick = onVolumeClick,
                 backdrop = actionsBackdrop
             )
@@ -335,7 +337,8 @@ private fun DebugBgmAlbumVolumeControl(
     val volumeBackdrop = rememberLayerBackdrop()
     val sliderBackdrop = rememberCombinedBackdrop(backdrop, volumeBackdrop)
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
-    val activeTint = if (sliderActive) accent.copy(alpha = 0.95f) else neutralTint
+    val sliderTint = if (sliderActive) accent.copy(alpha = 0.95f) else neutralTint.copy(alpha = 0.74f)
+    val sliderInactiveTint = neutralTint.copy(alpha = 0.18f)
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -356,7 +359,7 @@ private fun DebugBgmAlbumVolumeControl(
             Icon(
                 imageVector = appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
-                tint = activeTint,
+                tint = sliderTint,
                 modifier = Modifier.size(22.dp)
             )
             LiquidVolumeSlider(
@@ -370,7 +373,8 @@ private fun DebugBgmAlbumVolumeControl(
                 valueRange = 0f..1f,
                 visibilityThreshold = 0.001f,
                 backdrop = sliderBackdrop,
-                activeColor = activeTint,
+                activeColor = sliderTint,
+                inactiveColor = sliderInactiveTint,
                 modifier = Modifier
                     .weight(1f)
                     .height(30.dp)
@@ -392,11 +396,12 @@ private fun DebugBgmRoundAction(
     contentDescription: String,
     accent: Color,
     neutralTint: Color,
+    active: Boolean,
     onClick: () -> Unit = {},
     backdrop: Backdrop
 ) {
     var pressed by rememberSaveable { mutableStateOf(false) }
-    val contentTint = if (pressed) accent.copy(alpha = 0.98f) else neutralTint
+    val contentTint = if (pressed || active) accent.copy(alpha = 0.98f) else neutralTint
     AppLiquidIconButton(
         backdrop = backdrop,
         icon = icon,
@@ -421,7 +426,7 @@ private fun DebugBgmPlayAction(
     backdrop: Backdrop
 ) {
     var pressed by rememberSaveable { mutableStateOf(false) }
-    val contentTint = if (pressed) accent.copy(alpha = 0.98f) else neutralTint
+    val contentTint = if (pressed || isPlaying) accent.copy(alpha = 0.98f) else neutralTint
     AppLiquidTextButton(
         backdrop = backdrop,
         text = stringResource(

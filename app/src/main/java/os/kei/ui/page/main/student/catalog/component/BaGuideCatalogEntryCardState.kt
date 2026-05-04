@@ -54,7 +54,7 @@ internal fun rememberBaGuideCatalogEntryCardUiState(
     val favoriteActionColor = if (isFavorite) {
         Color(0xFFEC4899)
     } else {
-        Color(0xFF3B82F6)
+        MiuixTheme.colorScheme.onBackgroundVariant
     }
     val borderColor = if (isFavorite) {
         Color(0x99EC4899)

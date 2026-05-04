@@ -14,12 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -101,15 +100,13 @@ internal fun BaGuideCatalogEntryCard(
                     }
                 }
             }
-            AppStandaloneLiquidIconButton(
+            AppCompactIconAction(
                 icon = MiuixIcons.Regular.FavoritesFill,
                 contentDescription = uiState.favoriteContentDescription,
                 onClick = { onToggleFavorite(entry.contentId) },
-                width = 34.dp,
-                height = 34.dp,
-                variant = GlassVariant.Floating,
-                iconTint = uiState.favoriteActionColor,
-                containerColor = uiState.favoriteActionColor
+                modifier = Modifier.size(40.dp),
+                tint = uiState.favoriteActionColor,
+                minSize = 40.dp
             )
         }
     }

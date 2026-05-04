@@ -54,14 +54,24 @@ internal fun BaGuideStudentBgmHeader(
     val matchedCount = if (searchActive) displayedCount else totalCount
     AppOverviewCard(
         title = stringResource(R.string.ba_catalog_student_bgm_title),
-        subtitle = if (searchActive) {
-            stringResource(R.string.ba_catalog_student_bgm_overview_search_subtitle, matchedCount, totalCount)
-        } else {
-            stringResource(R.string.ba_catalog_student_bgm_overview_subtitle)
-        },
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.62f),
-        borderColor = accent.copy(alpha = 0.18f),
-        contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
+        subtitle = "",
+        containerColor = MiuixTheme.colorScheme.surface.copy(alpha = 0.62f),
+        borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
+        contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
+        headerEndActions = {
+            if (loadingCount > 0) {
+                StatusPill(
+                    label = stringResource(R.string.ba_catalog_student_bgm_resolving_count, loadingCount),
+                    color = Color(0xFFF59E0B),
+                    size = AppStatusPillSize.Compact
+                )
+            }
+            StatusPill(
+                label = stringResource(R.string.ba_catalog_student_bgm_ready_count, resolvedCount.coerceAtLeast(0)),
+                color = accent,
+                size = AppStatusPillSize.Compact
+            )
+        }
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -78,12 +88,6 @@ internal fun BaGuideStudentBgmHeader(
                 ),
                 value = matchedCount.coerceAtLeast(0).toString(),
                 valueColor = MiuixTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f)
-            )
-            AppOverviewMetricTile(
-                label = stringResource(R.string.ba_catalog_student_bgm_metric_resolved),
-                value = resolvedCount.coerceAtLeast(0).toString(),
-                valueColor = if (loadingCount > 0) Color(0xFFF59E0B) else accent,
                 modifier = Modifier.weight(1f)
             )
             AppOverviewMetricTile(
@@ -111,14 +115,16 @@ internal fun BaGuideStudentBgmCard(
     val isLoading = lookupState == BaGuideStudentBgmLookupState.Loading
     val isMissing = lookupState == BaGuideStudentBgmLookupState.Missing
     val ready = lookupState as? BaGuideStudentBgmLookupState.Ready
+    val cached = ready?.item?.fromCache == true
     val borderColor = when {
-        selected -> accent.copy(alpha = 0.38f)
         favorite -> Color(0xFFEC4899).copy(alpha = 0.34f)
+        selected -> accent.copy(alpha = 0.38f)
+        cached -> accent.copy(alpha = 0.22f)
         else -> MiuixTheme.colorScheme.outline.copy(alpha = 0.16f)
     }
     val containerColor = when {
-        selected -> accent.copy(alpha = 0.11f)
         favorite -> Color(0xFFEC4899).copy(alpha = 0.08f)
+        cached -> accent.copy(alpha = 0.11f)
         else -> MiuixTheme.colorScheme.surface.copy(alpha = 0.58f)
     }
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
@@ -180,12 +186,11 @@ internal fun BaGuideStudentBgmCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isLoading || isMissing || ready != null) {
+                    if (isLoading || isMissing) {
                         StatusPill(
                             label = when {
                                 isLoading -> stringResource(R.string.ba_catalog_student_bgm_status_resolving)
                                 isMissing -> stringResource(R.string.ba_catalog_student_bgm_status_missing)
-                                ready?.item?.fromCache == true -> stringResource(R.string.ba_catalog_student_bgm_status_cached_detail)
                                 else -> stringResource(R.string.ba_catalog_student_bgm_status_ready)
                             },
                             color = when {

@@ -60,6 +60,7 @@ internal fun DebugBgmFloatingBottomChrome(
     accent: Color,
     scrollState: DebugBgmBottomChromeScrollState,
     currentTrackTitle: String,
+    artworkImageUrl: String = "",
     isPlaying: Boolean,
     playbackProgress: Float,
     onPlaybackProgressChange: (Float) -> Unit,
@@ -295,6 +296,7 @@ internal fun DebugBgmFloatingBottomChrome(
                 DebugBgmMiniPlayer(
                     accent = accent,
                     currentTrackTitle = currentTrackTitle,
+                    artworkImageUrl = artworkImageUrl,
                     isPlaying = isPlaying,
                     playbackProgress = playbackProgress,
                     onPlaybackProgressChange = onPlaybackProgressChange,

@@ -64,6 +64,8 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackRuntimeState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
@@ -82,6 +84,7 @@ import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
+import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -223,6 +226,9 @@ fun BaGuideCatalogPage(
     )
     val chromePlaybackFavorite = favoriteBgms.firstOrNull { it.audioUrl == playbackSnapshot.selectedAudioUrl }
         ?: favoriteBgms.firstOrNull()
+    val chromeArtworkImageUrl = chromePlaybackFavorite
+        ?.studentArtworkImageUrl(catalogDataState.catalog)
+        .orEmpty()
     val chromeQueueMode = remember(playbackSnapshot.queueModeName) {
         BaGuideBgmQueueMode.entries.firstOrNull { it.name == playbackSnapshot.queueModeName }
             ?: BaGuideBgmQueueMode.Continuous
@@ -451,6 +457,7 @@ fun BaGuideCatalogPage(
                             onOpenGuide = onOpenGuide
                         )
                         pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> BaGuideFavoriteBgmMusicContent(
+                            catalog = catalogDataState.catalog,
                             searchQuery = pageSearchQuery,
                             accent = accent,
                             bottomBarScrollConnection = chromeScrollState,
@@ -527,6 +534,7 @@ fun BaGuideCatalogPage(
                 ?.studentTitle
                 ?.ifBlank { chromeCurrentTitle }
                 ?: chromeCurrentTitle,
+            artworkImageUrl = chromeArtworkImageUrl,
             isPlaying = chromePlaybackState.isPlaying,
             playbackProgress = chromePlaybackProgress,
             onPlaybackProgressChange = { progress ->
@@ -689,6 +697,7 @@ private fun selectChromeFavoriteOffset(
 
 @Composable
 private fun BaGuideFavoriteBgmMusicContent(
+    catalog: BaGuideCatalogBundle,
     searchQuery: String,
     accent: Color,
     bottomBarScrollConnection: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
@@ -910,14 +919,62 @@ private fun BaGuideFavoriteBgmMusicContent(
             topPadding = topPadding,
             bottomPadding = bottomPadding,
             contentBackdrop = contentBackdrop,
-            artworkImageUrl = selectedFavorite?.studentImageUrl
-                ?.ifBlank { selectedFavorite.imageUrl }
+            artworkImageUrl = selectedFavorite
+                ?.studentArtworkImageUrl(catalog)
                 .orEmpty(),
             showAlbumTitle = false,
             promoteSectionTitle = true,
             modifier = Modifier.fillMaxSize()
         )
     }
+}
+
+private fun GuideBgmFavoriteItem.studentArtworkImageUrl(
+    catalog: BaGuideCatalogBundle
+): String {
+    return sequenceOf(
+        studentImageUrl,
+        catalogEntryArtworkImageUrl(catalog),
+        imageUrl
+    )
+        .map { it.trim() }
+        .firstOrNull { it.isNotBlank() }
+        .orEmpty()
+}
+
+private fun GuideBgmFavoriteItem.catalogEntryArtworkImageUrl(
+    catalog: BaGuideCatalogBundle
+): String {
+    val entries = catalog.entriesByTab.values.asSequence().flatten()
+    val contentId = extractGuideContentIdFromUrl(sourceUrl)
+    val matchedEntry = when {
+        contentId != null -> entries.firstOrNull { entry -> entry.contentId == contentId }
+        sourceUrl.isNotBlank() -> entries.firstOrNull { entry -> entry.detailUrl == sourceUrl }
+        else -> null
+    } ?: catalog.entriesByTab.values
+        .asSequence()
+        .flatten()
+        .firstOrNull { entry -> entry.matchesFavoriteStudentName(this) }
+    return matchedEntry?.iconUrl.orEmpty()
+}
+
+private fun BaGuideCatalogEntry.matchesFavoriteStudentName(
+    favorite: GuideBgmFavoriteItem
+): Boolean {
+    val target = favorite.studentTitle.ifBlank { favorite.title }.catalogNameKey()
+    if (target.isBlank()) return false
+    return sequenceOf(name, alias, aliasDisplay)
+        .map { it.catalogNameKey() }
+        .any { key -> key == target || key.contains(target) || target.contains(key) }
+}
+
+private fun String.catalogNameKey(): String {
+    return trim()
+        .lowercase()
+        .replace("（", "(")
+        .replace("）", ")")
+        .replace(" ", "")
+        .replace("・", "·")
 }
 
 private fun GuideBgmFavoriteItem.toDebugTrack(): DebugBgmTrack {

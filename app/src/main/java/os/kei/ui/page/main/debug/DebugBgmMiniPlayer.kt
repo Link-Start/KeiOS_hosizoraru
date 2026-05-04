@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +49,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun DebugBgmMiniPlayer(
     accent: Color,
     currentTrackTitle: String,
+    artworkImageUrl: String,
     isPlaying: Boolean,
     playbackProgress: Float,
     onPlaybackProgressChange: (Float) -> Unit,
@@ -87,7 +89,7 @@ internal fun DebugBgmMiniPlayer(
         LiquidSurface(
             backdrop = backdrop,
             shape = RoundedCornerShape(artworkCornerRadius),
-            tint = accent.copy(alpha = 0.14f),
+            tint = if (artworkImageUrl.isBlank()) accent.copy(alpha = 0.14f) else Color.Transparent,
             surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.12f),
             chromaticAberration = true,
             isInteractive = false,
@@ -99,18 +101,25 @@ internal fun DebugBgmMiniPlayer(
                     .fillMaxSize()
                     .padding(4.dp)
                     .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D))
-                        )
-                    )
+                    .background(defaultMiniArtworkBrush(accent))
             )
-            Icon(
-                imageVector = appLucideMusicIcon(),
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(debugBgmLerpDp(21.dp, 23.dp, expanded))
-            )
+            if (artworkImageUrl.isNotBlank()) {
+                DebugBgmArtworkImage(
+                    imageUrl = artworkImageUrl,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
+                )
+            } else {
+                Icon(
+                    imageVector = appLucideMusicIcon(),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(debugBgmLerpDp(21.dp, 23.dp, expanded))
+                )
+            }
         }
         Column(
             modifier = Modifier.weight(1f),
@@ -235,3 +244,9 @@ private fun debugBgmLerpSp(
     end: Float,
     fraction: Float
 ) = (start + (end - start) * fraction.coerceIn(0f, 1f)).sp
+
+private fun defaultMiniArtworkBrush(accent: Color): Brush {
+    return Brush.linearGradient(
+        colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D))
+    )
+}

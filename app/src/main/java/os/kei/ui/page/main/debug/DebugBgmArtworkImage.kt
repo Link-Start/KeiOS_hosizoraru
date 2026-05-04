@@ -1,0 +1,42 @@
+package os.kei.ui.page.main.debug
+
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
+
+@Composable
+internal fun DebugBgmArtworkImage(
+    imageUrl: String,
+    contentScale: ContentScale,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val bitmap by produceState<Bitmap?>(
+        initialValue = BaGuideCatalogIconCache.get(imageUrl),
+        imageUrl
+    ) {
+        BaGuideCatalogIconCache.get(imageUrl)?.let { cached ->
+            value = cached
+            return@produceState
+        }
+        value = withContext(Dispatchers.IO) {
+            BaGuideCatalogIconCache.getOrLoad(context, imageUrl)
+        }
+    }
+    val rendered = bitmap ?: return
+    Image(
+        bitmap = rendered.asImageBitmap(),
+        contentDescription = null,
+        contentScale = contentScale,
+        modifier = modifier
+    )
+}

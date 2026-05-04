@@ -41,7 +41,6 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import coil3.compose.AsyncImage
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -229,16 +228,13 @@ private fun DebugBgmAlbumArtwork(
 ) {
     val shape = RoundedCornerShape(28.dp)
     val innerShape = RoundedCornerShape(23.dp)
-    val artworkSurfaceBackdrop = rememberLayerBackdrop()
-    val iconBackdrop = rememberCombinedBackdrop(backdrop, artworkSurfaceBackdrop)
     LiquidSurface(
         backdrop = backdrop,
         shape = shape,
-        tint = accent.copy(alpha = 0.14f),
+        tint = if (imageUrl.isBlank()) accent.copy(alpha = 0.14f) else Color.Transparent,
         surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.18f),
         chromaticAberration = true,
         isInteractive = false,
-        exportedBackdrop = artworkSurfaceBackdrop,
         modifier = Modifier
             .fillMaxWidth(0.72f)
             .aspectRatio(1f),
@@ -249,41 +245,18 @@ private fun DebugBgmAlbumArtwork(
                 .matchParentSize()
                 .padding(12.dp)
                 .clip(innerShape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFFFF4D6D),
-                            Color(0xFFFFC857),
-                            Color(0xFF35C2FF),
-                            accent,
-                            Color(0xFF2ED573)
-                        )
-                    )
-                )
+                .background(defaultAlbumArtworkBrush(accent))
         )
         if (imageUrl.isNotBlank()) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
+            DebugBgmArtworkImage(
+                imageUrl = imageUrl,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .matchParentSize()
-                    .padding(16.dp)
+                    .padding(12.dp)
                     .clip(innerShape)
             )
-        }
-        LiquidSurface(
-            backdrop = iconBackdrop,
-            shape = CircleShape,
-            tint = Color.White.copy(alpha = 0.12f),
-            surfaceColor = Color.White.copy(alpha = 0.12f),
-            chromaticAberration = true,
-            isInteractive = false,
-            modifier = Modifier
-                .size(88.dp)
-                .graphicsLayer { alpha = if (imageUrl.isBlank()) 1f else 0f },
-            contentAlignment = Alignment.Center
-        ) {
+        } else {
             Icon(
                 imageVector = appLucideMusicIcon(),
                 contentDescription = null,
@@ -304,6 +277,7 @@ private fun DebugBgmAlbumPrimaryActions(
     onPlayPauseClick: () -> Unit,
     onVolumeClick: () -> Unit
 ) {
+    val neutralTint = MiuixTheme.colorScheme.onBackground
     val actionsBackdrop = rememberLayerBackdrop()
     Box(
         modifier = Modifier
@@ -324,12 +298,13 @@ private fun DebugBgmAlbumPrimaryActions(
                 icon = appLucideRepeatIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_action_repeat),
                 accent = accent,
-                selected = repeatEnabled,
+                neutralTint = neutralTint,
                 onClick = onRepeatClick,
                 backdrop = actionsBackdrop
             )
             DebugBgmPlayAction(
                 accent = accent,
+                neutralTint = neutralTint,
                 isPlaying = isPlaying,
                 onClick = onPlayPauseClick,
                 backdrop = actionsBackdrop
@@ -338,7 +313,7 @@ private fun DebugBgmAlbumPrimaryActions(
                 icon = appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
                 accent = accent,
-                selected = volumeControlVisible,
+                neutralTint = neutralTint,
                 onClick = onVolumeClick,
                 backdrop = actionsBackdrop
             )
@@ -356,8 +331,11 @@ private fun DebugBgmAlbumVolumeControl(
     backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
+    var sliderActive by rememberSaveable { mutableStateOf(false) }
     val volumeBackdrop = rememberLayerBackdrop()
     val sliderBackdrop = rememberCombinedBackdrop(backdrop, volumeBackdrop)
+    val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
+    val activeTint = if (sliderActive) accent.copy(alpha = 0.95f) else neutralTint
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -378,18 +356,21 @@ private fun DebugBgmAlbumVolumeControl(
             Icon(
                 imageVector = appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
-                tint = accent.copy(alpha = 0.95f),
+                tint = activeTint,
                 modifier = Modifier.size(22.dp)
             )
             LiquidVolumeSlider(
                 value = { volume.coerceIn(0f, 1f) },
                 onValueChange = onVolumeChange,
                 onValueChangeFinished = onVolumeChangeFinished,
-                onInteractionChanged = onInteractionChanged,
+                onInteractionChanged = { active ->
+                    sliderActive = active
+                    onInteractionChanged(active)
+                },
                 valueRange = 0f..1f,
                 visibilityThreshold = 0.001f,
                 backdrop = sliderBackdrop,
-                activeColor = accent,
+                activeColor = activeTint,
                 modifier = Modifier
                     .weight(1f)
                     .height(30.dp)
@@ -410,15 +391,12 @@ private fun DebugBgmRoundAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
     accent: Color,
-    selected: Boolean = false,
+    neutralTint: Color,
     onClick: () -> Unit = {},
     backdrop: Backdrop
 ) {
-    val contentTint = if (selected) {
-        accent.copy(alpha = 0.98f)
-    } else {
-        MiuixTheme.colorScheme.onBackground
-    }
+    var pressed by rememberSaveable { mutableStateOf(false) }
+    val contentTint = if (pressed) accent.copy(alpha = 0.98f) else neutralTint
     AppLiquidIconButton(
         backdrop = backdrop,
         icon = icon,
@@ -429,22 +407,21 @@ private fun DebugBgmRoundAction(
         height = 52.dp,
         shape = CircleShape,
         iconTint = contentTint,
-        variant = GlassVariant.Floating
+        variant = GlassVariant.Floating,
+        onPressedChange = { pressed = it }
     )
 }
 
 @Composable
 private fun DebugBgmPlayAction(
     accent: Color,
+    neutralTint: Color,
     isPlaying: Boolean,
     onClick: () -> Unit,
     backdrop: Backdrop
 ) {
-    val contentTint = if (isPlaying) {
-        accent.copy(alpha = 0.98f)
-    } else {
-        MiuixTheme.colorScheme.onBackground
-    }
+    var pressed by rememberSaveable { mutableStateOf(false) }
+    val contentTint = if (pressed) accent.copy(alpha = 0.98f) else neutralTint
     AppLiquidTextButton(
         backdrop = backdrop,
         text = stringResource(
@@ -455,24 +432,27 @@ private fun DebugBgmPlayAction(
             .height(52.dp)
             .widthIn(min = 116.dp),
         textColor = contentTint,
-        containerColor = DebugBgmActionButtonSurfaceColor(selected = isPlaying, selectedAlpha = 0.24f),
         leadingIcon = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
         iconTint = contentTint,
-        variant = GlassVariant.SheetPrimaryAction,
+        variant = GlassVariant.Floating,
         minHeight = 52.dp,
         horizontalPadding = 24.dp,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis
+        textOverflow = TextOverflow.Ellipsis,
+        onPressedChange = { pressed = it }
     )
 }
 
-@Composable
-private fun DebugBgmActionButtonSurfaceColor(
-    selected: Boolean,
-    selectedAlpha: Float = 0.28f
-): Color {
-    val alpha = if (selected) selectedAlpha else 0.16f
-    return MiuixTheme.colorScheme.surfaceContainer.copy(alpha = alpha)
+private fun defaultAlbumArtworkBrush(accent: Color): Brush {
+    return Brush.linearGradient(
+        colors = listOf(
+            Color(0xFFFF4D6D),
+            Color(0xFFFFC857),
+            Color(0xFF35C2FF),
+            accent,
+            Color(0xFF2ED573)
+        )
+    )
 }
 
 private val DebugBgmVolumeControlHeight = 34.dp

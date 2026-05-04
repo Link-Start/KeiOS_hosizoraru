@@ -72,7 +72,8 @@ fun AppLiquidIconButton(
     variant: GlassVariant = GlassVariant.Content,
     iconTint: Color = MiuixTheme.colorScheme.primary,
     containerColor: Color? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onPressedChange: ((Boolean) -> Unit)? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -90,7 +91,8 @@ fun AppLiquidIconButton(
         isDark = isDark,
         containerColor = containerColor,
         contentTint = iconTint,
-        enabled = enabled
+        enabled = enabled,
+        onPressedChange = onPressedChange
     ) {
         Icon(
             imageVector = icon,
@@ -116,7 +118,8 @@ fun AppLiquidIconButton(
     iconTint: Color = Color.Unspecified,
     iconModifier: Modifier = Modifier,
     containerColor: Color? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onPressedChange: ((Boolean) -> Unit)? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -134,7 +137,8 @@ fun AppLiquidIconButton(
         isDark = isDark,
         containerColor = containerColor,
         contentTint = iconTint,
-        enabled = enabled
+        enabled = enabled,
+        onPressedChange = onPressedChange
     ) {
         Icon(
             painter = painter,
@@ -160,6 +164,7 @@ private fun AppLiquidIconButtonContainer(
     containerColor: Color?,
     contentTint: Color,
     enabled: Boolean,
+    onPressedChange: ((Boolean) -> Unit)?,
     content: @Composable () -> Unit
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
@@ -220,6 +225,12 @@ private fun AppLiquidIconButtonContainer(
         durationMillis = 110,
         label = "glass_icon_button_border_alpha"
     )
+    LaunchedEffect(isPressed, onPressedChange) {
+        onPressedChange?.invoke(isPressed)
+    }
+    DisposableEffect(onPressedChange) {
+        onDispose { onPressedChange?.invoke(false) }
+    }
     Box(
         modifier = modifier
             .width(width)

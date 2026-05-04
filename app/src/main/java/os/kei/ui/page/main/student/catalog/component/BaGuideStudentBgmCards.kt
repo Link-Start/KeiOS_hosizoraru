@@ -196,11 +196,6 @@ internal fun BaGuideStudentBgmCard(
                             size = AppStatusPillSize.Compact
                         )
                     }
-                    StatusPill(
-                        label = "ID ${entry.contentId}",
-                        color = MiuixTheme.colorScheme.primary,
-                        size = AppStatusPillSize.Compact
-                    )
                 }
             }
             AppCompactIconAction(

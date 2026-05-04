@@ -10,10 +10,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -37,9 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
@@ -88,6 +86,7 @@ import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -146,7 +145,6 @@ fun BaGuideCatalogPage(
     val pageTitle = stringResource(R.string.ba_catalog_page_title)
     val accent = MiuixTheme.colorScheme.primary
     val isDark = isSystemInDarkTheme()
-    val density = LocalDensity.current
     val panelBackground = if (isDark) Color(0xFF10141B) else MiuixTheme.colorScheme.background
     var activationCount by rememberSaveable { mutableIntStateOf(0) }
     DisposableEffect(Unit) {
@@ -205,8 +203,6 @@ fun BaGuideCatalogPage(
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchInputActive by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
-    var currentPanelHeightPx by remember { mutableIntStateOf(0) }
-    var largestPanelHeightPx by remember { mutableIntStateOf(0) }
 
     val chromeActivePageIndex = if (pagerState.isScrollInProgress) {
         pagerState.targetPage
@@ -347,22 +343,9 @@ fun BaGuideCatalogPage(
         scrolling = pagerState.isScrollInProgress
     )
 
-    val navigationBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
-    val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
-    val imeVisible = imeBottom > navigationBottom + 24.dp
-    val panelResizeDeltaPx = if (imeVisible && largestPanelHeightPx > 0 && currentPanelHeightPx > 0) {
-        (largestPanelHeightPx - currentPanelHeightPx).coerceAtLeast(0)
-    } else {
-        0
-    }
-    val panelResizeDelta = with(density) { panelResizeDeltaPx.toDp() }
-    val consumedKeyboardInset = if (panelResizeDelta > 48.dp) panelResizeDelta else 0.dp
-    val keyboardAvoidanceBottom = if (imeVisible) {
-        maxOf(imeBottom - consumedKeyboardInset, navigationBottom)
-    } else {
-        navigationBottom
-    }
-    val bottomChromeTargetPadding = if (searchInputActive) keyboardAvoidanceBottom else navigationBottom
+    val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val keyboardLift = rememberAppFloatingKeyboardLift(focusedLift = 36.dp)
+    val bottomChromeTargetPadding = navigationBottom + if (searchInputActive) keyboardLift else 0.dp
 
     BackHandler(enabled = searchVisible) {
         searchInputActive = false
@@ -382,10 +365,6 @@ fun BaGuideCatalogPage(
                     )
                 )
             )
-            .onSizeChanged { size ->
-                currentPanelHeightPx = size.height
-                largestPanelHeightPx = maxOf(largestPanelHeightPx, size.height)
-            }
     ) {
         Box(
             modifier = Modifier
@@ -923,6 +902,7 @@ private fun BaGuideFavoriteBgmMusicContent(
             sectionMeta = sectionMeta,
             sectionFooterTitle = stringResource(R.string.ba_catalog_tab_bgm),
             offlineTrackCount = displayedFavorites.count { isFavoriteBgmCached(appContext, it) },
+            showFooter = false,
             listState = rememberLazyListState(),
             collapseProgress = 0f,
             bottomBarScrollConnection = bottomBarScrollConnection,

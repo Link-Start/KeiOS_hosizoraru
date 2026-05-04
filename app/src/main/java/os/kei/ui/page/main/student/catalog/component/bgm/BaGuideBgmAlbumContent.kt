@@ -40,6 +40,7 @@ internal fun BaGuideBgmAlbumContent(
     sectionMeta: String,
     sectionFooterTitle: String,
     offlineTrackCount: Int,
+    showFooter: Boolean = true,
     listState: LazyListState,
     collapseProgress: Float,
     bottomBarScrollConnection: NestedScrollConnection,
@@ -115,12 +116,14 @@ internal fun BaGuideBgmAlbumContent(
                 onTrackShareClick = onTrackShareClick
             )
         }
-        item {
-            BaGuideBgmAlbumFooter(
-                sectionTitle = sectionFooterTitle,
-                trackCount = tracks.size,
-                offlineTrackCount = offlineTrackCount
-            )
+        if (showFooter) {
+            item {
+                BaGuideBgmAlbumFooter(
+                    sectionTitle = sectionFooterTitle,
+                    trackCount = tracks.size,
+                    offlineTrackCount = offlineTrackCount
+                )
+            }
         }
     }
 }

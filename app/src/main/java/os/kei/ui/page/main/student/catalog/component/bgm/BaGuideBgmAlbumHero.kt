@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +48,7 @@ import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideRepeatIcon
 import os.kei.ui.page.main.os.appLucideVolume2Icon
+import os.kei.ui.page.main.os.appLucideVolumeOffIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -79,6 +81,12 @@ internal fun BaGuideBgmAlbumHero(
     promoteSectionTitle: Boolean = false
 ) {
     var volumeControlVisible by rememberSaveable { mutableStateOf(true) }
+    var lastAudibleVolume by rememberSaveable { mutableStateOf(playbackVolume.takeIf { it > 0.01f } ?: 0.72f) }
+    LaunchedEffect(playbackVolume) {
+        if (playbackVolume > 0.01f) {
+            lastAudibleVolume = playbackVolume
+        }
+    }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val density = LocalDensity.current
     val volumeTransition = updateTransition(
@@ -189,6 +197,7 @@ internal fun BaGuideBgmAlbumHero(
                 repeatEnabled = repeatEnabled,
                 isPlaying = isPlaying,
                 volumeControlVisible = volumeControlVisible,
+                muted = playbackVolume <= 0.001f,
                 onRepeatClick = onRepeatClick,
                 onPlayPauseClick = onPlayPauseClick,
                 onVolumeClick = { volumeControlVisible = !volumeControlVisible }
@@ -203,7 +212,20 @@ internal fun BaGuideBgmAlbumHero(
                     accent = accent,
                     volume = playbackVolume,
                     onVolumeChange = onVolumeChange,
-                    onVolumeChangeFinished = onVolumeChangeFinished,
+                    onVolumeChangeFinished = { volume ->
+                        if (volume > 0.01f) lastAudibleVolume = volume
+                        onVolumeChangeFinished(volume)
+                    },
+                    onToggleMuted = {
+                        val nextVolume = if (playbackVolume > 0.001f) {
+                            lastAudibleVolume = playbackVolume
+                            0f
+                        } else {
+                            lastAudibleVolume.coerceIn(0.12f, 1f)
+                        }
+                        onVolumeChange(nextVolume)
+                        onVolumeChangeFinished(nextVolume)
+                    },
                     onInteractionChanged = onVolumeSliderInteractionChanged,
                     backdrop = contentBackdrop,
                     modifier = Modifier
@@ -273,6 +295,7 @@ private fun BaGuideBgmAlbumPrimaryActions(
     repeatEnabled: Boolean,
     isPlaying: Boolean,
     volumeControlVisible: Boolean,
+    muted: Boolean,
     onRepeatClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
     onVolumeClick: () -> Unit
@@ -311,7 +334,7 @@ private fun BaGuideBgmAlbumPrimaryActions(
                 backdrop = actionsBackdrop
             )
             BaGuideBgmRoundAction(
-                icon = appLucideVolume2Icon(),
+                icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
                 accent = accent,
                 neutralTint = neutralTint,
@@ -329,6 +352,7 @@ private fun BaGuideBgmAlbumVolumeControl(
     volume: Float,
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
+    onToggleMuted: () -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
     backdrop: Backdrop,
     modifier: Modifier = Modifier
@@ -337,8 +361,13 @@ private fun BaGuideBgmAlbumVolumeControl(
     val volumeBackdrop = rememberLayerBackdrop()
     val sliderBackdrop = rememberCombinedBackdrop(backdrop, volumeBackdrop)
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
-    val sliderTint = if (sliderActive) accent.copy(alpha = 0.95f) else neutralTint.copy(alpha = 0.74f)
-    val sliderInactiveTint = neutralTint.copy(alpha = 0.18f)
+    val muted = volume <= 0.001f
+    val sliderTint = if (muted) neutralTint.copy(alpha = 0.58f) else accent.copy(alpha = 0.95f)
+    val sliderInactiveTint = if (muted) {
+        neutralTint.copy(alpha = 0.16f)
+    } else {
+        accent.copy(alpha = if (sliderActive) 0.24f else 0.18f)
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -356,11 +385,13 @@ private fun BaGuideBgmAlbumVolumeControl(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = appLucideVolume2Icon(),
+            BaGuideBgmInlineIcon(
+                icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
                 tint = sliderTint,
-                modifier = Modifier.size(22.dp)
+                size = 32.dp,
+                iconSize = 22.dp,
+                onClick = onToggleMuted
             )
             LiquidVolumeSlider(
                 value = { volume.coerceIn(0f, 1f) },
@@ -402,6 +433,7 @@ private fun BaGuideBgmRoundAction(
 ) {
     var pressed by rememberSaveable { mutableStateOf(false) }
     val contentTint = if (pressed || active) accent.copy(alpha = 0.98f) else neutralTint
+    val actionSurfaceColor = Color.White.copy(alpha = 0.18f)
     AppLiquidIconButton(
         backdrop = backdrop,
         icon = icon,
@@ -412,6 +444,7 @@ private fun BaGuideBgmRoundAction(
         height = 52.dp,
         shape = CircleShape,
         iconTint = contentTint,
+        containerColor = actionSurfaceColor,
         variant = GlassVariant.Floating,
         onPressedChange = { pressed = it }
     )
@@ -427,6 +460,7 @@ private fun BaGuideBgmPlayAction(
 ) {
     var pressed by rememberSaveable { mutableStateOf(false) }
     val contentTint = if (pressed || isPlaying) accent.copy(alpha = 0.98f) else neutralTint
+    val actionSurfaceColor = Color.White.copy(alpha = 0.18f)
     AppLiquidTextButton(
         backdrop = backdrop,
         text = stringResource(
@@ -437,6 +471,7 @@ private fun BaGuideBgmPlayAction(
             .height(52.dp)
             .widthIn(min = 116.dp),
         textColor = contentTint,
+        containerColor = actionSurfaceColor,
         leadingIcon = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
         iconTint = contentTint,
         variant = GlassVariant.Floating,

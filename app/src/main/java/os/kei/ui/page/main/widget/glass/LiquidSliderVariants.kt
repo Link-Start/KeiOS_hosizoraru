@@ -345,7 +345,7 @@ private fun LiquidTrackSlider(
             rememberBackdrop(trackBackdrop) { drawBackdrop ->
                 val progress = dampedDragAnimation.pressProgress
                 val scaleX = lerp(2f / 3f, 1f, progress)
-                val scaleY = lerp(0f, 1f, progress)
+                val scaleY = lerp(SliderThumbRestingBackdropScaleY, 1f, progress)
                 scale(scaleX, scaleY) { drawBackdrop() }
             }
         )
@@ -551,3 +551,4 @@ private data class LiquidTrackSliderStyle(
 
 private const val SliderThumbRestingSurfaceAlpha = 0.42f
 private const val SliderThumbPressedSurfaceAlpha = 0.08f
+private const val SliderThumbRestingBackdropScaleY = 0.42f

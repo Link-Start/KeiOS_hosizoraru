@@ -93,8 +93,8 @@ internal fun BaGuideBgmTrackList(
     LiquidSurface(
         backdrop = backdrop,
         shape = listShape,
-        tint = accent.copy(alpha = if (isDark) 0.10f else 0.07f),
-        surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.16f else 0.22f),
+        tint = Color.White.copy(alpha = if (isDark) 0.04f else 0.10f),
+        surfaceColor = Color.White.copy(alpha = if (isDark) 0.12f else 0.34f),
         chromaticAberration = true,
         isInteractive = false,
         modifier = Modifier.fillMaxWidth()

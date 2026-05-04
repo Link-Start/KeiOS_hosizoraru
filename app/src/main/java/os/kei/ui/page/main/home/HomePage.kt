@@ -50,10 +50,12 @@ import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.isRenderEffectSupported
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
 
 @Composable
 fun HomePage(
@@ -90,6 +92,9 @@ fun HomePage(
             homeDynamicFullEffectEnabled ||
                 !runtime.isPagerScrollInProgress
             )
+    val foregroundBlurActive = blurEnabled &&
+        shaderSupported &&
+        fullBackdropEffectsEnabled
     val surfaceColor = MiuixTheme.colorScheme.surface
     val actionBarBackdrop = rememberActionBarBackdrop {
         drawRect(surfaceColor)
@@ -99,6 +104,11 @@ fun HomePage(
         rememberActionBarBackdrop {
             drawContent()
         }
+    } else {
+        null
+    }
+    val foregroundBackdrop = if (foregroundBlurActive) {
+        rememberMiuixLayerBackdrop()
     } else {
         null
     }
@@ -267,11 +277,14 @@ fun HomePage(
             BgEffectBackground(
                 dynamicBackground = dynamicBackgroundEnabled,
                 modifier = Modifier.fillMaxSize(),
-                bgModifier = Modifier,
+                bgModifier = foregroundBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
                 effectBackground = effectBackgroundEnabled,
-                alpha = heroMotionState.bgAlpha,
+                isFullSize = true,
+                alpha = { heroMotionState.bgAlpha },
             ) {
                 HomePageHero(
+                    foregroundBackdrop = foregroundBackdrop,
+                    foregroundBlurEnabled = foregroundBlurActive,
                     homeIconHdrEnabled = homeIconHdrEnabled,
                     hdrSweepProgress = heroMotionState.hdrSweepProgress,
                     homeHeaderSinkOffset = heroMotionState.homeHeaderSinkOffset,

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,7 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
 import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.ui.graphics.Shadow as ComposeTextShadow
 
@@ -179,6 +181,8 @@ internal fun HomePageControlSheet(
 
 @Composable
 internal fun HomePageHero(
+    foregroundBackdrop: LayerBackdrop?,
+    foregroundBlurEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
     hdrSweepProgress: Float,
     homeHeaderSinkOffset: Dp,
@@ -248,22 +252,21 @@ internal fun HomePageHero(
             )
         }
 
-        BasicText(
-            text = homeAppName,
-            style = TextStyle(
-                brush = Brush.linearGradient(
-                    colors = HOME_KEI_TITLE_GRADIENT_COLORS,
-                    start = Offset(14f, 6f),
-                    end = Offset(260f, 104f)
-                ),
-                fontWeight = FontWeight.Bold,
-                fontSize = 30.sp,
-                shadow = ComposeTextShadow(
-                    color = Color(0x55FF74A6),
-                    offset = Offset(0f, 3f),
-                    blurRadius = 16f
-                )
+        val titleTextStyle = TextStyle(
+            brush = Brush.linearGradient(
+                colors = HOME_KEI_TITLE_GRADIENT_COLORS,
+                start = Offset(14f, 6f),
+                end = Offset(260f, 104f)
             ),
+            fontWeight = FontWeight.Bold,
+            fontSize = 30.sp,
+            shadow = ComposeTextShadow(
+                color = Color(0x55FF74A6),
+                offset = Offset(0f, 3f),
+                blurRadius = 16f
+            )
+        )
+        Box(
             modifier = Modifier
                 .padding(top = 10.dp, bottom = 4.dp)
                 .onGloballyPositioned { coordinates ->
@@ -280,10 +283,27 @@ internal fun HomePageHero(
                     sweepProgress = hdrSweepProgress,
                     radialAlpha = 0.26f,
                     radialRadiusScale = 0.82f,
-                    radialCenterX = 0.32f,
-                    radialCenterY = 0.34f
-                )
-        )
+                        radialCenterX = 0.32f,
+                        radialCenterY = 0.34f
+                    )
+        ) {
+            BasicText(
+                text = homeAppName,
+                style = titleTextStyle
+            )
+            BasicText(
+                text = homeAppName,
+                style = titleTextStyle.copy(shadow = null),
+                modifier = Modifier
+                    .graphicsLayer { alpha = 0.42f }
+                    .homeHeroForegroundBlur(
+                        backdrop = foregroundBackdrop,
+                        enabled = foregroundBlurEnabled,
+                        shape = RoundedCornerShape(18.dp),
+                        blurRadius = 150f
+                    )
+            )
+        }
 
         Column(
             modifier = Modifier

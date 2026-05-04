@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +38,11 @@ import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurBlendMode
+import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val HOME_CARD_HORIZONTAL_PADDING_DP = 12
@@ -80,6 +87,39 @@ internal fun Modifier.homeKeiHdrAccent(
                 blendMode = BlendMode.SrcAtop
             )
         }
+}
+
+@Composable
+internal fun Modifier.homeHeroForegroundBlur(
+    backdrop: LayerBackdrop?,
+    enabled: Boolean,
+    shape: Shape,
+    blurRadius: Float
+): Modifier {
+    if (!enabled || backdrop == null) return this
+    val isDark = isSystemInDarkTheme()
+    val logoBlend = remember(isDark) {
+        if (isDark) {
+            listOf(
+                BlendColorEntry(Color(0xE6A1A1A1), BlurBlendMode.ColorDodge),
+                BlendColorEntry(Color(0x4DE6E6E6), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xFFFF73AD), BlurBlendMode.Lab)
+            )
+        } else {
+            listOf(
+                BlendColorEntry(Color(0xCC4A4A4A), BlurBlendMode.ColorBurn),
+                BlendColorEntry(Color(0xFF4F4F4F), BlurBlendMode.LinearLight),
+                BlendColorEntry(Color(0xFFFF5C96), BlurBlendMode.Lab)
+            )
+        }
+    }
+    return textureBlur(
+        backdrop = backdrop,
+        shape = shape,
+        blurRadius = blurRadius,
+        colors = BlurColors(blendColors = logoBlend),
+        contentBlendMode = BlendMode.DstIn
+    )
 }
 
 @Composable

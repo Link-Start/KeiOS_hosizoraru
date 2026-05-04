@@ -35,10 +35,11 @@ fun BgEffectBackground(
     modifier: Modifier = Modifier,
     bgModifier: Modifier = Modifier,
     effectBackground: Boolean = true,
-    alpha: Float = 1f,
+    isFullSize: Boolean = false,
+    alpha: () -> Float = { 1f },
     content: @Composable (BoxScope.() -> Unit),
 ) {
-    val shaderSupported = isRuntimeShaderSupported()
+    val shaderSupported = remember { isRuntimeShaderSupported() }
     val painter = remember { if (shaderSupported) BgEffectPainter() else null }
 
     val shaderBrush = remember(painter) {
@@ -51,7 +52,7 @@ fun BgEffectBackground(
     var targetSize by remember { mutableStateOf(IntSize.Zero) }
     var shaderReady by remember { mutableStateOf(false) }
     var frameVersion by remember { mutableIntStateOf(0) }
-    val logoHeight = with(LocalDensity.current) { 600.dp.toPx() }
+    val fallbackEffectHeight = with(LocalDensity.current) { 600.dp.toPx() }
 
     LaunchedEffect(targetSize, isDark, effectBackground, dynamicBackground) {
         if (painter == null || shaderBrush == null) {
@@ -62,8 +63,13 @@ fun BgEffectBackground(
             shaderReady = false
             return@LaunchedEffect
         }
+        val effectHeight = if (isFullSize) {
+            targetSize.height.toFloat()
+        } else {
+            fallbackEffectHeight
+        }
         painter.showRuntimeShader(
-            logoHeight,
+            effectHeight,
             targetSize.height.toFloat(),
             targetSize.width.toFloat(),
             isDark,
@@ -106,7 +112,7 @@ fun BgEffectBackground(
             ) {
                 currentFrameVersion
                 drawRect(surface)
-                drawRect(shaderBrush, alpha = alpha)
+                drawRect(shaderBrush, alpha = alpha())
             }
         }
         content()

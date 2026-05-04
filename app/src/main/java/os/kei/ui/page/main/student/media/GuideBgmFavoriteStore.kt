@@ -28,6 +28,12 @@ internal data class GuideBgmFavoriteImportResult(
     val updatedCount: Int
 )
 
+internal data class GuideBgmFavoriteImportPreview(
+    val importedCount: Int,
+    val addedCount: Int,
+    val updatedCount: Int
+)
+
 internal object GuideBgmFavoriteStore {
     private val store: MMKV by lazy { MMKV.mmkvWithID(BA_GUIDE_BGM_FAVORITES_KV_ID) }
     private val lock = Any()
@@ -143,6 +149,34 @@ internal object GuideBgmFavoriteStore {
                 updatedCount = updated
             )
         }
+    }
+
+    fun previewFavoritesJsonImport(raw: String): GuideBgmFavoriteImportPreview {
+        val imported = parseFavoritesImport(raw)
+        if (imported.isEmpty()) {
+            return GuideBgmFavoriteImportPreview(
+                importedCount = 0,
+                addedCount = 0,
+                updatedCount = 0
+            )
+        }
+        ensureLoaded()
+        val existingByAudioUrl = favoritesState.value.associateBy { it.audioUrl }
+        var added = 0
+        var updated = 0
+        imported.forEach { item ->
+            val previous = existingByAudioUrl[item.audioUrl]
+            if (previous == null) {
+                added += 1
+            } else if (previous != item) {
+                updated += 1
+            }
+        }
+        return GuideBgmFavoriteImportPreview(
+            importedCount = imported.size,
+            addedCount = added,
+            updatedCount = updated
+        )
     }
 
     private fun ensureLoaded() {

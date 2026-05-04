@@ -160,6 +160,16 @@
     <string name="ba_catalog_transfer_student_export_success">学生收藏已导出</string>
     <string name="ba_catalog_transfer_student_import_success">学生收藏已导入：%1$d 个</string>
     <string name="ba_catalog_transfer_import_failed">导入失败</string>
+    <string name="ba_catalog_import_preview_title">导入预览</string>
+    <string name="ba_catalog_import_preview_all">全部收藏</string>
+    <string name="ba_catalog_import_preview_student">学生收藏</string>
+    <string name="ba_catalog_import_preview_bgm">BGM 收藏</string>
+    <string name="ba_catalog_import_preview_summary">确认后会合并到当前收藏，已有条目按备份内容更新。</string>
+    <string name="ba_catalog_import_preview_empty">这个文件里没有可导入的收藏数据。</string>
+    <string name="ba_catalog_import_preview_student_count">学生</string>
+    <string name="ba_catalog_import_preview_bgm_added">BGM 新增</string>
+    <string name="ba_catalog_import_preview_bgm_updated">BGM 更新</string>
+    <string name="ba_catalog_import_preview_confirm">确认导入</string>
     <string name="ba_catalog_search_label">搜索名称 / 别名 / ID</string>
     <string name="ba_catalog_search_placeholder_student">搜索学生名称、别名或 ID</string>
     <string name="ba_catalog_search_placeholder_npc_satellite">搜索 NPC、卫星名称或 ID</string>
@@ -260,6 +270,9 @@
     <string name="ba_catalog_bgm_cache_failed">BGM 缓存失败</string>
     <string name="ba_catalog_bgm_cache_all_ready">当前列表已全部缓存</string>
     <string name="ba_catalog_bgm_cache_batch_done">批量缓存完成：%1$d 首</string>
+    <string name="ba_catalog_bgm_cache_manage_title">BGM 离线缓存</string>
+    <string name="ba_catalog_bgm_cache_clean_invalid">清理失效</string>
+    <string name="ba_catalog_bgm_cache_cleaned">已清理失效缓存：%1$d 首</string>
     <string name="ba_catalog_bgm_tools_title">资料库管理</string>
     <string name="ba_catalog_bgm_export_empty">暂无可导出的 BGM 收藏</string>
     <string name="ba_catalog_bgm_export_success">BGM 收藏已导出</string>

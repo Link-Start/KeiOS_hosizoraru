@@ -7,6 +7,12 @@ private const val CatalogFavoritesExportType = "keios.ba.catalog_favorites"
 private const val CatalogAllFavoritesExportType = "keios.ba.catalog_all_favorites"
 private const val CatalogFavoritesExportVersion = 1
 
+internal data class CatalogFavoritesImportPreview(
+    val importedCount: Int,
+    val addedCount: Int,
+    val updatedCount: Int
+)
+
 internal fun buildCatalogFavoritesExportJson(
     favorites: Map<Long, Long>,
     nowMs: Long = System.currentTimeMillis()
@@ -69,6 +75,35 @@ internal fun parseCatalogFavoritesExport(raw: String): Map<Long, Long> {
             }
         }
     }.getOrDefault(emptyMap())
+}
+
+internal fun previewCatalogFavoritesImport(
+    raw: String,
+    currentFavorites: Map<Long, Long>
+): CatalogFavoritesImportPreview {
+    val imported = parseCatalogFavoritesExport(raw)
+    if (imported.isEmpty()) {
+        return CatalogFavoritesImportPreview(
+            importedCount = 0,
+            addedCount = 0,
+            updatedCount = 0
+        )
+    }
+    var added = 0
+    var updated = 0
+    imported.forEach { (contentId, favoritedAtMs) ->
+        val current = currentFavorites[contentId]
+        if (current == null) {
+            added += 1
+        } else if (current != favoritedAtMs) {
+            updated += 1
+        }
+    }
+    return CatalogFavoritesImportPreview(
+        importedCount = imported.size,
+        addedCount = added,
+        updatedCount = updated
+    )
 }
 
 private fun parseCatalogFavoritesArray(array: JSONArray): Map<Long, Long> {

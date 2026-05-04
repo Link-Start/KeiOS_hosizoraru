@@ -1,12 +1,8 @@
 package os.kei.ui.page.main.host.main
 
-import android.app.Activity
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
-import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf

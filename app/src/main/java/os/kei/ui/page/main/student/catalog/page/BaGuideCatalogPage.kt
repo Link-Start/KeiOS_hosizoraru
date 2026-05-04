@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.catalog.page
 
-import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,20 +42,13 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
-import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
-import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
-import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
-import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
@@ -64,22 +56,23 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackRuntimeState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
-import os.kei.ui.page.main.student.catalog.component.applyFavoriteBgmQueueMode
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
+import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.clearFavoriteBgmCache
-import os.kei.ui.page.main.student.catalog.component.favoriteBgmRuntimeState
+import os.kei.ui.page.main.student.catalog.component.favoriteBgmCachedBytes
+import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
 import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
-import os.kei.ui.page.main.student.catalog.component.playFavoriteBgm
-import os.kei.ui.page.main.student.catalog.component.prepareFavoriteBgmPlayback
+import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
-import os.kei.ui.page.main.student.catalog.component.seekFavoriteBgmPlayback
-import os.kei.ui.page.main.student.catalog.component.toggleFavoriteBgmPlayback
-import os.kei.ui.page.main.student.catalog.component.updateFavoriteBgmVolume
-import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
@@ -191,14 +184,13 @@ fun BaGuideCatalogPage(
     val filterSortState = rememberBaGuideCatalogFilterSortState()
     var searchQueries by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
     var showTransferSheet by rememberSaveable { mutableStateOf(false) }
+    var importPreviewState by remember { mutableStateOf<BaGuideCatalogImportPreviewState?>(null) }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
-    var playbackSnapshot by remember { mutableStateOf(GuideBgmFavoritePlaybackStore.snapshot()) }
-    var chromePlaybackState by remember {
-        mutableStateOf(BaGuideBgmPlaybackRuntimeState(volume = playbackSnapshot.volume))
-    }
+    val playbackCoordinator = rememberBaGuideBgmPlaybackCoordinator(appContext, favoriteBgms)
     var playbackSliderPreview by remember { mutableStateOf<Float?>(null) }
+    var bgmCacheRevision by remember { mutableIntStateOf(0) }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchInputActive by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
@@ -219,16 +211,23 @@ fun BaGuideCatalogPage(
             BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
         }
     )
-    val chromePlaybackFavorite = favoriteBgms.firstOrNull { it.audioUrl == playbackSnapshot.selectedAudioUrl }
-        ?: favoriteBgms.firstOrNull()
+    val chromePlaybackFavorite = playbackCoordinator.selectedFavorite
     val chromeArtworkImageUrl = chromePlaybackFavorite
         ?.resolveStudentArtworkImageUrl(catalogDataState.catalog)
         .orEmpty()
-    val chromeQueueMode = remember(playbackSnapshot.queueModeName) {
-        BaGuideBgmQueueMode.entries.firstOrNull { it.name == playbackSnapshot.queueModeName }
-            ?: BaGuideBgmQueueMode.Continuous
+    val chromePlaybackProgress = playbackSliderPreview ?: playbackCoordinator.runtimeState.progress
+    val bgmCachedCount = remember(favoriteBgms, bgmCacheRevision) {
+        favoriteBgms.count { favorite -> isFavoriteBgmCached(appContext, favorite) }
     }
-    val chromePlaybackProgress = playbackSliderPreview ?: chromePlaybackState.progress
+    val bgmCacheBytes = remember(favoriteBgms, bgmCacheRevision) {
+        favoriteBgms.sumOf { favorite -> favoriteBgmCachedBytes(appContext, favorite) }
+    }
+    val bgmCacheSummary = stringResource(
+        R.string.ba_catalog_bgm_cache_summary,
+        bgmCachedCount,
+        favoriteBgms.size,
+        formatBgmCacheBytes(bgmCacheBytes)
+    )
     val transferExportAction = rememberBaGuideCatalogJsonExportAction(
         context, pageScope, exportDoneText, exportFailedText
     )
@@ -237,28 +236,31 @@ fun BaGuideCatalogPage(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         pageScope.launch {
-            val imported = withContext(Dispatchers.IO) {
+            val preview = withContext(Dispatchers.IO) {
                 runCatching {
                     val raw = context.contentResolver.openInputStream(uri)
                         ?.bufferedReader()
                         ?.use { it.readText() }
                         .orEmpty()
-                    parseCatalogFavoritesExport(raw)
-                }.getOrDefault(emptyMap())
+                    BaGuideCatalogImportPreviewState(
+                        kind = BaGuideCatalogImportKind.Student,
+                        raw = raw,
+                        studentPreview = previewCatalogFavoritesImport(
+                            raw = raw,
+                            currentFavorites = filterSortState.favoriteCatalogEntries
+                        ),
+                        bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport("")
+                    )
+                }.getOrNull()
             }
-            if (imported.isEmpty()) {
+            if (preview == null || !preview.hasImportableData) {
                 Toast.makeText(
                     context,
                     context.getString(R.string.ba_catalog_transfer_import_failed),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                filterSortState.replaceFavorites(filterSortState.favoriteCatalogEntries + imported)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_catalog_transfer_student_import_success, imported.size),
-                    Toast.LENGTH_SHORT
-                ).show()
+                importPreviewState = preview
             }
         }
     }
@@ -267,34 +269,30 @@ fun BaGuideCatalogPage(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         pageScope.launch {
-            val result = withContext(Dispatchers.IO) {
+            val preview = withContext(Dispatchers.IO) {
                 runCatching {
                     val raw = context.contentResolver.openInputStream(uri)
                         ?.bufferedReader()
                         ?.use { it.readText() }
                         .orEmpty()
-                    GuideBgmFavoriteStore.importFavoritesJsonMerged(raw)
+                    BaGuideCatalogImportPreviewState(
+                        kind = BaGuideCatalogImportKind.Bgm,
+                        raw = raw,
+                        studentPreview = CatalogFavoritesImportPreview(0, 0, 0),
+                        bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
+                    )
                 }
+                    .getOrNull()
             }
-            result
-                .onSuccess { imported ->
-                    Toast.makeText(
-                        context,
-                        context.getString(
-                            R.string.ba_catalog_bgm_import_success,
-                            imported.addedCount,
-                            imported.updatedCount
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                .onFailure {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.ba_catalog_bgm_import_failed),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+            if (preview == null || !preview.hasImportableData) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.ba_catalog_bgm_import_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                importPreviewState = preview
+            }
         }
     }
     val importAllFavoritesLauncher = rememberLauncherForActivityResult(
@@ -302,40 +300,85 @@ fun BaGuideCatalogPage(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         pageScope.launch {
-            val result = withContext(Dispatchers.IO) {
+            val preview = withContext(Dispatchers.IO) {
                 runCatching {
                     val raw = context.contentResolver.openInputStream(uri)
                         ?.bufferedReader()
                         ?.use { it.readText() }
                         .orEmpty()
-                    parseCatalogFavoritesExport(raw) to GuideBgmFavoriteStore.importFavoritesJsonMerged(raw)
+                    BaGuideCatalogImportPreviewState(
+                        kind = BaGuideCatalogImportKind.All,
+                        raw = raw,
+                        studentPreview = previewCatalogFavoritesImport(
+                            raw = raw,
+                            currentFavorites = filterSortState.favoriteCatalogEntries
+                        ),
+                        bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
+                    )
+                }
+            }
+                .getOrNull()
+            if (preview == null || !preview.hasImportableData) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.ba_catalog_transfer_import_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                importPreviewState = preview
+            }
+        }
+    }
+
+    fun confirmFavoritesImport(preview: BaGuideCatalogImportPreviewState) {
+        pageScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val studentFavorites = if (
+                        preview.kind == BaGuideCatalogImportKind.All ||
+                        preview.kind == BaGuideCatalogImportKind.Student
+                    ) {
+                        parseCatalogFavoritesExport(preview.raw)
+                    } else {
+                        emptyMap()
+                    }
+                    val bgmResult = if (
+                        preview.kind == BaGuideCatalogImportKind.All ||
+                        preview.kind == BaGuideCatalogImportKind.Bgm
+                    ) {
+                        GuideBgmFavoriteStore.importFavoritesJsonMerged(preview.raw)
+                    } else {
+                        null
+                    }
+                    studentFavorites to bgmResult
                 }
             }
             result
-                .onSuccess { (studentFavorites, bgmFavorites) ->
-                    if (studentFavorites.isEmpty() && bgmFavorites.importedCount <= 0) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.ba_catalog_transfer_import_failed),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        if (studentFavorites.isNotEmpty()) {
-                            filterSortState.replaceFavorites(
-                                filterSortState.favoriteCatalogEntries + studentFavorites
-                            )
-                        }
-                        Toast.makeText(
-                            context,
-                            context.getString(
-                                R.string.ba_catalog_transfer_all_import_success,
-                                studentFavorites.size,
-                                bgmFavorites.addedCount,
-                                bgmFavorites.updatedCount
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                .onSuccess { (studentFavorites, bgmResult) ->
+                    if (studentFavorites.isNotEmpty()) {
+                        filterSortState.replaceFavorites(
+                            filterSortState.favoriteCatalogEntries + studentFavorites
+                        )
                     }
+                    val message = when (preview.kind) {
+                        BaGuideCatalogImportKind.All -> context.getString(
+                            R.string.ba_catalog_transfer_all_import_success,
+                            studentFavorites.size,
+                            bgmResult?.addedCount ?: 0,
+                            bgmResult?.updatedCount ?: 0
+                        )
+                        BaGuideCatalogImportKind.Student -> context.getString(
+                            R.string.ba_catalog_transfer_student_import_success,
+                            studentFavorites.size
+                        )
+                        BaGuideCatalogImportKind.Bgm -> context.getString(
+                            R.string.ba_catalog_bgm_import_success,
+                            bgmResult?.addedCount ?: 0,
+                            bgmResult?.updatedCount ?: 0
+                        )
+                    }
+                    importPreviewState = null
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
                 .onFailure {
                     Toast.makeText(
@@ -347,16 +390,47 @@ fun BaGuideCatalogPage(
         }
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            playbackSnapshot = GuideBgmFavoritePlaybackStore.snapshot()
-            val favorite = favoriteBgms.firstOrNull { it.audioUrl == playbackSnapshot.selectedAudioUrl }
-            chromePlaybackState = favorite
-                ?.let { favoriteBgmRuntimeState(appContext, it) }
-                ?: BaGuideBgmPlaybackRuntimeState(volume = playbackSnapshot.volume)
-            delay(500L)
+    fun cacheAllFavoriteBgms() {
+        pageScope.launch {
+            val targets = favoriteBgms.filter { favorite ->
+                favorite.audioUrl.isNotBlank() && !isFavoriteBgmCached(appContext, favorite)
+            }
+            targets.forEach { favorite ->
+                runCatching {
+                    BaGuideTempMediaCache.prefetchForGuide(
+                        context = appContext,
+                        sourceUrl = favoriteCacheScope(favorite),
+                        rawUrls = listOf(favorite.audioUrl)
+                    )
+                }
+            }
+            bgmCacheRevision += 1
+            Toast.makeText(
+                context,
+                context.getString(R.string.ba_catalog_bgm_cache_batch_done, targets.size),
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
+
+    fun cleanInvalidFavoriteBgmCache() {
+        pageScope.launch {
+            var cleaned = 0
+            favoriteBgms.forEach { favorite ->
+                val before = favoriteBgmCachedBytes(appContext, favorite)
+                isFavoriteBgmCached(appContext, favorite)
+                val after = favoriteBgmCachedBytes(appContext, favorite)
+                if (before > 0L && after <= 0L) cleaned += 1
+            }
+            bgmCacheRevision += 1
+            Toast.makeText(
+                context,
+                context.getString(R.string.ba_catalog_bgm_cache_cleaned, cleaned),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     LaunchedEffect(pagerState.settledPage) {
         if (selectedTabIndex != pagerState.settledPage) {
             selectedTabIndex = pagerState.settledPage
@@ -446,6 +520,7 @@ fun BaGuideCatalogPage(
                         )
                         pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> BaGuideStudentBgmTabContent(
                             catalog = catalogDataState.catalog,
+                            playbackCoordinator = playbackCoordinator,
                             searchQuery = pageSearchQuery,
                             innerPadding = PaddingValues(
                                 top = CatalogMusicContentTopPadding,
@@ -463,6 +538,7 @@ fun BaGuideCatalogPage(
                         )
                         pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> BaGuideFavoriteBgmMusicContent(
                             catalog = catalogDataState.catalog,
+                            playbackCoordinator = playbackCoordinator,
                             searchQuery = pageSearchQuery,
                             accent = accent,
                             bottomBarScrollConnection = chromeScrollState,
@@ -534,6 +610,22 @@ fun BaGuideCatalogPage(
                 onImportBgmFavorites = {
                     showTransferSheet = false
                     importBgmFavoritesLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                },
+                bgmCacheSummary = bgmCacheSummary,
+                onCacheAllBgm = {
+                    showTransferSheet = false
+                    cacheAllFavoriteBgms()
+                },
+                onCleanInvalidBgmCache = {
+                    showTransferSheet = false
+                    cleanInvalidFavoriteBgmCache()
+                }
+            )
+            BaGuideCatalogImportPreviewSheet(
+                state = importPreviewState,
+                onDismissRequest = { importPreviewState = null },
+                onConfirm = {
+                    importPreviewState?.let(::confirmFavoritesImport)
                 }
             )
             Box(
@@ -561,7 +653,7 @@ fun BaGuideCatalogPage(
                 ?.ifBlank { chromeCurrentTitle }
                 ?: chromeCurrentTitle,
             artworkImageUrl = chromeArtworkImageUrl,
-            isPlaying = chromePlaybackState.isPlaying,
+            isPlaying = playbackCoordinator.runtimeState.isPlaying,
             playbackProgress = chromePlaybackProgress,
             onPlaybackProgressChange = { progress ->
                 playbackSliderPreview = progress
@@ -569,12 +661,7 @@ fun BaGuideCatalogPage(
             onPlaybackProgressChangeFinished = { progress ->
                 val favorite = chromePlaybackFavorite ?: return@BaGuideBgmFloatingBottomChrome
                 playbackSliderPreview = null
-                chromePlaybackState = seekFavoriteBgmPlayback(
-                    context = appContext,
-                    favorite = favorite,
-                    queueMode = chromeQueueMode,
-                    progress = progress
-                )
+                playbackCoordinator.seek(favorite, progress)
             },
             onPlaybackSliderInteractionChanged = { active ->
                 sliderInteractionActive = active
@@ -582,34 +669,13 @@ fun BaGuideCatalogPage(
             },
             onPlayPauseClick = {
                 val favorite = chromePlaybackFavorite ?: return@BaGuideBgmFloatingBottomChrome
-                val resumePosition = GuideBgmFavoritePlaybackStore
-                    .progressFor(favorite.audioUrl)
-                    ?.resumePositionMs
-                    ?: 0L
-                toggleFavoriteBgmPlayback(
-                    context = appContext,
-                    favorite = favorite,
-                    queueMode = chromeQueueMode,
-                    startPositionMs = resumePosition
-                )
+                playbackCoordinator.toggle(favorite)
             },
             onPreviousClick = {
-                selectChromeFavoriteOffset(
-                    favorites = favoriteBgms,
-                    selectedAudioUrl = playbackSnapshot.selectedAudioUrl,
-                    offset = -1,
-                    appContext = appContext,
-                    queueMode = chromeQueueMode
-                )
+                playbackCoordinator.selectOffset(offset = -1)
             },
             onNextClick = {
-                selectChromeFavoriteOffset(
-                    favorites = favoriteBgms,
-                    selectedAudioUrl = playbackSnapshot.selectedAudioUrl,
-                    offset = 1,
-                    appContext = appContext,
-                    queueMode = chromeQueueMode
-                )
+                playbackCoordinator.selectOffset(offset = 1)
             },
             searchVisible = enableSearchBar && searchVisible,
             searchInputActive = enableSearchBar && searchInputActive,
@@ -691,39 +757,10 @@ private fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
     }
 }
 
-private fun selectChromeFavoriteOffset(
-    favorites: List<GuideBgmFavoriteItem>,
-    selectedAudioUrl: String,
-    offset: Int,
-    appContext: Context,
-    queueMode: BaGuideBgmQueueMode
-) {
-    if (favorites.isEmpty()) return
-    val currentIndex = favorites.indexOfFirst { it.audioUrl == selectedAudioUrl }
-        .takeIf { it >= 0 }
-        ?: 0
-    val nextIndex = (currentIndex + offset + favorites.size) % favorites.size
-    val favorite = favorites[nextIndex]
-    val resumePosition = GuideBgmFavoritePlaybackStore
-        .progressFor(favorite.audioUrl)
-        ?.resumePositionMs
-        ?: 0L
-    GuideBgmFavoritePlaybackStore.saveSelection(
-        audioUrl = favorite.audioUrl,
-        queueModeName = queueMode.name
-    )
-    playFavoriteBgm(
-        context = appContext,
-        favorite = favorite,
-        queueMode = queueMode,
-        startPositionMs = resumePosition,
-        restart = offset != 0
-    )
-}
-
 @Composable
 private fun BaGuideFavoriteBgmMusicContent(
     catalog: BaGuideCatalogBundle,
+    playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     searchQuery: String,
     accent: Color,
     bottomBarScrollConnection: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
@@ -736,22 +773,6 @@ private fun BaGuideFavoriteBgmMusicContent(
     val appContext = remember(context) { context.applicationContext }
     val scope = rememberCoroutineScope()
     val favorites by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
-    val savedPlayback = remember { GuideBgmFavoritePlaybackStore.snapshot() }
-    var selectedAudioUrl by rememberSaveable { mutableStateOf(savedPlayback.selectedAudioUrl) }
-    var queueModeName by rememberSaveable {
-        mutableStateOf(
-            savedPlayback.queueModeName
-                .takeIf { saved -> BaGuideBgmQueueMode.entries.any { it.name == saved } }
-                ?: BaGuideBgmQueueMode.Continuous.name
-        )
-    }
-    val queueMode = remember(queueModeName) {
-        BaGuideBgmQueueMode.entries.firstOrNull { it.name == queueModeName }
-            ?: BaGuideBgmQueueMode.Continuous
-    }
-    var runtimeState by remember {
-        mutableStateOf(BaGuideBgmPlaybackRuntimeState(volume = savedPlayback.volume))
-    }
     var cacheRevision by remember { mutableIntStateOf(0) }
     var cachingAudioUrls by remember { mutableStateOf<Set<String>>(emptySet()) }
     val contentBackdrop = rememberLayerBackdrop()
@@ -762,7 +783,10 @@ private fun BaGuideFavoriteBgmMusicContent(
             sortMode = os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode.Recent
         )
     }
-    val selectedFavorite = displayedFavorites.firstOrNull { it.audioUrl == selectedAudioUrl }
+    LaunchedEffect(displayedFavorites) {
+        playbackCoordinator.updateQueue(displayedFavorites)
+    }
+    val selectedFavorite = displayedFavorites.firstOrNull { it.audioUrl == playbackCoordinator.selectedAudioUrl }
         ?: displayedFavorites.firstOrNull()
     val tracks = remember(displayedFavorites, cacheRevision) {
         displayedFavorites.map { favorite -> favorite.toBaGuideBgmTrack() }
@@ -788,19 +812,7 @@ private fun BaGuideFavoriteBgmMusicContent(
     val cacheRemovedText = stringResource(R.string.ba_catalog_bgm_cache_removed)
 
     fun playFavorite(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
-        selectedAudioUrl = favorite.audioUrl
-        GuideBgmFavoritePlaybackStore.saveSelection(favorite.audioUrl, queueMode.name)
-        playFavoriteBgm(
-            context = appContext,
-            favorite = favorite,
-            queueMode = queueMode,
-            startPositionMs = GuideBgmFavoritePlaybackStore
-                .progressFor(favorite.audioUrl)
-                ?.resumePositionMs
-                ?: 0L,
-            restart = restart
-        )
-        runtimeState = favoriteBgmRuntimeState(appContext, favorite)
+        playbackCoordinator.play(favorite, restart = restart)
     }
 
     fun cacheFavorite(favorite: GuideBgmFavoriteItem) {
@@ -835,44 +847,8 @@ private fun BaGuideFavoriteBgmMusicContent(
         }
     }
 
-    LaunchedEffect(displayedFavorites) {
-        selectedAudioUrl = when {
-            displayedFavorites.isEmpty() -> ""
-            selectedAudioUrl.isBlank() -> displayedFavorites.first().audioUrl
-            displayedFavorites.none { it.audioUrl == selectedAudioUrl } -> displayedFavorites.first().audioUrl
-            else -> selectedAudioUrl
-        }
-    }
-    LaunchedEffect(selectedFavorite?.audioUrl, queueMode) {
-        val favorite = selectedFavorite ?: return@LaunchedEffect
-        prepareFavoriteBgmPlayback(
-            context = appContext,
-            favorite = favorite,
-            queueMode = queueMode,
-            startPositionMs = GuideBgmFavoritePlaybackStore
-                .progressFor(favorite.audioUrl)
-                ?.resumePositionMs
-                ?: 0L
-        )
-        GuideBgmFavoritePlaybackStore.saveSelection(favorite.audioUrl, queueMode.name)
-    }
-    LaunchedEffect(selectedFavorite?.audioUrl, queueMode, displayedFavorites) {
-        val favorite = selectedFavorite ?: return@LaunchedEffect
-        while (true) {
-            val state = favoriteBgmRuntimeState(appContext, favorite)
-            runtimeState = state
-            saveFavoriteProgress(favorite, state)
-            if (
-                state.isEnded &&
-                queueMode == BaGuideBgmQueueMode.Continuous &&
-                displayedFavorites.size > 1
-            ) {
-                val index = displayedFavorites.indexOfFirst { it.audioUrl == favorite.audioUrl }.coerceAtLeast(0)
-                playFavorite(displayedFavorites[(index + 1) % displayedFavorites.size], restart = true)
-                return@LaunchedEffect
-            }
-            delay(500L)
-        }
+    LaunchedEffect(selectedFavorite?.audioUrl, playbackCoordinator.queueMode) {
+        playbackCoordinator.prepareSelected()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -885,53 +861,36 @@ private fun BaGuideFavoriteBgmMusicContent(
             accent = accent,
             tracks = tracks,
             currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
-            isPlaying = runtimeState.isPlaying,
-            repeatEnabled = queueMode == BaGuideBgmQueueMode.SingleLoop,
-            playbackVolume = runtimeState.volume,
+            isPlaying = playbackCoordinator.runtimeState.isPlaying,
+            repeatEnabled = playbackCoordinator.queueMode == BaGuideBgmQueueMode.SingleLoop,
+            playbackVolume = playbackCoordinator.runtimeState.volume,
             isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
             onRepeatClick = {
-                val favorite = selectedFavorite ?: return@BaGuideBgmAlbumContent
-                val nextMode = if (queueMode == BaGuideBgmQueueMode.Continuous) {
-                    BaGuideBgmQueueMode.SingleLoop
-                } else {
-                    BaGuideBgmQueueMode.Continuous
-                }
-                queueModeName = nextMode.name
-                GuideBgmFavoritePlaybackStore.saveSelection(favorite.audioUrl, nextMode.name)
-                applyFavoriteBgmQueueMode(appContext, favorite, nextMode)
+                playbackCoordinator.toggleQueueMode()
             },
             onPlayPauseClick = {
                 val favorite = selectedFavorite ?: displayedFavorites.firstOrNull() ?: return@BaGuideBgmAlbumContent
-                selectedAudioUrl = favorite.audioUrl
-                toggleFavoriteBgmPlayback(
-                    context = appContext,
-                    favorite = favorite,
-                    queueMode = queueMode,
-                    startPositionMs = GuideBgmFavoritePlaybackStore
-                        .progressFor(favorite.audioUrl)
-                        ?.resumePositionMs
-                        ?: 0L
-                )
+                playbackCoordinator.toggle(favorite)
             },
             onVolumeChange = { volume ->
                 selectedFavorite?.let { favorite ->
-                    runtimeState = updateFavoriteBgmVolume(appContext, favorite, volume)
+                    playbackCoordinator.updateVolume(favorite, volume)
                 }
             },
             onVolumeChangeFinished = { volume ->
                 selectedFavorite?.let { favorite ->
-                    runtimeState = updateFavoriteBgmVolume(appContext, favorite, volume)
+                    playbackCoordinator.updateVolume(favorite, volume)
                 }
             },
             onSliderInteractionChanged = onSliderInteractionChanged,
             onTrackClick = { id ->
                 favoritesByTrackId[id]?.let { favorite ->
-                    playFavorite(favorite, restart = id == selectedAudioUrl)
+                    playFavorite(favorite, restart = id == playbackCoordinator.selectedAudioUrl)
                 }
             },
             onTrackFavoriteClick = { id ->
                 GuideBgmFavoriteStore.removeFavorite(id)
-                if (selectedAudioUrl == id) selectedAudioUrl = ""
+                if (playbackCoordinator.selectedAudioUrl == id) playbackCoordinator.select("")
             },
             onTrackOfflineClick = { id ->
                 favoritesByTrackId[id]?.let(::toggleFavoriteCache)
@@ -992,6 +951,19 @@ private fun saveFavoriteProgress(
             isPlaying = state.isPlaying
         )
     }
+}
+
+private fun formatBgmCacheBytes(bytes: Long): String {
+    val safeBytes = bytes.coerceAtLeast(0L)
+    if (safeBytes < 1024L) return "$safeBytes B"
+    val units = listOf("KB", "MB", "GB")
+    var value = safeBytes / 1024.0
+    var unitIndex = 0
+    while (value >= 1024.0 && unitIndex < units.lastIndex) {
+        value /= 1024.0
+        unitIndex += 1
+    }
+    return String.format(java.util.Locale.US, "%.1f %s", value, units[unitIndex])
 }
 
 private val CatalogMusicContentTopPadding = 136.dp

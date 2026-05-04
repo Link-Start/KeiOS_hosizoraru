@@ -160,6 +160,16 @@
     <string name="ba_catalog_transfer_student_export_success">Student favorites exported.</string>
     <string name="ba_catalog_transfer_student_import_success">Student favorites imported: %1$d.</string>
     <string name="ba_catalog_transfer_import_failed">Import failed</string>
+    <string name="ba_catalog_import_preview_title">Import preview</string>
+    <string name="ba_catalog_import_preview_all">All favorites</string>
+    <string name="ba_catalog_import_preview_student">Student favorites</string>
+    <string name="ba_catalog_import_preview_bgm">BGM favorites</string>
+    <string name="ba_catalog_import_preview_summary">Confirm to merge into current favorites. Existing entries update from the backup.</string>
+    <string name="ba_catalog_import_preview_empty">This file has no importable favorites data.</string>
+    <string name="ba_catalog_import_preview_student_count">Students</string>
+    <string name="ba_catalog_import_preview_bgm_added">BGM added</string>
+    <string name="ba_catalog_import_preview_bgm_updated">BGM updated</string>
+    <string name="ba_catalog_import_preview_confirm">Confirm import</string>
     <string name="ba_catalog_search_label">Search name / alias / ID</string>
     <string name="ba_catalog_search_placeholder_student">Search student name, alias, or ID</string>
     <string name="ba_catalog_search_placeholder_npc_satellite">Search NPC, upcoming student, or ID</string>
@@ -260,6 +270,9 @@
     <string name="ba_catalog_bgm_cache_failed">BGM cache failed</string>
     <string name="ba_catalog_bgm_cache_all_ready">Current list is fully cached.</string>
     <string name="ba_catalog_bgm_cache_batch_done">Batch cache complete: %1$d tracks</string>
+    <string name="ba_catalog_bgm_cache_manage_title">BGM offline cache</string>
+    <string name="ba_catalog_bgm_cache_clean_invalid">Clean invalid</string>
+    <string name="ba_catalog_bgm_cache_cleaned">Invalid cache cleaned: %1$d tracks.</string>
     <string name="ba_catalog_bgm_tools_title">Library tools</string>
     <string name="ba_catalog_bgm_export_empty">No BGM favorites to export.</string>
     <string name="ba_catalog_bgm_export_success">BGM favorites exported.</string>

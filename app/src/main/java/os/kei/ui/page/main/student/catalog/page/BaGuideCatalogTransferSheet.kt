@@ -41,7 +41,10 @@ internal fun BaGuideCatalogTransferSheet(
     onExportStudentFavorites: () -> Unit,
     onImportStudentFavorites: () -> Unit,
     onExportBgmFavorites: () -> Unit,
-    onImportBgmFavorites: () -> Unit
+    onImportBgmFavorites: () -> Unit,
+    bgmCacheSummary: String,
+    onCacheAllBgm: () -> Unit,
+    onCleanInvalidBgmCache: () -> Unit
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -87,7 +90,41 @@ internal fun BaGuideCatalogTransferSheet(
                 onExport = onExportBgmFavorites,
                 onImport = onImportBgmFavorites
             )
+            BaGuideCatalogBgmCacheGroup(
+                summary = bgmCacheSummary,
+                onCacheAll = onCacheAllBgm,
+                onCleanInvalid = onCleanInvalidBgmCache
+            )
         }
+    }
+}
+
+@Composable
+private fun BaGuideCatalogBgmCacheGroup(
+    summary: String,
+    onCacheAll: () -> Unit,
+    onCleanInvalid: () -> Unit
+) {
+    val accent = Color(0xFF38BDF8)
+    SheetSectionTitle(stringResource(R.string.ba_catalog_bgm_cache_manage_title))
+    SheetSectionCard(verticalSpacing = 10.dp) {
+        Text(
+            text = summary,
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        BaGuideCatalogTransferActionRow(
+            exportText = stringResource(R.string.ba_catalog_bgm_action_cache_all),
+            importText = stringResource(R.string.ba_catalog_bgm_cache_clean_invalid),
+            accent = accent,
+            exportIcon = appLucideDownloadIcon(),
+            importIcon = appLucideUploadIcon(),
+            onExport = onCacheAll,
+            onImport = onCleanInvalid
+        )
     }
 }
 

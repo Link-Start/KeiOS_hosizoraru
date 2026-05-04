@@ -89,12 +89,11 @@ internal fun BaGuideBgmFloatingBottomChrome(
     val miniPlayerInteractionSource = remember { MutableInteractionSource() }
     val dockSurfaceInteractionSource = remember { MutableInteractionSource() }
     val searchFocusRequester = remember { FocusRequester() }
-    val searchMode = when {
-        searchInputActive -> BaGuideBgmBottomChromeMode.SearchInput
-        searchVisible -> BaGuideBgmBottomChromeMode.SearchExpanded
-        scrollState.isCompact -> BaGuideBgmBottomChromeMode.Compact
-        else -> BaGuideBgmBottomChromeMode.Expanded
-    }
+    val searchMode = resolveBaGuideBgmBottomChromeMode(
+        searchVisible = searchVisible,
+        searchInputActive = searchInputActive,
+        compact = scrollState.isCompact
+    )
     val transition = updateTransition(
         targetState = searchMode,
         label = "debug_bgm_bottom_chrome"
@@ -457,7 +456,7 @@ private fun boundedDp(
     max: Dp
 ): Dp = value.value.coerceIn(min.value, max.value).dp
 
-private enum class BaGuideBgmBottomChromeMode {
+internal enum class BaGuideBgmBottomChromeMode {
     Expanded,
     Compact,
     SearchExpanded,
@@ -465,6 +464,19 @@ private enum class BaGuideBgmBottomChromeMode {
 
     val isSearchMode: Boolean
         get() = this == SearchExpanded || this == SearchInput
+}
+
+internal fun resolveBaGuideBgmBottomChromeMode(
+    searchVisible: Boolean,
+    searchInputActive: Boolean,
+    compact: Boolean
+): BaGuideBgmBottomChromeMode {
+    return when {
+        searchInputActive -> BaGuideBgmBottomChromeMode.SearchInput
+        searchVisible -> BaGuideBgmBottomChromeMode.SearchExpanded
+        compact -> BaGuideBgmBottomChromeMode.Compact
+        else -> BaGuideBgmBottomChromeMode.Expanded
+    }
 }
 
 private val BaGuideBgmChromeControlHeight = AppChromeTokens.floatingBottomBarOuterHeight

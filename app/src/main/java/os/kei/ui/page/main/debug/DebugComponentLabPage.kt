@@ -25,7 +25,6 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideFlaskIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
-import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
@@ -47,8 +46,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun DebugComponentLabPage(
     onClose: () -> Unit,
-    onOpenLiquidCatalog: () -> Unit,
-    onOpenBgmMusic: () -> Unit
+    onOpenLiquidCatalog: () -> Unit
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -101,13 +99,6 @@ internal fun DebugComponentLabPage(
                         accent = accent,
                         backdrop = pageBackdrop,
                         onOpenLiquidCatalog = onOpenLiquidCatalog
-                    )
-                }
-                item {
-                    DebugBgmPreviewCard(
-                        accent = accent,
-                        backdrop = pageBackdrop,
-                        onOpenBgmMusic = onOpenBgmMusic
                     )
                 }
                 item {
@@ -211,64 +202,6 @@ private fun DebugLabIntroCard(accent: Color) {
                 value = stringResource(R.string.debug_component_lab_metric_focus_value),
                 modifier = Modifier.weight(1f),
                 valueMaxLines = 1
-            )
-        }
-    }
-}
-
-@Composable
-private fun DebugBgmPreviewCard(
-    accent: Color,
-    backdrop: Backdrop,
-    onOpenBgmMusic: () -> Unit
-) {
-    val openLabel = stringResource(R.string.debug_component_lab_action_open_bgm_activity)
-    AppFeatureCard(
-        title = stringResource(R.string.debug_component_lab_bgm_title),
-        subtitle = stringResource(R.string.debug_component_lab_bgm_subtitle),
-        sectionIcon = appLucideMusicIcon(),
-        titleColor = accent,
-        borderColor = accent.copy(alpha = 0.20f),
-        contentVerticalSpacing = CardLayoutRhythm.sectionGap,
-        onClick = onOpenBgmMusic,
-        headerEndActions = {
-            AppLiquidIconButton(
-                backdrop = backdrop,
-                icon = appLucideExternalLinkIcon(),
-                contentDescription = openLabel,
-                onClick = onOpenBgmMusic,
-                width = 40.dp,
-                height = 40.dp,
-                variant = GlassVariant.Compact,
-                iconTint = accent
-            )
-        }
-    ) {
-        AppSupportingBlock(
-            text = stringResource(R.string.debug_component_lab_bgm_entry_note),
-            accentColor = accent
-        )
-        AppInfoListBody {
-            AppInfoRow(
-                label = stringResource(R.string.debug_component_lab_row_entry_title),
-                value = stringResource(R.string.debug_component_lab_row_entry_value),
-                labelMaxLines = 1,
-                valueMaxLines = 1,
-                valueOverflow = TextOverflow.Ellipsis
-            )
-            AppInfoRow(
-                label = stringResource(R.string.debug_component_lab_row_surface_title),
-                value = stringResource(R.string.debug_component_lab_row_surface_value),
-                labelMaxLines = 1,
-                valueMaxLines = 1,
-                valueOverflow = TextOverflow.Ellipsis
-            )
-            AppInfoRow(
-                label = stringResource(R.string.debug_component_lab_row_components_title),
-                value = stringResource(R.string.debug_component_lab_row_components_value),
-                labelMaxLines = 1,
-                valueMaxLines = 2,
-                valueOverflow = TextOverflow.Ellipsis
             )
         }
     }

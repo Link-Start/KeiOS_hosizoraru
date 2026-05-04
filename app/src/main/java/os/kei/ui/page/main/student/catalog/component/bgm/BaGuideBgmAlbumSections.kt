@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +14,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DebugBgmAlbumFooter(
+internal fun BaGuideBgmAlbumFooter(
     sectionTitle: String,
     trackCount: Int,
     offlineTrackCount: Int
@@ -45,25 +45,25 @@ internal fun DebugBgmAlbumFooter(
 }
 
 @Composable
-internal fun rememberDebugBgmDockSectionText(selectedDockKey: String): DebugBgmDockSectionText {
+internal fun rememberBaGuideBgmDockSectionText(selectedDockKey: String): BaGuideBgmDockSectionText {
     val libraryLabel = stringResource(R.string.debug_component_lab_nav_library)
     return when (selectedDockKey) {
-        DebugBgmDockKeys.Home -> DebugBgmDockSectionText(
+        BaGuideBgmDockKeys.Home -> BaGuideBgmDockSectionText(
             heroTitle = stringResource(R.string.debug_component_lab_section_home_title),
             heroMeta = stringResource(R.string.debug_component_lab_section_home_meta),
             footerTitle = stringResource(R.string.debug_component_lab_nav_home)
         )
-        DebugBgmDockKeys.Discover -> DebugBgmDockSectionText(
+        BaGuideBgmDockKeys.Discover -> BaGuideBgmDockSectionText(
             heroTitle = stringResource(R.string.debug_component_lab_section_discover_title),
             heroMeta = stringResource(R.string.debug_component_lab_section_discover_meta),
             footerTitle = stringResource(R.string.debug_component_lab_nav_discover)
         )
-        DebugBgmDockKeys.Radio -> DebugBgmDockSectionText(
+        BaGuideBgmDockKeys.Radio -> BaGuideBgmDockSectionText(
             heroTitle = stringResource(R.string.debug_component_lab_section_radio_title),
             heroMeta = stringResource(R.string.debug_component_lab_section_radio_meta),
             footerTitle = stringResource(R.string.debug_component_lab_nav_radio)
         )
-        else -> DebugBgmDockSectionText(
+        else -> BaGuideBgmDockSectionText(
             heroTitle = stringResource(R.string.debug_component_lab_album_artist),
             heroMeta = stringResource(R.string.debug_component_lab_album_meta),
             footerTitle = libraryLabel
@@ -71,7 +71,7 @@ internal fun rememberDebugBgmDockSectionText(selectedDockKey: String): DebugBgmD
     }
 }
 
-internal data class DebugBgmDockSectionText(
+internal data class BaGuideBgmDockSectionText(
     val heroTitle: String,
     val heroMeta: String,
     val footerTitle: String

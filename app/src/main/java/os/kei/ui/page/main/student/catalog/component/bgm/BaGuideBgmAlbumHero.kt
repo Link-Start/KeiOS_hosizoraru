@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDp
@@ -60,7 +60,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DebugBgmAlbumHero(
+internal fun BaGuideBgmAlbumHero(
     accent: Color,
     collapseProgress: Float,
     repeatEnabled: Boolean,
@@ -85,14 +85,14 @@ internal fun DebugBgmAlbumHero(
         targetState = volumeControlVisible,
         label = "debug_bgm_volume_control"
     )
-    val volumeMotionDuration = resolvedMotionDuration(DebugBgmVolumeControlMotionMs, animationsEnabled)
+    val volumeMotionDuration = resolvedMotionDuration(BaGuideBgmVolumeControlMotionMs, animationsEnabled)
     val volumeHeight by volumeTransition.animateDp(
         transitionSpec = {
             tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
         },
         label = "debug_bgm_volume_height"
     ) { visible ->
-        if (visible) DebugBgmVolumeControlHeight else 0.dp
+        if (visible) BaGuideBgmVolumeControlHeight else 0.dp
     }
     val volumeAlpha by volumeTransition.animateFloat(
         transitionSpec = {
@@ -137,7 +137,7 @@ internal fun DebugBgmAlbumHero(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        DebugBgmAlbumArtwork(
+        BaGuideBgmAlbumArtwork(
             accent = accent,
             backdrop = contentBackdrop,
             imageUrl = artworkImageUrl
@@ -184,7 +184,7 @@ internal fun DebugBgmAlbumHero(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(volumeSpacing)
         ) {
-            DebugBgmAlbumPrimaryActions(
+            BaGuideBgmAlbumPrimaryActions(
                 accent = accent,
                 repeatEnabled = repeatEnabled,
                 isPlaying = isPlaying,
@@ -199,7 +199,7 @@ internal fun DebugBgmAlbumHero(
                     .height(volumeHeight)
                     .clipToBounds()
             ) {
-                DebugBgmAlbumVolumeControl(
+                BaGuideBgmAlbumVolumeControl(
                     accent = accent,
                     volume = playbackVolume,
                     onVolumeChange = onVolumeChange,
@@ -221,7 +221,7 @@ internal fun DebugBgmAlbumHero(
 }
 
 @Composable
-private fun DebugBgmAlbumArtwork(
+private fun BaGuideBgmAlbumArtwork(
     accent: Color,
     backdrop: Backdrop,
     imageUrl: String = ""
@@ -248,7 +248,7 @@ private fun DebugBgmAlbumArtwork(
                 .background(defaultAlbumArtworkBrush(accent))
         )
         if (imageUrl.isNotBlank()) {
-            DebugBgmArtworkImage(
+            BaGuideBgmArtworkImage(
                 imageUrl = imageUrl,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -268,7 +268,7 @@ private fun DebugBgmAlbumArtwork(
 }
 
 @Composable
-private fun DebugBgmAlbumPrimaryActions(
+private fun BaGuideBgmAlbumPrimaryActions(
     accent: Color,
     repeatEnabled: Boolean,
     isPlaying: Boolean,
@@ -294,7 +294,7 @@ private fun DebugBgmAlbumPrimaryActions(
             horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            DebugBgmRoundAction(
+            BaGuideBgmRoundAction(
                 icon = appLucideRepeatIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_action_repeat),
                 accent = accent,
@@ -303,14 +303,14 @@ private fun DebugBgmAlbumPrimaryActions(
                 onClick = onRepeatClick,
                 backdrop = actionsBackdrop
             )
-            DebugBgmPlayAction(
+            BaGuideBgmPlayAction(
                 accent = accent,
                 neutralTint = neutralTint,
                 isPlaying = isPlaying,
                 onClick = onPlayPauseClick,
                 backdrop = actionsBackdrop
             )
-            DebugBgmRoundAction(
+            BaGuideBgmRoundAction(
                 icon = appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
                 accent = accent,
@@ -324,7 +324,7 @@ private fun DebugBgmAlbumPrimaryActions(
 }
 
 @Composable
-private fun DebugBgmAlbumVolumeControl(
+private fun BaGuideBgmAlbumVolumeControl(
     accent: Color,
     volume: Float,
     onVolumeChange: (Float) -> Unit,
@@ -342,7 +342,7 @@ private fun DebugBgmAlbumVolumeControl(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(DebugBgmVolumeControlHeight)
+            .height(BaGuideBgmVolumeControlHeight)
     ) {
         Box(
             modifier = Modifier
@@ -391,7 +391,7 @@ private fun DebugBgmAlbumVolumeControl(
 }
 
 @Composable
-private fun DebugBgmRoundAction(
+private fun BaGuideBgmRoundAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
     accent: Color,
@@ -418,7 +418,7 @@ private fun DebugBgmRoundAction(
 }
 
 @Composable
-private fun DebugBgmPlayAction(
+private fun BaGuideBgmPlayAction(
     accent: Color,
     neutralTint: Color,
     isPlaying: Boolean,
@@ -460,5 +460,5 @@ private fun defaultAlbumArtworkBrush(accent: Color): Brush {
     )
 }
 
-private val DebugBgmVolumeControlHeight = 34.dp
-private const val DebugBgmVolumeControlMotionMs = 220
+private val BaGuideBgmVolumeControlHeight = 34.dp
+private const val BaGuideBgmVolumeControlMotionMs = 220

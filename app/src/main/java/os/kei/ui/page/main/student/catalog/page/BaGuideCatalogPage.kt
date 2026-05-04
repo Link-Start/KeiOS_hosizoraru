@@ -54,11 +54,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.ui.page.main.debug.DebugBgmAlbumContent
-import os.kei.ui.page.main.debug.DebugBgmDockTab
-import os.kei.ui.page.main.debug.DebugBgmFloatingBottomChrome
-import os.kei.ui.page.main.debug.DebugBgmTrack
-import os.kei.ui.page.main.debug.rememberDebugBgmBottomChromeScrollState
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
+import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
@@ -195,7 +195,7 @@ fun BaGuideCatalogPage(
     var pendingExportPayload by remember { mutableStateOf("") }
     var pendingExportToast by remember { mutableStateOf("") }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
-    val chromeScrollState = rememberDebugBgmBottomChromeScrollState(scrollThreshold = 56.dp)
+    val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
     var playbackSnapshot by remember { mutableStateOf(GuideBgmFavoritePlaybackStore.snapshot()) }
     var chromePlaybackState by remember {
@@ -526,7 +526,7 @@ fun BaGuideCatalogPage(
                     )
             )
         }
-        DebugBgmFloatingBottomChrome(
+        BaGuideBgmFloatingBottomChrome(
             accent = accent,
             scrollState = chromeScrollState,
             dockTabs = chromeTabs,
@@ -541,7 +541,7 @@ fun BaGuideCatalogPage(
                 playbackSliderPreview = progress
             },
             onPlaybackProgressChangeFinished = { progress ->
-                val favorite = chromePlaybackFavorite ?: return@DebugBgmFloatingBottomChrome
+                val favorite = chromePlaybackFavorite ?: return@BaGuideBgmFloatingBottomChrome
                 playbackSliderPreview = null
                 chromePlaybackState = seekFavoriteBgmPlayback(
                     context = appContext,
@@ -555,7 +555,7 @@ fun BaGuideCatalogPage(
                 if (!active) playbackSliderPreview = null
             },
             onPlayPauseClick = {
-                val favorite = chromePlaybackFavorite ?: return@DebugBgmFloatingBottomChrome
+                val favorite = chromePlaybackFavorite ?: return@BaGuideBgmFloatingBottomChrome
                 val resumePosition = GuideBgmFavoritePlaybackStore
                     .progressFor(favorite.audioUrl)
                     ?.resumePositionMs
@@ -637,7 +637,7 @@ fun BaGuideCatalogPage(
 }
 
 @Composable
-private fun rememberBaGuideCatalogChromeTabs(): List<DebugBgmDockTab> {
+private fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
     val studentLabel = stringResource(R.string.ba_catalog_tab_student_short)
     val npcLabel = stringResource(R.string.ba_catalog_tab_npc_satellite_short)
     val studentBgmLabel = stringResource(R.string.ba_catalog_tab_student_bgm_short)
@@ -657,10 +657,10 @@ private fun rememberBaGuideCatalogChromeTabs(): List<DebugBgmDockTab> {
         playbackIcon
     ) {
         listOf(
-            DebugBgmDockTab(BaGuideCatalogPageTab.Student.name, studentIcon, studentLabel),
-            DebugBgmDockTab(BaGuideCatalogPageTab.NpcSatellite.name, npcIcon, npcLabel),
-            DebugBgmDockTab(BaGuideCatalogPageTab.StudentBgm.name, musicIcon, studentBgmLabel),
-            DebugBgmDockTab(BaGuideCatalogPageTab.Bgm.name, playbackIcon, bgmLabel)
+            BaGuideBgmDockTab(BaGuideCatalogPageTab.Student.name, studentIcon, studentLabel),
+            BaGuideBgmDockTab(BaGuideCatalogPageTab.NpcSatellite.name, npcIcon, npcLabel),
+            BaGuideBgmDockTab(BaGuideCatalogPageTab.StudentBgm.name, musicIcon, studentBgmLabel),
+            BaGuideBgmDockTab(BaGuideCatalogPageTab.Bgm.name, playbackIcon, bgmLabel)
         )
     }
 }
@@ -739,7 +739,7 @@ private fun BaGuideFavoriteBgmMusicContent(
     val selectedFavorite = displayedFavorites.firstOrNull { it.audioUrl == selectedAudioUrl }
         ?: displayedFavorites.firstOrNull()
     val tracks = remember(displayedFavorites, cacheRevision) {
-        displayedFavorites.map { favorite -> favorite.toDebugTrack() }
+        displayedFavorites.map { favorite -> favorite.toBaGuideBgmTrack() }
     }
     val favoritesByTrackId = remember(displayedFavorites) {
         displayedFavorites.associateBy { it.audioUrl }
@@ -855,7 +855,7 @@ private fun BaGuideFavoriteBgmMusicContent(
                 .matchParentSize()
                 .layerBackdrop(contentBackdrop)
         )
-        DebugBgmAlbumContent(
+        BaGuideBgmAlbumContent(
             accent = accent,
             tracks = tracks,
             currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
@@ -864,7 +864,7 @@ private fun BaGuideFavoriteBgmMusicContent(
             playbackVolume = runtimeState.volume,
             isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
             onRepeatClick = {
-                val favorite = selectedFavorite ?: return@DebugBgmAlbumContent
+                val favorite = selectedFavorite ?: return@BaGuideBgmAlbumContent
                 val nextMode = if (queueMode == BaGuideBgmQueueMode.Continuous) {
                     BaGuideBgmQueueMode.SingleLoop
                 } else {
@@ -875,7 +875,7 @@ private fun BaGuideFavoriteBgmMusicContent(
                 applyFavoriteBgmQueueMode(appContext, favorite, nextMode)
             },
             onPlayPauseClick = {
-                val favorite = selectedFavorite ?: displayedFavorites.firstOrNull() ?: return@DebugBgmAlbumContent
+                val favorite = selectedFavorite ?: displayedFavorites.firstOrNull() ?: return@BaGuideBgmAlbumContent
                 selectedAudioUrl = favorite.audioUrl
                 toggleFavoriteBgmPlayback(
                     context = appContext,
@@ -940,9 +940,9 @@ private fun BaGuideFavoriteBgmMusicContent(
     }
 }
 
-private fun GuideBgmFavoriteItem.toDebugTrack(): DebugBgmTrack {
+private fun GuideBgmFavoriteItem.toBaGuideBgmTrack(): BaGuideBgmTrack {
     val durationMs = GuideBgmFavoritePlaybackStore.progressFor(audioUrl)?.durationMs ?: 0L
-    return DebugBgmTrack(
+    return BaGuideBgmTrack(
         id = audioUrl,
         title = studentTitle.ifBlank { title }.ifBlank { audioUrl },
         subtitle = title.ifBlank { note }.ifBlank { sourceUrl },

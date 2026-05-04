@@ -103,13 +103,6 @@
             android:label="@string/debug_component_lab_liquid_catalog_title" />
 
         <activity
-            android:name=".ui.page.main.debug.DebugBgmMusicActivity"
-            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
-            android:exported="${debugBgmActivityExported}"
-            android:label="@string/debug_component_lab_bgm_activity_title"
-            android:windowSoftInputMode="adjustNothing" />
-
-        <activity
             android:name=".ui.page.main.student.GuideVideoFullscreenActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:excludeFromRecents="true"

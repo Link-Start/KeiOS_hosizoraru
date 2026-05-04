@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Stable
-internal class DebugBgmBottomChromeScrollState(
+internal class BaGuideBgmBottomChromeScrollState(
     private val scrollThresholdPx: Float
 ) : NestedScrollConnection {
     var isCompact by mutableStateOf(false)
@@ -51,9 +51,9 @@ internal class DebugBgmBottomChromeScrollState(
 }
 
 @Composable
-internal fun rememberDebugBgmBottomChromeScrollState(
+internal fun rememberBaGuideBgmBottomChromeScrollState(
     scrollThreshold: Dp = 56.dp
-): DebugBgmBottomChromeScrollState = with(LocalDensity.current) {
+): BaGuideBgmBottomChromeScrollState = with(LocalDensity.current) {
     val thresholdPx = scrollThreshold.toPx()
-    remember(thresholdPx) { DebugBgmBottomChromeScrollState(thresholdPx) }
+    remember(thresholdPx) { BaGuideBgmBottomChromeScrollState(thresholdPx) }
 }

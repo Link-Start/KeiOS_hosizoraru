@@ -15,8 +15,7 @@ class DebugComponentLabActivity : ComponentActivity() {
             DebugActivityTheme {
                 DebugComponentLabPage(
                     onClose = { finish() },
-                    onOpenLiquidCatalog = { DebugLiquidCatalogActivity.launch(this) },
-                    onOpenBgmMusic = { DebugBgmMusicActivity.launch(this) }
+                    onOpenLiquidCatalog = { DebugLiquidCatalogActivity.launch(this) }
                 )
             }
         }

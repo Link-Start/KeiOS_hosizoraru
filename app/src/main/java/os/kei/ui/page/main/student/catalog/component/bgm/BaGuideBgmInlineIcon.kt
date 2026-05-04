@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.Icon
 
 @Composable
-internal fun DebugBgmInlineIcon(
+internal fun BaGuideBgmInlineIcon(
     icon: ImageVector,
     contentDescription: String,
     tint: Color,

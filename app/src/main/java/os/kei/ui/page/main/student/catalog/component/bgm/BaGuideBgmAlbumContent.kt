@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 
 @Composable
-internal fun DebugBgmAlbumContent(
+internal fun BaGuideBgmAlbumContent(
     accent: Color,
-    tracks: List<DebugBgmTrack>,
+    tracks: List<BaGuideBgmTrack>,
     currentTrackId: String,
     isPlaying: Boolean,
     repeatEnabled: Boolean,
@@ -34,7 +34,7 @@ internal fun DebugBgmAlbumContent(
     onTrackClick: (String) -> Unit,
     onTrackFavoriteClick: (String) -> Unit,
     onTrackOfflineClick: (String) -> Unit,
-    onTrackShareClick: (DebugBgmTrack) -> Unit,
+    onTrackShareClick: (BaGuideBgmTrack) -> Unit,
     isTrackOfflineSaved: (String) -> Boolean,
     sectionTitle: String,
     sectionMeta: String,
@@ -81,7 +81,7 @@ internal fun DebugBgmAlbumContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            DebugBgmAlbumHero(
+            BaGuideBgmAlbumHero(
                 accent = accent,
                 collapseProgress = collapseProgress,
                 repeatEnabled = repeatEnabled,
@@ -101,7 +101,7 @@ internal fun DebugBgmAlbumContent(
             )
         }
         item {
-            DebugBgmTrackList(
+            BaGuideBgmTrackList(
                 tracks = tracks,
                 currentTrackId = currentTrackId,
                 isPlaying = isPlaying,
@@ -116,7 +116,7 @@ internal fun DebugBgmAlbumContent(
             )
         }
         item {
-            DebugBgmAlbumFooter(
+            BaGuideBgmAlbumFooter(
                 sectionTitle = sectionFooterTitle,
                 trackCount = tracks.size,
                 offlineTrackCount = offlineTrackCount

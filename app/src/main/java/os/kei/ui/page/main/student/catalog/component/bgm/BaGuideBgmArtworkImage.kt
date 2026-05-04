@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
 
 @Composable
-internal fun DebugBgmArtworkImage(
+internal fun BaGuideBgmArtworkImage(
     imageUrl: String,
     contentScale: ContentScale,
     modifier: Modifier = Modifier

@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -67,8 +67,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DebugBgmTrackList(
-    tracks: List<DebugBgmTrack>,
+internal fun BaGuideBgmTrackList(
+    tracks: List<BaGuideBgmTrack>,
     currentTrackId: String,
     isPlaying: Boolean,
     accent: Color,
@@ -78,10 +78,10 @@ internal fun DebugBgmTrackList(
     onTrackClick: (String) -> Unit,
     onTrackFavoriteClick: (String) -> Unit,
     onTrackOfflineClick: (String) -> Unit,
-    onTrackShareClick: (DebugBgmTrack) -> Unit,
+    onTrackShareClick: (BaGuideBgmTrack) -> Unit,
 ) {
     if (tracks.isEmpty()) {
-        DebugBgmEmptyTrackResult(
+        BaGuideBgmEmptyTrackResult(
             accent = accent,
             backdrop = backdrop
         )
@@ -107,7 +107,7 @@ internal fun DebugBgmTrackList(
         ) {
             tracks.forEachIndexed { index, track ->
                 val active = track.id == currentTrackId
-                DebugBgmTrackRow(
+                BaGuideBgmTrackRow(
                     index = index,
                     track = track,
                     active = active,
@@ -126,7 +126,7 @@ internal fun DebugBgmTrackList(
 }
 
 @Composable
-private fun DebugBgmEmptyTrackResult(
+private fun BaGuideBgmEmptyTrackResult(
     accent: Color,
     backdrop: Backdrop
 ) {
@@ -187,9 +187,9 @@ private fun DebugBgmEmptyTrackResult(
 }
 
 @Composable
-private fun DebugBgmTrackRow(
+private fun BaGuideBgmTrackRow(
     index: Int,
-    track: DebugBgmTrack,
+    track: BaGuideBgmTrack,
     active: Boolean,
     isPlaying: Boolean,
     favorite: Boolean,
@@ -225,7 +225,7 @@ private fun DebugBgmTrackRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        DebugBgmTrackIndex(
+        BaGuideBgmTrackIndex(
             index = index,
             active = active,
             isPlaying = isPlaying,
@@ -258,7 +258,7 @@ private fun DebugBgmTrackRow(
             modifier = Modifier.capturePopupAnchor { moreAnchorBounds = it },
             contentAlignment = Alignment.Center
         ) {
-            DebugBgmInlineIcon(
+            BaGuideBgmInlineIcon(
                 icon = appLucideMoreIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_action_more),
                 tint = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -266,7 +266,7 @@ private fun DebugBgmTrackRow(
                 iconSize = 22.dp,
                 onClick = { moreExpanded = true }
             )
-            DebugBgmTrackMorePopup(
+            BaGuideBgmTrackMorePopup(
                 show = moreExpanded,
                 anchorBounds = moreAnchorBounds,
                 favorite = favorite,
@@ -294,7 +294,7 @@ private fun DebugBgmTrackRow(
 }
 
 @Composable
-private fun DebugBgmTrackMorePopup(
+private fun BaGuideBgmTrackMorePopup(
     show: Boolean,
     anchorBounds: IntRect?,
     favorite: Boolean,
@@ -315,14 +315,14 @@ private fun DebugBgmTrackMorePopup(
         onDismissRequest = onDismissRequest
     ) {
         LiquidGlassDropdownColumn {
-            DebugBgmTrackMenuItem(
+            BaGuideBgmTrackMenuItem(
                 text = stringResource(R.string.debug_component_lab_action_play),
                 leadingIcon = appLucidePlayIcon(),
                 index = 0,
-                optionSize = DebugBgmTrackMenuItemCount,
+                optionSize = BaGuideBgmTrackMenuItemCount,
                 onClick = onPlayClick
             )
-            DebugBgmTrackMenuItem(
+            BaGuideBgmTrackMenuItem(
                 text = stringResource(
                     if (favorite) {
                         R.string.debug_component_lab_action_unfavorite
@@ -332,10 +332,10 @@ private fun DebugBgmTrackMorePopup(
                 ),
                 leadingIcon = appLucideHeartIcon(),
                 index = 1,
-                optionSize = DebugBgmTrackMenuItemCount,
+                optionSize = BaGuideBgmTrackMenuItemCount,
                 onClick = onFavoriteClick
             )
-            DebugBgmTrackMenuItem(
+            BaGuideBgmTrackMenuItem(
                 text = stringResource(
                     if (offlineSaved) {
                         R.string.debug_component_lab_action_remove_offline
@@ -345,14 +345,14 @@ private fun DebugBgmTrackMorePopup(
                 ),
                 leadingIcon = appLucideDownloadIcon(),
                 index = 2,
-                optionSize = DebugBgmTrackMenuItemCount,
+                optionSize = BaGuideBgmTrackMenuItemCount,
                 onClick = onOfflineClick
             )
-            DebugBgmTrackMenuItem(
+            BaGuideBgmTrackMenuItem(
                 text = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
                 leadingIcon = appLucideExternalLinkIcon(),
                 index = 3,
-                optionSize = DebugBgmTrackMenuItemCount,
+                optionSize = BaGuideBgmTrackMenuItemCount,
                 onClick = onOpenGuideClick
             )
         }
@@ -360,7 +360,7 @@ private fun DebugBgmTrackMorePopup(
 }
 
 @Composable
-private fun DebugBgmTrackMenuItem(
+private fun BaGuideBgmTrackMenuItem(
     text: String,
     index: Int,
     optionSize: Int,
@@ -386,7 +386,7 @@ private fun IntRect.asTrackMenuAnchor(): IntRect {
 }
 
 @Composable
-private fun DebugBgmTrackIndex(
+private fun BaGuideBgmTrackIndex(
     index: Int,
     active: Boolean,
     isPlaying: Boolean,
@@ -397,7 +397,7 @@ private fun DebugBgmTrackIndex(
         contentAlignment = Alignment.Center
     ) {
         if (active) {
-            DebugBgmPlayingBars(
+            BaGuideBgmPlayingBars(
                 accent = accent,
                 animated = isPlaying
             )
@@ -416,7 +416,7 @@ private fun DebugBgmTrackIndex(
 }
 
 @Composable
-private fun DebugBgmPlayingBars(
+private fun BaGuideBgmPlayingBars(
     accent: Color,
     animated: Boolean
 ) {
@@ -456,14 +456,14 @@ private fun DebugBgmPlayingBars(
         horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.Bottom
     ) {
-        DebugBgmPlayingBar(accent = accent, heightFraction = if (animated) firstHeight else 0.56f)
-        DebugBgmPlayingBar(accent = accent, heightFraction = if (animated) secondHeight else 0.56f)
-        DebugBgmPlayingBar(accent = accent, heightFraction = if (animated) thirdHeight else 0.56f)
+        BaGuideBgmPlayingBar(accent = accent, heightFraction = if (animated) firstHeight else 0.56f)
+        BaGuideBgmPlayingBar(accent = accent, heightFraction = if (animated) secondHeight else 0.56f)
+        BaGuideBgmPlayingBar(accent = accent, heightFraction = if (animated) thirdHeight else 0.56f)
     }
 }
 
 @Composable
-private fun DebugBgmPlayingBar(
+private fun BaGuideBgmPlayingBar(
     accent: Color,
     heightFraction: Float
 ) {
@@ -477,7 +477,7 @@ private fun DebugBgmPlayingBar(
 }
 
 @Composable
-internal fun DebugBgmSearchPanel(
+internal fun BaGuideBgmSearchPanel(
     query: String,
     onQueryChange: (String) -> Unit,
     backdrop: Backdrop
@@ -509,4 +509,4 @@ internal fun DebugBgmSearchPanel(
     }
 }
 
-private const val DebugBgmTrackMenuItemCount = 4
+private const val BaGuideBgmTrackMenuItemCount = 4

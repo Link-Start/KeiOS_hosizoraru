@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DebugBgmMiniPlayer(
+internal fun BaGuideBgmChromeMiniPlayer(
     accent: Color,
     currentTrackTitle: String,
     artworkImageUrl: String,
@@ -104,7 +104,7 @@ internal fun DebugBgmMiniPlayer(
                     .background(defaultMiniArtworkBrush(accent))
             )
             if (artworkImageUrl.isNotBlank()) {
-                DebugBgmArtworkImage(
+                BaGuideBgmArtworkImage(
                     imageUrl = artworkImageUrl,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -158,11 +158,11 @@ internal fun DebugBgmMiniPlayer(
                 )
             }
         }
-        DebugBgmMiniPlayerSideControl(
+        BaGuideBgmChromeMiniPlayerSideControl(
             width = sideControlSlotWidth,
             progress = expanded
         ) {
-            DebugBgmInlineIcon(
+            BaGuideBgmInlineIcon(
                 icon = appLucideSkipBackIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_action_previous),
                 tint = MiuixTheme.colorScheme.onBackground,
@@ -197,11 +197,11 @@ internal fun DebugBgmMiniPlayer(
                 modifier = Modifier.size(playIconSize)
             )
         }
-        DebugBgmMiniPlayerSideControl(
+        BaGuideBgmChromeMiniPlayerSideControl(
             width = sideControlSlotWidth,
             progress = expanded
         ) {
-            DebugBgmInlineIcon(
+            BaGuideBgmInlineIcon(
                 icon = appLucideSkipForwardIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_action_next),
                 tint = MiuixTheme.colorScheme.onBackground,
@@ -215,7 +215,7 @@ internal fun DebugBgmMiniPlayer(
 }
 
 @Composable
-private fun DebugBgmMiniPlayerSideControl(
+private fun BaGuideBgmChromeMiniPlayerSideControl(
     width: androidx.compose.ui.unit.Dp,
     progress: Float,
     content: @Composable () -> Unit

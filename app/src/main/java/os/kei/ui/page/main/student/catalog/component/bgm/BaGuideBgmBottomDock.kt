@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.debug
+package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
@@ -90,8 +90,8 @@ import kotlin.math.max
 import kotlin.math.sign
 
 @Composable
-internal fun DebugBgmDockGroupContent(
-    tabs: List<DebugBgmDockTab>,
+internal fun BaGuideBgmDockGroupContent(
+    tabs: List<BaGuideBgmDockTab>,
     selectedDockKey: String,
     accent: Color,
     expandedProgress: Float,
@@ -147,7 +147,7 @@ internal fun DebugBgmDockGroupContent(
             AppChromeTokens.floatingBottomBarInnerHeight) / 2f
         val tabSlotWidth = ((maxWidth - contentHorizontalPadding * 2f) / safeTabCount.toFloat())
             .coerceAtLeast(42.dp)
-        val selectedPillWidth = (tabSlotWidth * DebugBgmDockSelectionWidthFraction)
+        val selectedPillWidth = (tabSlotWidth * BaGuideBgmDockSelectionWidthFraction)
             .coerceAtLeast(AppChromeTokens.floatingBottomBarInnerHeight + 12.dp)
             .coerceAtMost(tabSlotWidth)
         val selectedPillInset = (tabSlotWidth - selectedPillWidth) / 2f
@@ -165,7 +165,7 @@ internal fun DebugBgmDockGroupContent(
                 valueRange = 0f..(safeTabCount - 1).toFloat(),
                 visibilityThreshold = 0.001f,
                 initialScale = 1f,
-                pressedScale = DebugBgmDockPressedScale,
+                pressedScale = BaGuideBgmDockPressedScale,
                 gestureKey = safeTabCount to isLtr,
                 canDrag = { offset ->
                     if (!currentExpandedEnabled) return@DampedDragAnimation false
@@ -222,7 +222,7 @@ internal fun DebugBgmDockGroupContent(
         val dockScaleY = lerpFloat(1f, 0.996f, combinedInteractionProgress)
         val selectedContentScale = lerpFloat(
             1f,
-            DebugBgmDockSelectedContentPressedScale,
+            BaGuideBgmDockSelectedContentPressedScale,
             combinedInteractionProgress
         )
         val interactiveHighlight = remember(animationScope, dampedDragAnimation, tabWidthPx, isLtr) {
@@ -298,7 +298,7 @@ internal fun DebugBgmDockGroupContent(
             tabs.forEachIndexed { tabIndex, tab ->
                 val selectionProgress = (1f - abs(dampedDragAnimation.value - tabIndex))
                     .coerceIn(0f, 1f)
-                DebugBgmExpandedDockTab(
+                BaGuideBgmExpandedDockTab(
                     tab = tab,
                     selected = selectionProgress > 0.52f,
                     selectionProgress = selectionProgress,
@@ -343,7 +343,7 @@ internal fun DebugBgmDockGroupContent(
             tabs.forEachIndexed { tabIndex, tab ->
                 val selectionProgress = (1f - abs(dampedDragAnimation.value - tabIndex))
                     .coerceIn(0f, 1f)
-                DebugBgmExpandedDockTab(
+                BaGuideBgmExpandedDockTab(
                     tab = tab,
                     selected = selectionProgress > 0.52f,
                     selectionProgress = selectionProgress,
@@ -360,7 +360,7 @@ internal fun DebugBgmDockGroupContent(
             }
         }
 
-        DebugBgmDockSelectionPill(
+        BaGuideBgmDockSelectionPill(
             modifier = Modifier
                 .offset(x = selectedPillOffset, y = contentVerticalPadding)
                 .width(selectedPillWidth)
@@ -407,7 +407,7 @@ internal fun DebugBgmDockGroupContent(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            DebugBgmDockTabIcon(
+            BaGuideBgmDockTabIcon(
                 icon = compactTab.icon,
                 label = compactTab.label,
                 selected = true,
@@ -419,7 +419,7 @@ internal fun DebugBgmDockGroupContent(
 }
 
 @Composable
-private fun DebugBgmDockSelectionPill(
+private fun BaGuideBgmDockSelectionPill(
     backdrop: Backdrop,
     isDark: Boolean,
     pressProgress: Float,
@@ -430,14 +430,14 @@ private fun DebugBgmDockSelectionPill(
     modifier: Modifier = Modifier
 ) {
     val clampedPress = pressProgress.coerceIn(0f, 1f)
-    val clickScale = lerpFloat(1f, DebugBgmDockClickScale, itemPressProgress.coerceIn(0f, 1f))
+    val clickScale = lerpFloat(1f, BaGuideBgmDockClickScale, itemPressProgress.coerceIn(0f, 1f))
     val velocityScale = velocity / 10f
     val deformationScaleX = dragScaleX * clickScale /
-        (1f - (velocityScale * DebugBgmDockVelocityScaleXFactor)
-            .coerceIn(-DebugBgmDockVelocityScaleClamp, DebugBgmDockVelocityScaleClamp))
+        (1f - (velocityScale * BaGuideBgmDockVelocityScaleXFactor)
+            .coerceIn(-BaGuideBgmDockVelocityScaleClamp, BaGuideBgmDockVelocityScaleClamp))
     val deformationScaleY = dragScaleY * clickScale *
-        (1f - (velocityScale * DebugBgmDockVelocityScaleYFactor)
-            .coerceIn(-DebugBgmDockVelocityScaleClamp, DebugBgmDockVelocityScaleClamp))
+        (1f - (velocityScale * BaGuideBgmDockVelocityScaleYFactor)
+            .coerceIn(-BaGuideBgmDockVelocityScaleClamp, BaGuideBgmDockVelocityScaleClamp))
     val neutralFill = if (isDark) {
         Color.White.copy(alpha = 0.10f)
     } else {
@@ -506,8 +506,8 @@ private fun DebugBgmDockSelectionPill(
 }
 
 @Composable
-private fun DebugBgmExpandedDockTab(
-    tab: DebugBgmDockTab,
+private fun BaGuideBgmExpandedDockTab(
+    tab: BaGuideBgmDockTab,
     selected: Boolean,
     selectionProgress: Float,
     selectedContentScale: Float,
@@ -560,7 +560,7 @@ private fun DebugBgmExpandedDockTab(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val tintProgress = if (activeTint) 1f else 0f
-            DebugBgmDockTabIcon(
+            BaGuideBgmDockTabIcon(
                 icon = tab.icon,
                 label = tab.label,
                 selected = selected,
@@ -569,7 +569,7 @@ private fun DebugBgmExpandedDockTab(
             )
             Text(
                 text = tab.label,
-                color = DebugBgmDockTint(
+                color = BaGuideBgmDockTint(
                     selected = selected,
                     accent = accent,
                     selectionProgress = tintProgress
@@ -585,7 +585,7 @@ private fun DebugBgmExpandedDockTab(
 }
 
 @Composable
-internal fun DebugBgmDockTabIcon(
+internal fun BaGuideBgmDockTabIcon(
     icon: ImageVector,
     label: String,
     selected: Boolean,
@@ -596,7 +596,7 @@ internal fun DebugBgmDockTabIcon(
     Icon(
         imageVector = icon,
         contentDescription = label,
-        tint = DebugBgmDockTint(
+        tint = BaGuideBgmDockTint(
             selected = selected,
             accent = accent,
             selectionProgress = selectionProgress
@@ -606,7 +606,7 @@ internal fun DebugBgmDockTabIcon(
 }
 
 @Composable
-internal fun rememberDebugBgmDockTabs(): List<DebugBgmDockTab> {
+internal fun rememberBaGuideBgmDockTabs(): List<BaGuideBgmDockTab> {
     val homeLabel = stringResource(R.string.debug_component_lab_nav_home)
     val discoverLabel = stringResource(R.string.debug_component_lab_nav_discover)
     val radioLabel = stringResource(R.string.debug_component_lab_nav_radio)
@@ -626,16 +626,16 @@ internal fun rememberDebugBgmDockTabs(): List<DebugBgmDockTab> {
         libraryIcon
     ) {
         listOf(
-            DebugBgmDockTab(DebugBgmDockKeys.Home, homeIcon, homeLabel),
-            DebugBgmDockTab(DebugBgmDockKeys.Discover, discoverIcon, discoverLabel),
-            DebugBgmDockTab(DebugBgmDockKeys.Radio, radioIcon, radioLabel),
-            DebugBgmDockTab(DebugBgmDockKeys.Library, libraryIcon, libraryLabel)
+            BaGuideBgmDockTab(BaGuideBgmDockKeys.Home, homeIcon, homeLabel),
+            BaGuideBgmDockTab(BaGuideBgmDockKeys.Discover, discoverIcon, discoverLabel),
+            BaGuideBgmDockTab(BaGuideBgmDockKeys.Radio, radioIcon, radioLabel),
+            BaGuideBgmDockTab(BaGuideBgmDockKeys.Library, libraryIcon, libraryLabel)
         )
     }
 }
 
 @Composable
-private fun DebugBgmDockTint(
+private fun BaGuideBgmDockTint(
     selected: Boolean,
     accent: Color,
     selectionProgress: Float = if (selected) 1f else 0f
@@ -645,23 +645,23 @@ private fun DebugBgmDockTint(
     selectionProgress.coerceIn(0f, 1f)
 )
 
-internal object DebugBgmDockKeys {
+internal object BaGuideBgmDockKeys {
     const val Home = "home"
     const val Discover = "discover"
     const val Radio = "radio"
     const val Library = "library"
 }
 
-internal data class DebugBgmDockTab(
+internal data class BaGuideBgmDockTab(
     val key: String,
     val icon: ImageVector,
     val label: String
 )
 
-private const val DebugBgmDockSelectionWidthFraction = 1f
-private const val DebugBgmDockPressedScale = 68f / 54f
-private const val DebugBgmDockClickScale = 1.032f
-private const val DebugBgmDockVelocityScaleXFactor = 0.48f
-private const val DebugBgmDockVelocityScaleYFactor = 0.16f
-private const val DebugBgmDockVelocityScaleClamp = 0.12f
-private const val DebugBgmDockSelectedContentPressedScale = 1.12f
+private const val BaGuideBgmDockSelectionWidthFraction = 1f
+private const val BaGuideBgmDockPressedScale = 68f / 54f
+private const val BaGuideBgmDockClickScale = 1.032f
+private const val BaGuideBgmDockVelocityScaleXFactor = 0.48f
+private const val BaGuideBgmDockVelocityScaleYFactor = 0.16f
+private const val BaGuideBgmDockVelocityScaleClamp = 0.12f
+private const val BaGuideBgmDockSelectedContentPressedScale = 1.12f

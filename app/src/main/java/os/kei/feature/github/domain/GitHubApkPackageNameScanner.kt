@@ -85,7 +85,7 @@ internal class GitHubApkPackageNameScanner(
         ).getOrThrow()
         val packageName =
             AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes).getOrThrow()
-        check(packageNamePattern.matches(packageName)) {
+        check(GitHubPackageNameValidator.isValid(packageName)) {
             "Scanned package name is invalid: $packageName"
         }
         GitHubApkPackageNameScanResult(
@@ -98,8 +98,13 @@ internal class GitHubApkPackageNameScanner(
         )
     }
 
-    companion object {
-        private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$""")
+}
+
+internal object GitHubPackageNameValidator {
+    private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$""")
+
+    fun isValid(packageName: String): Boolean {
+        return packageNamePattern.matches(packageName.trim())
     }
 }
 

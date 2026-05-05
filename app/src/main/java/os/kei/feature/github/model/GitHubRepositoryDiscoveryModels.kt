@@ -64,6 +64,34 @@ data class GitHubAppRepositorySearchResult(
     val candidates: List<GitHubRepositoryImportCandidate>
 )
 
+data class GitHubPackageRepositoryScanRequest(
+    val packageName: String,
+    val appLabel: String = "",
+    val lookupConfig: GitHubLookupConfig,
+    val candidateLimit: Int = 20,
+    val verificationLimit: Int = 8
+)
+
+data class GitHubPackageRepositoryScanCandidate(
+    val repository: GitHubRepositoryCandidate,
+    val trackedApp: GitHubTrackedApp,
+    val score: Int,
+    val releaseTag: String,
+    val releaseUrl: String,
+    val assetName: String
+)
+
+data class GitHubPackageRepositoryScanResult(
+    val packageName: String,
+    val appLabel: String,
+    val queryCount: Int,
+    val fetchedCandidateCount: Int,
+    val scannedCandidateCount: Int,
+    val matchedCandidates: List<GitHubPackageRepositoryScanCandidate>,
+    val mismatchedCandidateCount: Int,
+    val failedCandidateCount: Int
+)
+
 data class GitHubApkPackageNameScanRequest(
     val repoUrl: String,
     val lookupConfig: GitHubLookupConfig

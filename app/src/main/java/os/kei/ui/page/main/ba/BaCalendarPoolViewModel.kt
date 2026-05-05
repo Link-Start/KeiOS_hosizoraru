@@ -3,13 +3,13 @@ package os.kei.ui.page.main.ba
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import os.kei.ui.page.main.ba.support.BaCalendarEntry
-import os.kei.ui.page.main.ba.support.BaPoolEntry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.ba.support.BaCalendarEntry
+import os.kei.ui.page.main.ba.support.BaPoolEntry
 
 internal data class BaCalendarUiState(
     val entries: List<BaCalendarEntry> = emptyList(),
@@ -71,12 +71,15 @@ internal class BaCalendarPoolViewModel(
             calendarRefreshIntervalHours = calendarRefreshIntervalHours,
             hydrationReady = hydrationReady
         )
-        if (key == lastCalendarRequestKey) return
+        val previousKey = lastCalendarRequestKey
+        if (key == previousKey) return
         lastCalendarRequestKey = key
         calendarJob?.cancel()
         calendarJob = viewModelScope.launch {
             val current = _calendarUiState.value
-            val showLoading = current.entries.isEmpty() || reloadSignal > 0
+            val showLoading = current.entries.isEmpty() ||
+                    reloadSignal > 0 ||
+                    previousKey?.serverIndex != serverIndex
             _calendarUiState.value = current.copy(loading = showLoading, error = null)
             val snapshot = BaCalendarPoolRepository.syncCalendar(
                 context = appContext,
@@ -109,12 +112,15 @@ internal class BaCalendarPoolViewModel(
             calendarRefreshIntervalHours = calendarRefreshIntervalHours,
             hydrationReady = hydrationReady
         )
-        if (key == lastPoolRequestKey) return
+        val previousKey = lastPoolRequestKey
+        if (key == previousKey) return
         lastPoolRequestKey = key
         poolJob?.cancel()
         poolJob = viewModelScope.launch {
             val current = _poolUiState.value
-            val showLoading = current.entries.isEmpty() || reloadSignal > 0
+            val showLoading = current.entries.isEmpty() ||
+                    reloadSignal > 0 ||
+                    previousKey?.serverIndex != serverIndex
             _poolUiState.value = current.copy(loading = showLoading, error = null)
             val snapshot = BaCalendarPoolRepository.syncPool(
                 context = appContext,

@@ -16,7 +16,7 @@ internal fun extractAudioUrlsFromRaw(sourceUrl: String, raw: String): List<Strin
         """(?i)((?:https?:)?//[^\s"'<>]+|/[^\s"'<>]+|[^\s"'<>]+\.(?:mp3|ogg|wav|m4a|aac)(?:\?[^\s"'<>]*)?)"""
     )
     return regex.findAll(raw)
-        .mapNotNull { match ->
+        .map { match ->
             normalizeMediaUrl(sourceUrl, match.groupValues.getOrNull(1).orEmpty())
         }
         .filter { it.isNotBlank() && isAudioUrl(it) }
@@ -87,7 +87,7 @@ internal fun extractWebUrlsFromAny(sourceUrl: String, any: Any?, depth: Int = 0)
             val direct = normalizeWebUrlCandidate(any)
             val embedded = Regex("""https?://[^\s"'<>]+|//[^\s"'<>]+""", RegexOption.IGNORE_CASE)
                 .findAll(any)
-                .mapNotNull { match ->
+                .map { match ->
                     normalizeWebUrlCandidate(match.value)
                 }
                 .toList()

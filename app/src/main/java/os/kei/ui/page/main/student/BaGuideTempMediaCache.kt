@@ -147,7 +147,7 @@ object BaGuideTempMediaCache {
         return fromPath in setOf("png", "jpg", "jpeg", "webp", "gif", "bmp", "avif")
     }
 
-    private suspend fun downloadWithValidation(
+    private fun downloadWithValidation(
         normalizedUrl: String,
         targetFile: File,
         forceReDownload: Boolean

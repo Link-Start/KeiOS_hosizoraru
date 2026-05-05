@@ -405,7 +405,7 @@ ${headersText.prependIndent("        ")}
             connectedClients = 0,
             lastError = null
         )
-        runCatching { McpKeepAliveService.Companion.stop(appContext) }
+        runCatching { McpKeepAliveService.stop(appContext) }
         appendLog("INFO", "MCP server stopped")
     }
 
@@ -550,7 +550,7 @@ ${headersText.prependIndent("        ")}
         val state = _uiState.value
         if (!state.running) return
         runCatching {
-            McpKeepAliveService.Companion.startOrUpdate(
+            McpKeepAliveService.startOrUpdate(
                 context = appContext,
                 serverName = state.serverName,
                 running = state.running,

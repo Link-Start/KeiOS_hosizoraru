@@ -3,8 +3,7 @@ package os.kei.ui.page.main.student
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
-import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -16,6 +15,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.io.File
 import java.io.RandomAccessFile
 import java.security.MessageDigest
@@ -139,7 +140,7 @@ object BaGuideTempMediaCache {
         if (normalized.isBlank()) return false
         if (looksLikeVideoUrl(normalized) || looksLikeAudioUrl(normalized)) return false
         if (looksLikeGifUrl(normalized)) return true
-        val fromPath = runCatching { Uri.parse(normalized).lastPathSegment.orEmpty() }
+        val fromPath = runCatching { normalized.toUri().lastPathSegment.orEmpty() }
             .getOrDefault("")
             .substringAfterLast('.', "")
             .lowercase()
@@ -184,7 +185,7 @@ object BaGuideTempMediaCache {
 
     private fun fileExtFromUrl(url: String): String {
         val normalized = url.substringBefore('?').substringBefore('#')
-        val fromPath = runCatching { Uri.parse(normalized).lastPathSegment.orEmpty() }
+        val fromPath = runCatching { normalized.toUri().lastPathSegment.orEmpty() }
             .getOrDefault("")
             .substringAfterLast('.', "")
             .lowercase()

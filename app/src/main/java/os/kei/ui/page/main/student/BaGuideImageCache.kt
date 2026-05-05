@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
+import androidx.core.net.toUri
 import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
@@ -20,7 +21,7 @@ internal object BaGuideImageCache {
         val value = raw.trim()
         if (value.isBlank()) return ""
         val isFile = runCatching {
-            android.net.Uri.parse(value).scheme.orEmpty().equals("file", ignoreCase = true)
+            value.toUri().scheme.orEmpty().equals("file", ignoreCase = true)
         }.getOrDefault(false)
         return if (isFile) value else normalizeGuideUrl(value)
     }
@@ -73,7 +74,7 @@ internal object BaGuideImageCache {
     }
 
     private fun localFileFromFileUrl(target: String): File? {
-        val uri = runCatching { android.net.Uri.parse(target) }.getOrNull() ?: return null
+        val uri = runCatching { target.toUri() }.getOrNull() ?: return null
         if (!uri.scheme.equals("file", ignoreCase = true)) return null
         val path = uri.path.orEmpty().ifBlank { android.net.Uri.decode(uri.encodedPath.orEmpty()) }
         if (path.isBlank()) return null

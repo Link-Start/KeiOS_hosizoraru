@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.fetch
 
-import android.net.Uri
+import androidx.core.net.toUri
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -75,7 +75,7 @@ internal fun normalizeWebUrlCandidate(raw: String): String {
         return ""
     }
     if (looksLikeBinaryMediaUrl(normalized)) return ""
-    val host = runCatching { Uri.parse(normalized).host.orEmpty().lowercase() }.getOrDefault("")
+    val host = runCatching { normalized.toUri().host.orEmpty().lowercase() }.getOrDefault("")
     if (host.isBlank()) return ""
     return normalized
 }

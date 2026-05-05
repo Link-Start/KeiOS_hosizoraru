@@ -4,7 +4,6 @@ import android.app.AppOpsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.runtime.Composable
@@ -15,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
@@ -223,7 +223,7 @@ private fun resolveOemAutoStartSnapshot(context: Context): SettingsOemAutoStartS
 private fun buildOemAutoStartLaunchPlan(context: Context): SettingsOemAutoStartLaunchPlan {
     val packageManager = context.packageManager
     val packageName = context.packageName
-    val packageUri = Uri.parse("package:$packageName")
+    val packageUri = "package:$packageName".toUri()
     val vendor = resolveOemAutoStartVendor()
     val detailIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -478,7 +478,7 @@ private fun readSystemProperty(key: String): String? {
 
 private fun buildNotificationSettingsIntent(context: Context): Intent? {
     val packageManager = context.packageManager
-    val packageUri = Uri.parse("package:${context.packageName}")
+    val packageUri = "package:${context.packageName}".toUri()
     val candidateIntents = buildList {
         add(
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
@@ -507,7 +507,7 @@ private fun Intent.putMiuiPermissionExtras(context: Context): Intent {
 }
 
 private fun Intent.putMiuiAppManagerExtras(context: Context): Intent {
-    data = Uri.parse("package:${context.packageName}")
+    data = "package:${context.packageName}".toUri()
     putMiuiPermissionExtras(context)
     putExtra("enter_from_appmanagermainactivity", true)
     putExtra("enter_way", "00001")

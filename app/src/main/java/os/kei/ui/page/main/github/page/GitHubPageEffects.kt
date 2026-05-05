@@ -3,14 +3,15 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.lazy.LazyListState
+import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val GITHUB_PAGE_ACTIVE_SYNC_DELAY_MS = 120L
 
@@ -49,7 +50,7 @@ internal fun BindGitHubPageEffects(
 
     LaunchedEffect(isPageDataActive) {
         if (!isPageDataActive) return@LaunchedEffect
-        delay(GITHUB_PAGE_ACTIVE_SYNC_DELAY_MS)
+        delay(GITHUB_PAGE_ACTIVE_SYNC_DELAY_MS.milliseconds)
         if (!state.hasInitialized) {
             state.hasInitialized = true
             actions.initializeWarmSnapshot()

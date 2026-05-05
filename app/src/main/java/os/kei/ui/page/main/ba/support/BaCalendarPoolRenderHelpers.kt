@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba.support
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.aspectRatio
@@ -19,9 +18,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -90,7 +90,7 @@ internal fun GameKeeCoverImage(
         }
         if (!loadEnabled) return@LaunchedEffect
         if (normalizedUrl.startsWith("file://")) {
-            val localPath = Uri.parse(normalizedUrl).path.orEmpty()
+            val localPath = normalizedUrl.toUri().path.orEmpty()
             if (localPath.isBlank()) {
                 return@LaunchedEffect
             }

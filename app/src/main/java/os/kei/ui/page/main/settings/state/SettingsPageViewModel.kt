@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.log.AppLogStore
 import os.kei.core.prefs.CacheEntrySummary
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val SETTINGS_LOG_STATS_REFRESH_MS = 1_200L
 
@@ -107,7 +108,7 @@ internal class SettingsPageViewModel : ViewModel() {
                     state.copy(logStats = repository.loadLogStats(appContext))
                 }
                 if (!logDebugEnabled) break
-                delay(SETTINGS_LOG_STATS_REFRESH_MS)
+                delay(SETTINGS_LOG_STATS_REFRESH_MS.milliseconds)
             } while (true)
         }
     }

@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.tabcontent.profile
 
-import android.net.Uri
+import androidx.core.net.toUri
 import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.util.concurrent.ConcurrentHashMap
@@ -19,7 +19,7 @@ internal fun extractProfileExternalLink(raw: String): String {
         else -> ""
     }
     if (direct.isNotBlank()) {
-        val scheme = runCatching { Uri.parse(direct).scheme.orEmpty() }.getOrDefault("")
+        val scheme = runCatching { direct.toUri().scheme.orEmpty() }.getOrDefault("")
         if (scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)) {
             return direct
         }
@@ -32,7 +32,7 @@ internal fun extractProfileExternalLink(raw: String): String {
         .trimEnd(')', ']', '}', ',', '。', '，')
     if (embedded.isBlank()) return ""
 
-    val embeddedScheme = runCatching { Uri.parse(embedded).scheme.orEmpty() }.getOrDefault("")
+    val embeddedScheme = runCatching { embedded.toUri().scheme.orEmpty() }.getOrDefault("")
     return if (embeddedScheme.equals("http", ignoreCase = true) || embeddedScheme.equals("https", ignoreCase = true)) {
         embedded
     } else {
@@ -86,7 +86,7 @@ internal fun cleanProfileLinkTitle(raw: String): String {
 }
 
 internal fun fallbackProfileLinkTitle(url: String): String {
-    val uri = runCatching { Uri.parse(url) }.getOrNull()
+    val uri = runCatching { url.toUri() }.getOrNull()
     val lastSegment = uri?.lastPathSegment?.trim().orEmpty()
     if (lastSegment.isNotBlank()) return lastSegment
     val host = uri?.host?.trim().orEmpty()

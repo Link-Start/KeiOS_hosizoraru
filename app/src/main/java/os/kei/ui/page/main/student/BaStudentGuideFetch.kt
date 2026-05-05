@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student
 
-import android.net.Uri
+import androidx.core.net.toUri
+import org.json.JSONObject
 import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.extractMeta
@@ -10,7 +11,6 @@ import os.kei.ui.page.main.student.fetch.normalizeImageUrl
 import os.kei.ui.page.main.student.fetch.parseGuideDetailFromContentJson
 import os.kei.ui.page.main.student.fetch.parser.firstImageFromAny
 import os.kei.ui.page.main.student.fetch.stripHtml
-import org.json.JSONObject
 
 private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
     val target = normalizeGuideUrl(sourceUrl)
@@ -18,7 +18,7 @@ private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
     val contentId = extractGuideContentIdFromUrl(target)
         ?: error("unable to resolve content_id")
 
-    val refererPath = runCatching { Uri.parse(target).path.orEmpty() }
+    val refererPath = runCatching { target.toUri().path.orEmpty() }
         .getOrDefault("/ba/tj/$contentId.html")
         .ifBlank { "/ba/tj/$contentId.html" }
 

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaGuideCatalogDataUiState(
     val catalog: BaGuideCatalogBundle = BaGuideCatalogBundle.EMPTY,
@@ -71,7 +72,7 @@ internal class BaGuideCatalogViewModel(
                 currentBinding.transitionAnimationsEnabled &&
                 currentBinding.initialFetchDelayMs > 0
             ) {
-                delay(currentBinding.initialFetchDelayMs.toLong())
+                delay(currentBinding.initialFetchDelayMs.milliseconds)
             }
             _dataState.update { state -> state.copy(loading = true) }
             val result = repository.loadCatalog(

@@ -2,21 +2,22 @@ package os.kei.ui.page.main.student.catalog
 
 import android.content.Context
 import androidx.annotation.StringRes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import os.kei.R
 import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
-import os.kei.ui.page.main.student.fetchGuideInfo
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import os.kei.ui.page.main.student.fetchGuideInfo
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val BA_GUIDE_SECOND_PAGE_ID = 23941
 private const val BA_GUIDE_STUDENT_PID = 49443
@@ -362,7 +363,7 @@ private suspend fun collectReleaseDatePatchFromNetwork(
                 }
             }
         if (requestThrottleMs > 0L && index < entries.lastIndex) {
-            delay(requestThrottleMs)
+            delay(requestThrottleMs.milliseconds)
         }
     }
     return CatalogReleaseDatePatch(

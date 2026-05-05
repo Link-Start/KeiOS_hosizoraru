@@ -24,16 +24,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 
 internal fun normalizeGuideMediaSource(raw: String): String {
     val value = raw.trim()
     if (value.isBlank()) return ""
-    val scheme = runCatching { Uri.parse(value).scheme.orEmpty() }.getOrDefault("")
+    val scheme = runCatching { value.toUri().scheme.orEmpty() }.getOrDefault("")
     return if (scheme.equals("file", ignoreCase = true)) {
         value
     } else {
@@ -258,7 +259,7 @@ internal fun isGifMediaSource(source: String): Boolean {
     if (value.isBlank()) return false
     if (value.startsWith("data:image/gif", ignoreCase = true)) return true
     if (Regex("""\.gif(\?.*)?(#.*)?$""", RegexOption.IGNORE_CASE).containsMatchIn(value)) return true
-    val uri = runCatching { Uri.parse(value) }.getOrNull()
+    val uri = runCatching { value.toUri() }.getOrNull()
     if (!uri?.scheme.equals("file", ignoreCase = true)) return false
     val path = uri?.path.orEmpty().ifBlank { Uri.decode(uri?.encodedPath.orEmpty()) }
     if (path.isBlank()) return false
@@ -275,14 +276,14 @@ internal fun isGifMediaSource(source: String): Boolean {
 internal fun isFileMediaSource(source: String): Boolean {
     val value = source.trim()
     if (value.isBlank()) return false
-    val uri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
+    val uri = runCatching { value.toUri() }.getOrNull() ?: return false
     return uri.scheme.equals("file", ignoreCase = true)
 }
 
 internal fun isHttpMediaSource(source: String): Boolean {
     val value = source.trim()
     if (value.isBlank()) return false
-    val uri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
+    val uri = runCatching { value.toUri() }.getOrNull() ?: return false
     val scheme = uri.scheme.orEmpty()
     return scheme.equals("http", ignoreCase = true) || scheme.equals("https", ignoreCase = true)
 }

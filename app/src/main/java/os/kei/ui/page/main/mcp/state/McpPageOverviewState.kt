@@ -6,13 +6,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.mcp.model.McpOverviewMetric
 import os.kei.ui.page.main.mcp.model.toMcpTokenPreview
 import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
-import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 internal data class McpPageOverviewState(
     val overviewAccentColor: Color,
@@ -53,7 +54,7 @@ internal fun rememberMcpPageOverviewState(
     ) {
         value = System.currentTimeMillis()
         while (uiState.running && uiState.runningSinceEpochMs > 0L) {
-            delay(if (runtime.isDataActive) 1_000L else 3_000L)
+            delay((if (runtime.isDataActive) 1_000L else 3_000L).milliseconds)
             value = System.currentTimeMillis()
         }
     }

@@ -9,17 +9,18 @@ import os.kei.R
 import os.kei.feature.github.domain.GitHubActionsBranchSelector
 import os.kei.feature.github.domain.GitHubActionsWorkflowSelector
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
+import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunArtifacts
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.feature.github.model.GitHubActionsRunSelectionOptions
 import os.kei.feature.github.model.GitHubActionsWorkflow
-import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubActionsWorkflowSelectionOptions
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class GitHubActionsActions(
     private val env: GitHubPageActionEnvironment
@@ -678,7 +679,7 @@ internal class GitHubActionsActions(
         if (!state.showActionsSheet || !plan.pollable) return
         val delayMillis = plan.nextPollDelayMillis.coerceAtLeast(5_000L)
         state.actionsRunWatchJob = scope.launch {
-            delay(delayMillis)
+            delay(delayMillis.milliseconds)
             if (!state.showActionsSheet || state.actionsSelectedRunId != runId) return@launch
             refreshRunStatus(runId = runId, showToast = false)
         }

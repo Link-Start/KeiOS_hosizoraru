@@ -1,10 +1,6 @@
 package os.kei.mcp.server
 
 import android.content.Context
-import os.kei.R
-import os.kei.core.log.AppLogger
-import os.kei.mcp.service.McpKeepAliveService
-import os.kei.mcp.notification.McpNotificationHelper
 import com.tencent.mmkv.MMKV
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
@@ -15,14 +11,6 @@ import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
-import java.net.Inet4Address
-import java.net.InetSocketAddress
-import java.net.NetworkInterface
-import java.net.ServerSocket
-import java.security.SecureRandom
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,6 +20,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import os.kei.R
+import os.kei.core.log.AppLogger
+import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.service.McpKeepAliveService
+import java.net.Inet4Address
+import java.net.InetSocketAddress
+import java.net.NetworkInterface
+import java.net.ServerSocket
+import java.security.SecureRandom
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
 data class McpLogEntry(
     val time: String,
@@ -486,7 +487,7 @@ ${headersText.prependIndent("        ")}
                         appendLog("INFO", "Client disconnected, online=$count")
                     }
                 }
-                delay(1200)
+                delay(1_200.milliseconds)
             }
         }
     }

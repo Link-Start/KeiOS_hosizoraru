@@ -4,10 +4,10 @@
 package os.kei.core.ui.effect.background
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.blur.asComposeShader
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DYNAMIC_BACKGROUND_FRAME_INTERVAL_MS = 33L
 
@@ -89,7 +90,7 @@ fun BgEffectBackground(
 
         val startTimeNs = System.nanoTime()
         while (dynamicBackground) {
-            delay(DYNAMIC_BACKGROUND_FRAME_INTERVAL_MS)
+            delay(DYNAMIC_BACKGROUND_FRAME_INTERVAL_MS.milliseconds)
             val animTime = ((System.nanoTime() - startTimeNs) / 1_000_000_000f) % 62.831852f
             painter.setAnimTime(animTime)
             painter.updateMaterials()

@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.tabcontent
 
-import android.net.Uri
+import androidx.core.net.toUri
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideVoiceEntry
 import os.kei.ui.page.main.student.BaStudentGuideInfo
@@ -149,7 +149,7 @@ internal fun resolveVoicePlaybackUrl(
 internal fun normalizeGuidePlaybackSource(raw: String): String {
     val value = raw.trim()
     if (value.isBlank()) return ""
-    val scheme = runCatching { Uri.parse(value).scheme.orEmpty() }.getOrDefault("")
+    val scheme = runCatching { value.toUri().scheme.orEmpty() }.getOrDefault("")
     return if (scheme.equals("file", ignoreCase = true)) {
         value
     } else {

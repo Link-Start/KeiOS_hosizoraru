@@ -6,10 +6,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.Icon
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.graphics.toColorInt
 import com.xzakota.hyper.notification.focus.FocusNotification
 import os.kei.MainActivity
 import os.kei.R
@@ -25,7 +25,7 @@ object GitHubRefreshNotificationHelper {
     private const val TAG = "GitHubRefreshNotify"
     const val CHANNEL_ID = "github_refresh_channel_v2"
     const val NOTIFICATION_ID = 38990
-    private const val ISLAND_ICON_RES_ID = R.drawable.ic_github_invertocat_island_blue
+    private val ISLAND_ICON_RES_ID = R.drawable.ic_github_invertocat_island_blue
     private const val MI_PROGRESS_COLOR = "#1A73E8"
     private const val MI_PROGRESS_TRACK_COLOR = "#334155"
     private const val RUNNING_PROGRESS_FLOOR = 6
@@ -416,7 +416,7 @@ object GitHubRefreshNotificationHelper {
             )
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setColorized(true)
-            .setColor(Color.parseColor(MI_PROGRESS_COLOR))
+            .setColor(MI_PROGRESS_COLOR.toColorInt())
             .setOngoing(state.running || state.keepUntilRead)
             .setOnlyAlertOnce(onlyAlertOnce)
             .setAutoCancel(false)

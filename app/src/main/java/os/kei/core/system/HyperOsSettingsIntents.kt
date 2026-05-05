@@ -3,8 +3,8 @@ package os.kei.core.system
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
+import androidx.core.net.toUri
 
 internal object HyperOsSettingsIntents {
     private const val SECURITY_CENTER_PACKAGE = "com.miui.securitycenter"
@@ -21,7 +21,7 @@ internal object HyperOsSettingsIntents {
 
     fun buildBatteryOptimizationIntent(context: Context, alreadyIgnored: Boolean): Intent? {
         val packageManager = context.packageManager
-        val packageUri = Uri.parse("package:${context.packageName}")
+        val packageUri = "package:${context.packageName}".toUri()
         val candidateIntents = buildList {
             if (isHyperOs3Device()) {
                 add(buildPowerDetailIntent(context))
@@ -41,7 +41,7 @@ internal object HyperOsSettingsIntents {
 
     fun buildAppListPermissionIntent(context: Context): Intent? {
         val packageManager = context.packageManager
-        val packageUri = Uri.parse("package:${context.packageName}")
+        val packageUri = "package:${context.packageName}".toUri()
         val candidateIntents = buildList {
             if (isHyperOs3Device()) {
                 add(buildHyperOsAppPermissionEditorIntent(context))
@@ -64,7 +64,7 @@ internal object HyperOsSettingsIntents {
         return Intent().setComponent(
             ComponentName(SECURITY_CENTER_PACKAGE, POWER_DETAIL_ACTIVITY)
         ).apply {
-            data = Uri.parse("package:${context.packageName}")
+            data = "package:${context.packageName}".toUri()
             putExtra("iconPackage", context.packageName)
             putExtra("package_name", context.packageName)
             putExtra("uid", context.applicationInfo.uid)

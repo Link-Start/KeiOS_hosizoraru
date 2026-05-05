@@ -16,10 +16,11 @@ import androidx.compose.runtime.setValue
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.ui.page.main.student.GuideBgmLoopStore
 import os.kei.ui.page.main.student.GuideBgmPlayerStore
-import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Stable
 internal class GuideGalleryAudioPlayerState(
@@ -310,7 +311,7 @@ internal fun BindGuideGalleryAudioPlayerEffects(
             } else {
                 0f
             }
-            delay(200)
+            delay(200.milliseconds)
         }
     }
 }

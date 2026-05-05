@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.tabcontent.profile
 
-import android.net.Uri
+import androidx.core.net.toUri
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.containsGuideWebLink
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
@@ -58,7 +58,7 @@ internal fun extractSameNameGuideLink(raw: String): String {
     for (candidate in directCandidates) {
         val normalized = normalizeGuideUrl(candidate)
         if (normalized.isBlank()) continue
-        val uri = runCatching { Uri.parse(normalized) }.getOrNull() ?: continue
+        val uri = runCatching { normalized.toUri() }.getOrNull() ?: continue
         val host = uri.host.orEmpty().lowercase()
         val path = uri.path.orEmpty()
         val hostAccepted = host == "www.gamekee.com" || host == "gamekee.com"

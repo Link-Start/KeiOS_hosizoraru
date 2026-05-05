@@ -30,6 +30,7 @@ import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.SessionNotifierImpl
 import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
 import os.kei.mcp.service.McpKeepAliveService
+import kotlin.time.Duration.Companion.milliseconds
 
 object McpNotificationHelper {
     private const val TAG = "McpNotifyHelper"
@@ -648,7 +649,7 @@ object McpNotificationHelper {
                     networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
                     notificationManager.notify(notificationId, notification)
                     notificationDispatched = true
-                    delay(resolveXiaomiMagicBlockIntervalMs())
+                    delay(resolveXiaomiMagicBlockIntervalMs().milliseconds)
                 } catch (throwable: Throwable) {
                     if (throwable is CancellationException) throw throwable
                     AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)

@@ -3,12 +3,11 @@ package os.kei.ui.page.main.os.shortcut
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import os.kei.R
 import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import java.util.Locale
-import kotlin.collections.plus
 
 internal fun buildGoogleSystemServiceRows(
     context: Context,
@@ -96,9 +95,9 @@ internal fun launchGoogleSystemServiceActivity(
         val dataText = normalized.intentUriData.trim()
         val mimeType = normalized.intentMimeType.trim()
         if (dataText.isNotBlank() && mimeType.isNotBlank()) {
-            setDataAndType(Uri.parse(dataText), mimeType)
+            setDataAndType(dataText.toUri(), mimeType)
         } else if (dataText.isNotBlank()) {
-            data = Uri.parse(dataText)
+            data = dataText.toUri()
         } else if (mimeType.isNotBlank()) {
             type = mimeType
         }
@@ -191,7 +190,7 @@ private fun Intent.putShortcutIntentExtra(extra: ShortcutIntentExtra) {
             }
         }
         ShortcutIntentExtraType.Uri -> {
-            val parsed = runCatching { Uri.parse(rawValue) }.getOrNull()
+            val parsed = runCatching { rawValue.toUri() }.getOrNull()
             if (parsed != null) {
                 putExtra(key, parsed)
             } else {

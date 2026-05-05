@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
+import kotlin.time.Duration.Companion.milliseconds
 
 class McpKeepAliveService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -172,7 +173,7 @@ class McpKeepAliveService : Service() {
         if (!currentRunning || !currentHeartbeatEnabled) return
         heartbeatJob = serviceScope.launch {
             while (true) {
-                delay(18_000)
+                delay(18_000.milliseconds)
                 if (!currentRunning || !currentHeartbeatEnabled) continue
                 McpNotificationHelper.refreshForegroundPulse(
                     context = this@McpKeepAliveService,
@@ -238,7 +239,7 @@ class McpKeepAliveService : Service() {
             val refreshCheckpoints = longArrayOf(420L, 1_150L, 2_300L, 4_000L)
             var elapsedMs = 0L
             refreshCheckpoints.forEach { checkpointMs ->
-                delay((checkpointMs - elapsedMs).coerceAtLeast(0L))
+                delay((checkpointMs - elapsedMs).coerceAtLeast(0L).milliseconds)
                 elapsedMs = checkpointMs
                 if (!canRefreshIsland(notificationId, serverName, port, path, clients)) return@launch
                 McpNotificationHelper.refreshForegroundAsIsland(

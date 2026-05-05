@@ -2,7 +2,6 @@ package os.kei.ui.page.main.student.page.state
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.provider.DocumentsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
@@ -144,7 +144,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                 } else {
                     val fixedTreeUriRaw = BASettingsStore.loadMediaSaveFixedTreeUri()
                     val fixedTreeUri = fixedTreeUriRaw.takeIf { it.isNotBlank() }?.let { raw ->
-                        runCatching { Uri.parse(raw) }.getOrNull()
+                        runCatching { raw.toUri() }.getOrNull()
                     }
                     if (fixedTreeUri != null) {
                         pageScope.launch {
@@ -187,7 +187,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                             )
                             putExtra(
                                 DocumentsContract.EXTRA_INITIAL_URI,
-                                Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload")
+                                "content://com.android.externalstorage.documents/tree/primary%3ADownload".toUri()
                             )
                         }
                         fixedFolderLauncher.launch(pickerIntent)
@@ -317,7 +317,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                 } else {
                     val fixedTreeUriRaw = BASettingsStore.loadMediaSaveFixedTreeUri()
                     val fixedTreeUri = fixedTreeUriRaw.takeIf { it.isNotBlank() }?.let { raw ->
-                        runCatching { Uri.parse(raw) }.getOrNull()
+                        runCatching { raw.toUri() }.getOrNull()
                     }
                     if (fixedTreeUri != null) {
                         pageScope.launch {
@@ -375,7 +375,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                             )
                             putExtra(
                                 DocumentsContract.EXTRA_INITIAL_URI,
-                                Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload")
+                                "content://com.android.externalstorage.documents/tree/primary%3ADownload".toUri()
                             )
                         }
                         fixedFolderPackSaveLauncher.launch(pickerIntent)

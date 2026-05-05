@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.fetch
 
-import android.net.Uri
+import androidx.core.net.toUri
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideVoiceEntry
@@ -85,7 +85,7 @@ internal fun normalizeImageUrl(sourceUrl: String, imageRaw: String): String {
     if (img.startsWith("data:image", ignoreCase = true)) return img
     if (img.startsWith("//")) return "https:$img"
     return if (img.startsWith("/")) {
-        val source = runCatching { Uri.parse(sourceUrl) }.getOrNull()
+        val source = runCatching { sourceUrl.toUri() }.getOrNull()
         val host = source?.scheme?.plus("://")?.plus(source.host.orEmpty()).orEmpty()
         (host.ifBlank { "https://www.gamekee.com" }) + img
     } else {
@@ -211,7 +211,7 @@ internal fun hasInvalidMediaTail(rawUrl: String): Boolean {
     val value = rawUrl.trim()
     if (value.isBlank()) return true
     val normalized = if (value.startsWith("//")) "https:$value" else value
-    val uri = runCatching { Uri.parse(normalized) }.getOrNull() ?: return false
+    val uri = runCatching { normalized.toUri() }.getOrNull() ?: return false
     val host = uri.host?.lowercase().orEmpty()
     if (!host.endsWith("gamekee.com")) return false
     val segments = uri.pathSegments.filter { it.isNotBlank() }
@@ -238,7 +238,7 @@ internal fun looksLikeImageUrl(raw: String): Boolean {
         return true
     }
     if (hasInvalidMediaTail(normalized)) return false
-    val uri = runCatching { Uri.parse(normalized) }.getOrNull()
+    val uri = runCatching { normalized.toUri() }.getOrNull()
     val host = uri?.host?.lowercase().orEmpty()
     val path = (uri?.encodedPath ?: uri?.path ?: "").lowercase()
     if (host.contains("cdnimg") || host.contains("img")) return true
@@ -271,7 +271,7 @@ fun extractGuideContentIdFromUrl(sourceUrl: String): Long? {
         val id = regex.find(target)?.groupValues?.getOrNull(1)?.toLongOrNull()
         if (id != null && id > 0L) return id
     }
-    val uri = runCatching { Uri.parse(target) }.getOrNull() ?: return null
+    val uri = runCatching { target.toUri() }.getOrNull() ?: return null
     GUIDE_CONTENT_ID_QUERY_KEYS.forEach { key ->
         val id = uri.getQueryParameter(key)?.toLongOrNull()
         if (id != null && id > 0L) return id

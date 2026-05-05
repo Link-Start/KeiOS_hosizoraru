@@ -3,6 +3,7 @@ package os.kei.core.intent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.net.toUri
 
 object SafeExternalIntents {
     private const val MIME_TEXT_PLAIN = "text/plain"
@@ -49,7 +50,7 @@ object SafeExternalIntents {
     }
 
     fun parseHttpUriOrNull(url: String): Uri? {
-        val uri = runCatching { Uri.parse(url.trim()) }.getOrNull() ?: return null
+        val uri = runCatching { url.trim().toUri() }.getOrNull() ?: return null
         val scheme = uri.scheme?.lowercase().orEmpty()
         val host = uri.host.orEmpty()
         if (scheme != "https" && scheme != "http") return null

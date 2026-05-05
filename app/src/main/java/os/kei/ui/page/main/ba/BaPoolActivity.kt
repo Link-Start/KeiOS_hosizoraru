@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -45,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -513,7 +513,7 @@ private fun openBaPoolGuideLink(
         ).show()
         return
     }
-    val uri = runCatching { Uri.parse(normalized) }.getOrNull()
+    val uri = runCatching { normalized.toUri() }.getOrNull()
     val host = uri?.host?.lowercase().orEmpty()
     val hostAccepted = host == "www.gamekee.com" || host == "gamekee.com"
     if (hostAccepted && baGuideDetailPathRegex.matches(uri?.path.orEmpty())) {

@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student
 
-import android.net.Uri
+import androidx.core.net.toUri
 
 private val guideWebLinkRegex = Regex(
     """(?i)((?:https?://|www\.)[^\s<>"'，。；;）)】]+)"""
@@ -59,7 +59,7 @@ internal fun hasInvalidGameKeeMediaTail(rawUrl: String): Boolean {
     val value = rawUrl.trim()
     if (value.isBlank()) return true
     val normalized = if (value.startsWith("//")) "https:$value" else value
-    val uri = runCatching { Uri.parse(normalized) }.getOrNull() ?: return false
+    val uri = runCatching { normalized.toUri() }.getOrNull() ?: return false
     val host = uri.host?.lowercase().orEmpty()
     if (!host.endsWith("gamekee.com")) return false
     val segments = uri.pathSegments.filter { it.isNotBlank() }
@@ -81,7 +81,7 @@ internal fun isRenderableGalleryImageUrl(raw: String): Boolean {
         return true
     }
     if (hasInvalidGameKeeMediaTail(normalized)) return false
-    val uri = runCatching { Uri.parse(normalized) }.getOrNull()
+    val uri = runCatching { normalized.toUri() }.getOrNull()
     val host = uri?.host?.lowercase().orEmpty()
     val path = (uri?.encodedPath ?: uri?.path ?: "").lowercase()
     if (host.contains("cdnimg") || host.contains("img")) return true

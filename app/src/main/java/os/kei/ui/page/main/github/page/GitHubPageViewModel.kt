@@ -9,15 +9,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.core.ui.snapshot.AppSnapshotFlowManager
+import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val pendingShareImportCardTickMs = 15_000L
 
@@ -205,7 +206,7 @@ internal class GitHubPageViewModel : ViewModel() {
                     pendingShareImportNowMillis.value = System.currentTimeMillis()
                     if (armedAtMillis == null) return@collectLatest
                     while (true) {
-                        kotlinx.coroutines.delay(pendingShareImportCardTickMs)
+                        kotlinx.coroutines.delay(pendingShareImportCardTickMs.milliseconds)
                         pendingShareImportNowMillis.value = System.currentTimeMillis()
                     }
                 }

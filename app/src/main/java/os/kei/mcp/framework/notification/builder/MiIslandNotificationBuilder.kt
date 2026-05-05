@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.toColorInt
 import com.xzakota.hyper.notification.focus.FocusNotification
 import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
 import os.kei.R
@@ -48,11 +49,11 @@ class MiIslandNotificationBuilder(
         private const val BA_AP_PROGRESS_COLOR = "#4DA3FF"
         private const val BA_AP_PROGRESS_TRACK_COLOR = "#374151"
         private const val BA_EVENT_ACCENT_COLOR = "#4DA3FF"
-        private const val ISLAND_ICON_RES_ID_DEFAULT = R.drawable.ic_kei_logo_island
-        private const val ISLAND_ICON_RES_ID_AP = R.drawable.ic_ba_ap_island_notification
-        private const val ISLAND_ICON_RES_ID_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
-        private const val ISLAND_ICON_RES_ID_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
-        private const val ISLAND_ICON_RES_ID_BA_CALENDAR_POOL =
+        private val ISLAND_ICON_RES_ID_DEFAULT = R.drawable.ic_kei_logo_island
+        private val ISLAND_ICON_RES_ID_AP = R.drawable.ic_ba_ap_island_notification
+        private val ISLAND_ICON_RES_ID_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
+        private val ISLAND_ICON_RES_ID_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
+        private val ISLAND_ICON_RES_ID_BA_CALENDAR_POOL =
             R.drawable.ic_ba_calendar_live_update
     }
 
@@ -113,7 +114,7 @@ class MiIslandNotificationBuilder(
         presentation.notificationAccentColor?.let { accentColor ->
             builder
                 .setColorized(true)
-                .setColor(Color.parseColor(accentColor))
+                .setColor(accentColor.toColorInt())
         }
         shortCriticalText?.let(builder::setShortCriticalText)
         if (!isBlueArchiveNotification) {

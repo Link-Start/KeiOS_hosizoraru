@@ -6,15 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_TICK_MS
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
 import os.kei.ui.page.main.widget.chrome.isPageSettledAtTop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal fun BaPageCommonEffects(
@@ -78,12 +79,12 @@ internal fun BaPageCommonEffects(
         office.applyApRegen()
         while (true) {
             if (isPageActive) {
-                delay(BA_AP_REGEN_TICK_MS)
+                delay(BA_AP_REGEN_TICK_MS.milliseconds)
                 office.applyCafeStorage()
                 office.applyApRegen()
             } else {
                 // Keep background overhead low on offscreen pager pages.
-                delay(5_000L)
+                delay(5_000.milliseconds)
             }
         }
     }
@@ -91,10 +92,10 @@ internal fun BaPageCommonEffects(
     LaunchedEffect(isPageActive, listState) {
         while (true) {
             if (isPageActive && listState.isScrollInProgress) {
-                delay(250L)
+                delay(250.milliseconds)
                 continue
             }
-            delay(if (isPageActive) 1_000L else 3_000L)
+            delay((if (isPageActive) 1_000L else 3_000L).milliseconds)
             if (isPageActive && listState.isScrollInProgress) continue
             onUiNowMsChange(System.currentTimeMillis())
         }

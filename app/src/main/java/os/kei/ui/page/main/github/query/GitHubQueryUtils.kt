@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import android.net.Uri
+import androidx.core.net.toUri
 import os.kei.R
 import os.kei.feature.github.model.InstalledAppItem
 
@@ -67,7 +67,7 @@ internal fun queryOnlineShareTargetOptions(
 }
 
 internal fun queryDownloaderOptions(context: Context): List<DownloaderOption> {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/")).apply {
+    val intent = Intent(Intent.ACTION_VIEW, "https://github.com/".toUri()).apply {
         addCategory(Intent.CATEGORY_BROWSABLE)
     }
     val resolved = runCatching {

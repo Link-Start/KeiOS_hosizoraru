@@ -1,13 +1,13 @@
 package os.kei.ui.page.main.host.main
 
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
@@ -17,7 +17,7 @@ private val mainScreenGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$"""
 private fun isMainScreenGuideDetailLink(rawUrl: String): Boolean {
     val normalized = normalizeGuideUrl(rawUrl)
     if (normalized.isBlank()) return false
-    val uri = runCatching { Uri.parse(normalized) }.getOrNull() ?: return false
+    val uri = runCatching { normalized.toUri() }.getOrNull() ?: return false
     val host = uri.host?.lowercase().orEmpty()
     val hostAccepted = host == "www.gamekee.com" || host == "gamekee.com"
     if (!hostAccepted) return false

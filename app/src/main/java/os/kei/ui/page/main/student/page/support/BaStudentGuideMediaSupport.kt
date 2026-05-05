@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import os.kei.ui.page.main.student.BaGuideGalleryItem
@@ -31,7 +32,7 @@ import java.util.zip.ZipOutputStream
 internal fun normalizeGuidePlaybackSource(raw: String): String {
     val value = raw.trim()
     if (value.isBlank()) return ""
-    val scheme = runCatching { Uri.parse(value).scheme.orEmpty() }.getOrDefault("")
+    val scheme = runCatching { value.toUri().scheme.orEmpty() }.getOrDefault("")
     return if (scheme.equals("file", ignoreCase = true)) {
         value
     } else {
@@ -42,7 +43,7 @@ internal fun normalizeGuidePlaybackSource(raw: String): String {
 internal fun isGuideAudioPlaybackUrl(raw: String): Boolean {
     val normalized = normalizeGuidePlaybackSource(raw)
     if (normalized.isBlank()) return false
-    val scheme = runCatching { Uri.parse(normalized).scheme.orEmpty() }.getOrDefault("")
+    val scheme = runCatching { normalized.toUri().scheme.orEmpty() }.getOrDefault("")
     return scheme.equals("http", ignoreCase = true) ||
         scheme.equals("https", ignoreCase = true) ||
         scheme.equals("file", ignoreCase = true)
@@ -160,7 +161,7 @@ private fun ByteArray.asciiAt(offset: Int, length: Int): String {
 }
 
 private fun inferGuideMediaExtFromLocalFile(rawSourceUrl: String, rawTitle: String): String? {
-    val parsed = runCatching { Uri.parse(rawSourceUrl) }.getOrNull()
+    val parsed = runCatching { rawSourceUrl.toUri() }.getOrNull()
     val path = when {
         parsed?.scheme.equals("file", ignoreCase = true) -> parsed?.path.orEmpty()
         rawSourceUrl.startsWith("/") -> rawSourceUrl
@@ -325,7 +326,7 @@ private inline fun copyGuideMediaFromSource(
         if (normalized.isBlank()) {
             false
         } else {
-            val sourceUri = runCatching { Uri.parse(normalized) }.getOrNull()
+            val sourceUri = runCatching { normalized.toUri() }.getOrNull()
             val scheme = sourceUri?.scheme.orEmpty().lowercase()
             when {
                 scheme == "file" -> {

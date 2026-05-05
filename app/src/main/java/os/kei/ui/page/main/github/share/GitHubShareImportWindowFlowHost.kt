@@ -1,12 +1,5 @@
 package os.kei.ui.page.main.github.share
 
-import android.app.DownloadManager
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Environment
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -16,34 +9,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
-import os.kei.R
-import os.kei.core.background.AppBackgroundScheduler
-import os.kei.core.system.AppPackageChangedEvent
-import os.kei.core.system.AppPackageChangedEvents
-import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
-import os.kei.feature.github.data.remote.GitHubShareImportResolver
-import os.kei.feature.github.data.remote.GitHubShareIntentParser
-import os.kei.feature.github.domain.GitHubReleaseCheckService
-import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubLookupStrategyOption
-import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.ui.page.main.github.localizedGitHubShareImportErrorMessage
-import os.kei.ui.page.main.github.query.systemDownloadManagerOption
-import os.kei.ui.page.main.github.state.toCacheEntry
-import os.kei.ui.page.main.github.state.toUi
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import os.kei.R
+import os.kei.core.system.AppPackageChangedEvents
+import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
+import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.remote.GitHubShareImportResolver
+import os.kei.feature.github.data.remote.GitHubShareIntentParser
+import os.kei.ui.page.main.github.localizedGitHubShareImportErrorMessage
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal fun GitHubShareImportWindowFlowHost(
@@ -152,7 +133,7 @@ internal fun GitHubShareImportWindowFlowHost(
 
             val pendingAge = (System.currentTimeMillis() - currentPending.armedAtMillis).coerceAtLeast(0L)
             if (pendingAge > shareImportTrackMaxAgeMs) return@LaunchedEffect
-            delay(2500L)
+            delay(2_500.milliseconds)
         }
     }
 

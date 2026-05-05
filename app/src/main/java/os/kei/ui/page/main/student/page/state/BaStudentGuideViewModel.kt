@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaStudentGuideDataUiState(
     val sourceUrl: String = "",
@@ -119,7 +120,7 @@ internal class BaStudentGuideViewModel(
                 currentBinding.transitionAnimationsEnabled &&
                 currentBinding.initialFetchDelayMs > 0
             ) {
-                delay(currentBinding.initialFetchDelayMs.toLong())
+                delay(currentBinding.initialFetchDelayMs.milliseconds)
             }
             _dataState.update { state ->
                 if (state.sourceUrl == sourceUrl) {

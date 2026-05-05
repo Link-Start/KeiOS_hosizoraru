@@ -2,11 +2,7 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.net.Uri
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
-import os.kei.ui.page.main.ba.support.BaCalendarEntry
-import os.kei.ui.page.main.ba.support.BaPoolEntry
-import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,9 +16,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.ui.page.main.ba.support.BaCalendarEntry
+import os.kei.ui.page.main.ba.support.BaPoolEntry
+import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 internal object BaCalendarPoolImageCache {
     private const val ROOT_DIR = "ba_calendar_pool_media"
@@ -54,7 +56,7 @@ internal object BaCalendarPoolImageCache {
 
     private fun fileExtFromUrl(url: String): String {
         val normalized = url.substringBefore('?').substringBefore('#')
-        val segment = runCatching { Uri.parse(normalized).lastPathSegment.orEmpty() }
+        val segment = runCatching { normalized.toUri().lastPathSegment.orEmpty() }
             .getOrDefault("")
             .substringAfterLast('.', "")
             .lowercase()
@@ -178,7 +180,7 @@ internal object BaCalendarPoolImageCache {
         warmJobs.remove(key)?.cancel()
         warmJobs[key] = warmScope.launch {
             if (delayMs > 0L) {
-                delay(delayMs)
+                delay(delayMs.milliseconds)
             }
             prefetchForCategory(
                 context = context.applicationContext,

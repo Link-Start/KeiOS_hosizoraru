@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -123,26 +124,26 @@ private fun AppTopBarTitleSlot(
     ) {
         val availableWidth = maxWidth.coerceAtLeast(AppChromeTokens.topBarTitleMinWidth)
         val cardMaxWidth = availableWidth.coerceAtMost(AppChromeTokens.topBarTitleMaxWidth)
-        val textLength = title.length
-        val titleTextSize = when {
-            cardMaxWidth < 112.dp || textLength >= 14 -> 14.sp
-            cardMaxWidth < 150.dp || textLength >= 9 -> 15.sp
-            else -> 16.sp
-        }
-        val titleLineHeight = when {
-            titleTextSize.value <= 14f -> 18.sp
-            titleTextSize.value <= 15f -> 19.sp
-            else -> 20.sp
-        }
         val horizontalPadding = when {
-            cardMaxWidth < 112.dp -> 12.dp
-            cardMaxWidth < 150.dp -> 14.dp
-            else -> 16.dp
+            cardMaxWidth < 112.dp -> 13.dp
+            cardMaxWidth < 150.dp -> 15.dp
+            else -> 18.dp
         }
-        val estimatedTextWidth = title.sumOf { char ->
-            if (char.code <= 0x007F) 9 else 17
+        val estimatedTextWidthAt18Sp = title.sumOf { char ->
+            when {
+                char.code <= 0x007F -> 10
+                char.isJapaneseKana() -> 18
+                else -> 19
+            }
         }.dp
-        val cardWidth = (estimatedTextWidth + horizontalPadding * 2)
+        val targetContentWidth = (cardMaxWidth - horizontalPadding * 2)
+            .coerceAtLeast(36.dp)
+        val textScale = (targetContentWidth.value / estimatedTextWidthAt18Sp.value)
+            .coerceIn(0.62f, 1f)
+        val titleTextSize = (18f * textScale).sp
+        val titleLineHeight = (22f * textScale).coerceAtLeast(15.5f).sp
+        val scaledTextWidth = estimatedTextWidthAt18Sp * textScale
+        val cardWidth = (scaledTextWidth + horizontalPadding * 2)
             .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
         AppTopBarLiquidTitleCard(
             title = title,
@@ -160,10 +161,10 @@ private fun AppTopBarLiquidTitleCard(
     title: String,
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
-    height: Dp = 42.dp,
+    height: Dp = AppChromeTokens.topBarTitleHeight,
     width: Dp,
-    textSize: androidx.compose.ui.unit.TextUnit,
-    lineHeight: androidx.compose.ui.unit.TextUnit,
+    textSize: TextUnit,
+    lineHeight: TextUnit,
     horizontalPadding: Dp,
 ) {
     AppLiquidFloatingSurface(
@@ -182,10 +183,14 @@ private fun AppTopBarLiquidTitleCard(
             lineHeight = lineHeight,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            overflow = TextOverflow.Clip,
             modifier = Modifier.padding(horizontal = horizontalPadding)
         )
     }
+}
+
+private fun Char.isJapaneseKana(): Boolean {
+    return this in '\u3040'..'\u30FF' || this in '\u31F0'..'\u31FF'
 }
 
 @Composable

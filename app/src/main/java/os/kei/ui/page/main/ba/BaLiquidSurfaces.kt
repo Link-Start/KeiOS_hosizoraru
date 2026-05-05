@@ -3,6 +3,7 @@ package os.kei.ui.page.main.ba
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -56,6 +56,7 @@ private fun BaLiquidSurfaceColumn(
     verticalSpacing: Dp,
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
+    pressFeedback: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -73,6 +74,7 @@ private fun BaLiquidSurfaceColumn(
     val accentTint = accentColor.copy(alpha = (accentAlpha * 0.35f).coerceIn(0f, 0.05f))
     val interactionSource = remember { MutableInteractionSource() }
     val hasInteraction = onClick != null || onLongClick != null
+    val hasLiquidPress = pressFeedback || hasInteraction
     val useLiquidClick = onClick != null && onLongClick == null
     val clickModifier = if (hasInteraction && !useLiquidClick) {
         Modifier.combinedClickable(
@@ -119,7 +121,7 @@ private fun BaLiquidSurfaceColumn(
                     .fillMaxWidth()
                     .then(clickModifier),
                 shape = liquidShape,
-                isInteractive = hasInteraction,
+                isInteractive = hasLiquidPress,
                 surfaceColor = accentTint
                     .compositeOver(glass.overlayColor)
                     .compositeOver(glass.baseColor),
@@ -127,6 +129,7 @@ private fun BaLiquidSurfaceColumn(
                 lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, variant),
                 shadow = glass.shadowAlpha > 0f,
                 interactionSource = interactionSource,
+                consumeDragChanges = hasLiquidPress,
                 onClick = if (useLiquidClick) onClick else null,
             ) {
                 Column(
@@ -173,6 +176,7 @@ internal fun BaLiquidCard(
     verticalSpacing: Dp = 8.dp,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    pressFeedback: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BaLiquidSurfaceColumn(
@@ -189,6 +193,7 @@ internal fun BaLiquidCard(
         verticalSpacing = verticalSpacing,
         onClick = onClick,
         onLongClick = onLongClick,
+        pressFeedback = pressFeedback,
         content = content,
     )
 }
@@ -205,6 +210,7 @@ internal fun BaLiquidPanel(
     verticalSpacing: Dp = 6.dp,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    pressFeedback: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BaLiquidSurfaceColumn(
@@ -221,6 +227,7 @@ internal fun BaLiquidPanel(
         verticalSpacing = verticalSpacing,
         onClick = onClick,
         onLongClick = onLongClick,
+        pressFeedback = pressFeedback,
         content = content,
     )
 }

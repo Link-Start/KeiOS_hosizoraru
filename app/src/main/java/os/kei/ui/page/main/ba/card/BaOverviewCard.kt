@@ -145,6 +145,7 @@ internal fun BaOverviewCard(
         BaLiquidPanel(
             backdrop = backdrop,
             accentColor = accentBlue,
+            accentAlpha = 0f,
         ) {
             BaOverviewIdFieldRow(
                 label = stringResource(R.string.ba_id_label_nickname),

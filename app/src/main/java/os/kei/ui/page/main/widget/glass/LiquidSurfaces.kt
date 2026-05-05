@@ -1,16 +1,16 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,13 +67,17 @@ fun LiquidSurface(
     shadow: Boolean = true,
     exportedBackdrop: LayerBackdrop? = null,
     interactionSource: MutableInteractionSource? = null,
+    consumeDragChanges: Boolean = false,
     contentAlignment: Alignment = Alignment.TopStart,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val animationScope = rememberCoroutineScope()
     val interactiveHighlight = remember(animationScope) {
-        InteractiveHighlight(animationScope = animationScope)
+        InteractiveHighlight(
+            animationScope = animationScope,
+            consumeDragChanges = consumeDragChanges
+        )
     }
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     val clickableModifier = if (onClick != null) {
@@ -114,7 +118,8 @@ fun LiquidSurface(
                     }
                 },
                 innerShadow = {
-                    val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
+                    val progress =
+                        if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
                     InnerShadow(radius = 6.dp * progress, alpha = progress)
                 },
                 layerBlock = if (isInteractive && enabled) {
@@ -130,11 +135,11 @@ fun LiquidSurface(
                         val maxDragScale = 4.dp.toPx() / size.height
                         val offsetAngle = atan2(offset.y, offset.x)
                         scaleX = scale +
-                            maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
-                            (size.width / size.height).fastCoerceAtMost(1f)
+                                maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
+                                (size.width / size.height).fastCoerceAtMost(1f)
                         scaleY = scale +
-                            maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
-                            (size.height / size.width).fastCoerceAtMost(1f)
+                                maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
+                                (size.height / size.width).fastCoerceAtMost(1f)
                     }
                 } else {
                     null
@@ -225,9 +230,9 @@ fun AppLiquidFloatingSurface(
                                 blur(UiPerformanceBudget.backdropBlur.toPx())
                                 lens(
                                     (UiPerformanceBudget.backdropLens *
-                                        (0.90f + 0.08f * pressProgress)).toPx(),
+                                            (0.90f + 0.08f * pressProgress)).toPx(),
                                     (UiPerformanceBudget.backdropLens *
-                                        (0.90f + 0.10f * pressProgress)).toPx()
+                                            (0.90f + 0.10f * pressProgress)).toPx()
                                 )
                             },
                             highlight = {
@@ -245,7 +250,10 @@ fun AppLiquidFloatingSurface(
                     } else {
                         Modifier
                             .clip(shape)
-                            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f), shape)
+                            .background(
+                                MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
+                                shape
+                            )
                     }
                 )
         )
@@ -291,6 +299,7 @@ fun AppLiquidFloatingSurface(
                             indication = null,
                             onClick = onClick
                         )
+
                         else -> Modifier
                     }
                 ),

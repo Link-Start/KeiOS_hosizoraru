@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -29,6 +30,7 @@ fun AppTopBarTitleCard(
     endReserve: Dp = AppChromeTokens.topBarTitleEdgePadding,
 ) {
     if (title.isBlank()) return
+    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     BoxWithConstraints(
         modifier = modifier.padding(start = startReserve, end = endReserve),
         contentAlignment = Alignment.Center,
@@ -40,20 +42,15 @@ fun AppTopBarTitleCard(
             cardMaxWidth < 150.dp -> 15.dp
             else -> 18.dp
         }
-        val estimatedTextWidthAt18Sp = title.sumOf { char ->
-            when {
-                char.code <= 0x007F -> 10
-                char.isJapaneseKana() -> 18
-                else -> 19
-            }
-        }.dp
+        val estimatedTextWidthAt18Sp = estimateTopBarTitleWidthAt18Sp(title)
         val targetContentWidth = (cardMaxWidth - horizontalPadding * 2)
             .coerceAtLeast(36.dp)
-        val textScale = (targetContentWidth.value / estimatedTextWidthAt18Sp.value)
-            .coerceIn(0.62f, 1f)
+        val scaledEstimate = estimatedTextWidthAt18Sp * fontScale
+        val textScale = (targetContentWidth.value / scaledEstimate.value)
+            .coerceIn(0.52f, 1f)
         val titleTextSize = (18f * textScale).sp
         val titleLineHeight = (22f * textScale).coerceAtLeast(15.5f).sp
-        val scaledTextWidth = estimatedTextWidthAt18Sp * textScale
+        val scaledTextWidth = scaledEstimate * textScale
         val cardWidth = (scaledTextWidth + horizontalPadding * 2)
             .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
         AppTopBarTitleCardSurface(
@@ -98,6 +95,17 @@ private fun AppTopBarTitleCardSurface(
             modifier = Modifier.padding(horizontal = horizontalPadding),
         )
     }
+}
+
+internal fun estimateTopBarTitleWidthAt18Sp(title: String): Dp {
+    return title.sumOf { char ->
+        when {
+            char == ' ' -> 5
+            char.code <= 0x007F -> if (char.isUpperCase()) 11 else 10
+            char.isJapaneseKana() -> 18
+            else -> 19
+        }
+    }.dp
 }
 
 private fun Char.isJapaneseKana(): Boolean {

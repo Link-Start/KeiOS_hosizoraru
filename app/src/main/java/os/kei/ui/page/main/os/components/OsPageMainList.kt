@@ -15,31 +15,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.os.InfoRow
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.OsCardExportAction
 import os.kei.ui.page.main.os.OsSectionCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.SystemOverviewState
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
-import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.os.osLucideEnterIcon
+import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
+import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
@@ -47,7 +48,6 @@ import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.status.StatusPill
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -143,6 +143,7 @@ internal fun OsPageMainList(
         label = "os_floating_search_bottom"
     )
     val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
+        restingBottomGap = searchDockBottom,
         label = "os_floating_keyboard_lift"
     )
     val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {

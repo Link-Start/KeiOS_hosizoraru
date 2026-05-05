@@ -104,20 +104,25 @@ fun AppFloatingSearchDock(
     val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
     val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
-    val fieldWidth by animateDpAsState(
-        targetValue = if (expanded) fieldTargetWidth else 0.dp,
-        animationSpec = androidx.compose.animation.core.tween(
-            durationMillis = 260
-        ),
+    val transition = updateTransition(targetState = expanded, label = "app_floating_search")
+    val fieldWidth by transition.animateDp(
+        transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
         label = "app_floating_search_field_width"
-    )
-    val totalWidth by animateDpAsState(
-        targetValue = size + if (expanded) gap + fieldTargetWidth else 0.dp,
-        animationSpec = androidx.compose.animation.core.tween(
-            durationMillis = 260
-        ),
+    ) { targetExpanded ->
+        if (targetExpanded) fieldTargetWidth else 0.dp
+    }
+    val totalWidth by transition.animateDp(
+        transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
         label = "app_floating_search_total_width"
-    )
+    ) { targetExpanded ->
+        size + if (targetExpanded) gap + fieldTargetWidth else 0.dp
+    }
+    val fieldAlpha by transition.animateFloat(
+        transitionSpec = { tween(durationMillis = AppFloatingSearchDockFadeMotionMs) },
+        label = "app_floating_search_field_alpha"
+    ) { targetExpanded ->
+        if (targetExpanded) 1f else 0f
+    }
 
     LaunchedEffect(expanded) {
         if (!expanded) {
@@ -130,7 +135,8 @@ fun AppFloatingSearchDock(
             AppLiquidFloatingSurface(
                 modifier = Modifier
                     .width(fieldWidth)
-                    .height(size),
+                    .height(size)
+                    .alpha(fieldAlpha),
                 shape = ContinuousCapsule,
                 backdrop = backdrop,
                 pressDurationMillis = 120,
@@ -223,19 +229,19 @@ fun AppFloatingVerticalSearchActionDock(
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
     val transition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
     val fieldWidth by transition.animateDp(
-        transitionSpec = { tween(durationMillis = 280) },
+        transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
         label = "app_vertical_floating_search_field_width"
     ) { targetExpanded ->
         if (targetExpanded) fieldTargetWidth else 0.dp
     }
     val totalWidth by transition.animateDp(
-        transitionSpec = { tween(durationMillis = 280) },
+        transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
         label = "app_vertical_floating_search_total_width"
     ) { targetExpanded ->
         size + if (targetExpanded) gap + fieldTargetWidth else 0.dp
     }
     val fieldAlpha by transition.animateFloat(
-        transitionSpec = { tween(durationMillis = 180) },
+        transitionSpec = { tween(durationMillis = AppFloatingSearchDockFadeMotionMs) },
         label = "app_vertical_floating_search_field_alpha"
     ) { targetExpanded ->
         if (targetExpanded) 1f else 0f
@@ -468,6 +474,7 @@ private fun appFloatingRefreshTint(
 @Composable
 fun rememberAppFloatingKeyboardLift(
     focusedLift: Dp = 18.dp,
+    restingBottomGap: Dp = 0.dp,
     label: String = "app_floating_keyboard_lift"
 ): Dp {
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
@@ -475,11 +482,12 @@ fun rememberAppFloatingKeyboardLift(
     val targetLift = appFloatingKeyboardLiftTarget(
         imeBottom = imeBottom,
         navigationBottom = navigationBottom,
-        focusedLift = focusedLift
+        focusedLift = focusedLift,
+        restingBottomGap = restingBottomGap
     )
     val lift by animateDpAsState(
         targetValue = targetLift,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
+        animationSpec = androidx.compose.animation.core.tween(durationMillis = AppFloatingKeyboardLiftMotionMs),
         label = label
     )
     return lift
@@ -488,11 +496,16 @@ fun rememberAppFloatingKeyboardLift(
 internal fun appFloatingKeyboardLiftTarget(
     imeBottom: Dp,
     navigationBottom: Dp,
-    focusedLift: Dp
+    focusedLift: Dp,
+    restingBottomGap: Dp = 0.dp
 ): Dp {
-    val imeHeight = (imeBottom - navigationBottom).coerceAtLeast(0.dp)
-    return if (imeHeight > 0.dp) imeHeight + focusedLift else 0.dp
+    if (imeBottom <= navigationBottom) return 0.dp
+    return (imeBottom + focusedLift - restingBottomGap).coerceAtLeast(focusedLift)
 }
+
+private const val AppFloatingSearchDockWidthMotionMs = 220
+private const val AppFloatingSearchDockFadeMotionMs = 120
+private const val AppFloatingKeyboardLiftMotionMs = 160
 
 @Composable
 private fun AppFloatingSearchField(

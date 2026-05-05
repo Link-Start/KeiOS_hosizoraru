@@ -68,6 +68,7 @@ internal fun SettingsBottomChrome(
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val keyboardLift = rememberAppFloatingKeyboardLift(
         focusedLift = 18.dp,
+        restingBottomGap = navigationBarBottom + 12.dp,
         label = "settings_bottom_chrome_keyboard_lift",
     )
     val transition = updateTransition(
@@ -252,8 +253,8 @@ private fun SettingsCompactCategoryDock(
 
 private val SettingsBottomChromeSearchGap: Dp = 8.dp
 private val SettingsBottomChromeMinSearchWidth: Dp = 196.dp
-private const val SettingsBottomChromeMotionMs = 280
-private const val SettingsBottomChromeFadeMotionMs = 180
+private const val SettingsBottomChromeMotionMs = 220
+private const val SettingsBottomChromeFadeMotionMs = 120
 private const val SettingsBottomChromeVisibleAlpha = 0.01f
 
 private fun settingsExpandedSearchWidth(

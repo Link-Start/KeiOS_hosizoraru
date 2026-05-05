@@ -108,6 +108,7 @@ internal fun GitHubMainContent(
         label = "github_floating_search_bottom"
     )
     val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
+        restingBottomGap = searchDockBottom,
         label = "github_floating_keyboard_lift"
     )
     val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {

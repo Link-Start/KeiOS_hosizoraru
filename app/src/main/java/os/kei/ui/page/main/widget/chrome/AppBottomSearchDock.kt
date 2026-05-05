@@ -181,8 +181,8 @@ fun AppBottomSearchDock(
     }
 }
 
-private const val AppBottomSearchDockWidthMotionMs = 260
-private const val AppBottomSearchDockContentFadeMs = 160
+private const val AppBottomSearchDockWidthMotionMs = 220
+private const val AppBottomSearchDockContentFadeMs = 120
 private const val AppBottomSearchDockVisibleAlpha = 0.01f
 
 @Composable

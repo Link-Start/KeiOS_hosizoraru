@@ -9,11 +9,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
-import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
-import os.kei.feature.github.model.GitHubStrategyBenchmarkResult
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubStrategyBenchmarkResult
+import os.kei.feature.github.model.GitHubStrategyBenchmarkTestType
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
 import os.kei.ui.page.main.widget.sheet.SheetExpandableCard
@@ -249,6 +250,24 @@ internal fun GitHubStrategyBenchmarkCard(
                 GitHubStatusPalette.Error
             }
         )
+        GitHubBenchmarkTaskRow(
+            label = stringResource(R.string.github_strategy_metric_release_snapshot),
+            result = result,
+            testType = GitHubStrategyBenchmarkTestType.ReleaseSnapshot,
+            valueColor = accent
+        )
+        GitHubBenchmarkTaskRow(
+            label = stringResource(R.string.github_strategy_metric_package_scan),
+            result = result,
+            testType = GitHubStrategyBenchmarkTestType.PackageNameScan,
+            valueColor = GitHubStatusPalette.Stable
+        )
+        GitHubBenchmarkTaskRow(
+            label = stringResource(R.string.github_strategy_metric_repo_scan),
+            result = result,
+            testType = GitHubStrategyBenchmarkTestType.RepositoryScan,
+            valueColor = GitHubStatusPalette.Update
+        )
         if (result.failures.isNotEmpty()) {
             Text(
                 text = result.failures.take(2).joinToString("\n"),
@@ -260,6 +279,27 @@ internal fun GitHubStrategyBenchmarkCard(
             )
         }
     }
+}
+
+@Composable
+private fun GitHubBenchmarkTaskRow(
+    label: String,
+    result: GitHubStrategyBenchmarkResult,
+    testType: GitHubStrategyBenchmarkTestType,
+    valueColor: Color
+) {
+    val samples = result.samplesFor(testType)
+    if (samples.isEmpty()) return
+    GitHubOverviewMetricItem(
+        label = label,
+        value = stringResource(
+            R.string.github_strategy_metric_task_result,
+            result.successCountFor(testType),
+            samples.size,
+            result.averageMsFor(testType)
+        ),
+        valueColor = valueColor
+    )
 }
 
 @Composable

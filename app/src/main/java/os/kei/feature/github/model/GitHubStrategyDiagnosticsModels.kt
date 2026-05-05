@@ -2,10 +2,16 @@ package os.kei.feature.github.model
 
 data class GitHubRepoTarget(
     val owner: String,
-    val repo: String
+    val repo: String,
+    val packageName: String = "",
+    val appLabel: String = "",
+    val repoUrl: String = ""
 ) {
     val id: String
         get() = "$owner/$repo"
+
+    val normalizedRepoUrl: String
+        get() = repoUrl.trim().ifBlank { "https://github.com/$owner/$repo" }
 }
 
 enum class GitHubApiAuthMode(val label: String) {
@@ -36,13 +42,22 @@ data class GitHubApiCredentialStatus(
 
 data class GitHubStrategyBenchmarkSample(
     val target: GitHubRepoTarget,
+    val testType: GitHubStrategyBenchmarkTestType = GitHubStrategyBenchmarkTestType.ReleaseSnapshot,
     val success: Boolean,
     val fromCache: Boolean,
     val elapsedMs: Long,
     val message: String = "",
     val stableTag: String = "",
-    val preReleaseTag: String = ""
+    val preReleaseTag: String = "",
+    val packageName: String = "",
+    val matchedRepository: String = ""
 )
+
+enum class GitHubStrategyBenchmarkTestType {
+    ReleaseSnapshot,
+    PackageNameScan,
+    RepositoryScan
+}
 
 data class GitHubStrategyBenchmarkResult(
     val strategyId: String,
@@ -52,10 +67,12 @@ data class GitHubStrategyBenchmarkResult(
     val warmSamples: List<GitHubStrategyBenchmarkSample>
 ) {
     val totalTargets: Int
-        get() = coldSamples.size
+        get() = coldSamples.count { it.testType == GitHubStrategyBenchmarkTestType.ReleaseSnapshot }
 
     val coldSuccessCount: Int
-        get() = coldSamples.count { it.success }
+        get() = coldSamples.count {
+            it.testType == GitHubStrategyBenchmarkTestType.ReleaseSnapshot && it.success
+        }
 
     val warmSuccessCount: Int
         get() = warmSamples.count { it.success }
@@ -67,7 +84,10 @@ data class GitHubStrategyBenchmarkResult(
         get() = if (warmSamples.isEmpty()) 0f else cacheHitCount.toFloat() / warmSamples.size.toFloat()
 
     val coldAverageMs: Long
-        get() = coldSamples.map { it.elapsedMs }.averageRounded()
+        get() = coldSamples
+            .filter { it.testType == GitHubStrategyBenchmarkTestType.ReleaseSnapshot }
+            .map { it.elapsedMs }
+            .averageRounded()
 
     val warmAverageMs: Long
         get() = warmSamples.map { it.elapsedMs }.averageRounded()
@@ -80,6 +100,18 @@ data class GitHubStrategyBenchmarkResult(
             .filter { !it.success && it.message.isNotBlank() }
             .map { "${it.target.id}: ${it.message}" }
             .distinct()
+
+    fun samplesFor(testType: GitHubStrategyBenchmarkTestType): List<GitHubStrategyBenchmarkSample> {
+        return (coldSamples + warmSamples).filter { it.testType == testType }
+    }
+
+    fun successCountFor(testType: GitHubStrategyBenchmarkTestType): Int {
+        return samplesFor(testType).count { it.success }
+    }
+
+    fun averageMsFor(testType: GitHubStrategyBenchmarkTestType): Long {
+        return samplesFor(testType).map { it.elapsedMs }.averageRounded()
+    }
 }
 
 data class GitHubStrategyBenchmarkReport(

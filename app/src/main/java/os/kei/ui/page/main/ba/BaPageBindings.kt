@@ -64,7 +64,6 @@ internal fun buildBaPageContentState(
         showCafeLevelPopup = ui.showCafeLevelPopup,
         overviewServerPopupAnchorBounds = ui.overviewServerPopupAnchorBounds,
         cafeLevelPopupAnchorBounds = ui.cafeLevelPopupAnchorBounds,
-        initState = ui.initState,
         baCalendarEntries = baCalendarEntries,
         baCalendarLoading = ui.baCalendarLoading,
         baCalendarError = ui.baCalendarError,
@@ -232,7 +231,6 @@ internal fun buildBaPageContentActions(
             office.claimCafeStoredAp(context)
             AppBackgroundScheduler.scheduleBaApThreshold(context)
         },
-        onInitStateChange = { ui.initState = it },
         onTouchHead = { office.touchHead(ui.serverIndex) },
         onForceResetHeadpatCooldown = { office.forceResetHeadpatCooldown() },
         onUseInviteTicket1 = { office.useInviteTicket1() },
@@ -248,24 +246,6 @@ internal fun buildBaPageContentActions(
         onSaveIdNickname = { office.saveIdNicknameFromInput() },
         onIdFriendCodeInputChange = { office.idFriendCodeInput = it },
         onSaveIdFriendCode = { office.saveIdFriendCodeFromInput(context) },
-        onSendApTestNotification = {
-            office.sendApTestNotification(context = context, showToast = true)
-        },
-        onSendCafeVisitTestNotification = {
-            office.sendCafeVisitTestNotification(
-                context = context,
-                serverIndex = ui.serverIndex,
-                showToast = true
-            )
-        },
-        onSendArenaRefreshTestNotification = {
-            office.sendArenaRefreshTestNotification(
-                context = context,
-                serverIndex = ui.serverIndex,
-                showToast = true
-            )
-        },
-        onTestCafePlus3Hours = { office.testCafePlus3Hours(context) },
     )
 }
 

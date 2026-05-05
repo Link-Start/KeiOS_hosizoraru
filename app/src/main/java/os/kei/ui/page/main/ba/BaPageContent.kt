@@ -14,11 +14,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.ba.card.BaCafeCard
-import os.kei.ui.page.main.ba.card.BaDebugCard
 import os.kei.ui.page.main.ba.card.BaOverviewCard
 import os.kei.ui.page.main.ba.card.BaPoolCard
 import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
-import os.kei.ui.page.main.ba.support.BAInitState
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -35,7 +33,6 @@ internal data class BaPageContentState(
     val showCafeLevelPopup: Boolean,
     val overviewServerPopupAnchorBounds: IntRect?,
     val cafeLevelPopupAnchorBounds: IntRect?,
-    val initState: BAInitState,
     val baCalendarEntries: List<BaCalendarEntry>,
     val baCalendarLoading: Boolean,
     val baCalendarError: String?,
@@ -61,7 +58,6 @@ internal data class BaPageContentActions(
     val onCafeLevelChange: (Int) -> Unit,
     val onServerSelected: (Int) -> Unit,
     val onClaimCafeStoredAp: () -> Unit,
-    val onInitStateChange: (BAInitState) -> Unit,
     val onTouchHead: () -> Unit,
     val onForceResetHeadpatCooldown: () -> Unit,
     val onUseInviteTicket1: () -> Unit,
@@ -77,10 +73,6 @@ internal data class BaPageContentActions(
     val onSaveIdNickname: () -> Unit,
     val onIdFriendCodeInputChange: (String) -> Unit,
     val onSaveIdFriendCode: () -> Unit,
-    val onSendApTestNotification: () -> Unit,
-    val onSendCafeVisitTestNotification: () -> Unit,
-    val onSendArenaRefreshTestNotification: () -> Unit,
-    val onTestCafePlus3Hours: () -> Unit,
 )
 
 @Composable
@@ -159,8 +151,6 @@ internal fun BaPageContent(
                 onServerSelected = actions.onServerSelected,
                 onClaimCafeStoredAp = actions.onClaimCafeStoredAp,
                 onOpenGuideCatalog = actions.onOpenGuideCatalog,
-                initState = state.initState,
-                onInitStateChange = actions.onInitStateChange,
             )
         }
 
@@ -205,16 +195,6 @@ internal fun BaPageContent(
                 onRefreshPool = actions.onRefreshPool,
                 onOpenPoolStudentGuide = actions.onOpenPoolStudentGuide,
                 onOpenCalendarLink = actions.onOpenCalendarLink
-            )
-        }
-
-        item {
-            BaDebugCard(
-                backdrop = backdrop,
-                onSendApTestNotification = actions.onSendApTestNotification,
-                onSendCafeVisitTestNotification = actions.onSendCafeVisitTestNotification,
-                onSendArenaRefreshTestNotification = actions.onSendArenaRefreshTestNotification,
-                onTestCafePlus3Hours = actions.onTestCafePlus3Hours,
             )
         }
     }

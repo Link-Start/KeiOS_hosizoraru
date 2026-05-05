@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
-import os.kei.ui.page.main.ba.support.BAInitState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
@@ -17,12 +16,12 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 internal data class BaPageUiState(
     val showSettingsSheet: Boolean,
     val showNotificationSettingsSheet: Boolean,
+    val showDebugSheet: Boolean,
     val showOverviewServerPopup: Boolean,
     val showCafeLevelPopup: Boolean,
     val overviewServerPopupAnchorBounds: IntRect?,
     val cafeLevelPopupAnchorBounds: IntRect?,
     val showCalendarIntervalPopup: Boolean,
-    val initState: BAInitState,
     val serverIndex: Int,
     val uiNowMs: Long,
     val baCalendarLoading: Boolean,
@@ -66,12 +65,12 @@ internal data class BaPageUiState(
 internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var showSettingsSheet by mutableStateOf(false)
     var showNotificationSettingsSheet by mutableStateOf(false)
+    var showDebugSheet by mutableStateOf(false)
     var showOverviewServerPopup by mutableStateOf(false)
     var showCafeLevelPopup by mutableStateOf(false)
     var overviewServerPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var cafeLevelPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var showCalendarIntervalPopup by mutableStateOf(false)
-    var initState by mutableStateOf(BAInitState.Empty)
     var serverIndex by mutableIntStateOf(snapshot.serverIndex)
     var uiNowMs by mutableLongStateOf(System.currentTimeMillis())
     var baCalendarLoading by mutableStateOf(true)
@@ -114,12 +113,12 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         return BaPageUiState(
             showSettingsSheet = showSettingsSheet,
             showNotificationSettingsSheet = showNotificationSettingsSheet,
+            showDebugSheet = showDebugSheet,
             showOverviewServerPopup = showOverviewServerPopup,
             showCafeLevelPopup = showCafeLevelPopup,
             overviewServerPopupAnchorBounds = overviewServerPopupAnchorBounds,
             cafeLevelPopupAnchorBounds = cafeLevelPopupAnchorBounds,
             showCalendarIntervalPopup = showCalendarIntervalPopup,
-            initState = initState,
             serverIndex = serverIndex,
             uiNowMs = uiNowMs,
             baCalendarLoading = baCalendarLoading,
@@ -203,6 +202,16 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     fun closeNotificationSettingsSheet(office: BaOfficeController) {
         showNotificationSettingsSheet = false
         loadNotificationDraft(office)
+    }
+
+    fun openDebugSheet() {
+        showOverviewServerPopup = false
+        showCafeLevelPopup = false
+        showDebugSheet = true
+    }
+
+    fun closeDebugSheet() {
+        showDebugSheet = false
     }
 
     private fun loadNotificationDraft(office: BaOfficeController) {

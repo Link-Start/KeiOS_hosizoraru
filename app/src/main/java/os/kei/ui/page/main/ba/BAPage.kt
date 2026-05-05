@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.ba
 
+import android.widget.Toast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,9 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
+import os.kei.ui.page.main.ba.support.BaCalendarEntry
+import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.os.appLucideCalendarIcon
@@ -122,6 +126,14 @@ fun BAPage(
 
     fun closeNotificationSettingsSheet() {
         ui.closeNotificationSettingsSheet(office)
+    }
+
+    fun openDebugSheet() {
+        ui.openDebugSheet()
+    }
+
+    fun closeDebugSheet() {
+        ui.closeDebugSheet()
     }
 
     fun refreshCalendar(force: Boolean = false) {
@@ -263,11 +275,17 @@ fun BAPage(
         targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
         label = "ba_floating_action_dock_bottom"
     )
+    val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE
+    val copyFriendCodeIconTint = if (friendCodeActivated) {
+        MiuixTheme.colorScheme.primary
+    } else {
+        MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.62f)
+    }
     val baDockActions = listOf(
         AppFloatingDockAction(
             icon = osLucideCopyIcon(),
             contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
-            iconTint = MiuixTheme.colorScheme.primary,
+            iconTint = copyFriendCodeIconTint,
             onClick = { office.copyFriendCodeToClipboard(context) },
         ),
         AppFloatingDockAction(
@@ -306,6 +324,7 @@ fun BAPage(
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,
+                    onShowDebug = ::openDebugSheet,
                     onInteractionChanged = onActionBarInteractingChanged,
                 )
             }
@@ -367,5 +386,130 @@ fun BAPage(
             onDismissRequest = ::closeNotificationSettingsSheet,
             onSaveRequest = ::saveNotificationSettings,
         )
+        BaDebugSheet(
+            show = ui.showDebugSheet,
+            backdrop = backdrops.sheet,
+            onSendApTestNotification = {
+                office.sendApTestNotification(context = context, showToast = true)
+            },
+            onSendCafeVisitTestNotification = {
+                office.sendCafeVisitTestNotification(
+                    context = context,
+                    serverIndex = ui.serverIndex,
+                    showToast = true
+                )
+            },
+            onSendArenaRefreshTestNotification = {
+                office.sendArenaRefreshTestNotification(
+                    context = context,
+                    serverIndex = ui.serverIndex,
+                    showToast = true
+                )
+            },
+            onSendCalendarUpcomingTestNotification = {
+                notifyBaDebugResult(
+                    context = context,
+                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarUpcoming(
+                        context = context,
+                        serverIndex = ui.serverIndex,
+                        entry = sampleCalendarEntry(context, upcoming = true)
+                    )
+                )
+            },
+            onSendCalendarEndingTestNotification = {
+                notifyBaDebugResult(
+                    context = context,
+                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarEnding(
+                        context = context,
+                        serverIndex = ui.serverIndex,
+                        entry = sampleCalendarEntry(context, upcoming = false)
+                    )
+                )
+            },
+            onSendPoolUpcomingTestNotification = {
+                notifyBaDebugResult(
+                    context = context,
+                    sent = BaCalendarPoolNotificationDispatcher.sendPoolUpcoming(
+                        context = context,
+                        serverIndex = ui.serverIndex,
+                        entry = samplePoolEntry(context, upcoming = true)
+                    )
+                )
+            },
+            onSendPoolEndingTestNotification = {
+                notifyBaDebugResult(
+                    context = context,
+                    sent = BaCalendarPoolNotificationDispatcher.sendPoolEnding(
+                        context = context,
+                        serverIndex = ui.serverIndex,
+                        entry = samplePoolEntry(context, upcoming = false)
+                    )
+                )
+            },
+            onSendCalendarPoolChangeTestNotification = {
+                notifyBaDebugResult(
+                    context = context,
+                    sent = BaCalendarPoolNotificationDispatcher.sendDataChanged(
+                        context = context,
+                        calendarChangeCount = 1,
+                        poolChangeCount = 1
+                    )
+                )
+            },
+            onTestCafePlus3Hours = { office.testCafePlus3Hours(context) },
+            onDismissRequest = ::closeDebugSheet,
+        )
     }
+}
+
+private fun sampleCalendarEntry(
+    context: android.content.Context,
+    upcoming: Boolean,
+): BaCalendarEntry {
+    val nowMs = System.currentTimeMillis()
+    val startAtMs = if (upcoming) nowMs + 60L * 60L * 1000L else nowMs - 2L * 60L * 60L * 1000L
+    val endAtMs = if (upcoming) nowMs + 3L * 60L * 60L * 1000L else nowMs + 60L * 60L * 1000L
+    return BaCalendarEntry(
+        id = -10_001,
+        title = context.getString(R.string.ba_debug_sample_calendar_title),
+        kindId = 14,
+        kindName = "",
+        beginAtMs = startAtMs,
+        endAtMs = endAtMs,
+        linkUrl = "",
+        imageUrl = "",
+        isRunning = !upcoming
+    )
+}
+
+private fun samplePoolEntry(
+    context: android.content.Context,
+    upcoming: Boolean,
+): BaPoolEntry {
+    val nowMs = System.currentTimeMillis()
+    val startAtMs = if (upcoming) nowMs + 60L * 60L * 1000L else nowMs - 2L * 60L * 60L * 1000L
+    val endAtMs = if (upcoming) nowMs + 3L * 60L * 60L * 1000L else nowMs + 60L * 60L * 1000L
+    return BaPoolEntry(
+        id = -10_002,
+        name = context.getString(R.string.ba_debug_sample_pool_title),
+        tagId = 6,
+        tagName = "",
+        startAtMs = startAtMs,
+        endAtMs = endAtMs,
+        linkUrl = "",
+        imageUrl = "",
+        isRunning = !upcoming
+    )
+}
+
+private fun notifyBaDebugResult(
+    context: android.content.Context,
+    sent: Boolean,
+) {
+    val messageRes = if (sent) {
+        R.string.ba_toast_calendar_pool_notification_sent
+    } else {
+        R.string.ba_toast_notification_permission_required
+    }
+    Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
 }

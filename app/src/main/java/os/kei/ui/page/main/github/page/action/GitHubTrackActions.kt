@@ -114,6 +114,7 @@ internal class GitHubTrackActions(
                     GitHubPackageRepositoryScanRequest(
                         packageName = packageName,
                         appLabel = appLabel,
+                        preferredRepoUrl = state.repoUrlInput.trim(),
                         lookupConfig = state.lookupConfig
                     )
                 ).getOrElse { error ->

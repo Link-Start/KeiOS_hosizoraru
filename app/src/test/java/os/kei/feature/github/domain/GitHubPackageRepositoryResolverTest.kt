@@ -140,6 +140,79 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
+    fun `resolver verifies preferred repository before live search`() {
+        val discovery = FakeDiscoverySource(emptyList())
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = mapOf("yukonga/updater-kmp" to "top.yukonga.updater.kmp")
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "top.yukonga.updater.kmp",
+                appLabel = "Updater",
+                preferredRepoUrl = "https://github.com/YuKongA/Updater-KMP",
+                lookupConfig = GitHubLookupConfig()
+            )
+        ).getOrThrow()
+
+        assertEquals(0, result.queryCount)
+        assertEquals(1, result.fetchedCandidateCount)
+        assertEquals(1, result.scannedCandidateCount)
+        assertTrue(discovery.queries.isEmpty())
+        assertEquals("YuKongA", result.matchedCandidates.single().repository.owner)
+        assertEquals("Updater-KMP", result.matchedCandidates.single().repository.repo)
+        assertEquals(
+            "https://github.com/YuKongA/Updater-KMP",
+            result.matchedCandidates.single().trackedApp.repoUrl
+        )
+    }
+
+    @Test
+    fun `resolver falls back to repository search after preferred repository mismatch`() {
+        val target = candidate(
+            owner = "example",
+            repo = "RealApp",
+            description = "RealApp android client",
+            stars = 200
+        )
+        val discovery = QueryAwareDiscoverySource { query ->
+            when {
+                query.contains("RealApp") && query.contains("realapp") -> listOf(target)
+                else -> emptyList()
+            }
+        }
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = mapOf(
+                "wrong/project" to "com.wrong.app",
+                "example/realapp" to "com.example.realapp"
+            )
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "com.example.realapp",
+                appLabel = "RealApp",
+                preferredRepoUrl = "https://github.com/wrong/project",
+                lookupConfig = GitHubLookupConfig()
+            )
+        ).getOrThrow()
+
+        assertEquals(2, result.queryCount)
+        assertEquals(2, result.scannedCandidateCount)
+        assertEquals(1, result.mismatchedCandidateCount)
+        assertEquals("example", result.matchedCandidates.single().repository.owner)
+        assertEquals("RealApp", result.matchedCandidates.single().repository.repo)
+    }
+
+    @Test
     fun `resolver expands to fallback queries when exact package candidates do not match`() {
         val mismatch = candidate(
             owner = "demo",
@@ -156,7 +229,7 @@ class GitHubPackageRepositoryResolverTest {
         val discovery = QueryAwareDiscoverySource { query ->
             when {
                 query.contains("com.example.realapp") -> listOf(mismatch)
-                query.contains("RealApp android") -> listOf(target)
+                query.contains("RealApp") && query.contains("realapp") -> listOf(target)
                 else -> emptyList()
             }
         }
@@ -198,6 +271,18 @@ class GitHubPackageRepositoryResolverTest {
         assertTrue(queries.any { it.contains("My Great App android") })
         assertTrue(queries.any { it.contains("greatapp android") })
         assertFalse(queries.any { it.isBlank() })
+        assertEquals(queries.distinct(), queries)
+    }
+
+    @Test
+    fun `package repository queries combine app label with package suffix tokens`() {
+        val queries = GitHubPackageRepositoryQueries.forPackage(
+            packageName = "top.yukonga.updater.kmp",
+            appLabel = "Updater"
+        )
+
+        assertTrue(queries.any { it.contains("Updater kmp android") })
+        assertTrue(queries.any { it.contains("yukonga updater kmp android") })
         assertEquals(queries.distinct(), queries)
     }
 

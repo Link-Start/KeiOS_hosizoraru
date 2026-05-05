@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
@@ -7,6 +8,7 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
+import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.concurrent.Callable
@@ -41,6 +43,40 @@ internal class GitHubPackageRepositoryResolver(
         val rawCandidates = mutableListOf<GitHubRepositoryCandidate>()
         val scannedRepoKeys = mutableSetOf<String>()
         val matchedCandidates = mutableListOf<GitHubPackageRepositoryScanCandidate>()
+
+        preferredRepositoryCandidate(request.preferredRepoUrl)?.let { preferredCandidate ->
+            rawCandidates += preferredCandidate
+            val preferredTargets = listOf(
+                preferredCandidate.withPackageSearchScore(
+                    packageName = packageName,
+                    appLabel = appLabel
+                )
+            ).filter { (candidate, _) ->
+                scannedRepoKeys.add(candidate.repoKey())
+            }
+            val batchResult = scanCandidates(
+                targets = preferredTargets,
+                packageName = packageName,
+                appLabel = appLabel,
+                lookupConfig = request.lookupConfig
+            )
+            matchedCandidates += batchResult.matchedCandidates
+            mismatchedCount += batchResult.mismatchedCount
+            failedCount += batchResult.failedCount
+            if (matchedCandidates.isNotEmpty()) {
+                return@runCatching buildScanResult(
+                    packageName = packageName,
+                    appLabel = appLabel,
+                    queryCount = executedQueryCount,
+                    rawCandidates = rawCandidates,
+                    scannedRepoKeys = scannedRepoKeys,
+                    matchedCandidates = matchedCandidates,
+                    mismatchedCount = mismatchedCount,
+                    failedCount = failedCount,
+                    candidateLimit = candidateLimit
+                )
+            }
+        }
 
         for ((queryIndex, query) in queries.withIndex()) {
             rawCandidates += discoverySource.searchRepositories(
@@ -81,6 +117,44 @@ internal class GitHubPackageRepositoryResolver(
             if (matchedCandidates.isNotEmpty()) break
         }
 
+        buildScanResult(
+            packageName = packageName,
+            appLabel = appLabel,
+            queryCount = executedQueryCount,
+            rawCandidates = rawCandidates,
+            scannedRepoKeys = scannedRepoKeys,
+            matchedCandidates = matchedCandidates,
+            mismatchedCount = mismatchedCount,
+            failedCount = failedCount,
+            candidateLimit = candidateLimit
+        )
+    }
+
+    private fun preferredRepositoryCandidate(repoUrl: String): GitHubRepositoryCandidate? {
+        val parsed = GitHubVersionUtils.parseOwnerRepo(repoUrl) ?: return null
+        val owner = parsed.first.trim()
+        val repo = parsed.second.trim().removeSuffix(".git")
+        if (owner.isBlank() || repo.isBlank()) return null
+        return GitHubRepositoryCandidate(
+            owner = owner,
+            repo = repo,
+            repoUrl = "https://github.com/$owner/$repo",
+            sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch,
+            matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName
+        )
+    }
+
+    private fun buildScanResult(
+        packageName: String,
+        appLabel: String,
+        queryCount: Int,
+        rawCandidates: List<GitHubRepositoryCandidate>,
+        scannedRepoKeys: Set<String>,
+        matchedCandidates: List<GitHubPackageRepositoryScanCandidate>,
+        mismatchedCount: Int,
+        failedCount: Int,
+        candidateLimit: Int
+    ): GitHubPackageRepositoryScanResult {
         val rankedCandidates = rawCandidates.rankedPackageCandidates(
             packageName = packageName,
             appLabel = appLabel,
@@ -91,11 +165,10 @@ internal class GitHubPackageRepositoryResolver(
                 .thenByDescending { it.repository.starCount }
                 .thenBy { it.repository.fullName.lowercase() }
         )
-
-        GitHubPackageRepositoryScanResult(
+        return GitHubPackageRepositoryScanResult(
             packageName = packageName,
             appLabel = appLabel,
-            queryCount = executedQueryCount,
+            queryCount = queryCount,
             fetchedCandidateCount = rankedCandidates.size,
             scannedCandidateCount = scannedRepoKeys.size,
             matchedCandidates = sortedMatchedCandidates,
@@ -311,9 +384,20 @@ internal object GitHubPackageRepositoryQueries {
         val normalizedPackageName = packageName.trim()
         val packageTail = normalizedPackageName.substringAfterLast('.').trim()
         val labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel)
+        val packageTokens = normalizedPackageName
+            .split('.')
+            .map { it.trim() }
+            .filter { it.length >= 3 }
+            .takeLast(3)
         return buildList {
             if (normalizedPackageName.isNotBlank()) {
                 add("$normalizedPackageName android in:description,readme")
+            }
+            if (appLabel.isNotBlank() && packageTail.length >= 3) {
+                add("${appLabel.trim()} $packageTail android in:name,description,readme")
+            }
+            if (packageTokens.size >= 2) {
+                add("${packageTokens.joinToString(" ")} android in:name,description,readme")
             }
             if (appLabel.isNotBlank()) {
                 add("${appLabel.trim()} android in:name,description,readme")

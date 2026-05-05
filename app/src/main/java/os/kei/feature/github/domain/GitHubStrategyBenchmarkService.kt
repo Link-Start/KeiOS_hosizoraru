@@ -67,7 +67,8 @@ object GitHubStrategyBenchmarkService {
 
         val apiStrategy = GitHubApiTokenReleaseStrategy(apiToken = apiToken.trim())
         val atomLookupConfig = GitHubLookupConfig(
-            selectedStrategy = GitHubLookupStrategyOption.AtomFeed
+            selectedStrategy = GitHubLookupStrategyOption.AtomFeed,
+            apiToken = apiToken.trim()
         )
         val apiLookupConfig = GitHubLookupConfig(
             selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
@@ -328,6 +329,7 @@ object GitHubStrategyBenchmarkService {
                     GitHubPackageRepositoryScanRequest(
                         packageName = target.packageName,
                         appLabel = target.appLabel,
+                        preferredRepoUrl = target.normalizedRepoUrl,
                         lookupConfig = lookupConfig,
                         candidateLimit = 10,
                         verificationLimit = 3

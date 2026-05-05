@@ -67,6 +67,7 @@ data class GitHubAppRepositorySearchResult(
 data class GitHubPackageRepositoryScanRequest(
     val packageName: String,
     val appLabel: String = "",
+    val preferredRepoUrl: String = "",
     val lookupConfig: GitHubLookupConfig,
     val candidateLimit: Int = 16,
     val verificationLimit: Int = 5

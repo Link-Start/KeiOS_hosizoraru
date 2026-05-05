@@ -84,6 +84,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
                 GitHubPackageRepositoryScanRequest(
                     packageName = item.packageName,
                     appLabel = item.appLabel,
+                    preferredRepoUrl = item.repoUrl,
                     lookupConfig = GitHubLookupConfig(
                         selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
                         apiToken = "token-123"

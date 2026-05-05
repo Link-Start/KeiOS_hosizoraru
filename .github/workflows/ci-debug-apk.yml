@@ -5,9 +5,34 @@ on:
   push:
     branches:
       - master
+    paths:
+      - ".github/actions/prepare-android-apk-artifact/**"
+      - ".github/workflows/ci-debug-apk.yml"
+      - "app/**"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "settings.gradle.kts"
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
     branches:
       - master
+    paths:
+      - ".github/actions/prepare-android-apk-artifact/**"
+      - ".github/workflows/ci-debug-apk.yml"
+      - "app/**"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "settings.gradle.kts"
   workflow_dispatch:
     inputs:
       commit:
@@ -30,6 +55,7 @@ defaults:
 jobs:
   build-debug-apk:
     name: Build debug APK
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:

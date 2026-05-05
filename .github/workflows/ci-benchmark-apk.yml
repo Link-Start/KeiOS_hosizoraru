@@ -5,9 +5,16 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
+    paths:
+      - ".github/actions/prepare-android-apk-artifact/**"
+      - ".github/workflows/ci-benchmark-apk.yml"
+      - "app/**"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "settings.gradle.kts"
   workflow_dispatch:
     inputs:
       commit:

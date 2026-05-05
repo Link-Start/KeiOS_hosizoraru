@@ -289,6 +289,8 @@ object GitHubReleaseAssetRepository {
             .header("Authorization", "Bearer ${apiToken.trim()}")
             .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
             .header("User-Agent", GITHUB_USER_AGENT)
+            .header("Cache-Control", "no-store")
+            .header("Pragma", "no-cache")
             .header("Connection", "close")
             .build()
 
@@ -368,10 +370,14 @@ object GitHubReleaseAssetRepository {
         apiToken: String
     ): Result<JSONObject> = runCatching {
         val url = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/releases/latest"
-        JSONObject(fetchJson(url, apiToken))
+        JSONObject(fetchJson(url, apiToken, noStore = true))
     }
 
-    private fun fetchJson(url: String, apiToken: String): String {
+    private fun fetchJson(
+        url: String,
+        apiToken: String,
+        noStore: Boolean = false
+    ): String {
         val token = apiToken.trim()
         var lastError: Throwable? = null
 
@@ -384,6 +390,11 @@ object GitHubReleaseAssetRepository {
                     .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
                     .header("User-Agent", GITHUB_USER_AGENT)
                     .header("Connection", "close")
+                if (noStore) {
+                    requestBuilder
+                        .header("Cache-Control", "no-store")
+                        .header("Pragma", "no-cache")
+                }
                 if (token.isNotBlank()) {
                     requestBuilder.header("Authorization", "Bearer $token")
                 }

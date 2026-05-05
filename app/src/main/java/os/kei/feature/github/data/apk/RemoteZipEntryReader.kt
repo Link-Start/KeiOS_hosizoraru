@@ -33,6 +33,9 @@ internal class RemoteZipEntryReader(
         check(centralDirectorySize > 0L && centralDirectoryOffset >= 0L) {
             "APK central directory is invalid"
         }
+        check(centralDirectorySize <= CENTRAL_DIRECTORY_SIZE_LIMIT) {
+            "APK central directory is too large"
+        }
         check(eocdAbsoluteOffset >= centralDirectoryOffset) {
             "APK central directory offset is invalid"
         }
@@ -64,6 +67,12 @@ internal class RemoteZipEntryReader(
         apiToken: String
     ): ByteArray {
         check(entry.compressedSize >= 0L) { "APK entry compressed size is invalid" }
+        check(entry.compressedSize <= ENTRY_COMPRESSED_SIZE_LIMIT) {
+            "APK entry compressed size is too large"
+        }
+        check(entry.uncompressedSize <= ENTRY_UNCOMPRESSED_SIZE_LIMIT) {
+            "APK entry uncompressed size is too large"
+        }
         if (entry.compressedSize <= INLINE_ENTRY_COMPRESSED_SIZE_LIMIT) {
             val prefetchEnd =
                 (entry.localHeaderOffset + LOCAL_ENTRY_PREFETCH_PREFIX_LIMIT + entry.compressedSize - 1L)
@@ -165,6 +174,8 @@ internal class RemoteZipEntryReader(
             .url(url)
             .get()
             .header("User-Agent", GITHUB_USER_AGENT)
+            .header("Cache-Control", "no-store")
+            .header("Pragma", "no-cache")
             .header(
                 "Accept",
                 "application/vnd.android.package-archive,application/octet-stream,*/*"
@@ -302,6 +313,9 @@ internal class RemoteZipEntryReader(
         private const val CENTRAL_DIRECTORY_HEADER_SIZE = 46
         private const val LOCAL_FILE_HEADER_SIZE = 30L
         private const val ZIP_U16_MAX = 65_535L
+        private const val CENTRAL_DIRECTORY_SIZE_LIMIT = 4L * 1024L * 1024L
+        private const val ENTRY_COMPRESSED_SIZE_LIMIT = 1L * 1024L * 1024L
+        private const val ENTRY_UNCOMPRESSED_SIZE_LIMIT = 2L * 1024L * 1024L
         private const val LOCAL_ENTRY_PREFETCH_PREFIX_LIMIT =
             LOCAL_FILE_HEADER_SIZE + ZIP_U16_MAX + ZIP_U16_MAX
         private const val INLINE_ENTRY_COMPRESSED_SIZE_LIMIT = 512L * 1024L

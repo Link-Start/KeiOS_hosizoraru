@@ -30,7 +30,10 @@ class RemoteZipEntryReaderTest {
             assertEquals("os.kei.remote", packageName)
             val ranges = buildList {
                 repeat(server.requestCount) {
-                    add(server.takeRequest().getHeader("Range").orEmpty())
+                    val request = server.takeRequest()
+                    assertEquals("no-store", request.getHeader("Cache-Control"))
+                    assertEquals("no-cache", request.getHeader("Pragma"))
+                    add(request.getHeader("Range").orEmpty())
                 }
             }
             assertEquals("bytes=0-0", ranges.first())

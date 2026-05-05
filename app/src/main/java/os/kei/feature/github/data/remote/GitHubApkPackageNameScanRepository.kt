@@ -66,11 +66,15 @@ internal class GitHubApkPackageNameScanRepository(
         }
         if (fastPath.isSuccess) return fastPath
 
-        return super.loadLatestStableApkAssets(
-            owner = owner,
-            repo = repo,
-            lookupConfig = lookupConfig
-        )
+        return try {
+            super.loadLatestStableApkAssets(
+                owner = owner,
+                repo = repo,
+                lookupConfig = lookupConfig
+            )
+        } finally {
+            clearScanFallbackCaches(lookupConfig)
+        }
     }
 
     override fun fetchApkAssets(
@@ -128,5 +132,19 @@ internal class GitHubApkPackageNameScanRepository(
 
     companion object {
         private const val ANDROID_MANIFEST_ENTRY = "AndroidManifest.xml"
+
+        private fun clearScanFallbackCaches(lookupConfig: GitHubLookupConfig) {
+            when (lookupConfig.selectedStrategy) {
+                GitHubLookupStrategyOption.AtomFeed -> {
+                    GitHubAtomReleaseStrategy.clearCaches()
+                }
+
+                GitHubLookupStrategyOption.GitHubApiToken -> {
+                    GitHubApiTokenReleaseStrategy(
+                        apiToken = lookupConfig.apiToken
+                    ).clearCaches()
+                }
+            }
+        }
     }
 }

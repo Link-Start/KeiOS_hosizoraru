@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -32,7 +33,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -53,6 +56,7 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -115,6 +119,8 @@ private fun BaActivityCalendarPage(
         stringResource(R.string.ba_server_jp)
     )
     var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
+    var showServerPopup by remember { mutableStateOf(false) }
+    var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var reloadSignal by remember { mutableIntStateOf(0) }
     var hydrationReady by remember { mutableStateOf(false) }
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -223,6 +229,23 @@ private fun BaActivityCalendarPage(
                 sectionSpacing = 14.dp
             ) {
                 item {
+                    BaActivityCalendarServerPanel(
+                        backdrop = pageBackdrop,
+                        serverOptions = serverOptions,
+                        serverIndex = serverIndex,
+                        expanded = showServerPopup,
+                        anchorBounds = serverPopupAnchorBounds,
+                        onExpandedChange = { showServerPopup = it },
+                        onAnchorBoundsChange = { serverPopupAnchorBounds = it },
+                        onServerSelected = { selected ->
+                            val normalized = selected.coerceIn(serverOptions.indices)
+                            serverIndex = normalized
+                            BASettingsStore.saveServerIndex(normalized)
+                            showServerPopup = false
+                        },
+                    )
+                }
+                item {
                     BaActivityCalendarOverviewPanel(
                         backdrop = pageBackdrop,
                         title = stringResource(
@@ -284,6 +307,52 @@ private fun BaActivityCalendarPage(
 }
 
 @Composable
+private fun BaActivityCalendarServerPanel(
+    backdrop: com.kyant.backdrop.Backdrop,
+    serverOptions: List<String>,
+    serverIndex: Int,
+    expanded: Boolean,
+    anchorBounds: IntRect?,
+    onExpandedChange: (Boolean) -> Unit,
+    onAnchorBoundsChange: (IntRect?) -> Unit,
+    onServerSelected: (Int) -> Unit,
+) {
+    BaLiquidPanel(
+        backdrop = backdrop,
+        modifier = Modifier.fillMaxWidth(),
+        accentColor = MiuixTheme.colorScheme.primary,
+        variant = GlassVariant.Content,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.ba_overview_server_label),
+                color = MiuixTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            AppDropdownSelector(
+                selectedText = serverOptions[serverIndex],
+                options = serverOptions,
+                selectedIndex = serverIndex,
+                expanded = expanded,
+                anchorBounds = anchorBounds,
+                onExpandedChange = onExpandedChange,
+                onSelectedIndexChange = onServerSelected,
+                onAnchorBoundsChange = onAnchorBoundsChange,
+                backdrop = backdrop,
+                variant = GlassVariant.Content,
+            )
+        }
+    }
+}
+
+@Composable
 private fun BaActivityCalendarOverviewPanel(
     backdrop: com.kyant.backdrop.Backdrop,
     title: String,
@@ -299,6 +368,7 @@ private fun BaActivityCalendarOverviewPanel(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = title,
@@ -311,6 +381,7 @@ private fun BaActivityCalendarOverviewPanel(
             Text(
                 text = syncText,
                 color = syncTextColor,
+                textAlign = TextAlign.End,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

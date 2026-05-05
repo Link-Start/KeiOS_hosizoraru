@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.settings.page
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -8,7 +9,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -50,6 +54,7 @@ import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.settings.section.SettingsAnimationSection
 import os.kei.ui.page.main.settings.section.SettingsBackgroundSection
 import os.kei.ui.page.main.settings.section.SettingsCacheSection
@@ -72,9 +77,11 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
@@ -380,6 +387,8 @@ fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val categories = remember { SettingsCategory.entries.toList() }
     var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
+    var searchExpanded by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val pagerState = rememberMainLoadedPagerState(
         initialPage = selectedCategoryIndex.coerceIn(0, categories.lastIndex),
         pageCount = categories.size
@@ -388,6 +397,7 @@ fun SettingsPage(
     val appearanceListState = rememberLazyListState()
     val notifyListState = rememberLazyListState()
     val dataListState = rememberLazyListState()
+    val searchListState = rememberLazyListState()
     var sliderInteractionActive by remember { mutableStateOf(false) }
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
@@ -432,6 +442,12 @@ fun SettingsPage(
             }
         }
     }
+    val settingsSearchPlaceholder = stringResource(R.string.settings_search_placeholder)
+    val searchContentDescription = settingsSearchPlaceholder
+    val searchTargets = rememberSettingsSearchTargets()
+    val trimmedSearchQuery = searchQuery.trim()
+    val searchActive = trimmedSearchQuery.isNotEmpty()
+    val matchingSearchTargets = searchTargets.filter { it.matches(trimmedSearchQuery) }
     val selectSettingsCategoryAction = remember(
         categories,
         pagerState,
@@ -491,6 +507,155 @@ fun SettingsPage(
         }
     }
 
+    BackHandler(enabled = searchExpanded) {
+        searchExpanded = false
+    }
+
+    LaunchedEffect(trimmedSearchQuery) {
+        if (trimmedSearchQuery.isNotEmpty()) {
+            searchListState.scrollToItem(0)
+        }
+    }
+
+    fun LazyListScope.settingsCardItem(card: SettingsSearchCard) {
+        item(key = "settings_card_${card.name}") {
+            when (card) {
+                SettingsSearchCard.Permissions -> SettingsPermissionKeepAliveSection(
+                    state = sectionContracts.permissionKeepAliveState,
+                    actions = sectionContracts.permissionKeepAliveActions,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+
+                SettingsSearchCard.Visual -> SettingsVisualSection(
+                    state = sectionContracts.visualState,
+                    actions = sectionContracts.visualActions,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+
+                SettingsSearchCard.Animation -> SettingsAnimationSection(
+                    state = sectionContracts.animationState,
+                    actions = sectionContracts.animationActions,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+
+                SettingsSearchCard.ComponentEffects -> SettingsComponentEffectsSection(
+                    state = sectionContracts.componentEffectsState,
+                    actions = sectionContracts.componentEffectsActions,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+
+                SettingsSearchCard.Background -> SettingsBackgroundSection(
+                    nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
+                    onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
+                    nonHomeBackgroundUri = nonHomeBackgroundUri,
+                    nonHomeBackgroundOpacity = nonHomeBackgroundOpacity,
+                    onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
+                    backgroundPickerLauncher = backgroundController.backgroundPickerLauncher,
+                    onClearBackground = backgroundController.clearBackground,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                    onSliderInteractionChanged = { active ->
+                        sliderInteractionActive = active
+                    },
+                )
+
+                SettingsSearchCard.Notify -> SettingsNotifySection(
+                    state = sectionContracts.notifyState,
+                    actions = sectionContracts.notifyActions,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                    onSliderInteractionChanged = { active ->
+                        sliderInteractionActive = active
+                    },
+                )
+
+                SettingsSearchCard.Copy -> SettingsCopySection(
+                    state = sectionContracts.copyState,
+                    actions = sectionContracts.copyActions,
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+
+                SettingsSearchCard.Cache -> SettingsCacheSection(
+                    cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
+                    onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
+                    cacheEntries = cacheState.cacheEntries,
+                    cacheEntriesLoading = cacheState.cacheEntriesLoading,
+                    clearingAllCaches = cacheState.clearingAllCaches,
+                    clearingCacheId = cacheState.clearingCacheId,
+                    onClearAllCaches = {
+                        scope.launch {
+                            val result = settingsPageViewModel.clearAllCaches(context)
+                            if (result.isSuccess) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.settings_cache_toast_cleared_all),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                val reason = result.exceptionOrNull()?.javaClass?.simpleName
+                                    ?: context.getString(R.string.common_unknown)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(
+                                        R.string.settings_cache_toast_clear_all_failed,
+                                        reason,
+                                    ),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
+                    },
+                    onClearCache = { cacheId ->
+                        scope.launch {
+                            settingsPageViewModel.clearCache(context, cacheId)
+                        }
+                    },
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+
+                SettingsSearchCard.Log -> SettingsLogSection(
+                    logDebugEnabled = logDebugEnabled,
+                    onLogDebugChanged = onLogDebugChanged,
+                    logStats = logState.logStats,
+                    exportingLogZip = logState.exportingLogZip,
+                    clearingLogs = logState.clearingLogs,
+                    onExportZipClick = settingsPageViewModel::beginLogExport,
+                    onClearLogsClick = {
+                        scope.launch {
+                            val result = settingsPageViewModel.clearLogs(context)
+                            if (result.isSuccess) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.settings_log_toast_cleared),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                val reason = result.exceptionOrNull()?.javaClass?.simpleName
+                                    ?: context.getString(R.string.common_unknown)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(
+                                        R.string.settings_log_toast_clear_failed,
+                                        reason,
+                                    ),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
+                    },
+                    enabledCardColor = enabledCardColor,
+                    disabledCardColor = disabledCardColor,
+                )
+            }
+        }
+    }
+
     AppPageScaffold(
         title = settingsTitle,
         modifier = Modifier
@@ -508,12 +673,12 @@ fun SettingsPage(
             )
         },
         bottomBar = {
-            SettingsCategoryBottomBar(
+            SettingsBottomChrome(
                 visible = showBottomBar,
                 navigationBarBottom = navigationBarBottom,
                 categories = categories,
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
-                selectedPagePosition = if (pagerState.isScrollInProgress) {
+                selectedPagePosition = if (!searchExpanded && pagerState.isScrollInProgress) {
                     pagerState.pagePosition.coerceIn(
                         0f,
                         categories.lastIndex.coerceAtLeast(0).toFloat()
@@ -522,22 +687,64 @@ fun SettingsPage(
                     null
                 },
                 selectedPageProvider = { pagerState.targetPage },
+                searchExpanded = searchExpanded,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onSearchExpandedChange = { searchExpanded = it },
+                searchIcon = appLucideSearchIcon(),
+                searchContentDescription = searchContentDescription,
+                searchPlaceholder = settingsSearchPlaceholder,
                 backdrop = bottomBarBackdrop,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
                 onSelectCategory = selectSettingsCategoryAction
             )
         }
     ) { innerPadding ->
-        MainLoadedPager(
-            state = pagerState,
-            userScrollEnabled = !sliderInteractionActive,
-            animationsEnabled = transitionAnimationsEnabled,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = farJumpAlpha.value }
-                .layerBackdrop(topBarBackdrop)
-                .layerBackdrop(bottomBarBackdrop)
-        ) { pageIndex ->
+        if (searchActive) {
+            AppPageLazyColumn(
+                innerPadding = innerPadding,
+                state = searchListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .graphicsLayer { alpha = 1f }
+                    .layerBackdrop(topBarBackdrop)
+                    .layerBackdrop(bottomBarBackdrop),
+                bottomExtra = appPageBottomPaddingWithFloatingOverlay(
+                    AppChromeTokens.floatingBottomBarOuterHeight,
+                ),
+                sectionSpacing = 12.dp,
+                userScrollEnabled = !sliderInteractionActive,
+            ) {
+                if (matchingSearchTargets.isEmpty()) {
+                    item(key = "settings_search_empty") {
+                        Text(
+                            text = stringResource(R.string.common_no_matched_results),
+                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            fontSize = AppTypographyTokens.Body.fontSize,
+                            lineHeight = AppTypographyTokens.Body.lineHeight,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = AppChromeTokens.pageHorizontalPadding),
+                        )
+                    }
+                } else {
+                    matchingSearchTargets.forEach { target ->
+                        settingsCardItem(target.card)
+                    }
+                }
+            }
+        } else {
+            MainLoadedPager(
+                state = pagerState,
+                userScrollEnabled = !sliderInteractionActive && !searchExpanded,
+                animationsEnabled = transitionAnimationsEnabled,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = farJumpAlpha.value }
+                    .layerBackdrop(topBarBackdrop)
+                    .layerBackdrop(bottomBarBackdrop)
+            ) { pageIndex ->
             val renderHeavyContent = pageIndex == pagerState.currentPage ||
                     pageIndex == pagerState.settledPage ||
                     pageIndex == pagerState.targetPage ||
@@ -723,6 +930,8 @@ fun SettingsPage(
             }
         }
     }
+}
+
 }
 
 }

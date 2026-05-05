@@ -115,7 +115,7 @@ internal fun SettingsCategoryBottomBar(
 }
 
 @Composable
-private fun SettingsCategory.label(): String {
+internal fun SettingsCategory.label(): String {
     return stringResource(
         when (this) {
             SettingsCategory.Access -> R.string.settings_category_access
@@ -127,7 +127,7 @@ private fun SettingsCategory.label(): String {
 }
 
 @Composable
-private fun SettingsCategory.icon(): ImageVector {
+internal fun SettingsCategory.icon(): ImageVector {
     val drawableRes = when (this) {
         SettingsCategory.Access -> LucideR.drawable.lucide_ic_shield_check
         SettingsCategory.Appearance -> LucideR.drawable.lucide_ic_palette

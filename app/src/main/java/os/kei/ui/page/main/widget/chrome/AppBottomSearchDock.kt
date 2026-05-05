@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.about.page
+package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -53,7 +52,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun AboutSearchDock(
+fun AppBottomSearchDock(
     backdrop: Backdrop?,
     expanded: Boolean,
     query: String,
@@ -86,27 +85,27 @@ internal fun AboutSearchDock(
         targetValue = targetWidth,
         animationSpec = tween(
             durationMillis = resolvedMotionDuration(
-                AboutSearchDockWidthMotionMs,
-                animationsEnabled
+                AppBottomSearchDockWidthMotionMs,
+                animationsEnabled,
             ),
         ),
-        label = "about_search_dock_width",
+        label = "app_bottom_search_dock_width",
     )
     val width = if (expandedWidth == null) animatedWidth else targetWidth
     val contentTransition = updateTransition(
         targetState = expanded,
-        label = "about_search_dock_content",
+        label = "app_bottom_search_dock_content",
     )
     val fieldAlpha by contentTransition.animateFloat(
         transitionSpec = {
             tween(
                 durationMillis = resolvedMotionDuration(
-                    AboutSearchDockContentFadeMs,
-                    animationsEnabled
-                )
+                    AppBottomSearchDockContentFadeMs,
+                    animationsEnabled,
+                ),
             )
         },
-        label = "about_search_field_alpha",
+        label = "app_bottom_search_field_alpha",
     ) { visible ->
         if (visible) 1f else 0f
     }
@@ -114,12 +113,12 @@ internal fun AboutSearchDock(
         transitionSpec = {
             tween(
                 durationMillis = resolvedMotionDuration(
-                    AboutSearchDockContentFadeMs,
-                    animationsEnabled
-                )
+                    AppBottomSearchDockContentFadeMs,
+                    animationsEnabled,
+                ),
             )
         },
-        label = "about_search_icon_alpha",
+        label = "app_bottom_search_icon_alpha",
     ) { visible ->
         if (visible) 0f else 1f
     }
@@ -141,11 +140,11 @@ internal fun AboutSearchDock(
             { onExpandedChange(true) }
         },
         pressDurationMillis = 120,
-        pressLabel = "about_search_dock_press",
+        pressLabel = "app_bottom_search_dock_press",
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (fieldAlpha > AboutSearchDockVisibleAlpha) {
-                AboutSearchField(
+            if (fieldAlpha > AppBottomSearchDockVisibleAlpha) {
+                AppBottomSearchField(
                     query = query,
                     onQueryChange = onQueryChange,
                     focusRequester = focusRequester,
@@ -161,7 +160,7 @@ internal fun AboutSearchDock(
                         .graphicsLayer { alpha = fieldAlpha },
                 )
             }
-            if (iconAlpha > AboutSearchDockVisibleAlpha) {
+            if (iconAlpha > AppBottomSearchDockVisibleAlpha) {
                 Icon(
                     imageVector = searchIcon,
                     contentDescription = contentDescription,
@@ -182,12 +181,12 @@ internal fun AboutSearchDock(
     }
 }
 
-private const val AboutSearchDockWidthMotionMs = 260
-private const val AboutSearchDockContentFadeMs = 160
-private const val AboutSearchDockVisibleAlpha = 0.01f
+private const val AppBottomSearchDockWidthMotionMs = 260
+private const val AppBottomSearchDockContentFadeMs = 160
+private const val AppBottomSearchDockVisibleAlpha = 0.01f
 
 @Composable
-private fun AboutSearchField(
+private fun AppBottomSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,

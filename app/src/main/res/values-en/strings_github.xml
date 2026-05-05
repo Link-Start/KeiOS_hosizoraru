@@ -419,6 +419,10 @@
     <string name="github_star_import_requirement_token">Add a GitHub API token in the fetch strategy sheet.</string>
     <string name="github_star_import_requirement_username">Enter a GitHub username to read public stars.</string>
     <string name="github_star_import_requirement_list_url">Paste a GitHub /stars/... or /stars/.../lists/... URL.</string>
+    <string name="github_star_import_sample_label">Example</string>
+    <string name="github_star_import_sample_token">Example: ghp_xxx...; configure the token in the GitHub fetch strategy sheet.</string>
+    <string name="github_star_import_sample_username">Example: octocat</string>
+    <string name="github_star_import_sample_list_url">Example: /stars/octocat/lists/android</string>
     <string name="github_star_import_controls_title">Filter and import</string>
     <string name="github_star_import_controls_summary_format">%1$d visible, %2$d selected.</string>
     <string name="github_star_import_filter_all">All</string>

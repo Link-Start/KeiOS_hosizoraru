@@ -419,6 +419,10 @@
     <string name="github_star_import_requirement_token">需要在抓取方案中填写 GitHub API Token。</string>
     <string name="github_star_import_requirement_username">输入 GitHub 用户名后读取公开 stars。</string>
     <string name="github_star_import_requirement_list_url">粘贴 GitHub /stars/... 或 /stars/.../lists/... 链接。</string>
+    <string name="github_star_import_sample_label">填写示例</string>
+    <string name="github_star_import_sample_token">示例：ghp_xxx...；在抓取方案配置。</string>
+    <string name="github_star_import_sample_username">示例：octocat</string>
+    <string name="github_star_import_sample_list_url">示例：/stars/octocat/lists/android</string>
     <string name="github_star_import_controls_title">筛选与导入</string>
     <string name="github_star_import_controls_summary_format">当前显示 %1$d 个，已选择 %2$d 个。</string>
     <string name="github_star_import_filter_all">全部</string>

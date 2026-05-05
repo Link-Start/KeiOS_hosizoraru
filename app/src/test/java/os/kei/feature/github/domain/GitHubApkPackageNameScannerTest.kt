@@ -6,6 +6,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import java.util.Collections
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -63,6 +64,59 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
+    fun `scanner falls back across apk assets when one manifest cannot be parsed`() {
+        val source = FakeScanSource(
+            manifestBytes = BinaryManifestFixture.build("os.kei.fallback"),
+            assetNames = listOf("KeiOS-metadata.apk", "KeiOS-universal.apk"),
+            manifestBytesByAsset = mapOf(
+                "KeiOS-metadata.apk" to byteArrayOf(0x01, 0x02),
+                "KeiOS-universal.apk" to BinaryManifestFixture.build("os.kei.fallback")
+            ),
+            readDelayMsByAsset = mapOf(
+                "KeiOS-universal.apk" to 25L
+            )
+        )
+        val scanner = GitHubApkPackageNameScanner(source)
+
+        val result = scanner.scan(
+            GitHubApkPackageNameScanRequest(
+                repoUrl = "https://github.com/hosizoraru/KeiOS",
+                lookupConfig = GitHubLookupConfig()
+            )
+        ).getOrThrow()
+
+        assertEquals("KeiOS-universal.apk", result.assetName)
+        assertEquals("os.kei.fallback", result.packageName)
+        assertTrue(source.scannedAssetNames.contains("KeiOS-metadata.apk"))
+        assertTrue(source.scannedAssetNames.contains("KeiOS-universal.apk"))
+    }
+
+    @Test
+    fun `scanner keeps lookup strategy while scanning apk assets in parallel`() {
+        val source = FakeScanSource(
+            manifestBytes = BinaryManifestFixture.build("os.kei.parallel"),
+            assetNames = listOf("KeiOS-arm64.apk", "KeiOS-x86.apk")
+        )
+        val scanner = GitHubApkPackageNameScanner(source)
+
+        val result = scanner.scan(
+            GitHubApkPackageNameScanRequest(
+                repoUrl = "https://github.com/hosizoraru/KeiOS",
+                lookupConfig = GitHubLookupConfig(
+                    selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
+                    apiToken = "token-123"
+                )
+            )
+        ).getOrThrow()
+
+        assertEquals("os.kei.parallel", result.packageName)
+        assertEquals(
+            List(source.scannedStrategies.size) { GitHubLookupStrategyOption.GitHubApiToken },
+            source.scannedStrategies
+        )
+    }
+
+    @Test
     fun `scanner reports invalid repository url before network work`() {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.scanned")
@@ -81,11 +135,18 @@ class GitHubApkPackageNameScannerTest {
     }
 
     private class FakeScanSource(
-        private val manifestBytes: ByteArray
+        private val manifestBytes: ByteArray,
+        private val assetNames: List<String> = listOf("KeiOS-debug.apk"),
+        private val manifestBytesByAsset: Map<String, ByteArray> = emptyMap(),
+        private val readDelayMsByAsset: Map<String, Long> = emptyMap()
     ) : GitHubApkPackageNameScanSource {
         var releaseLoadCount = 0
         var scannedDownloadUrl = ""
         var scannedStrategy: GitHubLookupStrategyOption? = null
+        val scannedAssetNames: MutableList<String> =
+            Collections.synchronizedList(mutableListOf())
+        val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
+            Collections.synchronizedList(mutableListOf())
 
         override fun loadLatestStableRelease(
             owner: String,
@@ -108,15 +169,15 @@ class GitHubApkPackageNameScannerTest {
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> {
             return Result.success(
-                listOf(
+                assetNames.mapIndexed { index, assetName ->
                     GitHubReleaseAssetFile(
-                        name = "KeiOS-debug.apk",
-                        downloadUrl = "https://github.com/$owner/$repo/releases/download/${release.tag}/KeiOS-debug.apk",
-                        apiAssetUrl = "https://api.github.com/repos/$owner/$repo/releases/assets/1",
+                        name = assetName,
+                        downloadUrl = "https://github.com/$owner/$repo/releases/download/${release.tag}/$assetName",
+                        apiAssetUrl = "https://api.github.com/repos/$owner/$repo/releases/assets/${index + 1}",
                         sizeBytes = 1024L,
                         downloadCount = 1
                     )
-                )
+                }
             )
         }
 
@@ -126,7 +187,12 @@ class GitHubApkPackageNameScannerTest {
         ): Result<ByteArray> {
             scannedDownloadUrl = asset.downloadUrl
             scannedStrategy = lookupConfig.selectedStrategy
-            return Result.success(manifestBytes)
+            scannedAssetNames += asset.name
+            scannedStrategies += lookupConfig.selectedStrategy
+            readDelayMsByAsset[asset.name]?.takeIf { it > 0L }?.let { delayMs ->
+                Thread.sleep(delayMs)
+            }
+            return Result.success(manifestBytesByAsset[asset.name] ?: manifestBytes)
         }
     }
 }

@@ -7,6 +7,10 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorCompletionService
+import java.util.concurrent.Executors
+import kotlin.math.min
 
 internal data class GitHubStableReleaseTarget(
     val tag: String,
@@ -76,28 +80,99 @@ internal class GitHubApkPackageNameScanner(
             lookupConfig = request.lookupConfig
         ).getOrThrow()
         val release = releaseAssets.release
-        val assets = releaseAssets.assets
-        val asset = assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
+        val assets = releaseAssets.assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
+        val scannedAsset = scanApkAssets(
+            assets = assets,
+            lookupConfig = request.lookupConfig
+        )
             ?: error("The latest stable release contains no APK asset")
+        GitHubApkPackageNameScanResult(
+            owner = owner,
+            repo = repo,
+            releaseTag = release.tag,
+            releaseUrl = release.releaseUrl,
+            assetName = scannedAsset.asset.name,
+            packageName = scannedAsset.packageName
+        )
+    }
+
+    private fun scanApkAssets(
+        assets: List<GitHubReleaseAssetFile>,
+        lookupConfig: GitHubLookupConfig
+    ): ScannedApkAsset? {
+        val scanTargets = assets.take(MAX_APK_ASSET_SCAN_CANDIDATES)
+        if (scanTargets.isEmpty()) return null
+        if (scanTargets.size == 1) {
+            return scanApkAsset(
+                asset = scanTargets.single(),
+                lookupConfig = lookupConfig
+            ).getOrThrow()
+        }
+
+        val workerCount = min(MAX_PARALLEL_APK_ASSET_SCANS, scanTargets.size)
+        val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
+            Thread(runnable, "github-apk-package-scan").apply {
+                isDaemon = true
+            }
+        }
+        return try {
+            val completionService = ExecutorCompletionService<Result<ScannedApkAsset>>(executor)
+            scanTargets.forEach { asset ->
+                completionService.submit(
+                    Callable {
+                        scanApkAsset(
+                            asset = asset,
+                            lookupConfig = lookupConfig
+                        )
+                    }
+                )
+            }
+            var lastError: Throwable? = null
+            repeat(scanTargets.size) {
+                val result = completionService.take().get()
+                result.fold(
+                    onSuccess = { scanned ->
+                        return scanned
+                    },
+                    onFailure = { error ->
+                        lastError = error
+                    }
+                )
+            }
+            throw lastError ?: IllegalStateException("No APK manifest could be scanned")
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    private fun scanApkAsset(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): Result<ScannedApkAsset> = runCatching {
         val manifestBytes = source.readAndroidManifestBytes(
             asset = asset,
-            lookupConfig = request.lookupConfig
+            lookupConfig = lookupConfig
         ).getOrThrow()
         val packageName =
             AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes).getOrThrow()
         check(GitHubPackageNameValidator.isValid(packageName)) {
             "Scanned package name is invalid: $packageName"
         }
-        GitHubApkPackageNameScanResult(
-            owner = owner,
-            repo = repo,
-            releaseTag = release.tag,
-            releaseUrl = release.releaseUrl,
-            assetName = asset.name,
+        ScannedApkAsset(
+            asset = asset,
             packageName = packageName
         )
     }
 
+    private data class ScannedApkAsset(
+        val asset: GitHubReleaseAssetFile,
+        val packageName: String
+    )
+
+    companion object {
+        private const val MAX_APK_ASSET_SCAN_CANDIDATES = 6
+        private const val MAX_PARALLEL_APK_ASSET_SCANS = 3
+    }
 }
 
 internal object GitHubPackageNameValidator {

@@ -4,9 +4,9 @@ import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.fetchGuideInfo
 import os.kei.ui.page.main.student.isGuideBgmFavoriteCandidateTitle
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 
 internal data class BaGuideStudentBgmResolvedItem(
@@ -39,7 +39,7 @@ private fun BaStudentGuideInfo.toStudentBgmFavorite(
     val item = firstStudentBgmGalleryItem() ?: return null
     val audioUrl = normalizeGuideMediaSource(item.mediaUrl)
     if (audioUrl.isBlank()) return null
-    val studentImage = entry.iconUrl.ifBlank { imageUrl }
+    val studentImage = imageUrl.ifBlank { entry.iconUrl }
     return BaGuideStudentBgmResolvedItem(
         favorite = GuideBgmFavoriteItem(
             audioUrl = audioUrl,

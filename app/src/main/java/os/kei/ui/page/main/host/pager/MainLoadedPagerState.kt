@@ -62,7 +62,7 @@ internal class MainLoadedPagerState internal constructor(
         }
     }
 
-    suspend fun scrollToPage(page: Int) {
+    fun scrollToPage(page: Int) {
         val epoch = nextNavigationEpoch()
         val target = coercePage(page)
         snapToPage(target, epoch)

@@ -8,14 +8,13 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.ba.card.BaCafeCard
 import os.kei.ui.page.main.ba.card.BaDebugCard
-import os.kei.ui.page.main.ba.card.BaIdCard
 import os.kei.ui.page.main.ba.card.BaOverviewCard
 import os.kei.ui.page.main.ba.card.BaPoolCard
 import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
@@ -23,7 +22,6 @@ import os.kei.ui.page.main.ba.support.BAInitState
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import com.kyant.backdrop.Backdrop
 
 internal data class BaPageContentState(
     val isPageActive: Boolean,
@@ -132,6 +130,12 @@ internal fun BaPageContent(
                 backdrop = backdrop,
                 overviewTitle = state.officeOverviewTitle,
                 idFriendCode = state.officeState.idFriendCode,
+                idNicknameInput = state.officeState.idNicknameInput,
+                onIdNicknameInputChange = actions.onIdNicknameInputChange,
+                onSaveIdNickname = actions.onSaveIdNickname,
+                idFriendCodeInput = state.officeState.idFriendCodeInput,
+                onIdFriendCodeInputChange = actions.onIdFriendCodeInputChange,
+                onSaveIdFriendCode = actions.onSaveIdFriendCode,
                 uiNowMs = state.uiNowMs,
                 apSyncMs = state.officeState.apSyncMs,
                 apLimit = state.officeState.apLimit,
@@ -200,18 +204,6 @@ internal fun BaPageContent(
                 onRefreshPool = actions.onRefreshPool,
                 onOpenPoolStudentGuide = actions.onOpenPoolStudentGuide,
                 onOpenCalendarLink = actions.onOpenCalendarLink
-            )
-        }
-
-        item {
-            BaIdCard(
-                backdrop = backdrop,
-                idNicknameInput = state.officeState.idNicknameInput,
-                onIdNicknameInputChange = actions.onIdNicknameInputChange,
-                onSaveIdNickname = actions.onSaveIdNickname,
-                idFriendCodeInput = state.officeState.idFriendCodeInput,
-                onIdFriendCodeInputChange = actions.onIdFriendCodeInputChange,
-                onSaveIdFriendCode = actions.onSaveIdFriendCode,
             )
         }
 

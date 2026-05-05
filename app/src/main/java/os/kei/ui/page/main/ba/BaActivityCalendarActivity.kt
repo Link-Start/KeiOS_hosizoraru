@@ -190,10 +190,11 @@ private fun BaActivityCalendarPage(
                 height = 52.dp,
                 variant = GlassVariant.Bar,
                 iconTint = if (calendarUiState.loading) {
-                    MiuixTheme.colorScheme.primary
+                    countdownBlue
                 } else {
-                    MiuixTheme.colorScheme.onBackground
+                    MiuixTheme.colorScheme.primary
                 },
+                containerColor = if (calendarUiState.loading) countdownBlue else null,
             )
         }
     ) { innerPadding ->

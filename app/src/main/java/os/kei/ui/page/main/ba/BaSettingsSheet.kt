@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -328,7 +329,7 @@ private fun BaSettingsRefreshIntervalDropdown(
     val options = BaCalendarRefreshIntervalOption.entries
     val selected = BaCalendarRefreshIntervalOption.fromHours(selectedHours)
     AppDropdownSelector(
-        modifier = Modifier.width(112.dp),
+        modifier = Modifier.width(128.dp),
         selectedText = stringResource(selected.labelRes),
         options = options.map { stringResource(it.labelRes) },
         selectedIndex = options.indexOf(selected).coerceAtLeast(0),
@@ -346,5 +347,6 @@ private fun BaSettingsRefreshIntervalDropdown(
         variant = GlassVariant.SheetAction,
         textColor = MiuixTheme.colorScheme.primary,
         horizontalPadding = 10.dp,
+        anchorAlignment = Alignment.CenterEnd,
     )
 }

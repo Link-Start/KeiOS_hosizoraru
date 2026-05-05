@@ -16,12 +16,12 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.util.fastCoerceIn
-import os.kei.core.ui.gesture.inspectDragGestures
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.Language
+import os.kei.core.ui.gesture.inspectDragGestures
 
 @SuppressLint("NewApi")
 class InteractiveHighlight(
@@ -29,7 +29,8 @@ class InteractiveHighlight(
     val position: (size: Size, offset: Offset) -> Offset = { _, offset -> offset },
     val highlightColor: Color = Color.White,
     val highlightStrength: Float = 1f,
-    val highlightRadiusScale: Float = 1.2f
+    val highlightRadiusScale: Float = 1.2f,
+    val consumeDragChanges: Boolean = false
 ) {
     private val pressProgressAnimationSpec = spring(0.5f, 300f, 0.001f)
     private val positionAnimationSpec = spring(0.5f, 300f, Offset.VisibilityThreshold)
@@ -116,7 +117,10 @@ class InteractiveHighlight(
                     launch { positionAnimation.animateTo(startPosition, positionAnimationSpec) }
                 }
             }
-        ) { change, _ ->
+        ) { change, dragAmount ->
+            if (consumeDragChanges && dragAmount != Offset.Zero) {
+                change.consume()
+            }
             pendingDragPosition = change.position
             if (dragPositionSyncJob?.isActive != true) {
                 dragPositionSyncJob = animationScope.launch {

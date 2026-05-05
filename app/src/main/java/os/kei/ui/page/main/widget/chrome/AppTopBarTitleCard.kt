@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.widget.chrome
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -16,9 +16,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
-import com.kyant.capsule.ContinuousCapsule
-import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
-import top.yukonga.miuix.kmp.basic.Text
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -75,24 +74,31 @@ private fun AppTopBarTitleCardSurface(
     lineHeight: TextUnit,
     horizontalPadding: Dp,
 ) {
-    AppLiquidFloatingSurface(
+    Box(
         modifier = modifier
             .height(height)
-            .defaultMinSize(minWidth = AppChromeTokens.topBarTitleMinWidth)
             .width(width),
-        shape = ContinuousCapsule,
-        backdrop = backdrop,
-        clipContent = true,
+        contentAlignment = Alignment.Center
     ) {
-        Text(
+        AppLiquidTextButton(
+            backdrop = backdrop,
             text = title,
-            color = MiuixTheme.colorScheme.onSurface,
-            fontSize = textSize,
-            lineHeight = lineHeight,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Clip,
-            modifier = Modifier.padding(horizontal = horizontalPadding),
+            onClick = {},
+            modifier = Modifier
+                .height(height)
+                .width(width),
+            textColor = MiuixTheme.colorScheme.onSurface,
+            variant = GlassVariant.Bar,
+            minHeight = height,
+            horizontalPadding = horizontalPadding,
+            verticalPadding = 0.dp,
+            textMaxLines = 1,
+            textOverflow = TextOverflow.Clip,
+            textSoftWrap = false,
+            textSize = textSize,
+            textLineHeight = lineHeight,
+            textFontWeight = FontWeight.SemiBold,
+            consumeDragChangesForInteraction = true,
         )
     }
 }

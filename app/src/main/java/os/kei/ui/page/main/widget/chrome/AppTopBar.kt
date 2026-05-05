@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -73,7 +72,10 @@ fun AppTopBarSection(
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = AppChromeTokens.topBarHorizontalPadding, top = 6.dp)
+                    .padding(
+                        start = AppChromeTokens.topBarHorizontalPadding,
+                        top = AppChromeTokens.topBarChromeTopPadding
+                    )
             ) {
                 navigationIcon?.invoke()
             }
@@ -84,12 +86,16 @@ fun AppTopBarSection(
                 endReserve = resolvedTitleEndReserve,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.Center),
+                    .align(Alignment.TopCenter)
+                    .padding(top = AppChromeTokens.topBarChromeTopPadding),
             )
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(end = AppChromeTokens.topBarHorizontalPadding, top = 6.dp),
+                    .padding(
+                        end = AppChromeTokens.topBarHorizontalPadding,
+                        top = AppChromeTokens.topBarChromeTopPadding
+                    ),
                 content = actions
             )
         }

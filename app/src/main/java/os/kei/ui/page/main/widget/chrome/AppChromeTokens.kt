@@ -12,6 +12,7 @@ object AppChromeTokens {
 
     val topBarExpandedHeight: Dp = 128.dp
     val topBarCollapsedHeight: Dp = 64.dp
+    val topBarChromeTopPadding: Dp = 6.dp
     val topBarHorizontalPadding: Dp = 14.dp
     val topBarTitleEdgePadding: Dp = 14.dp
     val topBarTitleNavigationReserve: Dp = 76.dp

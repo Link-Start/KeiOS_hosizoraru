@@ -20,4 +20,12 @@ class AppTopBarTitleCardLayoutTest {
             estimateTopBarTitleWidthAt18Sp("GitHub")
         )
     }
+
+    @Test
+    fun titleCardMatchesTopBarChromeBand() {
+        assertEquals(52.dp, AppChromeTokens.topBarTitleHeight)
+        assertEquals(52.dp, AppChromeTokens.liquidActionBarOuterHeight)
+        assertEquals(64.dp, AppChromeTokens.topBarCollapsedHeight)
+        assertEquals(6.dp, AppChromeTokens.topBarChromeTopPadding)
+    }
 }

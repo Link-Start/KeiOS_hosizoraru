@@ -30,8 +30,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
@@ -380,8 +382,12 @@ fun AppLiquidTextButton(
     textMaxLines: Int = Int.MAX_VALUE,
     textOverflow: TextOverflow = TextOverflow.Clip,
     textSoftWrap: Boolean = true,
+    textSize: TextUnit = AppTypographyTokens.Body.fontSize,
+    textLineHeight: TextUnit = AppTypographyTokens.Body.lineHeight,
+    textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
     pressScaleEnabled: Boolean = true,
-    pressOverlayEnabled: Boolean = true
+    pressOverlayEnabled: Boolean = true,
+    consumeDragChangesForInteraction: Boolean = false
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
@@ -423,8 +429,11 @@ fun AppLiquidTextButton(
     )
     val liquidInteractionEnabled = enabled && liquidControlsEnabled && (pressScaleEnabled || pressOverlayEnabled)
     val animationScope = rememberCoroutineScope()
-    val interactiveHighlight = remember(animationScope) {
-        InteractiveHighlight(animationScope = animationScope)
+    val interactiveHighlight = remember(animationScope, consumeDragChangesForInteraction) {
+        InteractiveHighlight(
+            animationScope = animationScope,
+            consumeDragChanges = consumeDragChangesForInteraction
+        )
     }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -590,9 +599,9 @@ fun AppLiquidTextButton(
                 Text(
                     text = text,
                     color = textColor,
-                    fontSize = AppTypographyTokens.Body.fontSize,
-                    lineHeight = AppTypographyTokens.Body.lineHeight,
-                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                    fontSize = textSize,
+                    lineHeight = textLineHeight,
+                    fontWeight = textFontWeight,
                     maxLines = textMaxLines,
                     overflow = textOverflow,
                     softWrap = textSoftWrap

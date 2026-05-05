@@ -3,13 +3,10 @@ package os.kei.ui.page.main.about.page
 import android.content.pm.PackageInfo
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -23,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -191,34 +187,22 @@ fun AboutPage(
             }
         },
         bottomBar = {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                AboutCategoryBottomBar(
-                    visible = true,
-                    navigationBarBottom = navigationBarBottom,
-                    categories = categories,
-                    selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
-                    selectedPageProvider = { pagerState.targetPage },
-                    backdrop = bottomBarBackdrop,
-                    isLiquidEffectEnabled = true,
-                    compact = searchExpanded,
-                    onSelectCategory = selectAboutCategory,
-                )
-                AboutSearchDock(
-                    backdrop = bottomBarBackdrop,
-                    expanded = searchExpanded,
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    onExpandedChange = { searchExpanded = it },
-                    searchIcon = appLucideSearchIcon(),
-                    contentDescription = searchContentDescription,
-                    placeholder = aboutSearchPlaceholder,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 14.dp, bottom = 12.dp + navigationBarBottom),
-                    size = AppChromeTokens.floatingBottomBarOuterHeight,
-                    iconSize = 24.dp,
-                )
-            }
+            AboutBottomChrome(
+                navigationBarBottom = navigationBarBottom,
+                categories = categories,
+                selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
+                selectedPageProvider = { pagerState.targetPage },
+                searchExpanded = searchExpanded,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onSearchExpandedChange = { searchExpanded = it },
+                searchIcon = appLucideSearchIcon(),
+                searchContentDescription = searchContentDescription,
+                searchPlaceholder = aboutSearchPlaceholder,
+                backdrop = bottomBarBackdrop,
+                isLiquidEffectEnabled = true,
+                onSelectCategory = selectAboutCategory,
+            )
         }
     ) { innerPadding ->
         HorizontalPager(

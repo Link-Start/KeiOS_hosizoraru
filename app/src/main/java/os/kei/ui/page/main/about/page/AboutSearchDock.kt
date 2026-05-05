@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.about.page
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,8 @@ import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -55,6 +58,7 @@ internal fun AboutSearchDock(
     contentDescription: String,
     placeholder: String,
     modifier: Modifier = Modifier,
+    expandedWidth: Dp? = null,
     compactDockReservedWidth: Dp = 116.dp,
     horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
@@ -64,6 +68,7 @@ internal fun AboutSearchDock(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
+    val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val maxExpandedWidth = (
             configuration.screenWidthDp.dp -
                     horizontalInset * 2 -
@@ -71,8 +76,13 @@ internal fun AboutSearchDock(
                     AppChromeTokens.pageSectionGap
             ).coerceAtLeast(size)
     val width by animateDpAsState(
-        targetValue = if (expanded) maxExpandedWidth else size,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 260),
+        targetValue = if (expanded) expandedWidth ?: maxExpandedWidth else size,
+        animationSpec = tween(
+            durationMillis = resolvedMotionDuration(
+                AboutSearchDockWidthMotionMs,
+                animationsEnabled
+            ),
+        ),
         label = "about_search_dock_width",
     )
 
@@ -122,6 +132,8 @@ internal fun AboutSearchDock(
         }
     }
 }
+
+private const val AboutSearchDockWidthMotionMs = 260
 
 @Composable
 private fun AboutSearchField(

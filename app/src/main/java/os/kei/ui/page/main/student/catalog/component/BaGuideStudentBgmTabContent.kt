@@ -52,6 +52,7 @@ import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
@@ -65,6 +66,7 @@ internal fun BaGuideStudentBgmTabContent(
     catalog: BaGuideCatalogBundle,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     searchQuery: String,
+    loading: Boolean,
     innerPadding: PaddingValues,
     nestedScrollConnection: NestedScrollConnection,
     accent: Color,
@@ -428,22 +430,32 @@ internal fun BaGuideStudentBgmTabContent(
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            item(key = "student-bgm-header") {
-                BaGuideStudentBgmHeader(
-                    totalCount = allStudentEntries.size,
-                    displayedCount = filteredEntries.size,
-                    resolvedCount = displayedEntries.count { entry ->
-                        val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
-                        stateWithFavoriteFallback(entry, lookupState) is BaGuideStudentBgmLookupState.Ready
-                    },
-                    favoriteCount = favorites.size,
-                    loadingCount = lookupStates.values.count { it == BaGuideStudentBgmLookupState.Loading },
-                    searchActive = searchQuery.isNotBlank(),
-                    accent = accent
-                )
+            if (loading && allStudentEntries.isEmpty()) {
+                item(key = "student-bgm-loading") {
+                    AppAronaLoadingPanel(accent = accent)
+                }
+            } else {
+                item(key = "student-bgm-header") {
+                    BaGuideStudentBgmHeader(
+                        totalCount = allStudentEntries.size,
+                        displayedCount = filteredEntries.size,
+                        resolvedCount = displayedEntries.count { entry ->
+                            val lookupState =
+                                lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
+                            stateWithFavoriteFallback(
+                                entry,
+                                lookupState
+                            ) is BaGuideStudentBgmLookupState.Ready
+                        },
+                        favoriteCount = favorites.size,
+                        loadingCount = lookupStates.values.count { it == BaGuideStudentBgmLookupState.Loading },
+                        searchActive = searchQuery.isNotBlank(),
+                        accent = accent
+                    )
+                }
             }
 
-            if (filteredEntries.isEmpty()) {
+            if (!loading && filteredEntries.isEmpty()) {
                 item(key = "student-bgm-empty") {
                     LiquidInfoBlock(
                         backdrop = null,

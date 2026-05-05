@@ -15,6 +15,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 
 @Composable
@@ -71,6 +72,11 @@ internal fun BaGuideCatalogV2ListContent(
                 )
             }
         }
+        if (uiState.showLoading) {
+            item {
+                AppAronaLoadingPanel(accent = accent)
+            }
+        }
         if (uiState.showEmpty) {
             item {
                 LiquidInfoBlock(
@@ -80,7 +86,7 @@ internal fun BaGuideCatalogV2ListContent(
                     accent = accent
                 )
             }
-        } else {
+        } else if (!uiState.showLoading) {
             renderBaGuideCatalogEntryListAdapter(
                 displayedEntries = tabListState.displayedEntries,
                 hasMoreEntries = tabListState.hasMoreEntries,

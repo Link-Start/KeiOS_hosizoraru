@@ -528,6 +528,7 @@ fun BaGuideCatalogPage(
                                 catalog = catalogDataState.catalog,
                                 playbackCoordinator = playbackCoordinator,
                                 searchQuery = pageSearchQuery,
+                                loading = catalogDataState.loading,
                                 innerPadding = PaddingValues(
                                     top = CatalogMusicContentTopPadding,
                                     bottom = CatalogMusicContentBottomPadding

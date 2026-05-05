@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.student.page.component
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.PagerState
@@ -26,7 +24,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.BaStudentGuideInfo
@@ -34,13 +34,10 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderState
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
+import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.flow.distinctUntilChanged
+import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -221,7 +218,8 @@ internal fun BaStudentGuidePagerPage(
                 sourceUrl.isNotBlank() &&
                 info == null &&
                 error.isNullOrBlank(),
-            innerPadding = innerPadding
+            innerPadding = innerPadding,
+            accent = accent,
         )
     }
 }
@@ -229,7 +227,8 @@ internal fun BaStudentGuidePagerPage(
 @Composable
 private fun BaStudentGuidePagerLoadingOverlay(
     visible: Boolean,
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues,
+    accent: Color,
 ) {
     if (!visible) return
     Box(
@@ -243,20 +242,6 @@ private fun BaStudentGuidePagerLoadingOverlay(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
-        ) {
-            androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(R.drawable.q_862c2944),
-                contentDescription = null,
-                modifier = Modifier.size(112.dp)
-            )
-            Text(
-                text = stringResource(R.string.guide_loading_title),
-                color = MiuixTheme.colorScheme.onBackground,
-                fontSize = 14.sp
-            )
-        }
+        AppAronaLoadingPanel(accent = accent)
     }
 }

@@ -14,17 +14,13 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,14 +38,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -69,10 +63,10 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -390,41 +384,7 @@ private fun BaActivityCalendarServerPanel(
 private fun BaActivityCalendarLoadingPanel(
     accentColor: Color,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(340.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Image(
-                painter = painterResource(R.drawable.q_862c2944),
-                contentDescription = null,
-                modifier = Modifier.size(112.dp),
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LiquidCircularProgressBar(
-                    progress = null,
-                    size = 18.dp,
-                    strokeWidth = 2.dp,
-                    activeColor = accentColor,
-                    inactiveColor = accentColor.copy(alpha = 0.26f),
-                    contentDescription = stringResource(R.string.ba_syncing),
-                )
-                Text(
-                    text = stringResource(R.string.guide_loading_title),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = 14.sp,
-                )
-            }
-        }
-    }
+    AppAronaLoadingPanel(accent = accentColor)
 }
 
 @Composable

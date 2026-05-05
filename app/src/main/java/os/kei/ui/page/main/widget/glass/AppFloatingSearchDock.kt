@@ -12,24 +12,19 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -40,25 +35,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -127,37 +116,26 @@ fun AppFloatingSearchDock(
     }
 
     LaunchedEffect(expanded) {
-        if (!expanded) {
-            focusManager.clearFocus()
-        }
+        if (!expanded) focusManager.clearFocus()
     }
 
     val fieldContent: @Composable () -> Unit = {
-        if (fieldWidth > 1.dp) {
-            AppLiquidFloatingSurface(
-                modifier = Modifier
-                    .width(fieldWidth)
-                    .height(size)
-                    .alpha(fieldAlpha),
-                shape = ContinuousCapsule,
-                backdrop = backdrop,
-                pressDurationMillis = 120,
-                pressLabel = "app_floating_search_field_press"
-            ) {
-                AppFloatingSearchField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    focusRequester = focusRequester,
-                    autoFocus = expanded && searchAutoFocusEnabled,
-                    onFocusActiveChange = { active ->
-                        if (active) onExpandedChange(true)
-                    },
-                    placeholder = placeholder,
-                    accent = accent,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }
+        AppFloatingSearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            focusRequester = focusRequester,
+            autoFocus = expanded && searchAutoFocusEnabled,
+            onFocusActiveChange = { active ->
+                if (active) onExpandedChange(true)
+            },
+            placeholder = placeholder,
+            accent = accent,
+            backdrop = backdrop,
+            modifier = Modifier
+                .width(fieldWidth)
+                .height(size)
+                .alpha(fieldAlpha)
+        )
     }
     val buttonContent: @Composable () -> Unit = {
         AppFloatingLiquidActionButton(
@@ -227,7 +205,7 @@ fun AppFloatingVerticalSearchActionDock(
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
     val visibleActionCount = if (showAddAction) 3 else 2
-    val dockHeight = size * visibleActionCount
+    val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
     val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
     val transition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
@@ -251,35 +229,26 @@ fun AppFloatingVerticalSearchActionDock(
     }
 
     LaunchedEffect(expanded) {
-        if (!expanded) {
-            focusManager.clearFocus()
-        }
+        if (!expanded) focusManager.clearFocus()
     }
 
     val fieldContent: @Composable () -> Unit = {
-        AppLiquidFloatingSurface(
+        AppFloatingSearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            focusRequester = focusRequester,
+            autoFocus = expanded && searchAutoFocusEnabled,
+            onFocusActiveChange = { active ->
+                if (active) onExpandedChange(true)
+            },
+            placeholder = placeholder,
+            accent = accent,
+            backdrop = backdrop,
             modifier = Modifier
                 .width(fieldWidth)
                 .height(size)
-                .alpha(fieldAlpha),
-            shape = ContinuousCapsule,
-            backdrop = backdrop,
-            pressDurationMillis = 120,
-            pressLabel = "app_vertical_floating_search_field_press"
-        ) {
-            AppFloatingSearchField(
-                query = query,
-                onQueryChange = onQueryChange,
-                focusRequester = focusRequester,
-                autoFocus = expanded && searchAutoFocusEnabled,
-                onFocusActiveChange = { active ->
-                    if (active) onExpandedChange(true)
-                },
-                placeholder = placeholder,
-                accent = accent,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+                .alpha(fieldAlpha)
+        )
     }
     val refreshTint = appFloatingRefreshTint(
         status = refreshStatus,
@@ -291,17 +260,14 @@ fun AppFloatingVerticalSearchActionDock(
         active = accent
     )
     val dockContent: @Composable () -> Unit = {
-        AppLiquidFloatingSurface(
+        AppFloatingLiquidVerticalDockSurface(
+            backdrop = backdrop,
             modifier = Modifier
                 .width(size)
-                .height(dockHeight),
-            shape = ContinuousCapsule,
-            backdrop = backdrop,
-            pressDurationMillis = 120,
-            pressLabel = "app_vertical_floating_action_dock_press"
+                .height(dockHeight)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -331,29 +297,40 @@ fun AppFloatingVerticalSearchActionDock(
                     onClick = { onExpandedChange(!expanded) },
                     size = size,
                     iconSize = iconSize,
-                    iconTint = accent
+                    iconTint = if (expanded) accent else MiuixTheme.colorScheme.onBackground
                 )
             }
         }
     }
 
-    Row(
+    Box(
         modifier = modifier
             .offset(y = -resolvedKeyboardLift)
             .width(totalWidth)
-            .height(dockHeight),
-        horizontalArrangement = Arrangement.spacedBy(
-            gap,
-            if (dockSide == AppFloatingDockSide.Start) Alignment.Start else Alignment.End
-        ),
-        verticalAlignment = Alignment.Bottom
+            .height(dockHeight)
     ) {
         if (dockSide == AppFloatingDockSide.Start) {
-            dockContent()
-            fieldContent()
+            Box(modifier = Modifier.align(Alignment.BottomStart)) {
+                dockContent()
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = size + gap)
+            ) {
+                fieldContent()
+            }
         } else {
-            fieldContent()
-            dockContent()
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = -(size + gap))
+            ) {
+                fieldContent()
+            }
+            Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+                dockContent()
+            }
         }
     }
 }
@@ -364,34 +341,40 @@ fun AppFloatingVerticalActionDock(
     actions: List<AppFloatingDockAction>,
     modifier: Modifier = Modifier,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
-    iconSize: Dp = 27.dp
+    iconSize: Dp = 27.dp,
+    gap: Dp = 8.dp
 ) {
     if (actions.isEmpty()) return
-    AppLiquidFloatingSurface(
+    Column(
         modifier = modifier
             .width(size)
-            .height(size * actions.size),
-        shape = ContinuousCapsule,
-        backdrop = backdrop,
-        pressDurationMillis = 120,
-        pressLabel = "app_vertical_floating_action_dock_press"
+            .height(appFloatingVerticalDockHeight(size, actions.size)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        AppFloatingLiquidVerticalDockSurface(
+            backdrop = backdrop,
+            modifier = Modifier
+                .width(size)
+                .height(appFloatingVerticalDockHeight(size, actions.size))
         ) {
-            actions.forEach { action ->
-                AppFloatingVerticalDockAction(
-                    icon = action.icon,
-                    contentDescription = action.contentDescription,
-                    onClick = action.onClick,
-                    size = size,
-                    iconSize = iconSize,
-                    iconTint = action.iconTint,
-                    enabled = action.enabled,
-                    rotating = action.rotating
-                )
+            Column(
+                modifier = Modifier.matchParentSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                actions.forEach { action ->
+                    AppFloatingVerticalDockAction(
+                        icon = action.icon,
+                        contentDescription = action.contentDescription,
+                        onClick = action.onClick,
+                        size = size,
+                        iconSize = iconSize,
+                        iconTint = action.iconTint,
+                        enabled = action.enabled,
+                        rotating = action.rotating
+                    )
+                }
             }
         }
     }
@@ -409,10 +392,16 @@ private fun AppFloatingVerticalDockAction(
     rotating: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
     val animatedTint by animateColorAsState(
         targetValue = iconTint,
         animationSpec = tween(durationMillis = 180),
         label = "app_floating_vertical_dock_action_tint"
+    )
+    val pressedScale by appMotionFloatState(
+        targetValue = if (isPressed) AppInteractiveTokens.pressedScale else 1f,
+        durationMillis = 110,
+        label = "app_floating_vertical_dock_action_scale"
     )
     val infiniteTransition = rememberInfiniteTransition(label = "app_floating_vertical_dock_action_rotation")
     val rotation by infiniteTransition.animateFloat(
@@ -424,6 +413,7 @@ private fun AppFloatingVerticalDockAction(
         ),
         label = "app_floating_vertical_dock_action_rotation"
     )
+
     Box(
         modifier = Modifier
             .size(size)
@@ -448,6 +438,8 @@ private fun AppFloatingVerticalDockAction(
             modifier = Modifier
                 .size(iconSize)
                 .graphicsLayer {
+                    scaleX = pressedScale
+                    scaleY = pressedScale
                     rotationZ = if (rotating) rotation else 0f
                 },
             tint = animatedTint
@@ -490,7 +482,7 @@ fun rememberAppFloatingKeyboardLift(
     )
     val lift by animateDpAsState(
         targetValue = targetLift,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = AppFloatingKeyboardLiftMotionMs),
+        animationSpec = tween(durationMillis = AppFloatingKeyboardLiftMotionMs),
         label = label
     )
     return lift
@@ -506,6 +498,14 @@ internal fun appFloatingKeyboardLiftTarget(
     return (imeBottom + focusedLift - restingBottomGap).coerceAtLeast(focusedLift)
 }
 
+internal fun appFloatingVerticalDockHeight(
+    itemSize: Dp,
+    itemCount: Int
+): Dp {
+    if (itemCount <= 0) return 0.dp
+    return itemSize * itemCount
+}
+
 private const val AppFloatingSearchDockWidthMotionMs = 220
 private const val AppFloatingSearchDockFadeMotionMs = 120
 private const val AppFloatingKeyboardLiftMotionMs = 160
@@ -519,69 +519,34 @@ private fun AppFloatingSearchField(
     onFocusActiveChange: (Boolean) -> Unit,
     placeholder: String,
     accent: Color,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    val contentColor = MiuixTheme.colorScheme.onBackground
-    val placeholderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
-    val interactionSource = remember { MutableInteractionSource() }
-    val textStyle = TextStyle(
-        color = contentColor,
-        fontSize = AppTypographyTokens.CardHeader.fontSize,
-        lineHeight = AppTypographyTokens.CardHeader.lineHeight,
-        platformStyle = PlatformTextStyle(includeFontPadding = false)
-    )
     LaunchedEffect(autoFocus) {
-        if (autoFocus) {
-            focusRequester.requestFocus()
-        }
+        if (autoFocus) focusRequester.requestFocus()
     }
-    Row(
-        modifier = modifier
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) {
-                onFocusActiveChange(true)
-                focusRequester.requestFocus()
+    AppLiquidInputField(
+        value = query,
+        onValueChange = onQueryChange,
+        label = placeholder,
+        backdrop = backdrop,
+        modifier = modifier,
+        singleLine = true,
+        fontSize = AppTypographyTokens.CardHeader.fontSize,
+        textColor = MiuixTheme.colorScheme.onBackground,
+        variant = GlassVariant.Bar,
+        minHeight = AppChromeTokens.floatingBottomBarOuterHeight,
+        horizontalPadding = 18.dp,
+        verticalPadding = 0.dp,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(
+            onSearch = {
+                onFocusActiveChange(false)
+                focusManager.clearFocus()
             }
-            .padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            singleLine = true,
-            textStyle = textStyle,
-            cursorBrush = SolidColor(accent),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    onFocusActiveChange(false)
-                    focusManager.clearFocus()
-                }
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .defaultMinSize(minHeight = 24.dp)
-                .focusRequester(focusRequester)
-                .onFocusChanged { state -> onFocusActiveChange(state.isFocused) },
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    if (query.isBlank()) {
-                        BasicText(
-                            text = placeholder,
-                            style = textStyle.copy(color = placeholderColor),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-        )
-    }
+        ),
+        focusRequester = focusRequester,
+        onFocusActiveChange = onFocusActiveChange
+    )
 }

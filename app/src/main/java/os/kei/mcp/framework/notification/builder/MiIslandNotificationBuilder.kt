@@ -52,6 +52,8 @@ class MiIslandNotificationBuilder(
         private const val ISLAND_ICON_RES_ID_AP = R.drawable.ic_ba_ap_island_notification
         private const val ISLAND_ICON_RES_ID_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
         private const val ISLAND_ICON_RES_ID_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
+        private const val ISLAND_ICON_RES_ID_BA_CALENDAR_POOL =
+            R.drawable.ic_ba_calendar_live_update
     }
 
     override fun build(payload: NotificationPayload): Notification {
@@ -59,25 +61,33 @@ class MiIslandNotificationBuilder(
         val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(state.serverName)
         val isBlueArchiveCafeVisit = McpNotificationPayload.isBaCafeVisitServerName(state.serverName)
         val isBlueArchiveArenaRefresh = McpNotificationPayload.isBaArenaRefreshServerName(state.serverName)
+        val isBlueArchiveCalendarPool =
+            McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isBlueArchiveNotification =
-            isBlueArchiveAp || isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh
+            isBlueArchiveAp ||
+                    isBlueArchiveCafeVisit ||
+                    isBlueArchiveArenaRefresh ||
+                    isBlueArchiveCalendarPool
         val islandIconResId = when {
             isBlueArchiveAp -> ISLAND_ICON_RES_ID_AP
             isBlueArchiveCafeVisit -> ISLAND_ICON_RES_ID_BA_CAFE_VISIT
             isBlueArchiveArenaRefresh -> ISLAND_ICON_RES_ID_BA_ARENA_REFRESH
+            isBlueArchiveCalendarPool -> ISLAND_ICON_RES_ID_BA_CALENDAR_POOL
             else -> ISLAND_ICON_RES_ID_DEFAULT
         }
         val shortCriticalText = resolveShortCriticalText(
             state = state,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
-            isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh
+            isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
+            isBlueArchiveCalendarPool = isBlueArchiveCalendarPool
         )
         val presentation = resolvePresentation(
             state = state,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
-            isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh
+            isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
+            isBlueArchiveCalendarPool = isBlueArchiveCalendarPool
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(islandIconResId)
@@ -87,6 +97,7 @@ class MiIslandNotificationBuilder(
             .setCategory(
                 when {
                     isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
+                    isBlueArchiveCalendarPool && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
                     else -> NotificationCompat.CATEGORY_STATUS
                 }
@@ -97,6 +108,7 @@ class MiIslandNotificationBuilder(
             .setAutoCancel(false)
             .setRequestPromotedOngoing(presentation.requestPromotedOngoing)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .applyDeadline(state.deadlineAtMs)
 
         presentation.notificationAccentColor?.let { accentColor ->
             builder
@@ -122,13 +134,19 @@ class MiIslandNotificationBuilder(
         val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(state.serverName)
         val isBlueArchiveCafeVisit = McpNotificationPayload.isBaCafeVisitServerName(state.serverName)
         val isBlueArchiveArenaRefresh = McpNotificationPayload.isBaArenaRefreshServerName(state.serverName)
+        val isBlueArchiveCalendarPool =
+            McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isBlueArchiveNotification =
-            isBlueArchiveAp || isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh
+            isBlueArchiveAp ||
+                    isBlueArchiveCafeVisit ||
+                    isBlueArchiveArenaRefresh ||
+                    isBlueArchiveCalendarPool
         val presentation = resolvePresentation(
             state = state,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
-            isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh
+            isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
+            isBlueArchiveCalendarPool = isBlueArchiveCalendarPool
         )
         val lightLogoIcon = if (isBlueArchiveNotification) {
             Icon.createWithResource(context, islandIconResId)
@@ -271,7 +289,8 @@ class MiIslandNotificationBuilder(
         state: McpNotificationPayload,
         isBlueArchiveAp: Boolean,
         isBlueArchiveCafeVisit: Boolean,
-        isBlueArchiveArenaRefresh: Boolean
+        isBlueArchiveArenaRefresh: Boolean,
+        isBlueArchiveCalendarPool: Boolean
     ): IslandPresentation {
         if (isBlueArchiveAp && state.running) {
             return IslandPresentation(
@@ -312,6 +331,24 @@ class MiIslandNotificationBuilder(
                 notificationAccentColor = BA_EVENT_ACCENT_COLOR
             )
         }
+        if (isBlueArchiveCalendarPool && state.running) {
+            val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
+            return IslandPresentation(
+                allowFloat = true,
+                showTextButtons = true,
+                rightTitle = state.shortText,
+                rightContent = state.onlineText(context).takeIf { it != state.shortText },
+                notificationOngoing = state.ongoing,
+                requestPromotedOngoing = state.ongoing,
+                focusUpdatable = true,
+                focusShowNotification = true,
+                showProgressRing = true,
+                showExpandedProgress = true,
+                progressPercent = progressPercent,
+                progressColor = BA_EVENT_ACCENT_COLOR,
+                notificationAccentColor = BA_EVENT_ACCENT_COLOR
+            )
+        }
         if (state.running) {
             return IslandPresentation(
                 allowFloat = false,
@@ -339,11 +376,13 @@ class MiIslandNotificationBuilder(
         state: McpNotificationPayload,
         isBlueArchiveAp: Boolean,
         isBlueArchiveCafeVisit: Boolean,
-        isBlueArchiveArenaRefresh: Boolean
+        isBlueArchiveArenaRefresh: Boolean,
+        isBlueArchiveCalendarPool: Boolean
     ): String? {
         return when {
             !state.running -> state.statusText(context)
             isBlueArchiveAp -> context.getString(R.string.ba_notification_ap_island_text)
+            isBlueArchiveCalendarPool -> state.shortText
             isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh -> state.onlineText(context)
             else -> state.onlineText(context)
         }.takeIf { it.isNotBlank() }
@@ -365,6 +404,14 @@ class MiIslandNotificationBuilder(
         val limit = state.clients.coerceAtLeast(1)
         val current = state.port.coerceAtLeast(0).coerceAtMost(limit)
         return ((current.toFloat() / limit.toFloat()) * 100f).roundToInt().coerceIn(0, 100)
+    }
+
+    private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {
+        if (deadlineAtMs == null) return this
+        return setWhen(deadlineAtMs)
+            .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
     }
 
     private fun FocusTemplateV3.focusShowNotification(show: Boolean?) {

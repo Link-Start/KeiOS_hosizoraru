@@ -1,11 +1,11 @@
 package os.kei.mcp.framework.notification.builder
 
 import android.app.PendingIntent
+import org.junit.Test
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationPayload
-import kotlin.test.assertEquals
-import org.junit.Test
 import sun.misc.Unsafe
+import kotlin.test.assertEquals
 
 class ModernNotificationSpecResolverTest {
     @Test
@@ -172,6 +172,28 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
+    fun `calendar pool uses calendar semantic icons and override progress`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
+                running = true,
+                port = 0,
+                clients = 1,
+                ongoing = true,
+                overrideProgressPercent = 67
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.BA_CALENDAR_POOL, spec.kind)
+        assertEquals(67, spec.progressPercent)
+        assertEquals(R.drawable.ic_ba_calendar_live_update, spec.iconResId)
+        assertEquals(R.drawable.ic_ba_calendar_live_update, spec.expandedIconResId)
+        assertEquals(R.drawable.ic_ba_calendar_live_update, spec.trackerIconResId)
+        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+    }
+
+    @Test
     fun `default notification keeps standard app status icon`() {
         val spec = ModernNotificationSpecResolver.resolve(
             state = createState(
@@ -212,7 +234,8 @@ class ModernNotificationSpecResolverTest {
         running: Boolean,
         port: Int,
         clients: Int,
-        ongoing: Boolean
+        ongoing: Boolean,
+        overrideProgressPercent: Int? = null
     ): McpNotificationPayload {
         val pendingIntent = createFakePendingIntent()
         return McpNotificationPayload(
@@ -224,7 +247,8 @@ class ModernNotificationSpecResolverTest {
             ongoing = ongoing,
             onlyAlertOnce = true,
             openPendingIntent = pendingIntent,
-            stopPendingIntent = pendingIntent
+            stopPendingIntent = pendingIntent,
+            overrideProgressPercent = overrideProgressPercent
         )
     }
 

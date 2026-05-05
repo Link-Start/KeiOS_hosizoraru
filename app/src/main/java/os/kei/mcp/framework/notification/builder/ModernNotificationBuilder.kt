@@ -12,7 +12,7 @@ class ModernNotificationBuilder(
 ) : SessionNotificationBuilder {
     private val baseNotificationBuilder by lazy {
         NotificationCompat.Builder(context, os.kei.mcp.notification.McpNotificationHelper.LIVE_CHANNEL_ID)
-            .setSmallIcon(os.kei.R.drawable.ic_kei_logo_live_update)
+            .setSmallIcon(R.drawable.ic_kei_logo_live_update)
             .setSilent(true)
             .setOnlyAlertOnce(true)
             .setOngoing(true)

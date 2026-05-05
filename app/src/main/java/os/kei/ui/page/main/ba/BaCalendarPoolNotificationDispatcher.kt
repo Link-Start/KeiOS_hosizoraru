@@ -5,17 +5,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.core.app.NotificationManagerCompat
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.framework.notification.NotificationHelper
-import os.kei.mcp.framework.notification.builder.EnvironmentContext
-import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
-import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
-import os.kei.mcp.framework.notification.builder.NotificationPayload
-import os.kei.mcp.framework.notification.builder.UserSettings
+import os.kei.mcp.framework.notification.SessionNotifierImpl
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 import os.kei.ui.page.main.ba.support.BASettingsStore
@@ -212,6 +207,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         McpNotificationHelper.ensureChannel(context)
         val helper = NotificationHelper(context)
         val openPendingIntent = openBaPendingIntent(context, notificationId)
+        val focusOpenPendingIntent = focusOpenBaPendingIntent(context, notificationId)
         val acknowledgePendingIntent = acknowledgePendingIntent(context, notificationId)
         val payload = McpNotificationPayload(
             serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
@@ -223,6 +219,7 @@ internal object BaCalendarPoolNotificationDispatcher {
             onlyAlertOnce = false,
             openPendingIntent = openPendingIntent,
             stopPendingIntent = acknowledgePendingIntent,
+            focusOpenPendingIntent = focusOpenPendingIntent,
             secondaryActionLabel = context.getString(R.string.common_acknowledge),
             overrideTitle = title,
             overrideContent = content,
@@ -231,21 +228,13 @@ internal object BaCalendarPoolNotificationDispatcher {
             overrideProgressPercent = progressPercent.coerceIn(0, 100),
             deadlineAtMs = deadlineAtMs
         )
-        val wrapped = NotificationPayload(
-            state = payload,
-            settings = UserSettings(miIslandOuterGlow = true),
-            environment = EnvironmentContext(
-                channelId = McpNotificationHelper.LIVE_CHANNEL_ID,
-                isHyperOS = helper.isHyperOS,
-                preferOemLiveIconLayout = helper.preferOemLiveIconLayout
-            )
+        val buildResult = SessionNotifierImpl(helper).build(payload)
+        McpNotificationHelper.dispatchNotification(
+            context = context,
+            notificationId = notificationId,
+            notification = buildResult.notification,
+            useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        val notification = if (helper.isModernLiveUpdateEligible) {
-            ModernNotificationBuilder(context).build(wrapped)
-        } else {
-            LegacyNotificationBuilder(context).build(wrapped)
-        }
-        NotificationManagerCompat.from(context).notify(notificationId, notification)
         return true
     }
 
@@ -320,6 +309,19 @@ internal object BaCalendarPoolNotificationDispatcher {
         return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,
             520_100 + notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun focusOpenBaPendingIntent(context: Context, notificationId: Int): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
+        }
+        return PendingIntent.getActivity(
+            context,
+            522_100 + notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -7,14 +7,14 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-import os.kei.MainActivity
-import os.kei.mcp.notification.McpNotificationPayload
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import os.kei.MainActivity
+import os.kei.mcp.notification.McpNotificationPayload
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
@@ -114,6 +114,57 @@ class MiIslandNotificationBuilderTest {
             actual = focusParam.contains("\"title\":\"128\""),
             message = "AP progress island title should show current AP. focusParam=$focusParam"
         )
+    }
+
+    @Test
+    fun `calendar pool island uses focus progress and acknowledge action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 701,
+            action = "os.kei.test.OPEN_BA_CALENDAR_POOL"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            702,
+            Intent("os.kei.test.MARK_BA_CALENDAR_POOL_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
+                running = true,
+                port = 72,
+                path = "Event starts soon",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                secondaryActionLabel = "知道了",
+                overrideTitle = "活动即将开始",
+                overrideContent = "测试活动 将在 05-06 04:00 开始",
+                overrideOnlineText = "活动即将开始",
+                overrideShortText = "活动即将开始",
+                overrideProgressPercent = 72,
+                deadlineAtMs = 1778007600000L
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(stopPendingIntent, focusStopAction.actionIntent)
+        assertTrue(focusParam.contains("\"title\":\"活动即将开始\""))
+        assertTrue(focusParam.contains("\"progress\":72"))
+        assertTrue(focusParam.contains("mcp_action_stop"))
     }
 
     private fun buildOpenPendingIntent(

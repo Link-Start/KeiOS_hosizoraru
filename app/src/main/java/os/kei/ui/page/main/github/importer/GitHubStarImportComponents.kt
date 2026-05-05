@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
+import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideConfirmIcon
@@ -25,6 +26,7 @@ import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -174,9 +176,12 @@ private fun StarImportSourceButton(
 internal fun StarImportStatusCard(
     preview: GitHubStarredRepositoryImportPreview?,
     loading: Boolean,
+    loadingProgress: Float,
+    loadingPhase: String,
     importing: Boolean,
     error: String?,
-    selectedCount: Int
+    selectedCount: Int,
+    discoveredListCount: Int
 ) {
     val title = when {
         loading -> stringResource(R.string.github_star_import_status_loading)
@@ -193,6 +198,11 @@ internal fun StarImportStatusCard(
             preview.importableCount,
             preview.alreadyTrackedCount,
             selectedCount
+        )
+
+        discoveredListCount > 0 -> stringResource(
+            R.string.github_star_import_status_lists_ready_format,
+            discoveredListCount
         )
 
         else -> stringResource(R.string.github_star_import_status_waiting_summary)
@@ -219,6 +229,23 @@ internal fun StarImportStatusCard(
             )
         }
     ) {
+        if (loading) {
+            LiquidLinearProgressBar(
+                progress = { loadingProgress.coerceIn(0f, 1f) },
+                activeColor = GitHubStatusPalette.Active,
+                contentDescription = loadingPhase.ifBlank {
+                    stringResource(R.string.github_star_import_status_loading)
+                }
+            )
+            if (loadingPhase.isNotBlank()) {
+                Text(
+                    text = loadingPhase,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
         if (preview != null) {
             StarImportInfoLine(
                 label = stringResource(R.string.github_star_import_source_label),
@@ -227,6 +254,55 @@ internal fun StarImportStatusCard(
             )
         }
     }
+}
+
+@Composable
+internal fun StarImportStarListPickerCard(
+    lists: List<GitHubStarListSummary>,
+    loading: Boolean,
+    onSelect: (GitHubStarListSummary) -> Unit
+) {
+    AppFeatureCard(
+        title = stringResource(R.string.github_star_import_lists_title),
+        subtitle = stringResource(R.string.github_star_import_lists_summary_format, lists.size),
+        sectionIcon = appLucideListIcon(),
+        showIndication = false
+    ) {
+        lists.forEach { list ->
+            StarImportListChoiceButton(
+                list = list,
+                enabled = !loading,
+                onClick = { onSelect(list) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun StarImportListChoiceButton(
+    list: GitHubStarListSummary,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    AppLiquidTextButton(
+        backdrop = null,
+        text = if (list.repositoryCount >= 0) {
+            stringResource(
+                R.string.github_star_import_list_choice_format,
+                list.name,
+                list.repositoryCount
+            )
+        } else {
+            list.name
+        },
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = enabled,
+        variant = GlassVariant.Content,
+        leadingIcon = appLucideListIcon(),
+        textMaxLines = 1,
+        textOverflow = TextOverflow.Ellipsis
+    )
 }
 
 @Composable

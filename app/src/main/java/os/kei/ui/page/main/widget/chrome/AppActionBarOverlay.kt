@@ -12,13 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 
 @Composable
 fun BoxScope.AppTopEndActionBarOverlay(
     modifier: Modifier = Modifier,
-    topSpacing: Dp = 8.dp,
-    endSpacing: Dp = 8.dp,
+    topSpacing: Dp = AppChromeTokens.topBarChromeTopPadding,
+    endSpacing: Dp = AppChromeTokens.topBarHorizontalPadding,
     content: @Composable () -> Unit
 ) {
     val layoutDirection = LocalLayoutDirection.current

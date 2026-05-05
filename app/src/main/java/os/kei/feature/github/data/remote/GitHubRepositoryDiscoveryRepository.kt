@@ -9,6 +9,7 @@ import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
+import os.kei.feature.github.model.GitHubStarListSummary
 import java.net.URI
 import java.net.URLEncoder
 import java.time.Instant
@@ -94,6 +95,13 @@ internal class GitHubRepositoryDiscoveryRepository(
         }
         candidates
     }
+
+    override fun fetchStarLists(starListsUrl: String): Result<List<GitHubStarListSummary>> =
+        runCatching {
+            val pathAndQuery = normalizeStarListsOverviewPath(starListsUrl)
+            val response = fetchWeb(buildWebUrl(pathAndQuery))
+            parseStarListSummaries(response.bodyText)
+        }
 
     private fun fetchStarredRepositories(
         firstPagePath: String,
@@ -201,6 +209,94 @@ internal class GitHubRepositoryDiscoveryRepository(
             "Invalid GitHub star list URL."
         }
         return "/" + segments.take(if (segments.size >= 4) 4 else 2).joinToString("/")
+    }
+
+    private fun normalizeStarListsOverviewPath(starListsUrl: String): String {
+        val raw = starListsUrl.trim().trimEnd('/')
+        check(raw.isNotBlank()) { "GitHub stars URL is required." }
+        val parsed = runCatching { URI(raw) }.getOrNull()
+        if (parsed != null && parsed.host?.contains("github.com", ignoreCase = true) == true) {
+            val path = parsed.rawPath.orEmpty().ifBlank { "/" }
+            val query = parsed.rawQuery.orEmpty()
+            val segments = path.trim('/').split('/').filter { it.isNotBlank() }
+            if (segments.size >= 2 && segments.first().equals("stars", ignoreCase = true)) {
+                return "/" + segments.take(2).joinToString("/")
+            }
+            if (segments.size == 1 && query.split('&').any {
+                    it.equals("tab=stars", ignoreCase = true)
+                }
+            ) {
+                return "/${segments.single()}?tab=stars"
+            }
+        }
+        val rawPath = when {
+            raw.startsWith("/stars/") -> raw.substringBefore('?')
+            raw.startsWith("stars/") -> "/$raw".substringBefore('?')
+            raw.matches(githubUsernameRegex) -> "/$raw?tab=stars"
+            else -> ""
+        }
+        val segments = rawPath.trim('/').split('/').filter { it.isNotBlank() }
+        check(
+            segments.size >= 2 && segments.first().equals("stars", ignoreCase = true) ||
+                    segments.size == 1 && segments.single().matches(githubUsernameRegex)
+        ) {
+            "Invalid GitHub stars URL."
+        }
+        return if (segments.size == 1) {
+            "/${segments.single()}?tab=stars"
+        } else {
+            "/" + segments.take(2).joinToString("/")
+        }
+    }
+
+    private fun parseStarListSummaries(html: String): List<GitHubStarListSummary> {
+        return htmlStarListLinkRegex.findAll(html)
+            .mapNotNull { match ->
+                val href = match.groupValues.getOrNull(1).orEmpty().htmlUnescape()
+                val body = match.groupValues.getOrNull(2).orEmpty()
+                val path = normalizeStarListHrefPath(href) ?: return@mapNotNull null
+                val text = body
+                    .replace(htmlTagRegex, " ")
+                    .htmlUnescape()
+                    .replace(Regex("""\s+"""), " ")
+                    .trim()
+                val count = repositoryCountRegex.find(text)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.replace(",", "")
+                    ?.toIntOrNull()
+                    ?: -1
+                val name = text
+                    .replace(repositoryCountRegex, "")
+                    .trim()
+                    .ifBlank { path.substringAfterLast('/').replace('-', ' ') }
+                GitHubStarListSummary(
+                    name = name,
+                    repositoryCount = count,
+                    url = "https://github.com$path"
+                )
+            }
+            .distinctBy { it.url.lowercase() }
+            .toList()
+    }
+
+    private fun normalizeStarListHrefPath(href: String): String? {
+        val uri = runCatching { URI(href) }.getOrNull()
+        val path = when {
+            uri != null && uri.host?.contains("github.com", ignoreCase = true) == true -> uri.path
+            href.startsWith("/") -> href
+            else -> return null
+        }.trim('/')
+        val parts = path.split('/').filter { it.isNotBlank() }
+        if (parts.size < 4) return null
+        if (!parts[0].equals("stars", ignoreCase = true)) return null
+        if (!parts[2].equals("lists", ignoreCase = true)) return null
+        val user = parts[1]
+        val slug = parts[3]
+        if (!githubUsernameRegex.matches(user) || !repositoryPathSegmentRegex.matches(slug)) {
+            return null
+        }
+        return "/stars/$user/lists/$slug"
     }
 
     private fun parseStarListRepositoryCandidates(html: String): List<GitHubRepositoryCandidate> {
@@ -329,7 +425,16 @@ internal class GitHubRepositoryDiscoveryRepository(
             """rel=["']next["']""",
             RegexOption.IGNORE_CASE
         )
+        private val htmlStarListLinkRegex = Regex(
+            """<a\b[^>]*href=["']([^"']*/stars/[^"']+/lists/[^"']+)["'][^>]*>(.*?)</a>""",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        )
+        private val htmlTagRegex = Regex("""<[^>]+>""")
+        private val repositoryCountRegex = Regex(
+            """(?i)(\d[\d,]*)\s+repositories?"""
+        )
         private val repositoryPathSegmentRegex = Regex("""[A-Za-z0-9_.-]+""")
+        private val githubUsernameRegex = Regex("""[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?""")
         private val reservedRepositoryOwners = setOf(
             "about",
             "apps",

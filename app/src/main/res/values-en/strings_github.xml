@@ -418,11 +418,19 @@
     <string name="github_star_import_requirement_label">Requirement</string>
     <string name="github_star_import_requirement_token">Add a GitHub API token in the fetch strategy sheet.</string>
     <string name="github_star_import_requirement_username">Enter a GitHub username to read public stars.</string>
-    <string name="github_star_import_requirement_list_url">Paste a GitHub /stars/... or /stars/.../lists/... URL.</string>
+    <string name="github_star_import_requirement_list_url">Paste a GitHub profile stars page, /stars/..., or /stars/.../lists/... URL.</string>
     <string name="github_star_import_sample_label">Example</string>
     <string name="github_star_import_sample_token">Example: ghp_xxx...; configure the token in the GitHub fetch strategy sheet.</string>
     <string name="github_star_import_sample_username">Example: octocat</string>
-    <string name="github_star_import_sample_list_url">Example: /stars/octocat/lists/android</string>
+    <string name="github_star_import_sample_list_url">Example: https://github.com/octocat?tab=stars</string>
+    <string name="github_star_import_loading_source">Checking import source</string>
+    <string name="github_star_import_loading_lists">Finding public Star List categories</string>
+    <string name="github_star_import_loading_repositories">Reading starred repositories</string>
+    <string name="github_star_import_loading_preview">Building import preview</string>
+    <string name="github_star_import_status_lists_ready_format">Found %1$d public Star Lists. Choose a category to continue.</string>
+    <string name="github_star_import_lists_title">Choose Star List category</string>
+    <string name="github_star_import_lists_summary_format">Found %1$d public categories for category-based import.</string>
+    <string name="github_star_import_list_choice_format">%1$s · %2$d repositories</string>
     <string name="github_star_import_controls_title">Filter and import</string>
     <string name="github_star_import_controls_summary_format">%1$d visible, %2$d selected.</string>
     <string name="github_star_import_filter_all">All</string>

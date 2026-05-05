@@ -12,9 +12,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,6 +26,7 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
+import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -32,6 +35,7 @@ import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @Composable
@@ -50,7 +54,10 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     var viewFilter by remember { mutableStateOf(StarImportViewFilter.All) }
     var preview by remember { mutableStateOf<GitHubStarredRepositoryImportPreview?>(null) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var starLists by remember { mutableStateOf<List<GitHubStarListSummary>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
+    var loadingProgress by remember { mutableStateOf(0f) }
+    var loadingPhase by remember { mutableStateOf("") }
     var importing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -84,41 +91,108 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         .map { it.trackedApp.id }
         .toSet()
 
-    fun loadPreview() {
+    fun loadPreview(forcedStarListUrl: String? = null) {
         if (loading || importing) return
-        if (!sourceReady) {
-            error = context.getString(source.requirementMessageRes)
+        val targetSource = if (forcedStarListUrl != null) StarImportUiSource.ListUrl else source
+        val targetListUrl = forcedStarListUrl ?: listUrlInput.trim()
+        val targetReady = targetSource.isReady(
+            token = lookupConfig.apiToken,
+            username = usernameInput,
+            listUrl = targetListUrl
+        )
+        if (!targetReady) {
+            error = context.getString(targetSource.requirementMessageRes)
             return
         }
         loading = true
+        loadingProgress = 0.08f
+        loadingPhase = context.getString(R.string.github_star_import_loading_source)
         error = null
+        if (forcedStarListUrl == null) {
+            starLists = emptyList()
+        }
+        val targetUsername = usernameInput.toGitHubUsernameInput()
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
+                    val repository =
+                        GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken)
+                    if (
+                        targetSource == StarImportUiSource.ListUrl &&
+                        forcedStarListUrl == null &&
+                        targetListUrl.isGitHubStarsOverviewInput()
+                    ) {
+                        withContext(Dispatchers.Main) {
+                            loadingProgress = 0.34f
+                            loadingPhase =
+                                context.getString(R.string.github_star_import_loading_lists)
+                        }
+                        val lists = repository.fetchStarLists(targetListUrl).getOrThrow()
+                        if (lists.isNotEmpty()) {
+                            return@runCatching StarImportLoadResult.Lists(lists)
+                        }
+                    }
+                    val resolvedListUrl = if (
+                        targetSource == StarImportUiSource.ListUrl &&
+                        forcedStarListUrl == null &&
+                        targetListUrl.isGitHubStarsOverviewInput()
+                    ) {
+                        targetListUrl.toGitHubStarsRepositoryUrlInput()
+                    } else {
+                        targetListUrl
+                    }
+                    withContext(Dispatchers.Main) {
+                        loadingProgress = 0.64f
+                        loadingPhase =
+                            context.getString(R.string.github_star_import_loading_repositories)
+                    }
                     val request = GitHubStarredRepositoryImportRequest(
-                        source = source.toRequestSource(),
-                        username = usernameInput.trim(),
-                        starListUrl = listUrlInput.trim(),
+                        source = targetSource.toRequestSource(),
+                        username = targetUsername,
+                        starListUrl = resolvedListUrl,
                         apiToken = lookupConfig.apiToken,
                         limit = 1_000
                     )
-                    GitHubRepositoryDiscoveryService(
-                        GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken)
-                    ).previewStarredRepositoryImport(
+                    val preview =
+                        GitHubRepositoryDiscoveryService(repository).previewStarredRepositoryImport(
                         request = request,
                         existingItems = GitHubTrackStore.load()
                     ).getOrThrow()
+                    withContext(Dispatchers.Main) {
+                        loadingProgress = 0.88f
+                        loadingPhase =
+                            context.getString(R.string.github_star_import_loading_preview)
+                    }
+                    StarImportLoadResult.Preview(preview)
                 }
             }
             loading = false
-            result.onSuccess { nextPreview ->
-                preview = nextPreview
-                selectedIds = nextPreview.candidates
-                    .filterNot { it.alreadyTracked }
-                    .map { it.trackedApp.id }
-                    .toSet()
+            loadingProgress = 1f
+            result.onSuccess { loadResult ->
+                when (loadResult) {
+                    is StarImportLoadResult.Lists -> {
+                        preview = null
+                        selectedIds = emptySet()
+                        starLists = loadResult.items
+                        loadingPhase = context.getString(
+                            R.string.github_star_import_status_lists_ready_format,
+                            loadResult.items.size
+                        )
+                    }
+
+                    is StarImportLoadResult.Preview -> {
+                        val nextPreview = loadResult.preview
+                        preview = nextPreview
+                        starLists = emptyList()
+                        selectedIds = nextPreview.candidates
+                            .filterNot { it.alreadyTracked }
+                            .map { it.trackedApp.id }
+                            .toSet()
+                    }
+                }
             }.onFailure { throwable ->
                 error = throwable.message.orEmpty().ifBlank { throwable.javaClass.simpleName }
+                loadingPhase = ""
             }
         }
     }
@@ -151,8 +225,11 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         error = null
         preview = null
         selectedIds = emptySet()
+        starLists = emptyList()
         filterInput = ""
         viewFilter = StarImportViewFilter.All
+        loadingProgress = 0f
+        loadingPhase = ""
     }
 
     AppPageScaffold(
@@ -161,7 +238,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
-        reserveTopEndActionSpace = true,
+        reserveTopEndActionSpace = false,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),
@@ -176,13 +253,20 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.github_star_import_cd_load),
                 onClick = { loadPreview() },
-                enabled = sourceReady && !loading && !importing
+                enabled = sourceReady && !loading && !importing,
+                width = 52.dp,
+                height = 52.dp,
+                variant = GlassVariant.Bar
             )
         }
     ) { innerPadding ->
         AppPageLazyColumn(
             innerPadding = innerPadding,
             state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .layerBackdrop(pageBackdrop),
             sectionSpacing = 10.dp
         ) {
             item {
@@ -200,13 +284,28 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                     onLoadPreview = { loadPreview() }
                 )
             }
+            if (starLists.isNotEmpty()) {
+                item {
+                    StarImportStarListPickerCard(
+                        lists = starLists,
+                        loading = loading,
+                        onSelect = { list ->
+                            listUrlInput = list.url
+                            loadPreview(forcedStarListUrl = list.url)
+                        }
+                    )
+                }
+            }
             item {
                 StarImportStatusCard(
                     preview = preview,
                     loading = loading,
+                    loadingProgress = loadingProgress,
+                    loadingPhase = loadingPhase,
                     importing = importing,
                     error = error,
-                    selectedCount = selectedImportableCount
+                    selectedCount = selectedImportableCount,
+                    discoveredListCount = starLists.size
                 )
             }
             if (preview != null) {
@@ -251,4 +350,9 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
             }
         }
     }
+}
+
+private sealed interface StarImportLoadResult {
+    data class Lists(val items: List<GitHubStarListSummary>) : StarImportLoadResult
+    data class Preview(val preview: GitHubStarredRepositoryImportPreview) : StarImportLoadResult
 }

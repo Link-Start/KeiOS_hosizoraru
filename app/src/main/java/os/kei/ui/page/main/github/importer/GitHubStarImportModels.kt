@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.importer
 import androidx.annotation.StringRes
 import os.kei.R
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
+import java.net.URI
 
 internal enum class StarImportViewFilter(@param:StringRes val labelRes: Int) {
     All(R.string.github_star_import_filter_all),
@@ -39,7 +40,7 @@ internal enum class StarImportUiSource(
     ): Boolean {
         return when (this) {
             MyStars -> token.trim().isNotBlank()
-            PublicUser -> username.trim().isNotBlank()
+            PublicUser -> username.isValidGitHubUsernameInput()
             ListUrl -> listUrl.trim().isValidGitHubStarListInput()
         }
     }
@@ -53,12 +54,130 @@ internal enum class StarImportUiSource(
     }
 }
 
+internal fun String.isValidGitHubUsernameInput(): Boolean {
+    return toGitHubUsernameInput().isNotBlank()
+}
+
+internal fun String.toGitHubUsernameInput(): String {
+    val raw = trim()
+    if (raw.isBlank()) return ""
+    val parsed = raw.parseGitHubUri()
+    if (parsed != null) {
+        val parts = parsed.path.orEmpty().trim('/').split('/').filter { it.isNotBlank() }
+        return when {
+            parts.size >= 2 && parts.first().equals("stars", ignoreCase = true) ->
+                parts[1].validGitHubUsernameOrBlank()
+
+            parts.size == 1 ->
+                parts.single().validGitHubProfileUsernameOrBlank()
+
+            else -> ""
+        }
+    }
+    val pathParts = raw.substringBefore('?')
+        .substringBefore('#')
+        .trim('/')
+        .split('/')
+        .filter { it.isNotBlank() }
+    return when {
+        pathParts.size >= 2 && pathParts.first().equals("stars", ignoreCase = true) ->
+            pathParts[1].validGitHubUsernameOrBlank()
+
+        pathParts.size == 1 && '/' !in raw ->
+            pathParts.single().removePrefix("@").validGitHubProfileUsernameOrBlank()
+
+        else -> ""
+    }
+}
+
 internal fun String.isValidGitHubStarListInput(): Boolean {
     val value = trim().trimEnd('/')
     return value.startsWith("/stars/", ignoreCase = true) ||
             value.startsWith("stars/", ignoreCase = true) ||
             value.startsWith("https://github.com/stars/", ignoreCase = true) ||
-            value.startsWith("http://github.com/stars/", ignoreCase = true)
+            value.startsWith("http://github.com/stars/", ignoreCase = true) ||
+            value.isGitHubProfileStarsUrl()
+}
+
+internal fun String.isDirectGitHubStarListInput(): Boolean {
+    val path = gitHubStarsInputPath() ?: return false
+    val parts = path.trim('/').split('/').filter { it.isNotBlank() }
+    return parts.size >= 4 &&
+            parts[0].equals("stars", ignoreCase = true) &&
+            parts[2].equals("lists", ignoreCase = true)
+}
+
+internal fun String.isGitHubStarsOverviewInput(): Boolean {
+    if (isDirectGitHubStarListInput()) return false
+    val path = gitHubStarsInputPath() ?: return false
+    val parts = path.trim('/').split('/').filter { it.isNotBlank() }
+    return parts.size == 2 && parts[0].equals("stars", ignoreCase = true) ||
+            isGitHubProfileStarsUrl()
+}
+
+internal fun String.toGitHubStarsRepositoryUrlInput(): String {
+    val parsed = runCatching { URI(trim()) }.getOrNull() ?: return trim()
+    if (parsed.host?.contains("github.com", ignoreCase = true) != true) return trim()
+    val parts = parsed.path.orEmpty().trim('/').split('/').filter { it.isNotBlank() }
+    return if (parts.size == 1 && parsed.query.orEmpty().split('&').any {
+            it.equals("tab=stars", ignoreCase = true)
+        }
+    ) {
+        "/stars/${parts.single()}"
+    } else {
+        trim()
+    }
+}
+
+private fun String.gitHubStarsInputPath(): String? {
+    val raw = trim().trimEnd('/')
+    val parsed = raw.parseGitHubUri()
+    return when {
+        parsed != null ->
+            parsed.path.orEmpty()
+
+        raw.startsWith("/stars/", ignoreCase = true) -> raw.substringBefore('?')
+        raw.startsWith("stars/", ignoreCase = true) -> "/$raw".substringBefore('?')
+        else -> null
+    }
+}
+
+private fun String.isGitHubProfileStarsUrl(): Boolean {
+    val parsed = trim().parseGitHubUri() ?: return false
+    val parts = parsed.path.orEmpty().trim('/').split('/').filter { it.isNotBlank() }
+    return parts.size == 1 && parsed.query.orEmpty().split('&').any {
+        it.equals("tab=stars", ignoreCase = true)
+    }
+}
+
+private fun String.parseGitHubUri(): URI? {
+    val raw = trim()
+    val candidate = when {
+        raw.startsWith("https://", ignoreCase = true) ||
+                raw.startsWith("http://", ignoreCase = true) -> raw
+
+        raw.startsWith("github.com/", ignoreCase = true) ||
+                raw.startsWith("www.github.com/", ignoreCase = true) -> "https://$raw"
+
+        else -> return null
+    }
+    val parsed = runCatching { URI(candidate) }.getOrNull() ?: return null
+    val host = parsed.host.orEmpty().removePrefix("www.")
+    return if (host.equals("github.com", ignoreCase = true)) parsed else null
+}
+
+private fun String.validGitHubProfileUsernameOrBlank(): String {
+    val value = validGitHubUsernameOrBlank()
+    return if (value.isNotBlank() && value.lowercase() !in reservedGitHubProfileSegments) {
+        value
+    } else {
+        ""
+    }
+}
+
+private fun String.validGitHubUsernameOrBlank(): String {
+    val value = trim()
+    return if (githubUsernameInputRegex.matches(value)) value else ""
 }
 
 internal fun Int.formatStarCount(): String {
@@ -72,3 +191,34 @@ internal fun Int.formatStarCount(): String {
 private fun String.trimTrailingZeroDecimal(): String {
     return replace(".0", "")
 }
+
+private val githubUsernameInputRegex = Regex("""[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?""")
+
+private val reservedGitHubProfileSegments = setOf(
+    "about",
+    "apps",
+    "blog",
+    "collections",
+    "contact",
+    "dashboard",
+    "enterprise",
+    "events",
+    "explore",
+    "features",
+    "issues",
+    "join",
+    "login",
+    "marketplace",
+    "new",
+    "notifications",
+    "organizations",
+    "orgs",
+    "pricing",
+    "pulls",
+    "repositories",
+    "search",
+    "settings",
+    "stars",
+    "topics",
+    "trending"
+)

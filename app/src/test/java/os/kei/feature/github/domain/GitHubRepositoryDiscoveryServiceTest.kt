@@ -5,6 +5,7 @@ import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
+import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -177,6 +178,10 @@ class GitHubRepositoryDiscoveryServiceTest {
             limit: Int
         ): Result<List<GitHubRepositoryCandidate>> {
             return Result.success(starList.take(limit))
+        }
+
+        override fun fetchStarLists(starListsUrl: String): Result<List<GitHubStarListSummary>> {
+            return Result.success(emptyList())
         }
     }
 

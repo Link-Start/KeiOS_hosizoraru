@@ -48,6 +48,12 @@ enum class GitHubStarredRepositoryImportSource {
     StarListUrl
 }
 
+data class GitHubStarListSummary(
+    val name: String,
+    val repositoryCount: Int,
+    val url: String
+)
+
 data class GitHubAppRepositorySearchRequest(
     val app: InstalledAppItem,
     val apiToken: String = "",

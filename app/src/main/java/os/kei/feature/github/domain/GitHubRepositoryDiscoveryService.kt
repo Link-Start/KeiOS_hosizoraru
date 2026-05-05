@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
+import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
@@ -26,6 +27,10 @@ internal interface GitHubRepositoryDiscoverySource {
         starListUrl: String,
         limit: Int
     ): Result<List<GitHubRepositoryCandidate>>
+
+    fun fetchStarLists(starListsUrl: String): Result<List<GitHubStarListSummary>> {
+        return Result.success(emptyList())
+    }
 }
 
 internal class GitHubRepositoryDiscoveryService(

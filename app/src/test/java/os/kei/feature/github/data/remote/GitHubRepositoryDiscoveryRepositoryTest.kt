@@ -174,6 +174,55 @@ class GitHubRepositoryDiscoveryRepositoryTest {
         }
     }
 
+    @Test
+    fun `star lists parser reads public list links from profile stars page`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        """
+                        <html>
+                          <body>
+                            <a href="/stars/hosizoraru/lists/android-apk">
+                              <span>android apk</span>
+                              <span>154 repositories</span>
+                            </a>
+                            <a href="https://github.com/stars/hosizoraru/lists/xposed">
+                              xposed
+                              208 repositories
+                            </a>
+                          </body>
+                        </html>
+                        """.trimIndent()
+                    )
+            )
+            val repository = GitHubRepositoryDiscoveryRepository(
+                apiToken = "token-123",
+                client = OkHttpClient(),
+                apiBaseUrl = server.url("/api").toString(),
+                webBaseUrl = server.url("/").toString()
+            )
+
+            val lists = repository.fetchStarLists(
+                starListsUrl = "https://github.com/hosizoraru?tab=stars"
+            ).getOrThrow()
+
+            assertEquals(listOf("android apk", "xposed"), lists.map { it.name })
+            assertEquals(listOf(154, 208), lists.map { it.repositoryCount })
+            assertEquals(
+                listOf(
+                    "https://github.com/stars/hosizoraru/lists/android-apk",
+                    "https://github.com/stars/hosizoraru/lists/xposed"
+                ),
+                lists.map { it.url }
+            )
+            val request = server.takeRequest()
+            assertEquals("/hosizoraru?tab=stars", request.path)
+            assertEquals("Bearer token-123", request.getHeader("Authorization"))
+        }
+    }
+
 
     private fun repositoryArrayJson(vararg items: String): String {
         return items.joinToString(prefix = "[", postfix = "]")

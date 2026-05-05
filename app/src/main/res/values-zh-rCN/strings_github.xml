@@ -418,11 +418,19 @@
     <string name="github_star_import_requirement_label">准备条件</string>
     <string name="github_star_import_requirement_token">需要在抓取方案中填写 GitHub API Token。</string>
     <string name="github_star_import_requirement_username">输入 GitHub 用户名后读取公开 stars。</string>
-    <string name="github_star_import_requirement_list_url">粘贴 GitHub /stars/... 或 /stars/.../lists/... 链接。</string>
+    <string name="github_star_import_requirement_list_url">粘贴 GitHub 个人 stars 页、/stars/... 或 /stars/.../lists/... 链接。</string>
     <string name="github_star_import_sample_label">填写示例</string>
     <string name="github_star_import_sample_token">示例：ghp_xxx...；在抓取方案配置。</string>
     <string name="github_star_import_sample_username">示例：octocat</string>
-    <string name="github_star_import_sample_list_url">示例：/stars/octocat/lists/android</string>
+    <string name="github_star_import_sample_list_url">示例：https://github.com/octocat?tab=stars</string>
+    <string name="github_star_import_loading_source">正在检查导入来源</string>
+    <string name="github_star_import_loading_lists">正在查找公开 Star List 分类</string>
+    <string name="github_star_import_loading_repositories">正在读取 starred repositories</string>
+    <string name="github_star_import_loading_preview">正在生成可导入预览</string>
+    <string name="github_star_import_status_lists_ready_format">已发现 %1$d 个公开 Star List，选择一个分类后继续读取。</string>
+    <string name="github_star_import_lists_title">选择 Star List 分类</string>
+    <string name="github_star_import_lists_summary_format">发现 %1$d 个公开分类，可按分类导入。</string>
+    <string name="github_star_import_list_choice_format">%1$s · %2$d repositories</string>
     <string name="github_star_import_controls_title">筛选与导入</string>
     <string name="github_star_import_controls_summary_format">当前显示 %1$d 个，已选择 %2$d 个。</string>
     <string name="github_star_import_filter_all">全部</string>

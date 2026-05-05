@@ -11,6 +11,10 @@
     <string name="about_value_glass_material">Backdrop %1$s · Capsule %2$s · Shapes %3$s</string>
     <string name="about_value_permission_bridge">Shizuku SDK %1$s · API %2$s</string>
     <string name="about_value_icon_set">Lucide Icons %1$s</string>
+    <string name="about_category_overview">概览</string>
+    <string name="about_category_runtime">运行</string>
+    <string name="about_category_security">权限</string>
+    <string name="about_category_tech">技术</string>
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>

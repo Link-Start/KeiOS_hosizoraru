@@ -207,7 +207,6 @@ private fun BaActivityCalendarPage(
                 } else {
                     MiuixTheme.colorScheme.primary
                 },
-                containerColor = if (calendarUiState.loading) countdownBlue else null,
             )
         }
     ) { innerPadding ->

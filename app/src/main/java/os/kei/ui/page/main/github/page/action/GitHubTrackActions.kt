@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
+import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
@@ -58,7 +59,7 @@ internal class GitHubTrackActions(
     }
 
     fun scanPackageNameFromRepo() {
-        if (state.packageNameScanRunning) return
+        if (state.packageNameScanRunning || state.repoUrlScanRunning) return
         if (state.repoUrlInput.isBlank()) {
             env.toast(R.string.github_toast_fill_repo_and_select_app)
             return
@@ -87,6 +88,60 @@ internal class GitHubTrackActions(
                 env.toast(R.string.github_toast_package_scan_success, result.packageName)
             } finally {
                 state.packageNameScanRunning = false
+            }
+        }
+    }
+
+    fun scanRepoUrlFromPackage() {
+        if (state.repoUrlScanRunning || state.packageNameScanRunning) return
+        val packageName = state.packageNameInput.trim().ifBlank {
+            state.selectedApp?.packageName.orEmpty().trim()
+        }
+        if (packageName.isBlank()) {
+            env.toast(R.string.github_toast_repo_scan_requires_package)
+            return
+        }
+        val appLabel = state.selectedApp?.label?.trim().orEmpty()
+            .ifBlank {
+                state.appList.firstOrNull { app ->
+                    app.packageName.equals(packageName, ignoreCase = true)
+                }?.label?.trim().orEmpty()
+            }
+        state.repoUrlScanRunning = true
+        scope.launch {
+            try {
+                val result = repository.scanRepositoryFromPackage(
+                    GitHubPackageRepositoryScanRequest(
+                        packageName = packageName,
+                        appLabel = appLabel,
+                        lookupConfig = state.lookupConfig
+                    )
+                ).getOrElse { error ->
+                    env.toast(
+                        R.string.github_toast_repo_scan_failed,
+                        error.message.orEmpty().ifBlank {
+                            env.string(R.string.github_error_repo_scan_failed)
+                        }
+                    )
+                    return@launch
+                }
+                val candidate = result.matchedCandidates.firstOrNull()
+                if (candidate == null) {
+                    env.toast(R.string.github_toast_repo_scan_no_match)
+                    return@launch
+                }
+                state.repoUrlInput = candidate.trackedApp.repoUrl
+                state.packageNameInput = candidate.trackedApp.packageName
+                state.selectedApp = state.appList.firstOrNull { app ->
+                    app.packageName.equals(candidate.trackedApp.packageName, ignoreCase = true)
+                } ?: state.selectedApp
+                env.toast(
+                    R.string.github_toast_repo_scan_success,
+                    candidate.repository.owner,
+                    candidate.repository.repo
+                )
+            } finally {
+                state.repoUrlScanRunning = false
             }
         }
     }

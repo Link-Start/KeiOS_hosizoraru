@@ -247,6 +247,8 @@ internal class GitHubPageActions(
 
     fun scanPackageNameFromRepo() = trackActions.scanPackageNameFromRepo()
 
+    fun scanRepoUrlFromPackage() = trackActions.scanRepoUrlFromPackage()
+
     fun applyTrackSheet() = trackActions.applyTrackSheet()
 
     fun confirmDeletePendingItem() = trackActions.confirmDeletePendingItem()

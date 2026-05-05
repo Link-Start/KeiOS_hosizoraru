@@ -24,6 +24,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
+import os.kei.feature.github.domain.GitHubPackageRepositoryResolver
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
 import os.kei.feature.github.domain.GitHubStrategyBenchmarkService
@@ -34,6 +35,8 @@ import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
+import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
 import os.kei.feature.github.model.GitHubRepoTarget
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
@@ -526,6 +529,21 @@ internal class GitHubPageRepository(
             GitHubApkPackageNameScanner(
                 GitHubApkPackageNameScanRepository()
             ).scan(request)
+        }
+    }
+
+    suspend fun scanRepositoryFromPackage(
+        request: GitHubPackageRepositoryScanRequest
+    ): Result<GitHubPackageRepositoryScanResult> {
+        return withContext(ioDispatcher) {
+            GitHubPackageRepositoryResolver(
+                discoverySource = GitHubRepositoryDiscoveryRepository(
+                    apiToken = request.lookupConfig.apiToken
+                ),
+                packageNameScanner = GitHubApkPackageNameScanner(
+                    GitHubApkPackageNameScanRepository()
+                )
+            ).scanRepositoriesForPackage(request)
         }
     }
 

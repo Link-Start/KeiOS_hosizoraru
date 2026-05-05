@@ -136,6 +136,7 @@ internal fun GitHubPageSheetHost(
         repoUrlInput = state.repoUrlInput,
         appSearch = state.appSearch,
         packageNameInput = state.packageNameInput,
+        repoUrlScanRunning = state.repoUrlScanRunning,
         packageNameScanRunning = state.packageNameScanRunning,
         pickerExpanded = state.pickerExpanded,
         selectedApp = state.selectedApp,
@@ -158,6 +159,7 @@ internal fun GitHubPageSheetHost(
                 }
             }
         },
+        onScanRepoUrl = actions::scanRepoUrlFromPackage,
         onScanPackageName = actions::scanPackageNameFromRepo,
         onPickerExpandedChange = { state.pickerExpanded = it },
         onSelectedAppChange = { app ->

@@ -54,6 +54,7 @@ internal fun GitHubTrackEditSheet(
     repoUrlInput: String,
     appSearch: String,
     packageNameInput: String,
+    repoUrlScanRunning: Boolean,
     packageNameScanRunning: Boolean,
     pickerExpanded: Boolean,
     selectedApp: InstalledAppItem?,
@@ -65,6 +66,7 @@ internal fun GitHubTrackEditSheet(
     onRepoUrlInputChange: (String) -> Unit,
     onAppSearchChange: (String) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
+    onScanRepoUrl: () -> Unit,
     onScanPackageName: () -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
@@ -137,12 +139,14 @@ internal fun GitHubTrackEditSheet(
                     backdrop = backdrop,
                     repoUrlInput = repoUrlInput,
                     packageNameInput = packageNameInput,
+                    repoUrlScanRunning = repoUrlScanRunning,
                     packageNameScanRunning = packageNameScanRunning,
                     selectedApp = selectedApp,
                     preferPreReleaseInput = preferPreReleaseInput,
                     alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
                     onRepoUrlInputChange = onRepoUrlInputChange,
                     onPackageNameInputChange = onPackageNameInputChange,
+                    onScanRepoUrl = onScanRepoUrl,
                     onScanPackageName = onScanPackageName,
                     onPickerExpandedChange = onPickerExpandedChange,
                     onPreferPreReleaseInputChange = onPreferPreReleaseInputChange,
@@ -158,21 +162,51 @@ private fun GitHubTrackEditFormContent(
     backdrop: LayerBackdrop,
     repoUrlInput: String,
     packageNameInput: String,
+    repoUrlScanRunning: Boolean,
     packageNameScanRunning: Boolean,
     selectedApp: InstalledAppItem?,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
+    onScanRepoUrl: () -> Unit,
     onScanPackageName: () -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
 ) {
+    val canScanRepoUrl = !repoUrlScanRunning &&
+            !packageNameScanRunning &&
+            (packageNameInput.isNotBlank() || selectedApp != null)
+    val canScanPackageName = !repoUrlScanRunning &&
+            !packageNameScanRunning &&
+            repoUrlInput.isNotBlank()
+
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSectionTitle(stringResource(R.string.github_track_sheet_section_repository))
         SheetSectionCard {
-            SheetInputTitle(stringResource(R.string.github_track_sheet_input_repo))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SheetInputTitle(stringResource(R.string.github_track_sheet_input_repo))
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = if (repoUrlScanRunning) {
+                        stringResource(R.string.github_track_sheet_btn_scan_repo_running)
+                    } else {
+                        stringResource(R.string.github_track_sheet_btn_scan_repo)
+                    },
+                    enabled = canScanRepoUrl,
+                    onClick = onScanRepoUrl,
+                    minHeight = 30.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 4.dp,
+                    textMaxLines = 1
+                )
+            }
             AppLiquidSearchField(
                 value = repoUrlInput,
                 onValueChange = onRepoUrlInputChange,
@@ -202,7 +236,7 @@ private fun GitHubTrackEditFormContent(
                     } else {
                         stringResource(R.string.github_track_sheet_btn_scan_package)
                     },
-                    enabled = !packageNameScanRunning && repoUrlInput.isNotBlank(),
+                    enabled = canScanPackageName,
                     onClick = onScanPackageName,
                     minHeight = 30.dp,
                     horizontalPadding = 10.dp,

@@ -164,7 +164,9 @@
     <string name="github_msg_assets_no_downloadable">%1$s currently has no directly downloadable assets</string>
     <string name="github_error_load_apk_assets_failed">Failed to load APK assets</string>
     <string name="github_error_package_scan_failed">Package scan failed</string>
+    <string name="github_error_repo_scan_failed">Project URL scan failed</string>
     <string name="github_toast_fill_repo_and_select_app">Enter a valid repository URL</string>
+    <string name="github_toast_repo_scan_requires_package">Enter a package name or select a local app first</string>
     <string name="github_toast_invalid_package_name">Invalid package name format</string>
     <string name="github_toast_track_exists">This item already exists</string>
     <string name="github_toast_track_added">Tracking added</string>
@@ -177,6 +179,9 @@
     <string name="github_toast_track_import_failed">Tracked project import failed: %1$s</string>
     <string name="github_toast_track_import_no_valid">The import file contains no valid tracked projects</string>
     <string name="github_toast_track_imported_summary">Import completed: added %1$d, updated %2$d, unchanged %3$d, ignored %4$d</string>
+    <string name="github_toast_repo_scan_success">Project URL scanned: %1$s/%2$s</string>
+    <string name="github_toast_repo_scan_no_match">No matching project URL found</string>
+    <string name="github_toast_repo_scan_failed">Project URL scan failed: %1$s</string>
     <string name="github_toast_package_scan_success">Package name scanned: %1$s</string>
     <string name="github_toast_package_scan_failed">Package scan failed: %1$s</string>
     <string name="github_toast_repo_message">%1$s/%2$s: %3$s</string>
@@ -389,11 +394,13 @@
     <string name="github_track_sheet_section_repository">Repository source</string>
     <string name="github_track_sheet_section_package_app">Package &amp; local app</string>
     <string name="github_track_sheet_input_repo">GitHub project URL</string>
-    <string name="github_track_sheet_summary_repo">Use a repository or release URL. Package scan reads the latest stable APK.</string>
+    <string name="github_track_sheet_summary_repo">Use a repository or release URL. The project URL can also be scanned from the package name.</string>
     <string name="github_track_sheet_input_app_filter_title">Filter local apps</string>
     <string name="github_track_sheet_input_app_filter">Name or package name</string>
     <string name="github_track_sheet_input_package_title">Package name (optional)</string>
     <string name="github_track_sheet_input_package">Enter package name manually</string>
+    <string name="github_track_sheet_btn_scan_repo">Scan project</string>
+    <string name="github_track_sheet_btn_scan_repo_running">Scanning</string>
     <string name="github_track_sheet_btn_scan_package">Scan package</string>
     <string name="github_track_sheet_btn_scan_package_running">Scanning</string>
     <string name="github_track_sheet_summary_package_optional">Leave empty to track only repository version. Filling a package name later or installing the matching app will link refresh automatically.</string>

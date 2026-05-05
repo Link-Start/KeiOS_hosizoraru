@@ -84,6 +84,7 @@ internal class GitHubPageState(
     var actionsRunWatchJob by mutableStateOf<Job?>(null)
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
+    var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
     var selectedApp by mutableStateOf<InstalledAppItem?>(null)
     var appList by mutableStateOf<List<InstalledAppItem>>(emptyList())
@@ -330,6 +331,7 @@ internal class GitHubPageState(
         pickerExpanded = false
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
+        repoUrlScanRunning = false
         packageNameScanRunning = false
     }
 

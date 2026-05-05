@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,6 +71,7 @@ internal fun GitHubCheckLogicSheet(
     onEnsureKeiOsSelfTrack: () -> Unit,
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
+    onOpenStarImport: () -> Unit,
     onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
@@ -178,7 +180,8 @@ internal fun GitHubCheckLogicSheet(
                 importInProgress = importInProgress,
                 onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
                 onExportTrackedItems = onExportTrackedItems,
-                onImportTrackedItems = onImportTrackedItems
+                onImportTrackedItems = onImportTrackedItems,
+                onOpenStarImport = onOpenStarImport
             )
             GitHubCheckNotesSection()
         }
@@ -438,7 +441,8 @@ private fun GitHubCheckTracksSection(
     importInProgress: Boolean,
     onEnsureKeiOsSelfTrack: () -> Unit,
     onExportTrackedItems: () -> Unit,
-    onImportTrackedItems: () -> Unit
+    onImportTrackedItems: () -> Unit,
+    onOpenStarImport: () -> Unit
 ) {
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_tracks))
     SheetSectionCard {
@@ -466,38 +470,48 @@ private fun GitHubCheckTracksSection(
             title = stringResource(R.string.github_check_sheet_label_track_transfer),
             summary = stringResource(R.string.github_check_sheet_summary_track_transfer)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        text = if (exportInProgress) {
-                            stringResource(R.string.github_check_sheet_action_exporting)
-                        } else {
-                            stringResource(R.string.github_check_sheet_action_export_tracks)
-                        },
-                        onClick = onExportTrackedItems,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !exportInProgress && !importInProgress,
-                        variant = GlassVariant.SheetAction
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            text = if (exportInProgress) {
+                                stringResource(R.string.github_check_sheet_action_exporting)
+                            } else {
+                                stringResource(R.string.github_check_sheet_action_export_tracks)
+                            },
+                            onClick = onExportTrackedItems,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !exportInProgress && !importInProgress,
+                            variant = GlassVariant.SheetAction
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            text = if (importInProgress) {
+                                stringResource(R.string.github_check_sheet_action_importing)
+                            } else {
+                                stringResource(R.string.github_check_sheet_action_import_tracks)
+                            },
+                            onClick = onImportTrackedItems,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !exportInProgress && !importInProgress,
+                            variant = GlassVariant.SheetAction
+                        )
+                    }
                 }
-                Box(modifier = Modifier.weight(1f)) {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        text = if (importInProgress) {
-                            stringResource(R.string.github_check_sheet_action_importing)
-                        } else {
-                            stringResource(R.string.github_check_sheet_action_import_tracks)
-                        },
-                        onClick = onImportTrackedItems,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !exportInProgress && !importInProgress,
-                        variant = GlassVariant.SheetAction
-                    )
-                }
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    text = stringResource(R.string.github_check_sheet_action_import_stars),
+                    onClick = onOpenStarImport,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !exportInProgress && !importInProgress,
+                    variant = GlassVariant.SheetAction
+                )
             }
         }
     }

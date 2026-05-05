@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.feature.github.model.isKeiOsSelfTrack
+import os.kei.ui.page.main.github.importer.GitHubStarImportActivity
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -348,6 +349,10 @@ fun GitHubPage(
         }
     }
 
+    val onOpenStarImport: () -> Unit = {
+        GitHubStarImportActivity.launch(context)
+    }
+
     val onConfirmTrackImport: () -> Unit = {
         val preview = state.pendingTrackImportPreview
         if (preview != null) {
@@ -412,6 +417,7 @@ fun GitHubPage(
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
             onExportTrackedItems = onExportTrackedItems,
             onImportTrackedItems = onImportTrackedItems,
+            onOpenStarImport = onOpenStarImport,
             onConfirmTrackImport = onConfirmTrackImport
         )
     }

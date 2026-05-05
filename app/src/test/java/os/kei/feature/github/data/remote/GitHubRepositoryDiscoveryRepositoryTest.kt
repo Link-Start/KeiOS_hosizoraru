@@ -136,6 +136,45 @@ class GitHubRepositoryDiscoveryRepositoryTest {
         }
     }
 
+    @Test
+    fun `star list url parser reads repository links from github stars page`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(
+                        """
+                        <html>
+                          <body>
+                            <a href="/alpha/one">alpha/one</a>
+                            <a href="/stars/voyager/lists/android">list</a>
+                            <a href="https://github.com/beta/two">beta/two</a>
+                            <a href="/alpha/one">duplicate</a>
+                          </body>
+                        </html>
+                        """.trimIndent()
+                    )
+            )
+            val repository = GitHubRepositoryDiscoveryRepository(
+                apiToken = "token-123",
+                client = OkHttpClient(),
+                apiBaseUrl = server.url("/api").toString(),
+                webBaseUrl = server.url("/").toString()
+            )
+
+            val candidates = repository.fetchStarListRepositories(
+                starListUrl = "https://github.com/stars/voyager/lists/android",
+                limit = 10
+            ).getOrThrow()
+
+            assertEquals(listOf("alpha/one", "beta/two"), candidates.map { it.fullName })
+            val request = server.takeRequest()
+            assertEquals("/stars/voyager/lists/android?page=1", request.path)
+            assertEquals("Bearer token-123", request.getHeader("Authorization"))
+        }
+    }
+
+
     private fun repositoryArrayJson(vararg items: String): String {
         return items.joinToString(prefix = "[", postfix = "]")
     }

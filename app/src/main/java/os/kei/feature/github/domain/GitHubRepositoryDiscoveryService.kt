@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
+import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import kotlin.math.min
@@ -21,6 +22,10 @@ internal interface GitHubRepositoryDiscoverySource {
     ): Result<List<GitHubRepositoryCandidate>>
 
     fun searchRepositories(query: String, limit: Int): Result<List<GitHubRepositoryCandidate>>
+    fun fetchStarListRepositories(
+        starListUrl: String,
+        limit: Int
+    ): Result<List<GitHubRepositoryCandidate>>
 }
 
 internal class GitHubRepositoryDiscoveryService(
@@ -32,11 +37,25 @@ internal class GitHubRepositoryDiscoveryService(
     ): Result<GitHubStarredRepositoryImportPreview> = runCatching {
         val limit = request.limit.coerceIn(1, MAX_IMPORT_LIMIT)
         val username = request.username.trim()
-        val rawCandidates = if (username.isBlank()) {
-            check(request.apiToken.isNotBlank()) { "A GitHub token is required to import the signed-in account stars." }
-            source.fetchAuthenticatedStarredRepositories(limit).getOrThrow()
-        } else {
-            source.fetchUserStarredRepositories(username, limit).getOrThrow()
+        val starListUrl = request.starListUrl.trim()
+        val resolvedSource = request.source.resolve(username, starListUrl)
+        val rawCandidates = when (resolvedSource) {
+            GitHubStarredRepositoryImportSource.AuthenticatedUser -> {
+                check(request.apiToken.isNotBlank()) {
+                    "A GitHub token is required to import the signed-in account stars."
+                }
+                source.fetchAuthenticatedStarredRepositories(limit).getOrThrow()
+            }
+
+            GitHubStarredRepositoryImportSource.PublicUser -> {
+                source.fetchUserStarredRepositories(username, limit).getOrThrow()
+            }
+
+            GitHubStarredRepositoryImportSource.StarListUrl -> {
+                source.fetchStarListRepositories(starListUrl, limit).getOrThrow()
+            }
+
+            GitHubStarredRepositoryImportSource.Auto -> error("Unresolved starred import source")
         }
         val candidates = rawCandidates
             .dedupeByRepo()
@@ -55,7 +74,12 @@ internal class GitHubRepositoryDiscoveryService(
             )
 
         GitHubStarredRepositoryImportPreview(
-            sourceLabel = username.ifBlank { "authenticated" },
+            sourceLabel = when (resolvedSource) {
+                GitHubStarredRepositoryImportSource.AuthenticatedUser -> "authenticated"
+                GitHubStarredRepositoryImportSource.PublicUser -> username
+                GitHubStarredRepositoryImportSource.StarListUrl -> starListUrl
+                GitHubStarredRepositoryImportSource.Auto -> "stars"
+            },
             totalFetchedCount = rawCandidates.size,
             importableCount = candidates.count { !it.alreadyTracked },
             alreadyTrackedCount = candidates.count { it.alreadyTracked },
@@ -136,6 +160,7 @@ internal class GitHubRepositoryDiscoveryService(
             GitHubRepositoryDiscoverySourceType.AuthenticatedStars -> 40
             GitHubRepositoryDiscoverySourceType.PublicUserStars -> 36
             GitHubRepositoryDiscoverySourceType.PreferredRepository -> 32
+            GitHubRepositoryDiscoverySourceType.StarList -> 34
             GitHubRepositoryDiscoverySourceType.RepositorySearch -> 20
         }
         val activityScore = if (updatedAtMillis > 0L) 8 else 0
@@ -186,6 +211,21 @@ internal class GitHubRepositoryDiscoveryService(
     companion object {
         private const val MAX_IMPORT_LIMIT = 1_000
         private const val MAX_SEARCH_LIMIT = 50
+    }
+}
+
+private fun GitHubStarredRepositoryImportSource.resolve(
+    username: String,
+    starListUrl: String
+): GitHubStarredRepositoryImportSource {
+    return when (this) {
+        GitHubStarredRepositoryImportSource.Auto -> when {
+            starListUrl.isNotBlank() -> GitHubStarredRepositoryImportSource.StarListUrl
+            username.isNotBlank() -> GitHubStarredRepositoryImportSource.PublicUser
+            else -> GitHubStarredRepositoryImportSource.AuthenticatedUser
+        }
+
+        else -> this
     }
 }
 

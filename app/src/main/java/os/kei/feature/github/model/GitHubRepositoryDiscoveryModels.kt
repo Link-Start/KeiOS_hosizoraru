@@ -4,6 +4,7 @@ enum class GitHubRepositoryDiscoverySourceType {
     AuthenticatedStars,
     PublicUserStars,
     PreferredRepository,
+    StarList,
     RepositorySearch
 }
 
@@ -33,10 +34,19 @@ data class GitHubRepositoryCandidate(
 }
 
 data class GitHubStarredRepositoryImportRequest(
+    val source: GitHubStarredRepositoryImportSource = GitHubStarredRepositoryImportSource.Auto,
     val username: String = "",
+    val starListUrl: String = "",
     val apiToken: String = "",
     val limit: Int = 300
 )
+
+enum class GitHubStarredRepositoryImportSource {
+    Auto,
+    AuthenticatedUser,
+    PublicUser,
+    StarListUrl
+}
 
 data class GitHubAppRepositorySearchRequest(
     val app: InstalledAppItem,

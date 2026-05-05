@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
+import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import kotlin.test.assertEquals
@@ -42,6 +43,34 @@ class GitHubRepositoryDiscoveryServiceTest {
         assertFalse(preview.candidates.first().alreadyTracked)
         assertEquals("", preview.candidates.first().trackedApp.packageName)
         assertEquals("beta/two", preview.candidates.first().trackedApp.appLabel)
+    }
+
+    @Test
+    fun `star list url import uses list source and marks existing items`() {
+        val source = FakeDiscoverySource(
+            starList = listOf(
+                candidate(
+                    owner = "list",
+                    repo = "one",
+                    sourceType = GitHubRepositoryDiscoverySourceType.StarList,
+                    matchReason = GitHubRepositoryCandidateMatchReason.Starred
+                )
+            )
+        )
+        val service = GitHubRepositoryDiscoveryService(source)
+
+        val preview = service.previewStarredRepositoryImport(
+            request = GitHubStarredRepositoryImportRequest(
+                source = GitHubStarredRepositoryImportSource.StarListUrl,
+                starListUrl = "https://github.com/stars/voyager/lists/android",
+                limit = 20
+            ),
+            existingItems = emptyList()
+        ).getOrThrow()
+
+        assertEquals("https://github.com/stars/voyager/lists/android", preview.sourceLabel)
+        assertEquals(1, preview.importableCount)
+        assertEquals("list/one", preview.candidates.single().repository.fullName)
     }
 
     @Test
@@ -117,6 +146,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     private class FakeDiscoverySource(
         private val authenticatedStars: List<GitHubRepositoryCandidate> = emptyList(),
         private val publicStars: List<GitHubRepositoryCandidate> = emptyList(),
+        private val starList: List<GitHubRepositoryCandidate> = emptyList(),
         private val searchResults: Map<String, List<GitHubRepositoryCandidate>> = emptyMap()
     ) : GitHubRepositoryDiscoverySource {
         val searchQueries = mutableListOf<String>()
@@ -140,6 +170,13 @@ class GitHubRepositoryDiscoveryServiceTest {
         ): Result<List<GitHubRepositoryCandidate>> {
             searchQueries += query
             return Result.success(searchResults[query].orEmpty().take(limit))
+        }
+
+        override fun fetchStarListRepositories(
+            starListUrl: String,
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(starList.take(limit))
         }
     }
 

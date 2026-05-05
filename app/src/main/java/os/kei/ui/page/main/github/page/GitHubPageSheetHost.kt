@@ -27,6 +27,7 @@ internal fun GitHubPageSheetHost(
     onEnsureKeiOsSelfTrack: () -> Unit,
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
+    onOpenStarImport: () -> Unit,
     onConfirmTrackImport: () -> Unit
 ) {
     GitHubStrategySheet(
@@ -91,6 +92,7 @@ internal fun GitHubPageSheetHost(
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
         onExportTrackedItems = onExportTrackedItems,
         onImportTrackedItems = onImportTrackedItems,
+        onOpenStarImport = onOpenStarImport,
         onRefreshIntervalHoursInputChange = { state.refreshIntervalHoursInput = it },
         onCheckAllTrackedPreReleasesInputChange = { state.checkAllTrackedPreReleasesInput = it },
         onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },

@@ -210,6 +210,13 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
                     .take(limit)
             )
         }
+
+        override fun fetchStarListRepositories(
+            starListUrl: String,
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(candidates.take(limit))
+        }
     }
 
     private class ExportTrackPackageScanSource(

@@ -315,6 +315,13 @@ class GitHubPackageRepositoryResolverTest {
             queries += query
             return Result.success(candidates.take(limit))
         }
+
+        override fun fetchStarListRepositories(
+            starListUrl: String,
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(emptyList())
+        }
     }
 
     private class QueryAwareDiscoverySource(
@@ -338,6 +345,13 @@ class GitHubPackageRepositoryResolverTest {
             limit: Int
         ): Result<List<GitHubRepositoryCandidate>> {
             return Result.success(candidatesForQuery(query).take(limit))
+        }
+
+        override fun fetchStarListRepositories(
+            starListUrl: String,
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(emptyList())
         }
     }
 

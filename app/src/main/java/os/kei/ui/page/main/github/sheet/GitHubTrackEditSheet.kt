@@ -1,5 +1,13 @@
 package os.kei.ui.page.main.github.sheet
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -27,6 +36,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.motion.AppMotionTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
@@ -91,152 +102,249 @@ internal fun GitHubTrackEditSheet(
             )
         }
     ) {
-        SheetContentColumn(
-            scrollable = !pickerExpanded,
-            verticalSpacing = 10.dp
-        ) {
-            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_repository))
-            SheetSectionCard {
-                SheetInputTitle(stringResource(R.string.github_track_sheet_input_repo))
-                AppLiquidSearchField(
-                    value = repoUrlInput,
-                    onValueChange = onRepoUrlInputChange,
-                    label = stringResource(R.string.github_track_sheet_input_repo),
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true
-                )
-                SheetDescriptionText(
-                    text = stringResource(R.string.github_track_sheet_summary_repo)
-                )
-            }
-
-            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))
-            SheetSectionCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetAction,
-                        text = if (packageNameScanRunning) {
-                            stringResource(R.string.github_track_sheet_btn_scan_package_running)
-                        } else {
-                            stringResource(R.string.github_track_sheet_btn_scan_package)
-                        },
-                        enabled = !packageNameScanRunning && repoUrlInput.isNotBlank(),
-                        onClick = onScanPackageName,
-                        minHeight = 30.dp,
-                        horizontalPadding = 10.dp,
-                        verticalPadding = 4.dp,
-                        textMaxLines = 1
-                    )
-                }
-                AppLiquidSearchField(
-                    value = packageNameInput,
-                    onValueChange = onPackageNameInputChange,
-                    label = stringResource(R.string.github_track_sheet_input_package),
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true
-                )
-                SheetDescriptionText(
-                    text = stringResource(R.string.github_track_sheet_summary_package_link)
-                )
-                SheetControlRow(
-                    label = stringResource(R.string.github_track_sheet_label_selected_app),
-                    summary = if (selectedApp == null) {
-                        stringResource(R.string.github_track_sheet_summary_app_binding_none)
-                    } else {
-                        null
-                    }
-                ) {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetAction,
-                        text = if (pickerExpanded) {
-                            stringResource(R.string.github_track_sheet_btn_collapse)
-                        } else {
-                            stringResource(R.string.github_track_sheet_btn_select_app)
-                        },
-                        onClick = { onPickerExpandedChange(!pickerExpanded) }
-                    )
-                }
-                selectedApp?.let { app ->
-                    GitHubSelectedAppCard(selectedApp = app)
-                }
-            }
-            if (pickerExpanded) {
-                val filteredApps = remember(appList, appSearch) {
-                    appList.filter { app ->
-                        appSearch.isBlank() ||
-                            app.label.contains(appSearch, ignoreCase = true) ||
-                            app.packageName.contains(appSearch, ignoreCase = true)
-                    }
-                }
-                SheetSectionTitle(stringResource(R.string.github_track_sheet_section_app_candidates))
-                SheetSectionCard(verticalSpacing = 6.dp) {
-                    SheetInputTitle(stringResource(R.string.github_track_sheet_input_app_filter_title))
-                    AppLiquidSearchField(
-                        value = appSearch,
-                        onValueChange = onAppSearchChange,
-                        label = stringResource(R.string.github_track_sheet_input_app_filter),
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetInput,
-                        singleLine = true
-                    )
-                    if (filteredApps.isEmpty()) {
-                        MiuixInfoItem(
-                            stringResource(R.string.github_track_sheet_label_app_list),
-                            stringResource(R.string.github_track_sheet_msg_app_no_match)
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 420.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            contentPadding = PaddingValues(vertical = 2.dp)
-                        ) {
-                            items(
-                                items = filteredApps,
-                                key = { it.packageName }
-                            ) { app ->
-                                GitHubAppCandidateRow(
-                                    app = app,
-                                    selected = selectedApp?.packageName == app.packageName,
-                                    onClick = {
-                                        onSelectedAppChange(app)
-                                        onPickerExpandedChange(false)
-                                    }
-                                )
+        val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
+        AnimatedContent(
+            targetState = pickerExpanded,
+            transitionSpec = {
+                if (transitionAnimationsEnabled) {
+                    (
+                            fadeIn(animationSpec = tween(durationMillis = AppMotionTokens.expandFadeInMs)) togetherWith
+                                    fadeOut(animationSpec = tween(durationMillis = AppMotionTokens.expandFadeOutMs))
+                            ).using(
+                            SizeTransform(clip = false) { _, _ ->
+                                tween(durationMillis = AppMotionTokens.expandSizeInMs)
                             }
-                        }
-                    }
+                        )
+                } else {
+                    EnterTransition.None togetherWith ExitTransition.None
                 }
+            },
+            label = "github_track_app_picker_content",
+            modifier = Modifier.fillMaxWidth()
+        ) { expanded ->
+            if (expanded) {
+                GitHubTrackAppPickerContent(
+                    backdrop = backdrop,
+                    appSearch = appSearch,
+                    selectedApp = selectedApp,
+                    appList = appList,
+                    onAppSearchChange = onAppSearchChange,
+                    onPickerExpandedChange = onPickerExpandedChange,
+                    onSelectedAppChange = onSelectedAppChange
+                )
+            } else {
+                GitHubTrackEditFormContent(
+                    backdrop = backdrop,
+                    repoUrlInput = repoUrlInput,
+                    packageNameInput = packageNameInput,
+                    packageNameScanRunning = packageNameScanRunning,
+                    selectedApp = selectedApp,
+                    preferPreReleaseInput = preferPreReleaseInput,
+                    alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
+                    onRepoUrlInputChange = onRepoUrlInputChange,
+                    onPackageNameInputChange = onPackageNameInputChange,
+                    onScanPackageName = onScanPackageName,
+                    onPickerExpandedChange = onPickerExpandedChange,
+                    onPreferPreReleaseInputChange = onPreferPreReleaseInputChange,
+                    onAlwaysShowLatestReleaseDownloadButtonInputChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
+                )
             }
-            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
-            SheetSectionCard {
-                SheetControlRow(
-                    label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
-                    summary = stringResource(R.string.github_track_sheet_summary_prefer_prerelease)
-                ) {
-                    AppSwitch(
-                        checked = preferPreReleaseInput,
-                        onCheckedChange = onPreferPreReleaseInputChange
-                    )
+        }
+    }
+}
+
+@Composable
+private fun GitHubTrackEditFormContent(
+    backdrop: LayerBackdrop,
+    repoUrlInput: String,
+    packageNameInput: String,
+    packageNameScanRunning: Boolean,
+    selectedApp: InstalledAppItem?,
+    preferPreReleaseInput: Boolean,
+    alwaysShowLatestReleaseDownloadButtonInput: Boolean,
+    onRepoUrlInputChange: (String) -> Unit,
+    onPackageNameInputChange: (String) -> Unit,
+    onScanPackageName: () -> Unit,
+    onPickerExpandedChange: (Boolean) -> Unit,
+    onPreferPreReleaseInputChange: (Boolean) -> Unit,
+    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
+) {
+    SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_repository))
+        SheetSectionCard {
+            SheetInputTitle(stringResource(R.string.github_track_sheet_input_repo))
+            AppLiquidSearchField(
+                value = repoUrlInput,
+                onValueChange = onRepoUrlInputChange,
+                label = stringResource(R.string.github_track_sheet_input_repo),
+                backdrop = backdrop,
+                variant = GlassVariant.SheetInput,
+                singleLine = true
+            )
+            SheetDescriptionText(
+                text = stringResource(R.string.github_track_sheet_summary_repo)
+            )
+        }
+
+        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))
+        SheetSectionCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = if (packageNameScanRunning) {
+                        stringResource(R.string.github_track_sheet_btn_scan_package_running)
+                    } else {
+                        stringResource(R.string.github_track_sheet_btn_scan_package)
+                    },
+                    enabled = !packageNameScanRunning && repoUrlInput.isNotBlank(),
+                    onClick = onScanPackageName,
+                    minHeight = 30.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 4.dp,
+                    textMaxLines = 1
+                )
+            }
+            AppLiquidSearchField(
+                value = packageNameInput,
+                onValueChange = onPackageNameInputChange,
+                label = stringResource(R.string.github_track_sheet_input_package),
+                backdrop = backdrop,
+                variant = GlassVariant.SheetInput,
+                singleLine = true
+            )
+            SheetDescriptionText(
+                text = stringResource(R.string.github_track_sheet_summary_package_link)
+            )
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_selected_app),
+                summary = if (selectedApp == null) {
+                    stringResource(R.string.github_track_sheet_summary_app_binding_none)
+                } else {
+                    null
                 }
-                SheetControlRow(
-                    label = stringResource(R.string.github_track_sheet_label_always_show_latest_release_download),
-                    summary = stringResource(R.string.github_track_sheet_summary_always_show_latest_release_download)
+            ) {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.github_track_sheet_btn_select_app),
+                    onClick = { onPickerExpandedChange(true) }
+                )
+            }
+            selectedApp?.let { app ->
+                GitHubSelectedAppCard(selectedApp = app)
+            }
+        }
+
+        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
+        SheetSectionCard {
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
+                summary = stringResource(R.string.github_track_sheet_summary_prefer_prerelease)
+            ) {
+                AppSwitch(
+                    checked = preferPreReleaseInput,
+                    onCheckedChange = onPreferPreReleaseInputChange
+                )
+            }
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_always_show_latest_release_download),
+                summary = stringResource(R.string.github_track_sheet_summary_always_show_latest_release_download)
+            ) {
+                AppSwitch(
+                    checked = alwaysShowLatestReleaseDownloadButtonInput,
+                    onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubTrackAppPickerContent(
+    backdrop: LayerBackdrop,
+    appSearch: String,
+    selectedApp: InstalledAppItem?,
+    appList: List<InstalledAppItem>,
+    onAppSearchChange: (String) -> Unit,
+    onPickerExpandedChange: (Boolean) -> Unit,
+    onSelectedAppChange: (InstalledAppItem?) -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val listMaxHeight = (configuration.screenHeightDp.dp * 0.60f).coerceIn(340.dp, 680.dp)
+    val filteredApps = remember(appList, appSearch) {
+        appList.filter { app ->
+            appSearch.isBlank() ||
+                    app.label.contains(appSearch, ignoreCase = true) ||
+                    app.packageName.contains(appSearch, ignoreCase = true)
+        }
+    }
+
+    SheetContentColumn(
+        scrollable = false,
+        verticalSpacing = 10.dp
+    ) {
+        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_app_candidates))
+        SheetSectionCard(verticalSpacing = 8.dp) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SheetInputTitle(stringResource(R.string.github_track_sheet_input_app_filter_title))
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.github_track_sheet_btn_collapse),
+                    onClick = { onPickerExpandedChange(false) },
+                    minHeight = 30.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 4.dp,
+                    textMaxLines = 1
+                )
+            }
+            AppLiquidSearchField(
+                value = appSearch,
+                onValueChange = onAppSearchChange,
+                label = stringResource(R.string.github_track_sheet_input_app_filter),
+                backdrop = backdrop,
+                variant = GlassVariant.SheetInput,
+                singleLine = true
+            )
+            selectedApp?.let { app ->
+                GitHubSelectedAppCard(selectedApp = app)
+            }
+            if (filteredApps.isEmpty()) {
+                MiuixInfoItem(
+                    stringResource(R.string.github_track_sheet_label_app_list),
+                    stringResource(R.string.github_track_sheet_msg_app_no_match)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = listMaxHeight),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 2.dp)
                 ) {
-                    AppSwitch(
-                        checked = alwaysShowLatestReleaseDownloadButtonInput,
-                        onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
-                    )
+                    items(
+                        items = filteredApps,
+                        key = { it.packageName }
+                    ) { app ->
+                        GitHubAppCandidateRow(
+                            app = app,
+                            selected = selectedApp?.packageName == app.packageName,
+                            onClick = {
+                                onSelectedAppChange(app)
+                                onPickerExpandedChange(false)
+                            }
+                        )
+                    }
                 }
             }
         }

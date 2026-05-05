@@ -46,7 +46,43 @@ internal class GitHubApkPackageNameScanRepository(
         repo: String,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubStableReleaseApkAssets> {
-        val fastPath = GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
+        return when (lookupConfig.selectedStrategy) {
+            GitHubLookupStrategyOption.GitHubApiToken -> {
+                loadLatestStableApkAssetsFromApi(
+                    owner = owner,
+                    repo = repo,
+                    lookupConfig = lookupConfig
+                ).recoverCatching {
+                    loadLatestStableApkAssetsFromSelectedStrategy(
+                        owner = owner,
+                        repo = repo,
+                        lookupConfig = lookupConfig
+                    ).getOrThrow()
+                }
+            }
+
+            GitHubLookupStrategyOption.AtomFeed -> {
+                loadLatestStableApkAssetsFromSelectedStrategy(
+                    owner = owner,
+                    repo = repo,
+                    lookupConfig = lookupConfig
+                ).recoverCatching {
+                    loadLatestStableApkAssetsFromApi(
+                        owner = owner,
+                        repo = repo,
+                        lookupConfig = lookupConfig
+                    ).getOrThrow()
+                }
+            }
+        }
+    }
+
+    private fun loadLatestStableApkAssetsFromApi(
+        owner: String,
+        repo: String,
+        lookupConfig: GitHubLookupConfig
+    ): Result<GitHubStableReleaseApkAssets> {
+        return GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
             owner = owner,
             repo = repo,
             aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
@@ -64,8 +100,13 @@ internal class GitHubApkPackageNameScanRepository(
                 }
             )
         }
-        if (fastPath.isSuccess) return fastPath
+    }
 
+    private fun loadLatestStableApkAssetsFromSelectedStrategy(
+        owner: String,
+        repo: String,
+        lookupConfig: GitHubLookupConfig
+    ): Result<GitHubStableReleaseApkAssets> {
         return try {
             super.loadLatestStableApkAssets(
                 owner = owner,

@@ -10,6 +10,7 @@ import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.InstalledAppItem
+import java.util.Collections
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -62,7 +63,7 @@ class GitHubPackageRepositoryResolverTest {
 
         assertEquals("com.absinthe.libchecker", result.packageName)
         assertEquals("LibChecker", result.appLabel)
-        assertEquals(4, result.queryCount)
+        assertEquals(1, result.queryCount)
         assertEquals(3, result.fetchedCandidateCount)
         assertEquals(3, result.scannedCandidateCount)
         assertEquals(1, result.matchedCandidates.size)
@@ -82,7 +83,6 @@ class GitHubPackageRepositoryResolverTest {
             scanSource.scannedStrategies
         )
         assertTrue(discovery.queries.any { it.contains("com.absinthe.libchecker") })
-        assertTrue(discovery.queries.any { it.contains("LibChecker android") })
     }
 
     @Test
@@ -140,6 +140,52 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
+    fun `resolver expands to fallback queries when exact package candidates do not match`() {
+        val mismatch = candidate(
+            owner = "demo",
+            repo = "package-name-docs",
+            description = "Mentions com.example.realapp",
+            stars = 50
+        )
+        val target = candidate(
+            owner = "example",
+            repo = "RealApp",
+            description = "RealApp android client",
+            stars = 200
+        )
+        val discovery = QueryAwareDiscoverySource { query ->
+            when {
+                query.contains("com.example.realapp") -> listOf(mismatch)
+                query.contains("RealApp android") -> listOf(target)
+                else -> emptyList()
+            }
+        }
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = mapOf(
+                "demo/package-name-docs" to "com.other.app",
+                "example/realapp" to "com.example.realapp"
+            )
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "com.example.realapp",
+                appLabel = "RealApp",
+                lookupConfig = GitHubLookupConfig()
+            )
+        ).getOrThrow()
+
+        assertEquals(2, result.queryCount)
+        assertEquals(2, result.scannedCandidateCount)
+        assertEquals("example", result.matchedCandidates.single().repository.owner)
+        assertEquals("RealApp", result.matchedCandidates.single().repository.repo)
+    }
+
+    @Test
     fun `package repository queries use installed app label and package tail`() {
         val queries = GitHubPackageRepositoryQueries.forInstalledApp(
             InstalledAppItem(
@@ -182,10 +228,35 @@ class GitHubPackageRepositoryResolverTest {
         }
     }
 
+    private class QueryAwareDiscoverySource(
+        private val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>
+    ) : GitHubRepositoryDiscoverySource {
+        override fun fetchAuthenticatedStarredRepositories(
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(emptyList())
+        }
+
+        override fun fetchUserStarredRepositories(
+            username: String,
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(emptyList())
+        }
+
+        override fun searchRepositories(
+            query: String,
+            limit: Int
+        ): Result<List<GitHubRepositoryCandidate>> {
+            return Result.success(candidatesForQuery(query).take(limit))
+        }
+    }
+
     private class FakePackageScanSource(
         private val packagesByRepo: Map<String, String>
     ) : GitHubApkPackageNameScanSource {
-        val scannedStrategies = mutableListOf<GitHubLookupStrategyOption>()
+        val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
+            Collections.synchronizedList(mutableListOf())
 
         override fun loadLatestStableRelease(
             owner: String,

@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
@@ -8,6 +9,9 @@ import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorCompletionService
+import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -31,68 +35,58 @@ internal class GitHubPackageRepositoryResolver(
         )
         val candidateLimit = request.candidateLimit.coerceIn(1, MAX_CANDIDATE_LIMIT)
         val verificationLimit = request.verificationLimit.coerceIn(1, candidateLimit)
-        val rawCandidates = queries.flatMap { query ->
-            discoverySource.searchRepositories(query, candidateLimit).getOrThrow()
-        }
-        val rankedCandidates = rawCandidates
-            .dedupeByRepo()
-            .map { candidate ->
-                val scored = candidate.withPackageSearchScore(
-                    packageName = packageName,
-                    appLabel = appLabel
-                )
-                scored.first to scored.second
-            }
-            .sortedWith(
-                compareByDescending<Pair<GitHubRepositoryCandidate, Int>> { it.second }
-                    .thenByDescending { it.first.starCount }
-                    .thenBy { it.first.fullName.lowercase() }
-            )
-            .take(candidateLimit)
-
+        var executedQueryCount = 0
         var mismatchedCount = 0
         var failedCount = 0
-        val matchedCandidates = buildList {
-            rankedCandidates.take(verificationLimit).forEach { (candidate, score) ->
-                val scanResult = packageNameScanner.scan(
-                    GitHubApkPackageNameScanRequest(
-                        repoUrl = candidate.repoUrl.ifBlank {
-                            "https://github.com/${candidate.owner}/${candidate.repo}"
-                        },
-                        lookupConfig = request.lookupConfig
-                    )
+        val rawCandidates = mutableListOf<GitHubRepositoryCandidate>()
+        val scannedRepoKeys = mutableSetOf<String>()
+        val matchedCandidates = mutableListOf<GitHubPackageRepositoryScanCandidate>()
+
+        for ((queryIndex, query) in queries.withIndex()) {
+            rawCandidates += discoverySource.searchRepositories(
+                query = query,
+                limit = searchLimitForQuery(
+                    queryIndex = queryIndex,
+                    candidateLimit = candidateLimit
                 )
-                scanResult.fold(
-                    onSuccess = { scanned ->
-                        if (scanned.packageName.equals(packageName, ignoreCase = true)) {
-                            add(
-                                GitHubPackageRepositoryScanCandidate(
-                                    repository = candidate,
-                                    trackedApp = GitHubTrackedApp(
-                                        repoUrl = candidate.repoUrl.ifBlank {
-                                            "https://github.com/${candidate.owner}/${candidate.repo}"
-                                        },
-                                        owner = candidate.owner,
-                                        repo = candidate.repo,
-                                        packageName = packageName,
-                                        appLabel = appLabel.ifBlank { candidate.fullName }
-                                    ),
-                                    score = score + CONFIRMED_PACKAGE_SCORE,
-                                    releaseTag = scanned.releaseTag,
-                                    releaseUrl = scanned.releaseUrl,
-                                    assetName = scanned.assetName
-                                )
-                            )
-                        } else {
-                            mismatchedCount += 1
-                        }
-                    },
-                    onFailure = {
-                        failedCount += 1
-                    }
-                )
-            }
-        }.sortedWith(
+            ).getOrThrow()
+            executedQueryCount += 1
+
+            val rankedCandidates = rawCandidates.rankedPackageCandidates(
+                packageName = packageName,
+                appLabel = appLabel,
+                candidateLimit = candidateLimit
+            )
+            val queryVerificationLimit = verificationLimitForQuery(
+                queryIndex = queryIndex,
+                queryCount = queries.size,
+                verificationLimit = verificationLimit
+            )
+            val scanTargets = rankedCandidates
+                .take(queryVerificationLimit)
+                .filter { (candidate, _) ->
+                    val repoKey = candidate.repoKey()
+                    scannedRepoKeys.add(repoKey)
+                }
+            val batchResult = scanCandidates(
+                targets = scanTargets,
+                packageName = packageName,
+                appLabel = appLabel,
+                lookupConfig = request.lookupConfig
+            )
+            matchedCandidates += batchResult.matchedCandidates
+            mismatchedCount += batchResult.mismatchedCount
+            failedCount += batchResult.failedCount
+
+            if (matchedCandidates.isNotEmpty()) break
+        }
+
+        val rankedCandidates = rawCandidates.rankedPackageCandidates(
+            packageName = packageName,
+            appLabel = appLabel,
+            candidateLimit = candidateLimit
+        )
+        val sortedMatchedCandidates = matchedCandidates.sortedWith(
             compareByDescending<GitHubPackageRepositoryScanCandidate> { it.score }
                 .thenByDescending { it.repository.starCount }
                 .thenBy { it.repository.fullName.lowercase() }
@@ -101,10 +95,10 @@ internal class GitHubPackageRepositoryResolver(
         GitHubPackageRepositoryScanResult(
             packageName = packageName,
             appLabel = appLabel,
-            queryCount = queries.size,
+            queryCount = executedQueryCount,
             fetchedCandidateCount = rankedCandidates.size,
-            scannedCandidateCount = rankedCandidates.take(verificationLimit).size,
-            matchedCandidates = matchedCandidates,
+            scannedCandidateCount = scannedRepoKeys.size,
+            matchedCandidates = sortedMatchedCandidates,
             mismatchedCandidateCount = mismatchedCount,
             failedCandidateCount = failedCount
         )
@@ -147,10 +141,166 @@ internal class GitHubPackageRepositoryResolver(
         return distinctBy { "${it.owner.lowercase()}/${it.repo.lowercase()}" }
     }
 
+    private fun List<GitHubRepositoryCandidate>.rankedPackageCandidates(
+        packageName: String,
+        appLabel: String,
+        candidateLimit: Int
+    ): List<Pair<GitHubRepositoryCandidate, Int>> {
+        return dedupeByRepo()
+            .map { candidate ->
+                val scored = candidate.withPackageSearchScore(
+                    packageName = packageName,
+                    appLabel = appLabel
+                )
+                scored.first to scored.second
+            }
+            .sortedWith(
+                compareByDescending<Pair<GitHubRepositoryCandidate, Int>> { it.second }
+                    .thenByDescending { it.first.starCount }
+                    .thenBy { it.first.fullName.lowercase() }
+            )
+            .take(candidateLimit)
+    }
+
+    private fun GitHubRepositoryCandidate.repoKey(): String {
+        return "${owner.lowercase()}/${repo.lowercase()}"
+    }
+
+    private fun scanCandidates(
+        targets: List<Pair<GitHubRepositoryCandidate, Int>>,
+        packageName: String,
+        appLabel: String,
+        lookupConfig: GitHubLookupConfig
+    ): PackageRepositoryVerificationBatch {
+        if (targets.isEmpty()) return PackageRepositoryVerificationBatch()
+        val workerCount = min(MAX_PARALLEL_VERIFICATIONS, targets.size)
+        val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
+            Thread(runnable, "github-package-repo-scan").apply {
+                isDaemon = true
+            }
+        }
+        return try {
+            val completionService =
+                ExecutorCompletionService<PackageRepositoryVerification>(executor)
+            targets.forEach { (candidate, score) ->
+                completionService.submit(
+                    Callable {
+                        verifyCandidate(
+                            candidate = candidate,
+                            score = score,
+                            packageName = packageName,
+                            appLabel = appLabel,
+                            lookupConfig = lookupConfig
+                        )
+                    }
+                )
+            }
+            val outcomes = buildList {
+                repeat(targets.size) {
+                    add(completionService.take().get())
+                }
+            }
+            PackageRepositoryVerificationBatch(
+                matchedCandidates = outcomes.mapNotNull { it.matchedCandidate },
+                mismatchedCount = outcomes.count { it.mismatched },
+                failedCount = outcomes.count { it.failed }
+            )
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    private fun verifyCandidate(
+        candidate: GitHubRepositoryCandidate,
+        score: Int,
+        packageName: String,
+        appLabel: String,
+        lookupConfig: GitHubLookupConfig
+    ): PackageRepositoryVerification {
+        val repoUrl = candidate.repoUrl.ifBlank {
+            "https://github.com/${candidate.owner}/${candidate.repo}"
+        }
+        val scanResult = packageNameScanner.scan(
+            GitHubApkPackageNameScanRequest(
+                repoUrl = repoUrl,
+                lookupConfig = lookupConfig
+            )
+        )
+        return scanResult.fold(
+            onSuccess = { scanned ->
+                if (scanned.packageName.equals(packageName, ignoreCase = true)) {
+                    PackageRepositoryVerification(
+                        matchedCandidate = GitHubPackageRepositoryScanCandidate(
+                            repository = candidate,
+                            trackedApp = GitHubTrackedApp(
+                                repoUrl = repoUrl,
+                                owner = candidate.owner,
+                                repo = candidate.repo,
+                                packageName = packageName,
+                                appLabel = appLabel.ifBlank { candidate.fullName }
+                            ),
+                            score = score + CONFIRMED_PACKAGE_SCORE,
+                            releaseTag = scanned.releaseTag,
+                            releaseUrl = scanned.releaseUrl,
+                            assetName = scanned.assetName
+                        )
+                    )
+                } else {
+                    PackageRepositoryVerification(mismatched = true)
+                }
+            },
+            onFailure = {
+                PackageRepositoryVerification(failed = true)
+            }
+        )
+    }
+
+    private fun searchLimitForQuery(
+        queryIndex: Int,
+        candidateLimit: Int
+    ): Int {
+        if (candidateLimit > DEFAULT_CANDIDATE_LIMIT) return candidateLimit
+        return when (queryIndex) {
+            0 -> min(candidateLimit, EXACT_PACKAGE_SEARCH_LIMIT)
+            else -> min(candidateLimit, FALLBACK_SEARCH_LIMIT)
+        }
+    }
+
+    private fun verificationLimitForQuery(
+        queryIndex: Int,
+        queryCount: Int,
+        verificationLimit: Int
+    ): Int {
+        val budget = when (queryIndex) {
+            0 -> EXACT_PACKAGE_VERIFICATION_LIMIT
+            queryCount - 1 -> verificationLimit
+            else -> FALLBACK_VERIFICATION_LIMIT
+        }
+        return min(verificationLimit, budget)
+    }
+
     companion object {
         private const val MAX_CANDIDATE_LIMIT = 50
+        private const val DEFAULT_CANDIDATE_LIMIT = 16
         private const val CONFIRMED_PACKAGE_SCORE = 1_000
+        private const val EXACT_PACKAGE_SEARCH_LIMIT = 10
+        private const val FALLBACK_SEARCH_LIMIT = 8
+        private const val EXACT_PACKAGE_VERIFICATION_LIMIT = 3
+        private const val FALLBACK_VERIFICATION_LIMIT = 4
+        private const val MAX_PARALLEL_VERIFICATIONS = 3
     }
+
+    private data class PackageRepositoryVerification(
+        val matchedCandidate: GitHubPackageRepositoryScanCandidate? = null,
+        val mismatched: Boolean = false,
+        val failed: Boolean = false
+    )
+
+    private data class PackageRepositoryVerificationBatch(
+        val matchedCandidates: List<GitHubPackageRepositoryScanCandidate> = emptyList(),
+        val mismatchedCount: Int = 0,
+        val failedCount: Int = 0
+    )
 }
 
 internal object GitHubPackageRepositoryQueries {

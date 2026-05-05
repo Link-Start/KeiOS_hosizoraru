@@ -68,8 +68,8 @@ data class GitHubPackageRepositoryScanRequest(
     val packageName: String,
     val appLabel: String = "",
     val lookupConfig: GitHubLookupConfig,
-    val candidateLimit: Int = 20,
-    val verificationLimit: Int = 8
+    val candidateLimit: Int = 16,
+    val verificationLimit: Int = 5
 )
 
 data class GitHubPackageRepositoryScanCandidate(

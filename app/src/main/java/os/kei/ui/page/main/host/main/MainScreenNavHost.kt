@@ -23,9 +23,9 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
-import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.about.page.AboutPage
 import os.kei.ui.page.main.host.pager.MainPagerLayout
+import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
@@ -68,6 +68,7 @@ internal fun MainScreenNavHost(
                 shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
                 mcpServerManager = pagerCoordinator.mcpServerManager,
                 onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
+                onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
                 requestedBottomPage = pagerCoordinator.requestedBottomPage,
                 requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
                 requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,

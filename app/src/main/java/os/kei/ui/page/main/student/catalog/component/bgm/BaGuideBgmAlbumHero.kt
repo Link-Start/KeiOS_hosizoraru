@@ -466,7 +466,7 @@ private fun BaGuideBgmPlayAction(
         backdrop = backdrop,
         modifier = Modifier
             .height(50.dp)
-            .widthIn(min = 92.dp, max = 104.dp),
+            .widthIn(min = 108.dp, max = 128.dp),
         shape = ContinuousCapsule,
         tint = Color.Unspecified,
         surfaceColor = actionSurfaceColor,

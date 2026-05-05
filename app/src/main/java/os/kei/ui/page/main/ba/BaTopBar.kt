@@ -5,19 +5,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.ui.page.main.os.appLucideConfigIcon
-import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.ba.support.BaCalendarRefreshIntervalOption
+import os.kei.ui.page.main.os.appLucideEditIcon
+import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
-import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
+import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
@@ -46,7 +46,7 @@ internal fun BaTopBarActions(
     onInteractionChanged: (Boolean) -> Unit,
 ) {
     val editIcon = appLucideEditIcon()
-    val refreshIntervalIcon = appLucideConfigIcon()
+    val refreshIntervalIcon = appLucideTimeIcon()
     val editContentDescription = stringResource(R.string.ba_cd_edit)
     val refreshIntervalContentDescription = stringResource(R.string.ba_cd_refresh_interval)
     val actionItems = remember(

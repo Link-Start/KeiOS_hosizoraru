@@ -53,6 +53,7 @@ internal fun MainPagerLayout(
     shizukuApiUtils: ShizukuApiUtils,
     mcpServerManager: McpServerManager,
     onOpenGuideDetail: (String) -> Unit,
+    onOpenBaGuideCatalog: () -> Unit,
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
@@ -73,8 +74,11 @@ internal fun MainPagerLayout(
     val onOpenAbout = remember(navigator) {
         { navigator.pushSingleTop(KeiosRoute.About) }
     }
-    val onOpenBaGuideCatalog = remember(navigator) {
-        { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog) }
+    val openBaGuideCatalog = remember(navigator, onOpenBaGuideCatalog) {
+        {
+            onOpenBaGuideCatalog()
+            navigator.pushSingleTop(KeiosRoute.BaGuideCatalog)
+        }
     }
     val onOpenMcpSkill = remember(navigator) {
         { navigator.pushSingleTop(KeiosRoute.McpSkill) }
@@ -211,7 +215,7 @@ internal fun MainPagerLayout(
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
                         onOpenPoolGuideDetail = onOpenGuideDetail,
-                        onOpenBaGuideCatalog = onOpenBaGuideCatalog,
+                        onOpenBaGuideCatalog = openBaGuideCatalog,
                         onOpenMcpSkill = onOpenMcpSkill,
                         onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged
                     )

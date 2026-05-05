@@ -3,16 +3,14 @@ package os.kei.ui.page.main.ba.card
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
@@ -23,9 +21,7 @@ import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.nextArenaRefreshMs
 import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import com.kyant.backdrop.Backdrop
 
 @Composable
 internal fun BaCafeCard(
@@ -82,21 +78,8 @@ internal fun BaCafeCard(
     ) {
         BaCardHeader(
             title = stringResource(R.string.ba_cafe_title),
+            titleIconRes = R.drawable.mp_cafe,
             trailing = {
-                AppLiquidIconButton(
-                    backdrop = backdrop,
-                    painter = painterResource(id = R.drawable.mp_cafe),
-                    contentDescription = stringResource(R.string.ba_cafe_title),
-                    onClick = {},
-                    variant = GlassVariant.Content,
-                    width = 52.dp,
-                    height = 40.dp,
-                    iconTint = Color.Unspecified,
-                    containerColor = accentPink,
-                    iconModifier = Modifier
-                        .width(30.dp)
-                        .height(22.dp)
-                )
                 AppDropdownSelector(
                     selectedText = "Lv$cafeLevel",
                     options = cafeLevelOptions.map { level -> "Lv$level" },

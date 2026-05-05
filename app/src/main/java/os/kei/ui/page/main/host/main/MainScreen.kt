@@ -112,6 +112,10 @@ fun MainScreen(
             }
             localRequestedBottomPage = null
         },
+        onBaGuideCatalogOpen = {
+            localRequestedBottomPage = BottomPage.Ba.name
+            localRequestedBottomPageToken += 1
+        },
         onBaGuideCatalogBack = {
             localRequestedBottomPage = BottomPage.Ba.name
             localRequestedBottomPageToken += 1

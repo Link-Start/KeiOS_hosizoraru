@@ -16,12 +16,19 @@ data class McpNotificationPayload(
     val stopPendingIntent: PendingIntent,
     val focusOpenPendingIntent: PendingIntent = openPendingIntent,
     val secondaryActionLabel: String? = null,
-    val outerGlow: Boolean = true
+    val outerGlow: Boolean = true,
+    val overrideTitle: String? = null,
+    val overrideContent: String? = null,
+    val overrideOnlineText: String? = null,
+    val overrideShortText: String? = null,
+    val overrideProgressPercent: Int? = null,
+    val deadlineAtMs: Long? = null
 ) {
     companion object {
         const val BA_AP_SERVER_NAME = "BlueArchive AP"
         const val BA_CAFE_VISIT_SERVER_NAME = "BlueArchive Cafe Visit"
         const val BA_ARENA_REFRESH_SERVER_NAME = "BlueArchive Arena Refresh"
+        const val BA_CALENDAR_POOL_SERVER_NAME = "BlueArchive Calendar Pool"
         const val BA_CAFE_VISIT_PATH = "student_visit"
         const val BA_ARENA_REFRESH_PATH = "arena_refresh"
 
@@ -37,10 +44,15 @@ data class McpNotificationPayload(
             return serverName.trim() == BA_ARENA_REFRESH_SERVER_NAME
         }
 
+        fun isBaCalendarPoolServerName(serverName: String): Boolean {
+            return serverName.trim() == BA_CALENDAR_POOL_SERVER_NAME
+        }
+
         fun isBaNotificationServerName(serverName: String): Boolean {
             return isBaApServerName(serverName) ||
                 isBaCafeVisitServerName(serverName) ||
-                isBaArenaRefreshServerName(serverName)
+                    isBaArenaRefreshServerName(serverName) ||
+                    isBaCalendarPoolServerName(serverName)
         }
     }
 
@@ -57,6 +69,7 @@ data class McpNotificationPayload(
         get() = isBaArenaRefreshServerName(normalizedServerName)
 
     fun title(context: Context): String {
+        overrideTitle?.takeIf { it.isNotBlank() }?.let { return it }
         return if (running) {
             if (isBlueArchiveCafeVisit) {
                 context.getString(R.string.ba_cafe_visit_notification_title)
@@ -71,6 +84,7 @@ data class McpNotificationPayload(
     }
 
     fun content(context: Context): String {
+        overrideContent?.takeIf { it.isNotBlank() }?.let { return it }
         return if (running) {
             if (isBlueArchiveCafeVisit) {
                 if (path.isBlank() || path == BA_CAFE_VISIT_PATH) {
@@ -103,6 +117,7 @@ data class McpNotificationPayload(
     }
 
     fun onlineText(context: Context): String {
+        overrideOnlineText?.takeIf { it.isNotBlank() }?.let { return it }
         return if (isBlueArchiveCafeVisit) {
             context.getString(R.string.ba_cafe_visit_notification_island_text)
         } else if (isBlueArchiveArenaRefresh) {
@@ -115,7 +130,7 @@ data class McpNotificationPayload(
     }
 
     val shortText: String
-        get() = if (running) {
+        get() = overrideShortText?.takeIf { it.isNotBlank() } ?: if (running) {
             if (isBlueArchiveAp) {
                 "${port.coerceAtLeast(0)}/${clients.coerceAtLeast(0)}"
             } else {
@@ -142,9 +157,10 @@ data class McpNotificationPayload(
     }
 
     val expandedTitle: String
-        get() = normalizedServerName
+        get() = overrideTitle?.takeIf { it.isNotBlank() } ?: normalizedServerName
 
     fun expandedContent(context: Context): String {
+        overrideContent?.takeIf { it.isNotBlank() }?.let { return it }
         return if (running) {
             if (isBlueArchiveCafeVisit) {
                 if (path.isBlank() || path == BA_CAFE_VISIT_PATH) {

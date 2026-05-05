@@ -24,7 +24,12 @@ class LegacyNotificationBuilder(
         val isBlueArchiveAp = spec.kind == ModernNotificationKind.BA_AP
         val isBlueArchiveCafeVisit = spec.kind == ModernNotificationKind.BA_CAFE_VISIT
         val isBlueArchiveArenaRefresh = spec.kind == ModernNotificationKind.BA_ARENA_REFRESH
-        val progressState = computeProgressState(state = state, isBlueArchiveAp = isBlueArchiveAp)
+        val isBlueArchiveCalendarPool = spec.kind == ModernNotificationKind.BA_CALENDAR_POOL
+        val progressState = computeProgressState(
+            state = state,
+            isBlueArchiveAp = isBlueArchiveAp,
+            isBlueArchiveCalendarPool = isBlueArchiveCalendarPool
+        )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(spec.iconResId)
             .setLargeIcon(NotificationLargeIconFactory.create(context, spec.expandedIconResId))
@@ -47,6 +52,7 @@ class LegacyNotificationBuilder(
             .setSilent(state.onlyAlertOnce)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setProgress(100, progressState.current, progressState.indeterminate)
+            .applyDeadline(state.deadlineAtMs)
 
         builder.addAction(0, context.getString(R.string.common_open), state.openPendingIntent)
         if (state.running) {
@@ -57,10 +63,17 @@ class LegacyNotificationBuilder(
 
     private fun computeProgressState(
         state: McpNotificationPayload,
-        isBlueArchiveAp: Boolean
+        isBlueArchiveAp: Boolean,
+        isBlueArchiveCalendarPool: Boolean
     ): LiveProgressState {
         if (!state.running) {
             return LiveProgressState(current = 0, indeterminate = false)
+        }
+        if (isBlueArchiveCalendarPool) {
+            return LiveProgressState(
+                current = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100,
+                indeterminate = false
+            )
         }
         if (
             McpNotificationPayload.isBaCafeVisitServerName(state.serverName) ||
@@ -80,5 +93,13 @@ class LegacyNotificationBuilder(
         val indeterminate = onlineClients <= 0
         val normalized = (onlineClients * 24).coerceIn(8, 100)
         return LiveProgressState(current = normalized, indeterminate = indeterminate)
+    }
+
+    private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {
+        if (deadlineAtMs == null) return this
+        return setWhen(deadlineAtMs)
+            .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
     }
 }

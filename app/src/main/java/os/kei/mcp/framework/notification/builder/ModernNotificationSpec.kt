@@ -9,7 +9,8 @@ internal enum class ModernNotificationKind {
     DEFAULT,
     BA_AP,
     BA_CAFE_VISIT,
-    BA_ARENA_REFRESH
+    BA_ARENA_REFRESH,
+    BA_CALENDAR_POOL
 }
 
 internal enum class ModernShortCriticalMode {
@@ -39,9 +40,11 @@ internal object ModernNotificationSpecResolver {
     private const val ICON_BA_AP = R.drawable.ic_ba_ap_island_notification
     private const val ICON_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
     private const val ICON_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
+    private const val ICON_BA_CALENDAR_POOL = R.drawable.ic_ba_calendar_live_update
     private const val CONTENT_ICON_AP = R.drawable.ic_ba_ap_live_update
     private const val CONTENT_ICON_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_live_update
     private const val CONTENT_ICON_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_live_update
+    private const val CONTENT_ICON_BA_CALENDAR_POOL = R.drawable.ic_ba_calendar_live_update
 
     fun resolve(
         state: McpNotificationPayload,
@@ -72,6 +75,7 @@ internal object ModernNotificationSpecResolver {
             McpNotificationPayload.isBaApServerName(serverName) -> ModernNotificationKind.BA_AP
             McpNotificationPayload.isBaCafeVisitServerName(serverName) -> ModernNotificationKind.BA_CAFE_VISIT
             McpNotificationPayload.isBaArenaRefreshServerName(serverName) -> ModernNotificationKind.BA_ARENA_REFRESH
+            McpNotificationPayload.isBaCalendarPoolServerName(serverName) -> ModernNotificationKind.BA_CALENDAR_POOL
             else -> ModernNotificationKind.DEFAULT
         }
     }
@@ -89,7 +93,8 @@ internal object ModernNotificationSpecResolver {
 
             ModernNotificationKind.BA_AP,
             ModernNotificationKind.BA_CAFE_VISIT,
-            ModernNotificationKind.BA_ARENA_REFRESH -> resolveSemanticCompactIcon(kind)
+            ModernNotificationKind.BA_ARENA_REFRESH,
+            ModernNotificationKind.BA_CALENDAR_POOL -> resolveSemanticCompactIcon(kind)
         }
     }
 
@@ -98,6 +103,7 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_AP -> ICON_BA_AP
             ModernNotificationKind.BA_CAFE_VISIT -> ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> ICON_BA_ARENA_REFRESH
+            ModernNotificationKind.BA_CALENDAR_POOL -> ICON_BA_CALENDAR_POOL
             ModernNotificationKind.DEFAULT -> ICON_DEFAULT_OEM
         }
     }
@@ -116,6 +122,7 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_AP -> CONTENT_ICON_AP
             ModernNotificationKind.BA_CAFE_VISIT -> CONTENT_ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> CONTENT_ICON_BA_ARENA_REFRESH
+            ModernNotificationKind.BA_CALENDAR_POOL -> CONTENT_ICON_BA_CALENDAR_POOL
         }
     }
 
@@ -125,7 +132,8 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_ARENA_REFRESH -> ModernShortCriticalMode.ONLINE_TEXT
 
             ModernNotificationKind.DEFAULT,
-            ModernNotificationKind.BA_AP -> ModernShortCriticalMode.SHORT_TEXT
+            ModernNotificationKind.BA_AP,
+            ModernNotificationKind.BA_CALENDAR_POOL -> ModernShortCriticalMode.SHORT_TEXT
         }
     }
 
@@ -137,6 +145,10 @@ internal object ModernNotificationSpecResolver {
         return when (kind) {
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH -> 100
+
+            ModernNotificationKind.BA_CALENDAR_POOL -> {
+                state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
+            }
 
             ModernNotificationKind.BA_AP -> {
                 val apLimit = state.clients.coerceAtLeast(1)

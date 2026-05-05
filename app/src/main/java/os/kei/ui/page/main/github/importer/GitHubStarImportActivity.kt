@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,6 +56,7 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideListIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -124,26 +126,49 @@ private fun GitHubStarImportPage(onClose: () -> Unit) {
     var usernameInput by remember { mutableStateOf("") }
     var listUrlInput by remember { mutableStateOf("") }
     var filterInput by remember { mutableStateOf("") }
+    var viewFilter by remember { mutableStateOf(StarImportViewFilter.All) }
     var preview by remember { mutableStateOf<GitHubStarredRepositoryImportPreview?>(null) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var loading by remember { mutableStateOf(false) }
     var importing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    val sourceReady = source.isReady(
+        token = lookupConfig.apiToken,
+        username = usernameInput,
+        listUrl = listUrlInput
+    )
     val candidates = preview?.candidates.orEmpty()
-    val filteredCandidates = candidates.filter { candidate ->
+    val searchedCandidates = candidates.filter { candidate ->
         val query = filterInput.trim()
         query.isBlank() ||
                 candidate.repository.fullName.contains(query, ignoreCase = true) ||
-                candidate.repository.description.contains(query, ignoreCase = true)
+                candidate.repository.description.contains(query, ignoreCase = true) ||
+                candidate.repository.language.contains(query, ignoreCase = true)
+    }
+    val filteredCandidates = searchedCandidates.filter { candidate ->
+        when (viewFilter) {
+            StarImportViewFilter.All -> true
+            StarImportViewFilter.Importable -> !candidate.alreadyTracked
+            StarImportViewFilter.Selected -> candidate.trackedApp.id in selectedIds
+            StarImportViewFilter.Tracked -> candidate.alreadyTracked
+        }
     }
     val selectedImportableCount = candidates.count { candidate ->
         !candidate.alreadyTracked && candidate.trackedApp.id in selectedIds
     }
     val importEnabled = selectedImportableCount > 0 && !loading && !importing
+    val visibleImportableIds = filteredCandidates
+        .filterNot { it.alreadyTracked }
+        .map { it.trackedApp.id }
+        .toSet()
 
     fun loadPreview() {
         if (loading || importing) return
+        if (!sourceReady) {
+            error = context.getString(source.requirementMessageRes)
+            return
+        }
         loading = true
         error = null
         scope.launch {
@@ -206,6 +231,8 @@ private fun GitHubStarImportPage(onClose: () -> Unit) {
         error = null
         preview = null
         selectedIds = emptySet()
+        filterInput = ""
+        viewFilter = StarImportViewFilter.All
     }
 
     AppPageScaffold(
@@ -229,7 +256,7 @@ private fun GitHubStarImportPage(onClose: () -> Unit) {
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.github_star_import_cd_load),
                 onClick = { loadPreview() },
-                enabled = !loading && !importing
+                enabled = sourceReady && !loading && !importing
             )
             AppLiquidIconButton(
                 modifier = Modifier.graphicsLayer { alpha = if (importEnabled) 1f else 0.52f },
@@ -253,6 +280,8 @@ private fun GitHubStarImportPage(onClose: () -> Unit) {
                     usernameInput = usernameInput,
                     listUrlInput = listUrlInput,
                     loading = loading,
+                    importing = importing,
+                    sourceReady = sourceReady,
                     onSourceChange = { source = it },
                     onUsernameInputChange = { usernameInput = it },
                     onListUrlInputChange = { listUrlInput = it },
@@ -270,14 +299,19 @@ private fun GitHubStarImportPage(onClose: () -> Unit) {
             }
             if (preview != null) {
                 item {
-                    AppLiquidSearchField(
-                        value = filterInput,
-                        onValueChange = { filterInput = it },
-                        label = stringResource(R.string.github_star_import_filter_label),
-                        backdrop = pageBackdrop,
-                        variant = GlassVariant.Content,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+                    StarImportListControlCard(
+                        filterInput = filterInput,
+                        viewFilter = viewFilter,
+                        filteredCount = filteredCandidates.size,
+                        visibleImportableCount = visibleImportableIds.size,
+                        selectedCount = selectedImportableCount,
+                        importEnabled = importEnabled,
+                        importing = importing,
+                        onFilterInputChange = { filterInput = it },
+                        onViewFilterChange = { viewFilter = it },
+                        onSelectVisible = { selectedIds = selectedIds + visibleImportableIds },
+                        onClearSelection = { selectedIds = emptySet() },
+                        onImport = { applyImport() }
                     )
                 }
                 items(
@@ -297,6 +331,11 @@ private fun GitHubStarImportPage(onClose: () -> Unit) {
                         }
                     )
                 }
+                if (filteredCandidates.isEmpty()) {
+                    item {
+                        StarImportEmptyCard()
+                    }
+                }
             }
         }
     }
@@ -309,6 +348,8 @@ private fun StarImportSourceCard(
     usernameInput: String,
     listUrlInput: String,
     loading: Boolean,
+    importing: Boolean,
+    sourceReady: Boolean,
     onSourceChange: (StarImportUiSource) -> Unit,
     onUsernameInputChange: (String) -> Unit,
     onListUrlInputChange: (String) -> Unit,
@@ -382,6 +423,15 @@ private fun StarImportSourceCard(
                 )
             }
         }
+        StarImportInfoLine(
+            label = stringResource(R.string.github_star_import_requirement_label),
+            value = stringResource(source.requirementMessageRes),
+            color = if (sourceReady) {
+                GitHubStatusPalette.Update
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant
+            }
+        )
         AppLiquidTextButton(
             backdrop = null,
             text = if (loading) {
@@ -390,7 +440,7 @@ private fun StarImportSourceCard(
                 stringResource(R.string.github_star_import_action_load)
             },
             onClick = onLoadPreview,
-            enabled = !loading,
+            enabled = sourceReady && !loading && !importing,
             variant = GlassVariant.Content,
             leadingIcon = appLucideListIcon(),
             modifier = Modifier.fillMaxWidth()
@@ -474,6 +524,143 @@ private fun StarImportStatusCard(
 }
 
 @Composable
+private fun StarImportListControlCard(
+    filterInput: String,
+    viewFilter: StarImportViewFilter,
+    filteredCount: Int,
+    visibleImportableCount: Int,
+    selectedCount: Int,
+    importEnabled: Boolean,
+    importing: Boolean,
+    onFilterInputChange: (String) -> Unit,
+    onViewFilterChange: (StarImportViewFilter) -> Unit,
+    onSelectVisible: () -> Unit,
+    onClearSelection: () -> Unit,
+    onImport: () -> Unit
+) {
+    AppFeatureCard(
+        title = stringResource(R.string.github_star_import_controls_title),
+        subtitle = stringResource(
+            R.string.github_star_import_controls_summary_format,
+            filteredCount,
+            selectedCount
+        ),
+        sectionIcon = appLucideListIcon(),
+        showIndication = false
+    ) {
+        AppLiquidSearchField(
+            value = filterInput,
+            onValueChange = onFilterInputChange,
+            label = stringResource(R.string.github_star_import_filter_label),
+            backdrop = null,
+            variant = GlassVariant.Content,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StarImportFilterButton(
+                filter = StarImportViewFilter.All,
+                selected = viewFilter == StarImportViewFilter.All,
+                onClick = onViewFilterChange,
+                modifier = Modifier.weight(1f)
+            )
+            StarImportFilterButton(
+                filter = StarImportViewFilter.Importable,
+                selected = viewFilter == StarImportViewFilter.Importable,
+                onClick = onViewFilterChange,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StarImportFilterButton(
+                filter = StarImportViewFilter.Selected,
+                selected = viewFilter == StarImportViewFilter.Selected,
+                onClick = onViewFilterChange,
+                modifier = Modifier.weight(1f)
+            )
+            StarImportFilterButton(
+                filter = StarImportViewFilter.Tracked,
+                selected = viewFilter == StarImportViewFilter.Tracked,
+                onClick = onViewFilterChange,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AppLiquidTextButton(
+                backdrop = null,
+                text = stringResource(R.string.github_star_import_action_select_visible),
+                onClick = onSelectVisible,
+                modifier = Modifier.weight(1f),
+                enabled = visibleImportableCount > 0 && !importing,
+                variant = GlassVariant.Content,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+            AppLiquidTextButton(
+                backdrop = null,
+                text = stringResource(R.string.github_star_import_action_clear_selection),
+                onClick = onClearSelection,
+                modifier = Modifier.weight(1f),
+                enabled = selectedCount > 0 && !importing,
+                variant = GlassVariant.Content,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+        }
+        AppLiquidTextButton(
+            backdrop = null,
+            text = if (importing) {
+                stringResource(R.string.github_star_import_status_importing)
+            } else {
+                stringResource(R.string.github_star_import_action_import_selected)
+            },
+            onClick = onImport,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = importEnabled,
+            variant = GlassVariant.SheetAction,
+            leadingIcon = appLucideConfirmIcon()
+        )
+    }
+}
+
+@Composable
+private fun StarImportFilterButton(
+    filter: StarImportViewFilter,
+    selected: Boolean,
+    onClick: (StarImportViewFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppLiquidTextButton(
+        backdrop = null,
+        text = stringResource(filter.labelRes),
+        onClick = { onClick(filter) },
+        modifier = modifier,
+        variant = if (selected) GlassVariant.SheetAction else GlassVariant.Content,
+        textMaxLines = 1,
+        textOverflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun StarImportEmptyCard() {
+    AppFeatureCard(
+        title = stringResource(R.string.github_star_import_empty_title),
+        subtitle = stringResource(R.string.github_star_import_empty_subtitle),
+        sectionIcon = appLucideInfoIcon(),
+        showIndication = false
+    ) {}
+}
+
+@Composable
 private fun StarImportCandidateCard(
     candidate: GitHubRepositoryImportCandidate,
     selected: Boolean,
@@ -509,6 +696,17 @@ private fun StarImportCandidateCard(
             )
         }
     ) {
+        Text(
+            text = stringResource(
+                R.string.github_star_import_candidate_meta_format,
+                candidate.repository.language.ifBlank { stringResource(R.string.common_not_used) },
+                candidate.repository.starCount.formatStarCount(),
+                candidate.score
+            ),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
         Text(
             text = candidate.trackedApp.repoUrl,
             color = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -573,10 +771,29 @@ private suspend fun applyStarImport(
     return changedCount
 }
 
-private enum class StarImportUiSource {
-    MyStars,
-    PublicUser,
-    ListUrl;
+private enum class StarImportViewFilter(@param:StringRes val labelRes: Int) {
+    All(R.string.github_star_import_filter_all),
+    Importable(R.string.github_star_import_filter_importable),
+    Selected(R.string.github_star_import_filter_selected),
+    Tracked(R.string.github_star_import_filter_tracked)
+}
+
+private enum class StarImportUiSource(@param:StringRes val requirementMessageRes: Int) {
+    MyStars(R.string.github_star_import_requirement_token),
+    PublicUser(R.string.github_star_import_requirement_username),
+    ListUrl(R.string.github_star_import_requirement_list_url);
+
+    fun isReady(
+        token: String,
+        username: String,
+        listUrl: String
+    ): Boolean {
+        return when (this) {
+            MyStars -> token.trim().isNotBlank()
+            PublicUser -> username.trim().isNotBlank()
+            ListUrl -> listUrl.trim().isValidGitHubStarListInput()
+        }
+    }
 
     fun toRequestSource(): GitHubStarredRepositoryImportSource {
         return when (this) {
@@ -585,6 +802,26 @@ private enum class StarImportUiSource {
             ListUrl -> GitHubStarredRepositoryImportSource.StarListUrl
         }
     }
+}
+
+private fun String.isValidGitHubStarListInput(): Boolean {
+    val value = trim().trimEnd('/')
+    return value.startsWith("/stars/", ignoreCase = true) ||
+            value.startsWith("stars/", ignoreCase = true) ||
+            value.startsWith("https://github.com/stars/", ignoreCase = true) ||
+            value.startsWith("http://github.com/stars/", ignoreCase = true)
+}
+
+private fun Int.formatStarCount(): String {
+    return when {
+        this >= 1_000_000 -> String.format("%.1fm", this / 1_000_000.0).trimTrailingZeroDecimal()
+        this >= 1_000 -> String.format("%.1fk", this / 1_000.0).trimTrailingZeroDecimal()
+        else -> toString()
+    }
+}
+
+private fun String.trimTrailingZeroDecimal(): String {
+    return replace(".0", "")
 }
 
 private tailrec fun Context.findGitHubStarImportHostActivity(): Activity? {

@@ -30,7 +30,6 @@ import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
-import os.kei.ui.page.main.ba.support.BAInitState
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_NICKNAME
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -81,8 +80,6 @@ internal fun BaOverviewCard(
     onServerSelected: (Int) -> Unit,
     onClaimCafeStoredAp: () -> Unit,
     onOpenGuideCatalog: () -> Unit,
-    initState: BAInitState,
-    onInitStateChange: (BAInitState) -> Unit,
 ) {
     val isWorkActivated = idFriendCode != BA_DEFAULT_FRIEND_CODE
     val apNextPointAt = calculateApNextPointAtMs(
@@ -122,25 +119,8 @@ internal fun BaOverviewCard(
         backdrop = backdrop,
         accentColor = stateAccent,
         accentAlpha = 0f,
-        onClick = {
-            if (initState == BAInitState.Empty) onInitStateChange(BAInitState.Draft)
-        },
     ) {
-        BaCardHeader(
-            title = overviewTitle,
-            trailing = {
-                Text(
-                    text = if (isWorkActivated) {
-                        stringResource(R.string.ba_state_activated)
-                    } else {
-                        stringResource(R.string.ba_state_default)
-                    },
-                    color = stateAccent,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                )
-            },
-        )
+        BaCardHeader(title = overviewTitle)
 
         BaLiquidPanel(
             backdrop = backdrop,

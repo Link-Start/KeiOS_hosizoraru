@@ -2,11 +2,6 @@ package os.kei.ui.page.main.ba.support
 
 import os.kei.R
 
-internal enum class BAInitState {
-    Empty,
-    Draft
-}
-
 internal data class BaPageSnapshot(
     val serverIndex: Int = 2,
     val cafeLevel: Int = 10,

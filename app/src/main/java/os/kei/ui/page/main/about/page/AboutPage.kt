@@ -3,6 +3,8 @@ package os.kei.ui.page.main.about.page
 import android.content.pm.PackageInfo
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,8 +13,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
@@ -53,6 +54,8 @@ import os.kei.ui.page.main.about.state.rememberAboutPageColorPalette
 import os.kei.ui.page.main.about.state.rememberAboutPageSectionExpansionState
 import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
+import os.kei.ui.page.main.host.pager.MainLoadedPager
+import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -60,9 +63,13 @@ import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.motion.AppMotionTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 @Composable
 fun AboutPage(
@@ -92,9 +99,9 @@ fun AboutPage(
     var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val pagerState = rememberPagerState(
+    val pagerState = rememberMainLoadedPagerState(
         initialPage = selectedCategoryIndex,
-        pageCount = { categories.size },
+        pageCount = categories.size,
     )
     val overviewListState = rememberLazyListState()
     val systemListState = rememberLazyListState()
@@ -107,6 +114,9 @@ fun AboutPage(
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val farJumpAlpha = remember { Animatable(1f) }
+    var tabJumpJob by remember { mutableStateOf<Job?>(null) }
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
 
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) {
@@ -152,9 +162,45 @@ fun AboutPage(
     val matchingSearchCards = matchingSearchTargets.map { it.card }.toSet()
     val selectAboutCategory: (Int) -> Unit = { index ->
         val target = index.coerceIn(0, categories.lastIndex)
-        selectedCategoryIndex = target
-        scope.launch {
-            pagerState.animateScrollToPage(target)
+        val stablePageIndex = if (pagerState.isScrollInProgress) {
+            pagerState.targetPage
+        } else {
+            pagerState.settledPage
+        }
+        if (target != stablePageIndex) {
+            selectedCategoryIndex = target
+            tabJumpJob?.cancel()
+            tabJumpJob = scope.launch {
+                val distance = abs(target - stablePageIndex)
+                if (distance > 1) {
+                    farJumpAlpha.snapTo(1f)
+                    farJumpAlpha.animateTo(
+                        targetValue = 0.92f,
+                        animationSpec = tween(
+                            durationMillis = resolvedMotionDuration(
+                                AppMotionTokens.farJumpDimMs,
+                                transitionAnimationsEnabled,
+                            ),
+                        ),
+                    )
+                }
+                pagerState.animateToPage(
+                    target = target,
+                    animationsEnabled = transitionAnimationsEnabled,
+                    durationMillis = aboutPagerSwitchDurationMillis(distance),
+                )
+                if (distance > 1) {
+                    farJumpAlpha.animateTo(
+                        targetValue = 1f,
+                        animationSpec = tween(
+                            durationMillis = resolvedMotionDuration(
+                                AppMotionTokens.farJumpRestoreMs,
+                                transitionAnimationsEnabled,
+                            ),
+                        ),
+                    )
+                }
+            }
         }
     }
 
@@ -348,6 +394,14 @@ fun AboutPage(
                 navigationBarBottom = navigationBarBottom,
                 categories = categories,
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
+                selectedPagePosition = if (!searchExpanded && pagerState.isScrollInProgress) {
+                    pagerState.pagePosition.coerceIn(
+                        0f,
+                        categories.lastIndex.coerceAtLeast(0).toFloat(),
+                    )
+                } else {
+                    null
+                },
                 selectedPageProvider = { pagerState.targetPage },
                 searchExpanded = searchExpanded,
                 searchQuery = searchQuery,
@@ -394,34 +448,44 @@ fun AboutPage(
                 }
             }
         } else {
-            HorizontalPager(
+            MainLoadedPager(
                 state = pagerState,
-                key = { index -> categories[index].name },
-                overscrollEffect = null,
+                userScrollEnabled = !searchExpanded,
+                animationsEnabled = transitionAnimationsEnabled,
                 modifier = Modifier
                     .fillMaxSize()
+                    .graphicsLayer { alpha = farJumpAlpha.value }
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .graphicsLayer { alpha = 1f }
                     .layerBackdrop(topBarBackdrop)
                     .layerBackdrop(bottomBarBackdrop),
             ) { pageIndex ->
-                val category = categories[pageIndex]
-                val pageListState = when (category) {
-                    AboutCategory.Overview -> overviewListState
-                    AboutCategory.System -> systemListState
-                    AboutCategory.Tech -> techListState
-                    AboutCategory.Lab -> labListState
-                }
-                AppPageLazyColumn(
-                    innerPadding = innerPadding,
-                    state = pageListState,
-                    modifier = Modifier.fillMaxSize(),
-                    bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
-                    sectionSpacing = 14.dp,
-                ) {
-                    aboutCategoryCards(category)
+                val renderHeavyContent = pageIndex == pagerState.currentPage ||
+                        pageIndex == pagerState.settledPage ||
+                        pageIndex == pagerState.targetPage ||
+                        abs(pageIndex - pagerState.pagePosition) <= 1.05f
+                if (renderHeavyContent) {
+                    val category = categories[pageIndex]
+                    val pageListState = when (category) {
+                        AboutCategory.Overview -> overviewListState
+                        AboutCategory.System -> systemListState
+                        AboutCategory.Tech -> techListState
+                        AboutCategory.Lab -> labListState
+                    }
+                    AppPageLazyColumn(
+                        innerPadding = innerPadding,
+                        state = pageListState,
+                        modifier = Modifier.fillMaxSize(),
+                        bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
+                        sectionSpacing = 14.dp,
+                    ) {
+                        aboutCategoryCards(category)
+                    }
                 }
             }
         }
     }
+}
+
+private fun aboutPagerSwitchDurationMillis(distance: Int): Int {
+    return (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
 }

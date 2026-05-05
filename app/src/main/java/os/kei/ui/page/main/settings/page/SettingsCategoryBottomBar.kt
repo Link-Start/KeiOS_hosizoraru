@@ -19,7 +19,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.composables.icons.lucide.R as LucideR
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
@@ -29,6 +28,7 @@ import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import com.composables.icons.lucide.R as LucideR
 
 internal enum class SettingsCategory {
     Access,
@@ -43,6 +43,7 @@ internal fun SettingsCategoryBottomBar(
     navigationBarBottom: Dp,
     categories: List<SettingsCategory>,
     selectedPage: Int,
+    selectedPagePosition: Float?,
     selectedPageProvider: () -> Int,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
@@ -98,6 +99,7 @@ internal fun SettingsCategoryBottomBar(
             LiquidGlassBottomBar(
                 modifier = bottomBarModifier,
                 selectedIndex = selectedPage,
+                selectedPosition = selectedPagePosition,
                 onSelected = { index ->
                     if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
                         onSelectCategory(index)

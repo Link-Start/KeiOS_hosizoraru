@@ -5,14 +5,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,8 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -43,24 +41,28 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
-import os.kei.ui.page.main.host.pager.animateTabSwitch
+import os.kei.ui.page.main.host.pager.MainLoadedPager
+import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.settings.section.SettingsAnimationSection
 import os.kei.ui.page.main.settings.section.SettingsBackgroundSection
 import os.kei.ui.page.main.settings.section.SettingsCacheSection
 import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSection
+import os.kei.ui.page.main.settings.section.SettingsCopySection
 import os.kei.ui.page.main.settings.section.SettingsLogSection
 import os.kei.ui.page.main.settings.section.SettingsNotifySection
 import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSection
-import os.kei.ui.page.main.settings.section.SettingsCopySection
 import os.kei.ui.page.main.settings.section.SettingsVisualSection
+import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.rememberSettingsBackgroundController
 import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
 import os.kei.ui.page.main.settings.state.rememberSettingsSectionContractBundle
-import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.support.rememberSettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
@@ -72,11 +74,9 @@ import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 private fun LazyListState.canMoveForSettingsChrome(deltaY: Float): Boolean {
     return when {
@@ -115,6 +115,10 @@ private fun settingsChromeNestedScrollConnection(
             return delegate.onPostFling(consumed, available)
         }
     }
+}
+
+private fun settingsPagerSwitchDurationMillis(distance: Int): Int {
+    return (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
 }
 
 private fun SettingsCategory.keepsChromeVisibleOnBounds(): Boolean {
@@ -376,9 +380,9 @@ fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val categories = remember { SettingsCategory.entries.toList() }
     var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
-    val pagerState = rememberPagerState(
+    val pagerState = rememberMainLoadedPagerState(
         initialPage = selectedCategoryIndex.coerceIn(0, categories.lastIndex),
-        pageCount = { categories.size }
+        pageCount = categories.size
     )
     val accessListState = rememberLazyListState()
     val appearanceListState = rememberLazyListState()
@@ -446,34 +450,35 @@ fun SettingsPage(
                 selectedCategoryIndex = safeIndex
                 tabJumpJob?.cancel()
                 tabJumpJob = scope.launch {
-                    pagerState.animateTabSwitch(
-                        fromIndex = stablePageIndex,
-                        targetIndex = safeIndex,
+                    val distance = abs(safeIndex - stablePageIndex)
+                    if (distance > 1) {
+                        farJumpAlpha.snapTo(1f)
+                        farJumpAlpha.animateTo(
+                            targetValue = 0.92f,
+                            animationSpec = tween(
+                                durationMillis = resolvedMotionDuration(
+                                    AppMotionTokens.farJumpDimMs,
+                                    transitionAnimationsEnabled
+                                )
+                            )
+                        )
+                    }
+                    pagerState.animateToPage(
+                        target = safeIndex,
                         animationsEnabled = transitionAnimationsEnabled,
-                        onFarJumpBefore = {
-                            farJumpAlpha.snapTo(1f)
-                            farJumpAlpha.animateTo(
-                                targetValue = 0.92f,
-                                animationSpec = tween(
-                                    durationMillis = resolvedMotionDuration(
-                                        AppMotionTokens.farJumpDimMs,
-                                        transitionAnimationsEnabled
-                                    )
-                                )
-                            )
-                        },
-                        onFarJumpAfter = {
-                            farJumpAlpha.animateTo(
-                                targetValue = 1f,
-                                animationSpec = tween(
-                                    durationMillis = resolvedMotionDuration(
-                                        AppMotionTokens.farJumpRestoreMs,
-                                        transitionAnimationsEnabled
-                                    )
-                                )
-                            )
-                        }
+                        durationMillis = settingsPagerSwitchDurationMillis(distance)
                     )
+                    if (distance > 1) {
+                        farJumpAlpha.animateTo(
+                            targetValue = 1f,
+                            animationSpec = tween(
+                                durationMillis = resolvedMotionDuration(
+                                    AppMotionTokens.farJumpRestoreMs,
+                                    transitionAnimationsEnabled
+                                )
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -507,6 +512,14 @@ fun SettingsPage(
                 navigationBarBottom = navigationBarBottom,
                 categories = categories,
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
+                selectedPagePosition = if (pagerState.isScrollInProgress) {
+                    pagerState.pagePosition.coerceIn(
+                        0f,
+                        categories.lastIndex.coerceAtLeast(0).toFloat()
+                    )
+                } else {
+                    null
+                },
                 selectedPageProvider = { pagerState.targetPage },
                 backdrop = bottomBarBackdrop,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
@@ -514,45 +527,48 @@ fun SettingsPage(
             )
         }
     ) { innerPadding ->
-        HorizontalPager(
+        MainLoadedPager(
             state = pagerState,
-            key = { index -> categories[index].name },
-            overscrollEffect = null,
-            beyondViewportPageCount = 1,
             userScrollEnabled = !sliderInteractionActive,
+            animationsEnabled = transitionAnimationsEnabled,
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = farJumpAlpha.value }
                 .layerBackdrop(topBarBackdrop)
                 .layerBackdrop(bottomBarBackdrop)
         ) { pageIndex ->
-            val category = categories[pageIndex]
-            val pageListState = when (category) {
-                SettingsCategory.Access -> accessListState
-                SettingsCategory.Appearance -> appearanceListState
-                SettingsCategory.Notify -> notifyListState
-                SettingsCategory.Data -> dataListState
-            }
-            val pageNestedScrollConnection = remember(pageListState, scrollBehavior) {
-                settingsChromeNestedScrollConnection(
-                    listState = pageListState,
-                    delegate = scrollBehavior.nestedScrollConnection
-                )
-            }
-            AppPageLazyColumn(
-                innerPadding = innerPadding,
-                state = pageListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(pageNestedScrollConnection),
-                bottomExtra = appPageBottomPaddingWithFloatingOverlay(
-                    AppChromeTokens.floatingBottomBarOuterHeight
-                ),
-                sectionSpacing = 12.dp,
-                userScrollEnabled = !sliderInteractionActive
-            ) {
-                when (category) {
-                    SettingsCategory.Access -> {
+            val renderHeavyContent = pageIndex == pagerState.currentPage ||
+                    pageIndex == pagerState.settledPage ||
+                    pageIndex == pagerState.targetPage ||
+                    abs(pageIndex - pagerState.pagePosition) <= 1.05f
+            if (renderHeavyContent) {
+                val category = categories[pageIndex]
+                val pageListState = when (category) {
+                    SettingsCategory.Access -> accessListState
+                    SettingsCategory.Appearance -> appearanceListState
+                    SettingsCategory.Notify -> notifyListState
+                    SettingsCategory.Data -> dataListState
+                }
+                val pageNestedScrollConnection = remember(pageListState, scrollBehavior) {
+                    settingsChromeNestedScrollConnection(
+                        listState = pageListState,
+                        delegate = scrollBehavior.nestedScrollConnection
+                    )
+                }
+                AppPageLazyColumn(
+                    innerPadding = innerPadding,
+                    state = pageListState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(pageNestedScrollConnection),
+                    bottomExtra = appPageBottomPaddingWithFloatingOverlay(
+                        AppChromeTokens.floatingBottomBarOuterHeight
+                    ),
+                    sectionSpacing = 12.dp,
+                    userScrollEnabled = !sliderInteractionActive
+                ) {
+                    when (category) {
+                        SettingsCategory.Access -> {
                         item {
                             SettingsPermissionKeepAliveSection(
                                 state = sectionContracts.permissionKeepAliveState,
@@ -706,4 +722,6 @@ fun SettingsPage(
             }
         }
     }
+}
+
 }

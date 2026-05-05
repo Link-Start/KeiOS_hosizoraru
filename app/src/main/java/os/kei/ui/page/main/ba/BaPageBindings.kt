@@ -32,6 +32,12 @@ internal fun buildBaNotificationSettingsSheetState(
         apNotifyEnabled = ui.sheetApNotifyEnabled,
         arenaRefreshNotifyEnabled = ui.sheetArenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = ui.sheetCafeVisitNotifyEnabled,
+        calendarUpcomingNotifyEnabled = ui.sheetCalendarUpcomingNotifyEnabled,
+        calendarEndingNotifyEnabled = ui.sheetCalendarEndingNotifyEnabled,
+        poolUpcomingNotifyEnabled = ui.sheetPoolUpcomingNotifyEnabled,
+        poolEndingNotifyEnabled = ui.sheetPoolEndingNotifyEnabled,
+        calendarPoolChangeNotifyEnabled = ui.sheetCalendarPoolChangeNotifyEnabled,
+        calendarPoolNotifyLeadHours = ui.sheetCalendarPoolNotifyLeadHours,
         apNotifyThresholdText = ui.sheetApNotifyThresholdText,
     )
 }

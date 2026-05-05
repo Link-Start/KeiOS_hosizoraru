@@ -86,6 +86,8 @@
     <string name="ba_settings_section_content">Content</string>
     <string name="ba_settings_card_sync_title">Data Sync</string>
     <string name="ba_settings_card_ap_title">AP Settings</string>
+    <string name="ba_settings_card_daily_notify_title">Daily reminders</string>
+    <string name="ba_settings_card_calendar_pool_notify_title">Events and banners</string>
     <string name="ba_settings_card_media_title">Media Settings</string>
     <string name="ba_settings_summary_refresh_interval">Auto-refresh events and banners.</string>
     <string name="ba_settings_label_ap_notify">AP notification</string>
@@ -93,6 +95,18 @@
     <string name="ba_settings_summary_cafe_visit_notify">Reminds at 04:00 and 16:00 in the selected server time zone.</string>
     <string name="ba_settings_label_arena_refresh_notify">Tactical Challenge reset notification</string>
     <string name="ba_settings_summary_arena_refresh_notify">Reminds at 14:00 in the selected server time zone.</string>
+    <string name="ba_settings_label_calendar_pool_notify_lead">Reminder lead time</string>
+    <string name="ba_settings_summary_calendar_pool_notify_lead">Triggers before events or banners start or end.</string>
+    <string name="ba_settings_label_calendar_upcoming_notify">Event starts soon</string>
+    <string name="ba_settings_summary_calendar_upcoming_notify">After an event refresh, remind for the nearest event that starts soon.</string>
+    <string name="ba_settings_label_calendar_ending_notify">Event ends soon</string>
+    <string name="ba_settings_summary_calendar_ending_notify">After an event refresh, remind for the nearest event that ends soon.</string>
+    <string name="ba_settings_label_pool_upcoming_notify">Banner opens soon</string>
+    <string name="ba_settings_summary_pool_upcoming_notify">After a banner refresh, remind for the nearest banner that opens soon.</string>
+    <string name="ba_settings_label_pool_ending_notify">Banner ends soon</string>
+    <string name="ba_settings_summary_pool_ending_notify">After a banner refresh, remind for the nearest banner that ends soon.</string>
+    <string name="ba_settings_label_calendar_pool_change_notify">Fetched change alerts</string>
+    <string name="ba_settings_summary_calendar_pool_change_notify">Remind when refreshed data adds entries or changes schedule times.</string>
     <string name="ba_settings_label_ap_threshold">AP reminder threshold</string>
     <string name="ba_settings_summary_ap_threshold">Recommended: 0-%1$d</string>
     <string name="ba_settings_label_media_adaptive_rotation">Adaptive media rotation</string>
@@ -131,6 +145,16 @@
     <string name="ba_arena_refresh_notification_content">Tactical Challenge reset</string>
     <string name="ba_arena_refresh_notification_content_detail">%1$s %2$d:00 Tactical Challenge reset</string>
     <string name="ba_arena_refresh_notification_island_text">Reset</string>
+    <string name="ba_calendar_notify_upcoming_title">Event starts soon</string>
+    <string name="ba_calendar_notify_upcoming_content">%1$s starts at %2$s</string>
+    <string name="ba_calendar_notify_ending_title">Event ends soon</string>
+    <string name="ba_calendar_notify_ending_content">%1$s ends at %2$s</string>
+    <string name="ba_pool_notify_upcoming_title">Banner opens soon</string>
+    <string name="ba_pool_notify_upcoming_content">%1$s opens at %2$s</string>
+    <string name="ba_pool_notify_ending_title">Banner ends soon</string>
+    <string name="ba_pool_notify_ending_content">%1$s ends at %2$s</string>
+    <string name="ba_calendar_pool_notify_change_title">Blue Archive data updated</string>
+    <string name="ba_calendar_pool_notify_change_content">%1$d event changes, %2$d banner changes</string>
 
     <string name="ba_catalog_page_title">Archive</string>
     <string name="ba_catalog_tab_title">Current section: %1$s</string>

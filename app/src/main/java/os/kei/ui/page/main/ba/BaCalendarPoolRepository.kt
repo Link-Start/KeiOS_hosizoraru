@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_CALENDAR_CACHE_SCHEMA_VERSION
@@ -16,8 +18,6 @@ import os.kei.ui.page.main.ba.support.fetchBaPoolEntries
 import os.kei.ui.page.main.ba.support.isNetworkAvailable
 import os.kei.ui.page.main.ba.support.runWithHardTimeout
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 internal data class BaCalendarSyncSnapshot(
     val entries: List<BaCalendarEntry>,
@@ -140,6 +140,14 @@ internal object BaCalendarPoolRepository {
                         localOnly = false
                     )
                 }
+                dispatchCalendarSyncNotifications(
+                    context = context,
+                    serverIndex = serverIndex,
+                    previousEntries = cachedEntries,
+                    nextEntries = entries,
+                    nowMs = now,
+                    hadCache = hasCache
+                )
                 BaCalendarPoolImageCache.scheduleCalendarWarm(
                     context = context,
                     serverIndex = serverIndex,
@@ -278,6 +286,14 @@ internal object BaCalendarPoolRepository {
                         localOnly = false
                     )
                 }
+                dispatchPoolSyncNotifications(
+                    context = context,
+                    serverIndex = serverIndex,
+                    previousEntries = cachedEntries,
+                    nextEntries = entries,
+                    nowMs = now,
+                    hadCache = hasCache
+                )
                 BaCalendarPoolImageCache.schedulePoolWarm(
                     context = context,
                     serverIndex = serverIndex,
@@ -309,4 +325,233 @@ internal object BaCalendarPoolRepository {
             lastSyncMs = cacheSnapshot.syncMs
         )
     }
+}
+
+private fun dispatchCalendarSyncNotifications(
+    context: Context,
+    serverIndex: Int,
+    previousEntries: List<BaCalendarEntry>,
+    nextEntries: List<BaCalendarEntry>,
+    nowMs: Long,
+    hadCache: Boolean,
+) {
+    val leadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
+    val leadMs = leadHours.coerceAtLeast(1) * 60L * 60L * 1000L
+    val notifiedKeys = BASettingsStore.loadCalendarPoolNotifiedKeys()
+
+    if (BASettingsStore.loadCalendarUpcomingNotifyEnabled()) {
+        val target = nextEntries
+            .asSequence()
+            .filter { it.beginAtMs > nowMs && it.beginAtMs - nowMs <= leadMs }
+            .sortedBy { it.beginAtMs }
+            .firstOrNull { entry ->
+                calendarNotifyKey(
+                    serverIndex,
+                    "calendar_start",
+                    entry.id,
+                    entry.beginAtMs,
+                    leadHours
+                ) !in notifiedKeys
+            }
+        if (target != null && BaCalendarPoolNotificationDispatcher.sendCalendarUpcoming(
+                context,
+                serverIndex,
+                target
+            )
+        ) {
+            BASettingsStore.markCalendarPoolNotified(
+                calendarNotifyKey(
+                    serverIndex,
+                    "calendar_start",
+                    target.id,
+                    target.beginAtMs,
+                    leadHours
+                )
+            )
+        }
+    }
+
+    if (BASettingsStore.loadCalendarEndingNotifyEnabled()) {
+        val target = nextEntries
+            .asSequence()
+            .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs }
+            .sortedBy { it.endAtMs }
+            .firstOrNull { entry ->
+                calendarNotifyKey(
+                    serverIndex,
+                    "calendar_end",
+                    entry.id,
+                    entry.endAtMs,
+                    leadHours
+                ) !in notifiedKeys
+            }
+        if (target != null && BaCalendarPoolNotificationDispatcher.sendCalendarEnding(
+                context,
+                serverIndex,
+                target
+            )
+        ) {
+            BASettingsStore.markCalendarPoolNotified(
+                calendarNotifyKey(serverIndex, "calendar_end", target.id, target.endAtMs, leadHours)
+            )
+        }
+    }
+
+    if (hadCache && BASettingsStore.loadCalendarPoolChangeNotifyEnabled()) {
+        val changedCount = countCalendarEntryChanges(previousEntries, nextEntries)
+        val changeKey = calendarNotifyKey(
+            serverIndex,
+            "calendar_change",
+            changedCount,
+            calendarEntriesFingerprint(nextEntries),
+            0
+        )
+        if (changedCount > 0 &&
+            changeKey !in notifiedKeys &&
+            BaCalendarPoolNotificationDispatcher.sendDataChanged(context, changedCount, 0)
+        ) {
+            BASettingsStore.markCalendarPoolNotified(changeKey)
+        }
+    }
+}
+
+private fun dispatchPoolSyncNotifications(
+    context: Context,
+    serverIndex: Int,
+    previousEntries: List<BaPoolEntry>,
+    nextEntries: List<BaPoolEntry>,
+    nowMs: Long,
+    hadCache: Boolean,
+) {
+    val leadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
+    val leadMs = leadHours.coerceAtLeast(1) * 60L * 60L * 1000L
+    val notifiedKeys = BASettingsStore.loadCalendarPoolNotifiedKeys()
+
+    if (BASettingsStore.loadPoolUpcomingNotifyEnabled()) {
+        val target = nextEntries
+            .asSequence()
+            .filter { it.startAtMs > nowMs && it.startAtMs - nowMs <= leadMs }
+            .sortedBy { it.startAtMs }
+            .firstOrNull { entry ->
+                calendarNotifyKey(
+                    serverIndex,
+                    "pool_start",
+                    entry.id,
+                    entry.startAtMs,
+                    leadHours
+                ) !in notifiedKeys
+            }
+        if (target != null && BaCalendarPoolNotificationDispatcher.sendPoolUpcoming(
+                context,
+                serverIndex,
+                target
+            )
+        ) {
+            BASettingsStore.markCalendarPoolNotified(
+                calendarNotifyKey(serverIndex, "pool_start", target.id, target.startAtMs, leadHours)
+            )
+        }
+    }
+
+    if (BASettingsStore.loadPoolEndingNotifyEnabled()) {
+        val target = nextEntries
+            .asSequence()
+            .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs }
+            .sortedBy { it.endAtMs }
+            .firstOrNull { entry ->
+                calendarNotifyKey(
+                    serverIndex,
+                    "pool_end",
+                    entry.id,
+                    entry.endAtMs,
+                    leadHours
+                ) !in notifiedKeys
+            }
+        if (target != null && BaCalendarPoolNotificationDispatcher.sendPoolEnding(
+                context,
+                serverIndex,
+                target
+            )
+        ) {
+            BASettingsStore.markCalendarPoolNotified(
+                calendarNotifyKey(serverIndex, "pool_end", target.id, target.endAtMs, leadHours)
+            )
+        }
+    }
+
+    if (hadCache && BASettingsStore.loadCalendarPoolChangeNotifyEnabled()) {
+        val changedCount = countPoolEntryChanges(previousEntries, nextEntries)
+        val changeKey = calendarNotifyKey(
+            serverIndex,
+            "pool_change",
+            changedCount,
+            poolEntriesFingerprint(nextEntries),
+            0
+        )
+        if (changedCount > 0 &&
+            changeKey !in notifiedKeys &&
+            BaCalendarPoolNotificationDispatcher.sendDataChanged(context, 0, changedCount)
+        ) {
+            BASettingsStore.markCalendarPoolNotified(changeKey)
+        }
+    }
+}
+
+private fun calendarEntriesFingerprint(entries: List<BaCalendarEntry>): Long {
+    return entries
+        .sortedBy { it.id }
+        .joinToString(separator = "\n") { "${it.id}|${it.title}|${it.kindId}|${it.beginAtMs}|${it.endAtMs}|${it.linkUrl}" }
+        .hashCode()
+        .toLong()
+        .and(0xffffffffL)
+}
+
+private fun poolEntriesFingerprint(entries: List<BaPoolEntry>): Long {
+    return entries
+        .sortedBy { it.id }
+        .joinToString(separator = "\n") { "${it.id}|${it.name}|${it.tagId}|${it.startAtMs}|${it.endAtMs}|${it.linkUrl}" }
+        .hashCode()
+        .toLong()
+        .and(0xffffffffL)
+}
+
+private fun countCalendarEntryChanges(
+    previousEntries: List<BaCalendarEntry>,
+    nextEntries: List<BaCalendarEntry>,
+): Int {
+    val previousSignatures = previousEntries.associateBy(
+        keySelector = { it.id },
+        valueTransform = { "${it.title}|${it.kindId}|${it.beginAtMs}|${it.endAtMs}|${it.linkUrl}" }
+    )
+    return nextEntries.count { entry ->
+        previousSignatures[entry.id] != "${entry.title}|${entry.kindId}|${entry.beginAtMs}|${entry.endAtMs}|${entry.linkUrl}"
+    }
+}
+
+private fun countPoolEntryChanges(
+    previousEntries: List<BaPoolEntry>,
+    nextEntries: List<BaPoolEntry>,
+): Int {
+    val previousSignatures = previousEntries.associateBy(
+        keySelector = { it.id },
+        valueTransform = { "${it.name}|${it.tagId}|${it.startAtMs}|${it.endAtMs}|${it.linkUrl}" }
+    )
+    return nextEntries.count { entry ->
+        previousSignatures[entry.id] != "${entry.name}|${entry.tagId}|${entry.startAtMs}|${entry.endAtMs}|${entry.linkUrl}"
+    }
+}
+
+private fun calendarNotifyKey(
+    serverIndex: Int,
+    type: String,
+    id: Int,
+    atMs: Long,
+    leadHours: Int,
+): String {
+    return "${
+        serverIndex.coerceIn(
+            0,
+            2
+        )
+    }|$type|$id|${atMs.coerceAtLeast(0L)}|${leadHours.coerceAtLeast(0)}"
 }

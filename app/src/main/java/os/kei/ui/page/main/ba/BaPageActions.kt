@@ -114,6 +114,12 @@ internal data class BaNotificationSettingsPersistenceResult(
     val savedThreshold: Int,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
+    val calendarUpcomingNotifyEnabled: Boolean,
+    val calendarEndingNotifyEnabled: Boolean,
+    val poolUpcomingNotifyEnabled: Boolean,
+    val poolEndingNotifyEnabled: Boolean,
+    val calendarPoolChangeNotifyEnabled: Boolean,
+    val calendarPoolNotifyLeadHours: Int,
 )
 
 internal fun persistBaNotificationSettingsDraft(
@@ -125,12 +131,24 @@ internal fun persistBaNotificationSettingsDraft(
     BASettingsStore.saveApNotifyEnabled(sheetState.apNotifyEnabled)
     BASettingsStore.saveArenaRefreshNotifyEnabled(sheetState.arenaRefreshNotifyEnabled)
     BASettingsStore.saveCafeVisitNotifyEnabled(sheetState.cafeVisitNotifyEnabled)
+    BASettingsStore.saveCalendarUpcomingNotifyEnabled(sheetState.calendarUpcomingNotifyEnabled)
+    BASettingsStore.saveCalendarEndingNotifyEnabled(sheetState.calendarEndingNotifyEnabled)
+    BASettingsStore.savePoolUpcomingNotifyEnabled(sheetState.poolUpcomingNotifyEnabled)
+    BASettingsStore.savePoolEndingNotifyEnabled(sheetState.poolEndingNotifyEnabled)
+    BASettingsStore.saveCalendarPoolChangeNotifyEnabled(sheetState.calendarPoolChangeNotifyEnabled)
+    BASettingsStore.saveCalendarPoolNotifyLeadHours(sheetState.calendarPoolNotifyLeadHours)
     BASettingsStore.saveApNotifyThreshold(savedThreshold)
 
     return BaNotificationSettingsPersistenceResult(
         savedThreshold = savedThreshold,
         arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
+        calendarUpcomingNotifyEnabled = sheetState.calendarUpcomingNotifyEnabled,
+        calendarEndingNotifyEnabled = sheetState.calendarEndingNotifyEnabled,
+        poolUpcomingNotifyEnabled = sheetState.poolUpcomingNotifyEnabled,
+        poolEndingNotifyEnabled = sheetState.poolEndingNotifyEnabled,
+        calendarPoolChangeNotifyEnabled = sheetState.calendarPoolChangeNotifyEnabled,
+        calendarPoolNotifyLeadHours = sheetState.calendarPoolNotifyLeadHours,
     )
 }
 

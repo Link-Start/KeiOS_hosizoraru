@@ -350,6 +350,14 @@ fun BAPage(
             onApNotifyEnabledChange = { ui.sheetApNotifyEnabled = it },
             onArenaRefreshNotifyEnabledChange = { ui.sheetArenaRefreshNotifyEnabled = it },
             onCafeVisitNotifyEnabledChange = { ui.sheetCafeVisitNotifyEnabled = it },
+            onCalendarUpcomingNotifyEnabledChange = { ui.sheetCalendarUpcomingNotifyEnabled = it },
+            onCalendarEndingNotifyEnabledChange = { ui.sheetCalendarEndingNotifyEnabled = it },
+            onPoolUpcomingNotifyEnabledChange = { ui.sheetPoolUpcomingNotifyEnabled = it },
+            onPoolEndingNotifyEnabledChange = { ui.sheetPoolEndingNotifyEnabled = it },
+            onCalendarPoolChangeNotifyEnabledChange = {
+                ui.sheetCalendarPoolChangeNotifyEnabled = it
+            },
+            onCalendarPoolNotifyLeadHoursSelected = { ui.sheetCalendarPoolNotifyLeadHours = it },
             onApNotifyThresholdTextChange = { ui.sheetApNotifyThresholdText = it },
             onApNotifyThresholdDone = {
                 val normalized =

@@ -86,6 +86,8 @@
     <string name="ba_settings_section_content">显示内容</string>
     <string name="ba_settings_card_sync_title">数据同步</string>
     <string name="ba_settings_card_ap_title">AP设置</string>
+    <string name="ba_settings_card_daily_notify_title">日常刷新提醒</string>
+    <string name="ba_settings_card_calendar_pool_notify_title">活动与卡池提醒</string>
     <string name="ba_settings_card_media_title">媒体设置</string>
     <string name="ba_settings_summary_refresh_interval">活动与卡池自动刷新</string>
     <string name="ba_settings_label_ap_notify">AP 通知</string>
@@ -93,6 +95,18 @@
     <string name="ba_settings_summary_cafe_visit_notify">按当前服务器时区在 04:00 / 16:00 各提醒一次</string>
     <string name="ba_settings_label_arena_refresh_notify">竞技场刷新通知</string>
     <string name="ba_settings_summary_arena_refresh_notify">按当前服务器时区在 14:00 提醒一次</string>
+    <string name="ba_settings_label_calendar_pool_notify_lead">即将提醒时间</string>
+    <string name="ba_settings_summary_calendar_pool_notify_lead">活动和卡池开始或结束前触发</string>
+    <string name="ba_settings_label_calendar_upcoming_notify">活动即将开始</string>
+    <string name="ba_settings_summary_calendar_upcoming_notify">刷新活动日历后提醒最近一项即将开始的活动</string>
+    <string name="ba_settings_label_calendar_ending_notify">活动即将结束</string>
+    <string name="ba_settings_summary_calendar_ending_notify">刷新活动日历后提醒最近一项即将结束的活动</string>
+    <string name="ba_settings_label_pool_upcoming_notify">卡池即将开启</string>
+    <string name="ba_settings_summary_pool_upcoming_notify">刷新卡池信息后提醒最近一项即将开启的卡池</string>
+    <string name="ba_settings_label_pool_ending_notify">卡池即将结束</string>
+    <string name="ba_settings_summary_pool_ending_notify">刷新卡池信息后提醒最近一项即将结束的卡池</string>
+    <string name="ba_settings_label_calendar_pool_change_notify">抓取变动提醒</string>
+    <string name="ba_settings_summary_calendar_pool_change_notify">刷新抓取到新增或时间变动时提醒</string>
     <string name="ba_settings_label_ap_threshold">AP 提醒阈值</string>
     <string name="ba_settings_summary_ap_threshold">建议 0-%1$d</string>
     <string name="ba_settings_label_media_adaptive_rotation">媒体自适应旋转</string>
@@ -131,6 +145,16 @@
     <string name="ba_arena_refresh_notification_content">竞技场已刷新</string>
     <string name="ba_arena_refresh_notification_content_detail">%1$s %2$d:00 竞技场已刷新</string>
     <string name="ba_arena_refresh_notification_island_text">刷新</string>
+    <string name="ba_calendar_notify_upcoming_title">活动即将开始</string>
+    <string name="ba_calendar_notify_upcoming_content">%1$s 将在 %2$s 开始</string>
+    <string name="ba_calendar_notify_ending_title">活动即将结束</string>
+    <string name="ba_calendar_notify_ending_content">%1$s 将在 %2$s 结束</string>
+    <string name="ba_pool_notify_upcoming_title">卡池即将开启</string>
+    <string name="ba_pool_notify_upcoming_content">%1$s 将在 %2$s 开启</string>
+    <string name="ba_pool_notify_ending_title">卡池即将结束</string>
+    <string name="ba_pool_notify_ending_content">%1$s 将在 %2$s 结束</string>
+    <string name="ba_calendar_pool_notify_change_title">BA 信息已更新</string>
+    <string name="ba_calendar_pool_notify_change_content">活动变动 %1$d 项，卡池变动 %2$d 项</string>
 
     <string name="ba_catalog_page_title">图鉴</string>
     <string name="ba_catalog_tab_title">当前分区：%1$s</string>

@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.ba.support.BAInitState
+import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 @Stable
@@ -45,6 +46,12 @@ internal data class BaPageUiState(
     val sheetApNotifyEnabled: Boolean,
     val sheetArenaRefreshNotifyEnabled: Boolean,
     val sheetCafeVisitNotifyEnabled: Boolean,
+    val sheetCalendarUpcomingNotifyEnabled: Boolean,
+    val sheetCalendarEndingNotifyEnabled: Boolean,
+    val sheetPoolUpcomingNotifyEnabled: Boolean,
+    val sheetPoolEndingNotifyEnabled: Boolean,
+    val sheetCalendarPoolChangeNotifyEnabled: Boolean,
+    val sheetCalendarPoolNotifyLeadHours: Int,
     val sheetApNotifyThresholdText: String,
     val sheetMediaAdaptiveRotationEnabled: Boolean,
     val sheetMediaSaveCustomEnabled: Boolean,
@@ -88,6 +95,12 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var sheetApNotifyEnabled by mutableStateOf(snapshot.apNotifyEnabled)
     var sheetArenaRefreshNotifyEnabled by mutableStateOf(snapshot.arenaRefreshNotifyEnabled)
     var sheetCafeVisitNotifyEnabled by mutableStateOf(snapshot.cafeVisitNotifyEnabled)
+    var sheetCalendarUpcomingNotifyEnabled by mutableStateOf(snapshot.calendarUpcomingNotifyEnabled)
+    var sheetCalendarEndingNotifyEnabled by mutableStateOf(snapshot.calendarEndingNotifyEnabled)
+    var sheetPoolUpcomingNotifyEnabled by mutableStateOf(snapshot.poolUpcomingNotifyEnabled)
+    var sheetPoolEndingNotifyEnabled by mutableStateOf(snapshot.poolEndingNotifyEnabled)
+    var sheetCalendarPoolChangeNotifyEnabled by mutableStateOf(snapshot.calendarPoolChangeNotifyEnabled)
+    var sheetCalendarPoolNotifyLeadHours by mutableIntStateOf(snapshot.calendarPoolNotifyLeadHours)
     var sheetApNotifyThresholdText by mutableStateOf(snapshot.apNotifyThreshold.toString())
     var sheetMediaAdaptiveRotationEnabled by mutableStateOf(snapshot.mediaAdaptiveRotationEnabled)
     var sheetMediaSaveCustomEnabled by mutableStateOf(snapshot.mediaSaveCustomEnabled)
@@ -130,6 +143,12 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             sheetApNotifyEnabled = sheetApNotifyEnabled,
             sheetArenaRefreshNotifyEnabled = sheetArenaRefreshNotifyEnabled,
             sheetCafeVisitNotifyEnabled = sheetCafeVisitNotifyEnabled,
+            sheetCalendarUpcomingNotifyEnabled = sheetCalendarUpcomingNotifyEnabled,
+            sheetCalendarEndingNotifyEnabled = sheetCalendarEndingNotifyEnabled,
+            sheetPoolUpcomingNotifyEnabled = sheetPoolUpcomingNotifyEnabled,
+            sheetPoolEndingNotifyEnabled = sheetPoolEndingNotifyEnabled,
+            sheetCalendarPoolChangeNotifyEnabled = sheetCalendarPoolChangeNotifyEnabled,
+            sheetCalendarPoolNotifyLeadHours = sheetCalendarPoolNotifyLeadHours,
             sheetApNotifyThresholdText = sheetApNotifyThresholdText,
             sheetMediaAdaptiveRotationEnabled = sheetMediaAdaptiveRotationEnabled,
             sheetMediaSaveCustomEnabled = sheetMediaSaveCustomEnabled,
@@ -190,6 +209,12 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         sheetApNotifyEnabled = office.apNotifyEnabled
         sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
         sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
+        sheetCalendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled()
+        sheetCalendarEndingNotifyEnabled = BASettingsStore.loadCalendarEndingNotifyEnabled()
+        sheetPoolUpcomingNotifyEnabled = BASettingsStore.loadPoolUpcomingNotifyEnabled()
+        sheetPoolEndingNotifyEnabled = BASettingsStore.loadPoolEndingNotifyEnabled()
+        sheetCalendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled()
+        sheetCalendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
         sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
     }
 }

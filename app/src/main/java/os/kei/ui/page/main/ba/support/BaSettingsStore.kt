@@ -19,6 +19,14 @@ internal object BASettingsStore {
     private const val KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS = "arena_refresh_last_notified_slot_ms"
     private const val KEY_CAFE_VISIT_NOTIFY_ENABLED = "cafe_visit_notify_enabled"
     private const val KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS = "cafe_visit_last_notified_slot_ms"
+    private const val KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED = "calendar_upcoming_notify_enabled"
+    private const val KEY_CALENDAR_ENDING_NOTIFY_ENABLED = "calendar_ending_notify_enabled"
+    private const val KEY_POOL_UPCOMING_NOTIFY_ENABLED = "pool_upcoming_notify_enabled"
+    private const val KEY_POOL_ENDING_NOTIFY_ENABLED = "pool_ending_notify_enabled"
+    private const val KEY_CALENDAR_POOL_CHANGE_NOTIFY_ENABLED =
+        "calendar_pool_change_notify_enabled"
+    private const val KEY_CALENDAR_POOL_NOTIFY_LEAD_HOURS = "calendar_pool_notify_lead_hours"
+    private const val KEY_CALENDAR_POOL_NOTIFIED_KEYS = "calendar_pool_notified_keys"
     private const val KEY_AP_CURRENT = "ap_current"
     private const val KEY_AP_CURRENT_EXACT = "ap_current_exact"
     private const val KEY_AP_REGEN_BASE_MS = "ap_regen_base_ms"
@@ -207,6 +215,23 @@ internal object BASettingsStore {
             cafeVisitNotifyEnabled = store.decodeBool(KEY_CAFE_VISIT_NOTIFY_ENABLED, false),
             cafeVisitLastNotifiedSlotMs = store.decodeLong(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, 0L)
                 .coerceAtLeast(0L),
+            calendarUpcomingNotifyEnabled = store.decodeBool(
+                KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED,
+                false
+            ),
+            calendarEndingNotifyEnabled = store.decodeBool(
+                KEY_CALENDAR_ENDING_NOTIFY_ENABLED,
+                false
+            ),
+            poolUpcomingNotifyEnabled = store.decodeBool(KEY_POOL_UPCOMING_NOTIFY_ENABLED, false),
+            poolEndingNotifyEnabled = store.decodeBool(KEY_POOL_ENDING_NOTIFY_ENABLED, false),
+            calendarPoolChangeNotifyEnabled = store.decodeBool(
+                KEY_CALENDAR_POOL_CHANGE_NOTIFY_ENABLED,
+                false
+            ),
+            calendarPoolNotifyLeadHours = BaCalendarPoolNotifyLeadOption.fromHours(
+                store.decodeInt(KEY_CALENDAR_POOL_NOTIFY_LEAD_HOURS, 24)
+            ).hours,
             coffeeHeadpatMs = store.decodeLong(KEY_COFFEE_HEADPAT_MS, 0L),
             coffeeInvite1UsedMs = store.decodeLong(KEY_COFFEE_INVITE1_USED_MS, 0L),
             coffeeInvite2UsedMs = store.decodeLong(KEY_COFFEE_INVITE2_USED_MS, 0L),
@@ -341,6 +366,70 @@ internal object BASettingsStore {
 
     fun saveCafeVisitLastNotifiedSlotMs(slotMs: Long) {
         kv().encode(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+    }
+
+    fun loadCalendarUpcomingNotifyEnabled(): Boolean =
+        kv().decodeBool(KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED, false)
+
+    fun saveCalendarUpcomingNotifyEnabled(enabled: Boolean) {
+        kv().encode(KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED, enabled)
+    }
+
+    fun loadCalendarEndingNotifyEnabled(): Boolean =
+        kv().decodeBool(KEY_CALENDAR_ENDING_NOTIFY_ENABLED, false)
+
+    fun saveCalendarEndingNotifyEnabled(enabled: Boolean) {
+        kv().encode(KEY_CALENDAR_ENDING_NOTIFY_ENABLED, enabled)
+    }
+
+    fun loadPoolUpcomingNotifyEnabled(): Boolean =
+        kv().decodeBool(KEY_POOL_UPCOMING_NOTIFY_ENABLED, false)
+
+    fun savePoolUpcomingNotifyEnabled(enabled: Boolean) {
+        kv().encode(KEY_POOL_UPCOMING_NOTIFY_ENABLED, enabled)
+    }
+
+    fun loadPoolEndingNotifyEnabled(): Boolean =
+        kv().decodeBool(KEY_POOL_ENDING_NOTIFY_ENABLED, false)
+
+    fun savePoolEndingNotifyEnabled(enabled: Boolean) {
+        kv().encode(KEY_POOL_ENDING_NOTIFY_ENABLED, enabled)
+    }
+
+    fun loadCalendarPoolChangeNotifyEnabled(): Boolean =
+        kv().decodeBool(KEY_CALENDAR_POOL_CHANGE_NOTIFY_ENABLED, false)
+
+    fun saveCalendarPoolChangeNotifyEnabled(enabled: Boolean) {
+        kv().encode(KEY_CALENDAR_POOL_CHANGE_NOTIFY_ENABLED, enabled)
+    }
+
+    fun loadCalendarPoolNotifyLeadHours(): Int {
+        return BaCalendarPoolNotifyLeadOption.fromHours(
+            kv().decodeInt(KEY_CALENDAR_POOL_NOTIFY_LEAD_HOURS, 24)
+        ).hours
+    }
+
+    fun saveCalendarPoolNotifyLeadHours(hours: Int) {
+        kv().encode(
+            KEY_CALENDAR_POOL_NOTIFY_LEAD_HOURS,
+            BaCalendarPoolNotifyLeadOption.fromHours(hours).hours
+        )
+    }
+
+    fun loadCalendarPoolNotifiedKeys(): Set<String> {
+        return kv().decodeString(KEY_CALENDAR_POOL_NOTIFIED_KEYS, "")
+            .orEmpty()
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+    }
+
+    fun markCalendarPoolNotified(key: String) {
+        val normalized = key.trim()
+        if (normalized.isBlank()) return
+        val keys = (loadCalendarPoolNotifiedKeys() + normalized).toList().takeLast(500)
+        kv().encode(KEY_CALENDAR_POOL_NOTIFIED_KEYS, keys.joinToString(separator = "\n"))
     }
 
     fun loadApCurrent(): Double {

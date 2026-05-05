@@ -25,6 +25,12 @@ internal data class BaPageSnapshot(
     val arenaRefreshLastNotifiedSlotMs: Long = 0L,
     val cafeVisitNotifyEnabled: Boolean = false,
     val cafeVisitLastNotifiedSlotMs: Long = 0L,
+    val calendarUpcomingNotifyEnabled: Boolean = false,
+    val calendarEndingNotifyEnabled: Boolean = false,
+    val poolUpcomingNotifyEnabled: Boolean = false,
+    val poolEndingNotifyEnabled: Boolean = false,
+    val calendarPoolChangeNotifyEnabled: Boolean = false,
+    val calendarPoolNotifyLeadHours: Int = 24,
     val coffeeHeadpatMs: Long = 0L,
     val coffeeInvite1UsedMs: Long = 0L,
     val coffeeInvite2UsedMs: Long = 0L,
@@ -57,6 +63,20 @@ internal enum class BaCalendarRefreshIntervalOption(val hours: Int, val labelRes
     companion object {
         fun fromHours(hours: Int): BaCalendarRefreshIntervalOption {
             return entries.firstOrNull { it.hours == hours } ?: Hour12
+        }
+    }
+}
+
+internal enum class BaCalendarPoolNotifyLeadOption(val hours: Int, val labelRes: Int) {
+    Hour1(1, R.string.ba_refresh_interval_1h),
+    Hour3(3, R.string.ba_refresh_interval_3h),
+    Hour6(6, R.string.ba_refresh_interval_6h),
+    Hour12(12, R.string.ba_refresh_interval_12h),
+    Hour24(24, R.string.ba_refresh_interval_24h);
+
+    companion object {
+        fun fromHours(hours: Int): BaCalendarPoolNotifyLeadOption {
+            return entries.firstOrNull { it.hours == hours } ?: Hour24
         }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -29,17 +30,16 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
-import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.AppScaffold
+import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import os.kei.ui.page.main.widget.chrome.AppScaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
@@ -131,6 +131,7 @@ internal fun GitHubMainContent(
                 GitHubTopBarSection(
                     topBarColor = topBarColor,
                     scrollBehavior = scrollBehavior,
+                    titleBackdrop = topBarBackdrop,
                 )
             }
         ) { innerPadding ->
@@ -222,7 +223,11 @@ internal fun GitHubMainContent(
                     keyboardLift = floatingKeyboardLift,
                     modifier = Modifier
                         .align(dockAlignment)
-                        .padding(start = dockStartPadding, end = dockEndPadding, bottom = searchDockBottom)
+                        .padding(
+                            start = dockStartPadding,
+                            end = dockEndPadding,
+                            bottom = searchDockBottom
+                        )
                 )
             }
         }

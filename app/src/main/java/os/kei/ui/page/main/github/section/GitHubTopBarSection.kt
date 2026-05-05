@@ -26,12 +26,14 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 internal fun GitHubTopBarSection(
     topBarColor: Color,
     scrollBehavior: ScrollBehavior,
+    titleBackdrop: LayerBackdrop? = null,
 ) {
     AppTopBarSection(
         title = "",
         largeTitle = stringResource(R.string.github_page_title),
         scrollBehavior = scrollBehavior,
         color = topBarColor,
+        titleBackdrop = titleBackdrop,
     ) {}
 }
 

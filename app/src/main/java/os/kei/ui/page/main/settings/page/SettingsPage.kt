@@ -498,6 +498,7 @@ fun SettingsPage(
             .nestedScroll(bottomBarNestedScrollConnection),
         scrollBehavior = scrollBehavior,
         topBarColor = Color.Transparent,
+        titleBackdrop = topBarBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),

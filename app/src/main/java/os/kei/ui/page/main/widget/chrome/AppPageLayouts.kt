@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 
@@ -59,6 +60,7 @@ fun AppPageScaffold(
     topBarColor: Color = Color.Transparent,
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    titleBackdrop: Backdrop? = null,
     bottomBar: @Composable () -> Unit = {},
     searchBarVisible: Boolean = false,
     searchBarAnimationLabelPrefix: String = "appPageSearch",
@@ -75,6 +77,7 @@ fun AppPageScaffold(
                     scrollBehavior = scrollBehavior,
                     color = topBarColor,
                     navigationIcon = navigationIcon,
+                    titleBackdrop = titleBackdrop,
                     searchBarVisible = searchBarVisible,
                     searchBarAnimationLabelPrefix = searchBarAnimationLabelPrefix,
                     searchBarContent = searchBarContent

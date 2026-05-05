@@ -58,6 +58,7 @@ fun McpSkillPage(
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarMaterialBackdrop,
+        titleBackdrop = topBarBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = MiuixIcons.Regular.Back,

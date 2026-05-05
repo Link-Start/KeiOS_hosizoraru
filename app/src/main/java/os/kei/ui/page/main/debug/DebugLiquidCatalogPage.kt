@@ -36,6 +36,7 @@ internal fun DebugLiquidCatalogPage(
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = Color.Transparent,
+        titleBackdrop = pageBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),

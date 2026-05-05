@@ -16,12 +16,14 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 internal fun BaTopBar(
     topBarColor: Color,
     scrollBehavior: ScrollBehavior?,
+    titleBackdrop: LayerBackdrop? = null,
 ) {
     AppTopBarSection(
         title = "",
         largeTitle = stringResource(R.string.ba_topbar_title),
         scrollBehavior = scrollBehavior,
         color = topBarColor,
+        titleBackdrop = titleBackdrop,
     )
 }
 

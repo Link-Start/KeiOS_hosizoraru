@@ -6,10 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
@@ -66,6 +66,7 @@ internal fun OsPageScaffoldShell(
         largeTitle = "OS",
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
+        titleBackdrop = topBarBackdrop,
         actions = {
             LiquidActionBar(
                 backdrop = topBarBackdrop,

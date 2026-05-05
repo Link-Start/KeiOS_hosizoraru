@@ -321,6 +321,7 @@ fun BaStudentGuidePage(
                     largeTitle = pageTitle,
                     scrollBehavior = scrollBehavior,
                     color = topBarMaterialBackdrop,
+                    titleBackdrop = topBarBackdrop,
                     navigationIcon = {
                         AppLiquidNavigationButton(
                             icon = appLucideBackIcon(),

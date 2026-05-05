@@ -196,6 +196,7 @@ private fun BaActivityCalendarPage(
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
+        titleBackdrop = pageBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),

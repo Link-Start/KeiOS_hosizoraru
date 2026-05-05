@@ -379,6 +379,7 @@ fun AboutPage(
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = Color.Transparent,
+        titleBackdrop = topBarBackdrop,
         navigationIcon = {
             if (onBack != null) {
                 AppLiquidNavigationButton(

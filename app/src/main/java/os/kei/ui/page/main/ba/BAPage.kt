@@ -268,6 +268,7 @@ fun BAPage(
                     BaTopBar(
                         topBarColor = topBarMaterialBackdrop,
                         scrollBehavior = scrollBehavior,
+                        titleBackdrop = backdrops.topBar,
                     )
                 },
             ) { innerPadding ->

@@ -78,9 +78,14 @@
     <string name="ba_pool_error_sync_failed">Recruitment banner sync failed. Check your network and try again.</string>
     <string name="ba_settings_title">Blue Archive Settings</string>
     <string name="ba_settings_section_basic">Basic</string>
+    <string name="ba_settings_section_sync">Sync</string>
+    <string name="ba_settings_section_notifications">Notifications</string>
+    <string name="ba_settings_section_media">Media</string>
     <string name="ba_settings_section_content">Content</string>
+    <string name="ba_settings_card_sync_title">Data Sync</string>
     <string name="ba_settings_card_ap_title">AP Settings</string>
     <string name="ba_settings_card_media_title">Media Settings</string>
+    <string name="ba_settings_summary_refresh_interval">Controls auto-refresh cadence for event calendar and recruitment banners.</string>
     <string name="ba_settings_label_ap_notify">AP notification</string>
     <string name="ba_settings_label_cafe_visit_notify">Cafe student visit notification</string>
     <string name="ba_settings_summary_cafe_visit_notify">Reminds at 04:00 and 16:00 in the selected server time zone.</string>
@@ -242,6 +247,7 @@
     <string name="ba_catalog_bgm_action_previous">Previous track</string>
     <string name="ba_catalog_bgm_action_next">Next track</string>
     <string name="ba_catalog_bgm_action_play">Play BGM</string>
+    <string name="ba_catalog_bgm_action_play_short">Play</string>
     <string name="ba_catalog_bgm_action_pause">Pause BGM</string>
     <string name="ba_catalog_bgm_action_repeat">Repeat</string>
     <string name="ba_catalog_bgm_action_favorite">Favorite</string>

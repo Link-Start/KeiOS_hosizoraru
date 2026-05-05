@@ -45,7 +45,9 @@ internal class BaGuideBgmPlaybackCoordinator(
 
     fun updateQueue(nextQueue: List<GuideBgmFavoriteItem>) {
         queue = nextQueue
-        if (selectedAudioUrl.isBlank() || nextQueue.none { it.audioUrl == selectedAudioUrl }) {
+        val selectedStillKnown = favorites.any { it.audioUrl == selectedAudioUrl } ||
+                nextQueue.any { it.audioUrl == selectedAudioUrl }
+        if (selectedAudioUrl.isBlank() || !selectedStillKnown) {
             selectedAudioUrl = nextQueue.firstOrNull()?.audioUrl
                 ?: favorites.firstOrNull()?.audioUrl
                 ?: ""

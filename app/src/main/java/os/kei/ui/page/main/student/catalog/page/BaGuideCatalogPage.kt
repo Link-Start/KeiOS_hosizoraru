@@ -799,7 +799,8 @@ private fun BaGuideFavoriteBgmMusicContent(
     LaunchedEffect(displayedFavorites) {
         playbackCoordinator.updateQueue(displayedFavorites)
     }
-    val selectedFavorite = displayedFavorites.firstOrNull { it.audioUrl == playbackCoordinator.selectedAudioUrl }
+    val selectedFavorite = playbackCoordinator.selectedFavorite
+        ?: displayedFavorites.firstOrNull { it.audioUrl == playbackCoordinator.selectedAudioUrl }
         ?: displayedFavorites.firstOrNull()
     val tracks = remember(displayedFavorites, cacheRevision) {
         displayedFavorites.map { favorite -> favorite.toBaGuideBgmTrack() }

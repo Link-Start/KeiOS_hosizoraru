@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -210,14 +211,16 @@ internal fun rememberMainLoadedPagerState(
     initialPage: Int,
     pageCount: Int
 ): MainLoadedPagerState {
+    var savedPage by rememberSaveable { mutableIntStateOf(initialPage.coerceAtLeast(0)) }
     val state = remember {
         MainLoadedPagerState(
-            initialPage = initialPage.coerceAtLeast(0),
+            initialPage = savedPage.coerceAtLeast(0),
             initialPageCount = pageCount
         )
     }
     SideEffect {
         state.updatePageCount(pageCount)
+        savedPage = state.settledPage
     }
     return state
 }

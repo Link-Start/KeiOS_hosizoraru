@@ -22,10 +22,9 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
-import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -224,7 +223,6 @@ fun BAPage(
         targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
         label = "ba_floating_action_dock_bottom"
     )
-    val baRefreshRunning = ui.baCalendarLoading || ui.baPoolLoading
     val baDockActions = listOf(
         AppFloatingDockAction(
             icon = osLucideCopyIcon(),
@@ -237,15 +235,7 @@ fun BAPage(
             contentDescription = stringResource(R.string.ba_calendar_cd_open_activity),
             iconTint = MiuixTheme.colorScheme.primary,
             onClick = { BaActivityCalendarActivity.launch(context) },
-        ),
-        AppFloatingDockAction(
-            icon = appLucideRefreshIcon(),
-            contentDescription = stringResource(R.string.ba_cd_refresh),
-            iconTint = MiuixTheme.colorScheme.primary,
-            enabled = !baRefreshRunning,
-            rotating = baRefreshRunning,
-            onClick = ::refreshAllBaData,
-        ),
+        )
     )
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
@@ -273,18 +263,7 @@ fun BAPage(
                 BaTopBarActions(
                     backdrop = backdrops.topBar,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    showCalendarIntervalPopup = ui.showCalendarIntervalPopup,
-                    calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
                     onShowSettings = ::openSettingsSheet,
-                    onShowCalendarIntervalPopupChange = { ui.showCalendarIntervalPopup = it },
-                    onCalendarRefreshIntervalSelected = { hours ->
-                        applyBaCalendarRefreshInterval(
-                            ui = ui,
-                            hours = hours,
-                            onRefreshCalendar = { refreshCalendar(force = true) },
-                            onRefreshPool = { refreshPool(force = true) },
-                        )
-                    },
                     onInteractionChanged = onActionBarInteractingChanged,
                 )
             }
@@ -319,6 +298,14 @@ fun BAPage(
             onShowEndedActivitiesChange = { ui.sheetShowEndedActivities = it },
             onShowEndedPoolsChange = { ui.sheetShowEndedPools = it },
             onShowCalendarPoolImagesChange = { ui.sheetShowCalendarPoolImages = it },
+            onCalendarRefreshIntervalSelected = { hours ->
+                applyBaCalendarRefreshInterval(
+                    ui = ui,
+                    hours = hours,
+                    onRefreshCalendar = { refreshCalendar(force = true) },
+                    onRefreshPool = { refreshPool(force = true) },
+                )
+            },
             onDismissRequest = ::closeSettingsSheet,
             onSaveRequest = ::saveSettings,
         )

@@ -7,18 +7,19 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.model.BottomPage
-import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 internal data class MainPagerTabJumpControllerState(
     val pagerScrollEnabled: Boolean,
@@ -46,7 +47,7 @@ internal fun rememberMainPagerTabJumpController(
     var pagerScrollEnabled by remember { mutableStateOf(true) }
     var showBottomBar by remember { mutableStateOf(true) }
     var navigationActive by remember { mutableStateOf(false) }
-    var selectedPageIndex by remember(tabs) {
+    var selectedPageIndex by rememberSaveable(tabs.map { it.name }) {
         mutableIntStateOf(pagerState.currentPage.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)))
     }
     val density = LocalDensity.current

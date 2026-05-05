@@ -14,27 +14,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.widget.glass.AppSwitch
+import os.kei.ui.page.main.ba.support.BaCalendarRefreshIntervalOption
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
+import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class BaSettingsSheetState(
     val cafeLevel: Int,
@@ -48,6 +51,7 @@ internal data class BaSettingsSheetState(
     val showEndedActivities: Boolean,
     val showEndedPools: Boolean,
     val showCalendarPoolImages: Boolean,
+    val calendarRefreshIntervalHours: Int,
 )
 
 @Composable
@@ -66,6 +70,7 @@ internal fun BaSettingsSheet(
     onShowEndedActivitiesChange: (Boolean) -> Unit,
     onShowEndedPoolsChange: (Boolean) -> Unit,
     onShowCalendarPoolImagesChange: (Boolean) -> Unit,
+    onCalendarRefreshIntervalSelected: (Int) -> Unit,
     onDismissRequest: () -> Unit,
     onSaveRequest: () -> Unit,
 ) {
@@ -109,12 +114,25 @@ internal fun BaSettingsSheet(
         },
     ) {
         SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_basic))
-            BaLiquidPanel(
-                backdrop = backdrop,
-                accentColor = settingsAccent,
-                variant = GlassVariant.SheetAction,
-            ) {
+            SheetSectionTitle(stringResource(R.string.ba_settings_section_sync))
+            SheetSectionCard {
+                Text(
+                    text = stringResource(R.string.ba_settings_card_sync_title),
+                    color = settingsAccent,
+                )
+                SheetFieldBlock(
+                    title = stringResource(R.string.ba_cd_refresh_interval),
+                    summary = stringResource(R.string.ba_settings_summary_refresh_interval),
+                ) {
+                    BaSettingsRefreshIntervalRow(
+                        selectedHours = state.calendarRefreshIntervalHours,
+                        onSelected = onCalendarRefreshIntervalSelected,
+                    )
+                }
+            }
+
+            SheetSectionTitle(stringResource(R.string.ba_settings_section_notifications))
+            SheetSectionCard {
                 Text(
                     text = stringResource(R.string.ba_settings_card_ap_title),
                     color = settingsAccent,
@@ -174,11 +192,9 @@ internal fun BaSettingsSheet(
                     )
                 }
             }
-            BaLiquidPanel(
-                backdrop = backdrop,
-                accentColor = settingsAccent,
-                variant = GlassVariant.SheetAction,
-            ) {
+
+            SheetSectionTitle(stringResource(R.string.ba_settings_section_media))
+            SheetSectionCard {
                 Text(
                     text = stringResource(R.string.ba_settings_card_media_title),
                     color = settingsAccent,
@@ -254,11 +270,7 @@ internal fun BaSettingsSheet(
                 }
             }
             SheetSectionTitle(stringResource(R.string.ba_settings_section_content))
-            BaLiquidPanel(
-                backdrop = backdrop,
-                accentColor = Color(0xFF60A5FA),
-                variant = GlassVariant.SheetAction,
-            ) {
+            SheetSectionCard {
                 SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_activity)) {
                     AppSwitch(
                         checked = state.showEndedActivities,
@@ -278,11 +290,7 @@ internal fun BaSettingsSheet(
                     )
                 }
             }
-            BaLiquidPanel(
-                backdrop = backdrop,
-                accentColor = Color(0xFFF59E0B),
-                variant = GlassVariant.SheetAction,
-            ) {
+            SheetSectionCard {
                 Text(
                     text = stringResource(R.string.ba_settings_note_timezone),
                     color = Color(0xFFF59E0B),
@@ -290,6 +298,37 @@ internal fun BaSettingsSheet(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun BaSettingsRefreshIntervalRow(
+    selectedHours: Int,
+    onSelected: (Int) -> Unit,
+) {
+    val selected = BaCalendarRefreshIntervalOption.fromHours(selectedHours)
+    androidx.compose.foundation.layout.Row(
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        BaCalendarRefreshIntervalOption.entries.forEach { option ->
+            val isSelected = option == selected
+            AppLiquidTextButton(
+                backdrop = null,
+                modifier = Modifier.weight(1f),
+                variant = if (isSelected) GlassVariant.SheetPrimaryAction else GlassVariant.SheetAction,
+                textColor = if (isSelected) {
+                    MiuixTheme.colorScheme.primary
+                } else {
+                    MiuixTheme.colorScheme.onBackgroundVariant
+                },
+                text = stringResource(option.labelRes),
+                onClick = { onSelected(option.hours) },
+                horizontalPadding = 6.dp,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

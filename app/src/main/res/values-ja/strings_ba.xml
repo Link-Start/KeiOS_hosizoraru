@@ -78,9 +78,14 @@
     <string name="ba_pool_error_sync_failed">募集情報の同期に失敗しました。ネットワークを確認して再試行してください。</string>
     <string name="ba_settings_title">ブルーアーカイブ設定</string>
     <string name="ba_settings_section_basic">基本</string>
+    <string name="ba_settings_section_sync">同期</string>
+    <string name="ba_settings_section_notifications">通知</string>
+    <string name="ba_settings_section_media">メディア</string>
     <string name="ba_settings_section_content">コンテンツ</string>
+    <string name="ba_settings_card_sync_title">データ同期</string>
     <string name="ba_settings_card_ap_title">AP 設定</string>
     <string name="ba_settings_card_media_title">メディア設定</string>
+    <string name="ba_settings_summary_refresh_interval">イベントカレンダーと募集情報の自動更新間隔を設定します。</string>
     <string name="ba_settings_label_ap_notify">AP 通知</string>
     <string name="ba_settings_label_cafe_visit_notify">カフェ生徒訪問通知</string>
     <string name="ba_settings_summary_cafe_visit_notify">選択したサーバー時刻の 04:00 と 16:00 に通知します。</string>
@@ -241,6 +246,7 @@
     <string name="ba_catalog_bgm_action_previous">前の曲</string>
     <string name="ba_catalog_bgm_action_next">次の曲</string>
     <string name="ba_catalog_bgm_action_play">BGM を再生</string>
+    <string name="ba_catalog_bgm_action_play_short">再生</string>
     <string name="ba_catalog_bgm_action_pause">BGM を一時停止</string>
     <string name="ba_catalog_bgm_action_repeat">リピート</string>
     <string name="ba_catalog_bgm_action_favorite">お気に入り</string>

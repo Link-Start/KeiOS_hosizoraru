@@ -25,6 +25,7 @@ internal fun buildBaSettingsSheetState(
         showEndedActivities = ui.sheetShowEndedActivities,
         showEndedPools = ui.sheetShowEndedPools,
         showCalendarPoolImages = ui.sheetShowCalendarPoolImages,
+        calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
     )
 }
 

@@ -492,7 +492,7 @@ private fun BaGuideBgmPlayAction(
                     if (isPlaying) {
                         R.string.ba_catalog_bgm_action_pause
                     } else {
-                        R.string.ba_catalog_bgm_action_play
+                        R.string.ba_catalog_bgm_action_play_short
                     }
                 ),
                 color = contentTint,

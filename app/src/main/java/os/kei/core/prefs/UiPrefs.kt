@@ -1,10 +1,10 @@
 package os.kei.core.prefs
 
-import os.kei.BuildConfig
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import os.kei.BuildConfig
 
 enum class AppThemeMode {
     FOLLOW_SYSTEM,
@@ -18,6 +18,7 @@ data class UiPrefsSnapshot(
     val liquidSwitchEnabled: Boolean,
     val transitionAnimationsEnabled: Boolean,
     val predictiveBackAnimationsEnabled: Boolean,
+    val searchAutoFocusEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
@@ -42,6 +43,7 @@ object UiPrefs {
     private const val KEY_LIQUID_SWITCH = "liquid_switch"
     private const val KEY_TRANSITION_ANIMATIONS = "transition_animations"
     private const val KEY_PREDICTIVE_BACK_ANIMATIONS = "predictive_back_animations"
+    private const val KEY_SEARCH_AUTO_FOCUS = "search_auto_focus"
     private const val KEY_GRIP_AWARE_FLOATING_DOCK = "grip_aware_floating_dock"
     private const val KEY_HOME_ICON_HDR = "home_icon_hdr"
     private const val KEY_HOME_DYNAMIC_FULL_EFFECT = "home_dynamic_full_effect"
@@ -113,6 +115,14 @@ object UiPrefs {
 
     fun setPredictiveBackAnimationsEnabled(value: Boolean) {
         kv().encode(KEY_PREDICTIVE_BACK_ANIMATIONS, value)
+    }
+
+    fun isSearchAutoFocusEnabled(defaultValue: Boolean = true): Boolean {
+        return kv().decodeBool(KEY_SEARCH_AUTO_FOCUS, defaultValue)
+    }
+
+    fun setSearchAutoFocusEnabled(value: Boolean) {
+        kv().encode(KEY_SEARCH_AUTO_FOCUS, value)
     }
 
     fun isGripAwareFloatingDockEnabled(defaultValue: Boolean = false): Boolean {
@@ -282,6 +292,7 @@ object UiPrefs {
             liquidSwitchEnabled = true,
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
+            searchAutoFocusEnabled = true,
             gripAwareFloatingDockEnabled = false,
             homeIconHdrEnabled = false,
             homeDynamicFullEffectEnabled = true,
@@ -308,6 +319,7 @@ object UiPrefs {
             liquidSwitchEnabled = store.decodeBool(KEY_LIQUID_SWITCH, true),
             transitionAnimationsEnabled = store.decodeBool(KEY_TRANSITION_ANIMATIONS, true),
             predictiveBackAnimationsEnabled = store.decodeBool(KEY_PREDICTIVE_BACK_ANIMATIONS, true),
+            searchAutoFocusEnabled = store.decodeBool(KEY_SEARCH_AUTO_FOCUS, true),
             gripAwareFloatingDockEnabled = store.decodeBool(KEY_GRIP_AWARE_FLOATING_DOCK, false),
             homeIconHdrEnabled = store.decodeBool(KEY_HOME_ICON_HDR, false),
             homeDynamicFullEffectEnabled = store.decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, true),

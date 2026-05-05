@@ -51,6 +51,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setSearchAutoFocusEnabled(value: Boolean) {
+        updateAndPersist({ copy(searchAutoFocusEnabled = value) }) {
+            UiPrefs.setSearchAutoFocusEnabled(value)
+        }
+    }
+
     suspend fun setGripAwareFloatingDockEnabled(value: Boolean) {
         updateAndPersist({ copy(gripAwareFloatingDockEnabled = value) }) {
             UiPrefs.setGripAwareFloatingDockEnabled(value)

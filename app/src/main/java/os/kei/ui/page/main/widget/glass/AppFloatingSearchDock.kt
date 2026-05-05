@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -101,6 +102,7 @@ fun AppFloatingSearchDock(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
+    val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
     val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
@@ -146,7 +148,7 @@ fun AppFloatingSearchDock(
                     query = query,
                     onQueryChange = onQueryChange,
                     focusRequester = focusRequester,
-                    autoFocus = expanded,
+                    autoFocus = expanded && searchAutoFocusEnabled,
                     onFocusActiveChange = { active ->
                         if (active) onExpandedChange(true)
                     },
@@ -222,6 +224,7 @@ fun AppFloatingVerticalSearchActionDock(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
+    val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
     val visibleActionCount = if (showAddAction) 3 else 2
     val dockHeight = size * visibleActionCount
@@ -268,7 +271,7 @@ fun AppFloatingVerticalSearchActionDock(
                 query = query,
                 onQueryChange = onQueryChange,
                 focusRequester = focusRequester,
-                autoFocus = expanded,
+                autoFocus = expanded && searchAutoFocusEnabled,
                 onFocusActiveChange = { active ->
                     if (active) onExpandedChange(true)
                 },

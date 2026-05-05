@@ -9,10 +9,10 @@ import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSectionActio
 import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSectionState
 import os.kei.ui.page.main.settings.section.SettingsCopySectionActions
 import os.kei.ui.page.main.settings.section.SettingsCopySectionState
-import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionActions
-import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionState
 import os.kei.ui.page.main.settings.section.SettingsNotifySectionActions
 import os.kei.ui.page.main.settings.section.SettingsNotifySectionState
+import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionActions
+import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionState
 import os.kei.ui.page.main.settings.section.SettingsVisualSectionActions
 import os.kei.ui.page.main.settings.section.SettingsVisualSectionState
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
@@ -48,6 +48,7 @@ internal fun rememberSettingsSectionContractBundle(
     liquidActionBarLayeredStyleEnabled: Boolean,
     liquidSwitchEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
+    searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
     superIslandBypassRestrictionEnabled: Boolean,
@@ -76,6 +77,7 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     onLiquidSwitchChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
+    onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
@@ -192,12 +194,14 @@ internal fun rememberSettingsSectionContractBundle(
         liquidActionBarLayeredStyleEnabled,
         liquidSwitchEnabled,
         liquidBottomBarEnabled,
+        searchAutoFocusEnabled,
         gripAwareFloatingDockEnabled
     ) {
         SettingsComponentEffectsSectionState(
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             liquidSwitchEnabled = liquidSwitchEnabled,
             liquidBottomBarEnabled = liquidBottomBarEnabled,
+            searchAutoFocusEnabled = searchAutoFocusEnabled,
             gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
         )
     }
@@ -205,12 +209,14 @@ internal fun rememberSettingsSectionContractBundle(
         onLiquidActionBarLayeredStyleChanged,
         onLiquidSwitchChanged,
         onLiquidBottomBarChanged,
+        onSearchAutoFocusChanged,
         onGripAwareFloatingDockChanged
     ) {
         SettingsComponentEffectsSectionActions(
             onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
             onLiquidSwitchChanged = onLiquidSwitchChanged,
             onLiquidBottomBarChanged = onLiquidBottomBarChanged,
+            onSearchAutoFocusChanged = onSearchAutoFocusChanged,
             onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
         )
     }

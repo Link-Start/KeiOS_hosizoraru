@@ -57,6 +57,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateSearchAutoFocusEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setSearchAutoFocusEnabled(value)
+        }
+    }
+
     fun updateGripAwareFloatingDockEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setGripAwareFloatingDockEnabled(value)

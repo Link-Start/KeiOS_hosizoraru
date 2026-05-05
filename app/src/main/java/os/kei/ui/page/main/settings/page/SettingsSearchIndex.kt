@@ -77,6 +77,7 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> {
                 stringResource(R.string.settings_bottom_bar_title),
                 stringResource(R.string.settings_actionbar_style_title),
                 stringResource(R.string.settings_liquid_switch_title),
+                stringResource(R.string.settings_search_auto_focus_title),
                 stringResource(R.string.settings_grip_aware_floating_dock_title),
             ),
         ),

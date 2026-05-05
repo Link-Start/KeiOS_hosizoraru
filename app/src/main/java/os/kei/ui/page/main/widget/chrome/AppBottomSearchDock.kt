@@ -74,6 +74,7 @@ fun AppBottomSearchDock(
     val keyboardController = LocalSoftwareKeyboardController.current
     val configuration = LocalConfiguration.current
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
+    val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val maxExpandedWidth = (
             configuration.screenWidthDp.dp -
                     horizontalInset * 2 -
@@ -148,7 +149,7 @@ fun AppBottomSearchDock(
                     query = query,
                     onQueryChange = onQueryChange,
                     focusRequester = focusRequester,
-                    autoFocus = expanded,
+                    autoFocus = expanded && searchAutoFocusEnabled,
                     onFocusActiveChange = { active ->
                         if (active) onExpandedChange(true)
                     },

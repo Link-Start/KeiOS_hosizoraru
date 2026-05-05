@@ -29,6 +29,7 @@ import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
+import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -89,6 +90,8 @@ internal fun MainScreenNavHost(
                 onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
                 predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
                 onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
+                searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
+                onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
                 gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
                 onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
                 homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
@@ -182,6 +185,7 @@ internal fun MainScreenNavHost(
     CompositionLocalProvider(
         LocalTransitionAnimationsEnabled provides prefsState.transitionAnimationsEnabled,
         LocalPredictiveBackAnimationsEnabled provides predictiveBackPreviewEnabled,
+        LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
         LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled
     ) {
         NavDisplay(

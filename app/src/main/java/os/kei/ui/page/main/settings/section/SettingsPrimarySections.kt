@@ -15,21 +15,21 @@ import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.appLucideLockIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
-import os.kei.ui.page.main.settings.support.SettingsActionItem
-import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
-import os.kei.ui.page.main.settings.support.SettingsGroupCard
-import os.kei.ui.page.main.settings.support.SettingsInfoItem
-import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_KEY_POINTS
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MAGNET_THRESHOLD
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MAX_MS
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MIN_MS
+import os.kei.ui.page.main.settings.support.SettingsActionItem
+import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
+import os.kei.ui.page.main.settings.support.SettingsGroupCard
+import os.kei.ui.page.main.settings.support.SettingsInfoItem
+import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.settings.support.formatMilliseconds
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import kotlin.math.roundToInt
 
 @Composable
@@ -480,6 +480,7 @@ internal fun SettingsComponentEffectsSection(
     val componentEffectsGroupActive = state.liquidActionBarLayeredStyleEnabled ||
         state.liquidSwitchEnabled ||
         state.liquidBottomBarEnabled ||
+            state.searchAutoFocusEnabled ||
         state.gripAwareFloatingDockEnabled
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_component_effects_header),
@@ -516,6 +517,18 @@ internal fun SettingsComponentEffectsSection(
             summary = stringResource(R.string.settings_bottom_bar_summary),
             checked = state.liquidBottomBarEnabled,
             onCheckedChange = actions.onLiquidBottomBarChanged
+        )
+        SettingsToggleItem(
+            title = stringResource(R.string.settings_search_auto_focus_title),
+            summary = if (state.searchAutoFocusEnabled) {
+                stringResource(R.string.settings_search_auto_focus_summary_enabled)
+            } else {
+                stringResource(R.string.settings_search_auto_focus_summary_disabled)
+            },
+            checked = state.searchAutoFocusEnabled,
+            onCheckedChange = actions.onSearchAutoFocusChanged,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_search_auto_focus_scope)
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_grip_aware_floating_dock_title),

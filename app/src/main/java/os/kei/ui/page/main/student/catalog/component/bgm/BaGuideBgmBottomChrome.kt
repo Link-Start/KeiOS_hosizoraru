@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -88,6 +89,11 @@ internal fun BaGuideBgmFloatingBottomChrome(
     val miniPlayerInteractionSource = remember { MutableInteractionSource() }
     val dockSurfaceInteractionSource = remember { MutableInteractionSource() }
     val searchFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(searchInputActive) {
+        if (searchInputActive) {
+            searchFocusRequester.requestFocus()
+        }
+    }
     val searchMode = resolveBaGuideBgmBottomChromeMode(
         searchVisible = searchVisible,
         searchInputActive = searchInputActive,

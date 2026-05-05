@@ -78,6 +78,7 @@ import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSor
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
+import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -448,6 +449,7 @@ fun BaGuideCatalogPage(
         focusedLift = 18.dp,
         restingBottomGap = navigationBottom
     )
+    val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val bottomChromeTargetPadding = navigationBottom + if (searchInputActive) keyboardLift else 0.dp
 
     BackHandler(enabled = searchVisible) {
@@ -730,6 +732,7 @@ fun BaGuideCatalogPage(
             onSearchClick = {
                 if (enableSearchBar) {
                     searchVisible = true
+                    searchInputActive = searchAutoFocusEnabled
                     chromeScrollState.expand()
                 }
             },

@@ -1,5 +1,5 @@
 name: CI / Benchmark APK
-run-name: "Benchmark APK #${{ github.run_number }} - ${{ github.event.pull_request.title || github.event.head_commit.message || github.event.inputs.commit || github.ref_name }}"
+run-name: "B#${{ github.run_number }} - ${{ github.event.pull_request.title || github.event.head_commit.message || github.event.inputs.commit || github.ref_name }}"
 
 on:
   push:
@@ -132,10 +132,10 @@ jobs:
         id: artifact
         run: |
           set -euo pipefail
-          APK_FILE_NAME="KeiOS-benchmark-${{ steps.context.outputs.short_sha }}-run-${{ steps.context.outputs.run_number }}.apk"
+          APK_FILE_NAME="${{ steps.meta.outputs.apk-file-name }}"
           cp "${{ steps.meta.outputs.apk-path }}" "${RUNNER_TEMP}/${APK_FILE_NAME}"
           echo "apk_file_name=${APK_FILE_NAME}" >> "${GITHUB_OUTPUT}"
-          echo "artifact_name=${APK_FILE_NAME%.apk}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=${{ steps.meta.outputs.artifact-name }}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload benchmark APK
         id: upload_apk

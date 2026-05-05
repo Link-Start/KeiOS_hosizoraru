@@ -1,12 +1,12 @@
 name: Prepare Android APK artifact metadata
-description: Compose normalized Android APK artifact and file names from Gradle output metadata.
+description: Compose Android APK artifact metadata from Gradle output metadata.
 
 inputs:
   variant:
-    description: Android Gradle variant label used in artifact names.
+    description: Android Gradle variant label.
     required: true
   abi:
-    description: ABI label used in artifact names.
+    description: ABI label.
     required: false
     default: arm64-v8a
   metadata-path:
@@ -72,18 +72,18 @@ runs:
             safe = re.sub(r"[^a-z0-9.]+", "-", str(value).lower()).strip("-")
             return safe or fallback
 
+        def filename_component(value, fallback):
+            safe = re.sub(r"[^A-Za-z0-9._+-]+", "-", str(value)).strip("-")
+            return safe or fallback
+
         variant = slug(os.environ["ARTIFACT_VARIANT"], "variant")
         abi = slug(os.environ["ARTIFACT_ABI"], "universal")
         version_name = str(element["versionName"])
         version_code = str(element["versionCode"])
         output_file = str(element["outputFile"])
-        safe_version = slug(version_name, "0")
+        safe_version = filename_component(version_name, "0")
 
-        artifact_base = (
-            f"keios-android-{variant}-apk-{abi}-v{safe_version}-{version_code}-"
-            f"{os.environ['SHORT_SHA']}-run-{os.environ['GITHUB_RUN_NUMBER']}-"
-            f"attempt-{os.environ['GITHUB_RUN_ATTEMPT']}"
-        )
+        artifact_base = f"KeiOS_{safe_version}"
         apk_path = metadata_path.parent / output_file
         outputs = {
             "application_id": str(data.get("applicationId", "")),

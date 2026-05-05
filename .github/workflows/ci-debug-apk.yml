@@ -1,5 +1,5 @@
 name: CI / Debug APK
-run-name: "Debug APK #${{ github.run_number }} - ${{ github.event.pull_request.title || github.event.head_commit.message || github.event.inputs.commit || github.ref_name }}"
+run-name: "D#${{ github.run_number }} - ${{ github.event.pull_request.title || github.event.head_commit.message || github.event.inputs.commit || github.ref_name }}"
 
 on:
   push:
@@ -132,10 +132,10 @@ jobs:
         id: artifact
         run: |
           set -euo pipefail
-          APK_FILE_NAME="KeiOS-debug-${{ steps.context.outputs.short_sha }}.apk"
+          APK_FILE_NAME="${{ steps.meta.outputs.apk-file-name }}"
           cp "${{ steps.meta.outputs.apk-path }}" "${RUNNER_TEMP}/${APK_FILE_NAME}"
           echo "apk_file_name=${APK_FILE_NAME}" >> "${GITHUB_OUTPUT}"
-          echo "artifact_name=${APK_FILE_NAME%.apk}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=${{ steps.meta.outputs.artifact-name }}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload debug APK
         id: upload_apk

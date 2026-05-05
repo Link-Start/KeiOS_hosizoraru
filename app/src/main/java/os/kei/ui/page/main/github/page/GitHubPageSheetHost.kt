@@ -169,8 +169,7 @@ internal fun GitHubPageSheetHost(
         onPreferPreReleaseInputChange = { state.preferPreReleaseInput = it },
         onAlwaysShowLatestReleaseDownloadButtonInputChange = {
             state.alwaysShowLatestReleaseDownloadButtonInput = it
-        },
-        onRequestDelete = actions::requestDeleteEditingItem
+        }
     )
 
     GitHubDeleteTrackDialog(

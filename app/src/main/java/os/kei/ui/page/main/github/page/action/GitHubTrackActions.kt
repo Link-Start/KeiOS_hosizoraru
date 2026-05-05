@@ -51,11 +51,6 @@ internal class GitHubTrackActions(
         env.toast(R.string.github_toast_track_current_app_added)
     }
 
-    fun requestDeleteEditingItem() {
-        state.pendingDeleteItem = state.editingTrackedItem
-        state.dismissTrackSheet()
-    }
-
     fun requestDeleteItem(item: GitHubTrackedApp) {
         if (state.deleteInProgress) return
         if (state.trackedItems.none { it.id == item.id }) return

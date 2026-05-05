@@ -243,8 +243,6 @@ internal class GitHubPageActions(
 
     fun dismissTrackSheet() = trackActions.dismissTrackSheet()
 
-    fun requestDeleteEditingItem() = trackActions.requestDeleteEditingItem()
-
     fun requestDeleteTrackedItem(item: GitHubTrackedApp) = trackActions.requestDeleteItem(item)
 
     fun scanPackageNameFromRepo() = trackActions.scanPackageNameFromRepo()

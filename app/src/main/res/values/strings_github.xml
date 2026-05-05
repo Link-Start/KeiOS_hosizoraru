@@ -382,7 +382,10 @@
     <string name="github_track_sheet_cd_confirm_add">确认新增</string>
     <string name="github_track_sheet_cd_confirm_save">确认保存</string>
     <string name="github_track_sheet_section_repo_app">仓库与 App</string>
+    <string name="github_track_sheet_section_repository">仓库来源</string>
+    <string name="github_track_sheet_section_package_app">包名与本机 App</string>
     <string name="github_track_sheet_input_repo">GitHub 项目地址</string>
+    <string name="github_track_sheet_summary_repo">填写仓库主页或 release 地址；扫描包名会读取最新稳定版 APK。</string>
     <string name="github_track_sheet_input_app_filter_title">筛选本机 App</string>
     <string name="github_track_sheet_input_app_filter">名称或包名</string>
     <string name="github_track_sheet_input_package_title">包名（可选）</string>
@@ -390,8 +393,10 @@
     <string name="github_track_sheet_btn_scan_package">扫描包名</string>
     <string name="github_track_sheet_btn_scan_package_running">扫描中</string>
     <string name="github_track_sheet_summary_package_optional">可留空仅跟踪仓库版本；后续填入包名或安装对应 App 后会自动联动刷新</string>
+    <string name="github_track_sheet_summary_package_link">包名用于匹配本机安装状态；也可以通过最新稳定版 APK 自动扫描。</string>
     <string name="github_track_sheet_label_selected_app">已选 App</string>
     <string name="github_track_sheet_selected_none">未选择</string>
+    <string name="github_track_sheet_summary_app_binding_none">可选。绑定本机 App 后会用于版本对比和安装后刷新。</string>
     <string name="github_track_sheet_btn_collapse">收起列表</string>
     <string name="github_track_sheet_btn_select_app">选择 App</string>
     <string name="github_track_badge_current_app">本应用</string>

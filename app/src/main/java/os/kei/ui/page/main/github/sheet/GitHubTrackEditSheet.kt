@@ -34,7 +34,6 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GitHubTrackEditSheet(
@@ -59,8 +58,7 @@ internal fun GitHubTrackEditSheet(
     onPickerExpandedChange: (Boolean) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
-    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
-    onRequestDelete: () -> Unit
+    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -95,9 +93,9 @@ internal fun GitHubTrackEditSheet(
     ) {
         SheetContentColumn(
             scrollable = !pickerExpanded,
-            verticalSpacing = 8.dp
+            verticalSpacing = 10.dp
         ) {
-            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_repo_app))
+            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_repository))
             SheetSectionCard {
                 SheetInputTitle(stringResource(R.string.github_track_sheet_input_repo))
                 AppLiquidSearchField(
@@ -108,6 +106,13 @@ internal fun GitHubTrackEditSheet(
                     variant = GlassVariant.SheetInput,
                     singleLine = true
                 )
+                SheetDescriptionText(
+                    text = stringResource(R.string.github_track_sheet_summary_repo)
+                )
+            }
+
+            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))
+            SheetSectionCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,21 +144,12 @@ internal fun GitHubTrackEditSheet(
                     singleLine = true
                 )
                 SheetDescriptionText(
-                    text = stringResource(R.string.github_track_sheet_summary_package_optional)
-                )
-                SheetInputTitle(stringResource(R.string.github_track_sheet_input_app_filter_title))
-                AppLiquidSearchField(
-                    value = appSearch,
-                    onValueChange = onAppSearchChange,
-                    label = stringResource(R.string.github_track_sheet_input_app_filter),
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true
+                    text = stringResource(R.string.github_track_sheet_summary_package_link)
                 )
                 SheetControlRow(
                     label = stringResource(R.string.github_track_sheet_label_selected_app),
                     summary = if (selectedApp == null) {
-                        stringResource(R.string.github_track_sheet_selected_none)
+                        stringResource(R.string.github_track_sheet_summary_app_binding_none)
                     } else {
                         null
                     }
@@ -183,6 +179,15 @@ internal fun GitHubTrackEditSheet(
                 }
                 SheetSectionTitle(stringResource(R.string.github_track_sheet_section_app_candidates))
                 SheetSectionCard(verticalSpacing = 6.dp) {
+                    SheetInputTitle(stringResource(R.string.github_track_sheet_input_app_filter_title))
+                    AppLiquidSearchField(
+                        value = appSearch,
+                        onValueChange = onAppSearchChange,
+                        label = stringResource(R.string.github_track_sheet_input_app_filter),
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetInput,
+                        singleLine = true
+                    )
                     if (filteredApps.isEmpty()) {
                         MiuixInfoItem(
                             stringResource(R.string.github_track_sheet_label_app_list),
@@ -231,21 +236,6 @@ internal fun GitHubTrackEditSheet(
                     AppSwitch(
                         checked = alwaysShowLatestReleaseDownloadButtonInput,
                         onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
-                    )
-                }
-            }
-            if (editingTrackedItem != null) {
-                SheetSectionTitle(
-                    text = stringResource(R.string.github_track_sheet_danger_title),
-                    danger = true
-                )
-                SheetSectionCard {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetDangerAction,
-                        text = stringResource(R.string.github_track_sheet_btn_delete),
-                        textColor = MiuixTheme.colorScheme.error,
-                        onClick = onRequestDelete
                     )
                 }
             }

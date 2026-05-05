@@ -402,7 +402,7 @@
     <string name="github_star_import_token_label">Token</string>
     <string name="github_star_import_token_ready">The current GitHub API token will read /user/starred</string>
     <string name="github_star_import_token_missing">Importing your stars requires a GitHub API token in the fetch strategy sheet</string>
-    <string name="github_star_import_username_label">GitHub username</string>
+    <string name="github_star_import_username_label">GitHub user or URL</string>
     <string name="github_star_import_list_url_label">GitHub Star List URL</string>
     <string name="github_star_import_action_load">Load preview</string>
     <string name="github_star_import_action_loading">Loading</string>
@@ -417,11 +417,11 @@
     <string name="github_star_import_filter_label">Filter repositories</string>
     <string name="github_star_import_requirement_label">Requirement</string>
     <string name="github_star_import_requirement_token">Add a GitHub API token in the fetch strategy sheet.</string>
-    <string name="github_star_import_requirement_username">Enter a GitHub username to read public stars.</string>
+    <string name="github_star_import_requirement_username">Enter a username, profile URL, or stars URL to read public stars.</string>
     <string name="github_star_import_requirement_list_url">Paste a GitHub profile stars page, /stars/..., or /stars/.../lists/... URL.</string>
     <string name="github_star_import_sample_label">Example</string>
     <string name="github_star_import_sample_token">Example: ghp_xxx...; configure the token in the GitHub fetch strategy sheet.</string>
-    <string name="github_star_import_sample_username">Example: octocat</string>
+    <string name="github_star_import_sample_username">Example: hosizoraru or https://github.com/hosizoraru?tab=stars</string>
     <string name="github_star_import_sample_list_url">Example: https://github.com/octocat?tab=stars</string>
     <string name="github_star_import_loading_source">Checking import source</string>
     <string name="github_star_import_loading_lists">Finding public Star List categories</string>

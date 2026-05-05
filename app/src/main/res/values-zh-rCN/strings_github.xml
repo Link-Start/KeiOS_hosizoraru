@@ -402,7 +402,7 @@
     <string name="github_star_import_token_label">Token</string>
     <string name="github_star_import_token_ready">将使用当前 GitHub API Token 读取 /user/starred</string>
     <string name="github_star_import_token_missing">导入自己的 stars 需要先在抓取方案里填写 GitHub API Token</string>
-    <string name="github_star_import_username_label">GitHub 用户名</string>
+    <string name="github_star_import_username_label">GitHub 用户 / 链接</string>
     <string name="github_star_import_list_url_label">GitHub Star List 链接</string>
     <string name="github_star_import_action_load">读取并预览</string>
     <string name="github_star_import_action_loading">读取中</string>
@@ -417,11 +417,11 @@
     <string name="github_star_import_filter_label">筛选仓库</string>
     <string name="github_star_import_requirement_label">准备条件</string>
     <string name="github_star_import_requirement_token">需要在抓取方案中填写 GitHub API Token。</string>
-    <string name="github_star_import_requirement_username">输入 GitHub 用户名后读取公开 stars。</string>
+    <string name="github_star_import_requirement_username">输入用户名、个人主页链接或 stars 链接后读取公开 stars。</string>
     <string name="github_star_import_requirement_list_url">粘贴 GitHub 个人 stars 页、/stars/... 或 /stars/.../lists/... 链接。</string>
     <string name="github_star_import_sample_label">填写示例</string>
     <string name="github_star_import_sample_token">示例：ghp_xxx...；在抓取方案配置。</string>
-    <string name="github_star_import_sample_username">示例：octocat</string>
+    <string name="github_star_import_sample_username">示例：hosizoraru 或 https://github.com/hosizoraru?tab=stars</string>
     <string name="github_star_import_sample_list_url">示例：https://github.com/octocat?tab=stars</string>
     <string name="github_star_import_loading_source">正在检查导入来源</string>
     <string name="github_star_import_loading_lists">正在查找公开 Star List 分类</string>

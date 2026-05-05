@@ -20,13 +20,19 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
+import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
 import os.kei.feature.github.domain.GitHubStrategyBenchmarkService
 import os.kei.feature.github.model.GitHubApiCredentialStatus
+import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
+import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepoTarget
+import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
+import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -477,6 +483,34 @@ internal class GitHubPageRepository(
                     preferPreRelease = draft.preferPreRelease,
                     alwaysShowLatestReleaseDownloadButton = draft.alwaysShowLatestReleaseDownloadButton
                 )
+            )
+        }
+    }
+
+    suspend fun previewStarredRepositoryImport(
+        request: GitHubStarredRepositoryImportRequest,
+        existingItems: List<GitHubTrackedApp>
+    ): Result<GitHubStarredRepositoryImportPreview> {
+        return withContext(ioDispatcher) {
+            GitHubRepositoryDiscoveryService(
+                GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken)
+            ).previewStarredRepositoryImport(
+                request = request,
+                existingItems = existingItems
+            )
+        }
+    }
+
+    suspend fun searchRepositoriesForApp(
+        request: GitHubAppRepositorySearchRequest,
+        existingItems: List<GitHubTrackedApp>
+    ): Result<GitHubAppRepositorySearchResult> {
+        return withContext(ioDispatcher) {
+            GitHubRepositoryDiscoveryService(
+                GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken)
+            ).searchRepositoriesForApp(
+                request = request,
+                existingItems = existingItems
             )
         }
     }

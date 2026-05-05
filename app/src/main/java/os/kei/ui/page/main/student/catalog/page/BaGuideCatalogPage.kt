@@ -72,7 +72,7 @@ import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
 import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
-import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
+import os.kei.ui.page.main.student.catalog.component.resolvePlaybackArtworkImageUrl
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
@@ -213,7 +213,7 @@ fun BaGuideCatalogPage(
     )
     val chromePlaybackFavorite = playbackCoordinator.selectedFavorite
     val chromeArtworkImageUrl = chromePlaybackFavorite
-        ?.resolveStudentArtworkImageUrl(catalogDataState.catalog)
+        ?.resolvePlaybackArtworkImageUrl()
         .orEmpty()
     val chromePlaybackProgress = playbackSliderPreview ?: playbackCoordinator.runtimeState.progress
     val bgmCachedCount = remember(favoriteBgms, bgmCacheRevision) {
@@ -931,7 +931,7 @@ private fun BaGuideFavoriteBgmMusicContent(
             bottomPadding = bottomPadding,
             contentBackdrop = contentBackdrop,
             artworkImageUrl = selectedFavorite
-                ?.resolveStudentArtworkImageUrl(catalog)
+                ?.resolvePlaybackArtworkImageUrl()
                 .orEmpty(),
             showAlbumTitle = false,
             promoteSectionTitle = true,

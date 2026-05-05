@@ -6,9 +6,6 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.ExperimentalActivityApi
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -20,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,10 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import os.kei.R
-import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -61,8 +55,6 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
-import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -103,19 +95,9 @@ private fun BaStandaloneActivityTheme(content: @Composable () -> Unit) {
         AppThemeMode.LIGHT -> ColorSchemeMode.Light
         AppThemeMode.DARK -> ColorSchemeMode.Dark
     }
-    val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-    val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
-    )
 
     MiuixTheme(controller = ThemeController(colorSchemeMode)) {
-        CompositionLocalProvider(
-            LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-            LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled,
-        ) {
-            content()
-        }
+        content()
     }
 }
 
@@ -184,8 +166,6 @@ private fun BaActivityCalendarPage(
             delay(1_000L)
         }
     }
-
-    BaActivityCalendarBackHandler(onBack = onClose)
 
     AppPageScaffold(
         title = stringResource(R.string.ba_calendar_activity_title),
@@ -333,33 +313,6 @@ private fun BaActivityCalendarOverviewPanel(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalActivityApi::class)
-@Composable
-private fun BaActivityCalendarBackHandler(
-    onBack: () -> Unit,
-) {
-    val predictiveBackEnabled = LocalTransitionAnimationsEnabled.current &&
-            LocalPredictiveBackAnimationsEnabled.current
-    BackHandler {
-        onBack()
-    }
-    PredictiveBackHandler(enabled = predictiveBackEnabled) { backEvents ->
-        var handledByProgress = false
-        try {
-            backEvents.collect { event ->
-                if (!handledByProgress && event.progress >= 0.995f) {
-                    handledByProgress = true
-                    onBack()
-                }
-            }
-            if (!handledByProgress) {
-                onBack()
-            }
-        } catch (_: CancellationException) {
         }
     }
 }

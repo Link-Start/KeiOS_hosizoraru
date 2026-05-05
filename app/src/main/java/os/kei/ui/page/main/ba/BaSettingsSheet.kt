@@ -10,18 +10,24 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaCalendarRefreshIntervalOption
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -76,6 +82,8 @@ internal fun BaSettingsSheet(
 ) {
     val context = LocalContext.current
     val settingsAccent = Color(0xFF3B82F6)
+    var refreshIntervalDropdownExpanded by remember { mutableStateOf(false) }
+    var refreshIntervalDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val pickMediaSaveFolderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -120,12 +128,17 @@ internal fun BaSettingsSheet(
                     text = stringResource(R.string.ba_settings_card_sync_title),
                     color = settingsAccent,
                 )
-                SheetFieldBlock(
-                    title = stringResource(R.string.ba_cd_refresh_interval),
+                SheetControlRow(
+                    label = stringResource(R.string.ba_cd_refresh_interval),
                     summary = stringResource(R.string.ba_settings_summary_refresh_interval),
                 ) {
-                    BaSettingsRefreshIntervalRow(
+                    BaSettingsRefreshIntervalDropdown(
+                        backdrop = backdrop,
                         selectedHours = state.calendarRefreshIntervalHours,
+                        expanded = refreshIntervalDropdownExpanded,
+                        anchorBounds = refreshIntervalDropdownAnchorBounds,
+                        onExpandedChange = { refreshIntervalDropdownExpanded = it },
+                        onAnchorBoundsChange = { refreshIntervalDropdownAnchorBounds = it },
                         onSelected = onCalendarRefreshIntervalSelected,
                     )
                 }
@@ -303,32 +316,35 @@ internal fun BaSettingsSheet(
 }
 
 @Composable
-private fun BaSettingsRefreshIntervalRow(
+private fun BaSettingsRefreshIntervalDropdown(
+    backdrop: Backdrop?,
     selectedHours: Int,
+    expanded: Boolean,
+    anchorBounds: IntRect?,
+    onExpandedChange: (Boolean) -> Unit,
+    onAnchorBoundsChange: (IntRect?) -> Unit,
     onSelected: (Int) -> Unit,
 ) {
+    val options = BaCalendarRefreshIntervalOption.entries
     val selected = BaCalendarRefreshIntervalOption.fromHours(selectedHours)
-    androidx.compose.foundation.layout.Row(
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        BaCalendarRefreshIntervalOption.entries.forEach { option ->
-            val isSelected = option == selected
-            AppLiquidTextButton(
-                backdrop = null,
-                modifier = Modifier.weight(1f),
-                variant = if (isSelected) GlassVariant.SheetPrimaryAction else GlassVariant.SheetAction,
-                textColor = if (isSelected) {
-                    MiuixTheme.colorScheme.primary
-                } else {
-                    MiuixTheme.colorScheme.onBackgroundVariant
-                },
-                text = stringResource(option.labelRes),
-                onClick = { onSelected(option.hours) },
-                horizontalPadding = 6.dp,
-                textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+    AppDropdownSelector(
+        modifier = Modifier.width(112.dp),
+        selectedText = stringResource(selected.labelRes),
+        options = options.map { stringResource(it.labelRes) },
+        selectedIndex = options.indexOf(selected).coerceAtLeast(0),
+        expanded = expanded,
+        anchorBounds = anchorBounds,
+        onExpandedChange = onExpandedChange,
+        onSelectedIndexChange = { index ->
+            options.getOrNull(index)?.let { option ->
+                onSelected(option.hours)
+            }
+            onExpandedChange(false)
+        },
+        onAnchorBoundsChange = onAnchorBoundsChange,
+        backdrop = backdrop,
+        variant = GlassVariant.SheetAction,
+        textColor = MiuixTheme.colorScheme.primary,
+        horizontalPadding = 10.dp,
+    )
 }

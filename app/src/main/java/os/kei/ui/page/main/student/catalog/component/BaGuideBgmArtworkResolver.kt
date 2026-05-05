@@ -18,6 +18,13 @@ internal fun GuideBgmFavoriteItem.resolveStudentArtworkImageUrl(
         .orEmpty()
 }
 
+internal fun GuideBgmFavoriteItem.resolvePlaybackArtworkImageUrl(): String {
+    return sequenceOf(studentImageUrl, imageUrl)
+        .map { it.trim() }
+        .firstOrNull { it.isNotBlank() }
+        .orEmpty()
+}
+
 private fun GuideBgmFavoriteItem.resolveCatalogEntryArtworkImageUrl(
     catalog: BaGuideCatalogBundle
 ): String {

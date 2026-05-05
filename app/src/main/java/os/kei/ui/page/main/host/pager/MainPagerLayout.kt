@@ -2,7 +2,6 @@ package os.kei.ui.page.main.host.pager
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -101,28 +100,24 @@ internal fun MainPagerLayout(
         coordinator.pagerState.targetPage,
         coordinator.pagerState.settledPage
     ) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            onDispose { }
-        } else {
-            val activity = context as? Activity
-            val homeVisibleInPager = listOf(
-                coordinator.pagerState.currentPage,
-                coordinator.pagerState.targetPage,
-                coordinator.pagerState.settledPage
-            ).any { pageIndex ->
-                coordinator.tabs.getOrElse(pageIndex) { BottomPage.Home } == BottomPage.Home
+        val activity = context as? Activity
+        val homeVisibleInPager = listOf(
+            coordinator.pagerState.currentPage,
+            coordinator.pagerState.targetPage,
+            coordinator.pagerState.settledPage
+        ).any { pageIndex ->
+            coordinator.tabs.getOrElse(pageIndex) { BottomPage.Home } == BottomPage.Home
+        }
+        runCatching {
+            activity?.window?.colorMode = if (homeIconHdrEnabled && homeVisibleInPager) {
+                ActivityInfo.COLOR_MODE_HDR
+            } else {
+                ActivityInfo.COLOR_MODE_DEFAULT
             }
+        }
+        onDispose {
             runCatching {
-                activity?.window?.colorMode = if (homeIconHdrEnabled && homeVisibleInPager) {
-                    ActivityInfo.COLOR_MODE_HDR
-                } else {
-                    ActivityInfo.COLOR_MODE_DEFAULT
-                }
-            }
-            onDispose {
-                runCatching {
-                    activity?.window?.colorMode = ActivityInfo.COLOR_MODE_DEFAULT
-                }
+                activity?.window?.colorMode = ActivityInfo.COLOR_MODE_DEFAULT
             }
         }
     }

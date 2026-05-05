@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: KeiOS repository
+    url: https://github.com/hosizoraru/KeiOS
+    about: Use the repository page for general project information.

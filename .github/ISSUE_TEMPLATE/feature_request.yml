@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest an improvement or new feature for KeiOS.
+title: "[Feature]: "
+labels: [ "enhancement" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the user problem and the expected workflow.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      placeholder: What would you like KeiOS to support?
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      placeholder: What user scenario or workflow does this improve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: How should the feature work from the user's point of view?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: Are there existing workarounds or different approaches?
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Additional context, screenshots, or references
+      description: Add mockups, screenshots, recordings, links, or examples if useful.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked for existing related issues or requests.
+          required: true
+        - label: This request is scoped to KeiOS behavior, UI, build, or documentation.
+          required: true

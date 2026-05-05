@@ -263,7 +263,6 @@ private fun BaActivityCalendarPage(
                         anchorBounds = serverPopupAnchorBounds,
                         onExpandedChange = { showServerPopup = it },
                         onAnchorBoundsChange = { serverPopupAnchorBounds = it },
-                        loading = calendarUiState.loading,
                         onServerSelected = { selected ->
                             val normalized = selected.coerceIn(serverOptions.indices)
                             serverIndex = normalized
@@ -350,7 +349,6 @@ private fun BaActivityCalendarServerPanel(
     anchorBounds: IntRect?,
     onExpandedChange: (Boolean) -> Unit,
     onAnchorBoundsChange: (IntRect?) -> Unit,
-    loading: Boolean,
     onServerSelected: (Int) -> Unit,
 ) {
     BaLiquidPanel(
@@ -384,16 +382,6 @@ private fun BaActivityCalendarServerPanel(
                 backdrop = backdrop,
                 variant = GlassVariant.Content,
             )
-            if (loading) {
-                LiquidCircularProgressBar(
-                    progress = null,
-                    size = 18.dp,
-                    strokeWidth = 2.dp,
-                    activeColor = MiuixTheme.colorScheme.primary,
-                    inactiveColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.24f),
-                    contentDescription = stringResource(R.string.ba_syncing),
-                )
-            }
         }
     }
 }

@@ -46,22 +46,31 @@ internal fun AboutCategoryBottomBar(
     selectedPageProvider: () -> Int,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
+    compact: Boolean = false,
     onSelectCategory: (Int) -> Unit,
 ) {
+    val safeSelectedPage = selectedPage.coerceIn(0, categories.lastIndex)
+    val displayCategories = if (compact) {
+        listOf(categories[safeSelectedPage])
+    } else {
+        categories
+    }
+    val displaySelectedPage = if (compact) 0 else safeSelectedPage
     Box(modifier = Modifier.fillMaxWidth()) {
         AnimatedVisibility(
             visible = visible,
             enter = appFloatingEnter(),
             exit = appFloatingExit(),
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.align(if (compact) Alignment.BottomStart else Alignment.BottomCenter),
         ) {
             val bottomBarModifier = Modifier.padding(
                 horizontal = 12.dp,
                 vertical = 12.dp + navigationBarBottom,
             )
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
-                categories.forEachIndexed { index, category ->
-                    val selected = selectedPage == index
+                displayCategories.forEachIndexed { index, category ->
+                    val sourceIndex = if (compact) safeSelectedPage else index
+                    val selected = displaySelectedPage == index
                     val tabColor = liquidGlassBottomBarItemContentColor(index)
                     val tabContent: @Composable ColumnScope.() -> Unit = {
                         Icon(
@@ -88,7 +97,7 @@ internal fun AboutCategoryBottomBar(
                     LiquidGlassBottomBarItem(
                         selected = selected,
                         tabIndex = index,
-                        onClick = { onSelectCategory(index) },
+                        onClick = { onSelectCategory(sourceIndex) },
                         modifier = Modifier.defaultMinSize(minWidth = 62.dp),
                         content = tabContent,
                     )
@@ -97,14 +106,15 @@ internal fun AboutCategoryBottomBar(
 
             LiquidGlassBottomBar(
                 modifier = bottomBarModifier,
-                selectedIndex = selectedPage,
+                selectedIndex = displaySelectedPage,
                 onSelected = { index ->
-                    if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
-                        onSelectCategory(index)
+                    val sourceIndex = if (compact) safeSelectedPage else index
+                    if (categories.getOrNull(sourceIndex) != null && sourceIndex != selectedPageProvider()) {
+                        onSelectCategory(sourceIndex)
                     }
                 },
                 backdrop = backdrop,
-                tabsCount = categories.size,
+                tabsCount = displayCategories.size,
                 isLiquidEffectEnabled = isLiquidEffectEnabled,
                 content = bottomBarTabs,
             )

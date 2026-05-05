@@ -59,7 +59,6 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @Composable
@@ -201,9 +200,10 @@ fun AboutPage(
                     selectedPageProvider = { pagerState.targetPage },
                     backdrop = bottomBarBackdrop,
                     isLiquidEffectEnabled = true,
+                    compact = searchExpanded,
                     onSelectCategory = selectAboutCategory,
                 )
-                AppFloatingSearchDock(
+                AboutSearchDock(
                     backdrop = bottomBarBackdrop,
                     expanded = searchExpanded,
                     query = searchQuery,
@@ -217,7 +217,6 @@ fun AboutPage(
                         .padding(end = 14.dp, bottom = 12.dp + navigationBarBottom),
                     size = AppChromeTokens.floatingBottomBarOuterHeight,
                     iconSize = 24.dp,
-                    focusedLift = 36.dp,
                 )
             }
         }

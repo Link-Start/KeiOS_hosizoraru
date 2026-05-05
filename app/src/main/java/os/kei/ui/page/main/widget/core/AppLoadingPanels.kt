@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.core
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import os.kei.R
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import top.yukonga.miuix.kmp.basic.Text
@@ -26,7 +27,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun AppAronaLoadingPanel(
     accent: Color,
     modifier: Modifier = Modifier,
-    height: Dp = 340.dp,
+    height: Dp = 388.dp,
+    imageSize: Dp = 300.dp,
+    progressSize: Dp = 22.dp,
+    textSize: TextUnit = 16.sp,
     showProgress: Boolean = true,
 ) {
     Box(
@@ -37,12 +41,13 @@ fun AppAronaLoadingPanel(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Image(
-                painter = painterResource(R.drawable.q_862c2944),
+            AsyncImage(
+                model = R.drawable.ba_arona_await,
                 contentDescription = null,
-                modifier = Modifier.size(112.dp),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(imageSize),
             )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -51,8 +56,8 @@ fun AppAronaLoadingPanel(
                 if (showProgress) {
                     LiquidCircularProgressBar(
                         progress = null,
-                        size = 18.dp,
-                        strokeWidth = 2.dp,
+                        size = progressSize,
+                        strokeWidth = 2.4.dp,
                         activeColor = accent,
                         inactiveColor = accent.copy(alpha = 0.26f),
                         contentDescription = stringResource(R.string.ba_syncing),
@@ -61,7 +66,7 @@ fun AppAronaLoadingPanel(
                 Text(
                     text = stringResource(R.string.guide_loading_title),
                     color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = 14.sp,
+                    fontSize = textSize,
                 )
             }
         }

@@ -623,6 +623,7 @@ private fun glassContainerOverlayAlpha(
         GlassVariant.Compact -> if (isDark) 0.22f else 0.28f
         GlassVariant.SheetDangerAction -> 0.18f
         GlassVariant.Floating -> if (isDark) 0.20f else 0.18f
+        GlassVariant.SearchField -> if (isDark) 0.18f else 0.22f
         GlassVariant.Content -> if (isDark) 0.26f else 0.32f
     }
 }
@@ -635,6 +636,7 @@ private fun appLiquidButtonShadowAlpha(
     val variantScale = when (variant) {
         GlassVariant.Floating -> 0.42f
         GlassVariant.Compact -> 0.58f
+        GlassVariant.SearchField,
         GlassVariant.SheetAction,
         GlassVariant.SheetPrimaryAction,
         GlassVariant.SheetDangerAction,
@@ -668,6 +670,7 @@ private fun resolveDarkCapsuleHighlightAlpha(
         GlassVariant.SheetPrimaryAction -> 0.44f
         GlassVariant.SheetDangerAction -> 0.44f
         GlassVariant.Floating -> 0.46f
+        GlassVariant.SearchField -> 0.48f
         GlassVariant.Compact -> 0.36f
         GlassVariant.Content -> 0.44f
     }

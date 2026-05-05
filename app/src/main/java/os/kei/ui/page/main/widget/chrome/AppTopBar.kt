@@ -125,7 +125,7 @@ fun AppTopBarSearchField(
             onValueChange = onValueChange,
             label = label,
             backdrop = backdrop,
-            variant = GlassVariant.Bar,
+            variant = GlassVariant.SearchField,
             singleLine = singleLine
         )
         Spacer(modifier = Modifier.height(AppChromeTokens.searchFieldBottomSpacing))

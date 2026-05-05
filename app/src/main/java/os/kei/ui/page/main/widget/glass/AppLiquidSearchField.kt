@@ -3,8 +3,9 @@ package os.kei.ui.page.main.widget.glass
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
@@ -26,12 +27,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -39,9 +43,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -49,8 +53,9 @@ import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -80,6 +85,7 @@ fun AppLiquidInputField(
     val isDark = isSystemInDarkTheme()
     val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
     var focused by remember { mutableStateOf(false) }
+    val usesSearchMaterial = variant == GlassVariant.SearchField
     val focusProgress by appMotionFloatState(
         targetValue = if (focused) 1f else 0f,
         durationMillis = 140,
@@ -118,6 +124,7 @@ fun AppLiquidInputField(
         }
     }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
+    val searchColors = appLiquidSearchMaterialColors(isDark)
     val borderModifier = if (!glass.showBorder) {
         Modifier
     } else {
@@ -151,23 +158,26 @@ fun AppLiquidInputField(
                         backdrop = activeBackdrop,
                         shape = { ContinuousCapsule },
                         layerBlock = {
-                            val focusScale = 1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * focusProgress
+                            val focusScale =
+                                1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * focusProgress
                             scaleX = focusScale
                             scaleY = focusScale
                         },
                         effects = {
                             vibrancy()
-                            blur(glass.blur.toPx())
+                            blur((if (usesSearchMaterial) glass.blur + 1.dp * focusProgress else glass.blur).toPx())
                             lens(
-                                glass.lensStart.toPx() + 4.dp.toPx() * focusProgress,
-                                glass.lensEnd.toPx() + 6.dp.toPx() * focusProgress,
-                                chromaticAberration = focusProgress > 0.01f,
-                                depthEffect = focusProgress > 0.01f
+                                glass.lensStart.toPx() + if (usesSearchMaterial) 2.dp.toPx() * focusProgress else 4.dp.toPx() * focusProgress,
+                                glass.lensEnd.toPx() + if (usesSearchMaterial) 4.dp.toPx() * focusProgress else 6.dp.toPx() * focusProgress,
+                                chromaticAberration = usesSearchMaterial || focusProgress > 0.01f,
+                                depthEffect = usesSearchMaterial || focusProgress > 0.01f
                             )
                         },
                         highlight = {
                             Highlight.Default.copy(
-                                alpha = (glass.highlightAlpha + 0.10f * focusProgress).coerceAtMost(1f)
+                                alpha = (glass.highlightAlpha + 0.10f * focusProgress).coerceAtMost(
+                                    1f
+                                )
                             )
                         },
                         shadow = {
@@ -182,7 +192,7 @@ fun AppLiquidInputField(
                             )
                         },
                         onDrawSurface = {
-                            if (variant == GlassVariant.Bar) {
+                            if (variant == GlassVariant.Bar || usesSearchMaterial) {
                                 drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
                             } else {
                                 drawRect(glass.baseColor)
@@ -208,6 +218,16 @@ fun AppLiquidInputField(
                             }
                         )
                 }
+            )
+            .then(
+                if (usesSearchMaterial) {
+                    appLiquidSearchMaterialOverlayModifier(
+                        shape = ContinuousCapsule,
+                        colors = searchColors,
+                        focusProgress = focusProgress,
+                        pressProgress = 0f
+                    )
+                } else Modifier
             )
             .graphicsLayer {
                 shadowElevation = 2.dp.toPx() * focusProgress
@@ -329,6 +349,204 @@ fun AppLiquidSearchField(
         ),
         focusRequester = focusRequester
     )
+}
+
+@Composable
+fun AppLiquidSearchSurface(
+    backdrop: Backdrop?,
+    modifier: Modifier = Modifier,
+    shape: Shape = ContinuousCapsule,
+    focused: Boolean = false,
+    pressed: Boolean = false,
+    pressDurationMillis: Int = 120,
+    pressLabel: String = "app_liquid_search_surface_press",
+    contentAlignment: Alignment = Alignment.CenterStart,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val isDark = isSystemInDarkTheme()
+    val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val density = LocalDensity.current
+    val focusProgress by appMotionFloatState(
+        targetValue = if (focused) 1f else 0f,
+        durationMillis = 140,
+        label = "app_liquid_search_surface_focus"
+    )
+    val pressProgress by appMotionFloatState(
+        targetValue = if (pressed) 1f else 0f,
+        durationMillis = pressDurationMillis,
+        label = pressLabel
+    )
+    val materialProgress = maxOf(focusProgress, pressProgress)
+    val glass = glassStyle(
+        isDark = isDark,
+        variant = GlassVariant.SearchField,
+        blurRadius = null
+    )
+    val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
+    val searchColors = appLiquidSearchMaterialColors(isDark)
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                translationY = -with(density) { 1.dp.toPx() } * pressProgress
+                scaleX = lerp(1f, 1.010f, pressProgress)
+                scaleY = lerp(1f, 0.992f, pressProgress)
+            }
+            .clip(shape)
+            .then(
+                if (activeBackdrop != null) {
+                    Modifier.drawBackdrop(
+                        backdrop = activeBackdrop,
+                        shape = { shape },
+                        effects = {
+                            vibrancy()
+                            blur((glass.blur + 1.dp * materialProgress).toPx())
+                            lens(
+                                glass.lensStart.toPx() + 2.dp.toPx() * materialProgress,
+                                glass.lensEnd.toPx() + 5.dp.toPx() * materialProgress,
+                                chromaticAberration = true,
+                                depthEffect = true
+                            )
+                        },
+                        highlight = {
+                            Highlight.Default.copy(
+                                alpha = (glass.highlightAlpha + 0.10f * materialProgress).coerceAtMost(
+                                    1f
+                                )
+                            )
+                        },
+                        shadow = {
+                            Shadow.Default.copy(
+                                color = Color.Black.copy(
+                                    alpha = (glass.shadowAlpha + 0.04f * focusProgress) * (1f - 0.25f * pressProgress)
+                                )
+                            )
+                        },
+                        innerShadow = {
+                            InnerShadow(
+                                radius = 6.dp * materialProgress,
+                                alpha = 0.18f * materialProgress
+                            )
+                        },
+                        onDrawSurface = {
+                            drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                        }
+                    )
+                } else {
+                    Modifier.background(fallbackSurface.copy(alpha = glass.fallbackAlpha), shape)
+                }
+            )
+            .then(
+                appLiquidSearchMaterialOverlayModifier(
+                    shape = shape,
+                    colors = searchColors,
+                    focusProgress = focusProgress,
+                    pressProgress = pressProgress
+                )
+            )
+            .border(
+                width = glass.borderWidth,
+                color = glass.borderColor.copy(
+                    alpha = (glass.borderColor.alpha + 0.10f * materialProgress).coerceAtMost(1f)
+                ),
+                shape = shape
+            ),
+        contentAlignment = contentAlignment,
+        content = content
+    )
+}
+
+private data class AppLiquidSearchMaterialColors(
+    val overlayTop: Color,
+    val overlayBottom: Color,
+    val centerGlow: Color,
+    val bottomGlow: Color,
+    val sideRim: Color,
+    val innerRim: Color,
+    val edge: Color
+)
+
+private fun appLiquidSearchMaterialColors(isDark: Boolean): AppLiquidSearchMaterialColors {
+    return AppLiquidSearchMaterialColors(
+        overlayTop = if (isDark) Color.White.copy(alpha = 0.130f) else Color.White.copy(alpha = 0.235f),
+        overlayBottom = if (isDark) {
+            Color(0xFF82B8FF).copy(alpha = 0.130f)
+        } else {
+            Color(0xFFB9D8FF).copy(alpha = 0.245f)
+        },
+        centerGlow = if (isDark) Color(0xFFBBD9FF).copy(alpha = 0.130f) else Color.White.copy(alpha = 0.340f),
+        bottomGlow = if (isDark) Color(0xFF73AFFF).copy(alpha = 0.115f) else Color(0xFFC6E0FF).copy(
+            alpha = 0.275f
+        ),
+        sideRim = if (isDark) Color.White.copy(alpha = 0.135f) else Color.White.copy(alpha = 0.56f),
+        innerRim = if (isDark) Color.White.copy(alpha = 0.200f) else Color.White.copy(alpha = 0.84f),
+        edge = if (isDark) Color.White.copy(alpha = 0.28f) else Color(0xFF86C3FF).copy(alpha = 0.96f)
+    )
+}
+
+private fun appLiquidSearchMaterialOverlayModifier(
+    shape: Shape,
+    colors: AppLiquidSearchMaterialColors,
+    focusProgress: Float,
+    pressProgress: Float
+): Modifier {
+    val materialProgress = maxOf(focusProgress, pressProgress)
+    return Modifier
+        .background(
+            Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom)),
+            shape
+        )
+        .background(
+            Brush.horizontalGradient(
+                colors = listOf(
+                    colors.sideRim,
+                    Color.Transparent,
+                    Color.Transparent,
+                    colors.sideRim
+                )
+            ),
+            shape
+        )
+        .background(
+            Brush.radialGradient(
+                colors = listOf(
+                    colors.centerGlow.copy(
+                        alpha = (colors.centerGlow.alpha + 0.055f * materialProgress).coerceAtMost(
+                            1f
+                        )
+                    ),
+                    Color.Transparent
+                )
+            ),
+            shape
+        )
+        .background(
+            Brush.verticalGradient(
+                colorStops = arrayOf(
+                    0.00f to Color.Transparent,
+                    0.62f to Color.Transparent,
+                    1.00f to colors.bottomGlow.copy(
+                        alpha = (colors.bottomGlow.alpha + 0.035f * materialProgress).coerceAtMost(
+                            1f
+                        )
+                    )
+                )
+            ),
+            shape
+        )
+        .border(
+            width = 1.1.dp,
+            color = colors.edge.copy(
+                alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f)
+            ),
+            shape = shape
+        )
+        .border(
+            width = 1.dp,
+            color = colors.innerRim.copy(
+                alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f)
+            ),
+            shape = shape
+        )
 }
 
 @Composable

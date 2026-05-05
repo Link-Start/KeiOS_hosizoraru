@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -44,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.page.main.widget.glass.AppLiquidSearchSurface
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
@@ -72,6 +73,8 @@ fun AppBottomSearchDock(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val dockInteractionSource = remember { MutableInteractionSource() }
+    val dockPressed by dockInteractionSource.collectIsPressedAsState()
     val configuration = LocalConfiguration.current
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
@@ -131,19 +134,30 @@ fun AppBottomSearchDock(
         }
     }
 
-    AppLiquidFloatingSurface(
+    AppLiquidSearchSurface(
         modifier = modifier
             .width(width)
             .height(size),
         shape = if (expanded) ContinuousCapsule else CircleShape,
         backdrop = backdrop,
-        onClick = if (expanded) null else {
-            { onExpandedChange(true) }
-        },
-        pressDurationMillis = 120,
-        pressLabel = "app_bottom_search_dock_press",
+        focused = expanded,
+        pressed = !expanded && dockPressed,
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (expanded) {
+                        Modifier
+                    } else {
+                        Modifier.clickable(
+                            interactionSource = dockInteractionSource,
+                            indication = null,
+                            onClick = { onExpandedChange(true) }
+                        )
+                    }
+                )
+        ) {
             if (fieldAlpha > AppBottomSearchDockVisibleAlpha) {
                 AppBottomSearchField(
                     query = query,

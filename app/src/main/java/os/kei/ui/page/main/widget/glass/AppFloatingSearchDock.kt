@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -523,8 +524,12 @@ private fun AppFloatingSearchField(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(autoFocus) {
-        if (autoFocus) focusRequester.requestFocus()
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
     AppLiquidInputField(
         value = query,
@@ -535,7 +540,7 @@ private fun AppFloatingSearchField(
         singleLine = true,
         fontSize = AppTypographyTokens.CardHeader.fontSize,
         textColor = MiuixTheme.colorScheme.onBackground,
-        variant = GlassVariant.Bar,
+        variant = GlassVariant.SearchField,
         minHeight = AppChromeTokens.floatingBottomBarOuterHeight,
         horizontalPadding = 18.dp,
         verticalPadding = 0.dp,
@@ -544,6 +549,7 @@ private fun AppFloatingSearchField(
             onSearch = {
                 onFocusActiveChange(false)
                 focusManager.clearFocus()
+                keyboardController?.hide()
             }
         ),
         focusRequester = focusRequester,

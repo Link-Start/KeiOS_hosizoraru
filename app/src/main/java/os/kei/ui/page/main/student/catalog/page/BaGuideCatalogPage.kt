@@ -444,7 +444,7 @@ fun BaGuideCatalogPage(
     )
 
     val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val keyboardLift = rememberAppFloatingKeyboardLift(focusedLift = 36.dp)
+    val keyboardLift = rememberAppFloatingKeyboardLift(focusedLift = 18.dp)
     val bottomChromeTargetPadding = navigationBottom + if (searchInputActive) keyboardLift else 0.dp
 
     BackHandler(enabled = searchVisible) {

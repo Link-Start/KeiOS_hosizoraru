@@ -63,6 +63,7 @@
             android:launchMode="singleTop"
             android:roundIcon="@mipmap/ic_launcher_round_adaptive_v2"
             android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

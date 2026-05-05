@@ -8,6 +8,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -20,10 +22,10 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
@@ -34,8 +36,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -46,8 +46,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -94,7 +94,7 @@ fun AppFloatingSearchDock(
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
     gap: Dp = 8.dp,
-    focusedLift: Dp = 36.dp,
+    focusedLift: Dp = 18.dp,
     keyboardLift: Dp? = null,
     accent: Color = MiuixTheme.colorScheme.primary
 ) {
@@ -209,7 +209,7 @@ fun AppFloatingVerticalSearchActionDock(
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
     gap: Dp = 8.dp,
-    focusedLift: Dp = 36.dp,
+    focusedLift: Dp = 18.dp,
     keyboardLift: Dp? = null,
     accent: Color = MiuixTheme.colorScheme.primary
 ) {
@@ -467,18 +467,31 @@ private fun appFloatingRefreshTint(
 
 @Composable
 fun rememberAppFloatingKeyboardLift(
-    focusedLift: Dp = 36.dp,
+    focusedLift: Dp = 18.dp,
     label: String = "app_floating_keyboard_lift"
 ): Dp {
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val targetLift = if (imeBottom > navigationBottom) focusedLift else 0.dp
+    val targetLift = appFloatingKeyboardLiftTarget(
+        imeBottom = imeBottom,
+        navigationBottom = navigationBottom,
+        focusedLift = focusedLift
+    )
     val lift by animateDpAsState(
         targetValue = targetLift,
         animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
         label = label
     )
     return lift
+}
+
+internal fun appFloatingKeyboardLiftTarget(
+    imeBottom: Dp,
+    navigationBottom: Dp,
+    focusedLift: Dp
+): Dp {
+    val imeHeight = (imeBottom - navigationBottom).coerceAtLeast(0.dp)
+    return if (imeHeight > 0.dp) imeHeight + focusedLift else 0.dp
 }
 
 @Composable

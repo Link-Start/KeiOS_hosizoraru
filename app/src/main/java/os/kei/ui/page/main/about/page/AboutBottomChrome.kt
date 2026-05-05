@@ -45,6 +45,7 @@ internal fun AboutBottomChrome(
     navigationBarBottom: Dp,
     categories: List<AboutCategory>,
     selectedPage: Int,
+    selectedPagePosition: Float?,
     selectedPageProvider: () -> Int,
     searchExpanded: Boolean,
     searchQuery: String,
@@ -63,7 +64,7 @@ internal fun AboutBottomChrome(
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val keyboardLift = rememberAppFloatingKeyboardLift(
-        focusedLift = 36.dp,
+        focusedLift = 18.dp,
         label = "about_bottom_chrome_keyboard_lift",
     )
     val transition = updateTransition(
@@ -183,6 +184,7 @@ internal fun AboutBottomChrome(
                         scaleY = fullDockScale
                     },
                 selectedIndex = safeSelectedPage,
+                selectedPosition = selectedPagePosition,
                 onSelected = { index ->
                     if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
                         onSelectCategory(index)

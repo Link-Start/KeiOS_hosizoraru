@@ -187,7 +187,9 @@
     <string name="github_topbar_search_label">搜索已跟踪项目（仓库/App/包名）</string>
     <string name="github_overview_title">项目版本跟踪</string>
     <string name="github_overview_label_strategy">策略</string>
+    <string name="github_overview_label_strategy_api">策略/API</string>
     <string name="github_overview_label_api">API</string>
+    <string name="github_overview_label_update_tracked">追踪</string>
     <string name="github_overview_label_tracked">已追踪</string>
     <string name="github_overview_label_stable_update">稳定可更新</string>
     <string name="github_overview_label_stable_latest">稳定已最新</string>
@@ -195,6 +197,8 @@
     <string name="github_overview_label_prerelease_update">预发可更新</string>
     <string name="github_overview_label_check_failed">检查失败</string>
     <string name="github_overview_value_count">%1$d 项</string>
+    <string name="github_overview_value_strategy_api">%1$s · API：%2$s</string>
+    <string name="github_overview_value_update_tracked">%1$d/%2$d</string>
     <string name="github_overview_strategy_atom">Atom</string>
     <string name="github_overview_strategy_api">API</string>
     <string name="github_overview_actions_strategy_nightly">nightly</string>

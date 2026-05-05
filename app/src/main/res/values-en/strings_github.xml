@@ -187,7 +187,9 @@
     <string name="github_topbar_search_label">Search tracked projects (repository / app / package)</string>
     <string name="github_overview_title">Project version tracking</string>
     <string name="github_overview_label_strategy">Strategy</string>
+    <string name="github_overview_label_strategy_api">Strategy/API</string>
     <string name="github_overview_label_api">API</string>
+    <string name="github_overview_label_update_tracked">Tracking</string>
     <string name="github_overview_label_tracked">Tracked</string>
     <string name="github_overview_label_stable_update">Stable updates</string>
     <string name="github_overview_label_stable_latest">Stable up to date</string>
@@ -195,6 +197,8 @@
     <string name="github_overview_label_prerelease_update">Pre-release updates</string>
     <string name="github_overview_label_check_failed">Check failed</string>
     <string name="github_overview_value_count">%1$d items</string>
+    <string name="github_overview_value_strategy_api">%1$s · API: %2$s</string>
+    <string name="github_overview_value_update_tracked">%1$d/%2$d</string>
     <string name="github_overview_strategy_atom">Atom</string>
     <string name="github_overview_strategy_api">API</string>
     <string name="github_overview_actions_strategy_nightly">nightly</string>

@@ -8,7 +8,8 @@ internal data class GitHubPageDerivedState(
     val sortedTracked: List<GitHubTrackedApp> = emptyList(),
     val overviewMetrics: GitHubOverviewMetrics = GitHubOverviewMetrics(
         trackedCount = 0,
-        updatableCount = 0,
+        stableUpdateCount = 0,
+        totalUpdatableCount = 0,
         stableLatestCount = 0,
         preReleaseCount = 0,
         preReleaseUpdateCount = 0,

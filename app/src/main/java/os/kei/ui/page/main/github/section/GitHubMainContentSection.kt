@@ -159,7 +159,6 @@ internal fun GitHubMainContent(
                             refreshProgress = refreshProgress,
                             lastRefreshMs = lastRefreshMs,
                             metrics = overviewMetrics,
-                            onRefreshAllTracked = onRefreshAllTracked,
                             onOpenTrackSheetForAdd = onOpenTrackSheetForAdd
                         )
                     }

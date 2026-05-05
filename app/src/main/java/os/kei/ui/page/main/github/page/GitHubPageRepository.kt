@@ -4,16 +4,16 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import os.kei.core.background.AppBackgroundScheduler
-import os.kei.feature.github.data.local.AppIconCache
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
-import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.core.background.AppBackgroundScheduler
+import os.kei.feature.github.data.local.AppIconCache
+import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
+import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -26,7 +26,6 @@ import os.kei.feature.github.domain.GitHubStrategyBenchmarkService
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRepoTarget
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
@@ -111,10 +110,15 @@ internal class GitHubPageRepository(
                 )
             }
             val trackedCount = input.trackedItems.size
-            val updatableCount = input.trackedItems.count { input.checkStates[it.id]?.hasUpdate == true }
+            val stableUpdateCount =
+                input.trackedItems.count { input.checkStates[it.id]?.hasUpdate == true }
             val preReleaseCount = input.trackedItems.count { input.checkStates[it.id]?.isPreRelease == true }
             val preReleaseUpdateCount =
                 input.trackedItems.count { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
+            val totalUpdatableCount = input.trackedItems.count {
+                val itemState = input.checkStates[it.id]
+                itemState?.hasUpdate == true || itemState?.hasPreReleaseUpdate == true
+            }
             val failedCount = input.trackedItems.count { input.checkStates[it.id]?.failed == true }
             val stableLatestCount = input.trackedItems.count {
                 val itemState = input.checkStates[it.id]
@@ -138,7 +142,8 @@ internal class GitHubPageRepository(
                     sortedTracked = sortedTracked,
                     overviewMetrics = GitHubOverviewMetrics(
                         trackedCount = trackedCount,
-                        updatableCount = updatableCount,
+                        stableUpdateCount = stableUpdateCount,
+                        totalUpdatableCount = totalUpdatableCount,
                         stableLatestCount = stableLatestCount,
                         preReleaseCount = preReleaseCount,
                         preReleaseUpdateCount = preReleaseUpdateCount,

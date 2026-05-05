@@ -2,14 +2,14 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,18 +26,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
-import os.kei.ui.animation.InteractiveHighlight
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
@@ -47,6 +44,9 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -71,6 +71,7 @@ fun AppLiquidIconButton(
     blurRadius: Dp? = null,
     variant: GlassVariant = GlassVariant.Content,
     iconTint: Color = MiuixTheme.colorScheme.primary,
+    iconModifier: Modifier = Modifier,
     containerColor: Color? = null,
     enabled: Boolean = true,
     onPressedChange: ((Boolean) -> Unit)? = null
@@ -97,6 +98,7 @@ fun AppLiquidIconButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
+            modifier = iconModifier,
             tint = iconTint
         )
     }
@@ -525,7 +527,8 @@ fun AppLiquidTextButton(
                             )
                         },
                         innerShadow = {
-                            val progress = if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
+                            val progress =
+                                if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
                             InnerShadow(radius = 6.dp * progress, alpha = progress)
                         },
                         onDrawSurface = {

@@ -3,9 +3,7 @@ package os.kei.ui.page.main.os.shell.page
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.widget.Toast
-import androidx.activity.ExperimentalActivityApi
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -25,6 +23,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -68,8 +67,6 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
-import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
-import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
@@ -144,6 +141,7 @@ fun OsShellRunnerPage(
 
     val commandInput = persistentState.commandInput
     val settings = persistentState.settings
+    val latestExitCleanupMode = rememberUpdatedState(settings.exitCleanupMode)
     val outputText = persistentState.outputState.outputText
     val outputEntries = persistentState.outputState.outputEntries
     val latestRunResultOutput = persistentState.outputState.latestRunResultOutput
@@ -169,6 +167,7 @@ fun OsShellRunnerPage(
     var pendingDangerousCommand by rememberSaveable { mutableStateOf("") }
     var saveTitleInput by rememberSaveable { mutableStateOf("") }
     var saveSubtitleInput by rememberSaveable { mutableStateOf("") }
+    var closeCleanupApplied by remember { mutableStateOf(false) }
 
     val latestOutputEntry = remember(outputEntries) { outputEntries.lastOrNull() }
 
@@ -334,9 +333,11 @@ fun OsShellRunnerPage(
         Toast.makeText(context, textBundle.clearAllToast, Toast.LENGTH_SHORT).show()
     }
 
-    fun requestClose() {
+    fun applyCloseCleanup() {
+        if (closeCleanupApplied) return
+        closeCleanupApplied = true
         stopCommand(showStoppedOutput = false)
-        when (settings.exitCleanupMode) {
+        when (latestExitCleanupMode.value) {
             OsShellRunnerExitCleanupMode.KeepAll -> Unit
             OsShellRunnerExitCleanupMode.ClearInput -> {
                 shellRunnerViewModel.updateCommandInput("")
@@ -347,7 +348,17 @@ fun OsShellRunnerPage(
                 shellRunnerViewModel.clearSavedOutput()
             }
         }
+    }
+
+    fun requestClose() {
+        applyCloseCleanup()
         onClose()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            applyCloseCleanup()
+        }
     }
 
     OsShellBackHandler(enabled = showSaveSheet) { showSaveSheet = false }
@@ -356,11 +367,6 @@ fun OsShellRunnerPage(
         showDangerousCommandConfirm = false
         pendingDangerousCommand = ""
     }
-    OsShellBackHandler(
-        enabled = !showSaveSheet && !showSettingsSheet && !showDangerousCommandConfirm,
-        onBack = { requestClose() }
-    )
-
     val clearAllIcon = osLucideClearAllIcon()
     val settingsIcon = osLucideSettingsIcon()
     val actionItems = remember(textBundle.clearAllActionDescription, textBundle.settingsActionDescription) {
@@ -544,31 +550,13 @@ fun OsShellRunnerPage(
     )
 }
 
-@OptIn(ExperimentalActivityApi::class)
 @Composable
 private fun OsShellBackHandler(
     enabled: Boolean,
     onBack: () -> Unit
 ) {
-    val predictiveBackEnabled = LocalTransitionAnimationsEnabled.current &&
-        LocalPredictiveBackAnimationsEnabled.current
     BackHandler(enabled = enabled) {
         onBack()
-    }
-    PredictiveBackHandler(enabled = enabled && predictiveBackEnabled) { backEvents ->
-        var handledByProgress = false
-        try {
-            backEvents.collect { event ->
-                if (!handledByProgress && event.progress >= 0.995f) {
-                    handledByProgress = true
-                    onBack()
-                }
-            }
-            if (!handledByProgress) {
-                onBack()
-            }
-        } catch (_: CancellationException) {
-        }
     }
 }
 

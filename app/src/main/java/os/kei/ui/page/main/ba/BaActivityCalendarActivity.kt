@@ -8,6 +8,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -33,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -179,6 +186,16 @@ private fun BaActivityCalendarPage(
             delay(1_000L)
         }
     }
+    val refreshIconRotation by rememberInfiniteTransition(label = "ba_activity_calendar_refresh_rotation")
+        .animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 900, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "ba_activity_calendar_refresh_rotation_value",
+        )
 
     AppPageScaffold(
         title = stringResource(R.string.ba_calendar_activity_title),
@@ -199,6 +216,9 @@ private fun BaActivityCalendarPage(
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.ba_calendar_cd_refresh),
                 onClick = { reloadSignal += 1 },
+                iconModifier = Modifier.graphicsLayer {
+                    rotationZ = if (calendarUiState.loading) refreshIconRotation else 0f
+                },
                 width = 52.dp,
                 height = 52.dp,
                 variant = GlassVariant.Bar,

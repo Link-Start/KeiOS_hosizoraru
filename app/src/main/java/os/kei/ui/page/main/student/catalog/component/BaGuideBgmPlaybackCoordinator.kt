@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class BaGuideBgmPlaybackCoordinator(
     private val context: Context
@@ -218,7 +219,7 @@ internal fun rememberBaGuideBgmPlaybackCoordinator(
         while (true) {
             coordinator.refreshRuntime()
             coordinator.advanceIfEnded()
-            delay(500L)
+            delay(500L.milliseconds)
         }
     }
     return coordinator

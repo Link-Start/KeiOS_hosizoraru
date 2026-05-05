@@ -2,10 +2,14 @@ package os.kei.ui.page.main.about.page
 
 import android.content.pm.PackageInfo
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -14,10 +18,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,10 +54,12 @@ import os.kei.ui.page.main.about.state.rememberAboutPageSectionExpansionState
 import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @Composable
@@ -80,6 +88,8 @@ fun AboutPage(
         )
     }
     var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
+    var searchExpanded by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val pagerState = rememberPagerState(
         initialPage = selectedCategoryIndex,
         pageCount = { categories.size },
@@ -125,12 +135,45 @@ fun AboutPage(
     val shizukuDetailMap = detailsState.shizukuDetailMap
     val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
     val openLinkFailed = stringResource(R.string.common_open_link_failed)
+    val appCardTitle = stringResource(R.string.about_card_app_title)
+    val appCardSubtitle = stringResource(R.string.about_card_app_subtitle)
+    val githubCardTitle = stringResource(R.string.about_card_github_title)
+    val githubCardSubtitle = stringResource(R.string.about_card_github_subtitle)
+    val runtimeCardTitle = stringResource(R.string.about_card_runtime_title)
+    val runtimeCardSubtitle = stringResource(R.string.about_card_runtime_subtitle)
+    val networkCardTitle = stringResource(R.string.about_card_network_title)
+    val networkCardSubtitle = stringResource(R.string.about_card_network_subtitle)
+    val mediaCardTitle = stringResource(R.string.about_card_media_title)
+    val mediaCardSubtitle = stringResource(R.string.about_card_media_subtitle)
+    val permissionCardTitle = stringResource(R.string.about_card_permission_title)
+    val permissionCardSubtitle = stringResource(R.string.about_card_permission_subtitle)
+    val componentCardTitle = stringResource(R.string.about_card_component_title)
+    val componentCardSubtitle = stringResource(R.string.about_card_component_subtitle)
+    val buildCardTitle = stringResource(R.string.about_card_build_title)
+    val buildCardSubtitle = stringResource(R.string.about_card_build_subtitle)
+    val uiCardTitle = stringResource(R.string.about_card_ui_title)
+    val uiCardSubtitle = stringResource(R.string.about_card_ui_subtitle)
+    val projectLicenseCardTitle = stringResource(R.string.about_card_project_license_title)
+    val projectLicenseCardSubtitle = stringResource(R.string.about_card_project_license_subtitle)
+    val licenseCardTitle = stringResource(R.string.about_card_license_title)
+    val licenseCardSubtitle = stringResource(R.string.about_card_license_subtitle)
+    val aboutSearchPlaceholder = stringResource(R.string.about_search_placeholder)
+    val searchContentDescription = stringResource(R.string.about_search_placeholder)
     val selectAboutCategory: (Int) -> Unit = { index ->
         val target = index.coerceIn(0, categories.lastIndex)
         selectedCategoryIndex = target
         scope.launch {
             pagerState.animateScrollToPage(target)
         }
+    }
+    fun matchesAboutSearch(vararg values: String): Boolean {
+        val query = searchQuery.trim()
+        if (query.isBlank()) return true
+        return values.any { value -> value.contains(query, ignoreCase = true) }
+    }
+
+    BackHandler(enabled = searchExpanded) {
+        searchExpanded = false
     }
 
     AppPageScaffold(
@@ -149,16 +192,34 @@ fun AboutPage(
             }
         },
         bottomBar = {
-            AboutCategoryBottomBar(
-                visible = true,
-                navigationBarBottom = navigationBarBottom,
-                categories = categories,
-                selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
-                selectedPageProvider = { pagerState.targetPage },
-                backdrop = bottomBarBackdrop,
-                isLiquidEffectEnabled = true,
-                onSelectCategory = selectAboutCategory,
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                AboutCategoryBottomBar(
+                    visible = true,
+                    navigationBarBottom = navigationBarBottom,
+                    categories = categories,
+                    selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
+                    selectedPageProvider = { pagerState.targetPage },
+                    backdrop = bottomBarBackdrop,
+                    isLiquidEffectEnabled = true,
+                    onSelectCategory = selectAboutCategory,
+                )
+                AppFloatingSearchDock(
+                    backdrop = bottomBarBackdrop,
+                    expanded = searchExpanded,
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    onExpandedChange = { searchExpanded = it },
+                    searchIcon = appLucideSearchIcon(),
+                    contentDescription = searchContentDescription,
+                    placeholder = aboutSearchPlaceholder,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 14.dp, bottom = 12.dp + navigationBarBottom),
+                    size = AppChromeTokens.floatingBottomBarOuterHeight,
+                    iconSize = 24.dp,
+                    focusedLift = 36.dp,
+                )
+            }
         }
     ) { innerPadding ->
         HorizontalPager(
@@ -188,7 +249,7 @@ fun AboutPage(
             ) {
                 when (category) {
                     AboutCategory.Overview -> {
-                        item {
+                        if (matchesAboutSearch(appCardTitle, appCardSubtitle, appLabel)) item {
                             AboutAppCardSection(
                                 appLabel = appLabel,
                                 packageInfo = packageInfo,
@@ -200,7 +261,7 @@ fun AboutPage(
                                 onOpenDebugActivity = { DebugComponentLabActivity.launch(context) }
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(githubCardTitle, githubCardSubtitle)) item {
                             AboutGitHubCardSection(
                                 cardColor = palette.githubCardColor,
                                 accent = palette.accent,
@@ -218,7 +279,12 @@ fun AboutPage(
                     }
 
                     AboutCategory.Runtime -> {
-                        item {
+                        if (matchesAboutSearch(
+                                runtimeCardTitle,
+                                runtimeCardSubtitle,
+                                shizukuStatus
+                            )
+                        ) item {
                             AboutRuntimeStatusCardSection(
                                 cardColor = palette.runtimeCardColor,
                                 accent = palette.accent,
@@ -235,7 +301,7 @@ fun AboutPage(
                                 onCheckShizuku = onCheckShizuku
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(networkCardTitle, networkCardSubtitle)) item {
                             AboutNetworkServiceCardSection(
                                 cardColor = palette.networkServiceCardColor,
                                 titleColor = palette.readyColor,
@@ -244,7 +310,7 @@ fun AboutPage(
                                 onExpandedChange = { expansionState.networkExpanded = it }
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(mediaCardTitle, mediaCardSubtitle)) item {
                             AboutMediaStorageCardSection(
                                 cardColor = palette.mediaStorageCardColor,
                                 accent = palette.accent,
@@ -256,7 +322,7 @@ fun AboutPage(
                     }
 
                     AboutCategory.Security -> {
-                        item {
+                        if (matchesAboutSearch(permissionCardTitle, permissionCardSubtitle)) item {
                             AboutPermissionCardSection(
                                 cardColor = palette.githubCardColor,
                                 accent = palette.accent,
@@ -268,7 +334,7 @@ fun AboutPage(
                                 onExpandedChange = { expansionState.permissionExpanded = it }
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(componentCardTitle, componentCardSubtitle)) item {
                             AboutComponentCardSection(
                                 cardColor = Color(0x2234D399),
                                 titleColor = palette.readyColor,
@@ -282,7 +348,7 @@ fun AboutPage(
                     }
 
                     AboutCategory.Tech -> {
-                        item {
+                        if (matchesAboutSearch(buildCardTitle, buildCardSubtitle)) item {
                             AboutBuildSdkCardSection(
                                 cardColor = palette.buildCardColor,
                                 accent = palette.accent,
@@ -291,7 +357,7 @@ fun AboutPage(
                                 onExpandedChange = { expansionState.buildExpanded = it }
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(uiCardTitle, uiCardSubtitle)) item {
                             AboutUiFrameworkCardSection(
                                 cardColor = palette.uiFrameworkCardColor,
                                 accent = palette.accent,
@@ -300,7 +366,11 @@ fun AboutPage(
                                 onExpandedChange = { expansionState.uiFrameworkExpanded = it }
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(
+                                projectLicenseCardTitle,
+                                projectLicenseCardSubtitle
+                            )
+                        ) item {
                             AboutProjectLicenseCardSection(
                                 cardColor = palette.projectLicenseCardColor,
                                 accent = palette.accent,
@@ -315,7 +385,7 @@ fun AboutPage(
                                 }
                             )
                         }
-                        item {
+                        if (matchesAboutSearch(licenseCardTitle, licenseCardSubtitle)) item {
                             AboutLicenseCardSection(
                                 cardColor = palette.licenseCardColor,
                                 accent = palette.accent,

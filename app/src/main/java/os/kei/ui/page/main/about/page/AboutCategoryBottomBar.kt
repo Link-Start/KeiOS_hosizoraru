@@ -89,7 +89,7 @@ internal fun AboutCategoryBottomBar(
                         selected = selected,
                         tabIndex = index,
                         onClick = { onSelectCategory(index) },
-                        modifier = Modifier.defaultMinSize(minWidth = 76.dp),
+                        modifier = Modifier.defaultMinSize(minWidth = 62.dp),
                         content = tabContent,
                     )
                 }

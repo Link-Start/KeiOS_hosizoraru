@@ -15,6 +15,7 @@
     <string name="about_category_runtime">Runtime</string>
     <string name="about_category_security">Security</string>
     <string name="about_category_tech">Tech</string>
+    <string name="about_search_placeholder">Search About cards</string>
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">App identity and runtime information</string>

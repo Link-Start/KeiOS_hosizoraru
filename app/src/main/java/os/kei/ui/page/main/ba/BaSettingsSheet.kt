@@ -2,8 +2,6 @@ package os.kei.ui.page.main.ba
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
@@ -248,21 +247,18 @@ internal fun BaSettingsSheet(
                                 onClick = {
                                     val currentTreeUri = state.mediaSaveFixedTreeUri
                                         .takeIf { it.isNotBlank() }
-                                        ?.let { raw -> runCatching { Uri.parse(raw) }.getOrNull() }
+                                        ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
                                     val pickerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
                                         addFlags(
                                             Intent.FLAG_GRANT_READ_URI_PERMISSION or
                                                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                                                 Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                                         )
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                            putExtra(
-                                                DocumentsContract.EXTRA_INITIAL_URI,
-                                                currentTreeUri ?: Uri.parse(
-                                                    "content://com.android.externalstorage.documents/tree/primary%3ADownload"
-                                                )
-                                            )
-                                        }
+                                        putExtra(
+                                            DocumentsContract.EXTRA_INITIAL_URI,
+                                            currentTreeUri
+                                                ?: "content://com.android.externalstorage.documents/tree/primary%3ADownload".toUri()
+                                        )
                                     }
                                     pickMediaSaveFolderLauncher.launch(pickerIntent)
                                 }

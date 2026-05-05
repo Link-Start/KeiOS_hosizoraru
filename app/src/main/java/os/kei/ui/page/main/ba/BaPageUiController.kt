@@ -51,6 +51,7 @@ internal data class BaPageUiState(
     val sheetPoolEndingNotifyEnabled: Boolean,
     val sheetCalendarPoolChangeNotifyEnabled: Boolean,
     val sheetCalendarPoolNotifyLeadHours: Int,
+    val debugUseRealCalendarPoolData: Boolean,
     val sheetApNotifyThresholdText: String,
     val sheetMediaAdaptiveRotationEnabled: Boolean,
     val sheetMediaSaveCustomEnabled: Boolean,
@@ -100,6 +101,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var sheetPoolEndingNotifyEnabled by mutableStateOf(snapshot.poolEndingNotifyEnabled)
     var sheetCalendarPoolChangeNotifyEnabled by mutableStateOf(snapshot.calendarPoolChangeNotifyEnabled)
     var sheetCalendarPoolNotifyLeadHours by mutableIntStateOf(snapshot.calendarPoolNotifyLeadHours)
+    var debugUseRealCalendarPoolData by mutableStateOf(true)
     var sheetApNotifyThresholdText by mutableStateOf(snapshot.apNotifyThreshold.toString())
     var sheetMediaAdaptiveRotationEnabled by mutableStateOf(snapshot.mediaAdaptiveRotationEnabled)
     var sheetMediaSaveCustomEnabled by mutableStateOf(snapshot.mediaSaveCustomEnabled)
@@ -148,6 +150,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             sheetPoolEndingNotifyEnabled = sheetPoolEndingNotifyEnabled,
             sheetCalendarPoolChangeNotifyEnabled = sheetCalendarPoolChangeNotifyEnabled,
             sheetCalendarPoolNotifyLeadHours = sheetCalendarPoolNotifyLeadHours,
+            debugUseRealCalendarPoolData = debugUseRealCalendarPoolData,
             sheetApNotifyThresholdText = sheetApNotifyThresholdText,
             sheetMediaAdaptiveRotationEnabled = sheetMediaAdaptiveRotationEnabled,
             sheetMediaSaveCustomEnabled = sheetMediaSaveCustomEnabled,

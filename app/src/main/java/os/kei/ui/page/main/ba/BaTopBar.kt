@@ -56,11 +56,6 @@ internal fun BaTopBarActions(
     ) {
         listOf(
             LiquidActionItem(
-                icon = debugIcon,
-                contentDescription = debugContentDescription,
-                onClick = onShowDebug,
-            ),
-            LiquidActionItem(
                 icon = bellIcon,
                 contentDescription = notificationContentDescription,
                 onClick = onShowNotificationSettings,
@@ -69,6 +64,11 @@ internal fun BaTopBarActions(
                 icon = editIcon,
                 contentDescription = editContentDescription,
                 onClick = onShowSettings,
+            ),
+            LiquidActionItem(
+                icon = debugIcon,
+                contentDescription = debugContentDescription,
+                onClick = onShowDebug,
             )
         )
     }

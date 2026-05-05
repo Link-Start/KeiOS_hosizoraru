@@ -129,6 +129,8 @@
     <string name="ba_debug_title">Debug</string>
     <string name="ba_debug_section_daily">日常测试</string>
     <string name="ba_debug_section_calendar_pool">活动与卡池提醒测试</string>
+    <string name="ba_debug_label_use_real_calendar_pool_data">接入当前服务器真实数据</string>
+    <string name="ba_debug_summary_use_real_calendar_pool_data">开启后测试按钮使用当前页面抓取到的真实活动与卡池</string>
     <string name="ba_debug_action_cafe_visit_notification">咖啡厅学生访问通知</string>
     <string name="ba_debug_action_arena_refresh_notification">竞技场刷新通知</string>
     <string name="ba_debug_action_cafe_plus_3h_ap">咖啡厅 3h AP</string>
@@ -139,12 +141,14 @@
     <string name="ba_debug_action_calendar_pool_change_notification">抓取变动提醒</string>
     <string name="ba_debug_sample_calendar_title">测试活动</string>
     <string name="ba_debug_sample_pool_title">测试卡池</string>
+    <string name="ba_debug_sample_change_detail">测试活动 / 测试卡池</string>
     <string name="ba_toast_notification_permission_required">请先授予通知权限</string>
     <string name="ba_toast_ap_threshold_notification_sent">已发送 AP 阈值提醒</string>
     <string name="ba_toast_ap_notification_sent">已发送 AP 通知</string>
     <string name="ba_toast_cafe_visit_notification_sent">已发送咖啡厅学生访问通知</string>
     <string name="ba_toast_arena_refresh_notification_sent">已发送竞技场刷新通知</string>
     <string name="ba_toast_calendar_pool_notification_sent">已发送活动与卡池提醒</string>
+    <string name="ba_toast_calendar_pool_real_data_missing">当前服务器暂无可用于测试的真实活动或卡池数据，请先刷新</string>
     <string name="ba_notification_ap_island_text">AP</string>
     <string name="ba_cafe_visit_notification_title">咖啡厅学生来访问啦</string>
     <string name="ba_cafe_visit_notification_content">咖啡厅学生来访问啦</string>
@@ -164,6 +168,8 @@
     <string name="ba_pool_notify_ending_content">%1$s 将在 %2$s 结束</string>
     <string name="ba_calendar_pool_notify_change_title">BA 信息已更新</string>
     <string name="ba_calendar_pool_notify_change_content">活动变动 %1$d 项，卡池变动 %2$d 项</string>
+    <string name="ba_calendar_pool_live_channel_name">BA 活动与卡池提醒</string>
+    <string name="ba_calendar_pool_live_channel_desc">活动日历和卡池提醒实时通知</string>
 
     <string name="ba_catalog_page_title">图鉴</string>
     <string name="ba_catalog_tab_title">当前分区：%1$s</string>

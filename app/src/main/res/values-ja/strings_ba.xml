@@ -129,6 +129,8 @@
     <string name="ba_debug_title">デバッグ</string>
     <string name="ba_debug_section_daily">日常テスト</string>
     <string name="ba_debug_section_calendar_pool">イベントと募集通知テスト</string>
+    <string name="ba_debug_label_use_real_calendar_pool_data">現在のサーバーの実データを使う</string>
+    <string name="ba_debug_summary_use_real_calendar_pool_data">オンにすると、このページで取得したイベントと募集をテスト通知に使います。</string>
     <string name="ba_debug_action_cafe_visit_notification">カフェ生徒訪問通知</string>
     <string name="ba_debug_action_arena_refresh_notification">戦術対抗戦リセット通知</string>
     <string name="ba_debug_action_cafe_plus_3h_ap">カフェ 3h AP</string>
@@ -139,12 +141,14 @@
     <string name="ba_debug_action_calendar_pool_change_notification">取得データ変更通知</string>
     <string name="ba_debug_sample_calendar_title">テストイベント</string>
     <string name="ba_debug_sample_pool_title">テスト募集</string>
+    <string name="ba_debug_sample_change_detail">テストイベント / テスト募集</string>
     <string name="ba_toast_notification_permission_required">先に通知権限を許可してください。</string>
     <string name="ba_toast_ap_threshold_notification_sent">AP しきい値通知を送信しました。</string>
     <string name="ba_toast_ap_notification_sent">AP 通知を送信しました。</string>
     <string name="ba_toast_cafe_visit_notification_sent">カフェ生徒訪問通知を送信しました。</string>
     <string name="ba_toast_arena_refresh_notification_sent">戦術対抗戦リセット通知を送信しました。</string>
     <string name="ba_toast_calendar_pool_notification_sent">イベントと募集通知を送信しました。</string>
+    <string name="ba_toast_calendar_pool_real_data_missing">このサーバーにはテスト可能な実イベントまたは募集データがありません。先に更新してください。</string>
     <string name="ba_notification_ap_island_text">AP</string>
     <string name="ba_cafe_visit_notification_title">カフェに生徒訪問があります</string>
     <string name="ba_cafe_visit_notification_content">カフェに生徒訪問があります</string>
@@ -164,6 +168,8 @@
     <string name="ba_pool_notify_ending_content">%1$s は %2$s に終了します</string>
     <string name="ba_calendar_pool_notify_change_title">ブルーアーカイブ情報を更新しました</string>
     <string name="ba_calendar_pool_notify_change_content">イベント変更 %1$d 件、募集変更 %2$d 件</string>
+    <string name="ba_calendar_pool_live_channel_name">ブルーアーカイブ イベント/募集通知</string>
+    <string name="ba_calendar_pool_live_channel_desc">イベントカレンダーと募集のリアルタイム通知</string>
     <string name="ba_catalog_page_title">生徒名簿</string>
     <string name="ba_catalog_tab_title">現在の区分: %1$s</string>
     <string name="ba_catalog_tab_student">実装済み生徒</string>

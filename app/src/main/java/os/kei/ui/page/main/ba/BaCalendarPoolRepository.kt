@@ -408,7 +408,12 @@ private fun dispatchCalendarSyncNotifications(
         )
         if (changedCount > 0 &&
             changeKey !in notifiedKeys &&
-            BaCalendarPoolNotificationDispatcher.sendDataChanged(context, changedCount, 0)
+            BaCalendarPoolNotificationDispatcher.sendDataChanged(
+                context = context,
+                calendarChangeCount = changedCount,
+                poolChangeCount = 0,
+                detail = firstChangedCalendarTitle(previousEntries, nextEntries)
+            )
         ) {
             BASettingsStore.markCalendarPoolNotified(changeKey)
         }
@@ -490,7 +495,12 @@ private fun dispatchPoolSyncNotifications(
         )
         if (changedCount > 0 &&
             changeKey !in notifiedKeys &&
-            BaCalendarPoolNotificationDispatcher.sendDataChanged(context, 0, changedCount)
+            BaCalendarPoolNotificationDispatcher.sendDataChanged(
+                context = context,
+                calendarChangeCount = 0,
+                poolChangeCount = changedCount,
+                detail = firstChangedPoolTitle(previousEntries, nextEntries)
+            )
         ) {
             BASettingsStore.markCalendarPoolNotified(changeKey)
         }
@@ -528,6 +538,19 @@ private fun countCalendarEntryChanges(
     }
 }
 
+private fun firstChangedCalendarTitle(
+    previousEntries: List<BaCalendarEntry>,
+    nextEntries: List<BaCalendarEntry>,
+): String {
+    val previousSignatures = previousEntries.associateBy(
+        keySelector = { it.id },
+        valueTransform = { "${it.title}|${it.kindId}|${it.beginAtMs}|${it.endAtMs}|${it.linkUrl}" }
+    )
+    return nextEntries.firstOrNull { entry ->
+        previousSignatures[entry.id] != "${entry.title}|${entry.kindId}|${entry.beginAtMs}|${entry.endAtMs}|${entry.linkUrl}"
+    }?.title.orEmpty()
+}
+
 private fun countPoolEntryChanges(
     previousEntries: List<BaPoolEntry>,
     nextEntries: List<BaPoolEntry>,
@@ -539,6 +562,19 @@ private fun countPoolEntryChanges(
     return nextEntries.count { entry ->
         previousSignatures[entry.id] != "${entry.name}|${entry.tagId}|${entry.startAtMs}|${entry.endAtMs}|${entry.linkUrl}"
     }
+}
+
+private fun firstChangedPoolTitle(
+    previousEntries: List<BaPoolEntry>,
+    nextEntries: List<BaPoolEntry>,
+): String {
+    val previousSignatures = previousEntries.associateBy(
+        keySelector = { it.id },
+        valueTransform = { "${it.name}|${it.tagId}|${it.startAtMs}|${it.endAtMs}|${it.linkUrl}" }
+    )
+    return nextEntries.firstOrNull { entry ->
+        previousSignatures[entry.id] != "${entry.name}|${entry.tagId}|${entry.startAtMs}|${entry.endAtMs}|${entry.linkUrl}"
+    }?.name.orEmpty()
 }
 
 private fun calendarNotifyKey(

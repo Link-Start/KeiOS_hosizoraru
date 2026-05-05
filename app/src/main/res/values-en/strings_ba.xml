@@ -129,6 +129,8 @@
     <string name="ba_debug_title">Debug</string>
     <string name="ba_debug_section_daily">Daily tests</string>
     <string name="ba_debug_section_calendar_pool">Event and banner alert tests</string>
+    <string name="ba_debug_label_use_real_calendar_pool_data">Use current server real data</string>
+    <string name="ba_debug_summary_use_real_calendar_pool_data">When enabled, test buttons use events and banners fetched on this page.</string>
     <string name="ba_debug_action_cafe_visit_notification">Cafe student visit notification</string>
     <string name="ba_debug_action_arena_refresh_notification">Tactical Challenge reset notification</string>
     <string name="ba_debug_action_cafe_plus_3h_ap">Cafe 3h AP</string>
@@ -139,12 +141,14 @@
     <string name="ba_debug_action_calendar_pool_change_notification">Fetched change alert</string>
     <string name="ba_debug_sample_calendar_title">Test event</string>
     <string name="ba_debug_sample_pool_title">Test banner</string>
+    <string name="ba_debug_sample_change_detail">Test event / Test banner</string>
     <string name="ba_toast_notification_permission_required">Grant notification permission first.</string>
     <string name="ba_toast_ap_threshold_notification_sent">AP threshold notification sent.</string>
     <string name="ba_toast_ap_notification_sent">AP notification sent.</string>
     <string name="ba_toast_cafe_visit_notification_sent">Cafe student visit notification sent.</string>
     <string name="ba_toast_arena_refresh_notification_sent">Tactical Challenge reset notification sent.</string>
     <string name="ba_toast_calendar_pool_notification_sent">Event and banner alert sent.</string>
+    <string name="ba_toast_calendar_pool_real_data_missing">No real event or banner data for this server. Refresh first.</string>
     <string name="ba_notification_ap_island_text">AP</string>
     <string name="ba_cafe_visit_notification_title">Cafe student visit available</string>
     <string name="ba_cafe_visit_notification_content">Cafe student visit available</string>
@@ -164,6 +168,8 @@
     <string name="ba_pool_notify_ending_content">%1$s ends at %2$s</string>
     <string name="ba_calendar_pool_notify_change_title">Blue Archive data updated</string>
     <string name="ba_calendar_pool_notify_change_content">%1$d event changes, %2$d banner changes</string>
+    <string name="ba_calendar_pool_live_channel_name">Blue Archive events and banners</string>
+    <string name="ba_calendar_pool_live_channel_desc">Live alerts for event calendar and recruitment banners.</string>
 
     <string name="ba_catalog_page_title">Archive</string>
     <string name="ba_catalog_tab_title">Current section: %1$s</string>

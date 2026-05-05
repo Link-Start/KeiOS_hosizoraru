@@ -12,8 +12,10 @@ import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
+import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
@@ -32,6 +34,8 @@ internal fun BaDebugSheet(
     onSendPoolUpcomingTestNotification: () -> Unit,
     onSendPoolEndingTestNotification: () -> Unit,
     onSendCalendarPoolChangeTestNotification: () -> Unit,
+    useRealCalendarPoolData: Boolean,
+    onUseRealCalendarPoolDataChange: (Boolean) -> Unit,
     onTestCafePlus3Hours: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
@@ -64,6 +68,15 @@ internal fun BaDebugSheet(
             }
             SheetSectionTitle(stringResource(R.string.ba_debug_section_calendar_pool))
             SheetSectionCard {
+                SheetControlRow(
+                    label = stringResource(R.string.ba_debug_label_use_real_calendar_pool_data),
+                    summary = stringResource(R.string.ba_debug_summary_use_real_calendar_pool_data),
+                ) {
+                    AppSwitch(
+                        checked = useRealCalendarPoolData,
+                        onCheckedChange = onUseRealCalendarPoolDataChange,
+                    )
+                }
                 BaDebugActionGrid(
                     backdrop = backdrop,
                     actions = listOf(

@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -56,6 +55,7 @@ import os.kei.ui.page.main.ba.card.BaPoolEntryPanel
 import os.kei.ui.page.main.ba.card.BaPoolStatePanel
 import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -74,7 +74,6 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.time.Duration.Companion.milliseconds
 
 class BaPoolActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -147,23 +146,11 @@ private fun BaPoolPage(
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var reloadSignal by remember { mutableIntStateOf(0) }
     var hydrationReady by remember { mutableStateOf(false) }
-    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val accent = MiuixTheme.colorScheme.primary
-    val visibleEntries = remember(
-        poolUiState.entries,
-        snapshot.showEndedPools,
-        nowMs
-    ) {
-        filterVisiblePoolEntries(
-            entries = poolUiState.entries,
-            showEndedPools = snapshot.showEndedPools,
-            nowMs = nowMs
-        )
-    }
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
         poolUiState.loading -> stringResource(R.string.ba_syncing)
@@ -195,22 +182,21 @@ private fun BaPoolPage(
         )
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            nowMs = System.currentTimeMillis()
-            delay(1_000L.milliseconds)
-        }
+    val refreshIconRotation = if (poolUiState.loading) {
+        val loadingRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
+            .animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 900, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+                label = "ba_pool_refresh_rotation_value",
+            )
+        loadingRotation
+    } else {
+        0f
     }
-    val refreshIconRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
-        .animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 900, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-            label = "ba_pool_refresh_rotation_value",
-        )
 
     AppPageScaffold(
         title = stringResource(R.string.ba_pool_activity_title),
@@ -234,7 +220,7 @@ private fun BaPoolPage(
                 contentDescription = stringResource(R.string.ba_pool_cd_refresh),
                 onClick = { reloadSignal += 1 },
                 iconModifier = Modifier.graphicsLayer {
-                    rotationZ = if (poolUiState.loading) refreshIconRotation else 0f
+                    rotationZ = refreshIconRotation
                 },
                 width = 52.dp,
                 height = 52.dp,
@@ -262,100 +248,159 @@ private fun BaPoolPage(
                     )
                     .layerBackdrop(pageBackdrop)
             )
-            AppPageLazyColumn(
+            BaPoolListContent(
                 innerPadding = innerPadding,
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                bottomExtra = 40.dp,
-                sectionSpacing = 14.dp
-            ) {
+                listState = listState,
+                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                backdrop = pageBackdrop,
+                serverOptions = serverOptions,
+                serverIndex = serverIndex,
+                showServerPopup = showServerPopup,
+                serverPopupAnchorBounds = serverPopupAnchorBounds,
+                showEndedPools = snapshot.showEndedPools,
+                showCalendarPoolImages = snapshot.showCalendarPoolImages,
+                entries = poolUiState.entries,
+                loading = poolUiState.loading,
+                error = poolUiState.error,
+                syncText = syncText,
+                syncTextColor = countdownBlue,
+                onServerPopupChange = { showServerPopup = it },
+                onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
+                onServerSelected = { selected ->
+                    val normalized = selected.coerceIn(serverOptions.indices)
+                    serverIndex = normalized
+                    BASettingsStore.saveServerIndex(normalized)
+                    showServerPopup = false
+                },
+                onOpenPoolStudentGuide = { url ->
+                    openBaPoolGuideLink(
+                        context = context,
+                        rawUrl = url,
+                        onOpenGuide = onOpenGuide
+                    )
+                },
+                onOpenCalendarLink = { url ->
+                    openBaExternalLink(context = context, url = url)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaPoolListContent(
+    innerPadding: androidx.compose.foundation.layout.PaddingValues,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    nestedScrollConnection: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
+    backdrop: com.kyant.backdrop.Backdrop,
+    serverOptions: List<String>,
+    serverIndex: Int,
+    showServerPopup: Boolean,
+    serverPopupAnchorBounds: IntRect?,
+    showEndedPools: Boolean,
+    showCalendarPoolImages: Boolean,
+    entries: List<BaPoolEntry>,
+    loading: Boolean,
+    error: String?,
+    syncText: String,
+    syncTextColor: Color,
+    onServerPopupChange: (Boolean) -> Unit,
+    onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onServerSelected: (Int) -> Unit,
+    onOpenPoolStudentGuide: (String) -> Unit,
+    onOpenCalendarLink: (String) -> Unit,
+) {
+    val nowMs = rememberBaStandaloneTickMs(enabled = !loading && error.isNullOrBlank())
+    val visibleEntries = remember(
+        entries,
+        showEndedPools,
+        nowMs
+    ) {
+        filterVisiblePoolEntries(
+            entries = entries,
+            showEndedPools = showEndedPools,
+            nowMs = nowMs
+        )
+    }
+    AppPageLazyColumn(
+        innerPadding = innerPadding,
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(nestedScrollConnection),
+        bottomExtra = 40.dp,
+        sectionSpacing = 14.dp
+    ) {
+        item {
+            BaPoolServerPanel(
+                backdrop = backdrop,
+                serverOptions = serverOptions,
+                serverIndex = serverIndex,
+                expanded = showServerPopup,
+                anchorBounds = serverPopupAnchorBounds,
+                onExpandedChange = onServerPopupChange,
+                onAnchorBoundsChange = onServerPopupAnchorBoundsChange,
+                onServerSelected = onServerSelected,
+            )
+        }
+        item {
+            BaPoolOverviewPanel(
+                backdrop = backdrop,
+                title = stringResource(
+                    R.string.ba_pool_title_format,
+                    serverOptions[serverIndex]
+                ),
+                syncText = syncText,
+                syncTextColor = syncTextColor,
+            )
+        }
+        when {
+            loading -> {
                 item {
-                    BaPoolServerPanel(
-                        backdrop = pageBackdrop,
-                        serverOptions = serverOptions,
-                        serverIndex = serverIndex,
-                        expanded = showServerPopup,
-                        anchorBounds = serverPopupAnchorBounds,
-                        onExpandedChange = { showServerPopup = it },
-                        onAnchorBoundsChange = { serverPopupAnchorBounds = it },
-                        onServerSelected = { selected ->
-                            val normalized = selected.coerceIn(serverOptions.indices)
-                            serverIndex = normalized
-                            BASettingsStore.saveServerIndex(normalized)
-                            showServerPopup = false
+                    BaPoolLoadingPanel(accentColor = syncTextColor)
+                }
+            }
+
+            !error.isNullOrBlank() -> {
+                item {
+                    BaPoolStatePanel(
+                        backdrop = backdrop,
+                        text = error.orEmpty(),
+                        accentColor = Color(0xFFF59E0B),
+                        effectsEnabled = true,
+                    )
+                }
+            }
+
+            visibleEntries.isEmpty() -> {
+                item {
+                    BaPoolStatePanel(
+                        backdrop = backdrop,
+                        text = if (showEndedPools) {
+                            stringResource(R.string.ba_pool_empty_all)
+                        } else {
+                            stringResource(R.string.ba_pool_empty_active)
                         },
+                        accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        effectsEnabled = true,
                     )
                 }
-                item {
-                    BaPoolOverviewPanel(
-                        backdrop = pageBackdrop,
-                        title = stringResource(
-                            R.string.ba_pool_title_format,
-                            serverOptions[serverIndex]
-                        ),
-                        syncText = syncText,
-                        syncTextColor = countdownBlue,
+            }
+
+            else -> {
+                items(visibleEntries.size) { index ->
+                    val pool = visibleEntries[index]
+                    BaPoolEntryPanel(
+                        backdrop = backdrop,
+                        isPageActive = true,
+                        serverIndex = serverIndex,
+                        pool = pool,
+                        nowMs = nowMs,
+                        showCalendarPoolImages = showCalendarPoolImages,
+                        effectsEnabled = true,
+                        onOpenPoolStudentGuide = onOpenPoolStudentGuide,
+                        onOpenCalendarLink = onOpenCalendarLink,
                     )
-                }
-                when {
-                    poolUiState.loading -> {
-                        item {
-                            BaPoolLoadingPanel(accentColor = countdownBlue)
-                        }
-                    }
-
-                    !poolUiState.error.isNullOrBlank() -> {
-                        item {
-                            BaPoolStatePanel(
-                                backdrop = pageBackdrop,
-                                text = poolUiState.error.orEmpty(),
-                                accentColor = Color(0xFFF59E0B),
-                                effectsEnabled = true,
-                            )
-                        }
-                    }
-
-                    !poolUiState.loading && visibleEntries.isEmpty() -> {
-                        item {
-                            BaPoolStatePanel(
-                                backdrop = pageBackdrop,
-                                text = if (snapshot.showEndedPools) {
-                                    stringResource(R.string.ba_pool_empty_all)
-                                } else {
-                                    stringResource(R.string.ba_pool_empty_active)
-                                },
-                                accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                                effectsEnabled = true,
-                            )
-                        }
-                    }
-
-                    else -> {
-                        items(visibleEntries.size) { index ->
-                            val pool = visibleEntries[index]
-                            BaPoolEntryPanel(
-                                backdrop = pageBackdrop,
-                                isPageActive = true,
-                                serverIndex = serverIndex,
-                                pool = pool,
-                                nowMs = nowMs,
-                                showCalendarPoolImages = snapshot.showCalendarPoolImages,
-                                effectsEnabled = true,
-                                onOpenPoolStudentGuide = { url ->
-                                    openBaPoolGuideLink(
-                                        context = context,
-                                        rawUrl = url,
-                                        onOpenGuide = onOpenGuide
-                                    )
-                                },
-                                onOpenCalendarLink = { url ->
-                                    openBaExternalLink(context = context, url = url)
-                                },
-                            )
-                        }
-                    }
                 }
             }
         }

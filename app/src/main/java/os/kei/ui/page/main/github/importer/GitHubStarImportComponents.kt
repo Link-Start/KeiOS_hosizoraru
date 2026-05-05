@@ -2,6 +2,8 @@ package os.kei.ui.page.main.github.importer
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
@@ -309,13 +311,18 @@ private fun StarImportListChoiceButton(
 internal fun StarImportListControlCard(
     filterInput: String,
     viewFilter: StarImportViewFilter,
+    qualityFilters: Set<StarImportQualityFilter>,
+    qualityFilterCounts: Map<StarImportQualityFilter, Int>,
     filteredCount: Int,
     visibleImportableCount: Int,
+    visibleRecommendedCount: Int,
     selectedCount: Int,
     importEnabled: Boolean,
     importing: Boolean,
     onFilterInputChange: (String) -> Unit,
     onViewFilterChange: (StarImportViewFilter) -> Unit,
+    onQualityFilterToggle: (StarImportQualityFilter) -> Unit,
+    onSelectRecommendedVisible: () -> Unit,
     onSelectVisible: () -> Unit,
     onClearSelection: () -> Unit,
     onImport: () -> Unit
@@ -348,6 +355,11 @@ internal fun StarImportListControlCard(
             variant = GlassVariant.Content,
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+        )
+        StarImportQualityFilterRow(
+            qualityFilters = qualityFilters,
+            qualityFilterCounts = qualityFilterCounts,
+            onQualityFilterToggle = onQualityFilterToggle
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -389,6 +401,16 @@ internal fun StarImportListControlCard(
         ) {
             AppLiquidTextButton(
                 backdrop = null,
+                text = stringResource(R.string.github_star_import_action_select_recommended),
+                onClick = onSelectRecommendedVisible,
+                modifier = Modifier.weight(1f),
+                enabled = visibleRecommendedCount > 0 && !importing,
+                variant = GlassVariant.Content,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+            AppLiquidTextButton(
+                backdrop = null,
                 text = stringResource(R.string.github_star_import_action_select_visible),
                 onClick = onSelectVisible,
                 modifier = Modifier.weight(1f),
@@ -397,11 +419,16 @@ internal fun StarImportListControlCard(
                 textMaxLines = 1,
                 textOverflow = TextOverflow.Ellipsis
             )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             AppLiquidTextButton(
                 backdrop = null,
                 text = stringResource(R.string.github_star_import_action_clear_selection),
                 onClick = onClearSelection,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 enabled = selectedCount > 0 && !importing,
                 variant = GlassVariant.Content,
                 textMaxLines = 1,
@@ -421,6 +448,51 @@ internal fun StarImportListControlCard(
             variant = GlassVariant.SheetAction,
             leadingIcon = appLucideConfirmIcon()
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StarImportQualityFilterRow(
+    qualityFilters: Set<StarImportQualityFilter>,
+    qualityFilterCounts: Map<StarImportQualityFilter, Int>,
+    onQualityFilterToggle: (StarImportQualityFilter) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.github_star_import_quality_filter_label),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontWeight = FontWeight.Medium
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StarImportQualityFilter.entries.forEach { filter ->
+                val selected = filter in qualityFilters
+                AppLiquidTextButton(
+                    backdrop = null,
+                    text = stringResource(
+                        R.string.github_star_import_quality_chip_format,
+                        stringResource(filter.labelRes),
+                        qualityFilterCounts[filter] ?: 0
+                    ),
+                    onClick = { onQualityFilterToggle(filter) },
+                    textColor = if (selected) {
+                        starImportQualityColor(filter)
+                    } else {
+                        MiuixTheme.colorScheme.primary
+                    },
+                    containerColor = if (selected) starImportQualityColor(filter) else null,
+                    leadingIcon = if (selected) appLucideConfirmIcon() else null,
+                    iconTint = starImportQualityColor(filter),
+                    variant = if (selected) GlassVariant.SheetAction else GlassVariant.Content,
+                    textMaxLines = 1,
+                    textOverflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
 
@@ -463,9 +535,12 @@ internal fun StarImportCandidateCard(
     onToggle: () -> Unit
 ) {
     val disabled = candidate.alreadyTracked
+    val quality = candidate.starImportQualityFilter()
     val accent = when {
         disabled -> MiuixTheme.colorScheme.onBackgroundVariant
         selected -> GitHubStatusPalette.Update
+        quality == StarImportQualityFilter.LikelyAndroid -> GitHubStatusPalette.Active
+        quality == StarImportQualityFilter.OtherPlatform -> MiuixTheme.colorScheme.onBackgroundVariant
         else -> MiuixTheme.colorScheme.primary
     }
     AppFeatureCard(
@@ -494,6 +569,16 @@ internal fun StarImportCandidateCard(
     ) {
         Text(
             text = stringResource(
+                R.string.github_star_import_quality_line_format,
+                stringResource(quality.labelRes),
+                stringResource(starImportQualitySummaryRes(quality))
+            ),
+            color = starImportQualityColor(quality),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = stringResource(
                 R.string.github_star_import_candidate_meta_format,
                 candidate.repository.language.ifBlank { stringResource(R.string.common_not_used) },
                 candidate.repository.starCount.formatStarCount(),
@@ -509,6 +594,32 @@ internal fun StarImportCandidateCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+private fun starImportQualityColor(filter: StarImportQualityFilter): Color {
+    return when (filter) {
+        StarImportQualityFilter.LikelyAndroid -> GitHubStatusPalette.Update
+        StarImportQualityFilter.NeedsReview -> GitHubStatusPalette.Active
+        StarImportQualityFilter.OtherPlatform -> MiuixTheme.colorScheme.onBackgroundVariant
+        StarImportQualityFilter.ArchivedOrFork -> GitHubStatusPalette.Error
+    }
+}
+
+private fun starImportQualitySummaryRes(filter: StarImportQualityFilter): Int {
+    return when (filter) {
+        StarImportQualityFilter.LikelyAndroid ->
+            R.string.github_star_import_quality_summary_likely_android
+
+        StarImportQualityFilter.NeedsReview ->
+            R.string.github_star_import_quality_summary_needs_review
+
+        StarImportQualityFilter.OtherPlatform ->
+            R.string.github_star_import_quality_summary_other_platform
+
+        StarImportQualityFilter.ArchivedOrFork ->
+            R.string.github_star_import_quality_summary_archived_or_fork
     }
 }
 

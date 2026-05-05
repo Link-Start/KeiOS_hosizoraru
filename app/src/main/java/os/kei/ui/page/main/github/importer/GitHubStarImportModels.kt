@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.importer
 
 import androidx.annotation.StringRes
 import os.kei.R
+import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import java.net.URI
 
@@ -10,6 +11,17 @@ internal enum class StarImportViewFilter(@param:StringRes val labelRes: Int) {
     Importable(R.string.github_star_import_filter_importable),
     Selected(R.string.github_star_import_filter_selected),
     Tracked(R.string.github_star_import_filter_tracked)
+}
+
+internal enum class StarImportQualityFilter(@param:StringRes val labelRes: Int) {
+    LikelyAndroid(R.string.github_star_import_quality_likely_android),
+    NeedsReview(R.string.github_star_import_quality_needs_review),
+    OtherPlatform(R.string.github_star_import_quality_other_platform),
+    ArchivedOrFork(R.string.github_star_import_quality_archived_or_fork);
+
+    companion object {
+        fun defaultVisible(): Set<StarImportQualityFilter> = setOf(LikelyAndroid, NeedsReview)
+    }
 }
 
 internal enum class StarImportUiSource(
@@ -52,6 +64,38 @@ internal enum class StarImportUiSource(
             ListUrl -> GitHubStarredRepositoryImportSource.StarListUrl
         }
     }
+}
+
+internal fun GitHubRepositoryImportCandidate.matchesStarImportQualityFilter(
+    filter: StarImportQualityFilter
+): Boolean {
+    return starImportQualityFilter() == filter
+}
+
+internal fun GitHubRepositoryImportCandidate.starImportQualityFilter(): StarImportQualityFilter {
+    val repo = this.repository
+    if (repo.archived || repo.fork) return StarImportQualityFilter.ArchivedOrFork
+    val searchable = listOf(
+        repo.fullName,
+        repo.description,
+        repo.language
+    ).joinToString(" ").lowercase()
+    val androidScore = androidStarImportSignals.sumOf { signal ->
+        if (searchable.contains(signal)) 2 else 0
+    } + androidLanguageScore(repo.language)
+    val otherPlatformScore = otherPlatformStarImportSignals.sumOf { signal ->
+        if (searchable.contains(signal)) 1 else 0
+    }
+    return when {
+        androidScore >= 3 && otherPlatformScore <= 2 -> StarImportQualityFilter.LikelyAndroid
+        androidScore >= 2 -> StarImportQualityFilter.NeedsReview
+        otherPlatformScore >= 2 -> StarImportQualityFilter.OtherPlatform
+        else -> StarImportQualityFilter.NeedsReview
+    }
+}
+
+internal fun GitHubRepositoryImportCandidate.isDefaultSelectedStarImportCandidate(): Boolean {
+    return !alreadyTracked && starImportQualityFilter() == StarImportQualityFilter.LikelyAndroid
 }
 
 internal fun String.isValidGitHubUsernameInput(): Boolean {
@@ -193,6 +237,51 @@ private fun String.trimTrailingZeroDecimal(): String {
 }
 
 private val githubUsernameInputRegex = Regex("""[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?""")
+
+private fun androidLanguageScore(language: String): Int {
+    return when (language.trim().lowercase()) {
+        "kotlin" -> 2
+        "java" -> 1
+        else -> 0
+    }
+}
+
+private val androidStarImportSignals = listOf(
+    "android",
+    "apk",
+    "fdroid",
+    "f-droid",
+    "jetpack compose",
+    "compose android",
+    "material you",
+    "shizuku",
+    "magisk",
+    "xposed",
+    "lsposed",
+    "termux",
+    "miui"
+)
+
+private val otherPlatformStarImportSignals = listOf(
+    "windows",
+    "win32",
+    "macos",
+    "linux",
+    "desktop",
+    "server",
+    "backend",
+    "cli",
+    "command line",
+    "powershell",
+    "vscode",
+    "browser extension",
+    "chrome extension",
+    "npm",
+    "nodejs",
+    "python package",
+    "docker",
+    "homebrew"
+)
 
 private val reservedGitHubProfileSegments = setOf(
     "about",

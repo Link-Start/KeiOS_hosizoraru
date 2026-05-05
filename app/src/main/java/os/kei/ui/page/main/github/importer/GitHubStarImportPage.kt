@@ -52,6 +52,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     var listUrlInput by remember { mutableStateOf("") }
     var filterInput by remember { mutableStateOf("") }
     var viewFilter by remember { mutableStateOf(StarImportViewFilter.All) }
+    var qualityFilters by remember { mutableStateOf(StarImportQualityFilter.defaultVisible()) }
     var preview by remember { mutableStateOf<GitHubStarredRepositoryImportPreview?>(null) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var starLists by remember { mutableStateOf<List<GitHubStarListSummary>>(emptyList()) }
@@ -72,15 +73,22 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         query.isBlank() ||
                 candidate.repository.fullName.contains(query, ignoreCase = true) ||
                 candidate.repository.description.contains(query, ignoreCase = true) ||
-                candidate.repository.language.contains(query, ignoreCase = true)
+                candidate.repository.language.contains(query, ignoreCase = true) ||
+                candidate.repository.repo.contains(query, ignoreCase = true) ||
+                candidate.repository.owner.contains(query, ignoreCase = true)
     }
     val filteredCandidates = searchedCandidates.filter { candidate ->
-        when (viewFilter) {
+        val statusMatches = when (viewFilter) {
             StarImportViewFilter.All -> true
             StarImportViewFilter.Importable -> !candidate.alreadyTracked
             StarImportViewFilter.Selected -> candidate.trackedApp.id in selectedIds
             StarImportViewFilter.Tracked -> candidate.alreadyTracked
         }
+        val qualityMatches = qualityFilters.any { candidate.matchesStarImportQualityFilter(it) }
+        statusMatches && qualityMatches
+    }
+    val qualityFilterCounts = StarImportQualityFilter.entries.associateWith { filter ->
+        searchedCandidates.count { candidate -> candidate.matchesStarImportQualityFilter(filter) }
     }
     val selectedImportableCount = candidates.count { candidate ->
         !candidate.alreadyTracked && candidate.trackedApp.id in selectedIds
@@ -88,6 +96,10 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     val importEnabled = selectedImportableCount > 0 && !loading && !importing
     val visibleImportableIds = filteredCandidates
         .filterNot { it.alreadyTracked }
+        .map { it.trackedApp.id }
+        .toSet()
+    val visibleRecommendedIds = filteredCandidates
+        .filter { it.isDefaultSelectedStarImportCandidate() }
         .map { it.trackedApp.id }
         .toSet()
 
@@ -185,7 +197,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                         preview = nextPreview
                         starLists = emptyList()
                         selectedIds = nextPreview.candidates
-                            .filterNot { it.alreadyTracked }
+                            .filter { it.isDefaultSelectedStarImportCandidate() }
                             .map { it.trackedApp.id }
                             .toSet()
                     }
@@ -228,6 +240,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         starLists = emptyList()
         filterInput = ""
         viewFilter = StarImportViewFilter.All
+        qualityFilters = StarImportQualityFilter.defaultVisible()
         loadingProgress = 0f
         loadingPhase = ""
     }
@@ -313,13 +326,29 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                     StarImportListControlCard(
                         filterInput = filterInput,
                         viewFilter = viewFilter,
+                        qualityFilters = qualityFilters,
+                        qualityFilterCounts = qualityFilterCounts,
                         filteredCount = filteredCandidates.size,
                         visibleImportableCount = visibleImportableIds.size,
+                        visibleRecommendedCount = visibleRecommendedIds.size,
                         selectedCount = selectedImportableCount,
                         importEnabled = importEnabled,
                         importing = importing,
                         onFilterInputChange = { filterInput = it },
                         onViewFilterChange = { viewFilter = it },
+                        onQualityFilterToggle = { filter ->
+                            val nextFilters = if (filter in qualityFilters) {
+                                qualityFilters - filter
+                            } else {
+                                qualityFilters + filter
+                            }
+                            qualityFilters = nextFilters.ifEmpty {
+                                StarImportQualityFilter.entries.toSet()
+                            }
+                        },
+                        onSelectRecommendedVisible = {
+                            selectedIds = selectedIds + visibleRecommendedIds
+                        },
                         onSelectVisible = { selectedIds = selectedIds + visibleImportableIds },
                         onClearSelection = { selectedIds = emptySet() },
                         onImport = { applyImport() }

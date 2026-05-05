@@ -5,9 +5,9 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - "**/*.md"
-      - "readme/**"
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       commit:
@@ -16,7 +16,7 @@ on:
         type: string
 
 concurrency:
-  group: ci-benchmark-apk-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -46,11 +46,36 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.inputs.commit || github.sha }}
 
+      - name: Build context
+        id: context
+        run: |
+          set -euo pipefail
+          COMMIT_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=12 HEAD)"
+          {
+            echo "commit_sha=${COMMIT_SHA}"
+            echo "short_sha=${SHORT_SHA}"
+            echo "run_number=${GITHUB_RUN_NUMBER}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "Commit: ${COMMIT_SHA}"
+          echo "Short commit: ${SHORT_SHA}"
+          echo "Run number: ${GITHUB_RUN_NUMBER}"
+
       - name: Setup JDK 21
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -104,16 +129,20 @@ jobs:
           test "${ACTUAL_SHA256}" = "${EXPECTED_APK_SIGNER_SHA256}"
 
       - name: Prepare artifact
+        id: artifact
         run: |
           set -euo pipefail
-          cp "${{ steps.meta.outputs.apk-path }}" "${RUNNER_TEMP}/${{ steps.meta.outputs.apk-file-name }}"
+          APK_FILE_NAME="KeiOS-benchmark-${{ steps.context.outputs.short_sha }}-run-${{ steps.context.outputs.run_number }}.apk"
+          cp "${{ steps.meta.outputs.apk-path }}" "${RUNNER_TEMP}/${APK_FILE_NAME}"
+          echo "apk_file_name=${APK_FILE_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=${APK_FILE_NAME%.apk}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload benchmark APK
         id: upload_apk
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.meta.outputs.artifact-name }}
-          path: ${{ runner.temp }}/${{ steps.meta.outputs.apk-file-name }}
+          name: ${{ steps.artifact.outputs.artifact_name }}
+          path: ${{ runner.temp }}/${{ steps.artifact.outputs.apk_file_name }}
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -123,11 +152,12 @@ jobs:
           {
             echo "### Benchmark APK artifact"
             echo ""
-            echo "- Artifact: \`${{ steps.meta.outputs.artifact-name }}\`"
-            echo "- File: \`${{ steps.meta.outputs.apk-file-name }}\`"
+            echo "- Artifact: \`${{ steps.artifact.outputs.artifact_name }}\`"
+            echo "- File: \`${{ steps.artifact.outputs.apk_file_name }}\`"
             echo "- Application ID: \`${{ steps.meta.outputs.application-id }}\`"
             echo "- Variant: \`${{ steps.meta.outputs.variant-name }}\`"
             echo "- Version: \`${{ steps.meta.outputs.version-name }}\` (\`${{ steps.meta.outputs.version-code }}\`)"
-            echo "- Commit: \`${{ steps.meta.outputs.commit-sha }}\`"
+            echo "- Commit: \`${{ steps.context.outputs.commit_sha }}\`"
+            echo "- Run number: \`${{ steps.context.outputs.run_number }}\`"
             echo "- Digest: \`${{ steps.upload_apk.outputs.artifact-digest }}\`"
           } >> "${GITHUB_STEP_SUMMARY}"

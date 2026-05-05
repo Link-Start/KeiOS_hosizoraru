@@ -166,6 +166,10 @@ class GitHubPackageRepositoryResolverTest {
         assertEquals("YuKongA", result.matchedCandidates.single().repository.owner)
         assertEquals("Updater-KMP", result.matchedCandidates.single().repository.repo)
         assertEquals(
+            GitHubRepositoryDiscoverySourceType.PreferredRepository,
+            result.matchedCandidates.single().repository.sourceType
+        )
+        assertEquals(
             "https://github.com/YuKongA/Updater-KMP",
             result.matchedCandidates.single().trackedApp.repoUrl
         )

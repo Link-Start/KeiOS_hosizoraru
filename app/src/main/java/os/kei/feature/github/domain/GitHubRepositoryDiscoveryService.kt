@@ -135,6 +135,7 @@ internal class GitHubRepositoryDiscoveryService(
         val sourceScore = when (sourceType) {
             GitHubRepositoryDiscoverySourceType.AuthenticatedStars -> 40
             GitHubRepositoryDiscoverySourceType.PublicUserStars -> 36
+            GitHubRepositoryDiscoverySourceType.PreferredRepository -> 32
             GitHubRepositoryDiscoverySourceType.RepositorySearch -> 20
         }
         val activityScore = if (updatedAtMillis > 0L) 8 else 0

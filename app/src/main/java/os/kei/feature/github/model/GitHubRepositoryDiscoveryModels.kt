@@ -3,6 +3,7 @@ package os.kei.feature.github.model
 enum class GitHubRepositoryDiscoverySourceType {
     AuthenticatedStars,
     PublicUserStars,
+    PreferredRepository,
     RepositorySearch
 }
 

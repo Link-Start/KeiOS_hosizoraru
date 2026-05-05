@@ -139,7 +139,7 @@ internal class GitHubPackageRepositoryResolver(
             owner = owner,
             repo = repo,
             repoUrl = "https://github.com/$owner/$repo",
-            sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch,
+            sourceType = GitHubRepositoryDiscoverySourceType.PreferredRepository,
             matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName
         )
     }

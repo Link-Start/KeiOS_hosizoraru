@@ -125,14 +125,14 @@
     <string name="ba_toast_cafe_no_ap">No Cafe AP to claim.</string>
     <string name="ba_toast_cafe_claimed_ap">Claimed %1$d AP.</string>
     <string name="ba_toast_cafe_debug_added">Added +3h Cafe AP (+%1$d).</string>
-    <string name="ba_debug_action_ap_notification">AP notification</string>
+    <string name="ba_debug_action_ap_notification">AP</string>
     <string name="ba_debug_title">Debug</string>
-    <string name="ba_debug_section_daily">Daily tests</string>
+    <string name="ba_debug_section_daily">Daily notification tests</string>
     <string name="ba_debug_section_calendar_pool">Event and banner alert tests</string>
     <string name="ba_debug_label_use_real_calendar_pool_data">Use current server real data</string>
     <string name="ba_debug_summary_use_real_calendar_pool_data">When enabled, test buttons use events and banners fetched on this page.</string>
-    <string name="ba_debug_action_cafe_visit_notification">Cafe student visit notification</string>
-    <string name="ba_debug_action_arena_refresh_notification">Tactical Challenge reset notification</string>
+    <string name="ba_debug_action_cafe_visit_notification">Cafe student visit</string>
+    <string name="ba_debug_action_arena_refresh_notification">Tactical Challenge reset</string>
     <string name="ba_debug_action_cafe_plus_3h_ap">Cafe 3h AP</string>
     <string name="ba_debug_action_calendar_upcoming_notification">Event starts soon</string>
     <string name="ba_debug_action_calendar_ending_notification">Event ends soon</string>
@@ -168,6 +168,8 @@
     <string name="ba_pool_notify_ending_content">%1$s ends at %2$s</string>
     <string name="ba_calendar_pool_notify_change_title">Blue Archive data updated</string>
     <string name="ba_calendar_pool_notify_change_content">%1$d event changes, %2$d banner changes</string>
+    <string name="ba_calendar_pool_notify_name_separator">, </string>
+    <string name="ba_calendar_pool_notify_name_list_more">%1$s and %2$d more</string>
     <string name="ba_calendar_pool_live_channel_name">Blue Archive events and banners</string>
     <string name="ba_calendar_pool_live_channel_desc">Live alerts for event calendar and recruitment banners.</string>
 

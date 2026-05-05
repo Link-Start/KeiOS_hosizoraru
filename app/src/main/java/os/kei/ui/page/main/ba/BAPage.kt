@@ -408,7 +408,7 @@ fun BAPage(
                 )
             },
             onSendCalendarUpcomingTestNotification = {
-                val entry = resolveCalendarDebugEntry(
+                val entries = resolveCalendarDebugEntries(
                     context = context,
                     entries = calendarUiState.entries,
                     useRealData = ui.debugUseRealCalendarPoolData,
@@ -416,15 +416,15 @@ fun BAPage(
                 ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarUpcoming(
+                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarUpcomingGroup(
                         context = context,
                         serverIndex = ui.serverIndex,
-                        entry = entry
+                        entries = entries
                     )
                 )
             },
             onSendCalendarEndingTestNotification = {
-                val entry = resolveCalendarDebugEntry(
+                val entries = resolveCalendarDebugEntries(
                     context = context,
                     entries = calendarUiState.entries,
                     useRealData = ui.debugUseRealCalendarPoolData,
@@ -432,15 +432,15 @@ fun BAPage(
                 ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarEnding(
+                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarEndingGroup(
                         context = context,
                         serverIndex = ui.serverIndex,
-                        entry = entry
+                        entries = entries
                     )
                 )
             },
             onSendPoolUpcomingTestNotification = {
-                val entry = resolvePoolDebugEntry(
+                val entries = resolvePoolDebugEntries(
                     context = context,
                     entries = poolUiState.entries,
                     useRealData = ui.debugUseRealCalendarPoolData,
@@ -448,15 +448,15 @@ fun BAPage(
                 ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendPoolUpcoming(
+                    sent = BaCalendarPoolNotificationDispatcher.sendPoolUpcomingGroup(
                         context = context,
                         serverIndex = ui.serverIndex,
-                        entry = entry
+                        entries = entries
                     )
                 )
             },
             onSendPoolEndingTestNotification = {
-                val entry = resolvePoolDebugEntry(
+                val entries = resolvePoolDebugEntries(
                     context = context,
                     entries = poolUiState.entries,
                     useRealData = ui.debugUseRealCalendarPoolData,
@@ -464,10 +464,10 @@ fun BAPage(
                 ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendPoolEnding(
+                    sent = BaCalendarPoolNotificationDispatcher.sendPoolEndingGroup(
                         context = context,
                         serverIndex = ui.serverIndex,
-                        entry = entry
+                        entries = entries
                     )
                 )
             },
@@ -551,24 +551,32 @@ private fun notifyBaDebugResult(
     Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
 }
 
-private fun resolveCalendarDebugEntry(
+private fun resolveCalendarDebugEntries(
     context: Context,
     entries: List<BaCalendarEntry>,
     useRealData: Boolean,
     upcoming: Boolean,
-): BaCalendarEntry? {
-    if (!useRealData) return sampleCalendarEntry(context, upcoming)
+): List<BaCalendarEntry>? {
+    if (!useRealData) return listOf(sampleCalendarEntry(context, upcoming))
     val nowMs = System.currentTimeMillis()
-    val realEntry = if (upcoming) {
+    val targetTime = if (upcoming) {
         entries
             .filter { it.beginAtMs > nowMs }
             .minByOrNull { it.beginAtMs }
+            ?.beginAtMs
     } else {
         entries
             .filter { it.endAtMs > nowMs }
             .minByOrNull { it.endAtMs }
+            ?.endAtMs
     }
-    if (realEntry != null) return realEntry
+    if (targetTime != null) {
+        return if (upcoming) {
+            entries.filter { it.beginAtMs == targetTime }
+        } else {
+            entries.filter { it.endAtMs == targetTime }
+        }
+    }
     Toast.makeText(
         context,
         context.getString(R.string.ba_toast_calendar_pool_real_data_missing),
@@ -577,24 +585,32 @@ private fun resolveCalendarDebugEntry(
     return null
 }
 
-private fun resolvePoolDebugEntry(
+private fun resolvePoolDebugEntries(
     context: Context,
     entries: List<BaPoolEntry>,
     useRealData: Boolean,
     upcoming: Boolean,
-): BaPoolEntry? {
-    if (!useRealData) return samplePoolEntry(context, upcoming)
+): List<BaPoolEntry>? {
+    if (!useRealData) return listOf(samplePoolEntry(context, upcoming))
     val nowMs = System.currentTimeMillis()
-    val realEntry = if (upcoming) {
+    val targetTime = if (upcoming) {
         entries
             .filter { it.startAtMs > nowMs }
             .minByOrNull { it.startAtMs }
+            ?.startAtMs
     } else {
         entries
             .filter { it.endAtMs > nowMs }
             .minByOrNull { it.endAtMs }
+            ?.endAtMs
     }
-    if (realEntry != null) return realEntry
+    if (targetTime != null) {
+        return if (upcoming) {
+            entries.filter { it.startAtMs == targetTime }
+        } else {
+            entries.filter { it.endAtMs == targetTime }
+        }
+    }
     Toast.makeText(
         context,
         context.getString(R.string.ba_toast_calendar_pool_real_data_missing),

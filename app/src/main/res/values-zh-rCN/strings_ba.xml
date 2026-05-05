@@ -125,14 +125,14 @@
     <string name="ba_toast_cafe_no_ap">咖啡厅暂无可领取体力</string>
     <string name="ba_toast_cafe_claimed_ap">已领取 %1$d 体力</string>
     <string name="ba_toast_cafe_debug_added">已增加 +3h 咖啡厅体力（+%1$d）</string>
-    <string name="ba_debug_action_ap_notification">AP 通知</string>
+    <string name="ba_debug_action_ap_notification">AP</string>
     <string name="ba_debug_title">Debug</string>
-    <string name="ba_debug_section_daily">日常测试</string>
+    <string name="ba_debug_section_daily">日常通知测试</string>
     <string name="ba_debug_section_calendar_pool">活动与卡池提醒测试</string>
     <string name="ba_debug_label_use_real_calendar_pool_data">接入当前服务器真实数据</string>
     <string name="ba_debug_summary_use_real_calendar_pool_data">开启后测试按钮使用当前页面抓取到的真实活动与卡池</string>
-    <string name="ba_debug_action_cafe_visit_notification">咖啡厅学生访问通知</string>
-    <string name="ba_debug_action_arena_refresh_notification">竞技场刷新通知</string>
+    <string name="ba_debug_action_cafe_visit_notification">咖啡厅学生访问</string>
+    <string name="ba_debug_action_arena_refresh_notification">竞技场刷新</string>
     <string name="ba_debug_action_cafe_plus_3h_ap">咖啡厅 3h AP</string>
     <string name="ba_debug_action_calendar_upcoming_notification">活动即将开始</string>
     <string name="ba_debug_action_calendar_ending_notification">活动即将结束</string>
@@ -168,6 +168,8 @@
     <string name="ba_pool_notify_ending_content">%1$s 将在 %2$s 结束</string>
     <string name="ba_calendar_pool_notify_change_title">BA 信息已更新</string>
     <string name="ba_calendar_pool_notify_change_content">活动变动 %1$d 项，卡池变动 %2$d 项</string>
+    <string name="ba_calendar_pool_notify_name_separator">、</string>
+    <string name="ba_calendar_pool_notify_name_list_more">%1$s 等 %2$d 项</string>
     <string name="ba_calendar_pool_live_channel_name">BA 活动与卡池提醒</string>
     <string name="ba_calendar_pool_live_channel_desc">活动日历和卡池提醒实时通知</string>
 

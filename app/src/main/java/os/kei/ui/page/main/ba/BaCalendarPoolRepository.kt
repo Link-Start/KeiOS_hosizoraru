@@ -340,11 +340,11 @@ private fun dispatchCalendarSyncNotifications(
     val notifiedKeys = BASettingsStore.loadCalendarPoolNotifiedKeys()
 
     if (BASettingsStore.loadCalendarUpcomingNotifyEnabled()) {
-        val target = nextEntries
+        val targetsByTime = nextEntries
             .asSequence()
             .filter { it.beginAtMs > nowMs && it.beginAtMs - nowMs <= leadMs }
             .sortedBy { it.beginAtMs }
-            .firstOrNull { entry ->
+            .filter { entry ->
                 calendarNotifyKey(
                     serverIndex,
                     "calendar_start",
@@ -353,30 +353,35 @@ private fun dispatchCalendarSyncNotifications(
                     leadHours
                 ) !in notifiedKeys
             }
-        if (target != null && BaCalendarPoolNotificationDispatcher.sendCalendarUpcoming(
-                context,
-                serverIndex,
-                target
-            )
-        ) {
-            BASettingsStore.markCalendarPoolNotified(
-                calendarNotifyKey(
+            .groupBy { it.beginAtMs }
+        targetsByTime.forEach { (_, targets) ->
+            if (BaCalendarPoolNotificationDispatcher.sendCalendarUpcomingGroup(
+                    context,
                     serverIndex,
-                    "calendar_start",
-                    target.id,
-                    target.beginAtMs,
-                    leadHours
+                    targets
                 )
-            )
+            ) {
+                targets.forEach { target ->
+                    BASettingsStore.markCalendarPoolNotified(
+                        calendarNotifyKey(
+                            serverIndex,
+                            "calendar_start",
+                            target.id,
+                            target.beginAtMs,
+                            leadHours
+                        )
+                    )
+                }
+            }
         }
     }
 
     if (BASettingsStore.loadCalendarEndingNotifyEnabled()) {
-        val target = nextEntries
+        val targetsByTime = nextEntries
             .asSequence()
             .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs }
             .sortedBy { it.endAtMs }
-            .firstOrNull { entry ->
+            .filter { entry ->
                 calendarNotifyKey(
                     serverIndex,
                     "calendar_end",
@@ -385,15 +390,26 @@ private fun dispatchCalendarSyncNotifications(
                     leadHours
                 ) !in notifiedKeys
             }
-        if (target != null && BaCalendarPoolNotificationDispatcher.sendCalendarEnding(
-                context,
-                serverIndex,
-                target
-            )
-        ) {
-            BASettingsStore.markCalendarPoolNotified(
-                calendarNotifyKey(serverIndex, "calendar_end", target.id, target.endAtMs, leadHours)
-            )
+            .groupBy { it.endAtMs }
+        targetsByTime.forEach { (_, targets) ->
+            if (BaCalendarPoolNotificationDispatcher.sendCalendarEndingGroup(
+                    context,
+                    serverIndex,
+                    targets
+                )
+            ) {
+                targets.forEach { target ->
+                    BASettingsStore.markCalendarPoolNotified(
+                        calendarNotifyKey(
+                            serverIndex,
+                            "calendar_end",
+                            target.id,
+                            target.endAtMs,
+                            leadHours
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -433,11 +449,11 @@ private fun dispatchPoolSyncNotifications(
     val notifiedKeys = BASettingsStore.loadCalendarPoolNotifiedKeys()
 
     if (BASettingsStore.loadPoolUpcomingNotifyEnabled()) {
-        val target = nextEntries
+        val targetsByTime = nextEntries
             .asSequence()
             .filter { it.startAtMs > nowMs && it.startAtMs - nowMs <= leadMs }
             .sortedBy { it.startAtMs }
-            .firstOrNull { entry ->
+            .filter { entry ->
                 calendarNotifyKey(
                     serverIndex,
                     "pool_start",
@@ -446,24 +462,35 @@ private fun dispatchPoolSyncNotifications(
                     leadHours
                 ) !in notifiedKeys
             }
-        if (target != null && BaCalendarPoolNotificationDispatcher.sendPoolUpcoming(
-                context,
-                serverIndex,
-                target
-            )
-        ) {
-            BASettingsStore.markCalendarPoolNotified(
-                calendarNotifyKey(serverIndex, "pool_start", target.id, target.startAtMs, leadHours)
-            )
+            .groupBy { it.startAtMs }
+        targetsByTime.forEach { (_, targets) ->
+            if (BaCalendarPoolNotificationDispatcher.sendPoolUpcomingGroup(
+                    context,
+                    serverIndex,
+                    targets
+                )
+            ) {
+                targets.forEach { target ->
+                    BASettingsStore.markCalendarPoolNotified(
+                        calendarNotifyKey(
+                            serverIndex,
+                            "pool_start",
+                            target.id,
+                            target.startAtMs,
+                            leadHours
+                        )
+                    )
+                }
+            }
         }
     }
 
     if (BASettingsStore.loadPoolEndingNotifyEnabled()) {
-        val target = nextEntries
+        val targetsByTime = nextEntries
             .asSequence()
             .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs }
             .sortedBy { it.endAtMs }
-            .firstOrNull { entry ->
+            .filter { entry ->
                 calendarNotifyKey(
                     serverIndex,
                     "pool_end",
@@ -472,15 +499,26 @@ private fun dispatchPoolSyncNotifications(
                     leadHours
                 ) !in notifiedKeys
             }
-        if (target != null && BaCalendarPoolNotificationDispatcher.sendPoolEnding(
-                context,
-                serverIndex,
-                target
-            )
-        ) {
-            BASettingsStore.markCalendarPoolNotified(
-                calendarNotifyKey(serverIndex, "pool_end", target.id, target.endAtMs, leadHours)
-            )
+            .groupBy { it.endAtMs }
+        targetsByTime.forEach { (_, targets) ->
+            if (BaCalendarPoolNotificationDispatcher.sendPoolEndingGroup(
+                    context,
+                    serverIndex,
+                    targets
+                )
+            ) {
+                targets.forEach { target ->
+                    BASettingsStore.markCalendarPoolNotified(
+                        calendarNotifyKey(
+                            serverIndex,
+                            "pool_end",
+                            target.id,
+                            target.endAtMs,
+                            leadHours
+                        )
+                    )
+                }
+            }
         }
     }
 

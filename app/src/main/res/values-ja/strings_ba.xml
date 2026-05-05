@@ -168,6 +168,8 @@
     <string name="ba_pool_notify_ending_content">%1$s は %2$s に終了します</string>
     <string name="ba_calendar_pool_notify_change_title">ブルーアーカイブ情報を更新しました</string>
     <string name="ba_calendar_pool_notify_change_content">イベント変更 %1$d 件、募集変更 %2$d 件</string>
+    <string name="ba_calendar_pool_notify_name_separator">、</string>
+    <string name="ba_calendar_pool_notify_name_list_more">%1$s ほか %2$d 件</string>
     <string name="ba_calendar_pool_live_channel_name">ブルーアーカイブ イベント/募集通知</string>
     <string name="ba_calendar_pool_live_channel_desc">イベントカレンダーと募集のリアルタイム通知</string>
     <string name="ba_catalog_page_title">生徒名簿</string>

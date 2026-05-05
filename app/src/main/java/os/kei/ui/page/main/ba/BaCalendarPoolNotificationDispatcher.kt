@@ -24,30 +24,42 @@ import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 
 internal object BaCalendarPoolNotificationDispatcher {
     const val CHANNEL_ID = "ba_calendar_pool_live_channel_v1"
-    private const val CALENDAR_UPCOMING_NOTIFICATION_ID = 38910
-    private const val CALENDAR_ENDING_NOTIFICATION_ID = 38911
-    private const val POOL_UPCOMING_NOTIFICATION_ID = 38912
-    private const val POOL_ENDING_NOTIFICATION_ID = 38913
+    private const val CALENDAR_UPCOMING_NOTIFICATION_ID_BASE = 389_100_000
+    private const val CALENDAR_ENDING_NOTIFICATION_ID_BASE = 390_100_000
+    private const val POOL_UPCOMING_NOTIFICATION_ID_BASE = 391_100_000
+    private const val POOL_ENDING_NOTIFICATION_ID_BASE = 392_100_000
     private const val CHANGE_NOTIFICATION_ID = 38914
     private const val ICON_RES_ID = R.drawable.ic_ba_calendar_live_update
     private const val LIVE_PROGRESS_COLOR = 0xFF2563EB.toInt()
+    private const val MAX_VISIBLE_NAMES = 3
 
     fun sendCalendarUpcoming(
         context: Context,
         serverIndex: Int,
         entry: BaCalendarEntry,
     ): Boolean {
+        return sendCalendarUpcomingGroup(context, serverIndex, listOf(entry))
+    }
+
+    fun sendCalendarUpcomingGroup(
+        context: Context,
+        serverIndex: Int,
+        entries: List<BaCalendarEntry>,
+    ): Boolean {
+        val normalizedEntries = entries.sortedBy { it.title }
+        val notifyAtMs = normalizedEntries.firstOrNull()?.beginAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = CALENDAR_UPCOMING_NOTIFICATION_ID,
+            notificationId = groupedNotificationId(
+                CALENDAR_UPCOMING_NOTIFICATION_ID_BASE,
+                notifyAtMs
+            ),
             title = context.getString(R.string.ba_calendar_notify_upcoming_title),
             content = context.getString(
                 R.string.ba_calendar_notify_upcoming_content,
-                entry.title.ifBlank {
-                    context.baCalendarKindLabel(entry.kindId, entry.kindName)
-                },
+                summarizeCalendarEntries(context, normalizedEntries),
                 formatBaDateTimeNoYearInTimeZone(
-                    entry.beginAtMs,
+                    notifyAtMs,
                     serverRefreshTimeZone(serverIndex)
                 )
             ),
@@ -60,16 +72,27 @@ internal object BaCalendarPoolNotificationDispatcher {
         serverIndex: Int,
         entry: BaCalendarEntry,
     ): Boolean {
+        return sendCalendarEndingGroup(context, serverIndex, listOf(entry))
+    }
+
+    fun sendCalendarEndingGroup(
+        context: Context,
+        serverIndex: Int,
+        entries: List<BaCalendarEntry>,
+    ): Boolean {
+        val normalizedEntries = entries.sortedBy { it.title }
+        val notifyAtMs = normalizedEntries.firstOrNull()?.endAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = CALENDAR_ENDING_NOTIFICATION_ID,
+            notificationId = groupedNotificationId(
+                CALENDAR_ENDING_NOTIFICATION_ID_BASE,
+                notifyAtMs
+            ),
             title = context.getString(R.string.ba_calendar_notify_ending_title),
             content = context.getString(
                 R.string.ba_calendar_notify_ending_content,
-                entry.title.ifBlank {
-                    context.baCalendarKindLabel(entry.kindId, entry.kindName)
-                },
-                formatBaDateTimeNoYearInTimeZone(entry.endAtMs, serverRefreshTimeZone(serverIndex))
+                summarizeCalendarEntries(context, normalizedEntries),
+                formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex))
             ),
             shortText = context.getString(R.string.ba_debug_action_calendar_ending_notification)
         )
@@ -80,15 +103,25 @@ internal object BaCalendarPoolNotificationDispatcher {
         serverIndex: Int,
         entry: BaPoolEntry,
     ): Boolean {
+        return sendPoolUpcomingGroup(context, serverIndex, listOf(entry))
+    }
+
+    fun sendPoolUpcomingGroup(
+        context: Context,
+        serverIndex: Int,
+        entries: List<BaPoolEntry>,
+    ): Boolean {
+        val normalizedEntries = entries.sortedBy { it.name }
+        val notifyAtMs = normalizedEntries.firstOrNull()?.startAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = POOL_UPCOMING_NOTIFICATION_ID,
+            notificationId = groupedNotificationId(POOL_UPCOMING_NOTIFICATION_ID_BASE, notifyAtMs),
             title = context.getString(R.string.ba_pool_notify_upcoming_title),
             content = context.getString(
                 R.string.ba_pool_notify_upcoming_content,
-                entry.name.ifBlank { context.baPoolTagLabel(entry.tagId, entry.tagName) },
+                summarizePoolEntries(context, normalizedEntries),
                 formatBaDateTimeNoYearInTimeZone(
-                    entry.startAtMs,
+                    notifyAtMs,
                     serverRefreshTimeZone(serverIndex)
                 )
             ),
@@ -101,14 +134,24 @@ internal object BaCalendarPoolNotificationDispatcher {
         serverIndex: Int,
         entry: BaPoolEntry,
     ): Boolean {
+        return sendPoolEndingGroup(context, serverIndex, listOf(entry))
+    }
+
+    fun sendPoolEndingGroup(
+        context: Context,
+        serverIndex: Int,
+        entries: List<BaPoolEntry>,
+    ): Boolean {
+        val normalizedEntries = entries.sortedBy { it.name }
+        val notifyAtMs = normalizedEntries.firstOrNull()?.endAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = POOL_ENDING_NOTIFICATION_ID,
+            notificationId = groupedNotificationId(POOL_ENDING_NOTIFICATION_ID_BASE, notifyAtMs),
             title = context.getString(R.string.ba_pool_notify_ending_title),
             content = context.getString(
                 R.string.ba_pool_notify_ending_content,
-                entry.name.ifBlank { context.baPoolTagLabel(entry.tagId, entry.tagName) },
-                formatBaDateTimeNoYearInTimeZone(entry.endAtMs, serverRefreshTimeZone(serverIndex))
+                summarizePoolEntries(context, normalizedEntries),
+                formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex))
             ),
             shortText = context.getString(R.string.ba_debug_action_pool_ending_notification)
         )
@@ -202,6 +245,59 @@ internal object BaCalendarPoolNotificationDispatcher {
             .build()
         NotificationManagerCompat.from(context).notify(notificationId, notification)
         return true
+    }
+
+    private fun summarizeCalendarEntries(
+        context: Context,
+        entries: List<BaCalendarEntry>,
+    ): String {
+        return summarizeNames(
+            context = context,
+            names = entries.map { entry ->
+                entry.title.ifBlank {
+                    context.baCalendarKindLabel(entry.kindId, entry.kindName)
+                }
+            }
+        )
+    }
+
+    private fun summarizePoolEntries(
+        context: Context,
+        entries: List<BaPoolEntry>,
+    ): String {
+        return summarizeNames(
+            context = context,
+            names = entries.map { entry ->
+                entry.name.ifBlank { context.baPoolTagLabel(entry.tagId, entry.tagName) }
+            }
+        )
+    }
+
+    private fun summarizeNames(
+        context: Context,
+        names: List<String>,
+    ): String {
+        val visibleNames = names
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .take(MAX_VISIBLE_NAMES)
+        val separator = context.getString(R.string.ba_calendar_pool_notify_name_separator)
+        val visibleText = visibleNames.joinToString(separator = separator)
+        val remainingCount = (names.size - visibleNames.size).coerceAtLeast(0)
+        return if (remainingCount > 0) {
+            context.getString(
+                R.string.ba_calendar_pool_notify_name_list_more,
+                visibleText,
+                remainingCount
+            )
+        } else {
+            visibleText
+        }
+    }
+
+    private fun groupedNotificationId(baseId: Int, notifyAtMs: Long): Int {
+        val timeBucketHash = (notifyAtMs / 60_000L).hashCode().and(0x7fffffff) % 900_000
+        return baseId + timeBucketHash
     }
 
     private fun openBaPendingIntent(context: Context, notificationId: Int): PendingIntent {

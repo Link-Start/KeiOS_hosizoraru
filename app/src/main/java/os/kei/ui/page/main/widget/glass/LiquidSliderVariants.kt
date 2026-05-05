@@ -16,8 +16,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,8 +148,8 @@ fun LiquidVolumeSlider(
             inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
             trackHeight = 6.dp,
             thumbWidth = 40.dp,
-            thumbHeight = 24.dp,
-            pressedScale = 1.5f
+            thumbHeight = 26.dp,
+            pressedScale = 1.36f
         )
     )
 }
@@ -380,7 +380,14 @@ private fun LiquidTrackSlider(
                     .fillMaxWidth()
                     .height(maxHeight)
                     .then(dampedDragAnimation.modifier)
-                    .pointerInput(safeValueRange, isLtr, trackWidth, keyPoints, snapToKeyPoints, snapThreshold) {
+                    .pointerInput(
+                        safeValueRange,
+                        isLtr,
+                        trackWidth,
+                        keyPoints,
+                        snapToKeyPoints,
+                        snapThreshold
+                    ) {
                         detectTapGestures { position ->
                             val rawTarget = sliderValueAt(
                                 offset = position,
@@ -410,9 +417,12 @@ private fun LiquidTrackSlider(
                 Modifier
                     .graphicsLayer {
                         translationX = (
-                            -size.width / 2f + trackWidth * progress
-                            ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) *
-                            if (isLtr) 1f else -1f
+                                -size.width / 2f + trackWidth * progress
+                                ).fastCoerceIn(
+                                -size.width / 4f,
+                                trackWidth - size.width * 3f / 4f
+                            ) *
+                                if (isLtr) 1f else -1f
                     }
                     .clip(ContinuousCapsule)
                     .background(resolveKeyPointColor(keyPoint, style, isActive))
@@ -422,11 +432,12 @@ private fun LiquidTrackSlider(
 
         Box(
             Modifier
+                .graphicsLayer { clip = false }
                 .graphicsLayer {
                     translationX = (
-                        -size.width / 2f + trackWidth * dampedDragAnimation.progress
-                        ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) *
-                        if (isLtr) 1f else -1f
+                            -size.width / 2f + trackWidth * dampedDragAnimation.progress
+                            ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) *
+                            if (isLtr) 1f else -1f
                 }
                 .drawBackdrop(
                     backdrop = thumbBackdrop,

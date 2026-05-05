@@ -240,8 +240,8 @@ private fun AppLiquidIconButtonContainer(
             .graphicsLayer {
                 scaleX = animatedScale
                 scaleY = animatedScale
+                clip = false
             }
-            .clip(shape)
             .then(
                 if (onLongClick != null) {
                     Modifier.combinedClickable(
@@ -316,7 +316,9 @@ private fun AppLiquidIconButtonContainer(
                         containerOverlay != null -> containerOverlay
                         else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
                     }
-                    Modifier.background(fallbackColor)
+                    Modifier
+                        .clip(shape)
+                        .background(fallbackColor)
                 }
             )
             .then(

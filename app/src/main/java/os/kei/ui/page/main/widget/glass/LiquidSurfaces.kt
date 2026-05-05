@@ -184,6 +184,7 @@ fun AppLiquidFloatingSurface(
     consumeTouches: Boolean = false,
     pressDurationMillis: Int = 130,
     pressLabel: String = "app_liquid_floating_surface_press",
+    pressSafePadding: Dp = Dp.Unspecified,
     content: @Composable BoxScope.() -> Unit
 ) {
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
@@ -208,13 +209,25 @@ fun AppLiquidFloatingSurface(
     }
     val shadowAlpha = (if (isDark) 0.12f else 0.05f) * (1f - 0.35f * pressProgress)
     val pressedBorderColor = borderColor.copy(alpha = borderColor.alpha * (1f - 0.72f * pressProgress))
+    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
+        if (onClick != null || consumeTouches) {
+            AppInteractiveTokens.denseLiquidPressSafePadding
+        } else {
+            0.dp
+        }
+    } else {
+        pressSafePadding
+    }
 
     Box(
-        modifier = modifier.graphicsLayer {
-            translationY = -with(density) { 1.25.dp.toPx() } * pressProgress
-            scaleX = lerp(1f, 1.010f, pressProgress)
-            scaleY = lerp(1f, 0.992f, pressProgress)
-        },
+        modifier = modifier
+            .padding(resolvedPressSafePadding)
+            .graphicsLayer {
+                translationY = -with(density) { 1.25.dp.toPx() } * pressProgress
+                scaleX = lerp(1f, 1.010f, pressProgress)
+                scaleY = lerp(1f, 0.992f, pressProgress)
+                clip = false
+            },
         contentAlignment = Alignment.Center
     ) {
         Box(

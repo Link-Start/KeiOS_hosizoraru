@@ -1,11 +1,11 @@
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -40,11 +40,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
@@ -62,7 +62,9 @@ private val LiquidGlassDropdownItemRadius = 18.dp
 private val LiquidGlassDropdownMinWidth = 168.dp
 private val LiquidGlassDropdownMaxWidth = 280.dp
 private val LiquidGlassDropdownMaxHeight = 336.dp
-private val LiquidGlassDropdownContentPadding = 6.dp
+private val LiquidGlassDropdownContentPadding = 8.dp
+private val LiquidGlassDropdownItemPressSafePadding =
+    AppInteractiveTokens.compactLiquidPressSafePadding
 private val LiquidGlassDropdownRowMinHeight = 44.dp
 private val LiquidGlassDropdownIconSize = 18.dp
 private val LiquidGlassDropdownCheckSize = 18.dp
@@ -258,8 +260,16 @@ fun LiquidGlassDropdownItem(
     val selectedSurface = liquidGlassDropdownSelectedSurfaceColor(isDark = isDark)
     val currentOnClick by rememberUpdatedState(onClick)
     val rowShape = RoundedRectangle(LiquidGlassDropdownItemRadius)
-    val outerTopPadding = if (index == 0) 0.dp else 2.dp
-    val outerBottomPadding = if (index == optionSize - 1) 0.dp else 2.dp
+    val outerTopPadding = if (index == 0) {
+        LiquidGlassDropdownItemPressSafePadding
+    } else {
+        2.dp
+    }
+    val outerBottomPadding = if (index == optionSize - 1) {
+        LiquidGlassDropdownItemPressSafePadding
+    } else {
+        2.dp
+    }
 
     if (itemBackdrop != null && highlighted) {
         LiquidSurface(

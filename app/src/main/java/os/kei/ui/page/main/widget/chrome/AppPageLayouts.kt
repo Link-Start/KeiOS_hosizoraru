@@ -82,7 +82,7 @@ fun AppPageScaffold(
                     titleEndReserve = if (reserveTopEndActionSpace) {
                         AppChromeTokens.topBarTitleActionReserve
                     } else {
-                        AppChromeTokens.topBarTitleEdgePadding
+                        null
                     },
                     searchBarVisible = searchBarVisible,
                     searchBarAnimationLabelPrefix = searchBarAnimationLabelPrefix,

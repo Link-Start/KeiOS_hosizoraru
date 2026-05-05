@@ -13,9 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -26,6 +24,7 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogSortActionPop
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
+import os.kei.ui.page.main.widget.chrome.AppTopBarTitleCard
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
@@ -117,17 +116,13 @@ internal fun BaGuideCatalogMusicTopBar(
                 }
             }
         }
-        Text(
-            text = title,
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.SectionTitle.fontSize,
-            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        AppTopBarTitleCard(
+            title = title,
+            backdrop = backdrop,
+            startReserve = AppChromeTokens.topBarTitleNavigationReserve,
+            endReserve = AppChromeTokens.topBarTitleActionReserve,
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 64.dp, end = 172.dp)
+                .align(Alignment.Center)
                 .fillMaxWidth()
         )
     }

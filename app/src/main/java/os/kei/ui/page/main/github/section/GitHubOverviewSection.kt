@@ -211,6 +211,7 @@ internal fun GitHubOverviewCard(
                     backdrop = backdrop,
                     isDark = isDark,
                     overviewTitleColor = overviewTitleColor,
+                    isApiStrategy = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken,
                     strategyValue = strategyValue,
                     strategyColor = strategyColor,
                     apiValue = apiValue,
@@ -369,6 +370,7 @@ private fun GitHubOverviewCollapsedContent(
     backdrop: Backdrop?,
     isDark: Boolean,
     overviewTitleColor: Color,
+    isApiStrategy: Boolean,
     strategyValue: String,
     strategyColor: Color,
     apiValue: String,
@@ -381,15 +383,19 @@ private fun GitHubOverviewCollapsedContent(
     ) {
         GitHubOverviewMetricItem(
             label = stringResource(R.string.github_overview_label_strategy_api),
-            value = stringResource(
-                R.string.github_overview_value_strategy_api,
-                strategyValue,
-                apiValue
-            ),
+            value = if (isApiStrategy) {
+                stringResource(R.string.github_overview_value_api, apiValue)
+            } else {
+                stringResource(
+                    R.string.github_overview_value_strategy_api,
+                    strategyValue,
+                    apiValue
+                )
+            },
             titleColor = overviewTitleColor,
             valueColor = if (apiColor == GitHubStatusPalette.PreRelease) apiColor else strategyColor,
             showLabel = false,
-            valueMaxLines = 2,
+            valueMaxLines = 1,
             valueTextAlign = TextAlign.Start,
             backdrop = backdrop,
             modifier = Modifier.weight(1f)

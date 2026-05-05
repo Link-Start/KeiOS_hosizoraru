@@ -80,6 +80,7 @@ tmp/
 
 # Local tooling state
 /.codex/
+/AGENTS.md
 
 # Local QA artifacts
 /artifacts/

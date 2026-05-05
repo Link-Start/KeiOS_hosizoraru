@@ -532,7 +532,7 @@ fun OsShellRunnerPage(
     OsShellDangerousCommandConfirmDialog(
         show = showDangerousCommandConfirm,
         title = textBundle.dangerousCommandDialogTitle,
-        summary = context.getString(
+        summary = stringResource(
             R.string.os_shell_dangerous_command_dialog_summary,
             dangerousCommandPreview.ifBlank { "-" }
         ),

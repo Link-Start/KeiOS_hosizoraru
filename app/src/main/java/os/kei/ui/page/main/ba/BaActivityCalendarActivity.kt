@@ -72,6 +72,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.time.Duration.Companion.milliseconds
 
 class BaActivityCalendarActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -177,7 +178,7 @@ private fun BaActivityCalendarPage(
     LaunchedEffect(Unit) {
         while (true) {
             nowMs = System.currentTimeMillis()
-            delay(1_000L)
+            delay(1_000L.milliseconds)
         }
     }
     val refreshIconRotation by rememberInfiniteTransition(label = "ba_activity_calendar_refresh_rotation")

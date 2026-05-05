@@ -84,6 +84,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 private fun LazyListState.canMoveForSettingsChrome(deltaY: Float): Boolean {
     return when {
@@ -249,7 +250,7 @@ fun SettingsPage(
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
                 shizukuStatus = latestShizukuStatus.value
             )
-            delay(400)
+            delay(400.milliseconds)
         }
     }
     val sectionContracts = rememberSettingsSectionContractBundle(

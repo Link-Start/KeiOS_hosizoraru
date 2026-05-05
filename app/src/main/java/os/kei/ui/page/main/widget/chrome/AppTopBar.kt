@@ -2,6 +2,7 @@ package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
@@ -43,6 +45,8 @@ fun AppTopBarSection(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     titleBackdrop: Backdrop? = null,
+    titleStartReserve: Dp? = null,
+    titleEndReserve: Dp = AppChromeTokens.topBarTitleEdgePadding,
     searchBarVisible: Boolean = false,
     searchBarAnimationLabelPrefix: String = "appTopBarSearch",
     searchBarContent: (@Composable BoxScope.() -> Unit)? = null
@@ -50,6 +54,11 @@ fun AppTopBarSection(
     val safeTop = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     val barHeight = AppChromeTokens.topBarCollapsedHeight
     val topBarTitle = title.ifBlank { largeTitle }
+    val resolvedTitleStartReserve = titleStartReserve ?: if (navigationIcon != null) {
+        AppChromeTokens.topBarTitleNavigationReserve
+    } else {
+        AppChromeTokens.topBarTitleEdgePadding
+    }
     SideEffect {
         scrollBehavior?.state?.let { state ->
             if (state.heightOffsetLimit != 0f) {
@@ -73,13 +82,13 @@ fun AppTopBarSection(
             ) {
                 navigationIcon?.invoke()
             }
-            if (topBarTitle.isNotBlank()) {
-                AppTopBarLiquidTitleCard(
-                    title = topBarTitle,
-                    backdrop = titleBackdrop,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+            AppTopBarTitleSlot(
+                title = topBarTitle,
+                backdrop = titleBackdrop,
+                startReserve = resolvedTitleStartReserve,
+                endReserve = titleEndReserve,
+                modifier = Modifier.align(Alignment.Center)
+            )
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -98,16 +107,70 @@ fun AppTopBarSection(
 }
 
 @Composable
+private fun AppTopBarTitleSlot(
+    title: String,
+    backdrop: Backdrop?,
+    startReserve: Dp,
+    endReserve: Dp,
+    modifier: Modifier = Modifier,
+) {
+    if (title.isBlank()) return
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = startReserve, end = endReserve),
+        contentAlignment = Alignment.Center
+    ) {
+        val availableWidth = maxWidth.coerceAtLeast(AppChromeTokens.topBarTitleMinWidth)
+        val cardMaxWidth = availableWidth.coerceAtMost(AppChromeTokens.topBarTitleMaxWidth)
+        val textLength = title.length
+        val titleTextSize = when {
+            cardMaxWidth < 112.dp || textLength >= 14 -> 14.sp
+            cardMaxWidth < 150.dp || textLength >= 9 -> 15.sp
+            else -> 16.sp
+        }
+        val titleLineHeight = when {
+            titleTextSize.value <= 14f -> 18.sp
+            titleTextSize.value <= 15f -> 19.sp
+            else -> 20.sp
+        }
+        val horizontalPadding = when {
+            cardMaxWidth < 112.dp -> 12.dp
+            cardMaxWidth < 150.dp -> 14.dp
+            else -> 16.dp
+        }
+        val estimatedTextWidth = title.sumOf { char ->
+            if (char.code <= 0x007F) 9 else 17
+        }.dp
+        val cardWidth = (estimatedTextWidth + horizontalPadding * 2)
+            .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
+        AppTopBarLiquidTitleCard(
+            title = title,
+            backdrop = backdrop,
+            width = cardWidth,
+            textSize = titleTextSize,
+            lineHeight = titleLineHeight,
+            horizontalPadding = horizontalPadding,
+        )
+    }
+}
+
+@Composable
 private fun AppTopBarLiquidTitleCard(
     title: String,
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
     height: Dp = 42.dp,
+    width: Dp,
+    textSize: androidx.compose.ui.unit.TextUnit,
+    lineHeight: androidx.compose.ui.unit.TextUnit,
+    horizontalPadding: Dp,
 ) {
     AppLiquidFloatingSurface(
         modifier = modifier
             .height(height)
-            .defaultMinSize(minWidth = 92.dp),
+            .defaultMinSize(minWidth = AppChromeTokens.topBarTitleMinWidth)
+            .width(width),
         shape = ContinuousCapsule,
         backdrop = backdrop,
         clipContent = true,
@@ -115,12 +178,12 @@ private fun AppTopBarLiquidTitleCard(
         Text(
             text = title,
             color = MiuixTheme.colorScheme.onSurface,
-            fontSize = 17.sp,
-            lineHeight = 20.sp,
+            fontSize = textSize,
+            lineHeight = lineHeight,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 18.dp)
+            modifier = Modifier.padding(horizontal = horizontalPadding)
         )
     }
 }

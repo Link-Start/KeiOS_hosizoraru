@@ -61,6 +61,7 @@ fun AppPageScaffold(
     navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     titleBackdrop: Backdrop? = null,
+    reserveTopEndActionSpace: Boolean = false,
     bottomBar: @Composable () -> Unit = {},
     searchBarVisible: Boolean = false,
     searchBarAnimationLabelPrefix: String = "appPageSearch",
@@ -78,6 +79,11 @@ fun AppPageScaffold(
                     color = topBarColor,
                     navigationIcon = navigationIcon,
                     titleBackdrop = titleBackdrop,
+                    titleEndReserve = if (reserveTopEndActionSpace) {
+                        AppChromeTokens.topBarTitleActionReserve
+                    } else {
+                        AppChromeTokens.topBarTitleEdgePadding
+                    },
                     searchBarVisible = searchBarVisible,
                     searchBarAnimationLabelPrefix = searchBarAnimationLabelPrefix,
                     searchBarContent = searchBarContent

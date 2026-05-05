@@ -403,6 +403,7 @@ fun OsShellRunnerPage(
         largeTitle = textBundle.shellPageTitle,
         scrollBehavior = scrollBehavior,
         titleBackdrop = topBarBackdrop,
+        reserveTopEndActionSpace = true,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),

@@ -428,6 +428,7 @@ fun McpPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarMaterialBackdrop,
         titleBackdrop = backdrops.topBar,
+        reserveTopEndActionSpace = true,
         actions = {
             LiquidActionBar(
                 backdrop = backdrops.topBar,

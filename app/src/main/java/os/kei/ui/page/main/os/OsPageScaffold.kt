@@ -67,6 +67,7 @@ internal fun OsPageScaffoldShell(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,
+        reserveTopEndActionSpace = true,
         actions = {
             LiquidActionBar(
                 backdrop = topBarBackdrop,

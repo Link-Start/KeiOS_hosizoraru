@@ -11,6 +11,7 @@ import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
@@ -34,6 +35,7 @@ internal fun GitHubTopBarSection(
         scrollBehavior = scrollBehavior,
         color = topBarColor,
         titleBackdrop = titleBackdrop,
+        titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
     ) {}
 }
 

@@ -197,6 +197,7 @@ private fun BaActivityCalendarPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
+        reserveTopEndActionSpace = true,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),

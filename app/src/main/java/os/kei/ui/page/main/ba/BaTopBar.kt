@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideEditIcon
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
@@ -24,6 +25,7 @@ internal fun BaTopBar(
         scrollBehavior = scrollBehavior,
         color = topBarColor,
         titleBackdrop = titleBackdrop,
+        titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
     )
 }
 

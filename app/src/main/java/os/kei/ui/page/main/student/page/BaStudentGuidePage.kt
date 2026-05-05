@@ -58,6 +58,7 @@ import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTabSelectCoo
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTopBarActionItems
 import os.kei.ui.page.main.student.page.support.rememberGuideSyncProgress
 import os.kei.ui.page.main.student.page.support.resolveGuideBottomTabs
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
@@ -322,6 +323,7 @@ fun BaStudentGuidePage(
                     scrollBehavior = scrollBehavior,
                     color = topBarMaterialBackdrop,
                     titleBackdrop = topBarBackdrop,
+                    titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
                     navigationIcon = {
                         AppLiquidNavigationButton(
                             icon = appLucideBackIcon(),

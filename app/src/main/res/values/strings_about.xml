@@ -14,7 +14,9 @@
     <string name="about_category_overview">概览</string>
     <string name="about_category_runtime">运行</string>
     <string name="about_category_security">权限</string>
+    <string name="about_category_system">系统</string>
     <string name="about_category_tech">技术</string>
+    <string name="about_category_lab">实验室</string>
     <string name="about_search_placeholder">搜索 About 卡片</string>
 
     <string name="about_card_app_title">App</string>
@@ -39,6 +41,8 @@
     <string name="about_card_project_license_subtitle">KeiOS 项目自身授权与许可证文件入口</string>
     <string name="about_card_license_title">开源依赖与许可证</string>
     <string name="about_card_license_subtitle">运行期依赖、内置开源组件、授权与源码入口</string>
+    <string name="about_card_component_lab_title">组件实验室</string>
+    <string name="about_card_component_lab_subtitle">Liquid 样张、控件状态与页面节奏验证入口</string>
     <string name="about_action_open_debug_activity">打开组件实验室</string>
 
     <string name="debug_component_lab_title">组件实验室</string>
@@ -324,6 +328,11 @@
     <string name="about_runtime_label_uname">uname</string>
     <string name="about_runtime_label_permission_count">权限总数</string>
     <string name="about_runtime_label_component_count">服务组件总数</string>
+
+    <string name="about_component_lab_row_entry">入口</string>
+    <string name="about_component_lab_row_scope">验证范围</string>
+    <string name="about_component_lab_row_activity">承载方式</string>
+    <string name="about_component_lab_row_components">组件</string>
 
     <string name="about_permission_empty">未读取到权限信息</string>
     <string name="about_permission_label_permission">权限</string>

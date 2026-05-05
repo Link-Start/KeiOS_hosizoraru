@@ -1,10 +1,13 @@
 package os.kei.ui.page.main.about.page
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,9 +30,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -67,6 +72,7 @@ internal fun AboutSearchDock(
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val configuration = LocalConfiguration.current
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val maxExpandedWidth = (
@@ -75,8 +81,9 @@ internal fun AboutSearchDock(
                     compactDockReservedWidth -
                     AppChromeTokens.pageSectionGap
             ).coerceAtLeast(size)
-    val width by animateDpAsState(
-        targetValue = if (expanded) expandedWidth ?: maxExpandedWidth else size,
+    val targetWidth = if (expanded) expandedWidth ?: maxExpandedWidth else size
+    val animatedWidth by animateDpAsState(
+        targetValue = targetWidth,
         animationSpec = tween(
             durationMillis = resolvedMotionDuration(
                 AboutSearchDockWidthMotionMs,
@@ -85,12 +92,42 @@ internal fun AboutSearchDock(
         ),
         label = "about_search_dock_width",
     )
+    val width = if (expandedWidth == null) animatedWidth else targetWidth
+    val contentTransition = updateTransition(
+        targetState = expanded,
+        label = "about_search_dock_content",
+    )
+    val fieldAlpha by contentTransition.animateFloat(
+        transitionSpec = {
+            tween(
+                durationMillis = resolvedMotionDuration(
+                    AboutSearchDockContentFadeMs,
+                    animationsEnabled
+                )
+            )
+        },
+        label = "about_search_field_alpha",
+    ) { visible ->
+        if (visible) 1f else 0f
+    }
+    val iconAlpha by contentTransition.animateFloat(
+        transitionSpec = {
+            tween(
+                durationMillis = resolvedMotionDuration(
+                    AboutSearchDockContentFadeMs,
+                    animationsEnabled
+                )
+            )
+        },
+        label = "about_search_icon_alpha",
+    ) { visible ->
+        if (visible) 0f else 1f
+    }
 
     LaunchedEffect(expanded) {
-        if (expanded) {
-            focusRequester.requestFocus()
-        } else {
+        if (!expanded) {
             focusManager.clearFocus()
+            keyboardController?.hide()
         }
     }
 
@@ -106,40 +143,55 @@ internal fun AboutSearchDock(
         pressDurationMillis = 120,
         pressLabel = "about_search_dock_press",
     ) {
-        if (expanded) {
-            AboutSearchField(
-                query = query,
-                onQueryChange = onQueryChange,
-                focusRequester = focusRequester,
-                onFocusActiveChange = { active ->
-                    if (active) onExpandedChange(true)
-                },
-                searchIcon = searchIcon,
-                placeholder = placeholder,
-                accent = accent,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Icon(
-                imageVector = searchIcon,
-                contentDescription = contentDescription,
-                tint = accent,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(17.dp)
-                    .size(iconSize),
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (fieldAlpha > AboutSearchDockVisibleAlpha) {
+                AboutSearchField(
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    focusRequester = focusRequester,
+                    autoFocus = expanded,
+                    onFocusActiveChange = { active ->
+                        if (active) onExpandedChange(true)
+                    },
+                    searchIcon = searchIcon,
+                    placeholder = placeholder,
+                    accent = accent,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = fieldAlpha },
+                )
+            }
+            if (iconAlpha > AboutSearchDockVisibleAlpha) {
+                Icon(
+                    imageVector = searchIcon,
+                    contentDescription = contentDescription,
+                    tint = accent,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(17.dp)
+                        .size(iconSize)
+                        .graphicsLayer {
+                            alpha = iconAlpha
+                            val scale = 0.90f + 0.10f * iconAlpha
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                )
+            }
         }
     }
 }
 
 private const val AboutSearchDockWidthMotionMs = 260
+private const val AboutSearchDockContentFadeMs = 160
+private const val AboutSearchDockVisibleAlpha = 0.01f
 
 @Composable
 private fun AboutSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
+    autoFocus: Boolean,
     onFocusActiveChange: (Boolean) -> Unit,
     searchIcon: ImageVector,
     placeholder: String,
@@ -147,7 +199,16 @@ private fun AboutSearchField(
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val interactionSource = remember { MutableInteractionSource() }
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        } else {
+            keyboardController?.hide()
+        }
+    }
     val textStyle = TextStyle(
         color = MiuixTheme.colorScheme.onBackground,
         fontSize = AppTypographyTokens.CardHeader.fontSize,
@@ -162,6 +223,7 @@ private fun AboutSearchField(
             ) {
                 onFocusActiveChange(true)
                 focusRequester.requestFocus()
+                keyboardController?.show()
             }
             .padding(horizontal = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -184,6 +246,7 @@ private fun AboutSearchField(
                 onSearch = {
                     onFocusActiveChange(false)
                     focusManager.clearFocus()
+                    keyboardController?.hide()
                 },
             ),
             modifier = Modifier

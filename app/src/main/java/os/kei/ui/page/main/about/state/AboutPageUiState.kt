@@ -23,6 +23,7 @@ internal class AboutPageSectionExpansionState {
     var mediaExpanded by mutableStateOf(false)
     var projectLicenseExpanded by mutableStateOf(false)
     var licenseExpanded by mutableStateOf(false)
+    var componentLabExpanded by mutableStateOf(true)
 }
 
 internal data class AboutPageColorPalette(
@@ -38,7 +39,8 @@ internal data class AboutPageColorPalette(
     val projectLicenseCardColor: Color,
     val licenseCardColor: Color,
     val githubCardColor: Color,
-    val runtimeCardColor: Color
+    val runtimeCardColor: Color,
+    val componentLabCardColor: Color
 )
 
 @Composable
@@ -54,6 +56,7 @@ internal fun rememberAboutPageSectionExpansionState(): AboutPageSectionExpansion
     val mediaExpanded = rememberSaveable { mutableStateOf(false) }
     val projectLicenseExpanded = rememberSaveable { mutableStateOf(false) }
     val licenseExpanded = rememberSaveable { mutableStateOf(false) }
+    val componentLabExpanded = rememberSaveable { mutableStateOf(true) }
     return remember {
         AboutPageSectionExpansionState().apply {
             this.appExpanded = appExpanded.value
@@ -67,6 +70,7 @@ internal fun rememberAboutPageSectionExpansionState(): AboutPageSectionExpansion
             this.mediaExpanded = mediaExpanded.value
             this.projectLicenseExpanded = projectLicenseExpanded.value
             this.licenseExpanded = licenseExpanded.value
+            this.componentLabExpanded = componentLabExpanded.value
         }
     }.also { state ->
         appExpanded.value = state.appExpanded
@@ -80,6 +84,7 @@ internal fun rememberAboutPageSectionExpansionState(): AboutPageSectionExpansion
         mediaExpanded.value = state.mediaExpanded
         projectLicenseExpanded.value = state.projectLicenseExpanded
         licenseExpanded.value = state.licenseExpanded
+        componentLabExpanded.value = state.componentLabExpanded
     }
 }
 
@@ -108,7 +113,8 @@ internal fun rememberAboutPageColorPalette(shizukuStatus: String): AboutPageColo
             projectLicenseCardColor = Color(0x2243A047),
             licenseCardColor = Color(0x2243A047),
             githubCardColor = Color(0x2248A6FF),
-            runtimeCardColor = runtimeCardColor
+            runtimeCardColor = runtimeCardColor,
+            componentLabCardColor = Color(0x223B82F6)
         )
     }
 }

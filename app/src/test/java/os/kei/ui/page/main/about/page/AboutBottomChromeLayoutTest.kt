@@ -28,4 +28,16 @@ class AboutBottomChromeLayoutTest {
             )
         )
     }
+
+    @Test
+    fun collapsedDockUsesSpaceBeforeSearchButton() {
+        assertEquals(
+            300.dp,
+            aboutCollapsedDockWidth(
+                availableWidth = 370.dp,
+                searchDockWidth = 62.dp,
+                gap = 8.dp,
+            )
+        )
+    }
 }

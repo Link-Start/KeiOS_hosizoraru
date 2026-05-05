@@ -32,9 +32,9 @@ import com.composables.icons.lucide.R as LucideR
 
 internal enum class AboutCategory {
     Overview,
-    Runtime,
-    Security,
-    Tech
+    System,
+    Tech,
+    Lab
 }
 
 @Composable
@@ -118,9 +118,9 @@ internal fun AboutCategory.label(): String {
     return stringResource(
         when (this) {
             AboutCategory.Overview -> R.string.about_category_overview
-            AboutCategory.Runtime -> R.string.about_category_runtime
-            AboutCategory.Security -> R.string.about_category_security
+            AboutCategory.System -> R.string.about_category_system
             AboutCategory.Tech -> R.string.about_category_tech
+            AboutCategory.Lab -> R.string.about_category_lab
         }
     )
 }
@@ -129,9 +129,9 @@ internal fun AboutCategory.label(): String {
 internal fun AboutCategory.icon(): ImageVector {
     val drawableRes = when (this) {
         AboutCategory.Overview -> LucideR.drawable.lucide_ic_info
-        AboutCategory.Runtime -> LucideR.drawable.lucide_ic_activity
-        AboutCategory.Security -> LucideR.drawable.lucide_ic_shield_check
+        AboutCategory.System -> LucideR.drawable.lucide_ic_shield_check
         AboutCategory.Tech -> LucideR.drawable.lucide_ic_layers_2
+        AboutCategory.Lab -> LucideR.drawable.lucide_ic_flask_conical
     }
     return ImageVector.vectorResource(drawableRes)
 }

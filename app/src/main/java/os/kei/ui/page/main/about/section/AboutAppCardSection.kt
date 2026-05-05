@@ -13,26 +13,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import os.kei.R
 import os.kei.BuildConfig
+import os.kei.R
+import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
+import os.kei.ui.page.main.about.util.formatTime
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.os.appLucideAlertIcon
-import os.kei.ui.page.main.os.appLucideFlaskIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideLockIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.os.appLucideVersionIcon
-import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
 import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppInfoListBody
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
-import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
-import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.about.util.formatTime
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -45,8 +42,7 @@ fun AboutAppCardSection(
     accent: Color,
     subtitleColor: Color,
     expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    onOpenDebugActivity: () -> Unit
+    onExpandedChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val unknown = stringResource(R.string.common_unknown)
@@ -88,16 +84,6 @@ fun AboutAppCardSection(
                     AppIcon(
                         packageName = packageInfo?.packageName ?: context.packageName,
                         size = AppInteractiveTokens.cardHeaderLeadingSlotSize
-                    )
-                },
-                endActions = {
-                    AppStandaloneLiquidIconButton(
-                        icon = appLucideFlaskIcon(),
-                        contentDescription = stringResource(R.string.about_action_open_debug_activity),
-                        onClick = onOpenDebugActivity,
-                        iconTint = accent,
-                        containerColor = Color.Transparent,
-                        variant = GlassVariant.Compact
                     )
                 },
                 expandable = true,

@@ -13,6 +13,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
@@ -34,17 +39,12 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceList
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
-import com.github.takahirom.roborazzi.captureRoboImage
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -276,8 +276,7 @@ class AppDesignSystemScreenshotTest {
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                             expanded = true,
-                            onExpandedChange = {},
-                            onOpenDebugActivity = {}
+                            onExpandedChange = {}
                         )
                     }
                 }
@@ -302,8 +301,7 @@ class AppDesignSystemScreenshotTest {
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                             expanded = false,
-                            onExpandedChange = {},
-                            onOpenDebugActivity = {}
+                            onExpandedChange = {}
                         )
                     }
                 }

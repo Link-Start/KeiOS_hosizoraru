@@ -74,7 +74,7 @@ private fun BaLiquidSurfaceColumn(
     val accentTint = accentColor.copy(alpha = (accentAlpha * 0.35f).coerceIn(0f, 0.05f))
     val interactionSource = remember { MutableInteractionSource() }
     val hasInteraction = onClick != null || onLongClick != null
-    val hasLiquidPress = pressFeedback || hasInteraction
+    val hasLiquidPress = pressFeedback
     val useLiquidClick = onClick != null && onLongClick == null
     val clickModifier = if (hasInteraction && !useLiquidClick) {
         Modifier.combinedClickable(
@@ -176,7 +176,7 @@ internal fun BaLiquidCard(
     verticalSpacing: Dp = 8.dp,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    pressFeedback: Boolean = true,
+    pressFeedback: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BaLiquidSurfaceColumn(

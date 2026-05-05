@@ -70,7 +70,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     }
 
     @Test
-    fun `package to repository resolver confirms every exported tracked app`() {
+    fun `package to repository resolver confirms every exported tracked app from preferred repository`() {
         val items = GitHubTrackExportFixture.trackedItems
         val discovery = ExportTrackDiscoverySource(items)
         val scanSource = ExportTrackPackageScanSource(items)
@@ -103,6 +103,43 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
             assertEquals(item.packageName, matched.trackedApp.packageName)
             assertEquals(item.appLabel, matched.trackedApp.appLabel)
             assertTrue(result.scannedCandidateCount >= result.matchedCandidates.size)
+        }
+    }
+
+    @Test
+    fun `package to repository resolver discovers every exported tracked app from package and label`() {
+        val items = GitHubTrackExportFixture.trackedItems
+        val discovery = ExportTrackDiscoverySource(items)
+        val scanSource = ExportTrackPackageScanSource(items)
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        items.forEach { item ->
+            val result = resolver.scanRepositoriesForPackage(
+                GitHubPackageRepositoryScanRequest(
+                    packageName = item.packageName,
+                    appLabel = item.appLabel,
+                    lookupConfig = GitHubLookupConfig(
+                        selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
+                        apiToken = "token-123"
+                    ),
+                    candidateLimit = items.size,
+                    verificationLimit = items.size
+                )
+            ).getOrThrow()
+            val matched = result.matchedCandidates.firstOrNull { candidate ->
+                candidate.repository.owner.equals(item.owner, ignoreCase = true) &&
+                        candidate.repository.repo.equals(item.repo, ignoreCase = true)
+            }
+
+            assertNotNull(
+                matched,
+                "Expected package search to discover ${item.owner}/${item.repo}"
+            )
+            assertEquals(item.packageName, matched.trackedApp.packageName)
+            assertTrue(result.queryCount >= 1)
         }
     }
 
@@ -147,7 +184,31 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
             query: String,
             limit: Int
         ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(candidates.take(limit))
+            val terms = query
+                .replace(Regex("""\bin:[^\s]+"""), " ")
+                .replace(Regex("""[^A-Za-z0-9_.-]+"""), " ")
+                .split(' ')
+                .map { it.trim().lowercase() }
+                .filter { term ->
+                    term.length >= 2 &&
+                            term != "android" &&
+                            term != "app"
+                }
+                .distinct()
+            if (terms.isEmpty()) return Result.success(emptyList())
+            return Result.success(
+                candidates
+                    .filter { candidate ->
+                        val searchable = listOf(
+                            candidate.owner,
+                            candidate.repo,
+                            candidate.fullName,
+                            candidate.description
+                        ).joinToString(" ").lowercase()
+                        terms.all { term -> searchable.contains(term) }
+                    }
+                    .take(limit)
+            )
         }
     }
 

@@ -22,12 +22,13 @@ import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
-import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -63,7 +64,7 @@ internal fun BaGuideStudentBgmHeader(
             if (loadingCount > 0) {
                 StatusPill(
                     label = stringResource(R.string.ba_catalog_student_bgm_resolving_count, loadingCount),
-                    color = Color(0xFFF59E0B),
+                    color = AppStatusColors.Refreshing,
                     size = AppStatusPillSize.Compact
                 )
             }
@@ -195,9 +196,9 @@ internal fun BaGuideStudentBgmCard(
                                 else -> stringResource(R.string.ba_catalog_student_bgm_status_ready)
                             },
                             color = when {
-                                isMissing -> Color(0xFFEF4444)
-                                isLoading -> Color(0xFFF59E0B)
-                                else -> Color(0xFF22C55E)
+                                isMissing -> AppStatusColors.Failed
+                                isLoading -> AppStatusColors.Refreshing
+                                else -> AppStatusColors.Fresh
                             },
                             size = AppStatusPillSize.Compact
                         )

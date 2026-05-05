@@ -44,6 +44,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -99,10 +100,10 @@ internal fun BaOverviewCard(
     val apSyncTimeText = if (apSyncMs > 0L) formatBaDateTime(apSyncMs, notSyncedText) else notSyncedText
     val apFullText = formatBaRemainingTime(apFullAt, uiNowMs)
     val apFullTimeText = formatBaDateTime(apFullAt, notSyncedText)
-    val accentBlue = Color(0xFF3B82F6)
-    val accentGreen = Color(0xFF22C55E)
-    val accentAmber = Color(0xFFF59E0B)
-    val stateAccent = if (isWorkActivated) accentBlue else accentAmber
+    val accentBlue = AppStatusColors.Cached
+    val accentGreen = AppStatusColors.Fresh
+    val stateAccent =
+        if (isWorkActivated) accentBlue else MiuixTheme.colorScheme.onBackgroundVariant
     val nicknameLengthForWidth =
         idNicknameInput.ifEmpty { BA_DEFAULT_NICKNAME }.length.coerceIn(1, 10)
     val nicknameFieldWidth = (nicknameLengthForWidth * 10 + 24).coerceIn(68, 108).dp

@@ -12,6 +12,7 @@ import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.ui.page.main.home.model.formatGitHubCacheAgo
 import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class HomePageContentState(
@@ -88,10 +89,10 @@ internal fun rememberHomePageContentState(
     baOverview: HomeBaOverview
 ): HomePageContentState {
     val context = LocalContext.current
-    val runningColor = Color(0xFF2E7D32)
-    val stoppedColor = Color(0xFFC62828)
+    val runningColor = AppStatusColors.Fresh
+    val stoppedColor = AppStatusColors.Failed
     val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant
-    val githubCacheColor = Color(0xFFF59E0B)
+    val githubCacheColor = AppStatusColors.Cached
     val trackedCount = githubOverview.trackedCount
     val cacheHitCount = githubOverview.cacheHitCount
     val updatableCount = githubOverview.updatableCount

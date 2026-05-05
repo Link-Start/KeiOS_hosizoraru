@@ -49,6 +49,7 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -459,10 +460,10 @@ private fun appFloatingRefreshTint(
     active: Color
 ): Color {
     return when (status) {
-        AppFloatingRefreshStatus.Refreshing -> active
+        AppFloatingRefreshStatus.Refreshing -> AppStatusColors.Refreshing
         AppFloatingRefreshStatus.Success -> success
         AppFloatingRefreshStatus.Danger -> danger
-        AppFloatingRefreshStatus.Cached -> Color(0xFFF59E0B)
+        AppFloatingRefreshStatus.Cached -> AppStatusColors.Cached
         AppFloatingRefreshStatus.Idle -> if (enabled) neutral else muted
     }
 }

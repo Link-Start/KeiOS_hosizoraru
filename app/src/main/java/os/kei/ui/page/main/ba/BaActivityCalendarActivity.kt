@@ -54,6 +54,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -117,7 +118,7 @@ private fun BaActivityCalendarPage(
 
         else -> stringResource(R.string.ba_state_not_synced)
     }
-    val countdownBlue = Color(0xFF60A5FA)
+    val countdownBlue = AppStatusColors.Refreshing
 
     LaunchedEffect(Unit) {
         hydrationReady = true
@@ -307,7 +308,9 @@ private fun BaActivityCalendarListContent(
                     BaCalendarStatePanel(
                         backdrop = backdrop,
                         text = error.orEmpty(),
-                        accentColor = Color(0xFFF59E0B),
+                        accentColor = baCalendarPoolSyncNoticeColor(
+                            hasVisibleEntries = visibleEntries.isNotEmpty()
+                        ),
                         effectsEnabled = true,
                     )
                 }

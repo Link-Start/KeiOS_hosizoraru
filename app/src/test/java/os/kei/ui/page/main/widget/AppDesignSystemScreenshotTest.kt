@@ -37,6 +37,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceList
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -142,7 +143,7 @@ class AppDesignSystemScreenshotTest {
                                     label = "预发行",
                                     value = "2",
                                     labelColor = Color(0xFFCBD5E1),
-                                    valueColor = Color(0xFFFBBF24)
+                                    valueColor = AppStatusColors.Cached
                                 )
                             }
                         }

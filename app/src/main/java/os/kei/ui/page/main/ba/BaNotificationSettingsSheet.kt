@@ -29,6 +29,7 @@ import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -224,7 +225,7 @@ internal fun BaNotificationSettingsSheet(
             SheetSectionCard {
                 Text(
                     text = stringResource(R.string.ba_settings_note_timezone),
-                    color = Color(0xFFF59E0B),
+                    color = AppStatusColors.Cached,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )

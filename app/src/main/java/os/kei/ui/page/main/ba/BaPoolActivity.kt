@@ -63,6 +63,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -152,7 +153,7 @@ private fun BaPoolPage(
 
         else -> stringResource(R.string.ba_state_not_synced)
     }
-    val countdownBlue = Color(0xFF60A5FA)
+    val countdownBlue = AppStatusColors.Refreshing
 
     LaunchedEffect(Unit) {
         hydrationReady = true
@@ -353,7 +354,9 @@ private fun BaPoolListContent(
                     BaPoolStatePanel(
                         backdrop = backdrop,
                         text = error.orEmpty(),
-                        accentColor = Color(0xFFF59E0B),
+                        accentColor = baCalendarPoolSyncNoticeColor(
+                            hasVisibleEntries = visibleEntries.isNotEmpty()
+                        ),
                         effectsEnabled = true,
                     )
                 }
@@ -399,6 +402,12 @@ private fun BaPoolLoadingPanel(
     accentColor: Color,
 ) {
     AppAronaLoadingPanel(accent = accentColor)
+}
+
+internal fun baCalendarPoolSyncNoticeColor(
+    hasVisibleEntries: Boolean,
+): Color {
+    return if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
 }
 
 private val baGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$""", RegexOption.IGNORE_CASE)

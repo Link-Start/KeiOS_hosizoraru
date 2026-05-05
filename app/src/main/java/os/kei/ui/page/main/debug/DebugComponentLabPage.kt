@@ -37,6 +37,7 @@ import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -218,7 +219,7 @@ private fun DebugIterationQueueCard(accent: Color) {
         headerEndActions = {
             StatusPill(
                 label = stringResource(R.string.debug_component_lab_queue_badge),
-                color = Color(0xFFF59E0B),
+                color = AppStatusColors.Cached,
                 size = AppStatusPillSize.Compact
             )
         }

@@ -1,24 +1,26 @@
 package os.kei.ui.page.main.github
 
 import android.content.Context
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import os.kei.feature.github.model.GitHubTrackedReleaseStatus
-import androidx.compose.runtime.Composable
 import os.kei.R
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
+import os.kei.ui.page.main.widget.status.AppStatusColors
 
 internal object GitHubStatusPalette {
-    val Active = Color(0xFF3B82F6)
-    val Stable = Color(0xFF3B82F6)
-    val Update = Color(0xFF22C55E)
-    val PreRelease = Color(0xFFF59E0B)
-    val Error = Color(0xFFEF4444)
+    val Active = AppStatusColors.Refreshing
+    val Stable = AppStatusColors.Cached
+    val Update = AppStatusColors.Fresh
+    val PreRelease = AppStatusColors.Cached
+    val Cache = AppStatusColors.Cached
+    val Error = AppStatusColors.Failed
 
     fun tonedSurface(color: Color, isDark: Boolean): Color {
         return color.copy(alpha = if (isDark) 0.20f else 0.11f)
@@ -39,7 +41,7 @@ internal fun OverviewRefreshState.color(neutralColor: Color): Color {
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.Active
         OverviewRefreshState.Completed -> GitHubStatusPalette.Update
         OverviewRefreshState.Failed -> GitHubStatusPalette.Error
-        OverviewRefreshState.Cached -> GitHubStatusPalette.PreRelease
+        OverviewRefreshState.Cached -> GitHubStatusPalette.Cache
         OverviewRefreshState.Idle -> neutralColor
     }
 }
@@ -52,7 +54,10 @@ internal fun OverviewRefreshState.surfaceColor(
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Active, isDark)
         OverviewRefreshState.Completed -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark)
         OverviewRefreshState.Failed -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Error, isDark)
-        OverviewRefreshState.Cached -> GitHubStatusPalette.tonedSurface(GitHubStatusPalette.PreRelease, isDark)
+        OverviewRefreshState.Cached -> GitHubStatusPalette.tonedSurface(
+            GitHubStatusPalette.Cache,
+            isDark
+        )
         OverviewRefreshState.Idle -> neutralSurface.copy(alpha = 0.66f)
     }
 }
@@ -65,7 +70,7 @@ internal fun OverviewRefreshState.borderColor(
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.Active
         OverviewRefreshState.Completed -> GitHubStatusPalette.Update
         OverviewRefreshState.Failed -> GitHubStatusPalette.Error
-        OverviewRefreshState.Cached -> GitHubStatusPalette.PreRelease
+        OverviewRefreshState.Cached -> GitHubStatusPalette.Cache
         OverviewRefreshState.Idle -> neutralColor
     }
     return if (isDark) {
@@ -80,7 +85,7 @@ internal fun OverviewRefreshState.indicatorBackground(neutralSurface: Color): Co
         OverviewRefreshState.Refreshing -> GitHubStatusPalette.Active.copy(alpha = 0.33f)
         OverviewRefreshState.Completed -> GitHubStatusPalette.Update.copy(alpha = 0.33f)
         OverviewRefreshState.Failed -> GitHubStatusPalette.Error.copy(alpha = 0.33f)
-        OverviewRefreshState.Cached -> GitHubStatusPalette.PreRelease.copy(alpha = 0.33f)
+        OverviewRefreshState.Cached -> GitHubStatusPalette.Cache.copy(alpha = 0.33f)
         OverviewRefreshState.Idle -> neutralSurface
     }
 }

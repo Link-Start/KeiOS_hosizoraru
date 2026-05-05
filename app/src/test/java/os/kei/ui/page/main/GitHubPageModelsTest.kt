@@ -1,11 +1,12 @@
 package os.kei.ui.page.main
 
 import androidx.compose.ui.graphics.Color
+import org.junit.Test
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.statusActionUrl
 import os.kei.ui.page.main.github.statusColor
-import org.junit.Test
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import kotlin.test.assertEquals
 
 class GitHubPageModelsTest {
@@ -61,6 +62,6 @@ class GitHubPageModelsTest {
             isPreRelease = true
         )
 
-        assertEquals(Color(0xFFF59E0B), state.statusColor(Color.Gray))
+        assertEquals(AppStatusColors.Cached, state.statusColor(Color.Gray))
     }
 }

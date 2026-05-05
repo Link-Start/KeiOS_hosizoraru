@@ -6,6 +6,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.components.OsOverviewMetric
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.widget.status.AppStatusColors
 
 internal data class OsActivityOverviewStats(
     val totalCount: Int,
@@ -126,7 +127,7 @@ internal fun buildOsOverviewUiState(
         SystemOverviewState.Cached -> cachedColor
         SystemOverviewState.Refreshing -> refreshingColor
         SystemOverviewState.Completed -> syncedColor
-        SystemOverviewState.Failed -> Color(0xFFEF4444)
+        SystemOverviewState.Failed -> AppStatusColors.Failed
         SystemOverviewState.Idle -> inactiveColor
     }
     val overviewCardColor = if (isDark) {

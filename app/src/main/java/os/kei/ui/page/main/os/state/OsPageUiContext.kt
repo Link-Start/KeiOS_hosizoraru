@@ -9,10 +9,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
-import kotlinx.coroutines.CoroutineScope
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class OsPageUiContext(
@@ -59,9 +60,9 @@ internal fun rememberOsPageUiContext(
         isDark = isDark,
         inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant,
         titleColor = MiuixTheme.colorScheme.onBackground,
-        cachedColor = Color(0xFFF59E0B),
-        refreshingColor = Color(0xFF3B82F6),
-        syncedColor = Color(0xFF22C55E),
+        cachedColor = AppStatusColors.Cached,
+        refreshingColor = AppStatusColors.Refreshing,
+        syncedColor = AppStatusColors.Fresh,
         surfaceColor = MiuixTheme.colorScheme.surface,
         searchBarHideThresholdPx = searchBarHideThresholdPx
     )

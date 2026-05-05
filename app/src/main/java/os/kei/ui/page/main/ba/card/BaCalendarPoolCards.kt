@@ -9,13 +9,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidPanel
@@ -32,7 +33,7 @@ import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
-import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -64,7 +65,7 @@ internal fun BaCalendarSectionHeaderCard(
     effectsEnabled: Boolean,
     onRefreshCalendar: () -> Unit,
 ) {
-    val countdownBlue = Color(0xFF60A5FA)
+    val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
         baCalendarLoading -> stringResource(R.string.ba_syncing)
@@ -118,7 +119,7 @@ internal fun BaCalendarCard(
     onRefreshCalendar: () -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
-    val countdownBlue = Color(0xFF60A5FA)
+    val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
         baCalendarLoading -> stringResource(R.string.ba_syncing)
@@ -157,7 +158,9 @@ internal fun BaCalendarCard(
                 BaCalendarStatePanel(
                     backdrop = backdrop,
                     text = baCalendarError,
-                    accentColor = Color(0xFFF59E0B),
+                    accentColor = baCalendarPoolCardNoticeColor(
+                        hasVisibleEntries = visibleCalendarEntries.isNotEmpty()
+                    ),
                     effectsEnabled = effectsEnabled
                 )
             }
@@ -226,9 +229,9 @@ internal fun BaCalendarEntryPanel(
     effectsEnabled: Boolean,
     onOpenCalendarLink: (String) -> Unit,
 ) {
-    val accentGreen = Color(0xFF22C55E)
-    val accentBlue = Color(0xFF3B82F6)
-    val countdownBlue = Color(0xFF60A5FA)
+    val accentGreen = AppStatusColors.Fresh
+    val accentBlue = AppStatusColors.Cached
+    val countdownBlue = AppStatusColors.Refreshing
     val isRunningNow = nowMs in activity.beginAtMs until activity.endAtMs
     val isEnded = activity.endAtMs <= nowMs
     val remainTarget = if (isRunningNow || isEnded) activity.endAtMs else activity.beginAtMs
@@ -315,7 +318,7 @@ internal fun BaPoolSectionHeaderCard(
     effectsEnabled: Boolean,
     onRefreshPool: () -> Unit,
 ) {
-    val countdownBlue = Color(0xFF60A5FA)
+    val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
         baPoolLoading -> stringResource(R.string.ba_syncing)
@@ -370,7 +373,7 @@ internal fun BaPoolCard(
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
-    val countdownBlue = Color(0xFF60A5FA)
+    val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
         baPoolLoading -> stringResource(R.string.ba_syncing)
@@ -409,7 +412,9 @@ internal fun BaPoolCard(
                 BaPoolStatePanel(
                     backdrop = backdrop,
                     text = baPoolError,
-                    accentColor = Color(0xFFF59E0B),
+                    accentColor = baCalendarPoolCardNoticeColor(
+                        hasVisibleEntries = visiblePoolEntries.isNotEmpty()
+                    ),
                     effectsEnabled = effectsEnabled
                 )
             }
@@ -480,9 +485,9 @@ internal fun BaPoolEntryPanel(
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
-    val accentBlue = Color(0xFF3B82F6)
-    val accentGreen = Color(0xFF22C55E)
-    val countdownBlue = Color(0xFF60A5FA)
+    val accentBlue = AppStatusColors.Cached
+    val accentGreen = AppStatusColors.Fresh
+    val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val isRunningNow = nowMs in pool.startAtMs until pool.endAtMs
     val isEnded = pool.endAtMs <= nowMs
@@ -583,4 +588,10 @@ private fun baCalendarKindLabel(kindId: Int, fallback: String): String {
 @Composable
 private fun baPoolTagLabel(tagId: Int, fallback: String): String {
     return LocalContext.current.baPoolTagLabel(tagId, fallback)
+}
+
+private fun baCalendarPoolCardNoticeColor(
+    hasVisibleEntries: Boolean,
+): Color {
+    return if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
 }

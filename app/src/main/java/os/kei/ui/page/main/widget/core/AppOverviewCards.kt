@@ -6,19 +6,18 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -42,6 +41,7 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -377,7 +377,7 @@ private fun AppOverviewCardPreviewLight() {
             ) {
                 AppInfoRow(label = "Tracked", value = "18")
                 AppInfoRow(label = "Updates", value = "4", valueColor = Color(0xFF2563EB))
-                AppInfoRow(label = "Pre-release", value = "2", valueColor = Color(0xFFF59E0B))
+                AppInfoRow(label = "Pre-release", value = "2", valueColor = AppStatusColors.Cached)
             }
         }
     }
@@ -398,7 +398,7 @@ private fun AppOverviewCardPreviewDark() {
                 headerEndActions = {
                     StatusPill(
                         label = "Cached",
-                        color = Color(0xFFF59E0B)
+                        color = AppStatusColors.Cached
                     )
                 }
             ) {

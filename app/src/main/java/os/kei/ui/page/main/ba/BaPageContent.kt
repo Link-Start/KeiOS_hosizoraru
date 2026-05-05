@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -15,8 +14,6 @@ import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.ba.card.BaCafeCard
 import os.kei.ui.page.main.ba.card.BaOverviewCard
-import os.kei.ui.page.main.ba.card.BaPoolCard
-import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -85,22 +82,6 @@ internal fun BaPageContent(
     state: BaPageContentState,
     actions: BaPageContentActions,
 ) {
-    val sectionTickMs = 1_000L
-    val calendarPoolNowMs = remember(state.uiNowMs, sectionTickMs) {
-        (state.uiNowMs / sectionTickMs).coerceAtLeast(0L) * sectionTickMs
-    }
-    val calendarPoolEffectsEnabled = true
-    val visiblePoolEntries = remember(
-        state.baPoolEntries,
-        state.showEndedPools,
-        calendarPoolNowMs
-    ) {
-        filterVisiblePoolEntries(
-            entries = state.baPoolEntries,
-            showEndedPools = state.showEndedPools,
-            nowMs = calendarPoolNowMs
-        )
-    }
     val pageGap = AppChromeTokens.pageSectionGap
     val topBarToHeaderGap = AppChromeTokens.topBarToHeaderGap
     val pageHorizontalPadding = AppChromeTokens.pageHorizontalPadding
@@ -175,26 +156,6 @@ internal fun BaPageContent(
                 onForceResetInviteTicket1Cooldown = actions.onForceResetInviteTicket1Cooldown,
                 onUseInviteTicket2 = actions.onUseInviteTicket2,
                 onForceResetInviteTicket2Cooldown = actions.onForceResetInviteTicket2Cooldown,
-            )
-        }
-
-        item {
-            BaPoolCard(
-                backdrop = backdrop,
-                isPageActive = state.isPageActive,
-                serverOptions = state.serverOptions,
-                serverIndex = state.serverIndex,
-                baPoolLoading = state.baPoolLoading,
-                baPoolLastSyncMs = state.baPoolLastSyncMs,
-                baPoolError = state.baPoolError,
-                visiblePoolEntries = visiblePoolEntries,
-                nowMs = calendarPoolNowMs,
-                showEndedPools = state.showEndedPools,
-                showCalendarPoolImages = state.showCalendarPoolImages,
-                effectsEnabled = calendarPoolEffectsEnabled,
-                onRefreshPool = actions.onRefreshPool,
-                onOpenPoolStudentGuide = actions.onOpenPoolStudentGuide,
-                onOpenCalendarLink = actions.onOpenCalendarLink
             )
         }
     }

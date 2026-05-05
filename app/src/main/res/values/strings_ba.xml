@@ -54,6 +54,8 @@
     <string name="ba_calendar_kind_tactical_test">战术测试</string>
     <string name="ba_calendar_kind_other">其他</string>
     <string name="ba_pool_title_format">卡池信息 · %1$s</string>
+    <string name="ba_pool_activity_title">卡池信息</string>
+    <string name="ba_pool_cd_open_activity">打开卡池信息</string>
     <string name="ba_pool_cd_refresh">刷新卡池</string>
     <string name="ba_pool_empty_all">暂无卡池</string>
     <string name="ba_pool_empty_active">暂无进行中或即将开始的卡池</string>

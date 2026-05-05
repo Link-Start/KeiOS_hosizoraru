@@ -98,6 +98,12 @@
             android:label="@string/ba_calendar_activity_title" />
 
         <activity
+            android:name=".ui.page.main.ba.BaPoolActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:label="@string/ba_pool_activity_title" />
+
+        <activity
             android:name=".ui.page.main.debug.DebugComponentLabActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="false"

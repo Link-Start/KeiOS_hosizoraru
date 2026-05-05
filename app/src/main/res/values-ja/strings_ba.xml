@@ -54,6 +54,8 @@
     <string name="ba_calendar_kind_tactical_test">合同火力演習</string>
     <string name="ba_calendar_kind_other">その他</string>
     <string name="ba_pool_title_format">募集 | %1$s</string>
+    <string name="ba_pool_activity_title">募集</string>
+    <string name="ba_pool_cd_open_activity">募集を開く</string>
     <string name="ba_pool_cd_refresh">募集を更新</string>
     <string name="ba_pool_empty_all">募集はありません</string>
     <string name="ba_pool_empty_active">開催中または開催予定の募集はありません</string>

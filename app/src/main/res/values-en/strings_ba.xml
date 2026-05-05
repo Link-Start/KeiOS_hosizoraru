@@ -54,6 +54,8 @@
     <string name="ba_calendar_kind_tactical_test">Joint Firing Drill</string>
     <string name="ba_calendar_kind_other">Other</string>
     <string name="ba_pool_title_format">Recruitment Banners | %1$s</string>
+    <string name="ba_pool_activity_title">Recruitment Banners</string>
+    <string name="ba_pool_cd_open_activity">Open recruitment banners</string>
     <string name="ba_pool_cd_refresh">Refresh recruitment banners</string>
     <string name="ba_pool_empty_all">No recruitment banners</string>
     <string name="ba_pool_empty_active">No active or upcoming recruitment banners</string>

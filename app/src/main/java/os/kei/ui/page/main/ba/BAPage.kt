@@ -34,6 +34,7 @@ import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.os.appLucideCalendarIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -294,6 +295,12 @@ fun BAPage(
             contentDescription = stringResource(R.string.ba_calendar_cd_open_activity),
             iconTint = MiuixTheme.colorScheme.primary,
             onClick = { BaActivityCalendarActivity.launch(context) },
+        ),
+        AppFloatingDockAction(
+            icon = appLucidePackageIcon(),
+            contentDescription = stringResource(R.string.ba_pool_cd_open_activity),
+            iconTint = MiuixTheme.colorScheme.primary,
+            onClick = { BaPoolActivity.launch(context) },
         )
     )
 

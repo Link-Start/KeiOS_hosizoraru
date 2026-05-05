@@ -2,7 +2,9 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,15 +50,20 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.delay
 import os.kei.R
+import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.ui.page.main.ba.card.BaCalendarEntryPanel
-import os.kei.ui.page.main.ba.card.BaCalendarStatePanel
-import os.kei.ui.page.main.ba.card.filterVisibleCalendarEntries
+import os.kei.ui.page.main.ba.card.BaPoolEntryPanel
+import os.kei.ui.page.main.ba.card.BaPoolStatePanel
+import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.student.BaStudentGuideStore
+import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
+import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
@@ -68,14 +76,14 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.time.Duration.Companion.milliseconds
 
-class BaActivityCalendarActivity : ComponentActivity() {
+class BaPoolActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         setContent {
             BaStandaloneActivityTheme {
-                BaActivityCalendarPage(onClose = { finish() })
+                BaPoolRoot(onClose = { finish() })
             }
         }
     }
@@ -83,7 +91,7 @@ class BaActivityCalendarActivity : ComponentActivity() {
     companion object {
         fun launch(context: Context) {
             val hostActivity = context.findBaHostActivity()
-            val intent = Intent(context, BaActivityCalendarActivity::class.java).apply {
+            val intent = Intent(context, BaPoolActivity::class.java).apply {
                 if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             if (hostActivity != null) {
@@ -96,13 +104,39 @@ class BaActivityCalendarActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BaActivityCalendarPage(
+private fun BaPoolRoot(
     onClose: () -> Unit,
+) {
+    var guideOpen by remember { mutableStateOf(false) }
+    var guideNonce by remember { mutableLongStateOf(0L) }
+
+    if (guideOpen) {
+        key(guideNonce) {
+            BaStudentGuidePage(
+                liquidActionBarLayeredStyleEnabled = true,
+                onBack = { guideOpen = false },
+            )
+        }
+    } else {
+        BaPoolPage(
+            onClose = onClose,
+            onOpenGuide = {
+                guideNonce = System.nanoTime()
+                guideOpen = true
+            },
+        )
+    }
+}
+
+@Composable
+private fun BaPoolPage(
+    onClose: () -> Unit,
+    onOpenGuide: () -> Unit,
 ) {
     val context = LocalContext.current
     val snapshot = remember { BASettingsStore.loadSnapshot() }
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
-    val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsState()
+    val poolUiState by calendarPoolViewModel.poolUiState.collectAsState()
     val serverOptions = listOf(
         stringResource(R.string.ba_server_cn),
         stringResource(R.string.ba_server_global),
@@ -120,21 +154,21 @@ private fun BaActivityCalendarPage(
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val accent = MiuixTheme.colorScheme.primary
     val visibleEntries = remember(
-        calendarUiState.entries,
-        snapshot.showEndedActivities,
+        poolUiState.entries,
+        snapshot.showEndedPools,
         nowMs
     ) {
-        filterVisibleCalendarEntries(
-            entries = calendarUiState.entries,
-            showEndedActivities = snapshot.showEndedActivities,
+        filterVisiblePoolEntries(
+            entries = poolUiState.entries,
+            showEndedPools = snapshot.showEndedPools,
             nowMs = nowMs
         )
     }
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
-        calendarUiState.loading -> stringResource(R.string.ba_syncing)
-        calendarUiState.lastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
-            calendarUiState.lastSyncMs,
+        poolUiState.loading -> stringResource(R.string.ba_syncing)
+        poolUiState.lastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
+            poolUiState.lastSyncMs,
             serverTimeZone
         )
 
@@ -146,8 +180,13 @@ private fun BaActivityCalendarPage(
         hydrationReady = true
     }
 
-    LaunchedEffect(serverIndex, reloadSignal, snapshot.calendarRefreshIntervalHours, hydrationReady) {
-        calendarPoolViewModel.syncCalendar(
+    LaunchedEffect(
+        serverIndex,
+        reloadSignal,
+        snapshot.calendarRefreshIntervalHours,
+        hydrationReady
+    ) {
+        calendarPoolViewModel.syncPool(
             isPageActive = true,
             serverIndex = serverIndex,
             reloadSignal = reloadSignal,
@@ -162,7 +201,7 @@ private fun BaActivityCalendarPage(
             delay(1_000L.milliseconds)
         }
     }
-    val refreshIconRotation by rememberInfiniteTransition(label = "ba_activity_calendar_refresh_rotation")
+    val refreshIconRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
         .animateFloat(
             initialValue = 0f,
             targetValue = 360f,
@@ -170,11 +209,11 @@ private fun BaActivityCalendarPage(
                 animation = tween(durationMillis = 900, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart,
             ),
-            label = "ba_activity_calendar_refresh_rotation_value",
+            label = "ba_pool_refresh_rotation_value",
         )
 
     AppPageScaffold(
-        title = stringResource(R.string.ba_calendar_activity_title),
+        title = stringResource(R.string.ba_pool_activity_title),
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
@@ -192,15 +231,15 @@ private fun BaActivityCalendarPage(
             AppLiquidIconButton(
                 backdrop = pageBackdrop,
                 icon = appLucideRefreshIcon(),
-                contentDescription = stringResource(R.string.ba_calendar_cd_refresh),
+                contentDescription = stringResource(R.string.ba_pool_cd_refresh),
                 onClick = { reloadSignal += 1 },
                 iconModifier = Modifier.graphicsLayer {
-                    rotationZ = if (calendarUiState.loading) refreshIconRotation else 0f
+                    rotationZ = if (poolUiState.loading) refreshIconRotation else 0f
                 },
                 width = 52.dp,
                 height = 52.dp,
                 variant = GlassVariant.Bar,
-                iconTint = if (calendarUiState.loading) {
+                iconTint = if (poolUiState.loading) {
                     countdownBlue
                 } else {
                     MiuixTheme.colorScheme.primary
@@ -233,7 +272,7 @@ private fun BaActivityCalendarPage(
                 sectionSpacing = 14.dp
             ) {
                 item {
-                    BaActivityCalendarServerPanel(
+                    BaPoolServerPanel(
                         backdrop = pageBackdrop,
                         serverOptions = serverOptions,
                         serverIndex = serverIndex,
@@ -250,10 +289,10 @@ private fun BaActivityCalendarPage(
                     )
                 }
                 item {
-                    BaActivityCalendarOverviewPanel(
+                    BaPoolOverviewPanel(
                         backdrop = pageBackdrop,
                         title = stringResource(
-                            R.string.ba_calendar_title_format,
+                            R.string.ba_pool_title_format,
                             serverOptions[serverIndex]
                         ),
                         syncText = syncText,
@@ -261,33 +300,31 @@ private fun BaActivityCalendarPage(
                     )
                 }
                 when {
-                    calendarUiState.loading -> {
+                    poolUiState.loading -> {
                         item {
-                            BaActivityCalendarLoadingPanel(
-                                accentColor = countdownBlue,
-                            )
+                            BaPoolLoadingPanel(accentColor = countdownBlue)
                         }
                     }
 
-                    !calendarUiState.error.isNullOrBlank() -> {
+                    !poolUiState.error.isNullOrBlank() -> {
                         item {
-                            BaCalendarStatePanel(
+                            BaPoolStatePanel(
                                 backdrop = pageBackdrop,
-                                text = calendarUiState.error.orEmpty(),
+                                text = poolUiState.error.orEmpty(),
                                 accentColor = Color(0xFFF59E0B),
                                 effectsEnabled = true,
                             )
                         }
                     }
 
-                    !calendarUiState.loading && visibleEntries.isEmpty() -> {
+                    !poolUiState.loading && visibleEntries.isEmpty() -> {
                         item {
-                            BaCalendarStatePanel(
+                            BaPoolStatePanel(
                                 backdrop = pageBackdrop,
-                                text = if (snapshot.showEndedActivities) {
-                                    stringResource(R.string.ba_calendar_empty_all)
+                                text = if (snapshot.showEndedPools) {
+                                    stringResource(R.string.ba_pool_empty_all)
                                 } else {
-                                    stringResource(R.string.ba_calendar_empty_active)
+                                    stringResource(R.string.ba_pool_empty_active)
                                 },
                                 accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
                                 effectsEnabled = true,
@@ -297,15 +334,22 @@ private fun BaActivityCalendarPage(
 
                     else -> {
                         items(visibleEntries.size) { index ->
-                            val activity = visibleEntries[index]
-                            BaCalendarEntryPanel(
+                            val pool = visibleEntries[index]
+                            BaPoolEntryPanel(
                                 backdrop = pageBackdrop,
                                 isPageActive = true,
                                 serverIndex = serverIndex,
-                                activity = activity,
+                                pool = pool,
                                 nowMs = nowMs,
                                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
                                 effectsEnabled = true,
+                                onOpenPoolStudentGuide = { url ->
+                                    openBaPoolGuideLink(
+                                        context = context,
+                                        rawUrl = url,
+                                        onOpenGuide = onOpenGuide
+                                    )
+                                },
                                 onOpenCalendarLink = { url ->
                                     openBaExternalLink(context = context, url = url)
                                 },
@@ -319,7 +363,7 @@ private fun BaActivityCalendarPage(
 }
 
 @Composable
-private fun BaActivityCalendarServerPanel(
+private fun BaPoolServerPanel(
     backdrop: com.kyant.backdrop.Backdrop,
     serverOptions: List<String>,
     serverIndex: Int,
@@ -365,14 +409,14 @@ private fun BaActivityCalendarServerPanel(
 }
 
 @Composable
-private fun BaActivityCalendarLoadingPanel(
+private fun BaPoolLoadingPanel(
     accentColor: Color,
 ) {
     AppAronaLoadingPanel(accent = accentColor)
 }
 
 @Composable
-private fun BaActivityCalendarOverviewPanel(
+private fun BaPoolOverviewPanel(
     backdrop: com.kyant.backdrop.Backdrop,
     title: String,
     syncText: String,
@@ -405,5 +449,63 @@ private fun BaActivityCalendarOverviewPanel(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+private val baGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$""", RegexOption.IGNORE_CASE)
+
+private fun openBaPoolGuideLink(
+    context: Context,
+    rawUrl: String,
+    onOpenGuide: () -> Unit,
+) {
+    val normalized = normalizeGuideUrl(rawUrl)
+    if (normalized.isBlank()) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.main_toast_pool_guide_missing),
+            Toast.LENGTH_SHORT
+        ).show()
+        return
+    }
+    val uri = runCatching { Uri.parse(normalized) }.getOrNull()
+    val host = uri?.host?.lowercase().orEmpty()
+    val hostAccepted = host == "www.gamekee.com" || host == "gamekee.com"
+    if (hostAccepted && baGuideDetailPathRegex.matches(uri?.path.orEmpty())) {
+        val contentId = extractGuideContentIdFromUrl(normalized)
+        if (contentId != null && contentId > 0L) {
+            BaStudentGuideStore.setCurrentUrl("https://www.gamekee.com/ba/tj/$contentId.html")
+            onOpenGuide()
+            return
+        }
+        Toast.makeText(
+            context,
+            context.getString(R.string.main_toast_pool_guide_missing),
+            Toast.LENGTH_SHORT
+        ).show()
+        return
+    }
+    openBaStandaloneExternalLink(context, normalized)
+}
+
+private fun openBaStandaloneExternalLink(
+    context: Context,
+    url: String,
+) {
+    val intent = SafeExternalIntents.browsableViewIntent(url, newTask = true)
+    if (intent == null) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.ba_error_open_activity_link),
+            Toast.LENGTH_SHORT
+        ).show()
+        return
+    }
+    runCatching { context.startActivity(intent) }.onFailure {
+        Toast.makeText(
+            context,
+            context.getString(R.string.ba_error_open_activity_link),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 }

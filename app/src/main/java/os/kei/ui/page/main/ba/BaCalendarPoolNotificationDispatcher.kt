@@ -185,12 +185,8 @@ internal object BaCalendarPoolNotificationDispatcher {
     }
 
     private fun notificationsGranted(context: Context): Boolean {
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
-                    PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
+        return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
     }
 
     @SuppressLint("MissingPermission")

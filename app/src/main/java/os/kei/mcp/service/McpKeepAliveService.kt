@@ -5,12 +5,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import os.kei.mcp.notification.McpNotificationHelper
-import os.kei.mcp.notification.McpNotificationPayload
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,6 +15,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.notification.McpNotificationPayload
 
 class McpKeepAliveService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -104,18 +103,11 @@ class McpKeepAliveService : Service() {
                     !isBlueArchiveNotification &&
                         (!isForegroundPromoted || intent?.action == ACTION_START)
                 if (shouldPromoteForeground) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        startForeground(
-                            McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID,
-                            notification,
-                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                        )
-                    } else {
-                        startForeground(
-                            McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID,
-                            notification
-                        )
-                    }
+                    startForeground(
+                        McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    )
                     isForegroundPromoted = true
                 } else if (!isBlueArchiveNotification && isForegroundPromoted) {
                     notificationManager.notify(

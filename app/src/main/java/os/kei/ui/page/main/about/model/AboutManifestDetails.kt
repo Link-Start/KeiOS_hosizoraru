@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.os.Build
 import androidx.annotation.StringRes
 import os.kei.R
 
@@ -124,15 +123,10 @@ fun loadPackageDetailInfo(context: Context): PackageInfo? {
         PackageManager.GET_RECEIVERS or
         PackageManager.GET_PROVIDERS
     return runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.packageManager.getPackageInfo(
-                context.packageName,
-                PackageManager.PackageInfoFlags.of(flags.toLong())
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageInfo(context.packageName, flags)
-        }
+        context.packageManager.getPackageInfo(
+            context.packageName,
+            PackageManager.PackageInfoFlags.of(flags.toLong())
+        )
     }.getOrNull()
 }
 
@@ -234,13 +228,10 @@ fun buildComponentEntries(context: Context, packageInfo: PackageInfo?): List<Abo
 }
 
 private fun formatFgsType(context: Context, serviceInfo: ServiceInfo): String {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return context.getString(R.string.common_na)
     val type = serviceInfo.foregroundServiceType
     if (type == 0) return context.getString(R.string.about_component_fgs_none)
     val labels = buildList {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
-            (type and ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) != 0
-        ) {
+        if ((type and ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE) != 0) {
             add("specialUse")
         }
         if ((type and ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) != 0) add("dataSync")

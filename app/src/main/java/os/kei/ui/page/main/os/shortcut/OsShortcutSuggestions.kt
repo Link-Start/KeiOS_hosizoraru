@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import java.util.Locale
 
 internal enum class ShortcutSuggestionField {
@@ -39,12 +38,8 @@ internal data class ShortcutActivityClassOption(
 
 internal fun loadInstalledAppOptions(context: Context): List<ShortcutInstalledAppOption> {
     val pm = context.packageManager
-    val packageInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val packageInfos =
         pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong()))
-    } else {
-        @Suppress("DEPRECATION")
-        pm.getInstalledPackages(PackageManager.GET_ACTIVITIES)
-    }
     val overlayFlagMask = runCatching {
         ApplicationInfo::class.java.getField("FLAG_IS_RESOURCE_OVERLAY").getInt(null)
     }.getOrDefault(0)
@@ -52,11 +47,7 @@ internal fun loadInstalledAppOptions(context: Context): List<ShortcutInstalledAp
         val packageName = info.packageName.trim()
         if (packageName.isBlank()) return@mapNotNull null
         val appInfo = info.applicationInfo ?: runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
-            } else {
-                pm.getApplicationInfo(packageName, 0)
-            }
+            pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
         }.getOrNull() ?: return@mapNotNull null
         if (
             shouldIgnoreInstalledAppForShortcut(
@@ -92,15 +83,10 @@ internal fun loadActivityClassOptions(
     if (normalizedPackageName.isBlank()) return emptyList()
     val pm = context.packageManager
     val packageInfo = runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pm.getPackageInfo(
-                normalizedPackageName,
-                PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong())
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            pm.getPackageInfo(normalizedPackageName, PackageManager.GET_ACTIVITIES)
-        }
+        pm.getPackageInfo(
+            normalizedPackageName,
+            PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong())
+        )
     }.getOrNull() ?: return emptyList()
 
     return packageInfo.activities.orEmpty()

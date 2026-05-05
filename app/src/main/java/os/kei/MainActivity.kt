@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -25,14 +24,14 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.metrics.performance.JankStats
-import os.kei.core.prefs.AppThemeMode
-import os.kei.core.prefs.UiPrefs
 import os.kei.core.perf.AppJankMonitor
 import os.kei.core.platform.LocalNetworkPermissionCompat
+import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
 import os.kei.core.system.ShizukuApiUtils
-import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
 import os.kei.ui.page.main.ba.support.BASettingsStore
@@ -218,7 +217,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun applyWindowColorMode(hdrEnabled: Boolean) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         runCatching {
             window.colorMode = if (hdrEnabled) {
                 ActivityInfo.COLOR_MODE_HDR

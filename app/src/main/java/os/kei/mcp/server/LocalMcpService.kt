@@ -1,7 +1,6 @@
 package os.kei.mcp.server
 
 import android.content.Context
-import android.os.Build
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
@@ -91,11 +90,6 @@ class LocalMcpService(
 
     private fun currentLocale(): Locale {
         val configuration = environment.appContext.resources.configuration
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            configuration.locales[0] ?: Locale.getDefault()
-        } else {
-            @Suppress("DEPRECATION")
-            configuration.locale ?: Locale.getDefault()
-        }
+        return configuration.locales[0] ?: Locale.getDefault()
     }
 }

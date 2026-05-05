@@ -4,12 +4,11 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.FeatureInfo
 import android.content.pm.PackageManager
-import android.os.Build
+import org.json.JSONArray
+import org.json.JSONObject
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropString
 import os.kei.core.system.getAllSystemProperties
-import org.json.JSONArray
-import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -134,20 +133,12 @@ internal fun decodeOpenGlEsVersion(raw: String): String {
 
 internal fun packageVersionName(context: Context, packageName: String): String {
     return runCatching {
-        val info = if (Build.VERSION.SDK_INT >= 33) {
-            context.packageManager.getPackageInfo(
-                packageName,
-                PackageManager.PackageInfoFlags.of(0)
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageInfo(packageName, 0)
-        }
+        val info = context.packageManager.getPackageInfo(
+            packageName,
+            PackageManager.PackageInfoFlags.of(0)
+        )
         val versionName = info.versionName ?: ""
-        val versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
-            @Suppress("DEPRECATION")
-            info.versionCode.toLong()
-        }
+        val versionCode = info.longVersionCode
         buildString {
             append(versionName.ifBlank { "unknown" })
             append(" (")

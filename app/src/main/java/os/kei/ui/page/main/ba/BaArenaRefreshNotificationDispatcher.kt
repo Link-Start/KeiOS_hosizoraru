@@ -14,11 +14,9 @@ internal object BaArenaRefreshNotificationDispatcher {
         serverIndex: Int,
         slotMs: Long,
     ): Boolean {
-        val notificationsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
+        val notificationsGranted =
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
         if (!notificationsGranted) return false
 
         val detailLine = buildRefreshDetailLine(

@@ -6,21 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import os.kei.MainActivity
-import os.kei.R
-import os.kei.core.intent.PendingIntentLaunchOptionsCompat
-import os.kei.core.log.AppLogger
-import os.kei.core.prefs.UiPrefs
-import os.kei.core.system.ShizukuApiUtils
-import os.kei.feature.notification.NotificationActionReceiver
-import os.kei.mcp.service.McpKeepAliveService
-import os.kei.mcp.domain.notification.SessionNotifier
-import os.kei.mcp.framework.notification.NotificationHelper
-import os.kei.mcp.framework.notification.SessionNotifierImpl
-import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +18,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import os.kei.MainActivity
+import os.kei.R
+import os.kei.core.intent.PendingIntentLaunchOptionsCompat
+import os.kei.core.log.AppLogger
+import os.kei.core.prefs.UiPrefs
+import os.kei.core.system.ShizukuApiUtils
+import os.kei.feature.notification.NotificationActionReceiver
+import os.kei.mcp.domain.notification.SessionNotifier
+import os.kei.mcp.framework.notification.NotificationHelper
+import os.kei.mcp.framework.notification.SessionNotifierImpl
+import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
+import os.kei.mcp.service.McpKeepAliveService
 
 object McpNotificationHelper {
     private const val TAG = "McpNotifyHelper"
@@ -91,7 +90,6 @@ object McpNotificationHelper {
     }
 
     fun ensureChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         runCatching {
             val legacy = manager.getNotificationChannel(LEGACY_CHANNEL_ID)

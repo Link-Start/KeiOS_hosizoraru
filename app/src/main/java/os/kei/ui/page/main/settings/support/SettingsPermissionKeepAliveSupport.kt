@@ -18,8 +18,8 @@ import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.system.findPropString
 import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.system.findPropString
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 
 internal enum class SettingsAppListAccessMode {
@@ -480,13 +480,11 @@ private fun buildNotificationSettingsIntent(context: Context): Intent? {
     val packageManager = context.packageManager
     val packageUri = Uri.parse("package:${context.packageName}")
     val candidateIntents = buildList {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            add(
-                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                }
-            )
-        }
+        add(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            }
+        )
         add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri))
     }
     return candidateIntents.firstOrNull { intent ->

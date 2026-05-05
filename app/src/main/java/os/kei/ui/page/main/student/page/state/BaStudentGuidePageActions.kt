@@ -16,6 +16,10 @@ import androidx.compose.runtime.setValue
 import androidx.documentfile.provider.DocumentFile
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.ui.page.main.ba.support.BASettingsStore
@@ -30,10 +34,6 @@ import os.kei.ui.page.main.student.page.support.copyGuideMediaPackToUri
 import os.kei.ui.page.main.student.page.support.copyGuideMediaToUri
 import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
 import os.kei.ui.page.main.student.page.support.normalizeGuidePlaybackSource
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 internal data class BaStudentGuidePageActions(
     val shareSource: () -> Unit,
@@ -185,12 +185,10 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                             )
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                putExtra(
-                                    DocumentsContract.EXTRA_INITIAL_URI,
-                                    Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload")
-                                )
-                            }
+                            putExtra(
+                                DocumentsContract.EXTRA_INITIAL_URI,
+                                Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload")
+                            )
                         }
                         fixedFolderLauncher.launch(pickerIntent)
                     }
@@ -375,12 +373,10 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                             )
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                putExtra(
-                                    DocumentsContract.EXTRA_INITIAL_URI,
-                                    Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload")
-                                )
-                            }
+                            putExtra(
+                                DocumentsContract.EXTRA_INITIAL_URI,
+                                Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload")
+                            )
                         }
                         fixedFolderPackSaveLauncher.launch(pickerIntent)
                     }

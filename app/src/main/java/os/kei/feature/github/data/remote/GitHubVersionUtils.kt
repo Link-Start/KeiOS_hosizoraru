@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import os.kei.core.system.HyperOsSettingsIntents
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidate
@@ -119,12 +118,7 @@ object GitHubVersionUtils {
             throw error
         }
         val versionName = pkgInfo.versionName?.trim().orEmpty().ifBlank { "unknown" }
-        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            pkgInfo.longVersionCode
-        } else {
-            @Suppress("DEPRECATION")
-            pkgInfo.versionCode.toLong()
-        }
+        val versionCode = pkgInfo.longVersionCode
         return LocalVersionInfo(
             versionName = versionName,
             versionCode = versionCode
@@ -554,21 +548,12 @@ object GitHubVersionUtils {
     }
 }
 
-private fun PackageManager.queryInstalledPackageInfos() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+private fun PackageManager.queryInstalledPackageInfos() =
     getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
-} else {
-    @Suppress("DEPRECATION")
-    getInstalledPackages(0)
-}
 
 private fun PackageManager.getApplicationInfoCompat(packageName: String): ApplicationInfo? {
     return runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
-        } else {
-            @Suppress("DEPRECATION")
-            getApplicationInfo(packageName, 0)
-        }
+        getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
     }.getOrNull()
 }
 

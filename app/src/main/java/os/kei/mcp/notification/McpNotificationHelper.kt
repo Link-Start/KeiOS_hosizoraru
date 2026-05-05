@@ -253,7 +253,8 @@ object McpNotificationHelper {
         secondaryActionMode: SecondaryActionMode = SecondaryActionMode.DEFAULT,
         notificationId: Int = KEEPALIVE_NOTIFICATION_ID
     ): SessionNotifier.NotificationBuildResult {
-        val isBlueArchiveNotification = McpNotificationPayload.Companion.isBaNotificationServerName(serverName)
+        val isBlueArchiveNotification =
+            McpNotificationPayload.isBaNotificationServerName(serverName)
         val openRequestCode = 110_100 + notificationId
         val focusOpenRequestCode = 410_100 + notificationId
         val secondaryRequestCode = 110_200 + notificationId
@@ -345,9 +346,10 @@ object McpNotificationHelper {
         path: String,
         clients: Int
     ) {
-        val isBlueArchiveAp = McpNotificationPayload.Companion.isBaApServerName(serverName)
-        val isBlueArchiveCafeVisit = McpNotificationPayload.Companion.isBaCafeVisitServerName(serverName)
-        val isBlueArchiveArenaRefresh = McpNotificationPayload.Companion.isBaArenaRefreshServerName(serverName)
+        val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(serverName)
+        val isBlueArchiveCafeVisit = McpNotificationPayload.isBaCafeVisitServerName(serverName)
+        val isBlueArchiveArenaRefresh =
+            McpNotificationPayload.isBaArenaRefreshServerName(serverName)
         val isBlueArchiveNotification = isBlueArchiveAp || isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh
         val runningForNotification = if (isBlueArchiveNotification) running else true
         val baNotificationId = when {

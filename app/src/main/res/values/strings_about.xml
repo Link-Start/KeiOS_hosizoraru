@@ -297,6 +297,8 @@
     <string name="about_license_value_network_stack">Ktor %1$s · OkHttp %2$s · Focus API %3$s · Apache-2.0</string>
     <string name="about_license_row_media_stack">媒体与图像栈</string>
     <string name="about_license_value_media_stack">Media3 %1$s · Coil %2$s · ZoomImage %3$s · uCrop %4$s · Apache-2.0</string>
+    <string name="about_license_row_package_installer">PackageInstaller</string>
+    <string name="about_license_value_package_installer">远端 APK manifest 扫描链路参考 · Apache-2.0 · Copyright vvb2060</string>
     <string name="about_license_url_miuix">https://github.com/compose-miuix-ui/miuix/blob/main/LICENSE</string>
     <string name="about_license_url_androidx_runtime">https://github.com/androidx/androidx/blob/androidx-main/LICENSE.txt</string>
     <string name="about_license_url_material_components">https://github.com/material-components/material-components-android/blob/master/LICENSE</string>
@@ -311,6 +313,7 @@
     <string name="about_license_url_mcp">https://github.com/modelcontextprotocol/kotlin-sdk/blob/main/LICENSE</string>
     <string name="about_license_url_network_stack">https://github.com/square/okhttp/blob/master/LICENSE.txt</string>
     <string name="about_license_url_media_stack">https://www.apache.org/licenses/LICENSE-2.0.txt</string>
+    <string name="about_license_url_package_installer">https://github.com/vvb2060/PackageInstaller</string>
 
     <string name="about_project_license_row_name">许可证</string>
     <string name="about_project_license_value_name">Apache License 2.0</string>

@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.github.page
 
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -14,6 +14,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Job
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.model.GitHubActionsBranchOption
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
@@ -37,7 +38,6 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
-import kotlinx.coroutines.Job
 
 @Stable
 internal class GitHubPageState(
@@ -84,6 +84,7 @@ internal class GitHubPageState(
     var actionsRunWatchJob by mutableStateOf<Job?>(null)
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
+    var packageNameScanRunning by mutableStateOf(false)
     var selectedApp by mutableStateOf<InstalledAppItem?>(null)
     var appList by mutableStateOf<List<InstalledAppItem>>(emptyList())
     var appListLoaded by mutableStateOf(false)
@@ -329,6 +330,7 @@ internal class GitHubPageState(
         pickerExpanded = false
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
+        packageNameScanRunning = false
     }
 
     fun dismissTrackSheet() {

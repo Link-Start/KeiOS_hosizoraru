@@ -243,6 +243,7 @@ internal fun rememberAboutSearchTargets(
                 stringResource(R.string.about_license_row_mcp),
                 stringResource(R.string.about_license_row_network_stack),
                 stringResource(R.string.about_license_row_media_stack),
+                stringResource(R.string.about_license_row_package_installer),
             ),
         ),
         AboutSearchTarget(

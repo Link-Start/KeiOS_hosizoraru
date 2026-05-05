@@ -10,6 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.BuildConfig
 import os.kei.R
+import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
+import os.kei.ui.page.main.about.ui.AboutSectionCard
 import os.kei.ui.page.main.os.appLucideAppWindowIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
@@ -18,8 +20,6 @@ import os.kei.ui.page.main.os.appLucideMediaIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.osLucideSettingsIcon
-import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
-import os.kei.ui.page.main.about.ui.AboutSectionCard
 
 private data class AboutLicenseEntry(
     @get:StringRes val titleRes: Int,
@@ -145,6 +145,12 @@ fun AboutLicenseCardSection(
             ),
             sourceUrl = stringResource(R.string.about_license_url_media_stack),
             icon = appLucideMediaIcon()
+        ),
+        AboutLicenseEntry(
+            titleRes = R.string.about_license_row_package_installer,
+            value = stringResource(R.string.about_license_value_package_installer),
+            sourceUrl = stringResource(R.string.about_license_url_package_installer),
+            icon = appLucidePackageIcon()
         )
     )
 

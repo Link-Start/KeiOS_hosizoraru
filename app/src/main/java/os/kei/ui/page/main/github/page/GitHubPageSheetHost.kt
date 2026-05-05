@@ -2,10 +2,9 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import os.kei.R
+import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
@@ -137,6 +136,7 @@ internal fun GitHubPageSheetHost(
         repoUrlInput = state.repoUrlInput,
         appSearch = state.appSearch,
         packageNameInput = state.packageNameInput,
+        packageNameScanRunning = state.packageNameScanRunning,
         pickerExpanded = state.pickerExpanded,
         selectedApp = state.selectedApp,
         appList = state.appList,
@@ -158,6 +158,7 @@ internal fun GitHubPageSheetHost(
                 }
             }
         },
+        onScanPackageName = actions::scanPackageNameFromRepo,
         onPickerExpandedChange = { state.pickerExpanded = it },
         onSelectedAppChange = { app ->
             state.selectedApp = app

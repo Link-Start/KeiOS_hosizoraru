@@ -128,6 +128,21 @@ object GitHubReleaseAssetRepository {
         }
     }
 
+    fun fetchLatestStableApkAssets(
+        owner: String,
+        repo: String,
+        aggressiveFiltering: Boolean = false,
+        apiToken: String = ""
+    ): Result<GitHubReleaseAssetBundle> = runCatching {
+        val release = fetchLatestRelease(owner, repo, apiToken).getOrThrow()
+        parseReleaseBundle(release)
+            .copy(fetchSource = GitHubReleaseAssetFetchSources.API)
+            .selectDisplayAssets(
+                aggressiveFiltering = aggressiveFiltering,
+                includeAllAssets = false
+            )
+    }
+
     fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,
         useApiAssetUrl: Boolean,
@@ -345,6 +360,15 @@ object GitHubReleaseAssetRepository {
     ): Result<JSONArray> = runCatching {
         val url = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
         JSONArray(fetchJson(url, apiToken))
+    }
+
+    private fun fetchLatestRelease(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<JSONObject> = runCatching {
+        val url = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/releases/latest"
+        JSONObject(fetchJson(url, apiToken))
     }
 
     private fun fetchJson(url: String, apiToken: String): String {

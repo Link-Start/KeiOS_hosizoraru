@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.page.action
 
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
@@ -59,6 +60,40 @@ internal class GitHubTrackActions(
         if (state.deleteInProgress) return
         if (state.trackedItems.none { it.id == item.id }) return
         state.pendingDeleteItem = item
+    }
+
+    fun scanPackageNameFromRepo() {
+        if (state.packageNameScanRunning) return
+        if (state.repoUrlInput.isBlank()) {
+            env.toast(R.string.github_toast_fill_repo_and_select_app)
+            return
+        }
+        state.packageNameScanRunning = true
+        scope.launch {
+            try {
+                val result = repository.scanPackageNameFromLatestStableApk(
+                    GitHubApkPackageNameScanRequest(
+                        repoUrl = state.repoUrlInput,
+                        lookupConfig = state.lookupConfig
+                    )
+                ).getOrElse { error ->
+                    env.toast(
+                        R.string.github_toast_package_scan_failed,
+                        error.message.orEmpty().ifBlank {
+                            env.string(R.string.github_error_package_scan_failed)
+                        }
+                    )
+                    return@launch
+                }
+                state.packageNameInput = result.packageName
+                state.selectedApp = state.appList.firstOrNull { app ->
+                    app.packageName.equals(result.packageName, ignoreCase = true)
+                }
+                env.toast(R.string.github_toast_package_scan_success, result.packageName)
+            } finally {
+                state.packageNameScanRunning = false
+            }
+        }
     }
 
     fun applyTrackSheet() {

@@ -16,16 +16,20 @@ import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
+import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.domain.GitHubApkPackageNameScanner
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
 import os.kei.feature.github.domain.GitHubStrategyBenchmarkService
 import os.kei.feature.github.model.GitHubApiCredentialStatus
+import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
+import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubCheckCacheEntry
@@ -512,6 +516,16 @@ internal class GitHubPageRepository(
                 request = request,
                 existingItems = existingItems
             )
+        }
+    }
+
+    suspend fun scanPackageNameFromLatestStableApk(
+        request: GitHubApkPackageNameScanRequest
+    ): Result<GitHubApkPackageNameScanResult> {
+        return withContext(ioDispatcher) {
+            GitHubApkPackageNameScanner(
+                GitHubApkPackageNameScanRepository()
+            ).scan(request)
         }
     }
 

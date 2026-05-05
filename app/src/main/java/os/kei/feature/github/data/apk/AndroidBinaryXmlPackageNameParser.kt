@@ -1,0 +1,157 @@
+package os.kei.feature.github.data.apk
+
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+internal object AndroidBinaryXmlPackageNameParser {
+    private const val CHUNK_XML = 0x0003
+    private const val CHUNK_STRING_POOL = 0x0001
+    private const val CHUNK_XML_START_ELEMENT = 0x0102
+    private const val XML_NODE_HEADER_SIZE = 16
+    private const val UTF8_FLAG = 0x00000100
+    private const val TYPE_STRING = 0x03
+
+    fun parsePackageName(manifestBytes: ByteArray): Result<String> = runCatching {
+        val buffer = ByteBuffer.wrap(manifestBytes).order(ByteOrder.LITTLE_ENDIAN)
+        val strings = readStringPool(buffer)
+        var offset = 0
+        while (offset + 8 <= manifestBytes.size) {
+            val chunkType = buffer.u16(offset)
+            val chunkSize = buffer.i32(offset + 4)
+            if (chunkSize <= 0 || offset + chunkSize > manifestBytes.size) break
+            if (chunkType == CHUNK_XML_START_ELEMENT) {
+                val packageName = readStartElementPackageName(
+                    buffer = buffer,
+                    chunkOffset = offset,
+                    strings = strings
+                )
+                if (packageName.isNotBlank()) return@runCatching packageName
+            }
+            offset += nextChunkStep(buffer, offset, chunkType, chunkSize)
+        }
+        error("AndroidManifest.xml does not expose a package name")
+    }
+
+    private fun readStringPool(buffer: ByteBuffer): List<String> {
+        var offset = 0
+        while (offset + 28 <= buffer.capacity()) {
+            val chunkType = buffer.u16(offset)
+            val chunkSize = buffer.i32(offset + 4)
+            if (chunkSize <= 0 || offset + chunkSize > buffer.capacity()) break
+            if (chunkType == CHUNK_STRING_POOL) {
+                val stringCount = buffer.i32(offset + 8)
+                val flags = buffer.i32(offset + 16)
+                val stringsStart = buffer.i32(offset + 20)
+                val utf8 = flags and UTF8_FLAG != 0
+                return List(stringCount) { index ->
+                    val stringOffset = buffer.i32(offset + 28 + index * 4)
+                    val absolute = offset + stringsStart + stringOffset
+                    if (utf8) {
+                        buffer.readUtf8String(absolute)
+                    } else {
+                        buffer.readUtf16String(absolute)
+                    }
+                }
+            }
+            offset += nextChunkStep(buffer, offset, chunkType, chunkSize)
+        }
+        return emptyList()
+    }
+
+    private fun readStartElementPackageName(
+        buffer: ByteBuffer,
+        chunkOffset: Int,
+        strings: List<String>
+    ): String {
+        val nameIndex = buffer.i32(chunkOffset + 20)
+        val elementName = strings.getOrNull(nameIndex).orEmpty()
+        if (elementName != "manifest") return ""
+        val attributeStart = buffer.u16(chunkOffset + 24)
+        val attributeSize = buffer.u16(chunkOffset + 26)
+        val attributeCount = buffer.u16(chunkOffset + 28)
+        val attributesOffset = chunkOffset + XML_NODE_HEADER_SIZE + attributeStart
+        for (index in 0 until attributeCount) {
+            val attributeOffset = attributesOffset + index * attributeSize
+            if (attributeOffset + 20 > buffer.capacity()) break
+            val attributeName = strings.getOrNull(buffer.i32(attributeOffset + 4)).orEmpty()
+            if (attributeName != "package") continue
+            val rawValueIndex = buffer.i32(attributeOffset + 8)
+            val valueType = buffer.u8(attributeOffset + 15)
+            val valueData = buffer.i32(attributeOffset + 16)
+            return when {
+                rawValueIndex >= 0 -> strings.getOrNull(rawValueIndex).orEmpty()
+                valueType == TYPE_STRING -> strings.getOrNull(valueData).orEmpty()
+                else -> ""
+            }.trim()
+        }
+        return ""
+    }
+
+    private fun nextChunkStep(
+        buffer: ByteBuffer,
+        offset: Int,
+        chunkType: Int,
+        chunkSize: Int
+    ): Int {
+        return if (chunkType == CHUNK_XML) {
+            buffer.u16(offset + 2).coerceAtLeast(8)
+        } else {
+            chunkSize
+        }
+    }
+
+    private fun ByteBuffer.readUtf8String(offset: Int): String {
+        val firstLength = readLength8(offset)
+        val byteLength = readLength8(firstLength.nextOffset)
+        val start = byteLength.nextOffset
+        if (start + byteLength.value > capacity()) return ""
+        return String(array(), arrayOffset() + start, byteLength.value, Charsets.UTF_8)
+    }
+
+    private fun ByteBuffer.readUtf16String(offset: Int): String {
+        val charLength = readLength16(offset)
+        val start = charLength.nextOffset
+        val byteLength = charLength.value * 2
+        if (start + byteLength > capacity()) return ""
+        return Charsets.UTF_16LE.decode(
+            duplicate()
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .apply {
+                    position(start)
+                    limit(start + byteLength)
+                }
+                .slice()
+        ).toString()
+    }
+
+    private fun ByteBuffer.readLength8(offset: Int): StringLength {
+        if (offset >= capacity()) return StringLength(0, offset)
+        val first = u8(offset)
+        return if (first and 0x80 != 0 && offset + 1 < capacity()) {
+            StringLength(((first and 0x7F) shl 8) or u8(offset + 1), offset + 2)
+        } else {
+            StringLength(first, offset + 1)
+        }
+    }
+
+    private fun ByteBuffer.readLength16(offset: Int): StringLength {
+        if (offset + 1 >= capacity()) return StringLength(0, offset)
+        val first = u16(offset)
+        return if (first and 0x8000 != 0 && offset + 3 < capacity()) {
+            StringLength(((first and 0x7FFF) shl 16) or u16(offset + 2), offset + 4)
+        } else {
+            StringLength(first, offset + 2)
+        }
+    }
+
+    private fun ByteBuffer.u8(offset: Int): Int = get(offset).toInt() and 0xFF
+
+    private fun ByteBuffer.u16(offset: Int): Int = getShort(offset).toInt() and 0xFFFF
+
+    private fun ByteBuffer.i32(offset: Int): Int = getInt(offset)
+
+    private data class StringLength(
+        val value: Int,
+        val nextOffset: Int
+    )
+}

@@ -2,21 +2,21 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.page.action.GitHubAssetActions
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
+import os.kei.ui.page.main.github.page.action.GitHubAssetActions
 import os.kei.ui.page.main.github.page.action.GitHubConfigActions
 import os.kei.ui.page.main.github.page.action.GitHubPageActionEnvironment
 import os.kei.ui.page.main.github.page.action.GitHubRefreshActions
 import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 internal class GitHubPageActions(
     context: Context,
@@ -246,6 +246,8 @@ internal class GitHubPageActions(
     fun requestDeleteEditingItem() = trackActions.requestDeleteEditingItem()
 
     fun requestDeleteTrackedItem(item: GitHubTrackedApp) = trackActions.requestDeleteItem(item)
+
+    fun scanPackageNameFromRepo() = trackActions.scanPackageNameFromRepo()
 
     fun applyTrackSheet() = trackActions.applyTrackSheet()
 

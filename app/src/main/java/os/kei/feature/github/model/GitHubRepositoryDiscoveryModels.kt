@@ -63,3 +63,17 @@ data class GitHubAppRepositorySearchResult(
     val queryCount: Int,
     val candidates: List<GitHubRepositoryImportCandidate>
 )
+
+data class GitHubApkPackageNameScanRequest(
+    val repoUrl: String,
+    val lookupConfig: GitHubLookupConfig
+)
+
+data class GitHubApkPackageNameScanResult(
+    val owner: String,
+    val repo: String,
+    val releaseTag: String,
+    val releaseUrl: String,
+    val assetName: String,
+    val packageName: String
+)

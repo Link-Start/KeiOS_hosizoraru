@@ -1,46 +1,32 @@
 package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
-import os.kei.ui.page.main.github.RefreshIntervalOption
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
-import os.kei.ui.page.main.github.GitHubStatusPalette
-import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
-import os.kei.ui.page.main.github.query.DownloaderOption
-import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import os.kei.ui.page.main.github.query.noOnlineShareTargetOption
-import os.kei.ui.page.main.github.query.systemDefaultDownloaderOption
-import os.kei.ui.page.main.github.query.systemDownloadManagerOption
-import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.AppSwitch
+import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
@@ -48,8 +34,6 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import os.kei.ui.page.main.widget.status.StatusPill
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -60,6 +44,7 @@ internal fun GitHubTrackEditSheet(
     repoUrlInput: String,
     appSearch: String,
     packageNameInput: String,
+    packageNameScanRunning: Boolean,
     pickerExpanded: Boolean,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
@@ -70,6 +55,7 @@ internal fun GitHubTrackEditSheet(
     onRepoUrlInputChange: (String) -> Unit,
     onAppSearchChange: (String) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
+    onScanPackageName: () -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
@@ -122,7 +108,28 @@ internal fun GitHubTrackEditSheet(
                     variant = GlassVariant.SheetInput,
                     singleLine = true
                 )
-                SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text = if (packageNameScanRunning) {
+                            stringResource(R.string.github_track_sheet_btn_scan_package_running)
+                        } else {
+                            stringResource(R.string.github_track_sheet_btn_scan_package)
+                        },
+                        enabled = !packageNameScanRunning && repoUrlInput.isNotBlank(),
+                        onClick = onScanPackageName,
+                        minHeight = 30.dp,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 4.dp,
+                        textMaxLines = 1
+                    )
+                }
                 AppLiquidSearchField(
                     value = packageNameInput,
                     onValueChange = onPackageNameInputChange,

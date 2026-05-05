@@ -163,6 +163,7 @@
     <string name="github_msg_assets_no_downloadable_except_source">%1$s 当前除了 Source code 外没有其它可下载资源</string>
     <string name="github_msg_assets_no_downloadable">%1$s 当前没有可直接下载的资源</string>
     <string name="github_error_load_apk_assets_failed">加载 APK 资产失败</string>
+    <string name="github_error_package_scan_failed">包名扫描失败</string>
     <string name="github_toast_fill_repo_and_select_app">请填写正确仓库地址</string>
     <string name="github_toast_invalid_package_name">包名格式不正确</string>
     <string name="github_toast_track_exists">该条目已存在</string>
@@ -176,6 +177,8 @@
     <string name="github_toast_track_import_failed">跟踪项目导入失败: %1$s</string>
     <string name="github_toast_track_import_no_valid">导入文件里没有有效的跟踪项目</string>
     <string name="github_toast_track_imported_summary">导入完成：新增 %1$d，更新 %2$d，保持 %3$d，忽略 %4$d</string>
+    <string name="github_toast_package_scan_success">已扫描包名：%1$s</string>
+    <string name="github_toast_package_scan_failed">包名扫描失败：%1$s</string>
     <string name="github_toast_repo_message">%1$s/%2$s: %3$s</string>
     <string name="github_cd_add_track">新增跟踪</string>
     <string name="github_cd_status">状态</string>
@@ -384,6 +387,8 @@
     <string name="github_track_sheet_input_app_filter">名称或包名</string>
     <string name="github_track_sheet_input_package_title">包名（可选）</string>
     <string name="github_track_sheet_input_package">手动填写包名</string>
+    <string name="github_track_sheet_btn_scan_package">扫描包名</string>
+    <string name="github_track_sheet_btn_scan_package_running">扫描中</string>
     <string name="github_track_sheet_summary_package_optional">可留空仅跟踪仓库版本；后续填入包名或安装对应 App 后会自动联动刷新</string>
     <string name="github_track_sheet_label_selected_app">已选 App</string>
     <string name="github_track_sheet_selected_none">未选择</string>

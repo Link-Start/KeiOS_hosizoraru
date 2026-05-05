@@ -339,9 +339,13 @@
     <string name="github_strategy_app_fallback">App</string>
     <string name="github_check_sheet_title">检查与下载</string>
     <string name="github_check_sheet_cd_save">保存检查逻辑</string>
+    <string name="github_check_sheet_section_overview">当前设置</string>
     <string name="github_check_sheet_section_checks">检查策略</string>
     <string name="github_check_sheet_section_transfer">下载与联动</string>
     <string name="github_check_sheet_section_tracks">跟踪项目</string>
+    <string name="github_check_sheet_metric_share_import">分享联动</string>
+    <string name="github_check_sheet_value_enabled">开启</string>
+    <string name="github_check_sheet_value_disabled">关闭</string>
     <string name="github_check_sheet_label_refresh_interval">更新间隔</string>
     <string name="github_check_sheet_summary_refresh_interval">超时后自动视为过期</string>
     <string name="github_check_sheet_label_prerelease_check">检查所有追踪项的预发行最新版</string>

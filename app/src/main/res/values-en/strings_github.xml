@@ -339,9 +339,13 @@
     <string name="github_strategy_app_fallback">App</string>
     <string name="github_check_sheet_title">Check &amp; download</string>
     <string name="github_check_sheet_cd_save">Save check logic</string>
+    <string name="github_check_sheet_section_overview">Current settings</string>
     <string name="github_check_sheet_section_checks">Check strategy</string>
     <string name="github_check_sheet_section_transfer">Download &amp; linkage</string>
     <string name="github_check_sheet_section_tracks">Tracked projects</string>
+    <string name="github_check_sheet_metric_share_import">Share linkage</string>
+    <string name="github_check_sheet_value_enabled">On</string>
+    <string name="github_check_sheet_value_disabled">Off</string>
     <string name="github_check_sheet_label_refresh_interval">Refresh interval</string>
     <string name="github_check_sheet_summary_refresh_interval">Treat as expired after timeout</string>
     <string name="github_check_sheet_label_prerelease_check">Check latest pre-release for every tracked item</string>

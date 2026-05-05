@@ -198,7 +198,7 @@
     <string name="github_overview_label_check_failed">检查失败</string>
     <string name="github_overview_value_count">%1$d 项</string>
     <string name="github_overview_value_strategy_api">%1$s · API：%2$s</string>
-    <string name="github_overview_value_update_tracked">%1$d/%2$d</string>
+    <string name="github_overview_value_update_tracked_compact">更新 %1$d · 追踪 %2$d</string>
     <string name="github_overview_strategy_atom">Atom</string>
     <string name="github_overview_strategy_api">API</string>
     <string name="github_overview_actions_strategy_nightly">nightly</string>

@@ -211,7 +211,7 @@ fun AppOverviewMetricTile(
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
                 maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis
             )
             top.yukonga.miuix.kmp.basic.Text(
                 text = value.ifBlank { "N/A" },
@@ -220,7 +220,7 @@ fun AppOverviewMetricTile(
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 fontWeight = if (emphasizedValue) AppTypographyTokens.BodyEmphasis.fontWeight else AppTypographyTokens.Body.fontWeight,
                 maxLines = valueMaxLines,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -262,6 +262,8 @@ fun AppOverviewInlineMetricTile(
     valueMaxLines: Int = 2,
     labelWeight: Float = 0.58f,
     valueWeight: Float = 0.42f,
+    showLabel: Boolean = true,
+    valueTextAlign: TextAlign = TextAlign.End,
     backdrop: Backdrop? = null,
     emphasizedValue: Boolean = true
 ) {
@@ -307,23 +309,25 @@ fun AppOverviewInlineMetricTile(
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
             verticalAlignment = androidx.compose.ui.Alignment.Top
         ) {
-            top.yukonga.miuix.kmp.basic.Text(
-                text = label,
-                color = labelColor,
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-                modifier = Modifier.weight(labelWeight),
-                maxLines = labelMaxLines,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (showLabel) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = label,
+                    color = labelColor,
+                    fontSize = AppTypographyTokens.Caption.fontSize,
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
+                    modifier = Modifier.weight(labelWeight),
+                    maxLines = labelMaxLines,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             top.yukonga.miuix.kmp.basic.Text(
                 text = value.ifBlank { "N/A" },
                 color = valueColor,
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 fontWeight = if (emphasizedValue) FontWeight.Medium else FontWeight.Normal,
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(valueWeight),
+                textAlign = valueTextAlign,
+                modifier = Modifier.weight(if (showLabel) valueWeight else 1f),
                 maxLines = valueMaxLines,
                 overflow = TextOverflow.Ellipsis
             )

@@ -1,7 +1,13 @@
 package os.kei.ui.page.main.github.section
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -34,6 +41,8 @@ import os.kei.ui.page.main.github.surfaceColor
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.page.main.widget.motion.AppMotionTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -75,6 +84,7 @@ internal fun GitHubOverviewCard(
     val context = LocalContext.current
     val overviewTitleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant
     var expanded by rememberSaveable { mutableStateOf(true) }
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val strategyValue = lookupConfig.selectedStrategy.overviewLabel(context)
     val apiValue = lookupConfig.overviewApiLabel(context)
     val strategyColor = lookupConfig.selectedStrategy.run {
@@ -168,10 +178,22 @@ internal fun GitHubOverviewCard(
     ) {
         AnimatedContent(
             targetState = expanded,
+            transitionSpec = {
+                if (transitionAnimationsEnabled) {
+                    (
+                            fadeIn(animationSpec = tween(durationMillis = AppMotionTokens.expandFadeInMs)) togetherWith
+                                    fadeOut(animationSpec = tween(durationMillis = AppMotionTokens.expandFadeOutMs))
+                            ).using(
+                            SizeTransform(clip = false) { _, _ ->
+                                tween(durationMillis = AppMotionTokens.expandSizeInMs)
+                            }
+                        )
+                } else {
+                    EnterTransition.None togetherWith ExitTransition.None
+                }
+            },
             label = "github_overview_expand_content",
-            modifier = Modifier
-                .fillMaxWidth()
-                .animateContentSize()
+            modifier = Modifier.fillMaxWidth()
         ) {
             if (it) {
                 GitHubOverviewExpandedContent(
@@ -366,17 +388,16 @@ private fun GitHubOverviewCollapsedContent(
             ),
             titleColor = overviewTitleColor,
             valueColor = if (apiColor == GitHubStatusPalette.PreRelease) apiColor else strategyColor,
-            labelMaxLines = 1,
+            showLabel = false,
             valueMaxLines = 2,
-            labelWeight = 0.38f,
-            valueWeight = 0.62f,
+            valueTextAlign = TextAlign.Start,
             backdrop = backdrop,
             modifier = Modifier.weight(1f)
         )
         GitHubOverviewMetricItem(
             label = stringResource(R.string.github_overview_label_update_tracked),
             value = stringResource(
-                R.string.github_overview_value_update_tracked,
+                R.string.github_overview_value_update_tracked_compact,
                 metrics.totalUpdatableCount,
                 metrics.trackedCount
             ),
@@ -387,10 +408,9 @@ private fun GitHubOverviewCollapsedContent(
                 isDark = isDark
             ),
             emphasized = metrics.totalUpdatableCount > 0,
-            labelMaxLines = 1,
+            showLabel = false,
             valueMaxLines = 1,
-            labelWeight = 0.42f,
-            valueWeight = 0.58f,
+            valueTextAlign = TextAlign.Start,
             backdrop = backdrop,
             modifier = Modifier.weight(1f)
         )

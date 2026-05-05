@@ -428,7 +428,6 @@ fun OsShellRunnerPage(
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .layerBackdrop(topBarBackdrop),
-            topExtra = 0.dp,
             sectionSpacing = AppChromeTokens.pageSectionGap
         ) {
             item(key = "shell_input_card") {

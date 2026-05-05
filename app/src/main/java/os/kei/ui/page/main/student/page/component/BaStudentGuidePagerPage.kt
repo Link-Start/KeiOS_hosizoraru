@@ -34,6 +34,7 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderState
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
@@ -143,7 +144,7 @@ internal fun BaStudentGuidePagerPage(
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection),
                 contentPadding = PaddingValues(
-                    top = innerPadding.calculateTopPadding(),
+                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     bottom = innerPadding.calculateBottomPadding() + 16.dp,
                     start = 16.dp,
                     end = 16.dp
@@ -235,7 +236,7 @@ private fun BaStudentGuidePagerLoadingOverlay(
         modifier = Modifier
             .fillMaxSize()
             .padding(
-                top = innerPadding.calculateTopPadding(),
+                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                 bottom = innerPadding.calculateBottomPadding(),
                 start = 20.dp,
                 end = 20.dp

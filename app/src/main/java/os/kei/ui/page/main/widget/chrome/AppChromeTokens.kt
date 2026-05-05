@@ -7,6 +7,7 @@ object AppChromeTokens {
     val pageHorizontalPadding: Dp = 14.dp
     val pageSectionGap: Dp = 12.dp
     val pageSectionGapLarge: Dp = 14.dp
+    val topBarToHeaderGap: Dp = 12.dp
     val pageBottomInsetExtra: Dp = 16.dp
     val pageFloatingOverlayBottomExtra: Dp = 64.dp
 

@@ -106,7 +106,7 @@ fun AppPageLazyColumn(
     state: LazyListState,
     modifier: Modifier = Modifier,
     bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
-    topExtra: Dp = AppChromeTokens.pageSectionGap,
+    topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
     sectionSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     userScrollEnabled: Boolean = true,
     content: LazyListScope.() -> Unit

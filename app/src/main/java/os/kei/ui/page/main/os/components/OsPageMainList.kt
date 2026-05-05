@@ -168,7 +168,6 @@ internal fun OsPageMainList(
                 .nestedScroll(scrollBehaviorConnection),
             state = listState,
             innerPadding = innerPadding,
-            topExtra = 8.dp,
             sectionSpacing = 0.dp
         ) {
             item {

@@ -110,6 +110,7 @@ internal fun BaPageContent(
         )
     }
     val pageGap = AppChromeTokens.pageSectionGap
+    val topBarToHeaderGap = AppChromeTokens.topBarToHeaderGap
     val pageHorizontalPadding = AppChromeTokens.pageHorizontalPadding
 
     LazyColumn(
@@ -118,7 +119,7 @@ internal fun BaPageContent(
             .nestedScroll(nestedScrollConnection),
         state = listState,
         contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding() + pageGap,
+            top = innerPadding.calculateTopPadding() + topBarToHeaderGap,
             bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
             start = pageHorizontalPadding,
             end = pageHorizontalPadding,

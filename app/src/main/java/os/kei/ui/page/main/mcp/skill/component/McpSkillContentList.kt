@@ -1,16 +1,16 @@
 package os.kei.ui.page.main.mcp.skill.component
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.mcp.skill.state.McpSkillPageContentState
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 
 @Composable
@@ -37,9 +37,8 @@ internal fun McpSkillContentList(
         modifier = modifier
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection),
-        topExtra = 0.dp,
-        bottomExtra = 16.dp,
-        sectionSpacing = 12.dp
+        bottomExtra = AppChromeTokens.pageBottomInsetExtra,
+        sectionSpacing = AppChromeTokens.pageSectionGap
     ) {
         item {
             McpSkillClawGuideCard(

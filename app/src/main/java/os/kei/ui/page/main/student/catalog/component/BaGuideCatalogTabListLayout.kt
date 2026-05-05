@@ -36,7 +36,7 @@ internal fun BaGuideCatalogTabListLayout(
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection),
         contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding(),
+            top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
             bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
             start = AppChromeTokens.pageHorizontalPadding,
             end = AppChromeTokens.pageHorizontalPadding

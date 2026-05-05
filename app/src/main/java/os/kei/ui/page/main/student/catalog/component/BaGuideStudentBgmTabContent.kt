@@ -417,7 +417,7 @@ internal fun BaGuideStudentBgmTabContent(
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection),
             contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding(),
+                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                 bottom = listBottomChromePadding +
                     AppChromeTokens.pageSectionGap +
                     if (showNowPlaying) {

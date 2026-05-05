@@ -148,7 +148,6 @@ internal fun GitHubMainContent(
                     state = listState,
                     innerPadding = innerPadding,
                     bottomExtra = appPageBottomPaddingWithFloatingOverlay(contentBottomPadding),
-                    topExtra = 8.dp,
                     sectionSpacing = CardLayoutRhythm.denseSectionGap
                 ) {
                     item {

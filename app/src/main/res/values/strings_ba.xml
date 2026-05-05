@@ -1,6 +1,7 @@
 <resources>
     <string name="ba_topbar_title">BlueArchive</string>
     <string name="ba_cd_edit">编辑</string>
+    <string name="ba_cd_notification_settings">通知设置</string>
     <string name="ba_cd_refresh_interval">刷新间隔</string>
     <string name="ba_cd_copy_friend_code">复制好友码</string>
     <string name="ba_cd_refresh">刷新</string>
@@ -77,6 +78,7 @@
     <string name="ba_calendar_error_sync_failed">活动日历同步失败（超时或网络异常）</string>
     <string name="ba_pool_error_sync_failed">卡池同步失败（超时或网络异常）</string>
     <string name="ba_settings_title">BA 配置</string>
+    <string name="ba_notification_settings_title">BA 通知设置</string>
     <string name="ba_settings_section_basic">基础设置</string>
     <string name="ba_settings_section_sync">同步</string>
     <string name="ba_settings_section_notifications">通知</string>

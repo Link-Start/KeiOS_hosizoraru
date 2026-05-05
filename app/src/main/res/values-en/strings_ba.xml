@@ -1,6 +1,7 @@
 <resources>
     <string name="ba_topbar_title">Blue Archive</string>
     <string name="ba_cd_edit">Edit</string>
+    <string name="ba_cd_notification_settings">Notification settings</string>
     <string name="ba_cd_refresh_interval">Refresh interval</string>
     <string name="ba_cd_copy_friend_code">Copy friend code</string>
     <string name="ba_cd_refresh">Refresh</string>
@@ -77,6 +78,7 @@
     <string name="ba_calendar_error_sync_failed">Event calendar sync failed. Check your network and try again.</string>
     <string name="ba_pool_error_sync_failed">Recruitment banner sync failed. Check your network and try again.</string>
     <string name="ba_settings_title">Blue Archive Settings</string>
+    <string name="ba_notification_settings_title">Blue Archive Notifications</string>
     <string name="ba_settings_section_basic">Basic</string>
     <string name="ba_settings_section_sync">Sync</string>
     <string name="ba_settings_section_notifications">Notifications</string>

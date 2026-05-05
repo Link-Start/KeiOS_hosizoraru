@@ -15,6 +15,7 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 @Stable
 internal data class BaPageUiState(
     val showSettingsSheet: Boolean,
+    val showNotificationSettingsSheet: Boolean,
     val showOverviewServerPopup: Boolean,
     val showCafeLevelPopup: Boolean,
     val overviewServerPopupAnchorBounds: IntRect?,
@@ -57,6 +58,7 @@ internal data class BaPageUiState(
 
 internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var showSettingsSheet by mutableStateOf(false)
+    var showNotificationSettingsSheet by mutableStateOf(false)
     var showOverviewServerPopup by mutableStateOf(false)
     var showCafeLevelPopup by mutableStateOf(false)
     var overviewServerPopupAnchorBounds by mutableStateOf<IntRect?>(null)
@@ -98,6 +100,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     fun state(): BaPageUiState {
         return BaPageUiState(
             showSettingsSheet = showSettingsSheet,
+            showNotificationSettingsSheet = showNotificationSettingsSheet,
             showOverviewServerPopup = showOverviewServerPopup,
             showCafeLevelPopup = showCafeLevelPopup,
             overviewServerPopupAnchorBounds = overviewServerPopupAnchorBounds,
@@ -150,10 +153,6 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         showOverviewServerPopup = false
         showCafeLevelPopup = false
         sheetCafeLevel = office.cafeLevel
-        sheetApNotifyEnabled = office.apNotifyEnabled
-        sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
-        sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-        sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
         sheetMediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
         sheetMediaSaveCustomEnabled = mediaSaveCustomEnabled
         sheetMediaSaveFixedTreeUri = mediaSaveFixedTreeUri
@@ -167,16 +166,31 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         showSettingsSheet = false
         showCafeLevelPopup = false
         sheetCafeLevel = office.cafeLevel
-        sheetApNotifyEnabled = office.apNotifyEnabled
-        sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
-        sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-        sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
         sheetMediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
         sheetMediaSaveCustomEnabled = mediaSaveCustomEnabled
         sheetMediaSaveFixedTreeUri = mediaSaveFixedTreeUri
         sheetShowEndedPools = showEndedPools
         sheetShowEndedActivities = showEndedActivities
         sheetShowCalendarPoolImages = showCalendarPoolImages
+    }
+
+    fun openNotificationSettingsSheet(office: BaOfficeController) {
+        showOverviewServerPopup = false
+        showCafeLevelPopup = false
+        loadNotificationDraft(office)
+        showNotificationSettingsSheet = true
+    }
+
+    fun closeNotificationSettingsSheet(office: BaOfficeController) {
+        showNotificationSettingsSheet = false
+        loadNotificationDraft(office)
+    }
+
+    private fun loadNotificationDraft(office: BaOfficeController) {
+        sheetApNotifyEnabled = office.apNotifyEnabled
+        sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
+        sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
+        sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
     }
 }
 

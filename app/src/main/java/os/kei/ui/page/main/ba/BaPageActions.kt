@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import org.json.JSONArray
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.ui.page.main.ba.support.BASettingsStore
@@ -19,14 +20,10 @@ import os.kei.ui.page.main.ba.support.floorToHourMs
 import os.kei.ui.page.main.ba.support.fractionalApPart
 import os.kei.ui.page.main.ba.support.normalizeAp
 import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
-import org.json.JSONArray
 import kotlin.math.roundToInt
 
 internal data class BaSettingsPersistenceResult(
     val savedCafeLevel: Int,
-    val savedThreshold: Int,
-    val arenaRefreshNotifyEnabled: Boolean,
-    val cafeVisitNotifyEnabled: Boolean,
     val showEndedPools: Boolean,
     val showEndedActivities: Boolean,
     val showCalendarPoolImages: Boolean,
@@ -91,13 +88,8 @@ internal fun persistBaSettingsDraft(
     currentShowCalendarPoolImages: Boolean,
 ): BaSettingsPersistenceResult {
     val savedCafeLevel = sheetState.cafeLevel.coerceIn(1, 10)
-    val savedThreshold = sheetState.apNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
 
     BASettingsStore.saveCafeLevel(savedCafeLevel)
-    BASettingsStore.saveApNotifyEnabled(sheetState.apNotifyEnabled)
-    BASettingsStore.saveArenaRefreshNotifyEnabled(sheetState.arenaRefreshNotifyEnabled)
-    BASettingsStore.saveCafeVisitNotifyEnabled(sheetState.cafeVisitNotifyEnabled)
-    BASettingsStore.saveApNotifyThreshold(savedThreshold)
     BASettingsStore.savePoolShowEnded(sheetState.showEndedPools)
     BASettingsStore.saveActivityShowEnded(sheetState.showEndedActivities)
     BASettingsStore.saveShowCalendarPoolImages(sheetState.showCalendarPoolImages)
@@ -107,9 +99,6 @@ internal fun persistBaSettingsDraft(
 
     return BaSettingsPersistenceResult(
         savedCafeLevel = savedCafeLevel,
-        savedThreshold = savedThreshold,
-        arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
-        cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
         showEndedPools = sheetState.showEndedPools,
         showEndedActivities = sheetState.showEndedActivities,
         showCalendarPoolImages = sheetState.showCalendarPoolImages,
@@ -118,6 +107,30 @@ internal fun persistBaSettingsDraft(
         mediaSaveFixedTreeUri = sheetState.mediaSaveFixedTreeUri,
         turningEndedActivitiesOn = !currentShowEndedActivities && sheetState.showEndedActivities,
         turningImagesOn = !currentShowCalendarPoolImages && sheetState.showCalendarPoolImages,
+    )
+}
+
+internal data class BaNotificationSettingsPersistenceResult(
+    val savedThreshold: Int,
+    val arenaRefreshNotifyEnabled: Boolean,
+    val cafeVisitNotifyEnabled: Boolean,
+)
+
+internal fun persistBaNotificationSettingsDraft(
+    sheetState: BaNotificationSettingsSheetState,
+): BaNotificationSettingsPersistenceResult {
+    val savedThreshold =
+        sheetState.apNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
+
+    BASettingsStore.saveApNotifyEnabled(sheetState.apNotifyEnabled)
+    BASettingsStore.saveArenaRefreshNotifyEnabled(sheetState.arenaRefreshNotifyEnabled)
+    BASettingsStore.saveCafeVisitNotifyEnabled(sheetState.cafeVisitNotifyEnabled)
+    BASettingsStore.saveApNotifyThreshold(savedThreshold)
+
+    return BaNotificationSettingsPersistenceResult(
+        savedThreshold = savedThreshold,
+        arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
     )
 }
 

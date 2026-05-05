@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.os.appLucideBellIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
@@ -34,15 +35,25 @@ internal fun BaTopBarActions(
     backdrop: LayerBackdrop,
     liquidActionBarLayeredStyleEnabled: Boolean,
     onShowSettings: () -> Unit,
+    onShowNotificationSettings: () -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
 ) {
     val editIcon = appLucideEditIcon()
+    val bellIcon = appLucideBellIcon()
     val editContentDescription = stringResource(R.string.ba_cd_edit)
+    val notificationContentDescription = stringResource(R.string.ba_cd_notification_settings)
     val actionItems = remember(
         editContentDescription,
+        notificationContentDescription,
         onShowSettings,
+        onShowNotificationSettings,
     ) {
         listOf(
+            LiquidActionItem(
+                icon = bellIcon,
+                contentDescription = notificationContentDescription,
+                onClick = onShowNotificationSettings,
+            ),
             LiquidActionItem(
                 icon = editIcon,
                 contentDescription = editContentDescription,
@@ -55,7 +66,6 @@ internal fun BaTopBarActions(
         backdrop = backdrop,
         layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
         items = actionItems,
-        compactSingleItem = true,
         onInteractionChanged = onInteractionChanged,
     )
 }

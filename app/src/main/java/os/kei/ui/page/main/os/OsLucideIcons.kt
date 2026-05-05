@@ -127,6 +127,9 @@ internal fun appLucideWarningIcon(): ImageVector = osLucideVector(LucideR.drawab
 internal fun appLucideAlertIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_circle_alert)
 
 @Composable
+internal fun appLucideBellIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_bell)
+
+@Composable
 internal fun appLucideMoreIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_ellipsis)
 
 @Composable

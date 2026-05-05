@@ -15,10 +15,6 @@ internal fun buildBaSettingsSheetState(
 ): BaSettingsSheetState {
     return BaSettingsSheetState(
         cafeLevel = ui.sheetCafeLevel,
-        apNotifyEnabled = ui.sheetApNotifyEnabled,
-        arenaRefreshNotifyEnabled = ui.sheetArenaRefreshNotifyEnabled,
-        cafeVisitNotifyEnabled = ui.sheetCafeVisitNotifyEnabled,
-        apNotifyThresholdText = ui.sheetApNotifyThresholdText,
         mediaAdaptiveRotationEnabled = ui.sheetMediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = ui.sheetMediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = ui.sheetMediaSaveFixedTreeUri,
@@ -26,6 +22,17 @@ internal fun buildBaSettingsSheetState(
         showEndedPools = ui.sheetShowEndedPools,
         showCalendarPoolImages = ui.sheetShowCalendarPoolImages,
         calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
+    )
+}
+
+internal fun buildBaNotificationSettingsSheetState(
+    ui: BaPageUiController,
+): BaNotificationSettingsSheetState {
+    return BaNotificationSettingsSheetState(
+        apNotifyEnabled = ui.sheetApNotifyEnabled,
+        arenaRefreshNotifyEnabled = ui.sheetArenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = ui.sheetCafeVisitNotifyEnabled,
+        apNotifyThresholdText = ui.sheetApNotifyThresholdText,
     )
 }
 
@@ -85,9 +92,41 @@ internal fun saveBaPageSettings(
 
     office.cafeLevel = persisted.savedCafeLevel
     office.clampCafeStoredToCap()
+    ui.showEndedPools = persisted.showEndedPools
+    ui.showEndedActivities = persisted.showEndedActivities
+    ui.showCalendarPoolImages = persisted.showCalendarPoolImages
+    ui.mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled
+    ui.mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled
+    ui.mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri
+
+    if (persisted.turningEndedActivitiesOn) {
+        val (calendarCacheRaw, _) = BASettingsStore.loadCalendarCache(ui.serverIndex)
+        if (calendarCacheRaw.isBlank()) onRefreshCalendar(true)
+    }
+
+    if (persisted.turningImagesOn) {
+        val calendarHasImage = hasAnyImageInBaCalendarCache(ui.serverIndex)
+        val poolHasImage = hasAnyImageInBaPoolCache(ui.serverIndex)
+        if (!calendarHasImage) onRefreshCalendar(true)
+        if (!poolHasImage) onRefreshPool(true)
+    }
+
+    office.applyApRegen()
+    AppBackgroundScheduler.scheduleBaApThreshold(context)
+    ui.closeSettingsSheet(office)
+}
+
+internal fun saveBaNotificationSettings(
+    context: Context,
+    office: BaOfficeController,
+    ui: BaPageUiController,
+    notificationSettingsSheetState: BaNotificationSettingsSheetState,
+) {
     val previousArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
     val previousCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-    office.apNotifyEnabled = settingsSheetState.apNotifyEnabled
+    val persisted = persistBaNotificationSettingsDraft(notificationSettingsSheetState)
+
+    office.apNotifyEnabled = notificationSettingsSheetState.apNotifyEnabled
     office.arenaRefreshNotifyEnabled = persisted.arenaRefreshNotifyEnabled
     office.cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled
     office.apNotifyThreshold = persisted.savedThreshold
@@ -113,28 +152,10 @@ internal fun saveBaPageSettings(
         office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
         BASettingsStore.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
     }
-    ui.showEndedPools = persisted.showEndedPools
-    ui.showEndedActivities = persisted.showEndedActivities
-    ui.showCalendarPoolImages = persisted.showCalendarPoolImages
-    ui.mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled
-    ui.mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled
-    ui.mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri
-
-    if (persisted.turningEndedActivitiesOn) {
-        val (calendarCacheRaw, _) = BASettingsStore.loadCalendarCache(ui.serverIndex)
-        if (calendarCacheRaw.isBlank()) onRefreshCalendar(true)
-    }
-
-    if (persisted.turningImagesOn) {
-        val calendarHasImage = hasAnyImageInBaCalendarCache(ui.serverIndex)
-        val poolHasImage = hasAnyImageInBaPoolCache(ui.serverIndex)
-        if (!calendarHasImage) onRefreshCalendar(true)
-        if (!poolHasImage) onRefreshPool(true)
-    }
 
     office.applyApRegen()
     AppBackgroundScheduler.scheduleBaApThreshold(context)
-    ui.closeSettingsSheet(office)
+    ui.closeNotificationSettingsSheet(office)
 }
 
 internal fun buildBaPageContentActions(

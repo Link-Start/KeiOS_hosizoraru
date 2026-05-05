@@ -94,6 +94,7 @@ fun BAPage(
     val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
 
     val settingsSheetState = buildBaSettingsSheetState(ui)
+    val notificationSettingsSheetState = buildBaNotificationSettingsSheetState(ui)
     val pageContentState = buildBaPageContentState(
         isPageActive = runtime.isPageActive,
         officeOverviewTitle = officeOverviewTitle,
@@ -113,6 +114,14 @@ fun BAPage(
 
     fun closeSettingsSheet() {
         ui.closeSettingsSheet(office)
+    }
+
+    fun openNotificationSettingsSheet() {
+        ui.openNotificationSettingsSheet(office)
+    }
+
+    fun closeNotificationSettingsSheet() {
+        ui.closeNotificationSettingsSheet(office)
     }
 
     fun refreshCalendar(force: Boolean = false) {
@@ -155,6 +164,15 @@ fun BAPage(
             settingsSheetState = settingsSheetState,
             onRefreshCalendar = ::refreshCalendar,
             onRefreshPool = ::refreshPool,
+        )
+    }
+
+    fun saveNotificationSettings() {
+        saveBaNotificationSettings(
+            context = context,
+            office = office,
+            ui = ui,
+            notificationSettingsSheetState = notificationSettingsSheetState,
         )
     }
 
@@ -287,6 +305,7 @@ fun BAPage(
                     backdrop = backdrops.topBar,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     onShowSettings = ::openSettingsSheet,
+                    onShowNotificationSettings = ::openNotificationSettingsSheet,
                     onInteractionChanged = onActionBarInteractingChanged,
                 )
             }
@@ -307,14 +326,6 @@ fun BAPage(
             show = ui.showSettingsSheet,
             backdrop = backdrops.sheet,
             state = settingsSheetState,
-            onApNotifyEnabledChange = { ui.sheetApNotifyEnabled = it },
-            onArenaRefreshNotifyEnabledChange = { ui.sheetArenaRefreshNotifyEnabled = it },
-            onCafeVisitNotifyEnabledChange = { ui.sheetCafeVisitNotifyEnabled = it },
-            onApNotifyThresholdTextChange = { ui.sheetApNotifyThresholdText = it },
-            onApNotifyThresholdDone = {
-                val normalized = ui.sheetApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
-                ui.sheetApNotifyThresholdText = normalized.toString()
-            },
             onMediaAdaptiveRotationEnabledChange = { ui.sheetMediaAdaptiveRotationEnabled = it },
             onMediaSaveCustomEnabledChange = { ui.sheetMediaSaveCustomEnabled = it },
             onMediaSaveFixedTreeUriChange = { ui.sheetMediaSaveFixedTreeUri = it },
@@ -331,6 +342,22 @@ fun BAPage(
             },
             onDismissRequest = ::closeSettingsSheet,
             onSaveRequest = ::saveSettings,
+        )
+        BaNotificationSettingsSheet(
+            show = ui.showNotificationSettingsSheet,
+            backdrop = backdrops.sheet,
+            state = notificationSettingsSheetState,
+            onApNotifyEnabledChange = { ui.sheetApNotifyEnabled = it },
+            onArenaRefreshNotifyEnabledChange = { ui.sheetArenaRefreshNotifyEnabled = it },
+            onCafeVisitNotifyEnabledChange = { ui.sheetCafeVisitNotifyEnabled = it },
+            onApNotifyThresholdTextChange = { ui.sheetApNotifyThresholdText = it },
+            onApNotifyThresholdDone = {
+                val normalized =
+                    ui.sheetApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
+                ui.sheetApNotifyThresholdText = normalized.toString()
+            },
+            onDismissRequest = ::closeNotificationSettingsSheet,
+            onSaveRequest = ::saveNotificationSettings,
         )
     }
 }

@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.kyant.backdrop.Backdrop
 import os.kei.R
-import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaCalendarRefreshIntervalOption
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
@@ -47,10 +46,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class BaSettingsSheetState(
     val cafeLevel: Int,
-    val apNotifyEnabled: Boolean,
-    val arenaRefreshNotifyEnabled: Boolean,
-    val cafeVisitNotifyEnabled: Boolean,
-    val apNotifyThresholdText: String,
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
@@ -65,11 +60,6 @@ internal fun BaSettingsSheet(
     show: Boolean,
     backdrop: Backdrop?,
     state: BaSettingsSheetState,
-    onApNotifyEnabledChange: (Boolean) -> Unit,
-    onArenaRefreshNotifyEnabledChange: (Boolean) -> Unit,
-    onCafeVisitNotifyEnabledChange: (Boolean) -> Unit,
-    onApNotifyThresholdTextChange: (String) -> Unit,
-    onApNotifyThresholdDone: () -> Unit,
     onMediaAdaptiveRotationEnabledChange: (Boolean) -> Unit,
     onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
     onMediaSaveFixedTreeUriChange: (String) -> Unit,
@@ -140,68 +130,6 @@ internal fun BaSettingsSheet(
                         onExpandedChange = { refreshIntervalDropdownExpanded = it },
                         onAnchorBoundsChange = { refreshIntervalDropdownAnchorBounds = it },
                         onSelected = onCalendarRefreshIntervalSelected,
-                    )
-                }
-            }
-
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_notifications))
-            SheetSectionCard {
-                Text(
-                    text = stringResource(R.string.ba_settings_card_ap_title),
-                    color = settingsAccent,
-                )
-                SheetControlRow(label = stringResource(R.string.ba_settings_label_ap_notify)) {
-                    AppSwitch(
-                        checked = state.apNotifyEnabled,
-                        onCheckedChange = onApNotifyEnabledChange,
-                    )
-                }
-                if (state.apNotifyEnabled) {
-                    SheetControlRow(
-                        label = stringResource(R.string.ba_settings_label_ap_threshold),
-                        summary = stringResource(R.string.ba_settings_summary_ap_threshold,
-                            BA_AP_MAX
-                        ),
-                    ) {
-                        AppLiquidSearchField(
-                            modifier = Modifier.width(70.dp),
-                            value = state.apNotifyThresholdText,
-                            onValueChange = { input ->
-                                val digits = input.filter { it.isDigit() }.take(3)
-                                val normalized = if (digits.isBlank()) {
-                                    ""
-                                } else {
-                                    digits.toIntOrNull()?.coerceIn(0, BA_AP_MAX)?.toString().orEmpty()
-                                }
-                                onApNotifyThresholdTextChange(normalized)
-                            },
-                            onImeActionDone = onApNotifyThresholdDone,
-                            label = "120",
-                            backdrop = backdrop,
-                            variant = GlassVariant.SheetInput,
-                            singleLine = true,
-                            textAlign = TextAlign.Center,
-                            fontSize = 18.sp,
-                            textColor = Color(0xFF22C55E),
-                        )
-                    }
-                }
-                SheetControlRow(
-                    label = stringResource(R.string.ba_settings_label_arena_refresh_notify),
-                    summary = stringResource(R.string.ba_settings_summary_arena_refresh_notify),
-                ) {
-                    AppSwitch(
-                        checked = state.arenaRefreshNotifyEnabled,
-                        onCheckedChange = onArenaRefreshNotifyEnabledChange,
-                    )
-                }
-                SheetControlRow(
-                    label = stringResource(R.string.ba_settings_label_cafe_visit_notify),
-                    summary = stringResource(R.string.ba_settings_summary_cafe_visit_notify),
-                ) {
-                    AppSwitch(
-                        checked = state.cafeVisitNotifyEnabled,
-                        onCheckedChange = onCafeVisitNotifyEnabledChange,
                     )
                 }
             }

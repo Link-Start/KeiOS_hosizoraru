@@ -53,6 +53,7 @@ import os.kei.ui.page.main.os.appLucideRepeatIcon
 import os.kei.ui.page.main.os.appLucideVolume2Icon
 import os.kei.ui.page.main.os.appLucideVolumeOffIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -305,7 +306,7 @@ private fun BaGuideBgmAlbumPrimaryActions(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(50.dp + AppInteractiveTokens.liquidPressSafePadding * 2)
     ) {
         Box(
             modifier = Modifier
@@ -313,7 +314,9 @@ private fun BaGuideBgmAlbumPrimaryActions(
                 .layerBackdrop(actionsBackdrop)
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = AppInteractiveTokens.liquidPressSafePadding),
             horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {

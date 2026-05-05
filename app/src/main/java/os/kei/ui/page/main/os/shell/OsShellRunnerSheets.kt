@@ -1,15 +1,11 @@
 package os.kei.ui.page.main.os.shell
 
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
@@ -108,7 +104,7 @@ internal fun OsShellBehaviorSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_startup_behavior_title))
-            OsShellSettingsChoiceGroup {
+            SheetActionGroup(verticalSpacing = 8.dp) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_startup_behavior_focus_title),
                     summary = stringResource(R.string.os_shell_settings_startup_behavior_focus_summary),
@@ -124,7 +120,7 @@ internal fun OsShellBehaviorSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_exit_cleanup_title))
-            OsShellSettingsChoiceGroup {
+            SheetActionGroup(verticalSpacing = 8.dp) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_exit_cleanup_keep_all_title),
                     summary = stringResource(R.string.os_shell_settings_exit_cleanup_keep_all_summary),
@@ -228,7 +224,7 @@ internal fun OsShellOutputSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_output_save_mode_title))
-            OsShellSettingsChoiceGroup {
+            SheetActionGroup(verticalSpacing = 8.dp) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_output_save_mode_full_title),
                     summary = stringResource(R.string.os_shell_settings_output_save_mode_full_summary),
@@ -244,7 +240,7 @@ internal fun OsShellOutputSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_copy_mode_title))
-            OsShellSettingsChoiceGroup {
+            SheetActionGroup(verticalSpacing = 8.dp) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_copy_mode_full_title),
                     summary = stringResource(R.string.os_shell_settings_copy_mode_full_summary),
@@ -263,19 +259,6 @@ internal fun OsShellOutputSettingsSheet(
 }
 
 @Composable
-private fun OsShellSettingsChoiceGroup(
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    SheetActionGroup(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 6.dp),
-        verticalSpacing = 10.dp,
-        content = content
-    )
-}
-
-@Composable
 private fun OsShellSettingsChoiceCard(
     title: String,
     summary: String,
@@ -283,7 +266,6 @@ private fun OsShellSettingsChoiceCard(
     onSelect: () -> Unit,
 ) {
     SheetChoiceCard(
-        modifier = Modifier.padding(1.dp),
         title = title,
         summary = summary,
         selected = selected,

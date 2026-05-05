@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +26,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -44,6 +46,7 @@ fun AppSurfaceCard(
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
     showIndication: Boolean = true,
     captureLocalBackdrop: Boolean = true,
+    pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
@@ -77,12 +80,23 @@ fun AppSurfaceCard(
     val cardBackdrop = backdrop ?: localBackdrop
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
+    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
+        if (showIndication && clickable) {
+            AppInteractiveTokens.compactLiquidPressSafePadding
+        } else {
+            0.dp
+        }
+    } else {
+        pressSafePadding
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .padding(resolvedPressSafePadding)
             .graphicsLayer {
                 scaleX = pressedScale
                 scaleY = pressedScale
+                clip = false
             }
     ) {
         if (backdrop == null && captureLocalBackdrop) {

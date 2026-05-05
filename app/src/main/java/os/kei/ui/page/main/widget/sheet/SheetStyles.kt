@@ -153,6 +153,7 @@ fun SheetSurfaceCard(
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
     verticalSpacing: Dp = 8.dp,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -162,6 +163,7 @@ fun SheetSurfaceCard(
         borderColor = borderColor,
         contentColor = contentColor,
         captureLocalBackdrop = false,
+        pressSafePadding = pressSafePadding,
         onClick = onClick
     ) {
         AppCardBodyColumn(
@@ -311,6 +313,7 @@ fun SheetChoiceCard(
     selected: Boolean,
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
+    pressSafePadding: Dp = AppInteractiveTokens.liquidPressSafePadding,
     accentColor: Color = MiuixTheme.colorScheme.primary,
     selectedAccentColor: Color = accentColor,
     unselectedTitleColor: Color = MiuixTheme.colorScheme.onBackground,
@@ -323,61 +326,68 @@ fun SheetChoiceCard(
         DefaultSelectedLabelSentinel -> stringResource(R.string.common_selected)
         else -> selectedLabel
     }
-    SheetSurfaceCard(
-        modifier = modifier,
-        containerColor = if (selected) {
-            selectedAccentColor.copy(alpha = 0.12f)
-        } else {
-            MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.68f)
-        },
-        borderColor = if (selected) {
-            selectedAccentColor.copy(alpha = 0.32f)
-        } else {
-            MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f)
-        },
-        onClick = onSelect
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(pressSafePadding)
     ) {
-        Row(
+        SheetSurfaceCard(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            containerColor = if (selected) {
+                selectedAccentColor.copy(alpha = 0.12f)
+            } else {
+                MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.68f)
+            },
+            borderColor = if (selected) {
+                selectedAccentColor.copy(alpha = 0.32f)
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f)
+            },
+            pressSafePadding = 0.dp,
+            onClick = onSelect
         ) {
-            leading?.invoke()
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                leading?.invoke()
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = title,
-                        color = if (selected) selectedAccentColor else unselectedTitleColor,
-                        fontWeight = AppTypographyTokens.CardHeader.fontWeight,
-                        fontSize = AppTypographyTokens.CardHeader.fontSize,
-                        lineHeight = AppTypographyTokens.CardHeader.lineHeight
-                    )
-                    if (selected && !resolvedSelectedLabel.isNullOrBlank()) {
-                        StatusPill(
-                            label = resolvedSelectedLabel,
-                            color = selectedAccentColor
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = title,
+                            color = if (selected) selectedAccentColor else unselectedTitleColor,
+                            fontWeight = AppTypographyTokens.CardHeader.fontWeight,
+                            fontSize = AppTypographyTokens.CardHeader.fontSize,
+                            lineHeight = AppTypographyTokens.CardHeader.lineHeight
                         )
+                        if (selected && !resolvedSelectedLabel.isNullOrBlank()) {
+                            StatusPill(
+                                label = resolvedSelectedLabel,
+                                color = selectedAccentColor
+                            )
+                        }
                     }
+                    Text(
+                        text = summary,
+                        color = summaryColor,
+                        fontSize = AppTypographyTokens.Body.fontSize,
+                        lineHeight = AppTypographyTokens.Body.lineHeight
+                    )
+                    details?.invoke(this)
                 }
-                Text(
-                    text = summary,
-                    color = summaryColor,
-                    fontSize = AppTypographyTokens.Body.fontSize,
-                    lineHeight = AppTypographyTokens.Body.lineHeight
+                SheetLiquidChoiceIndicator(
+                    selected = selected,
+                    onSelect = onSelect,
+                    accentColor = selectedAccentColor
                 )
-                details?.invoke(this)
             }
-            SheetLiquidChoiceIndicator(
-                selected = selected,
-                onSelect = onSelect,
-                accentColor = selectedAccentColor
-            )
         }
     }
 }

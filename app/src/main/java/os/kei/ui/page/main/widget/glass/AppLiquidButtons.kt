@@ -483,8 +483,8 @@ fun AppLiquidTextButton(
                 scaleX = animatedScale
                 scaleY = animatedScale
                 alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                clip = false
             }
-            .clip(ContinuousCapsule)
             .then(
                 if (longClick != null) {
                     Modifier.combinedClickable(
@@ -560,7 +560,7 @@ fun AppLiquidTextButton(
                         containerOverlay != null -> containerOverlay
                         else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
                     }
-                    Modifier.background(fallbackColor)
+                    Modifier.background(fallbackColor, ContinuousCapsule)
                 }
             )
             .then(

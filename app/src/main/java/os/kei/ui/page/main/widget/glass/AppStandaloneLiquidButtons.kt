@@ -2,6 +2,7 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -39,12 +41,19 @@ fun AppStandaloneLiquidTextButton(
     textOverflow: TextOverflow = TextOverflow.Clip,
     textSoftWrap: Boolean = true,
     pressScaleEnabled: Boolean = true,
-    pressOverlayEnabled: Boolean = true
+    pressOverlayEnabled: Boolean = true,
+    pressSafePadding: Dp = Dp.Unspecified
 ) {
     val localBackdrop = rememberLayerBackdrop()
+    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
+        defaultLiquidPressSafePadding(variant)
+    } else {
+        pressSafePadding
+    }
     AppStandaloneBackdropHost(
         backdrop = localBackdrop,
-        modifier = modifier
+        modifier = modifier,
+        pressSafePadding = resolvedPressSafePadding
     ) {
         AppLiquidTextButton(
             backdrop = localBackdrop,
@@ -87,12 +96,19 @@ fun AppStandaloneLiquidIconButton(
     variant: GlassVariant = GlassVariant.Content,
     iconTint: Color = MiuixTheme.colorScheme.primary,
     containerColor: Color? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    pressSafePadding: Dp = Dp.Unspecified
 ) {
     val localBackdrop = rememberLayerBackdrop()
+    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
+        defaultLiquidPressSafePadding(variant)
+    } else {
+        pressSafePadding
+    }
     AppStandaloneBackdropHost(
         backdrop = localBackdrop,
-        modifier = modifier
+        modifier = modifier,
+        pressSafePadding = resolvedPressSafePadding
     ) {
         AppLiquidIconButton(
             backdrop = localBackdrop,
@@ -129,12 +145,19 @@ fun AppStandaloneLiquidIconButton(
     iconTint: Color = Color.Unspecified,
     iconModifier: Modifier = Modifier,
     containerColor: Color? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    pressSafePadding: Dp = Dp.Unspecified
 ) {
     val localBackdrop = rememberLayerBackdrop()
+    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
+        defaultLiquidPressSafePadding(variant)
+    } else {
+        pressSafePadding
+    }
     AppStandaloneBackdropHost(
         backdrop = localBackdrop,
-        modifier = modifier
+        modifier = modifier,
+        pressSafePadding = resolvedPressSafePadding
     ) {
         AppLiquidIconButton(
             backdrop = localBackdrop,
@@ -160,10 +183,16 @@ fun AppStandaloneLiquidIconButton(
 internal fun AppStandaloneBackdropHost(
     backdrop: LayerBackdrop,
     modifier: Modifier,
+    pressSafePadding: Dp = Dp.Unspecified,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
+        0.dp
+    } else {
+        pressSafePadding
+    }
     Box(
-        modifier = modifier,
+        modifier = modifier.padding(resolvedPressSafePadding),
         contentAlignment = Alignment.Center
     ) {
         if (LocalLiquidControlsEnabled.current) {

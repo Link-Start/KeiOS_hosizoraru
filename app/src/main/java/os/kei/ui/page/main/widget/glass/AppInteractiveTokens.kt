@@ -27,6 +27,9 @@ object AppInteractiveTokens {
     val controlContentGap: Dp = 8.dp
 
     val popupAnimationOffset: Dp = 10.dp
+    val liquidPressSafePadding: Dp = 6.dp
+    val compactLiquidPressSafePadding: Dp = 4.dp
+    val denseLiquidPressSafePadding: Dp = 2.dp
 
     const val pressedScale: Float = 0.985f
     const val pressedOverlayAlphaLight: Float = 0.08f
@@ -59,6 +62,16 @@ internal fun defaultAppLiquidTextButtonVerticalPadding(variant: GlassVariant): D
     return when (variant) {
         GlassVariant.Compact -> AppInteractiveTokens.compactAppLiquidTextButtonVerticalPadding
         else -> AppInteractiveTokens.appLiquidTextButtonVerticalPadding
+    }
+}
+
+internal fun defaultLiquidPressSafePadding(variant: GlassVariant): Dp {
+    return when (variant) {
+        GlassVariant.Compact -> AppInteractiveTokens.denseLiquidPressSafePadding
+        GlassVariant.Bar,
+        GlassVariant.Floating -> AppInteractiveTokens.compactLiquidPressSafePadding
+
+        else -> AppInteractiveTokens.liquidPressSafePadding
     }
 }
 

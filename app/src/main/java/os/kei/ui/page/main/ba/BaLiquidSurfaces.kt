@@ -30,6 +30,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -105,9 +106,14 @@ private fun BaLiquidSurfaceColumn(
         else -> localBackdrop
     }
     val liquidShape = RoundedRectangle(cornerRadius)
+    val pressSafePadding = if (hasLiquidPress) {
+        AppInteractiveTokens.compactLiquidPressSafePadding
+    } else {
+        0.dp
+    }
 
     if (activeBackdrop != null) {
-        Box(modifier = modifier) {
+        Box(modifier = modifier.padding(pressSafePadding)) {
             if (backdrop == null) {
                 Box(
                     modifier = Modifier
@@ -144,6 +150,7 @@ private fun BaLiquidSurfaceColumn(
     } else {
         Column(
             modifier = modifier
+                .padding(pressSafePadding)
                 .clip(shape)
                 .background(fallbackSurface, shape)
                 .then(

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student.component
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -12,6 +13,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 
@@ -31,8 +33,17 @@ internal fun GuideLiquidCard(
     content: @Composable BoxScope.() -> Unit
 ) {
     val cardBackdrop = rememberLayerBackdrop()
+    val pressSafePadding = if (isInteractive && enabled && onClick != null) {
+        AppInteractiveTokens.compactLiquidPressSafePadding
+    } else {
+        0.dp
+    }
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(pressSafePadding)
+    ) {
         Box(
             modifier = Modifier
                 .matchParentSize()

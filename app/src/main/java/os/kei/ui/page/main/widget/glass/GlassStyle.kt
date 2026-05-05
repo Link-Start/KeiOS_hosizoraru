@@ -2,8 +2,8 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
@@ -17,7 +17,8 @@ enum class GlassVariant {
     SheetPrimaryAction,
     SheetDangerAction,
     Floating,
-    Bar
+    Bar,
+    SearchField
 }
 
 internal data class GlassStyle(
@@ -57,6 +58,24 @@ internal fun glassStyle(
             fallbackAlpha = if (isDark) 0.40f else 0.56f,
             lensStart = lens(24.dp),
             lensEnd = lens(24.dp),
+            showBorder = true
+        )
+
+        GlassVariant.SearchField -> GlassStyle(
+            blur = blur(blurRadius ?: 4.dp),
+            baseColor = Color.Transparent,
+            overlayColor = Color.Transparent,
+            borderColor = if (isDark) {
+                Color.White.copy(alpha = 0.28f)
+            } else {
+                Color(0xFF86C3FF).copy(alpha = 0.96f)
+            },
+            borderWidth = 1.1.dp,
+            highlightAlpha = if (isDark) 0.54f else 0.98f,
+            shadowAlpha = if (isDark) 0.22f else 0.18f,
+            fallbackAlpha = if (isDark) 0.38f else 0.42f,
+            lensStart = lens(28.dp),
+            lensEnd = lens(54.dp),
             showBorder = true
         )
         GlassVariant.SheetInput -> {

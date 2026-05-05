@@ -45,13 +45,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideConfigIcon
+import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.osLucideClearAllIcon
-import os.kei.ui.page.main.os.osLucideSettingsIcon
+import os.kei.ui.page.main.os.shell.OsShellBehaviorSettingsSheet
+import os.kei.ui.page.main.os.shell.OsShellOutputSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellRunnerCopyMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerExitCleanupMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerStartupBehavior
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
-import os.kei.ui.page.main.os.shell.OsShellSettingsSheet
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerInputCard
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerOutputCard
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerSaveSheet
@@ -162,7 +164,8 @@ fun OsShellRunnerPage(
     var runningJob by remember { mutableStateOf<Job?>(null) }
     var suppressStopOutputAppend by remember { mutableStateOf(false) }
     var showSaveSheet by rememberSaveable { mutableStateOf(false) }
-    var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    var showBehaviorSettingsSheet by rememberSaveable { mutableStateOf(false) }
+    var showOutputSettingsSheet by rememberSaveable { mutableStateOf(false) }
     var showDangerousCommandConfirm by rememberSaveable { mutableStateOf(false) }
     var pendingDangerousCommand by rememberSaveable { mutableStateOf("") }
     var saveTitleInput by rememberSaveable { mutableStateOf("") }
@@ -362,14 +365,31 @@ fun OsShellRunnerPage(
     }
 
     OsShellBackHandler(enabled = showSaveSheet) { showSaveSheet = false }
-    OsShellBackHandler(enabled = !showSaveSheet && showSettingsSheet) { showSettingsSheet = false }
-    OsShellBackHandler(enabled = !showSaveSheet && !showSettingsSheet && showDangerousCommandConfirm) {
+    OsShellBackHandler(enabled = !showSaveSheet && showBehaviorSettingsSheet) {
+        showBehaviorSettingsSheet = false
+    }
+    OsShellBackHandler(enabled = !showSaveSheet && showOutputSettingsSheet) {
+        showOutputSettingsSheet = false
+    }
+    OsShellBackHandler(
+        enabled = !showSaveSheet &&
+                !showBehaviorSettingsSheet &&
+                !showOutputSettingsSheet &&
+                showDangerousCommandConfirm
+    ) {
         showDangerousCommandConfirm = false
         pendingDangerousCommand = ""
     }
     val clearAllIcon = osLucideClearAllIcon()
-    val settingsIcon = osLucideSettingsIcon()
-    val actionItems = remember(textBundle.clearAllActionDescription, textBundle.settingsActionDescription) {
+    val behaviorSettingsIcon = appLucideConfigIcon()
+    val outputSettingsIcon = appLucideNotesIcon()
+    val behaviorSettingsDescription = stringResource(R.string.os_shell_action_behavior_settings)
+    val outputSettingsDescription = stringResource(R.string.os_shell_action_output_settings)
+    val actionItems = remember(
+        textBundle.clearAllActionDescription,
+        behaviorSettingsDescription,
+        outputSettingsDescription
+    ) {
         listOf(
             LiquidActionItem(
                 icon = clearAllIcon,
@@ -377,9 +397,14 @@ fun OsShellRunnerPage(
                 onClick = { clearAllContent() }
             ),
             LiquidActionItem(
-                icon = settingsIcon,
-                contentDescription = textBundle.settingsActionDescription,
-                onClick = { showSettingsSheet = true }
+                icon = behaviorSettingsIcon,
+                contentDescription = behaviorSettingsDescription,
+                onClick = { showBehaviorSettingsSheet = true }
+            ),
+            LiquidActionItem(
+                icon = outputSettingsIcon,
+                contentDescription = outputSettingsDescription,
+                onClick = { showOutputSettingsSheet = true }
             )
         )
     }
@@ -487,13 +512,27 @@ fun OsShellRunnerPage(
     )
 
     CompositionLocalProvider(LocalLiquidControlsEnabled provides chromePrefs.liquidSwitchEnabled) {
-        OsShellSettingsSheet(
-            show = showSettingsSheet,
-            onDismissRequest = { showSettingsSheet = false },
+        OsShellBehaviorSettingsSheet(
+            show = showBehaviorSettingsSheet,
+            onDismissRequest = { showBehaviorSettingsSheet = false },
             settings = settings,
             onPersistInputEnabledChange = shellRunnerViewModel::updatePersistInput,
-            onPersistOutputEnabledChange = shellRunnerViewModel::updatePersistOutput,
             onTimeoutSecondsChange = shellRunnerViewModel::updateTimeoutSeconds,
+            onDangerousCommandConfirmChange = shellRunnerViewModel::updateDangerousCommandConfirm,
+            onCompletionToastChange = shellRunnerViewModel::updateCompletionToast,
+            onStartupBehaviorChange = { behavior ->
+                shellRunnerViewModel.updateStartupBehavior(behavior)
+                if (behavior == OsShellRunnerStartupBehavior.FocusInput) {
+                    startupFocusRequestToken += 1
+                }
+            },
+            onExitCleanupModeChange = shellRunnerViewModel::updateExitCleanupMode,
+        )
+        OsShellOutputSettingsSheet(
+            show = showOutputSettingsSheet,
+            onDismissRequest = { showOutputSettingsSheet = false },
+            settings = settings,
+            onPersistOutputEnabledChange = shellRunnerViewModel::updatePersistOutput,
             onAutoFormatOutputChange = shellRunnerViewModel::updateAutoFormatOutput,
             onAutoScrollOutputChange = shellRunnerViewModel::updateAutoScrollOutput,
             onOutputLimitCharsChange = { limit ->
@@ -512,16 +551,7 @@ fun OsShellRunnerPage(
                     outputTimeLabel = textBundle.outputTimeLabel
                 )
             },
-            onDangerousCommandConfirmChange = shellRunnerViewModel::updateDangerousCommandConfirm,
-            onCompletionToastChange = shellRunnerViewModel::updateCompletionToast,
-            onStartupBehaviorChange = { behavior ->
-                shellRunnerViewModel.updateStartupBehavior(behavior)
-                if (behavior == OsShellRunnerStartupBehavior.FocusInput) {
-                    startupFocusRequestToken += 1
-                }
-            },
-            onExitCleanupModeChange = shellRunnerViewModel::updateExitCleanupMode,
-            onCopyModeChange = shellRunnerViewModel::updateCopyMode
+            onCopyModeChange = shellRunnerViewModel::updateCopyMode,
         )
     }
 

@@ -56,6 +56,8 @@
     <string name="os_shell_action_save_command">保存命令到 OS 卡片</string>
     <string name="os_shell_action_clear_all">清空 shell 输入和输出</string>
     <string name="os_shell_action_settings">打开 shell 设置</string>
+    <string name="os_shell_action_behavior_settings">打开 shell 运行行为设置</string>
+    <string name="os_shell_action_output_settings">打开 shell 输出历史设置</string>
     <string name="os_shell_action_format_output">格式化输出</string>
     <string name="os_shell_action_copy_output">复制命令输出</string>
     <string name="os_shell_action_clear_output_history">清空输出历史</string>
@@ -85,7 +87,11 @@
     <string name="os_shell_toast_cleared_all">已清空 shell 输入和输出</string>
     <string name="os_shell_toast_command_completed">命令执行完成。</string>
     <string name="os_shell_settings_sheet_title">shell 设置</string>
+    <string name="os_shell_behavior_settings_sheet_title">shell 运行行为</string>
+    <string name="os_shell_output_settings_sheet_title">shell 输出历史</string>
     <string name="os_shell_settings_section_general">基础行为</string>
+    <string name="os_shell_settings_section_execution">执行参数</string>
+    <string name="os_shell_output_settings_section_display">输出显示</string>
     <string name="os_shell_settings_persist_input_label">持久化 shell 输入</string>
     <string name="os_shell_settings_persist_input_summary">开启后会保留输入内容，重新进入 shell 页面可继续编辑。</string>
     <string name="os_shell_settings_persist_output_label">持久化 shell 输出</string>

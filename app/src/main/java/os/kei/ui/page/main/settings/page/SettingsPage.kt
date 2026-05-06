@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.settings.page
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,15 +45,6 @@ import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
-import os.kei.ui.page.main.settings.section.SettingsAnimationSection
-import os.kei.ui.page.main.settings.section.SettingsBackgroundSection
-import os.kei.ui.page.main.settings.section.SettingsCacheSection
-import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSection
-import os.kei.ui.page.main.settings.section.SettingsCopySection
-import os.kei.ui.page.main.settings.section.SettingsLogSection
-import os.kei.ui.page.main.settings.section.SettingsNotifySection
-import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSection
-import os.kei.ui.page.main.settings.section.SettingsVisualSection
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.rememberSettingsBackgroundController
 import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
@@ -345,145 +334,27 @@ fun SettingsPage(
             searchListState.scrollToItem(0)
         }
     }
-
-    fun LazyListScope.settingsCardItem(card: SettingsSearchCard) {
-        item(key = "settings_card_${card.name}") {
-            when (card) {
-                SettingsSearchCard.Permissions -> SettingsPermissionKeepAliveSection(
-                    state = sectionContracts.permissionKeepAliveState,
-                    actions = sectionContracts.permissionKeepAliveActions,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-
-                SettingsSearchCard.Visual -> SettingsVisualSection(
-                    state = sectionContracts.visualState,
-                    actions = sectionContracts.visualActions,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-
-                SettingsSearchCard.Animation -> SettingsAnimationSection(
-                    state = sectionContracts.animationState,
-                    actions = sectionContracts.animationActions,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-
-                SettingsSearchCard.ComponentEffects -> SettingsComponentEffectsSection(
-                    state = sectionContracts.componentEffectsState,
-                    actions = sectionContracts.componentEffectsActions,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-
-                SettingsSearchCard.Background -> SettingsBackgroundSection(
-                    nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
-                    onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
-                    nonHomeBackgroundUri = nonHomeBackgroundUri,
-                    nonHomeBackgroundOpacity = nonHomeBackgroundOpacity,
-                    onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
-                    backgroundPickerLauncher = backgroundController.backgroundPickerLauncher,
-                    onClearBackground = backgroundController.clearBackground,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                    onSliderInteractionChanged = { active ->
-                        sliderInteractionActive = active
-                    },
-                )
-
-                SettingsSearchCard.Notify -> SettingsNotifySection(
-                    state = sectionContracts.notifyState,
-                    actions = sectionContracts.notifyActions,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                    onSliderInteractionChanged = { active ->
-                        sliderInteractionActive = active
-                    },
-                )
-
-                SettingsSearchCard.Copy -> SettingsCopySection(
-                    state = sectionContracts.copyState,
-                    actions = sectionContracts.copyActions,
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-
-                SettingsSearchCard.Cache -> SettingsCacheSection(
-                    cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
-                    onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
-                    cacheEntries = cacheState.cacheEntries,
-                    cacheEntriesLoading = cacheState.cacheEntriesLoading,
-                    clearingAllCaches = cacheState.clearingAllCaches,
-                    clearingCacheId = cacheState.clearingCacheId,
-                    onClearAllCaches = {
-                        scope.launch {
-                            val result = settingsPageViewModel.clearAllCaches(context)
-                            if (result.isSuccess) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.settings_cache_toast_cleared_all),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            } else {
-                                val reason = result.exceptionOrNull()?.javaClass?.simpleName
-                                    ?: context.getString(R.string.common_unknown)
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.settings_cache_toast_clear_all_failed,
-                                        reason,
-                                    ),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            }
-                        }
-                    },
-                    onClearCache = { cacheId ->
-                        scope.launch {
-                            settingsPageViewModel.clearCache(context, cacheId)
-                        }
-                    },
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-
-                SettingsSearchCard.Log -> SettingsLogSection(
-                    logDebugEnabled = logDebugEnabled,
-                    onLogDebugChanged = onLogDebugChanged,
-                    logStats = logState.logStats,
-                    exportingLogZip = logState.exportingLogZip,
-                    clearingLogs = logState.clearingLogs,
-                    onExportZipClick = settingsPageViewModel::beginLogExport,
-                    onClearLogsClick = {
-                        scope.launch {
-                            val result = settingsPageViewModel.clearLogs(context)
-                            if (result.isSuccess) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.settings_log_toast_cleared),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            } else {
-                                val reason = result.exceptionOrNull()?.javaClass?.simpleName
-                                    ?: context.getString(R.string.common_unknown)
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.settings_log_toast_clear_failed,
-                                        reason,
-                                    ),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            }
-                        }
-                    },
-                    enabledCardColor = enabledCardColor,
-                    disabledCardColor = disabledCardColor,
-                )
-            }
-        }
-    }
+    val settingsSearchCardInput = SettingsSearchCardRenderInput(
+        context = context,
+        scope = scope,
+        settingsPageViewModel = settingsPageViewModel,
+        sectionContracts = sectionContracts,
+        backgroundController = backgroundController,
+        cacheState = cacheState,
+        logState = logState,
+        cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
+        onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
+        logDebugEnabled = logDebugEnabled,
+        onLogDebugChanged = onLogDebugChanged,
+        nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
+        onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
+        nonHomeBackgroundUri = nonHomeBackgroundUri,
+        nonHomeBackgroundOpacity = nonHomeBackgroundOpacity,
+        onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
+        enabledCardColor = enabledCardColor,
+        disabledCardColor = disabledCardColor,
+        onSliderInteractionChanged = { active -> sliderInteractionActive = active }
+    )
 
     AppPageScaffold(
         title = settingsTitle,
@@ -559,7 +430,7 @@ fun SettingsPage(
                     }
                 } else {
                     matchingSearchTargets.forEach { target ->
-                        settingsCardItem(target.card)
+                        settingsCardItem(target.card, settingsSearchCardInput)
                     }
                 }
             }
@@ -604,158 +475,7 @@ fun SettingsPage(
                     sectionSpacing = 12.dp,
                     userScrollEnabled = !sliderInteractionActive
                 ) {
-                    when (category) {
-                        SettingsCategory.Access -> {
-                        item {
-                            SettingsPermissionKeepAliveSection(
-                                state = sectionContracts.permissionKeepAliveState,
-                                actions = sectionContracts.permissionKeepAliveActions,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                    }
-                    SettingsCategory.Appearance -> {
-                        item {
-                            SettingsVisualSection(
-                                state = sectionContracts.visualState,
-                                actions = sectionContracts.visualActions,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                        item {
-                            SettingsAnimationSection(
-                                state = sectionContracts.animationState,
-                                actions = sectionContracts.animationActions,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                        item {
-                            SettingsComponentEffectsSection(
-                                state = sectionContracts.componentEffectsState,
-                                actions = sectionContracts.componentEffectsActions,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                        item {
-                            SettingsBackgroundSection(
-                                nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
-                                onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
-                                nonHomeBackgroundUri = nonHomeBackgroundUri,
-                                nonHomeBackgroundOpacity = nonHomeBackgroundOpacity,
-                                onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
-                                backgroundPickerLauncher = backgroundController.backgroundPickerLauncher,
-                                onClearBackground = backgroundController.clearBackground,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor,
-                                onSliderInteractionChanged = { active ->
-                                    sliderInteractionActive = active
-                                }
-                            )
-                        }
-                    }
-                    SettingsCategory.Notify -> {
-                        item {
-                            SettingsNotifySection(
-                                state = sectionContracts.notifyState,
-                                actions = sectionContracts.notifyActions,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor,
-                                onSliderInteractionChanged = { active ->
-                                    sliderInteractionActive = active
-                                }
-                            )
-                        }
-                    }
-                    SettingsCategory.Data -> {
-                        item {
-                            SettingsCopySection(
-                                state = sectionContracts.copyState,
-                                actions = sectionContracts.copyActions,
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                        item {
-                            SettingsCacheSection(
-                                cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
-                                onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
-                                cacheEntries = cacheState.cacheEntries,
-                                cacheEntriesLoading = cacheState.cacheEntriesLoading,
-                                clearingAllCaches = cacheState.clearingAllCaches,
-                                clearingCacheId = cacheState.clearingCacheId,
-                                onClearAllCaches = {
-                                    scope.launch {
-                                        val result = settingsPageViewModel.clearAllCaches(context)
-                                        if (result.isSuccess) {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.settings_cache_toast_cleared_all),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            val reason = result.exceptionOrNull()?.javaClass?.simpleName
-                                                ?: context.getString(R.string.common_unknown)
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(
-                                                    R.string.settings_cache_toast_clear_all_failed,
-                                                    reason
-                                                ),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                },
-                                onClearCache = { cacheId ->
-                                    scope.launch {
-                                        settingsPageViewModel.clearCache(context, cacheId)
-                                    }
-                                },
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                        item {
-                            SettingsLogSection(
-                                logDebugEnabled = logDebugEnabled,
-                                onLogDebugChanged = onLogDebugChanged,
-                                logStats = logState.logStats,
-                                exportingLogZip = logState.exportingLogZip,
-                                clearingLogs = logState.clearingLogs,
-                                onExportZipClick = settingsPageViewModel::beginLogExport,
-                                onClearLogsClick = {
-                                    scope.launch {
-                                        val result = settingsPageViewModel.clearLogs(context)
-                                        if (result.isSuccess) {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.settings_log_toast_cleared),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            val reason = result.exceptionOrNull()?.javaClass?.simpleName
-                                                ?: context.getString(R.string.common_unknown)
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(
-                                                    R.string.settings_log_toast_clear_failed,
-                                                    reason
-                                                ),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                },
-                                enabledCardColor = enabledCardColor,
-                                disabledCardColor = disabledCardColor
-                            )
-                        }
-                    }
-                }
+                    settingsCategoryItems(category, settingsSearchCardInput)
             }
         }
     }

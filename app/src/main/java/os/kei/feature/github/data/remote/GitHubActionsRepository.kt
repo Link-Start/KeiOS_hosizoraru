@@ -62,6 +62,14 @@ class GitHubActionsRepository(
             limit = limit
         ).result
     }
+    private val nightlyPublicApiFallback = GitHubActionsNightlyPublicApiFallback(
+        apiUrls = apiUrls,
+        fetchJson = ::fetchJson,
+        defaultWorkflowLimit = DEFAULT_WORKFLOW_LIMIT,
+        runsCacheTtlMillis = ACTIONS_RUNS_CACHE_TTL_MS,
+        artifactCacheTtlMillis = ACTIONS_ARTIFACT_CACHE_TTL_MS,
+        metadataCacheTtlMillis = ACTIONS_METADATA_CACHE_TTL_MS
+    )
 
     val authMode: GitHubApiAuthMode
         get() = apiClient.authMode
@@ -289,7 +297,7 @@ class GitHubActionsRepository(
             ) {
                 return nightlyResult.toTrace(startedAt)
             }
-            val fallbackResult = fetchNightlyCompatibleWorkflowArtifactSnapshotFromPublicApi(
+            val fallbackResult = nightlyPublicApiFallback.fetchWorkflowArtifactSnapshot(
                 owner = owner,
                 repo = repo,
                 workflowId = workflowId,
@@ -309,7 +317,7 @@ class GitHubActionsRepository(
                 branch.isNotBlank() &&
                 fallbackSnapshot?.artifacts.orEmpty().isEmpty()
             ) {
-                fetchNightlyCompatibleWorkflowArtifactSnapshotFromPublicApi(
+                nightlyPublicApiFallback.fetchWorkflowArtifactSnapshot(
                     owner = owner,
                     repo = repo,
                     workflowId = workflowId,
@@ -392,108 +400,6 @@ class GitHubActionsRepository(
                 runs = runArtifacts
             )
         ).toTrace(startedAt)
-    }
-
-    private fun fetchNightlyCompatibleWorkflowArtifactSnapshotFromPublicApi(
-        owner: String,
-        repo: String,
-        workflowId: String,
-        runLimit: Int,
-        artifactsPerRun: Int,
-        artifactRunLimit: Int,
-        branch: String,
-        event: String,
-        status: String,
-        actor: String,
-        created: String,
-        headSha: String,
-        excludePullRequests: Boolean
-    ): Result<GitHubActionsWorkflowArtifactsSnapshot> = runCatching {
-        val workflow = findPublicApiWorkflowForNightly(owner, repo, workflowId).getOrThrow()
-        val runs = fetchJson(
-            url = apiUrls.workflowRuns(
-                owner = owner,
-                repo = repo,
-                workflowId = workflow.id.toString(),
-                limit = runLimit,
-                branch = branch,
-                event = event,
-                status = status.nightlyPublicApiRunStatus(),
-                actor = actor,
-                created = created,
-                headSha = headSha,
-                excludePullRequests = excludePullRequests
-            ),
-            cacheTtlMillis = ACTIONS_RUNS_CACHE_TTL_MS
-        ).getOrThrow().let(::parseWorkflowRuns)
-        val artifactRuns = runs.take(artifactRunLimit.coerceAtLeast(0))
-        val artifactsByRunId = mutableMapOf<Long, List<GitHubActionsArtifact>>()
-        artifactRuns.forEach { run ->
-            val artifacts = fetchJson(
-                url = apiUrls.runArtifacts(owner, repo, run.id, artifactsPerRun),
-                cacheTtlMillis = ACTIONS_ARTIFACT_CACHE_TTL_MS
-            ).getOrThrow()
-                .let { json -> parseArtifacts(json, fallbackWorkflowRunId = run.id) }
-                .map { artifact ->
-                    artifact.copy(
-                        archiveDownloadUrl = apiUrls.nightlyRunArtifactDownload(
-                            owner = owner,
-                            repo = repo,
-                            runId = run.id,
-                            artifactName = artifact.name
-                        )
-                    )
-                }
-            artifactsByRunId[run.id] = artifacts
-        }
-        GitHubActionsWorkflowArtifactsSnapshot(
-            owner = owner,
-            repo = repo,
-            workflowId = workflow.id.toString(),
-            runs = runs.map { run ->
-                GitHubActionsRunArtifacts(
-                    run = run,
-                    artifacts = artifactsByRunId[run.id].orEmpty()
-                )
-            }
-        )
-    }
-
-    private fun findPublicApiWorkflowForNightly(
-        owner: String,
-        repo: String,
-        workflowId: String
-    ): Result<GitHubActionsWorkflow> = runCatching {
-        workflowId.trim().toLongOrNull()?.takeIf { it > 0L }?.let { id ->
-            return@runCatching GitHubActionsWorkflow(
-                id = id,
-                name = id.toString(),
-                path = workflowId.trim()
-            )
-        }
-        val workflows = fetchJson(
-            url = apiUrls.workflows(owner, repo, DEFAULT_WORKFLOW_LIMIT),
-            cacheTtlMillis = ACTIONS_METADATA_CACHE_TTL_MS
-        ).getOrThrow().let(::parseWorkflows)
-        selectPublicApiWorkflowForNightly(workflows, workflowId)
-            ?: error("GitHub public API found no matching workflow: $workflowId")
-    }
-
-    private fun selectPublicApiWorkflowForNightly(
-        workflows: List<GitHubActionsWorkflow>,
-        workflowId: String
-    ): GitHubActionsWorkflow? {
-        val lookup = workflowId.trim()
-            .substringBefore('?')
-            .trim()
-        val lookupFile = lookup.substringAfterLast('/').trim()
-        val lookupPath = lookup.trimStart('/')
-        return workflows.firstOrNull { workflow -> workflow.id.toString() == lookup } ?:
-            workflows.firstOrNull { workflow -> workflow.path.equals(lookupPath, ignoreCase = true) } ?:
-            workflows.firstOrNull { workflow ->
-                workflow.path.substringAfterLast('/').equals(lookupFile, ignoreCase = true)
-            } ?:
-            workflows.firstOrNull { workflow -> workflow.name.equals(lookup, ignoreCase = true) }
     }
 
     fun resolveArtifactDownloadUrl(
@@ -615,15 +521,6 @@ class GitHubActionsRepository(
             Result.failure(IllegalStateException("GitHub Actions API Token mode requires a token"))
         } else {
             Result.success(Unit)
-        }
-    }
-
-    private fun String.nightlyPublicApiRunStatus(): String {
-        val normalized = trim()
-        return when {
-            normalized.isBlank() -> "success"
-            normalized.equals("completed", ignoreCase = true) -> "success"
-            else -> normalized
         }
     }
 

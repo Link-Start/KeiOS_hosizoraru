@@ -162,8 +162,17 @@ internal fun GitHubPageSheetHost(
             ?: os.kei.ui.page.main.github.VersionCheckUi(),
         assetBundle = state.decisionAssistDetailRequest?.item?.id
             ?.let { state.apkAssetBundles[it] },
-        assetLoading = state.decisionAssistDetailRequest?.item?.id
-            ?.let { state.apkAssetLoading[it] == true } == true,
+        assetLoading = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.id
+            ?.let { state.releaseNotesLoading[it] == true } == true,
+        assetError = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.id
+            ?.let { state.releaseNotesErrors[it] }
+            .orEmpty(),
         onDismissRequest = { state.decisionAssistDetailRequest = null },
         onRefreshHealth = { item -> actions.refreshTrackedItem(item, showToastOnError = true) },
         onRefreshReleaseNotes = { item, itemState ->
@@ -172,6 +181,9 @@ internal fun GitHubPageSheetHost(
                 itemState = itemState,
                 clearCache = true
             )
+        },
+        onOpenExternalUrl = { url, failureMessage ->
+            actions.openExternalUrl(url = url, failureMessage = failureMessage)
         }
     )
 

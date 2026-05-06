@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -31,6 +32,7 @@ import os.kei.ui.page.main.github.buildGitHubApkTrustSignal
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -125,43 +127,44 @@ internal fun GitHubTrackedItemAssetRow(
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                itemVerticalAlignment = Alignment.CenterVertically
             ) {
                 extensionLabel?.let { label ->
-                    StatusPill(
+                    AssetStatusPill(
                         label = label,
                         color = MiuixTheme.colorScheme.primary
                     )
                 }
                 abiLabel?.let { label ->
-                    StatusPill(
+                    AssetStatusPill(
                         label = label,
                         color = actionAccent
                     )
                 }
                 relativeTimeLabel?.let { label ->
-                    StatusPill(
+                    AssetStatusPill(
                         label = label,
                         color = MiuixTheme.colorScheme.onBackgroundVariant
                     )
                 }
-                StatusPill(
+                AssetStatusPill(
                     label = sizeLabel,
                     color = MiuixTheme.colorScheme.onBackgroundVariant
                 )
                 if (preferredForDevice) {
-                    StatusPill(
+                    AssetStatusPill(
                         label = stringResource(R.string.github_asset_badge_recommended),
                         color = GitHubStatusPalette.Update
                     )
                 } else if (!likelyCompatible && abiLabel != null) {
-                    StatusPill(
+                    AssetStatusPill(
                         label = stringResource(R.string.github_asset_badge_incompatible),
                         color = GitHubStatusPalette.PreRelease
                     )
                 }
                 apkTrustSignal?.let { signal ->
-                    StatusPill(
+                    AssetStatusPill(
                         label = stringResource(signal.level.labelRes()),
                         color = signal.level.toStatusColor()
                     )
@@ -186,6 +189,18 @@ internal fun GitHubTrackedItemAssetRow(
             }
         }
     }
+}
+
+@Composable
+private fun AssetStatusPill(
+    label: String,
+    color: Color
+) {
+    StatusPill(
+        label = label,
+        color = color,
+        size = AppStatusPillSize.Compact
+    )
 }
 
 private fun GitHubDecisionLevel.labelRes(): Int {

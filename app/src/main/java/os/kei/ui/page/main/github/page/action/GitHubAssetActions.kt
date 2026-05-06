@@ -108,7 +108,9 @@ internal class GitHubAssetActions(
         includeAllAssets: Boolean = false,
         allowLatestReleaseFallback: Boolean = false,
         expandPanelOnLoad: Boolean = true,
-        openFallbackTarget: Boolean = true
+        openFallbackTarget: Boolean = true,
+        showAssetPanelLoading: Boolean = true,
+        requireReleaseNotesBody: Boolean = false
     ) {
         val alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton
         val target = itemState.apkAssetTarget(
@@ -137,6 +139,10 @@ internal class GitHubAssetActions(
         }
 
         state.apkAssetIncludeAll[item.id] = includeAllAssets
+        val loadingState =
+            if (showAssetPanelLoading) state.apkAssetLoading else state.releaseNotesLoading
+        val errorState =
+            if (showAssetPanelLoading) state.apkAssetErrors else state.releaseNotesErrors
 
         val cachedBundle = state.apkAssetBundles[item.id]
         if (
@@ -144,20 +150,22 @@ internal class GitHubAssetActions(
             cachedBundle != null &&
             state.matchesAssetSourceSignature(cachedBundle) &&
             cachedBundle.tagName.equals(target.rawTag, ignoreCase = true) &&
-            cachedBundle.showingAllAssets == includeAllAssets
+            cachedBundle.showingAllAssets == includeAllAssets &&
+            (!requireReleaseNotesBody || cachedBundle.releaseNotesBody.isNotBlank())
         ) {
             if (expandPanelOnLoad) {
                 state.apkAssetExpanded[item.id] = !(state.apkAssetExpanded[item.id] ?: false)
             }
-            state.apkAssetErrors.remove(item.id)
+            loadingState[item.id] = false
+            errorState.remove(item.id)
             return
         }
 
         if (expandPanelOnLoad) {
             state.apkAssetExpanded[item.id] = true
         }
-        state.apkAssetLoading[item.id] = true
-        state.apkAssetErrors.remove(item.id)
+        loadingState[item.id] = true
+        errorState.remove(item.id)
         scope.launch {
             val preferHtml = state.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
             val refreshIntervalHours = repository.loadRefreshIntervalHours()
@@ -175,8 +183,12 @@ internal class GitHubAssetActions(
                 cacheKey = assetCacheKey,
                 refreshIntervalHours = refreshIntervalHours
             )
-            if (persistedBundle != null && state.matchesAssetSourceSignature(persistedBundle)) {
-                state.apkAssetLoading[item.id] = false
+            if (
+                persistedBundle != null &&
+                state.matchesAssetSourceSignature(persistedBundle) &&
+                (!requireReleaseNotesBody || persistedBundle.releaseNotesBody.isNotBlank())
+            ) {
+                loadingState[item.id] = false
                 state.apkAssetBundles[item.id] = persistedBundle
                 if (expandPanelOnLoad) {
                     state.apkAssetErrors[item.id] = buildEmptyAssetMessage(
@@ -199,7 +211,7 @@ internal class GitHubAssetActions(
                 includeAllAssets = includeAllAssets,
                 apiToken = state.lookupConfig.apiToken
             )
-            state.apkAssetLoading[item.id] = false
+            loadingState[item.id] = false
             result.onSuccess { bundle ->
                 val persistedBundle = bundle.copy(
                     sourceConfigSignature = state.buildAssetSourceSignature()
@@ -219,7 +231,7 @@ internal class GitHubAssetActions(
                     )
                 }
             }.onFailure { error ->
-                state.apkAssetErrors[item.id] = error.message
+                errorState[item.id] = error.message
                     ?: context.getString(R.string.github_error_load_apk_assets_failed)
             }
         }
@@ -244,7 +256,9 @@ internal class GitHubAssetActions(
             includeAllAssets = true,
             allowLatestReleaseFallback = true,
             expandPanelOnLoad = false,
-            openFallbackTarget = false
+            openFallbackTarget = false,
+            showAssetPanelLoading = false,
+            requireReleaseNotesBody = true
         )
     }
 

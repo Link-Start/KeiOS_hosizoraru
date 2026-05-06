@@ -1,11 +1,18 @@
 package os.kei.ui.page.main.github.sheet
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -23,6 +30,7 @@ import os.kei.ui.page.main.github.GitHubRepositoryHealthReason
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatAssetSize
+import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 import os.kei.ui.page.main.github.buildGitHubApkTrustSignal
 import os.kei.ui.page.main.github.buildGitHubReleaseNotesDetailLines
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
@@ -32,8 +40,10 @@ import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
+import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -54,9 +64,11 @@ internal fun GitHubDecisionAssistDetailSheet(
     versionState: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
     assetLoading: Boolean,
+    assetError: String,
     onDismissRequest: () -> Unit,
     onRefreshHealth: (GitHubTrackedApp) -> Unit,
-    onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit
+    onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit,
+    onOpenExternalUrl: (String, String) -> Unit
 ) {
     val detail = request ?: return
     val title = when (detail.type) {
@@ -103,7 +115,10 @@ internal fun GitHubDecisionAssistDetailSheet(
                 item = detail.item,
                 state = versionState,
                 assetBundle = assetBundle,
-                assetLoading = assetLoading
+                assetLoading = assetLoading,
+                assetError = assetError,
+                backdrop = backdrop,
+                onOpenExternalUrl = onOpenExternalUrl
             )
         }
     }
@@ -184,6 +199,33 @@ internal fun GitHubActionsArtifactDetailSheet(
                         ?.let { formatAssetSize(it, context) }
                         ?: stringResource(R.string.common_unknown)
                 )
+                artifact.expiresAtMillis?.let { expiresAt ->
+                    DetailTextLine(
+                        stringResource(
+                            R.string.github_actions_artifact_detail_expires_at,
+                            formatReleaseUpdatedAtNoYear(expiresAt)
+                                ?: stringResource(R.string.common_unknown)
+                        )
+                    )
+                }
+                artifact.workflowRunHeadSha.ifBlank { run.headSha }.takeIf { it.isNotBlank() }
+                    ?.let { sha ->
+                        DetailTextLine(
+                            stringResource(
+                                R.string.github_actions_artifact_detail_commit,
+                                sha.take(12)
+                            )
+                        )
+                    }
+                artifact.digest.takeIf { it.isNotBlank() }?.let { digest ->
+                    DetailTextLine(
+                        stringResource(
+                            R.string.github_actions_artifact_detail_digest,
+                            digest
+                        ),
+                        maxLines = 2
+                    )
+                }
             }
             TrustReasonSection(
                 reasons = trustSignal.reasons,
@@ -191,6 +233,27 @@ internal fun GitHubActionsArtifactDetailSheet(
             )
             ArtifactSelectorReasonSection(detail.artifactMatch.reasons)
             SheetSectionCard {
+                val copyPayload = buildArtifactCopyPayload(
+                    runHeadSha = run.headSha,
+                    artifactHeadSha = artifact.workflowRunHeadSha,
+                    digest = artifact.digest
+                )
+                val copyToast =
+                    stringResource(R.string.github_actions_toast_artifact_metadata_copied)
+                ActionButtonRow {
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text = stringResource(R.string.github_actions_action_copy_metadata),
+                        leadingIcon = osLucideCopyIcon(),
+                        enabled = copyPayload.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            copyTextToClipboard(context, "github_artifact_metadata", copyPayload)
+                            Toast.makeText(context, copyToast, Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
                 ActionButtonRow {
                     AppLiquidTextButton(
                         backdrop = backdrop,
@@ -278,13 +341,22 @@ private fun GitHubReleaseNotesDetailContent(
     item: GitHubTrackedApp,
     state: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
-    assetLoading: Boolean
+    assetLoading: Boolean,
+    assetError: String,
+    backdrop: LayerBackdrop,
+    onOpenExternalUrl: (String, String) -> Unit
 ) {
+    val context = LocalContext.current
+    var showRawMarkdown by remember(item.id, assetBundle?.tagName) { mutableStateOf(false) }
     val lines = buildGitHubReleaseNotesDetailLines(
         item = item,
         state = state,
         assetBundle = assetBundle
     )
+    val rawMarkdown = assetBundle?.releaseNotesBody.orEmpty()
+    val releaseUrl = assetBundle?.htmlUrl?.takeIf { it.isNotBlank() }
+        ?: buildFallbackReleaseUrl(item, state)
+    val copyText = rawMarkdown.ifBlank { lines.joinToString("\n") }
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSummaryCard(
             title = assetBundle?.releaseName?.takeIf { it.isNotBlank() }
@@ -295,16 +367,74 @@ private fun GitHubReleaseNotesDetailContent(
         ) {
             DetailTextLine("${item.owner}/${item.repo}")
             DetailTextLine(
-                if (assetLoading) {
+                if (assetError.isNotBlank()) {
+                    assetError
+                } else if (assetLoading) {
                     stringResource(R.string.github_release_notes_detail_refreshing)
                 } else {
                     stringResource(R.string.github_release_notes_detail_refresh_hint)
                 }
             )
         }
+        SheetSectionCard {
+            ActionButtonRow {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(
+                        if (showRawMarkdown) {
+                            R.string.github_release_notes_action_preview
+                        } else {
+                            R.string.github_release_notes_action_raw
+                        }
+                    ),
+                    enabled = rawMarkdown.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    onClick = { showRawMarkdown = !showRawMarkdown }
+                )
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.common_copy),
+                    leadingIcon = osLucideCopyIcon(),
+                    enabled = copyText.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        copyTextToClipboard(context, "github_release_notes", copyText)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.github_release_notes_toast_copied),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            }
+            ActionButtonRow {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.github_release_notes_action_open_release),
+                    leadingIcon = appLucideExternalLinkIcon(),
+                    enabled = releaseUrl.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        onOpenExternalUrl(
+                            releaseUrl,
+                            context.getString(R.string.github_error_open_link)
+                        )
+                    }
+                )
+            }
+        }
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
         SheetSectionCard(verticalSpacing = 10.dp) {
-            if (lines.isEmpty()) {
+            if (showRawMarkdown && rawMarkdown.isNotBlank()) {
+                DetailTextLine(
+                    text = rawMarkdown,
+                    maxLines = 18,
+                    accent = true
+                )
+            } else if (lines.isEmpty()) {
                 SheetDescriptionText(stringResource(R.string.github_release_notes_detail_empty))
             } else {
                 lines.forEachIndexed { index, line ->
@@ -317,6 +447,39 @@ private fun GitHubReleaseNotesDetailContent(
             }
         }
     }
+}
+
+private fun buildFallbackReleaseUrl(
+    item: GitHubTrackedApp,
+    state: VersionCheckUi
+): String {
+    val tag = state.latestStableRawTag.ifBlank { state.latestPreRawTag }
+    return if (tag.isBlank()) {
+        "https://github.com/${item.owner}/${item.repo}/releases"
+    } else {
+        "https://github.com/${item.owner}/${item.repo}/releases/tag/$tag"
+    }
+}
+
+private fun buildArtifactCopyPayload(
+    runHeadSha: String,
+    artifactHeadSha: String,
+    digest: String
+): String {
+    return buildList {
+        artifactHeadSha.ifBlank { runHeadSha }.takeIf { it.isNotBlank() }?.let { sha ->
+            add("commit: $sha")
+        }
+        digest.takeIf { it.isNotBlank() }?.let { value ->
+            add("digest: $value")
+        }
+    }.joinToString("\n")
+}
+
+private fun copyTextToClipboard(context: Context, label: String, text: String) {
+    val clipboard =
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
 }
 
 @Composable

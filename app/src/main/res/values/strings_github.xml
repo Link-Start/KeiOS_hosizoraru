@@ -600,6 +600,10 @@
     <string name="github_release_notes_detail_target_latest">当前 Release</string>
     <string name="github_release_notes_detail_body_title">发布说明</string>
     <string name="github_release_notes_detail_empty">当前 release 暂无可显示的发布说明</string>
+    <string name="github_release_notes_action_raw">原始 Markdown</string>
+    <string name="github_release_notes_action_preview">预览摘要</string>
+    <string name="github_release_notes_action_open_release">打开 Release</string>
+    <string name="github_release_notes_toast_copied">已复制 Release Notes</string>
     <string name="github_apk_trust_good">可信</string>
     <string name="github_apk_trust_review">需确认</string>
     <string name="github_apk_trust_risk">高风险</string>
@@ -616,8 +620,13 @@
     <string name="github_actions_artifact_detail_title">Artifact 详情</string>
     <string name="github_actions_artifact_detail_score">匹配分数：%1$d</string>
     <string name="github_actions_artifact_detail_run">%1$s · %2$s</string>
+    <string name="github_actions_artifact_detail_expires_at">过期时间：%1$s</string>
+    <string name="github_actions_artifact_detail_commit">提交：%1$s</string>
+    <string name="github_actions_artifact_detail_digest">Digest：%1$s</string>
     <string name="github_actions_artifact_detail_selector_title">选择理由</string>
     <string name="github_actions_artifact_detail_selector_empty">当前 artifact 由基础规则选出</string>
+    <string name="github_actions_action_copy_metadata">复制元数据</string>
+    <string name="github_actions_toast_artifact_metadata_copied">已复制 artifact 元数据</string>
     <string name="github_actions_action_share">分享</string>
     <string name="github_actions_empty_artifacts_filter">当前分段没有可显示的 artifact</string>
     <string name="github_actions_artifact_filter_recommended">推荐 %1$d</string>

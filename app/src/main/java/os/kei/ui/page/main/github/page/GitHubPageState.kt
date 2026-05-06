@@ -154,6 +154,8 @@ internal class GitHubPageState(
     val apkAssetErrors = mutableStateMapOf<String, String>()
     val apkAssetExpanded = mutableStateMapOf<String, Boolean>()
     val apkAssetIncludeAll = mutableStateMapOf<String, Boolean>()
+    val releaseNotesLoading = mutableStateMapOf<String, Boolean>()
+    val releaseNotesErrors = mutableStateMapOf<String, String>()
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
@@ -215,6 +217,8 @@ internal class GitHubPageState(
         apkAssetErrors.clear()
         apkAssetExpanded.clear()
         apkAssetIncludeAll.clear()
+        releaseNotesLoading.clear()
+        releaseNotesErrors.clear()
     }
 
     fun clearAssetRuntimeState(itemId: String) {
@@ -222,6 +226,8 @@ internal class GitHubPageState(
         apkAssetLoading.remove(itemId)
         apkAssetErrors.remove(itemId)
         apkAssetBundles.remove(itemId)
+        releaseNotesLoading.remove(itemId)
+        releaseNotesErrors.remove(itemId)
     }
 
     fun clearAssetUiState(itemId: String) {
@@ -237,6 +243,8 @@ internal class GitHubPageState(
         apkAssetLoading.keys.retainAll(validItemIds)
         apkAssetErrors.keys.retainAll(validItemIds)
         apkAssetBundles.keys.retainAll(validItemIds)
+        releaseNotesLoading.keys.retainAll(validItemIds)
+        releaseNotesErrors.keys.retainAll(validItemIds)
     }
 
     fun recordTrackedFirstInstallAt(packageName: String, firstInstallAtMillis: Long) {

@@ -19,8 +19,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.ui.page.main.about.section.AboutAppCardSection
+import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
 import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
@@ -324,13 +324,7 @@ class AppDesignSystemScreenshotTest {
                             .padding(16.dp)
                     ) {
                         GitHubTrackedItemAssetRow(
-                            asset = GitHubReleaseAssetFile(
-                                name = "InstallerX-Revived-offline-v2.3.2.apk",
-                                downloadUrl = "https://github.com/wxxsfxyzm/InstallerX-Revived/releases/download/v2.3.2/app.apk",
-                                sizeBytes = 4_700_000L,
-                                downloadCount = 120,
-                                updatedAtMillis = System.currentTimeMillis() - 58L * 24L * 60L * 60L * 1000L
-                            ),
+                            asset = GitHubEnhancedInfoFixture.releaseAsset,
                             alwaysLatestReleaseDownload = false,
                             targetAccent = Color(0xFF06B6D4),
                             summaryContainerColor = Color(0x3322D3EE),
@@ -367,7 +361,7 @@ class AppDesignSystemScreenshotTest {
                             onClick = {}
                         )
                         AppSupportingBlock(
-                            text = "Release Notes\nInstallerX Revived stable v2.3.2",
+                            text = "Release Notes\n${GitHubEnhancedInfoFixture.releaseBundle.releaseName}",
                             accentColor = Color(0xFF0EA5E9),
                             maxLines = 3,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

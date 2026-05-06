@@ -314,7 +314,7 @@
     <string name="github_strategy_desc_atom_note">Atom 方案无需 Token，适合公开仓库和轻量检查；若你更看重稳定性、资源读取或 private 仓库支持，可切到 API。</string>
     <string name="github_strategy_section_local_benchmark">本地对比</string>
     <string name="github_strategy_benchmark_desc_no_target">会用当前已追踪仓库做对比，最多抽 6 个样本；当前还没有可用样本。</string>
-    <string name="github_strategy_benchmark_desc_with_target">会对比 Release 快照、缓存复测、APK 包名扫描和包名反扫仓库，展示 Atom 与 API 的耗时、命中率和能力差异。</string>
+    <string name="github_strategy_benchmark_desc_with_target">会对比 Release 快照、Release Assets、Release Notes、APK Manifest、缓存复测、APK 包名扫描和包名反扫仓库，展示 Atom 与 API 的耗时、命中率和能力差异。</string>
     <string name="github_strategy_benchmark_btn_running">对比中...</string>
     <string name="github_strategy_benchmark_btn_run">运行双策略对比</string>
     <string name="github_strategy_benchmark_error">对比测试失败：%1$s</string>
@@ -340,6 +340,9 @@
     <string name="github_strategy_metric_cache_hit">缓存命中</string>
     <string name="github_strategy_metric_failed">失败</string>
     <string name="github_strategy_metric_release_snapshot">Release</string>
+    <string name="github_strategy_metric_release_assets">Assets</string>
+    <string name="github_strategy_metric_release_notes">Notes</string>
+    <string name="github_strategy_metric_apk_manifest">Manifest</string>
     <string name="github_strategy_metric_package_scan">扫包名</string>
     <string name="github_strategy_metric_repo_scan">反扫仓库</string>
     <string name="github_strategy_metric_task_result">%1$d/%2$d · %3$d ms</string>

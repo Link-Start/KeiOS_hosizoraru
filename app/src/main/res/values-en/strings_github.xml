@@ -314,7 +314,7 @@
     <string name="github_strategy_desc_atom_note">Atom requires no token and fits public repositories and lightweight checks. API is better for stability, asset reads, and private repository support.</string>
     <string name="github_strategy_section_local_benchmark">Local comparison</string>
     <string name="github_strategy_benchmark_desc_no_target">Current tracked repositories will be used for comparison, up to 6 samples. No usable samples are available yet.</string>
-    <string name="github_strategy_benchmark_desc_with_target">Compares release snapshots, cached retests, APK package scans, and package-to-repository scans to show Atom/API timing, hit rate, and capability differences.</string>
+    <string name="github_strategy_benchmark_desc_with_target">Compares release snapshots, release assets, release notes, APK manifests, cached retests, APK package scans, and package-to-repository scans to show Atom/API timing, hit rate, and capability differences.</string>
     <string name="github_strategy_benchmark_btn_running">Comparing...</string>
     <string name="github_strategy_benchmark_btn_run">Run dual-strategy comparison</string>
     <string name="github_strategy_benchmark_error">Comparison failed: %1$s</string>
@@ -340,6 +340,9 @@
     <string name="github_strategy_metric_cache_hit">Cache hit</string>
     <string name="github_strategy_metric_failed">Failed</string>
     <string name="github_strategy_metric_release_snapshot">Release</string>
+    <string name="github_strategy_metric_release_assets">Assets</string>
+    <string name="github_strategy_metric_release_notes">Notes</string>
+    <string name="github_strategy_metric_apk_manifest">Manifest</string>
     <string name="github_strategy_metric_package_scan">Package scan</string>
     <string name="github_strategy_metric_repo_scan">Repo scan</string>
     <string name="github_strategy_metric_task_result">%1$d/%2$d · %3$d ms</string>

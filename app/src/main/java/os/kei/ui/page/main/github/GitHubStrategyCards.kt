@@ -257,6 +257,24 @@ internal fun GitHubStrategyBenchmarkCard(
             valueColor = accent
         )
         GitHubBenchmarkTaskRow(
+            label = stringResource(R.string.github_strategy_metric_release_assets),
+            result = result,
+            testType = GitHubStrategyBenchmarkTestType.ReleaseAssets,
+            valueColor = GitHubStatusPalette.Active
+        )
+        GitHubBenchmarkTaskRow(
+            label = stringResource(R.string.github_strategy_metric_release_notes),
+            result = result,
+            testType = GitHubStrategyBenchmarkTestType.ReleaseNotes,
+            valueColor = GitHubStatusPalette.Stable
+        )
+        GitHubBenchmarkTaskRow(
+            label = stringResource(R.string.github_strategy_metric_apk_manifest),
+            result = result,
+            testType = GitHubStrategyBenchmarkTestType.ApkManifest,
+            valueColor = GitHubStatusPalette.Update
+        )
+        GitHubBenchmarkTaskRow(
             label = stringResource(R.string.github_strategy_metric_package_scan),
             result = result,
             testType = GitHubStrategyBenchmarkTestType.PackageNameScan,

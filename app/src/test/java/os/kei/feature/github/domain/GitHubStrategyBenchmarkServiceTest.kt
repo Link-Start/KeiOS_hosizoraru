@@ -1,6 +1,9 @@
 package os.kei.feature.github.domain
 
 import org.junit.Test
+import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubRepoTarget
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubStrategyBenchmarkTestType
@@ -141,11 +144,74 @@ class GitHubStrategyBenchmarkServiceTest {
         assertEquals(1, result.successCountFor(GitHubStrategyBenchmarkTestType.RepositoryScan))
     }
 
+    @Test
+    fun `benchmark includes release asset notes and apk manifest samples`() {
+        val runner = benchmarkRunner(
+            strategyId = "atom",
+            activeLoads = AtomicInteger(0),
+            maxActiveLoads = AtomicInteger(0),
+            firstColdWave = CountDownLatch(1),
+            loadReleaseAssets = {
+                GitHubStrategyLoadTrace(
+                    result = Result.success(releaseBundle(notes = "")),
+                    fromCache = false,
+                    elapsedMs = 4L
+                )
+            },
+            loadReleaseNotes = {
+                GitHubStrategyLoadTrace(
+                    result = Result.success(releaseBundle(notes = "Fixed bugs")),
+                    fromCache = false,
+                    elapsedMs = 5L
+                )
+            },
+            inspectApkManifest = {
+                GitHubStrategyLoadTrace(
+                    result = Result.success(
+                        GitHubApkManifestInfo(
+                            assetName = "demo.apk",
+                            packageName = "com.demo.app"
+                        )
+                    ),
+                    fromCache = false,
+                    elapsedMs = 6L
+                )
+            }
+        )
+
+        val report = GitHubStrategyBenchmarkService.compareTargetsWithRunners(
+            targets = listOf(GitHubRepoTarget("demo", "app")),
+            runners = listOf(runner),
+            maxConcurrency = 1
+        )
+        val result = report.results.single()
+
+        assertEquals(1, result.successCountFor(GitHubStrategyBenchmarkTestType.ReleaseAssets))
+        assertEquals(1, result.successCountFor(GitHubStrategyBenchmarkTestType.ReleaseNotes))
+        assertEquals(1, result.successCountFor(GitHubStrategyBenchmarkTestType.ApkManifest))
+        assertEquals(
+            1,
+            result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseAssets).single().assetCount
+        )
+        assertEquals(
+            10,
+            result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseNotes)
+                .single().releaseNotesLength
+        )
+        assertEquals(
+            "com.demo.app",
+            result.samplesFor(GitHubStrategyBenchmarkTestType.ApkManifest).single().packageName
+        )
+    }
+
     private fun benchmarkRunner(
         strategyId: String,
         activeLoads: AtomicInteger,
         maxActiveLoads: AtomicInteger,
         firstColdWave: CountDownLatch,
+        loadReleaseAssets: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
+        loadReleaseNotes: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
+        inspectApkManifest: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo>)? = null,
         scanPackageName: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null,
         scanRepository: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null
     ): GitHubStrategyBenchmarkRunner {
@@ -165,8 +231,28 @@ class GitHubStrategyBenchmarkServiceTest {
                     elapsedMs = 1L
                 )
             },
+            loadReleaseAssets = loadReleaseAssets,
+            loadReleaseNotes = loadReleaseNotes,
+            inspectApkManifest = inspectApkManifest,
             scanPackageName = scanPackageName,
             scanRepository = scanRepository
+        )
+    }
+
+    private fun releaseBundle(notes: String): GitHubReleaseAssetBundle {
+        return GitHubReleaseAssetBundle(
+            releaseName = "Demo",
+            tagName = "v1.0.0",
+            htmlUrl = "https://github.com/demo/app/releases/tag/v1.0.0",
+            releaseNotesBody = notes,
+            assets = listOf(
+                GitHubReleaseAssetFile(
+                    name = "demo.apk",
+                    downloadUrl = "https://github.com/demo/app/releases/download/v1.0.0/demo.apk",
+                    sizeBytes = 1L,
+                    downloadCount = 1
+                )
+            )
         )
     }
 

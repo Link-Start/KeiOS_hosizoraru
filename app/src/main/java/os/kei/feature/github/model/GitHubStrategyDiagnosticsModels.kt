@@ -49,12 +49,17 @@ data class GitHubStrategyBenchmarkSample(
     val message: String = "",
     val stableTag: String = "",
     val preReleaseTag: String = "",
+    val assetCount: Int = 0,
+    val releaseNotesLength: Int = 0,
     val packageName: String = "",
     val matchedRepository: String = ""
 )
 
 enum class GitHubStrategyBenchmarkTestType {
     ReleaseSnapshot,
+    ReleaseAssets,
+    ReleaseNotes,
+    ApkManifest,
     PackageNameScan,
     RepositoryScan
 }

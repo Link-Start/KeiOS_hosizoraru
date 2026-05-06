@@ -159,6 +159,7 @@ fun BAPage(
                 val savedServerIndex = BASettingsStore.loadServerIndex()
                 if (savedServerIndex != ui.serverIndex) {
                     ui.serverIndex = savedServerIndex
+                    office.loadIdForServer(savedServerIndex)
                     refreshCalendar(force = true)
                     refreshPool(force = true)
                 }
@@ -356,6 +357,7 @@ fun BAPage(
             onMediaAdaptiveRotationEnabledChange = { ui.sheetMediaAdaptiveRotationEnabled = it },
             onMediaSaveCustomEnabledChange = { ui.sheetMediaSaveCustomEnabled = it },
             onMediaSaveFixedTreeUriChange = { ui.sheetMediaSaveFixedTreeUri = it },
+            onIdIndependentByServerChange = { ui.sheetIdIndependentByServer = it },
             onShowEndedActivitiesChange = { ui.sheetShowEndedActivities = it },
             onShowEndedPoolsChange = { ui.sheetShowEndedPools = it },
             onShowCalendarPoolImagesChange = { ui.sheetShowCalendarPoolImages = it },

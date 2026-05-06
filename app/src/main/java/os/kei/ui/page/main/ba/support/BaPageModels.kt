@@ -9,6 +9,7 @@ internal data class BaPageSnapshot(
     val cafeLastHourMs: Long = 0L,
     val idNickname: String = BA_DEFAULT_NICKNAME,
     val idFriendCode: String = BA_DEFAULT_FRIEND_CODE,
+    val idIndependentByServer: Boolean = false,
     val apLimit: Int = BA_AP_LIMIT_MAX,
     val apCurrent: Double = 0.0,
     val apRegenBaseMs: Long = 0L,

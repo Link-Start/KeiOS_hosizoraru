@@ -119,6 +119,8 @@
     <string name="ba_settings_summary_media_save_fixed_uri_ready">当前目录已设置，后续保存默认写入该目录。</string>
     <string name="ba_settings_action_pick_media_save_location">选择目录</string>
     <string name="ba_settings_hint_media_save_fixed_uri">content://.../tree/...</string>
+    <string name="ba_settings_label_id_independent_by_server">按服务器独立 ID 卡</string>
+    <string name="ba_settings_summary_id_independent_by_server">开启后，昵称和好友码会按当前服务器分别保存与切换。</string>
     <string name="ba_settings_label_show_ended_activity">显示已结束活动</string>
     <string name="ba_settings_label_show_ended_pool">显示已结束卡池</string>
     <string name="ba_settings_label_show_images">显示活动/卡池图片</string>

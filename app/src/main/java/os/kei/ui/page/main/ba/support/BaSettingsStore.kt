@@ -11,6 +11,9 @@ internal object BASettingsStore {
     private const val KEY_CAFE_LAST_HOUR_MS = "cafe_last_hour_ms"
     private const val KEY_ID_NICKNAME = "id_nickname"
     private const val KEY_ID_FRIEND_CODE = "id_friend_code"
+    private const val KEY_ID_INDEPENDENT_BY_SERVER = "id_independent_by_server"
+    private const val KEY_ID_NICKNAME_SERVER_PREFIX = "id_nickname_server_"
+    private const val KEY_ID_FRIEND_CODE_SERVER_PREFIX = "id_friend_code_server_"
     private const val KEY_AP_LIMIT = "ap_limit"
     private const val KEY_AP_NOTIFY_ENABLED = "ap_notify_enabled"
     private const val KEY_AP_NOTIFY_THRESHOLD = "ap_notify_threshold"
@@ -67,9 +70,38 @@ internal object BASettingsStore {
     private fun poolCacheKey(serverIndex: Int): String = "$KEY_POOL_CACHE_PREFIX${serverIndex.coerceIn(0, 2)}"
     private fun poolSyncKey(serverIndex: Int): String = "$KEY_POOL_SYNC_PREFIX${serverIndex.coerceIn(0, 2)}"
     private fun poolCacheVersionKey(serverIndex: Int): String = "$KEY_POOL_CACHE_VERSION_PREFIX${serverIndex.coerceIn(0, 2)}"
+    private fun idNicknameServerKey(serverIndex: Int): String =
+        "$KEY_ID_NICKNAME_SERVER_PREFIX${serverIndex.coerceIn(0, 2)}"
+
+    private fun idFriendCodeServerKey(serverIndex: Int): String =
+        "$KEY_ID_FRIEND_CODE_SERVER_PREFIX${serverIndex.coerceIn(0, 2)}"
 
     private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
     private fun kv(): MMKV = store
+
+    private fun sanitizeIdNickname(name: String): String {
+        return name.take(10).ifEmpty { DEFAULT_ID_NICKNAME }
+    }
+
+    private fun sanitizeIdFriendCode(code: String): String {
+        val normalized = code
+            .uppercase(Locale.ROOT)
+            .filter { it in 'A'..'Z' }
+            .take(8)
+        return if (normalized.length == 8) normalized else DEFAULT_ID_FRIEND_CODE
+    }
+
+    private fun loadSharedIdNickname(store: MMKV = kv()): String {
+        return sanitizeIdNickname(
+            store.decodeString(KEY_ID_NICKNAME, DEFAULT_ID_NICKNAME).orEmpty()
+        )
+    }
+
+    private fun loadSharedIdFriendCode(store: MMKV = kv()): String {
+        return sanitizeIdFriendCode(
+            store.decodeString(KEY_ID_FRIEND_CODE, DEFAULT_ID_FRIEND_CODE).orEmpty()
+        )
+    }
 
     fun loadCalendarCache(serverIndex: Int): Pair<String, Long> {
         val store = kv()
@@ -159,20 +191,15 @@ internal object BASettingsStore {
     fun loadSnapshot(): BaPageSnapshot {
         val store = kv()
         val serverIndex = store.decodeInt(KEY_SERVER_INDEX, DEFAULT_SERVER_INDEX).coerceIn(0, 2)
+        val idIndependentByServer = store.decodeBool(KEY_ID_INDEPENDENT_BY_SERVER, false)
         val cafeLevel = store.decodeInt(KEY_CAFE_LEVEL, DEFAULT_CAFE_LEVEL).coerceIn(1, 10)
         val cafeStoredAp = normalizeAp(
             store.decodeString(KEY_CAFE_STORED_AP, DEFAULT_CAFE_STORED_AP.toString())
                 ?.toDoubleOrNull()
                 ?: DEFAULT_CAFE_STORED_AP
         )
-        val idNickname = store.decodeString(KEY_ID_NICKNAME, DEFAULT_ID_NICKNAME).orEmpty().take(10)
-            .ifEmpty { DEFAULT_ID_NICKNAME }
-        val idFriendCode = store.decodeString(KEY_ID_FRIEND_CODE, DEFAULT_ID_FRIEND_CODE)
-            .orEmpty()
-            .uppercase(Locale.ROOT)
-            .filter { it in 'A'..'Z' }
-            .take(8)
-            .let { if (it.length == 8) it else DEFAULT_ID_FRIEND_CODE }
+        val idNickname = loadIdNickname(serverIndex)
+        val idFriendCode = loadIdFriendCode(serverIndex)
         val apCurrent = if (store.containsKey(KEY_AP_CURRENT_EXACT)) {
             store.decodeString(KEY_AP_CURRENT_EXACT, DEFAULT_AP_CURRENT.toString())?.toDoubleOrNull() ?: DEFAULT_AP_CURRENT
         } else {
@@ -191,6 +218,7 @@ internal object BASettingsStore {
             cafeLastHourMs = store.decodeLong(KEY_CAFE_LAST_HOUR_MS, 0L),
             idNickname = idNickname,
             idFriendCode = idFriendCode,
+            idIndependentByServer = idIndependentByServer,
             apLimit = store.decodeInt(KEY_AP_LIMIT, DEFAULT_AP_LIMIT).coerceIn(0, BA_AP_LIMIT_MAX),
             apCurrent = normalizeAp(apCurrent.coerceIn(0.0, BA_AP_MAX.toDouble())),
             apRegenBaseMs = store.decodeLong(KEY_AP_REGEN_BASE_MS, 0L),
@@ -291,31 +319,51 @@ internal object BASettingsStore {
         kv().encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
     }
 
-    fun loadIdNickname(): String {
-        val raw = kv().decodeString(KEY_ID_NICKNAME, DEFAULT_ID_NICKNAME).orEmpty().take(10)
-        return raw.ifEmpty { DEFAULT_ID_NICKNAME }
+    fun loadIdIndependentByServerEnabled(): Boolean =
+        kv().decodeBool(KEY_ID_INDEPENDENT_BY_SERVER, false)
+
+    fun saveIdIndependentByServerEnabled(enabled: Boolean) {
+        kv().encode(KEY_ID_INDEPENDENT_BY_SERVER, enabled)
     }
 
-    fun saveIdNickname(name: String) {
-        val sanitized = name.take(10).ifEmpty { DEFAULT_ID_NICKNAME }
-        kv().encode(KEY_ID_NICKNAME, sanitized)
+    fun loadIdNickname(serverIndex: Int? = null): String {
+        val store = kv()
+        if (serverIndex != null && store.decodeBool(KEY_ID_INDEPENDENT_BY_SERVER, false)) {
+            val key = idNicknameServerKey(serverIndex)
+            val raw = store.decodeString(key, "").orEmpty()
+            if (raw.isNotBlank()) return sanitizeIdNickname(raw)
+        }
+        return loadSharedIdNickname(store)
     }
 
-    fun loadIdFriendCode(): String {
-        val normalized = kv().decodeString(KEY_ID_FRIEND_CODE, DEFAULT_ID_FRIEND_CODE)
-            .orEmpty()
-            .uppercase(Locale.ROOT)
-            .filter { it in 'A'..'Z' }
-            .take(8)
-        return if (normalized.length == 8) normalized else DEFAULT_ID_FRIEND_CODE
+    fun saveIdNickname(name: String, serverIndex: Int? = null) {
+        val store = kv()
+        val sanitized = sanitizeIdNickname(name)
+        if (serverIndex != null && store.decodeBool(KEY_ID_INDEPENDENT_BY_SERVER, false)) {
+            store.encode(idNicknameServerKey(serverIndex), sanitized)
+        } else {
+            store.encode(KEY_ID_NICKNAME, sanitized)
+        }
     }
 
-    fun saveIdFriendCode(code: String) {
-        val normalized = code.uppercase(Locale.ROOT).filter { it in 'A'..'Z' }.take(8)
-        kv().encode(
-            KEY_ID_FRIEND_CODE,
-            if (normalized.length == 8) normalized else DEFAULT_ID_FRIEND_CODE
-        )
+    fun loadIdFriendCode(serverIndex: Int? = null): String {
+        val store = kv()
+        if (serverIndex != null && store.decodeBool(KEY_ID_INDEPENDENT_BY_SERVER, false)) {
+            val key = idFriendCodeServerKey(serverIndex)
+            val raw = store.decodeString(key, "").orEmpty()
+            if (raw.isNotBlank()) return sanitizeIdFriendCode(raw)
+        }
+        return loadSharedIdFriendCode(store)
+    }
+
+    fun saveIdFriendCode(code: String, serverIndex: Int? = null) {
+        val store = kv()
+        val normalized = sanitizeIdFriendCode(code)
+        if (serverIndex != null && store.decodeBool(KEY_ID_INDEPENDENT_BY_SERVER, false)) {
+            store.encode(idFriendCodeServerKey(serverIndex), normalized)
+        } else {
+            store.encode(KEY_ID_FRIEND_CODE, normalized)
+        }
     }
 
     fun loadApLimit(): Int = kv().decodeInt(KEY_AP_LIMIT, DEFAULT_AP_LIMIT).coerceIn(0,
@@ -502,7 +550,17 @@ internal object BASettingsStore {
 
     fun configBytesEstimated(): Long {
         val snapshot = loadSnapshot()
-        return listOf(snapshot.idNickname, snapshot.idFriendCode).sumOf { it.length.toLong() * 2 } + 160L
+        var bytes = listOf(
+            snapshot.idNickname,
+            snapshot.idFriendCode
+        ).sumOf { it.length.toLong() * 2 } + 160L
+        if (snapshot.idIndependentByServer) {
+            for (serverIndex in 0..2) {
+                bytes += loadIdNickname(serverIndex).length.toLong() * 2
+                bytes += loadIdFriendCode(serverIndex).length.toLong() * 2
+            }
+        }
+        return bytes
     }
 
     fun clearListScrollState() {

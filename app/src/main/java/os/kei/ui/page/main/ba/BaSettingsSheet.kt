@@ -48,6 +48,7 @@ internal data class BaSettingsSheetState(
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
+    val idIndependentByServer: Boolean,
     val showEndedActivities: Boolean,
     val showEndedPools: Boolean,
     val showCalendarPoolImages: Boolean,
@@ -62,6 +63,7 @@ internal fun BaSettingsSheet(
     onMediaAdaptiveRotationEnabledChange: (Boolean) -> Unit,
     onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
     onMediaSaveFixedTreeUriChange: (String) -> Unit,
+    onIdIndependentByServerChange: (Boolean) -> Unit,
     onShowEndedActivitiesChange: (Boolean) -> Unit,
     onShowEndedPoolsChange: (Boolean) -> Unit,
     onShowCalendarPoolImagesChange: (Boolean) -> Unit,
@@ -204,6 +206,18 @@ internal fun BaSettingsSheet(
                             fontSize = 14.sp,
                         )
                     }
+                }
+            }
+            SheetSectionTitle(stringResource(R.string.ba_id_card_title))
+            SheetSectionCard {
+                SheetControlRow(
+                    label = stringResource(R.string.ba_settings_label_id_independent_by_server),
+                    summary = stringResource(R.string.ba_settings_summary_id_independent_by_server),
+                ) {
+                    AppSwitch(
+                        checked = state.idIndependentByServer,
+                        onCheckedChange = onIdIndependentByServerChange,
+                    )
                 }
             }
             SheetSectionTitle(stringResource(R.string.ba_settings_section_content))

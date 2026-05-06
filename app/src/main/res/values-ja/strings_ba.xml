@@ -119,6 +119,8 @@
     <string name="ba_settings_summary_media_save_fixed_uri_ready">フォルダを選択済みです。以後の保存で既定の保存先として使います。</string>
     <string name="ba_settings_action_pick_media_save_location">フォルダを選択</string>
     <string name="ba_settings_hint_media_save_fixed_uri">content://.../tree/...</string>
+    <string name="ba_settings_label_id_independent_by_server">サーバー別 ID カード</string>
+    <string name="ba_settings_summary_id_independent_by_server">オンにすると、ニックネームとフレンドコードをサーバーごとに保存して切り替えます。</string>
     <string name="ba_settings_label_show_ended_activity">終了したイベントを表示</string>
     <string name="ba_settings_label_show_ended_pool">終了した募集を表示</string>
     <string name="ba_settings_label_show_images">イベント/募集画像を表示</string>

@@ -18,6 +18,7 @@ internal fun buildBaSettingsSheetState(
         mediaAdaptiveRotationEnabled = ui.sheetMediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = ui.sheetMediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = ui.sheetMediaSaveFixedTreeUri,
+        idIndependentByServer = ui.sheetIdIndependentByServer,
         showEndedActivities = ui.sheetShowEndedActivities,
         showEndedPools = ui.sheetShowEndedPools,
         showCalendarPoolImages = ui.sheetShowCalendarPoolImages,
@@ -103,6 +104,11 @@ internal fun saveBaPageSettings(
     ui.mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled
     ui.mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled
     ui.mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri
+    ui.idIndependentByServer = persisted.idIndependentByServer
+    office.applyIdIndependentByServer(
+        serverIndex = ui.serverIndex,
+        enabled = persisted.idIndependentByServer
+    )
 
     if (persisted.turningEndedActivitiesOn) {
         val (calendarCacheRaw, _) = BASettingsStore.loadCalendarCache(ui.serverIndex)
@@ -206,6 +212,7 @@ internal fun buildBaPageContentActions(
         onServerSelected = { selected ->
             ui.serverIndex = selected
             BASettingsStore.saveServerIndex(selected)
+            office.loadIdForServer(selected)
             if (office.cafeVisitNotifyEnabled) {
                 val baselineSlotMs = currentCafeStudentRefreshSlotMs(
                     nowMs = System.currentTimeMillis(),
@@ -243,9 +250,9 @@ internal fun buildBaPageContentActions(
         onOpenPoolStudentGuide = onOpenPoolStudentGuide,
         onOpenGuideCatalog = onOpenGuideCatalog,
         onIdNicknameInputChange = { office.idNicknameInput = it },
-        onSaveIdNickname = { office.saveIdNicknameFromInput() },
+        onSaveIdNickname = { office.saveIdNicknameFromInput(ui.serverIndex) },
         onIdFriendCodeInputChange = { office.idFriendCodeInput = it },
-        onSaveIdFriendCode = { office.saveIdFriendCodeFromInput(context) },
+        onSaveIdFriendCode = { office.saveIdFriendCodeFromInput(context, ui.serverIndex) },
     )
 }
 

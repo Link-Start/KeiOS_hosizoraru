@@ -38,6 +38,7 @@ internal data class BaPageUiState(
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
+    val idIndependentByServer: Boolean,
     val calendarRefreshIntervalHours: Int,
     val calendarHydrationReady: Boolean,
     val poolHydrationReady: Boolean,
@@ -56,6 +57,7 @@ internal data class BaPageUiState(
     val sheetMediaAdaptiveRotationEnabled: Boolean,
     val sheetMediaSaveCustomEnabled: Boolean,
     val sheetMediaSaveFixedTreeUri: String,
+    val sheetIdIndependentByServer: Boolean,
     val sheetShowEndedPools: Boolean,
     val sheetShowEndedActivities: Boolean,
     val sheetShowCalendarPoolImages: Boolean,
@@ -88,6 +90,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var mediaAdaptiveRotationEnabled by mutableStateOf(snapshot.mediaAdaptiveRotationEnabled)
     var mediaSaveCustomEnabled by mutableStateOf(snapshot.mediaSaveCustomEnabled)
     var mediaSaveFixedTreeUri by mutableStateOf(snapshot.mediaSaveFixedTreeUri)
+    var idIndependentByServer by mutableStateOf(snapshot.idIndependentByServer)
     var calendarRefreshIntervalHours by mutableIntStateOf(snapshot.calendarRefreshIntervalHours)
     var calendarHydrationReady by mutableStateOf(false)
     var poolHydrationReady by mutableStateOf(false)
@@ -106,6 +109,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var sheetMediaAdaptiveRotationEnabled by mutableStateOf(snapshot.mediaAdaptiveRotationEnabled)
     var sheetMediaSaveCustomEnabled by mutableStateOf(snapshot.mediaSaveCustomEnabled)
     var sheetMediaSaveFixedTreeUri by mutableStateOf(snapshot.mediaSaveFixedTreeUri)
+    var sheetIdIndependentByServer by mutableStateOf(snapshot.idIndependentByServer)
     var sheetShowEndedPools by mutableStateOf(snapshot.showEndedPools)
     var sheetShowEndedActivities by mutableStateOf(snapshot.showEndedActivities)
     var sheetShowCalendarPoolImages by mutableStateOf(snapshot.showCalendarPoolImages)
@@ -137,6 +141,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             mediaSaveCustomEnabled = mediaSaveCustomEnabled,
             mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
+            idIndependentByServer = idIndependentByServer,
             calendarRefreshIntervalHours = calendarRefreshIntervalHours,
             calendarHydrationReady = calendarHydrationReady,
             poolHydrationReady = poolHydrationReady,
@@ -155,6 +160,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             sheetMediaAdaptiveRotationEnabled = sheetMediaAdaptiveRotationEnabled,
             sheetMediaSaveCustomEnabled = sheetMediaSaveCustomEnabled,
             sheetMediaSaveFixedTreeUri = sheetMediaSaveFixedTreeUri,
+            sheetIdIndependentByServer = sheetIdIndependentByServer,
             sheetShowEndedPools = sheetShowEndedPools,
             sheetShowEndedActivities = sheetShowEndedActivities,
             sheetShowCalendarPoolImages = sheetShowCalendarPoolImages,
@@ -177,6 +183,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         sheetMediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
         sheetMediaSaveCustomEnabled = mediaSaveCustomEnabled
         sheetMediaSaveFixedTreeUri = mediaSaveFixedTreeUri
+        sheetIdIndependentByServer = idIndependentByServer
         sheetShowEndedPools = showEndedPools
         sheetShowEndedActivities = showEndedActivities
         sheetShowCalendarPoolImages = showCalendarPoolImages
@@ -190,6 +197,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         sheetMediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
         sheetMediaSaveCustomEnabled = mediaSaveCustomEnabled
         sheetMediaSaveFixedTreeUri = mediaSaveFixedTreeUri
+        sheetIdIndependentByServer = idIndependentByServer
         sheetShowEndedPools = showEndedPools
         sheetShowEndedActivities = showEndedActivities
         sheetShowCalendarPoolImages = showCalendarPoolImages

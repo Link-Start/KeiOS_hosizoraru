@@ -61,6 +61,7 @@ internal class BaOfficeController(
     var cafeLastHourMs by mutableLongStateOf(snapshot.cafeLastHourMs)
     var idNickname by mutableStateOf(snapshot.idNickname)
     var idFriendCode by mutableStateOf(snapshot.idFriendCode)
+    var idIndependentByServer by mutableStateOf(snapshot.idIndependentByServer)
     var apLimit by mutableIntStateOf(snapshot.apLimit)
     var apCurrent by mutableStateOf(snapshot.apCurrent.coerceAtLeast(0.0))
     var apRegenBaseMs by mutableLongStateOf(snapshot.apRegenBaseMs)
@@ -135,14 +136,37 @@ internal class BaOfficeController(
         }
     }
 
-    fun saveIdNicknameFromInput() {
+    fun loadIdForServer(serverIndex: Int) {
+        if (!idIndependentByServer) return
+        idNickname = BASettingsStore.loadIdNickname(serverIndex)
+        idFriendCode = BASettingsStore.loadIdFriendCode(serverIndex)
+        idNicknameInput = idNickname
+        idFriendCodeInput = idFriendCode
+    }
+
+    fun applyIdIndependentByServer(
+        serverIndex: Int,
+        enabled: Boolean,
+    ) {
+        idIndependentByServer = enabled
+        BASettingsStore.saveIdIndependentByServerEnabled(enabled)
+        if (enabled) {
+            BASettingsStore.saveIdNickname(idNickname, serverIndex)
+            BASettingsStore.saveIdFriendCode(idFriendCode, serverIndex)
+        } else {
+            BASettingsStore.saveIdNickname(idNickname)
+            BASettingsStore.saveIdFriendCode(idFriendCode)
+        }
+    }
+
+    fun saveIdNicknameFromInput(serverIndex: Int) {
         val sanitized = idNicknameInput.take(10).ifEmpty { BA_DEFAULT_NICKNAME }
         idNickname = sanitized
         idNicknameInput = sanitized
-        BASettingsStore.saveIdNickname(sanitized)
+        BASettingsStore.saveIdNickname(sanitized, serverIndex)
     }
 
-    fun saveIdFriendCodeFromInput(context: Context) {
+    fun saveIdFriendCodeFromInput(context: Context, serverIndex: Int) {
         val sanitized = sanitizeBaFriendCodeInput(idFriendCodeInput)
         if (sanitized.length != 8) {
             Toast.makeText(context, context.getString(R.string.ba_toast_friend_code_invalid), Toast.LENGTH_SHORT).show()
@@ -151,7 +175,7 @@ internal class BaOfficeController(
         }
         idFriendCode = sanitized
         idFriendCodeInput = sanitized
-        BASettingsStore.saveIdFriendCode(sanitized)
+        BASettingsStore.saveIdFriendCode(sanitized, serverIndex)
     }
 
     fun updateCurrentAp(newValue: Int, markSync: Boolean) {

@@ -3,6 +3,9 @@ package os.kei.ui.page.main.github.importer
 import androidx.annotation.StringRes
 import os.kei.R
 import os.kei.feature.github.domain.GitHubStarImportClassifier
+import os.kei.feature.github.model.GitHubRepositoryImportCandidate
+import os.kei.feature.github.model.GitHubStarImportApkVerification
+import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import java.net.URI
@@ -89,6 +92,110 @@ internal fun os.kei.feature.github.model.GitHubRepositoryImportCandidate.matches
     quality: GitHubStarImportQuality
 ): Boolean {
     return GitHubStarImportClassifier.classify(this) == quality
+}
+
+internal data class StarImportApkVerificationUiState(
+    val checking: Boolean = false,
+    val verification: GitHubStarImportApkVerification? = null
+)
+
+internal data class StarImportCandidateListUiState(
+    val searchedCandidates: List<GitHubRepositoryImportCandidate>,
+    val filteredCandidates: List<GitHubRepositoryImportCandidate>,
+    val qualityFilterCounts: Map<GitHubStarImportQuality, Int>,
+    val selectedImportableCount: Int,
+    val visibleImportableIds: Set<String>,
+    val visibleRecommendedIds: Set<String>,
+    val selectedCandidates: List<GitHubRepositoryImportCandidate>,
+    val selectedVerificationTargets: List<GitHubRepositoryImportCandidate>
+)
+
+internal fun buildStarImportCandidateListUiState(
+    candidates: List<GitHubRepositoryImportCandidate>,
+    filterInput: String,
+    viewFilter: StarImportViewFilter,
+    qualityFilters: Set<GitHubStarImportQuality>,
+    selectedIds: Set<String>,
+    verificationStates: Map<String, StarImportApkVerificationUiState>
+): StarImportCandidateListUiState {
+    val query = filterInput.trim()
+    val activeQualityFilters = qualityFilters.ifEmpty { GitHubStarImportQuality.entries.toSet() }
+    val searchedCandidates = if (query.isBlank()) {
+        candidates
+    } else {
+        candidates.filter { candidate -> candidate.matchesStarImportQuery(query) }
+    }
+    val searchedClassifiedCandidates = searchedCandidates.map { candidate ->
+        StarImportClassifiedCandidate(
+            candidate = candidate,
+            quality = GitHubStarImportClassifier.classify(candidate)
+        )
+    }
+    val qualityFilterCounts = searchedClassifiedCandidates
+        .groupingBy { classified -> classified.quality }
+        .eachCount()
+        .let { counts ->
+            GitHubStarImportQuality.entries.associateWith { quality -> counts[quality] ?: 0 }
+        }
+    val filteredClassifiedCandidates = searchedClassifiedCandidates.filter { classified ->
+        val candidate = classified.candidate
+        val quality = classified.quality
+        val statusMatches = when (viewFilter) {
+            StarImportViewFilter.All -> true
+            StarImportViewFilter.Importable -> !candidate.alreadyTracked
+            StarImportViewFilter.Selected -> candidate.trackedApp.id in selectedIds
+            StarImportViewFilter.Tracked -> candidate.alreadyTracked
+        }
+        statusMatches && quality in activeQualityFilters
+    }
+    val filteredCandidates = filteredClassifiedCandidates.map { classified ->
+        classified.candidate
+    }
+    val selectedCandidates = candidates.filter { candidate ->
+        !candidate.alreadyTracked && candidate.trackedApp.id in selectedIds
+    }
+    val selectedVerificationTargets = selectedCandidates.filter { candidate ->
+        val state = verificationStates[candidate.trackedApp.id]
+        state?.checking != true &&
+                (
+                        state?.verification == null ||
+                                state.verification.status == GitHubStarImportApkVerificationStatus.Failed
+                        )
+    }
+    return StarImportCandidateListUiState(
+        searchedCandidates = searchedCandidates,
+        filteredCandidates = filteredCandidates,
+        qualityFilterCounts = qualityFilterCounts,
+        selectedImportableCount = selectedCandidates.size,
+        visibleImportableIds = filteredCandidates
+            .asSequence()
+            .filterNot { it.alreadyTracked }
+            .map { it.trackedApp.id }
+            .toSet(),
+        visibleRecommendedIds = filteredClassifiedCandidates
+            .asSequence()
+            .filter { classified ->
+                !classified.candidate.alreadyTracked &&
+                        classified.quality == GitHubStarImportQuality.LikelyAndroid
+            }
+            .map { classified -> classified.candidate.trackedApp.id }
+            .toSet(),
+        selectedCandidates = selectedCandidates,
+        selectedVerificationTargets = selectedVerificationTargets
+    )
+}
+
+private data class StarImportClassifiedCandidate(
+    val candidate: GitHubRepositoryImportCandidate,
+    val quality: GitHubStarImportQuality
+)
+
+private fun GitHubRepositoryImportCandidate.matchesStarImportQuery(query: String): Boolean {
+    return repository.fullName.contains(query, ignoreCase = true) ||
+            repository.description.contains(query, ignoreCase = true) ||
+            repository.language.contains(query, ignoreCase = true) ||
+            repository.repo.contains(query, ignoreCase = true) ||
+            repository.owner.contains(query, ignoreCase = true)
 }
 
 internal fun String.isValidGitHubUsernameInput(): Boolean {

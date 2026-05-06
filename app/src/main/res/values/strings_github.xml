@@ -462,6 +462,10 @@
     <string name="github_star_import_confirm_summary_format">将导入 %1$d 个项目，其中 %2$d 个已验证 APK，%3$d 个尚未验证。</string>
     <string name="github_star_import_confirm_risky_format">%1$d 个项目需要谨慎确认，可能没有 APK 或更像其他平台项目。</string>
     <string name="github_star_import_confirm_action">确认导入</string>
+    <string name="github_star_import_exit_confirm_title">保留当前选择？</string>
+    <string name="github_star_import_exit_confirm_summary_format">当前已选 %1$d 个项目，退出后需要重新读取和选择。</string>
+    <string name="github_star_import_exit_confirm_keep">继续选择</string>
+    <string name="github_star_import_exit_confirm_action">退出</string>
     <string name="github_star_import_apk_confirm_has_apk">已验证 APK</string>
     <string name="github_star_import_apk_confirm_no_apk">未发现 APK</string>
     <string name="github_star_import_apk_confirm_unverified">尚未验证</string>

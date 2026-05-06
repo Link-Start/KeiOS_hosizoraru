@@ -462,6 +462,10 @@
     <string name="github_star_import_confirm_summary_format">Import %1$d repositories. %2$d have verified APKs and %3$d are unverified.</string>
     <string name="github_star_import_confirm_risky_format">%1$d repositories need extra care because they may have no APK or look like other-platform projects.</string>
     <string name="github_star_import_confirm_action">Confirm import</string>
+    <string name="github_star_import_exit_confirm_title">Keep current selection?</string>
+    <string name="github_star_import_exit_confirm_summary_format">%1$d repositories are selected. Leaving will require loading and selecting them again.</string>
+    <string name="github_star_import_exit_confirm_keep">Keep selecting</string>
+    <string name="github_star_import_exit_confirm_action">Leave</string>
     <string name="github_star_import_apk_confirm_has_apk">Verified APK</string>
     <string name="github_star_import_apk_confirm_no_apk">No APK found</string>
     <string name="github_star_import_apk_confirm_unverified">Unverified</string>

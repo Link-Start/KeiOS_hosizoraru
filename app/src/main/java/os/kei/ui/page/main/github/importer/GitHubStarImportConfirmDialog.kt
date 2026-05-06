@@ -121,6 +121,47 @@ internal fun GitHubStarImportConfirmDialog(
 }
 
 @Composable
+internal fun GitHubStarImportExitConfirmDialog(
+    show: Boolean,
+    selectedCount: Int,
+    onDismissRequest: () -> Unit,
+    onConfirmExit: () -> Unit
+) {
+    if (!show) return
+    WindowDialog(
+        show = true,
+        title = stringResource(R.string.github_star_import_exit_confirm_title),
+        summary = stringResource(
+            R.string.github_star_import_exit_confirm_summary_format,
+            selectedCount
+        ),
+        onDismissRequest = onDismissRequest
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLiquidDialogActionButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.github_star_import_exit_confirm_keep),
+                    onClick = onDismissRequest
+                )
+                AppLiquidDialogActionButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.github_star_import_exit_confirm_action),
+                    containerColor = GitHubStatusPalette.Error,
+                    textColor = MiuixTheme.colorScheme.onPrimary,
+                    variant = GlassVariant.SheetPrimaryAction,
+                    onClick = onConfirmExit
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun StarImportConfirmMetricRow(
     label: String,
     value: Int,

@@ -7,33 +7,16 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
-import os.kei.core.log.AppLogger
-import os.kei.core.prefs.UiPrefs
-import os.kei.core.system.ShizukuApiUtils
 import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.domain.notification.SessionNotifier
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.SessionNotifierImpl
-import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
 import os.kei.mcp.service.McpKeepAliveService
-import kotlin.time.Duration.Companion.milliseconds
 
 object McpNotificationHelper {
-    private const val TAG = "McpNotifyHelper"
-
     const val CHANNEL_ID = "mcp_keepalive_channel_v2"
     const val LIVE_CHANNEL_ID = "mcp_live_update_channel_v1"
     const val FOREGROUND_SERVICE_CHANNEL_ID = "mcp_keepalive_service_channel_v1"
@@ -45,44 +28,6 @@ object McpNotificationHelper {
     private const val TEST_NOTIFICATION_ID = KEEPALIVE_NOTIFICATION_ID
     private const val ACTION_DISMISS = "os.kei.mcp.keepalive.DISMISS"
     private const val EXTRA_NOTIFICATION_ID = "notification_id"
-    private const val XMSF_PACKAGE_NAME = "com.xiaomi.xmsf"
-
-    private enum class XiaomiMagicCommandSet {
-        PACKAGE_NETWORKING,
-        UID_FIREWALL,
-        NONE
-    }
-
-    private val shizukuApiUtils = ShizukuApiUtils()
-    private val magicScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val networkMutex = Mutex()
-    @Volatile
-    private var commandSet: XiaomiMagicCommandSet? = null
-    @Volatile
-    private var isXmsfNetworkBlocked = false
-    @Volatile
-    private var isUidFirewallChainEnabled = false
-    @Volatile
-    private var keepAliveSnapshot: CachedNotificationSnapshot? = null
-    @Volatile
-    private var baApSnapshot: CachedNotificationSnapshot? = null
-    @Volatile
-    private var baCafeVisitSnapshot: CachedNotificationSnapshot? = null
-    @Volatile
-    private var baArenaRefreshSnapshot: CachedNotificationSnapshot? = null
-
-    private data class CachedNotificationSnapshot(
-        val serverName: String,
-        val running: Boolean,
-        val port: Int,
-        val path: String,
-        val clients: Int,
-        val ongoing: Boolean,
-        val onlyAlertOnce: Boolean,
-        val style: NotificationRenderStyle,
-        val useXiaomiMagic: Boolean
-    )
-
     private enum class SecondaryActionMode {
         DEFAULT,
         MARK_READ
@@ -99,25 +44,25 @@ object McpNotificationHelper {
             context = context,
             manager = manager,
             notificationId = KEEPALIVE_NOTIFICATION_ID,
-            snapshot = keepAliveSnapshot
+            snapshot = McpNotificationSnapshotStore.get(KEEPALIVE_NOTIFICATION_ID)
         )
         refreshCachedNotificationIfActive(
             context = context,
             manager = manager,
             notificationId = BA_AP_NOTIFICATION_ID,
-            snapshot = baApSnapshot
+            snapshot = McpNotificationSnapshotStore.get(BA_AP_NOTIFICATION_ID)
         )
         refreshCachedNotificationIfActive(
             context = context,
             manager = manager,
             notificationId = BA_CAFE_VISIT_NOTIFICATION_ID,
-            snapshot = baCafeVisitSnapshot
+            snapshot = McpNotificationSnapshotStore.get(BA_CAFE_VISIT_NOTIFICATION_ID)
         )
         refreshCachedNotificationIfActive(
             context = context,
             manager = manager,
             notificationId = BA_ARENA_REFRESH_NOTIFICATION_ID,
-            snapshot = baArenaRefreshSnapshot
+            snapshot = McpNotificationSnapshotStore.get(BA_ARENA_REFRESH_NOTIFICATION_ID)
         )
     }
 
@@ -352,7 +297,7 @@ object McpNotificationHelper {
             secondaryActionMode = SecondaryActionMode.MARK_READ,
             notificationId = notificationId
         )
-        val snapshot = CachedNotificationSnapshot(
+        val snapshot = McpNotificationSnapshot(
             serverName = serverName,
             running = running,
             port = port,
@@ -363,7 +308,7 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        cacheNotificationSnapshot(notificationId, snapshot)
+        McpNotificationSnapshotStore.put(notificationId, snapshot)
         notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
@@ -394,7 +339,7 @@ object McpNotificationHelper {
             onlyAlertOnce = onlyAlertOnce,
             notificationId = notificationId
         )
-        val snapshot = CachedNotificationSnapshot(
+        val snapshot = McpNotificationSnapshot(
             serverName = serverName,
             running = running,
             port = port,
@@ -405,7 +350,7 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        cacheNotificationSnapshot(notificationId, snapshot)
+        McpNotificationSnapshotStore.put(notificationId, snapshot)
         notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
@@ -435,7 +380,7 @@ object McpNotificationHelper {
             onlyAlertOnce = true,
             notificationId = notificationId
         )
-        val snapshot = CachedNotificationSnapshot(
+        val snapshot = McpNotificationSnapshot(
             serverName = serverName,
             running = running,
             port = port,
@@ -446,7 +391,7 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        cacheNotificationSnapshot(notificationId, snapshot)
+        McpNotificationSnapshotStore.put(notificationId, snapshot)
         notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
@@ -456,21 +401,14 @@ object McpNotificationHelper {
     }
 
     fun restoreXiaomiNetworkIfNeeded(context: Context) {
-        val xmsfUid = resolveXmsfUid(context)
-        magicScope.launch {
-            networkMutex.withLock {
-                if (xmsfUid != null && shizukuApiUtils.canUseCommand()) {
-                    healXmsfNetworkingLocked(xmsfUid)
-                }
-            }
-        }
+        McpXiaomiMagicDispatcher.restoreNetworkIfNeeded(context)
     }
 
     private fun refreshCachedNotificationIfActive(
         context: Context,
         manager: NotificationManager,
         notificationId: Int,
-        snapshot: CachedNotificationSnapshot?
+        snapshot: McpNotificationSnapshot?
     ) {
         if (snapshot == null || !isNotificationActive(manager, notificationId)) return
         val buildResult = buildForegroundNotificationResult(
@@ -484,7 +422,7 @@ object McpNotificationHelper {
             onlyAlertOnce = snapshot.onlyAlertOnce,
             notificationId = notificationId
         )
-        cacheNotificationSnapshot(
+        McpNotificationSnapshotStore.put(
             notificationId = notificationId,
             snapshot = snapshot.copy(
                 style = buildResult.style,
@@ -505,27 +443,6 @@ object McpNotificationHelper {
         }.getOrDefault(false)
     }
 
-    private fun cacheNotificationSnapshot(
-        notificationId: Int,
-        snapshot: CachedNotificationSnapshot
-    ) {
-        when (notificationId) {
-            KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = snapshot
-            BA_AP_NOTIFICATION_ID -> baApSnapshot = snapshot
-            BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot = snapshot
-            BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot = snapshot
-        }
-    }
-
-    private fun clearNotificationSnapshot(notificationId: Int) {
-        when (notificationId) {
-            KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = null
-            BA_AP_NOTIFICATION_ID -> baApSnapshot = null
-            BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot = null
-            BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot = null
-        }
-    }
-
     private fun notifyWithResolvedDispatcher(
         context: Context,
         notificationId: Int,
@@ -533,7 +450,7 @@ object McpNotificationHelper {
         useXiaomiMagic: Boolean
     ) {
         if (useXiaomiMagic) {
-            notifyWithXiaomiMagic(
+            McpXiaomiMagicDispatcher.notify(
                 context = context,
                 notificationId = notificationId,
                 notification = notification
@@ -541,7 +458,7 @@ object McpNotificationHelper {
             return
         }
         val notificationManager = NotificationManagerCompat.from(context)
-        if (shizukuApiUtils.canUseCommand()) {
+        if (McpXiaomiMagicDispatcher.canUseCommand()) {
             restoreXiaomiNetworkIfNeeded(context)
         }
         notificationManager.notify(notificationId, notification)
@@ -565,212 +482,10 @@ object McpNotificationHelper {
         context: Context,
         notificationId: Int
     ) {
-        clearNotificationSnapshot(notificationId)
-        if (shizukuApiUtils.canUseCommand()) {
+        McpNotificationSnapshotStore.clear(notificationId)
+        if (McpXiaomiMagicDispatcher.canUseCommand()) {
             restoreXiaomiNetworkIfNeeded(context)
         }
         NotificationManagerCompat.from(context).cancel(notificationId)
-    }
-
-    private fun notifyWithXiaomiMagic(
-        context: Context,
-        notificationId: Int,
-        notification: Notification
-    ) {
-        val notificationManager = NotificationManagerCompat.from(context)
-        val targetUid = resolveXmsfUid(context)
-        AppLogger.i(TAG, "notifyWithXiaomiMagic: targetUid=$targetUid notifId=$notificationId")
-        if (!shouldExecuteXiaomiMagic(targetUid)) {
-            AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
-            if (shizukuApiUtils.canUseCommand()) {
-                restoreXiaomiNetworkIfNeeded(context)
-            }
-            notificationManager.notify(notificationId, notification)
-            return
-        }
-        val nonNullUid = targetUid ?: run {
-            AppLogger.w(TAG, "skip Xiaomi magic: xmsf uid is null")
-            notificationManager.notify(notificationId, notification)
-            return
-        }
-
-        magicScope.launch {
-            networkMutex.withLock {
-                var notificationDispatched = false
-                var networkTouched = false
-                try {
-                    healXmsfNetworkingLocked(nonNullUid)
-                    AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
-                    blockXmsfNetworkingLocked(nonNullUid)
-                    networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
-                    notificationManager.notify(notificationId, notification)
-                    notificationDispatched = true
-                    delay(resolveXiaomiMagicBlockIntervalMs().milliseconds)
-                } catch (throwable: Throwable) {
-                    if (throwable is CancellationException) throw throwable
-                    AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
-                    if (!notificationDispatched) {
-                        runCatching {
-                            notificationManager.notify(notificationId, notification)
-                        }.onFailure {
-                            AppLogger.e(TAG, "Fallback notification dispatch failed", it)
-                        }
-                    }
-                } finally {
-                    withContext(NonCancellable) {
-                        if (networkTouched || isXmsfNetworkBlocked || isUidFirewallChainEnabled) {
-                            AppLogger.i(TAG, "restoring xmsf network for uid=$nonNullUid")
-                            runCatching {
-                                restoreXmsfNetworkingLocked(nonNullUid)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
-                            }
-                            runCatching {
-                                healXmsfNetworkingLocked(nonNullUid)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun resolveXmsfUid(context: Context): Int? {
-        return runCatching {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageUid(XMSF_PACKAGE_NAME, 0)
-        }.getOrNull()?.takeIf { it > 0 }
-    }
-
-    private fun shouldExecuteXiaomiMagic(xmsfUid: Int?): Boolean {
-        if (xmsfUid == null) {
-            AppLogger.w(TAG, "shouldExecuteXiaomiMagic=false: xmsf uid not found")
-            return false
-        }
-        if (!shizukuApiUtils.canUseCommand()) {
-            AppLogger.w(TAG, "shouldExecuteXiaomiMagic=false: Shizuku command unavailable")
-            return false
-        }
-        val idOutput = shizukuApiUtils.execCommand("id").orEmpty()
-        val isShellOrRoot = idOutput.contains("uid=2000") || idOutput.contains("uid=0")
-        if (!isShellOrRoot) {
-            AppLogger.w(TAG, "shouldExecuteXiaomiMagic=false: unsupported Shizuku identity '$idOutput'")
-            return false
-        }
-        val mode = resolveMagicCommandSet()
-        val canUseMode = mode != XiaomiMagicCommandSet.NONE
-        AppLogger.i(TAG, "Shizuku id='$idOutput', mode=$mode, allowMagic=$canUseMode")
-        return canUseMode
-    }
-
-    private fun blockXmsfNetworkingLocked(uid: Int) {
-        when (resolveMagicCommandSet()) {
-            XiaomiMagicCommandSet.PACKAGE_NETWORKING -> {
-                val blocked = execMagicCommand("cmd connectivity set-package-networking-enabled false $XMSF_PACKAGE_NAME")
-                isXmsfNetworkBlocked = blocked
-                AppLogger.i(
-                    TAG,
-                    "blockXmsfNetworkingLocked(package): uid=$uid blocked=$blocked"
-                )
-            }
-
-            XiaomiMagicCommandSet.UID_FIREWALL -> {
-                val chainEnabled = execMagicCommand("cmd connectivity set-firewall-chain-enabled 9 true")
-                val blocked = execMagicCommand("cmd connectivity set-uid-firewall-rule 9 $uid 2")
-                isXmsfNetworkBlocked = blocked
-                isUidFirewallChainEnabled = chainEnabled
-                AppLogger.i(
-                    TAG,
-                    "blockXmsfNetworkingLocked(uid): uid=$uid chainEnabled=$chainEnabled blocked=$blocked"
-                )
-            }
-
-            XiaomiMagicCommandSet.NONE -> {
-                isXmsfNetworkBlocked = false
-                isUidFirewallChainEnabled = false
-                AppLogger.w(TAG, "blockXmsfNetworkingLocked skipped: no supported connectivity command")
-            }
-        }
-    }
-
-    private fun restoreXmsfNetworkingLocked(uid: Int) {
-        val mode = resolveMagicCommandSet()
-        val restored = when (mode) {
-            XiaomiMagicCommandSet.PACKAGE_NETWORKING -> {
-                if (isXmsfNetworkBlocked) {
-                    execMagicCommand("cmd connectivity set-package-networking-enabled true $XMSF_PACKAGE_NAME")
-                } else {
-                    true
-                }
-            }
-
-            XiaomiMagicCommandSet.UID_FIREWALL -> {
-                val ruleRestored = if (isXmsfNetworkBlocked) {
-                    execMagicCommand("cmd connectivity set-uid-firewall-rule 9 $uid 0")
-                } else {
-                    true
-                }
-                ruleRestored
-            }
-
-            XiaomiMagicCommandSet.NONE -> false
-        }
-        AppLogger.i(TAG, "restoreXmsfNetworkingLocked: uid=$uid mode=$mode restored=$restored")
-        isXmsfNetworkBlocked = false
-        isUidFirewallChainEnabled = false
-    }
-
-    private fun healXmsfNetworkingLocked(uid: Int) {
-        when (resolveMagicCommandSet()) {
-            XiaomiMagicCommandSet.PACKAGE_NETWORKING -> {
-                val restored = execMagicCommand("cmd connectivity set-package-networking-enabled true $XMSF_PACKAGE_NAME")
-                AppLogger.i(TAG, "healXmsfNetworkingLocked(package): uid=$uid restored=$restored")
-            }
-
-            XiaomiMagicCommandSet.UID_FIREWALL -> {
-                val ruleRestored = execMagicCommand("cmd connectivity set-uid-firewall-rule 9 $uid 0")
-                AppLogger.i(TAG, "healXmsfNetworkingLocked(uid): uid=$uid ruleRestored=$ruleRestored")
-            }
-
-            XiaomiMagicCommandSet.NONE -> {
-                AppLogger.w(TAG, "healXmsfNetworkingLocked skipped: no supported connectivity command")
-            }
-        }
-        isXmsfNetworkBlocked = false
-        isUidFirewallChainEnabled = false
-    }
-
-    private fun resolveMagicCommandSet(): XiaomiMagicCommandSet {
-        commandSet?.let { return it }
-        val helpText = shizukuApiUtils.execCommand("cmd connectivity help")
-        if (helpText.isNullOrBlank()) {
-            AppLogger.w(TAG, "resolveMagicCommandSet skipped: connectivity help unavailable")
-            return XiaomiMagicCommandSet.NONE
-        }
-        val resolved = when {
-            helpText.contains("set-package-networking-enabled") -> XiaomiMagicCommandSet.PACKAGE_NETWORKING
-            helpText.contains("set-firewall-chain-enabled") &&
-                helpText.contains("set-uid-firewall-rule") -> XiaomiMagicCommandSet.UID_FIREWALL
-            else -> XiaomiMagicCommandSet.NONE
-        }
-        commandSet = resolved
-        AppLogger.i(TAG, "resolved Xiaomi magic command set: $resolved")
-        return resolved
-    }
-
-    private fun execMagicCommand(command: String): Boolean {
-        val output = shizukuApiUtils.execCommand("($command) >/dev/null 2>&1 && echo __OK__ || echo __FAIL__")
-            ?: return false
-        val success = output.contains("__OK__")
-        if (!success) {
-            AppLogger.w(TAG, "magic command failed: $command; output=$output")
-        }
-        return success
-    }
-
-    private fun resolveXiaomiMagicBlockIntervalMs(): Long {
-        return UiPrefs.getSuperIslandRestoreDelayMs().toLong()
     }
 }

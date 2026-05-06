@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,14 +34,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.prefs.AppThemeMode
@@ -63,7 +59,6 @@ import os.kei.ui.page.main.settings.section.SettingsVisualSection
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.rememberSettingsBackgroundController
 import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
-import os.kei.ui.page.main.settings.state.rememberSettingsSectionContractBundle
 import os.kei.ui.page.main.settings.support.rememberSettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
@@ -80,7 +75,6 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SettingsPage(
@@ -137,8 +131,6 @@ fun SettingsPage(
     val enabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
     val disabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
     val scope = rememberCoroutineScope()
-    val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
-    val latestShizukuStatus = rememberUpdatedState(shizukuStatus)
     var shizukuRefreshToken by remember { mutableIntStateOf(0) }
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
     val cacheState by settingsPageViewModel.cacheState.collectAsState()
@@ -157,152 +149,61 @@ fun SettingsPage(
         context = context,
         shizukuApiUtils = shizukuApiUtils
     )
-    DisposableEffect(lifecycleOwner, batteryOptimizationController, permissionKeepAliveController) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                batteryOptimizationController.refresh()
-                scope.launch {
-                    permissionKeepAliveController.refresh(
-                        notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                        shizukuStatus = latestShizukuStatus.value
-                    )
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-    LaunchedEffect(notificationPermissionGranted, shizukuStatus) {
-        permissionKeepAliveController.refresh(
-            notificationPermissionGranted = notificationPermissionGranted,
-            shizukuStatus = shizukuStatus
-        )
-    }
-    LaunchedEffect(context, cacheDiagnosticsEnabled) {
-        settingsPageViewModel.bindCacheDiagnostics(
-            context = context,
-            enabled = cacheDiagnosticsEnabled
-        )
-    }
-    LaunchedEffect(context, logDebugEnabled) {
-        settingsPageViewModel.bindLogStats(
-            context = context,
-            logDebugEnabled = logDebugEnabled
-        )
-    }
-    LaunchedEffect(shizukuRefreshToken) {
-        if (shizukuRefreshToken <= 0) return@LaunchedEffect
-        repeat(8) {
-            permissionKeepAliveController.refresh(
-                notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                shizukuStatus = latestShizukuStatus.value
-            )
-            delay(400.milliseconds)
-        }
-    }
-    val sectionContracts = rememberSettingsSectionContractBundle(
+    BindSettingsPageEffects(
+        context = context,
+        lifecycleOwner = lifecycleOwner,
+        scope = scope,
+        settingsPageViewModel = settingsPageViewModel,
+        batteryOptimizationController = batteryOptimizationController,
+        permissionKeepAliveController = permissionKeepAliveController,
         notificationPermissionGranted = notificationPermissionGranted,
-        notificationsEnabled = permissionKeepAliveController.notificationsEnabled,
-        notificationSettingsActionAvailable = permissionKeepAliveController.notificationSettingsActionAvailable,
-        preloadingEnabled = preloadingEnabled,
-        homeIconHdrEnabled = homeIconHdrEnabled,
-        homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
-        appThemeMode = appThemeMode,
-        appLanguageActionAvailable = appLanguageController.actionAvailable,
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
-        searchAutoFocusEnabled = searchAutoFocusEnabled,
-        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-        liquidSwitchEnabled = liquidSwitchEnabled,
-        liquidBottomBarEnabled = liquidBottomBarEnabled,
-        gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
-        superIslandNotificationEnabled = superIslandNotificationEnabled,
-        superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
-        superIslandRestoreDelayMs = superIslandRestoreDelayMs,
-        ignoringBatteryOptimizations = batteryOptimizationController.ignoringBatteryOptimizations,
-        batteryOptimizationActionAvailable = batteryOptimizationController.requestActionAvailable,
-        oemAutoStartState = permissionKeepAliveController.oemAutoStartState,
-        oemAutoStartVendorLabel = permissionKeepAliveController.oemAutoStartVendorLabel,
-        oemAutoStartActionAvailable = permissionKeepAliveController.oemAutoStartActionAvailable,
-        appListAccessMode = permissionKeepAliveController.appListAccessMode,
-        appListDetectedCount = permissionKeepAliveController.appListDetectedCount,
-        appListSettingsActionAvailable = permissionKeepAliveController.appListSettingsActionAvailable,
-        shizukuGranted = permissionKeepAliveController.shizukuGranted,
-        shizukuStatusText = permissionKeepAliveController.shizukuStatusText,
-        textCopyCapabilityExpanded = textCopyCapabilityExpanded,
+        shizukuStatus = shizukuStatus,
+        cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
+        logDebugEnabled = logDebugEnabled,
+        shizukuRefreshToken = shizukuRefreshToken
+    )
+    val sectionContracts = rememberSettingsPageSectionContracts(
+        context = context,
         pageUiState = pageUiState,
-        onRequestNotificationPermission = onRequestNotificationPermission,
-        onOpenNotificationSettings = {
-            val opened = permissionKeepAliveController.openNotificationSettings()
-            if (!opened) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_notification_permission_toast_open_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        },
+        permissionKeepAliveController = permissionKeepAliveController,
+        batteryOptimizationController = batteryOptimizationController,
+        appLanguageController = appLanguageController,
+        notificationPermissionGranted = notificationPermissionGranted,
+        preloadingEnabled = preloadingEnabled,
         onPreloadingEnabledChanged = onPreloadingEnabledChanged,
+        homeIconHdrEnabled = homeIconHdrEnabled,
         onHomeIconHdrChanged = onHomeIconHdrChanged,
+        homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
         onHomeDynamicFullEffectChanged = onHomeDynamicFullEffectChanged,
+        appThemeMode = appThemeMode,
         onAppThemeModeChanged = onAppThemeModeChanged,
-        onOpenAppLanguageSettings = {
-            val opened = appLanguageController.openAppLanguageSettings()
-            if (!opened) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_app_language_toast_open_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        },
+        transitionAnimationsEnabled = transitionAnimationsEnabled,
         onTransitionAnimationsChanged = onTransitionAnimationsChanged,
+        predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
         onPredictiveBackAnimationsChanged = onPredictiveBackAnimationsChanged,
+        searchAutoFocusEnabled = searchAutoFocusEnabled,
         onSearchAutoFocusChanged = onSearchAutoFocusChanged,
+        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
         onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
+        liquidSwitchEnabled = liquidSwitchEnabled,
         onLiquidSwitchChanged = onLiquidSwitchChanged,
+        liquidBottomBarEnabled = liquidBottomBarEnabled,
         onLiquidBottomBarChanged = onLiquidBottomBarChanged,
+        gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
         onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
+        superIslandNotificationEnabled = superIslandNotificationEnabled,
         onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
+        superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
         onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
+        superIslandRestoreDelayMs = superIslandRestoreDelayMs,
         onSuperIslandRestoreDelayMsChanged = onSuperIslandRestoreDelayMsChanged,
-        onOpenBatteryOptimizationSettings = {
-            val opened = batteryOptimizationController.openBatteryOptimizationSettings()
-            if (!opened) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_battery_optimization_toast_open_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        },
-        onOpenOemAutoStartSettings = {
-            val opened = permissionKeepAliveController.openOemAutoStartSettings()
-            if (!opened) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_oem_autostart_toast_open_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        },
-        onOpenAppListPermissionSettings = {
-            val opened = permissionKeepAliveController.openAppListPermissionSettings()
-            if (!opened) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_app_list_access_toast_open_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        },
+        textCopyCapabilityExpanded = textCopyCapabilityExpanded,
+        onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged,
+        onRequestNotificationPermission = onRequestNotificationPermission,
         onCheckOrRequestShizuku = {
             shizukuRefreshToken += 1
             onCheckOrRequestShizuku()
-        },
-        onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged
+        }
     )
 
     BindSettingsLogExportAction(

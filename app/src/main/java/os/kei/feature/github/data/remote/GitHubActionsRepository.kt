@@ -13,7 +13,6 @@ import os.kei.feature.github.model.GitHubActionsWorkflowRun
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class GitHubActionsRepository(
@@ -52,6 +51,16 @@ class GitHubActionsRepository(
             noRedirectClient = noRedirectClient,
             apiBaseUrl = apiBaseUrl
         )
+    }
+    private val runArtifactFetcher = GitHubActionsRunArtifactFetcher(
+        maxConcurrency = MAX_ARTIFACT_FETCH_CONCURRENCY
+    ) { fetchOwner, fetchRepo, runId, limit ->
+        fetchRunArtifacts(
+            owner = fetchOwner,
+            repo = fetchRepo,
+            runId = runId,
+            limit = limit
+        ).result
     }
 
     val authMode: GitHubApiAuthMode
@@ -353,7 +362,7 @@ class GitHubActionsRepository(
         }
         val artifactRuns = runs.take(artifactRunLimit.coerceAtLeast(0))
         val artifactsByRun = runCatching {
-            fetchRunArtifactsForRuns(
+            runArtifactFetcher.fetchForRuns(
                 owner = owner,
                 repo = repo,
                 runs = artifactRuns,
@@ -383,33 +392,6 @@ class GitHubActionsRepository(
                 runs = runArtifacts
             )
         ).toTrace(startedAt)
-    }
-
-    private fun fetchRunArtifactsForRuns(
-        owner: String,
-        repo: String,
-        runs: List<GitHubActionsWorkflowRun>,
-        limit: Int
-    ): List<Pair<GitHubActionsWorkflowRun, Result<List<GitHubActionsArtifact>>>> {
-        if (runs.isEmpty()) return emptyList()
-        val concurrency = runs.size.coerceAtMost(MAX_ARTIFACT_FETCH_CONCURRENCY)
-        if (concurrency <= 1) {
-            return runs.map { run ->
-                run to fetchRunArtifacts(owner = owner, repo = repo, runId = run.id, limit = limit).result
-            }
-        }
-        val executor = Executors.newFixedThreadPool(concurrency)
-        return try {
-            runs.map { run ->
-                executor.submit<Pair<GitHubActionsWorkflowRun, Result<List<GitHubActionsArtifact>>>> {
-                    run to fetchRunArtifacts(owner = owner, repo = repo, runId = run.id, limit = limit).result
-                }
-            }.map { future ->
-                future.get()
-            }
-        } finally {
-            executor.shutdownNow()
-        }
     }
 
     private fun fetchNightlyCompatibleWorkflowArtifactSnapshotFromPublicApi(

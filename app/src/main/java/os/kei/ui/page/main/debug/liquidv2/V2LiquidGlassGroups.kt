@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.debug.liquidv2
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -38,9 +40,20 @@ internal enum class V2GlassGroupOrientation {
 internal class V2GlassGroupScope internal constructor(
     val groupBackdrop: Backdrop,
     val childBackdrop: LayerBackdrop,
+    val combinedChildBackdrop: Backdrop,
     val density: V2GlassContentDensity,
     val role: V2GlassRole,
     val defaultSize: V2GlassControlSize
+)
+
+@Stable
+internal class V2LiquidGlassScope internal constructor(
+    val parentBackdrop: Backdrop,
+    val exportedBackdrop: LayerBackdrop,
+    val combinedChildBackdrop: Backdrop,
+    val density: V2GlassContentDensity,
+    val role: V2GlassRole,
+    val defaultMaterialStyle: V2LiquidMaterialStyle
 )
 
 @Stable
@@ -69,10 +82,13 @@ internal fun V2GlassGroup(
 ) {
     val palette = rememberV2LiquidGlassPalette()
     val childBackdrop = rememberLayerBackdrop()
-    val scope = remember(backdrop, childBackdrop, density, role, defaultSize) {
+    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
+    val scope =
+        remember(backdrop, childBackdrop, combinedChildBackdrop, density, role, defaultSize) {
         V2GlassGroupScope(
             groupBackdrop = backdrop,
             childBackdrop = childBackdrop,
+            combinedChildBackdrop = combinedChildBackdrop,
             density = density,
             role = role,
             defaultSize = defaultSize
@@ -85,6 +101,7 @@ internal fun V2GlassGroup(
             shape = RoundedCornerShape(V2LiquidGlassTokens.radiusCard),
             role = role,
             surfaceColor = palette.clearTint,
+            materialStyle = V2LiquidMaterialStyle.Widget,
             blur = V2LiquidGlassTokens.blurBalanced,
             lensHeight = V2LiquidGlassTokens.lensBalanced,
             lensAmount = V2LiquidGlassTokens.lensStrong,
@@ -126,6 +143,7 @@ internal fun V2GlassGroupScope.V2GlassListRow(
     onClick: (() -> Unit)? = null
 ) {
     val palette = rememberV2LiquidGlassPalette()
+    val isDark = isSystemInDarkTheme()
     V2GlassSurface(
         backdrop = childBackdrop,
         modifier = modifier.fillMaxWidth(),
@@ -138,7 +156,8 @@ internal fun V2GlassGroupScope.V2GlassListRow(
             lensAmount = 20.dp,
             interactive = onClick != null,
             disabled = !enabled,
-            role = role
+            role = role,
+            backgroundReadability = if (isDark) 0.24f else 0f
         ),
         contentPadding = PaddingValues(12.dp),
         contentAlignment = Alignment.CenterStart,
@@ -159,7 +178,8 @@ internal fun V2GlassGroupScope.V2GlassListRow(
                         surfaceColor = palette.clearTint,
                         blur = V2LiquidGlassTokens.blurSoft,
                         lensHeight = 10.dp,
-                        lensAmount = 14.dp
+                        lensAmount = 14.dp,
+                        backgroundReadability = if (isDark) 0.18f else 0f
                     ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -225,10 +245,12 @@ internal fun V2GlassToolbar(
 ) {
     val palette = rememberV2LiquidGlassPalette()
     val childBackdrop = rememberLayerBackdrop()
-    val scope = remember(backdrop, childBackdrop, role) {
+    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
+    val scope = remember(backdrop, childBackdrop, combinedChildBackdrop, role) {
         V2GlassGroupScope(
             groupBackdrop = backdrop,
             childBackdrop = childBackdrop,
+            combinedChildBackdrop = combinedChildBackdrop,
             density = V2GlassContentDensity.Compact,
             role = role,
             defaultSize = V2GlassControlSize.Compact
@@ -272,10 +294,12 @@ internal fun V2GlassDockGroup(
 ) {
     val palette = rememberV2LiquidGlassPalette()
     val childBackdrop = rememberLayerBackdrop()
-    val scope = remember(backdrop, childBackdrop, role) {
+    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
+    val scope = remember(backdrop, childBackdrop, combinedChildBackdrop, role) {
         V2GlassGroupScope(
             groupBackdrop = backdrop,
             childBackdrop = childBackdrop,
+            combinedChildBackdrop = combinedChildBackdrop,
             density = V2GlassContentDensity.Compact,
             role = role,
             defaultSize = V2GlassControlSize.Compact
@@ -312,6 +336,7 @@ internal fun V2GlassActionGroup(
 ) {
     val palette = rememberV2LiquidGlassPalette()
     val childBackdrop = rememberLayerBackdrop()
+    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
     V2GlassSurface(
         backdrop = backdrop,
         modifier = modifier,
@@ -335,7 +360,7 @@ internal fun V2GlassActionGroup(
                 V2GlassButton(
                     text = item.label,
                     icon = item.icon,
-                    backdrop = childBackdrop,
+                    backdrop = combinedChildBackdrop,
                     role = item.role,
                     selected = item.selected,
                     loading = item.loading,

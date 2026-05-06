@@ -274,12 +274,15 @@ internal fun V2BackdropStage(parentBackdrop: Backdrop) {
 }
 
 @Composable
-internal fun V2NestedExportedBackdropSample(backdrop: Backdrop) {
+internal fun V2NestedExportedBackdropSample(
+    backdrop: Backdrop,
+    modifier: Modifier = Modifier
+) {
     val palette = rememberV2LiquidGlassPalette()
     val childBackdrop = rememberLayerBackdrop()
     V2GlassSurface(
         backdrop = backdrop,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(178.dp),
         spec = V2GlassSurfaceSpec(
@@ -564,12 +567,13 @@ internal fun V2SliderLine(
 @Composable
 internal fun V2PerfPanel(
     pageLabel: String,
-    backdrop: Backdrop
+    backdrop: Backdrop,
+    modifier: Modifier = Modifier
 ) {
     val palette = rememberV2LiquidGlassPalette()
     V2GlassGroup(
         backdrop = backdrop,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         role = V2GlassRole.Success,
         density = V2GlassContentDensity.Compact,
         contentPadding = PaddingValues(10.dp),

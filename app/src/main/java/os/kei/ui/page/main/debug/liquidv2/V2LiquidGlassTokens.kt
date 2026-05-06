@@ -31,11 +31,13 @@ internal object V2LiquidGlassTokens {
     val spacingLg: Dp = 18.dp
     val spacingXl: Dp = 24.dp
     val controlHeight: Dp = 46.dp
-    val dockHeight: Dp = 66.dp
+    val dockHeight: Dp = 62.dp
     val switchWidth: Dp = 62.dp
     val switchHeight: Dp = 36.dp
     val sliderHeight: Dp = 46.dp
     val sliderCompactHeight: Dp = 38.dp
+    val dockIndicatorInset: Dp = 6.dp
+    val dockItemMinWidth: Dp = 54.dp
     const val pressMotionMs: Int = 130
     const val stateMotionMs: Int = 180
     const val overlayMotionMs: Int = 190
@@ -62,19 +64,19 @@ internal fun rememberV2LiquidGlassPalette(
         accent = accent,
         content = MiuixTheme.colorScheme.onBackground,
         secondary = if (isDark) {
-            Color.White.copy(alpha = 0.72f)
+            Color.White.copy(alpha = 0.80f)
         } else {
-            MiuixTheme.colorScheme.onBackgroundVariant
+            Color(0xFF253044).copy(alpha = 0.82f)
         },
         panelTint = if (isDark) {
-            Color(0xFF101820).copy(alpha = 0.32f)
+            Color(0xFF11161B).copy(alpha = 0.24f)
         } else {
-            Color.White.copy(alpha = 0.44f)
+            Color.White.copy(alpha = 0.30f)
         },
         clearTint = if (isDark) {
-            Color.White.copy(alpha = 0.08f)
+            Color.White.copy(alpha = 0.075f)
         } else {
-            Color.White.copy(alpha = 0.26f)
+            Color.White.copy(alpha = 0.18f)
         },
         danger = Color(0xFFFF4D6D),
         success = Color(0xFF21C982),
@@ -114,6 +116,16 @@ internal enum class V2GlassBackdropPolicy {
     CombinedChild
 }
 
+internal enum class V2LiquidMaterialStyle {
+    Clear,
+    Regular,
+    Prominent,
+    Tinted,
+    Dock,
+    Widget,
+    ControlThumb
+}
+
 internal enum class V2GlassTabLabelPolicy {
     Always,
     Selected,
@@ -145,12 +157,62 @@ internal data class V2GlassShadowSpec(
     val innerRadius: Dp = 7.dp
 )
 
+@Immutable
+internal data class V2LiquidParameterSet(
+    val blur: Dp,
+    val refractionHeight: Dp,
+    val refractionAmount: Dp,
+    val chromaticAberration: Boolean = true,
+    val depthEffect: Boolean = true
+) {
+    fun bounded(): V2LiquidParameterSet {
+        return copy(
+            blur = blur.coerceIn(0.dp, 28.dp),
+            refractionHeight = refractionHeight.coerceIn(0.dp, 48.dp),
+            refractionAmount = refractionAmount.coerceIn(0.dp, 56.dp)
+        )
+    }
+
+    companion object {
+        val sampleClear = V2LiquidParameterSet(
+            blur = 4.dp,
+            refractionHeight = 16.dp,
+            refractionAmount = 32.dp,
+            chromaticAberration = true,
+            depthEffect = true
+        )
+        val controlRegular = V2LiquidParameterSet(
+            blur = 6.dp,
+            refractionHeight = 18.dp,
+            refractionAmount = 30.dp,
+            chromaticAberration = true,
+            depthEffect = true
+        )
+        val dockProminent = V2LiquidParameterSet(
+            blur = 5.dp,
+            refractionHeight = 18.dp,
+            refractionAmount = 34.dp,
+            chromaticAberration = true,
+            depthEffect = true
+        )
+        val thumbLens = V2LiquidParameterSet(
+            blur = 3.dp,
+            refractionHeight = 14.dp,
+            refractionAmount = 22.dp,
+            chromaticAberration = true,
+            depthEffect = true
+        )
+    }
+}
+
 internal typealias V2GlassSurfaceDrawBlock = DrawScope.() -> Unit
 internal typealias V2GlassLayerBlock = GraphicsLayerScope.(pressProgress: Float) -> Unit
 
 @Immutable
 internal data class V2GlassSurfaceSpec(
     val shape: Shape = RoundedCornerShape(V2LiquidGlassTokens.radiusCard),
+    val materialStyle: V2LiquidMaterialStyle = V2LiquidMaterialStyle.Regular,
+    val parameters: V2LiquidParameterSet? = null,
     val role: V2GlassRole = V2GlassRole.Neutral,
     val size: V2GlassControlSize = V2GlassControlSize.Regular,
     val density: V2GlassContentDensity = V2GlassContentDensity.Comfortable,
@@ -173,12 +235,20 @@ internal data class V2GlassSurfaceSpec(
     val maxHeight: Dp = Dp.Unspecified,
     val highlightAlpha: Float = 0.88f,
     val disabledHighlightAlpha: Float = 0.32f,
+    val clearDimmingAlpha: Float = 0f,
+    val rimLightAlpha: Float = 0.28f,
+    val edgeChromaticAlpha: Float = 0.12f,
+    val causticAlpha: Float = 0.08f,
+    val contentVibrancy: Float = 1f,
+    val backgroundReadability: Float = 0f,
+    val shapeMorph: Float = 0f,
     val border: V2GlassBorderSpec = V2GlassBorderSpec(),
     val shadow: V2GlassShadowSpec = V2GlassShadowSpec(),
     val motion: V2GlassMotionSpec = V2GlassMotionSpec(),
     val semanticsRole: Role? = null,
     val backdropPolicy: V2GlassBackdropPolicy = V2GlassBackdropPolicy.Parent,
     val onDrawSurface: V2GlassSurfaceDrawBlock? = null,
+    val gestureTransform: V2GlassLayerBlock? = null,
     val layerBlock: V2GlassLayerBlock? = null
 ) {
     companion object {

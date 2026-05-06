@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -254,6 +255,7 @@ internal fun V2GlassStatusCapsule(
     size: V2GlassControlSize = V2GlassControlSize.Compact
 ) {
     val palette = rememberV2LiquidGlassPalette()
+    val isDark = isSystemInDarkTheme()
     V2GlassSurface(
         backdrop = backdrop,
         modifier = modifier.height(if (size == V2GlassControlSize.Compact) 30.dp else 34.dp),
@@ -267,7 +269,8 @@ internal fun V2GlassStatusCapsule(
             blur = V2LiquidGlassTokens.blurSoft,
             lensHeight = 12.dp,
             lensAmount = 16.dp,
-            chromaticAberration = false
+            chromaticAberration = false,
+            backgroundReadability = if (isDark) 0.18f else 0f
         ),
         contentPadding = PaddingValues(horizontal = 12.dp),
         contentAlignment = Alignment.Center
@@ -300,13 +303,21 @@ internal fun V2GlassSwitch(
 ) {
     val palette = rememberV2LiquidGlassPalette()
     val trackBackdrop = rememberLayerBackdrop()
-    val progress by appMotionFloatState(
+    var dragging by remember { mutableStateOf(false) }
+    var dragProgress by remember { mutableStateOf(if (checked) 1f else 0f) }
+    val animatedProgress by appMotionFloatState(
         targetValue = if (checked) 1f else 0f,
         durationMillis = V2LiquidGlassTokens.stateMotionMs,
         label = "v2_glass_switch"
     )
+    val dragMorph by appMotionFloatState(
+        targetValue = if (dragging) 1f else 0f,
+        durationMillis = V2LiquidGlassTokens.pressMotionMs,
+        label = "v2_glass_switch_drag"
+    )
+    val progress = if (dragging) dragProgress else animatedProgress
     val trackTint = if (checked) {
-        palette.roleTint(role, 0.35f)
+        palette.success.copy(alpha = 0.58f)
     } else {
         palette.clearTint
     }
@@ -316,13 +327,46 @@ internal fun V2GlassSwitch(
         surfaceColor = palette.clearTint,
         interactive = true,
         role = role
-    ).copy(disabled = !enabled, semanticsRole = Role.Switch)
+    ).copy(
+        materialStyle = V2LiquidMaterialStyle.Tinted,
+        parameters = V2LiquidParameterSet.controlRegular,
+        rimLightAlpha = 0.34f,
+        edgeChromaticAlpha = 0.14f,
+        causticAlpha = 0.10f,
+        disabled = !enabled,
+        semanticsRole = Role.Switch
+    )
     V2GlassSurface(
         backdrop = backdrop,
-        modifier = modifier.size(
-            width = V2LiquidGlassTokens.switchWidth,
-            height = V2LiquidGlassTokens.switchHeight
-        ),
+        modifier = modifier
+            .size(
+                width = V2LiquidGlassTokens.switchWidth,
+                height = V2LiquidGlassTokens.switchHeight
+            )
+            .pointerInput(canChange) {
+                if (canChange) {
+                    detectDragGestures(
+                        onDragStart = {
+                            dragging = true
+                            dragProgress = progress
+                            onDragStateChange(true)
+                        },
+                        onDragEnd = {
+                            dragging = false
+                            onDragStateChange(false)
+                            onCheckedChange(dragProgress >= 0.5f)
+                        },
+                        onDragCancel = {
+                            dragging = false
+                            onDragStateChange(false)
+                        },
+                        onDrag = { change, _ ->
+                            dragProgress =
+                                (change.position.x / size.width.toFloat()).fastCoerceIn(0f, 1f)
+                        }
+                    )
+                }
+            },
         spec = resolvedTrackSpec,
         interactionSource = interactionSource,
         onClick = { if (canChange) onCheckedChange(!checked) }
@@ -345,15 +389,25 @@ internal fun V2GlassSwitch(
                         y = 0
                     )
                 }
-                .size(28.dp),
+                .size(width = 28.dp + 6.dp * dragMorph, height = 28.dp),
             spec = (thumbSpec ?: V2GlassSurfaceSpec(
                 shape = ContinuousCapsule,
-                tint = if (checked) palette.roleTint(role, 0.38f) else Color.Unspecified,
-                surfaceColor = Color.White.copy(alpha = 0.34f),
+                materialStyle = V2LiquidMaterialStyle.ControlThumb,
+                parameters = V2LiquidParameterSet.thumbLens,
+                tint = if (checked) palette.success.copy(alpha = 0.18f) else Color.Unspecified,
+                surfaceColor = Color.White.copy(alpha = 0.28f),
                 blur = V2LiquidGlassTokens.blurSoft,
                 lensHeight = 12.dp,
                 lensAmount = 18.dp,
-                interactive = false
+                interactive = false,
+                rimLightAlpha = 0.36f,
+                edgeChromaticAlpha = 0.16f,
+                causticAlpha = 0.12f,
+                shapeMorph = 1f,
+                gestureTransform = { press ->
+                    scaleX = lerp(1f, 1.08f, dragMorph + press).coerceAtMost(1.12f)
+                    scaleY = lerp(1f, 0.96f, dragMorph)
+                }
             )).copy(disabled = !enabled),
             contentAlignment = Alignment.Center
         ) {
@@ -556,7 +610,14 @@ internal fun V2GlassSegmentedControl(
         showIcons = false,
         compact = true,
         selectionStyle = selectionStyle,
-        activeTint = palette.accent.copy(alpha = 0.30f)
+        activeTint = palette.accent.copy(alpha = 0.30f),
+        spec = V2LiquidDockSpec(
+            height = if (size == V2GlassControlSize.Compact) 46.dp else 52.dp,
+            itemMinWidth = 52.dp,
+            outerPadding = 4.dp,
+            indicatorInset = 4.dp,
+            selectedBlobStyle = V2LiquidMaterialStyle.ControlThumb
+        )
     )
 }
 

@@ -75,9 +75,20 @@ internal fun V2GlassSurface(
         palette = palette,
         role = spec.role,
         tint = spec.tint,
+        materialStyle = spec.materialStyle,
         selected = spec.selected,
         loading = spec.loading
     )
+    val materialFill = v2ResolvedMaterialFill(palette, spec)
+    val parameters = remember(spec) {
+        (spec.parameters ?: V2LiquidParameterSet(
+            blur = spec.blur,
+            refractionHeight = spec.lensHeight,
+            refractionAmount = spec.lensAmount,
+            chromaticAberration = spec.chromaticAberration,
+            depthEffect = spec.depthEffect
+        )).bounded()
+    }
     val borderColor = v2ResolvedBorderColor(
         spec = spec,
         fallback = if (spec.surfaceColor.isSpecified) {
@@ -95,13 +106,15 @@ internal fun V2GlassSurface(
                 backdrop = backdrop,
                 shape = { spec.shape },
                 effects = {
-                    vibrancy()
-                    blur(spec.blur.toPx().coerceIn(0f, 28.dp.toPx()))
+                    if (spec.contentVibrancy > 0f) vibrancy()
+                    blur(parameters.blur.toPx().coerceIn(0f, 28.dp.toPx()))
                     lens(
-                        refractionHeight = spec.lensHeight.toPx().coerceIn(0f, 48.dp.toPx()),
-                        refractionAmount = spec.lensAmount.toPx().coerceIn(0f, 56.dp.toPx()),
-                        depthEffect = spec.depthEffect,
-                        chromaticAberration = spec.chromaticAberration
+                        refractionHeight = parameters.refractionHeight.toPx()
+                            .coerceIn(0f, 48.dp.toPx()),
+                        refractionAmount = parameters.refractionAmount.toPx()
+                            .coerceIn(0f, 56.dp.toPx()),
+                        depthEffect = parameters.depthEffect,
+                        chromaticAberration = parameters.chromaticAberration
                     )
                 },
                 highlight = {
@@ -134,12 +147,58 @@ internal fun V2GlassSurface(
                 layerBlock = layerBlock,
                 exportedBackdrop = exportedBackdrop,
                 onDrawSurface = {
+                    if (spec.clearDimmingAlpha > 0f) {
+                        drawRect(
+                            Color.Black.copy(
+                                alpha = spec.clearDimmingAlpha.coerceIn(
+                                    0f,
+                                    0.45f
+                                )
+                            )
+                        )
+                    }
                     if (tint.isSpecified) {
                         drawRect(tint, blendMode = BlendMode.Hue)
                         drawRect(tint.copy(alpha = tint.alpha * 0.72f))
                     }
+                    if (materialFill.isSpecified && materialFill.alpha > 0f) {
+                        drawRect(materialFill)
+                    }
                     if (spec.surfaceColor.isSpecified && spec.surfaceColor.alpha > 0f) {
                         drawRect(spec.surfaceColor)
+                    }
+                    if (spec.backgroundReadability > 0f) {
+                        drawRect(
+                            Color.Black.copy(
+                                alpha = spec.backgroundReadability.coerceIn(
+                                    0f,
+                                    0.32f
+                                )
+                            )
+                        )
+                    }
+                    if (spec.rimLightAlpha > 0f) {
+                        drawRect(
+                            Color.White.copy(alpha = spec.rimLightAlpha.coerceIn(0f, 0.45f)),
+                            blendMode = BlendMode.Screen
+                        )
+                    }
+                    if (spec.edgeChromaticAlpha > 0f && parameters.chromaticAberration) {
+                        drawRect(
+                            Color(0xFF39C5FF).copy(
+                                alpha = spec.edgeChromaticAlpha.coerceIn(
+                                    0f,
+                                    0.22f
+                                )
+                            ),
+                            blendMode = BlendMode.Softlight
+                        )
+                    }
+                    if (spec.causticAlpha > 0f) {
+                        drawRect(
+                            Color.White.copy(alpha = spec.causticAlpha.coerceIn(0f, 0.16f)),
+                            blendMode = BlendMode.Overlay
+                        )
                     }
                     spec.onDrawSurface?.invoke(this)
                 }
@@ -181,6 +240,7 @@ private fun v2ResolvedTint(
     palette: V2LiquidGlassPalette,
     role: V2GlassRole,
     tint: Color,
+    materialStyle: V2LiquidMaterialStyle,
     selected: Boolean,
     loading: Boolean
 ): Color {
@@ -188,9 +248,26 @@ private fun v2ResolvedTint(
     val alpha = when {
         loading -> 0.20f
         selected -> 0.24f
+        materialStyle == V2LiquidMaterialStyle.Tinted -> 0.18f
+        materialStyle == V2LiquidMaterialStyle.Dock -> 0.08f
         else -> 0.16f
     }
     return palette.roleTint(role, alpha)
+}
+
+private fun v2ResolvedMaterialFill(
+    palette: V2LiquidGlassPalette,
+    spec: V2GlassSurfaceSpec
+): Color {
+    return when (spec.materialStyle) {
+        V2LiquidMaterialStyle.Clear -> Color.White.copy(alpha = if (spec.selected) 0.16f else 0.08f)
+        V2LiquidMaterialStyle.Regular -> palette.clearTint
+        V2LiquidMaterialStyle.Prominent -> Color.White.copy(alpha = 0.22f)
+        V2LiquidMaterialStyle.Tinted -> Color.White.copy(alpha = 0.12f)
+        V2LiquidMaterialStyle.Dock -> Color.White.copy(alpha = 0.10f)
+        V2LiquidMaterialStyle.Widget -> Color.White.copy(alpha = 0.14f)
+        V2LiquidMaterialStyle.ControlThumb -> Color.White.copy(alpha = 0.32f)
+    }
 }
 
 private fun v2ResolvedBorderColor(
@@ -212,13 +289,15 @@ private fun v2SurfaceLayerBlock(
 ): (GraphicsLayerScope.() -> Unit)? {
     val hasDefaultPress = spec.interactive && !spec.disabled
     val customBlock = spec.layerBlock
-    if (!hasDefaultPress && customBlock == null) return null
+    if (!hasDefaultPress && customBlock == null && spec.gestureTransform == null) return null
     return {
         if (hasDefaultPress) {
-            scaleX = lerp(1f, spec.motion.pressScaleX, pressProgress)
-            scaleY = lerp(1f, spec.motion.pressScaleY, pressProgress)
+            val morph = spec.shapeMorph.coerceIn(0f, 1f)
+            scaleX = lerp(1f, spec.motion.pressScaleX + morph * 0.018f, pressProgress)
+            scaleY = lerp(1f, spec.motion.pressScaleY - morph * 0.010f, pressProgress)
             translationY = -spec.motion.pressLift.toPx() * pressProgress
         }
+        spec.gestureTransform?.invoke(this, pressProgress)
         customBlock?.invoke(this, pressProgress)
     }
 }

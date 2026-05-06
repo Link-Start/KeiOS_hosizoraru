@@ -127,7 +127,7 @@ internal fun DebugV2LiquidGlassSamplePage(
                 verticalAlignment = Alignment.Top
             ) { pageIndex ->
                 val destination = destinations[pageIndex]
-                val active = pageIndex == pagerState.settledPage
+                val active = pageIndex == pagerState.currentPage
                 V2LiquidGlassSampleContent(
                     page = destination.page,
                     active = active,
@@ -150,7 +150,15 @@ internal fun DebugV2LiquidGlassSamplePage(
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .fillMaxWidth()
-                    .height(V2LiquidGlassTokens.dockHeight)
+                    .height(62.dp),
+                compact = true,
+                spec = V2LiquidDockSpec(
+                    height = 62.dp,
+                    itemMinWidth = 48.dp,
+                    outerPadding = 4.dp,
+                    indicatorInset = 5.dp,
+                    selectedBlobStyle = V2LiquidMaterialStyle.Dock
+                )
             )
         }
     }

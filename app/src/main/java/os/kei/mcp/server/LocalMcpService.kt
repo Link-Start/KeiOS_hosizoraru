@@ -35,7 +35,8 @@ class LocalMcpService(
     private val skillContent = McpSkillContent(environment, runtimeTools::buildRuntimeConfigJson)
     private val homeTools = McpHomeTools(environment)
     private val systemOsTools = McpSystemOsTools(environment)
-    private val githubTools = McpGitHubTools(environment)
+    private val githubTrackingTools = McpGitHubTrackingTools(environment)
+    private val githubDiscoveryTools = McpGitHubDiscoveryTools(environment)
     private val baTools = McpBaTools(environment)
 
     private val serverInstructions: String by lazy {
@@ -81,7 +82,8 @@ class LocalMcpService(
         skillContent.registerClawGuideTool(server)
         homeTools.register(server)
         systemOsTools.register(server)
-        githubTools.register(server)
+        githubTrackingTools.register(server)
+        githubDiscoveryTools.register(server)
         baTools.register(server)
         skillContent.registerResources(server)
         skillContent.registerPrompt(server)

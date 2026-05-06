@@ -230,6 +230,7 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         state: GitHubShareImportNotificationState
     ): McpNotificationPayload {
+        val liveUpdateActive = state.phase.ongoing || state.phase.promotedLiveUpdate
         val openPendingIntent = if (state.phase.openGitHubPage) {
             buildOpenGitHubPendingIntent(context)
         } else {
@@ -249,11 +250,11 @@ object GitHubShareImportNotificationHelper {
         val content = resolveContent(context, state)
         return McpNotificationPayload(
             serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
-            running = state.phase.ongoing,
+            running = liveUpdateActive,
             port = state.phase.progressPercent,
             path = content,
             clients = 1,
-            ongoing = state.phase.ongoing,
+            ongoing = liveUpdateActive,
             onlyAlertOnce = true,
             openPendingIntent = openPendingIntent,
             stopPendingIntent = secondaryPendingIntent,
@@ -440,7 +441,8 @@ internal enum class GitHubShareImportNotificationPhase(
     val progressPercent: Int,
     val ongoing: Boolean,
     val openGitHubPage: Boolean,
-    val cancelActionEnabled: Boolean = false
+    val cancelActionEnabled: Boolean = false,
+    val promotedLiveUpdate: Boolean = false
 ) {
     Resolving(
         titleRes = R.string.github_share_import_notify_title_resolving,
@@ -499,7 +501,8 @@ internal enum class GitHubShareImportNotificationPhase(
         primaryActionRes = R.string.github_share_import_notify_action_view_tracking,
         progressPercent = 100,
         ongoing = false,
-        openGitHubPage = true
+        openGitHubPage = true,
+        promotedLiveUpdate = true
     ),
     AlreadyTracked(
         titleRes = R.string.github_share_import_notify_title_already_tracked,
@@ -507,7 +510,8 @@ internal enum class GitHubShareImportNotificationPhase(
         primaryActionRes = R.string.github_share_import_notify_action_view_tracking,
         progressPercent = 100,
         ongoing = false,
-        openGitHubPage = true
+        openGitHubPage = true,
+        promotedLiveUpdate = true
     ),
     Failed(
         titleRes = R.string.github_share_import_notify_title_failed,
@@ -523,6 +527,7 @@ internal enum class GitHubShareImportNotificationPhase(
         primaryActionRes = R.string.github_share_import_notify_action_view_github,
         progressPercent = 100,
         ongoing = false,
-        openGitHubPage = true
+        openGitHubPage = true,
+        promotedLiveUpdate = true
     )
 }

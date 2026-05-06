@@ -10,7 +10,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import os.kei.mcp.notification.McpNotificationHelper
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -68,7 +67,7 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `completed notification offers tracking and mark read actions`() {
+    fun `added notification keeps live update and tracking actions`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Added,
@@ -79,9 +78,9 @@ class GitHubShareImportNotificationHelperTest {
 
         val notification = buildModern(context, state)
 
-        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
-        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertEquals(
             "GitHub tracking added",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
@@ -96,7 +95,31 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `cancelled notification offers github and mark read actions`() {
+    fun `already tracked notification keeps live update and tracking actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.AlreadyTracked,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo"
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals(
+            "GitHub tracking already exists",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(2, notification.actions.size)
+        assertEquals("View tracking", notification.actions[0].title.toString())
+        assertEquals("Mark read", notification.actions[1].title.toString())
+    }
+
+    @Test
+    fun `cancelled notification keeps live update and mark read actions`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Cancelled
@@ -104,8 +127,8 @@ class GitHubShareImportNotificationHelperTest {
 
         val notification = buildModern(context, state)
 
-        assertEquals(Notification.CATEGORY_STATUS, notification.category)
-        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertEquals(
             "Share import cancelled",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()

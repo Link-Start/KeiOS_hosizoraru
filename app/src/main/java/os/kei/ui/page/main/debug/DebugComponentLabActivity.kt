@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import os.kei.ui.page.main.debug.liquidv2.DebugV2LiquidGlassSampleActivity
 
 class DebugComponentLabActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,6 +16,7 @@ class DebugComponentLabActivity : ComponentActivity() {
             DebugActivityTheme {
                 DebugComponentLabPage(
                     onClose = { finish() },
+                    onOpenV2LiquidSample = { DebugV2LiquidGlassSampleActivity.launch(this) },
                     onOpenLiquidCatalog = { DebugLiquidCatalogActivity.launch(this) }
                 )
             }

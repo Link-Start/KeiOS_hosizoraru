@@ -1,16 +1,17 @@
 package os.kei.feature.github.domain
 
+import org.junit.Test
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubVersionCandidateSource
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -290,6 +291,43 @@ class GitHubReleaseCheckServiceTest {
         assertFalse(result.hasPreReleaseUpdate)
         assertFalse(result.recommendsPreRelease)
         assertEquals("10.9.0-alpha03-2025070901", result.preReleaseInfo)
+    }
+
+    @Test
+    fun `precise apk version overrides display payload and versionCode comparison`() {
+        val item = trackedApp(preferPreRelease = false)
+        val stable = signal(tag = "v1.0.0", title = "Demo 1.0.0")
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.0.0",
+            localVersionCode = 10L,
+            snapshot = snapshot(
+                stable = stable,
+                entries = listOf(entry(tag = "v1.0.0", title = "Demo 1.0.0"))
+            ),
+            preciseStableApkVersion = GitHubRemoteApkVersionInfo(
+                releaseName = "Demo 1.0.0",
+                releaseTag = "v1.0.0",
+                assetName = "demo.apk",
+                packageName = "demo.app",
+                versionName = "2.0.0",
+                versionCode = "20"
+            ),
+            sourceConfigSignature = "check-v2|fixture"
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+        assertEquals("2.0.0 (20)", result.preciseStableApkVersion?.versionLabel())
+        assertEquals("Demo 1.0.0 · v1.0.0", result.preciseStableApkVersion?.releaseLabel())
+        assertEquals("check-v2|fixture", result.sourceConfigSignature)
+
+        val cacheEntry = GitHubReleaseCheckService.run { result.toCacheEntry() }
+        val restored = GitHubReleaseCheckService.fromCacheEntry(cacheEntry)
+        assertEquals("2.0.0 (20)", restored.preciseStableApkVersion?.versionLabel())
+        assertEquals("Demo 1.0.0 · v1.0.0", restored.preciseStableApkVersion?.releaseLabel())
+        assertEquals("check-v2|fixture", restored.sourceConfigSignature)
     }
 
     private fun trackedApp(preferPreRelease: Boolean): GitHubTrackedApp {

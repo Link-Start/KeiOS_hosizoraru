@@ -64,5 +64,8 @@ data class GitHubCheckCacheEntry(
     val hasPreReleaseUpdate: Boolean = false,
     val recommendsPreRelease: Boolean = false,
     val releaseHint: String = "",
-    val sourceStrategyId: String = ""
+    val sourceStrategyId: String = "",
+    val sourceConfigSignature: String = "",
+    val latestStableApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val latestPreApkVersion: GitHubRemoteApkVersionInfo? = null
 )

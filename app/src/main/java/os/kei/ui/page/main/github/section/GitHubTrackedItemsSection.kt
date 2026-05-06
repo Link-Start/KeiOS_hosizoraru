@@ -47,6 +47,8 @@ import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
 import os.kei.ui.page.main.github.buildGitHubReleaseNotesLines
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
+import os.kei.ui.page.main.github.formatApkVersionValue
+import os.kei.ui.page.main.github.formatReleaseMetaValue
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -267,17 +269,24 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             }
                         )
                     }
-                    if (state.hasStableRelease &&
+                    val showStableRelease = state.hasStableRelease &&
                         (state.latestStableName.isNotBlank() ||
                             state.latestStableRawTag.isNotBlank() ||
                             state.latestTag.isNotBlank())
-                    ) {
+                    val showPreRelease = state.showPreReleaseInfo &&
+                            (state.latestPreName.isNotBlank() ||
+                                    state.latestPreRawTag.isNotBlank() ||
+                                    state.preReleaseInfo.isNotBlank())
+                    if (showStableRelease) {
                         val latestColor = state.stableVersionColor(
                             neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
                         )
                         VersionValueRow(
                             label = stringResource(R.string.github_item_label_stable_version),
-                            value = formatReleaseValue(
+                            value = formatApkVersionValue(
+                                preciseInfo = state.latestStableApkVersion.takeIf {
+                                    lookupConfig.preciseApkVersionEnabled
+                                },
                                 releaseName = state.latestStableName.ifBlank { state.latestTag },
                                 rawTag = state.latestStableRawTag
                             ),
@@ -285,23 +294,51 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             emphasized = state.hasUpdate == true && !state.recommendsPreRelease
                         )
                     }
-                    if (state.showPreReleaseInfo &&
-                        (state.latestPreName.isNotBlank() ||
-                            state.latestPreRawTag.isNotBlank() ||
-                            state.preReleaseInfo.isNotBlank())
-                    ) {
+                    if (showPreRelease) {
                         val preColor = state.preReleaseVersionColor(
                             neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
                         )
                         VersionValueRow(
                             label = stringResource(R.string.github_item_label_prerelease_version),
-                            value = formatReleaseValue(
+                            value = formatApkVersionValue(
+                                preciseInfo = state.latestPreApkVersion.takeIf {
+                                    lookupConfig.preciseApkVersionEnabled
+                                },
                                 releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
                                 rawTag = state.latestPreRawTag
                             ),
                             valueColor = preColor,
                             emphasized = state.recommendsPreRelease || state.hasPreReleaseUpdate
                         )
+                    }
+                    if (lookupConfig.preciseApkVersionEnabled) {
+                        val releaseMetaValues = buildList {
+                            if (showStableRelease) {
+                                formatReleaseMetaValue(
+                                    preciseInfo = state.latestStableApkVersion,
+                                    releaseName = state.latestStableName.ifBlank { state.latestTag },
+                                    rawTag = state.latestStableRawTag
+                                ).takeIf { it.isNotBlank() }?.let { label ->
+                                    add("${context.getString(R.string.github_release_meta_prefix_stable)}: $label")
+                                }
+                            }
+                            if (showPreRelease) {
+                                formatReleaseMetaValue(
+                                    preciseInfo = state.latestPreApkVersion,
+                                    releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
+                                    rawTag = state.latestPreRawTag
+                                ).takeIf { it.isNotBlank() }?.let { label ->
+                                    add("${context.getString(R.string.github_release_meta_prefix_prerelease)}: $label")
+                                }
+                            }
+                        }
+                        if (releaseMetaValues.isNotEmpty()) {
+                            VersionValueRow(
+                                label = stringResource(R.string.github_item_label_releases),
+                                value = releaseMetaValues.joinToString(" / "),
+                                valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+                            )
+                        }
                     }
                     val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
                         appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L }

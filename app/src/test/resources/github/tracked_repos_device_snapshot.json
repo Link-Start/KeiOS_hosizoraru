@@ -40,14 +40,6 @@
     "checkPreRelease": true
   },
   {
-    "repoUrl": "https://github.com/xororz/local-dream",
-    "owner": "xororz",
-    "repo": "local-dream",
-    "packageName": "io.github.xororz.localdream",
-    "appLabel": "Local Dream",
-    "checkPreRelease": false
-  },
-  {
     "repoUrl": "https://github.com/LanRhyme/MicYou",
     "owner": "LanRhyme",
     "repo": "MicYou",

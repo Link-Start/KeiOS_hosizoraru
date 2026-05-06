@@ -11,9 +11,26 @@ internal object BinaryManifestFixture {
     private const val UTF8_FLAG = 0x00000100
     private const val TYPE_STRING = 0x03
 
-    fun build(packageName: String): ByteArray {
-        val stringPool = stringPool(listOf("manifest", "package", packageName))
-        val startElement = manifestStartElement(packageNameIndex = 2)
+    fun build(
+        packageName: String,
+        versionName: String = "",
+        versionCode: Long = -1L
+    ): ByteArray {
+        val attributes = buildList {
+            add("package" to packageName)
+            if (versionName.isNotBlank()) add("versionName" to versionName)
+            if (versionCode >= 0L) add("versionCode" to versionCode.toString())
+        }
+        val strings = (listOf("manifest") + attributes.flatMap { (name, value) ->
+            listOf(name, value)
+        }).distinct()
+        val stringIndexes = strings.withIndex().associate { it.value to it.index }
+        val stringPool = stringPool(strings)
+        val startElement = manifestStartElement(
+            attributes = attributes.map { (name, value) ->
+                stringIndexes.getValue(name) to stringIndexes.getValue(value)
+            }
+        )
         val totalSize = 8 + stringPool.size + startElement.size
         return ByteArrayOutputStream().apply {
             writeU16(RES_XML_TYPE)
@@ -51,8 +68,8 @@ internal object BinaryManifestFixture {
         }.toByteArray()
     }
 
-    private fun manifestStartElement(packageNameIndex: Int): ByteArray {
-        val chunkSize = 56
+    private fun manifestStartElement(attributes: List<Pair<Int, Int>>): ByteArray {
+        val chunkSize = 36 + attributes.size * 20
         return ByteArrayOutputStream().apply {
             writeU16(RES_XML_START_ELEMENT_TYPE)
             writeU16(16)
@@ -63,17 +80,19 @@ internal object BinaryManifestFixture {
             writeI32(0)
             writeU16(20)
             writeU16(20)
-            writeU16(1)
+            writeU16(attributes.size)
             writeU16(0)
             writeU16(0)
             writeU16(0)
-            writeI32(-1)
-            writeI32(1)
-            writeI32(packageNameIndex)
-            writeU16(8)
-            write(0)
-            write(TYPE_STRING)
-            writeI32(packageNameIndex)
+            attributes.forEach { (nameIndex, valueIndex) ->
+                writeI32(-1)
+                writeI32(nameIndex)
+                writeI32(valueIndex)
+                writeU16(8)
+                write(0)
+                write(TYPE_STRING)
+                writeI32(valueIndex)
+            }
         }.toByteArray()
     }
 

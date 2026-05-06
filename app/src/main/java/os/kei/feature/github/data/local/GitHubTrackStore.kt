@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseNotesMode
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 
@@ -51,6 +52,7 @@ object GitHubTrackStore {
     private const val KEY_GITHUB_API_TOKEN = "github_api_token"
     private const val KEY_CHECK_ALL_TRACKED_PRE_RELEASES = "check_all_tracked_pre_releases"
     private const val KEY_AGGRESSIVE_APK_FILTERING = "github_aggressive_apk_filtering"
+    private const val KEY_PRECISE_APK_VERSION_ENABLED = "github_precise_apk_version_enabled"
     private const val KEY_SHARE_IMPORT_LINKAGE_ENABLED = "github_share_import_linkage_enabled"
     private const val KEY_ONLINE_SHARE_TARGET_PACKAGE = "github_online_share_target_package"
     private const val KEY_PREFERRED_DOWNLOADER_PACKAGE = "github_preferred_downloader_package"
@@ -313,7 +315,14 @@ object GitHubTrackStore {
                             hasPreReleaseUpdate = item.optBoolean("hasPreReleaseUpdate", false),
                             recommendsPreRelease = item.optBoolean("recommendsPreRelease", false),
                             releaseHint = item.optString("releaseHint"),
-                            sourceStrategyId = item.optString("sourceStrategyId")
+                            sourceStrategyId = item.optString("sourceStrategyId"),
+                            sourceConfigSignature = item.optString("sourceConfigSignature"),
+                            latestStableApkVersion = parseRemoteApkVersionInfo(
+                                item.optJSONObject("latestStableApkVersion")
+                            ),
+                            latestPreApkVersion = parseRemoteApkVersionInfo(
+                                item.optJSONObject("latestPreApkVersion")
+                            )
                         )
                     )
                 }
@@ -364,6 +373,15 @@ object GitHubTrackStore {
                     .put("recommendsPreRelease", state.recommendsPreRelease)
                     .put("releaseHint", state.releaseHint)
                     .put("sourceStrategyId", state.sourceStrategyId)
+                    .put("sourceConfigSignature", state.sourceConfigSignature)
+                    .put(
+                        "latestStableApkVersion",
+                        remoteApkVersionInfoToJson(state.latestStableApkVersion)
+                    )
+                    .put(
+                        "latestPreApkVersion",
+                        remoteApkVersionInfoToJson(state.latestPreApkVersion)
+                    )
             )
         }
         kv().encode(KEY_CHECK_CACHE, obj.toString())
@@ -398,7 +416,12 @@ object GitHubTrackStore {
                 state.message,
                 state.preReleaseInfo,
                 state.releaseHint,
-                state.sourceStrategyId
+                state.sourceStrategyId,
+                state.sourceConfigSignature,
+                state.latestStableApkVersion?.versionLabel().orEmpty(),
+                state.latestStableApkVersion?.releaseLabel().orEmpty(),
+                state.latestPreApkVersion?.versionLabel().orEmpty(),
+                state.latestPreApkVersion?.releaseLabel().orEmpty()
             ).sumOf { it.length.toLong() * 2 } + 64L
         }
         return cacheJsonBytes + 16L
@@ -442,6 +465,7 @@ object GitHubTrackStore {
             apiToken = kv().decodeString(KEY_GITHUB_API_TOKEN).orEmpty().trim(),
             checkAllTrackedPreReleases = kv().decodeBool(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, false),
             aggressiveApkFiltering = kv().decodeBool(KEY_AGGRESSIVE_APK_FILTERING, false),
+            preciseApkVersionEnabled = kv().decodeBool(KEY_PRECISE_APK_VERSION_ENABLED, false),
             shareImportLinkageEnabled = kv().decodeBool(KEY_SHARE_IMPORT_LINKAGE_ENABLED, false),
             onlineShareTargetPackage = kv().decodeString(KEY_ONLINE_SHARE_TARGET_PACKAGE).orEmpty().trim(),
             preferredDownloaderPackage = kv().decodeString(KEY_PREFERRED_DOWNLOADER_PACKAGE)
@@ -464,6 +488,7 @@ object GitHubTrackStore {
         kv().encode(KEY_GITHUB_API_TOKEN, config.apiToken.trim())
         kv().encode(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, config.checkAllTrackedPreReleases)
         kv().encode(KEY_AGGRESSIVE_APK_FILTERING, config.aggressiveApkFiltering)
+        kv().encode(KEY_PRECISE_APK_VERSION_ENABLED, config.preciseApkVersionEnabled)
         kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
         kv().encode(KEY_ONLINE_SHARE_TARGET_PACKAGE, config.onlineShareTargetPackage.trim())
         kv().encode(KEY_PREFERRED_DOWNLOADER_PACKAGE, config.preferredDownloaderPackage.trim())
@@ -515,5 +540,33 @@ object GitHubTrackStore {
             .put("checkPreRelease", item.preferPreRelease)
             .put("alwaysShowLatestReleaseDownloadButton", item.alwaysShowLatestReleaseDownloadButton)
             .put("alwaysShowLatestReleaseDownload", item.alwaysShowLatestReleaseDownloadButton)
+    }
+
+    private fun parseRemoteApkVersionInfo(obj: JSONObject?): GitHubRemoteApkVersionInfo? {
+        obj ?: return null
+        val info = GitHubRemoteApkVersionInfo(
+            releaseName = obj.optString("releaseName").trim(),
+            releaseTag = obj.optString("releaseTag").trim(),
+            releaseUrl = obj.optString("releaseUrl").trim(),
+            assetName = obj.optString("assetName").trim(),
+            packageName = obj.optString("packageName").trim(),
+            versionName = obj.optString("versionName").trim(),
+            versionCode = obj.optString("versionCode").trim(),
+            fetchSource = obj.optString("fetchSource").trim()
+        )
+        return info.takeIf { it.hasVersion() || it.releaseLabel().isNotBlank() }
+    }
+
+    private fun remoteApkVersionInfoToJson(info: GitHubRemoteApkVersionInfo?): JSONObject? {
+        info ?: return null
+        return JSONObject()
+            .put("releaseName", info.releaseName)
+            .put("releaseTag", info.releaseTag)
+            .put("releaseUrl", info.releaseUrl)
+            .put("assetName", info.assetName)
+            .put("packageName", info.packageName)
+            .put("versionName", info.versionName)
+            .put("versionCode", info.versionCode)
+            .put("fetchSource", info.fetchSource)
     }
 }

@@ -1,7 +1,7 @@
 {
   "format": "keios.github.tracked\/v1",
   "exportedAtMillis": 1778012078072,
-  "itemCount": 31,
+  "itemCount": 30,
   "items": [
     {
       "repoUrl": "https:\/\/github.com\/jay3-yy\/BiliPai",
@@ -57,17 +57,6 @@
       "checkPreRelease": true,
       "alwaysShowLatestReleaseDownloadButton": true,
       "alwaysShowLatestReleaseDownload": true
-    },
-    {
-      "repoUrl": "https:\/\/github.com\/xororz\/local-dream",
-      "owner": "xororz",
-      "repo": "local-dream",
-      "packageName": "io.github.xororz.localdream",
-      "appLabel": "Local Dream",
-      "preferPreRelease": true,
-      "checkPreRelease": true,
-      "alwaysShowLatestReleaseDownloadButton": false,
-      "alwaysShowLatestReleaseDownload": false
     },
     {
       "repoUrl": "https:\/\/github.com\/LanRhyme\/MicYou",

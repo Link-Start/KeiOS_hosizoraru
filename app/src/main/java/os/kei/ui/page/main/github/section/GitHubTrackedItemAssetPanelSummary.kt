@@ -96,6 +96,16 @@ internal fun GitHubTrackedItemAssetSummaryCard(
                 }
             val loadedReleaseUpdatedAt =
                 formatReleaseUpdatedAtNoYear(loadedReleaseUpdatedAtMillis)
+            val loadedApkVersionLabel = when {
+                loadedReleaseTag.equals(state.latestStableRawTag, ignoreCase = true) ||
+                        loadedReleaseTag.equals(state.latestTag, ignoreCase = true) ->
+                    state.latestStableApkVersion?.versionLabel()
+
+                loadedReleaseTag.equals(state.latestPreRawTag, ignoreCase = true) ->
+                    state.latestPreApkVersion?.versionLabel()
+
+                else -> null
+            }?.takeIf { it.isNotBlank() }
             val showLoadedReleaseMeta =
                 loadedReleaseName.isNotBlank() || loadedReleaseTag.isNotBlank()
             val summaryMetaPillModifier = Modifier
@@ -142,6 +152,15 @@ internal fun GitHubTrackedItemAssetSummaryCard(
                             StatusPill(
                                 label = label,
                                 color = targetAccent,
+                                size = AppStatusPillSize.Compact,
+                                modifier = summaryMetaPillModifier,
+                                contentPadding = summaryMetaPillPadding
+                            )
+                        }
+                        loadedApkVersionLabel?.let { label ->
+                            StatusPill(
+                                label = label,
+                                color = GitHubStatusPalette.Update,
                                 size = AppStatusPillSize.Compact,
                                 modifier = summaryMetaPillModifier,
                                 contentPadding = summaryMetaPillPadding

@@ -14,9 +14,10 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     @Test
     fun `exported tracks json imports all array items as valid tracked apps`() {
         val payload = GitHubTrackStore.parseTrackedItemsImport(GitHubTrackExportFixture.rawJson)
+        val expectedCount = GitHubTrackExportFixture.expectedItemCount
 
-        assertEquals(31, payload.sourceCount)
-        assertEquals(31, payload.items.size)
+        assertEquals(expectedCount, payload.sourceCount)
+        assertEquals(expectedCount, payload.items.size)
         assertEquals(0, payload.invalidCount)
         assertEquals(0, payload.duplicateCount)
         assertNotNull(payload.items.firstOrNull { item ->

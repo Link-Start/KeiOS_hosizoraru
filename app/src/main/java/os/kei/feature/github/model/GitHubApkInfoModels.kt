@@ -16,6 +16,46 @@ data class GitHubApkManifestInfo(
     val signatureInfo: GitHubApkSignatureInfo? = null
 )
 
+data class GitHubRemoteApkVersionInfo(
+    val releaseName: String = "",
+    val releaseTag: String = "",
+    val releaseUrl: String = "",
+    val assetName: String = "",
+    val packageName: String = "",
+    val versionName: String = "",
+    val versionCode: String = "",
+    val fetchSource: String = ""
+) {
+    val versionCodeLong: Long?
+        get() = versionCode.trim().toLongOrNull()
+
+    fun hasVersion(): Boolean {
+        return versionName.isNotBlank() || versionCode.isNotBlank()
+    }
+
+    fun versionLabel(): String {
+        val name = versionName.trim()
+        val code = versionCode.trim()
+        return when {
+            name.isNotBlank() && code.isNotBlank() -> "$name ($code)"
+            name.isNotBlank() -> name
+            code.isNotBlank() -> code
+            else -> ""
+        }
+    }
+
+    fun releaseLabel(): String {
+        val name = releaseName.trim()
+        val tag = releaseTag.trim()
+        return when {
+            name.isBlank() -> tag
+            tag.isBlank() -> name
+            name.equals(tag, ignoreCase = true) -> name
+            else -> "$name · $tag"
+        }
+    }
+}
+
 data class GitHubApkManifestMetadata(
     val name: String,
     val value: String

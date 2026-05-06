@@ -53,6 +53,7 @@ internal fun GitHubCheckLogicSheet(
     refreshIntervalHoursInput: Int,
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
+    preciseApkVersionEnabledInput: Boolean,
     shareImportLinkageEnabledInput: Boolean,
     onlineShareTargetPackageInput: String,
     preferredDownloaderPackageInput: String,
@@ -82,6 +83,7 @@ internal fun GitHubCheckLogicSheet(
     onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
+    onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
@@ -138,6 +140,7 @@ internal fun GitHubCheckLogicSheet(
         val logicChanged = refreshIntervalHoursInput != refreshIntervalHours ||
             checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
+                preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
             shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
             onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
                 preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
@@ -162,9 +165,11 @@ internal fun GitHubCheckLogicSheet(
                 checkLogicIntervalPopupAnchorBounds = checkLogicIntervalPopupAnchorBounds,
                 checkAllTrackedPreReleasesInput = checkAllTrackedPreReleasesInput,
                 aggressiveApkFilteringInput = aggressiveApkFilteringInput,
+                preciseApkVersionEnabledInput = preciseApkVersionEnabledInput,
                 onRefreshIntervalHoursInputChange = onRefreshIntervalHoursInputChange,
                 onCheckAllTrackedPreReleasesInputChange = onCheckAllTrackedPreReleasesInputChange,
                 onAggressiveApkFilteringInputChange = onAggressiveApkFilteringInputChange,
+                onPreciseApkVersionEnabledInputChange = onPreciseApkVersionEnabledInputChange,
                 onShowCheckLogicIntervalPopupChange = onShowCheckLogicIntervalPopupChange,
                 onCheckLogicIntervalPopupAnchorBoundsChange = onCheckLogicIntervalPopupAnchorBoundsChange
             )
@@ -327,9 +332,11 @@ private fun GitHubCheckStrategySection(
     checkLogicIntervalPopupAnchorBounds: IntRect?,
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
+    preciseApkVersionEnabledInput: Boolean,
     onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
+    onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
     onShowCheckLogicIntervalPopupChange: (Boolean) -> Unit,
     onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
@@ -373,6 +380,15 @@ private fun GitHubCheckStrategySection(
             AppSwitch(
                 checked = aggressiveApkFilteringInput,
                 onCheckedChange = onAggressiveApkFilteringInputChange
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_precise_apk_version),
+            summary = stringResource(R.string.github_check_sheet_summary_precise_apk_version)
+        ) {
+            AppSwitch(
+                checked = preciseApkVersionEnabledInput,
+                onCheckedChange = onPreciseApkVersionEnabledInputChange
             )
         }
     }

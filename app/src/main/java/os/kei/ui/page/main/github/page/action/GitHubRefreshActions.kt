@@ -13,6 +13,7 @@ import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.githubCheckSourceSignature
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -413,6 +414,7 @@ internal class GitHubRefreshActions(
         state.githubApiTokenInput = trackSnapshot.lookupConfig.apiToken
         state.checkAllTrackedPreReleasesInput = trackSnapshot.lookupConfig.checkAllTrackedPreReleases
         state.aggressiveApkFilteringInput = trackSnapshot.lookupConfig.aggressiveApkFiltering
+        state.preciseApkVersionEnabledInput = trackSnapshot.lookupConfig.preciseApkVersionEnabled
         state.shareImportLinkageEnabledInput = trackSnapshot.lookupConfig.shareImportLinkageEnabled
         state.onlineShareTargetPackageInput = trackSnapshot.lookupConfig.onlineShareTargetPackage
         state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage
@@ -447,6 +449,7 @@ internal class GitHubRefreshActions(
             ?.toShareImportResult()
 
         val cachedStates = trackSnapshot.checkCache
+        val activeCheckSignature = trackSnapshot.lookupConfig.githubCheckSourceSignature()
         state.checkStates.clear()
         trackSnapshot.items.forEach { item ->
             cachedStates[item.id]
@@ -454,7 +457,13 @@ internal class GitHubRefreshActions(
                     val sourceId = cache.sourceStrategyId.ifBlank {
                         GitHubLookupStrategyOption.AtomFeed.storageId
                     }
-                    sourceId == activeStrategyId
+                    when {
+                        cache.sourceConfigSignature.isNotBlank() ->
+                            cache.sourceConfigSignature == activeCheckSignature
+
+                        trackSnapshot.lookupConfig.preciseApkVersionEnabled -> false
+                        else -> sourceId == activeStrategyId
+                    }
                 }
                 ?.let { cached ->
                     state.checkStates[item.id] = cached.toUi()

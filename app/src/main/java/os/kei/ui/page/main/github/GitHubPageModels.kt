@@ -7,6 +7,7 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import kotlin.math.max
 
 internal data class VersionCheckUi(
@@ -32,7 +33,10 @@ internal data class VersionCheckUi(
     val recommendsPreRelease: Boolean = false,
     val releaseHint: String = "",
     val failed: Boolean = false,
-    val sourceStrategyId: String = ""
+    val sourceStrategyId: String = "",
+    val sourceConfigSignature: String = "",
+    val latestStableApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val latestPreApkVersion: GitHubRemoteApkVersionInfo? = null
 )
 
 internal data class GitHubStrategyGuide(
@@ -229,6 +233,31 @@ internal fun formatReleaseValue(
         tag.isBlank() -> normalizedName.ifBlank { name }
         name.equals(tag, ignoreCase = true) -> name
         normalizedName.equals(normalizedTag, ignoreCase = true) -> normalizedName.ifBlank { normalizedTag }
+        else -> "$name · $tag"
+    }
+}
+
+internal fun formatApkVersionValue(
+    preciseInfo: GitHubRemoteApkVersionInfo?,
+    releaseName: String,
+    rawTag: String
+): String {
+    return preciseInfo?.versionLabel()?.takeIf { it.isNotBlank() }
+        ?: formatReleaseValue(releaseName = releaseName, rawTag = rawTag)
+}
+
+internal fun formatReleaseMetaValue(
+    preciseInfo: GitHubRemoteApkVersionInfo?,
+    releaseName: String,
+    rawTag: String
+): String {
+    preciseInfo?.releaseLabel()?.takeIf { it.isNotBlank() }?.let { return it }
+    val name = releaseName.trim()
+    val tag = rawTag.trim()
+    return when {
+        name.isBlank() -> tag
+        tag.isBlank() -> name
+        name.equals(tag, ignoreCase = true) -> name
         else -> "$name · $tag"
     }
 }

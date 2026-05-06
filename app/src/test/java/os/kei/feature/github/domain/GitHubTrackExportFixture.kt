@@ -5,6 +5,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 
 internal object GitHubTrackExportFixture {
     private const val RESOURCE_PATH = "/github/keios-github-tracks-260506-0414.json"
+    const val expectedItemCount: Int = 30
 
     val rawJson: String by lazy {
         requireNotNull(GitHubTrackExportFixture::class.java.getResource(RESOURCE_PATH)) {

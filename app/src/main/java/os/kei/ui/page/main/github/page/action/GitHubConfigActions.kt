@@ -52,6 +52,7 @@ internal class GitHubConfigActions(
             state.lookupConfig = config
             state.checkAllTrackedPreReleasesInput = config.checkAllTrackedPreReleases
             state.aggressiveApkFilteringInput = config.aggressiveApkFiltering
+            state.preciseApkVersionEnabledInput = config.preciseApkVersionEnabled
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
@@ -94,6 +95,7 @@ internal class GitHubConfigActions(
                 apiToken = sanitizedToken,
                 checkAllTrackedPreReleases = previousConfig.checkAllTrackedPreReleases,
                 aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
+                preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
                 preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
@@ -176,6 +178,7 @@ internal class GitHubConfigActions(
             val newConfig = previousConfig.copy(
                 checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
                 aggressiveApkFiltering = state.aggressiveApkFilteringInput,
+                preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
                     installedOnlineShareTargets.any { it.packageName == selected }
@@ -196,6 +199,8 @@ internal class GitHubConfigActions(
             val checkScopeChanged =
                 previousConfig.checkAllTrackedPreReleases != newConfig.checkAllTrackedPreReleases
             val filteringChanged = previousConfig.aggressiveApkFiltering != newConfig.aggressiveApkFiltering
+            val preciseVersionChanged =
+                previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled
             val shareImportChanged =
                 previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled
             val onlineShareTargetChanged =
@@ -216,10 +221,11 @@ internal class GitHubConfigActions(
                 intervalChanged
             ).count { it }
             when {
-                checkScopeChanged || filteringChanged -> {
+                checkScopeChanged || filteringChanged || preciseVersionChanged -> {
                     repository.clearCheckCache()
                     state.checkStates.clear()
                     state.clearAllAssetUiState()
+                    state.assetSourceSignature = state.buildAssetSourceSignature(newConfig)
                     state.lastRefreshMs = 0L
                     state.refreshProgress = 0f
                     state.overviewRefreshState = OverviewRefreshState.Idle

@@ -1,19 +1,23 @@
 package os.kei.feature.github.domain
 
 import android.content.Context
+import os.kei.feature.github.GitHubBoundedRunner
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseLookupStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
+import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
-import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.githubCheckSourceSignature
 import java.io.IOException
 
 object GitHubReleaseCheckService {
@@ -24,7 +28,36 @@ object GitHubReleaseCheckService {
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null
     ): GitHubTrackedReleaseCheck {
+        return evaluateTrackedAppInternal(
+            context = context,
+            item = item,
+            strategy = strategy,
+            preciseApkVersionResolver = GitHubPreciseApkVersionResolver()
+        )
+    }
+
+    internal fun evaluateTrackedAppForTest(
+        context: Context,
+        item: GitHubTrackedApp,
+        strategy: GitHubReleaseLookupStrategy? = null,
+        preciseApkVersionResolver: GitHubPreciseApkVersionResolver = GitHubPreciseApkVersionResolver()
+    ): GitHubTrackedReleaseCheck {
+        return evaluateTrackedAppInternal(
+            context = context,
+            item = item,
+            strategy = strategy,
+            preciseApkVersionResolver = preciseApkVersionResolver
+        )
+    }
+
+    private fun evaluateTrackedAppInternal(
+        context: Context,
+        item: GitHubTrackedApp,
+        strategy: GitHubReleaseLookupStrategy?,
+        preciseApkVersionResolver: GitHubPreciseApkVersionResolver
+    ): GitHubTrackedReleaseCheck {
         val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig()
+        val sourceConfigSignature = lookupConfig.githubCheckSourceSignature()
         val localVersionInfo = runCatching {
             GitHubVersionUtils.localVersionInfoOrNull(context, item.packageName)
         }.getOrNull()
@@ -35,6 +68,7 @@ object GitHubReleaseCheckService {
                 strategyId = lookupConfig.selectedStrategy.storageId,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
+                sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
             )
@@ -51,17 +85,28 @@ object GitHubReleaseCheckService {
                 strategyId = effectiveStrategy.id,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
+                sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
             )
         }
+        val preciseVersions = resolvePreciseApkVersions(
+            item = item,
+            localVersion = localVersion,
+            snapshot = snapshot,
+            lookupConfig = lookupConfig,
+            resolver = preciseApkVersionResolver
+        )
 
         return evaluateSnapshot(
             item = item,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
             snapshot = snapshot,
-            checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases
+            checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
+            preciseStableApkVersion = preciseVersions.stable,
+            precisePreReleaseApkVersion = preciseVersions.preRelease,
+            sourceConfigSignature = sourceConfigSignature
         )
     }
 
@@ -70,7 +115,10 @@ object GitHubReleaseCheckService {
         localVersion: String,
         localVersionCode: Long,
         snapshot: GitHubRepositoryReleaseSnapshot,
-        checkAllTrackedPreReleases: Boolean = false
+        checkAllTrackedPreReleases: Boolean = false,
+        preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
+        precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
+        sourceConfigSignature: String = ""
     ): GitHubTrackedReleaseCheck {
         val matchedEntry = snapshot.feed.entries.firstOrNull { entry ->
             GitHubVersionUtils.compareVersionToStructuredCandidates(localVersion, entry.versionCandidates) == 0
@@ -113,10 +161,19 @@ object GitHubReleaseCheckService {
             null
         }
 
+        val preciseStableCmp = preciseStableApkVersion
+            ?.versionCodeLong
+            ?.takeIf { localVersionCode >= 0L }
+            ?.compareTo(localVersionCode)
+        val precisePreCmp = precisePreReleaseApkVersion
+            ?.versionCodeLong
+            ?.takeIf { localVersionCode >= 0L }
+            ?.compareTo(localVersionCode)
         val hasPreReleaseUpdate = inspectPreRelease &&
             latestPreIsRelevant &&
-            (latestPreCmp?.let { it < 0 } == true)
-        val stableHasUpdate = stableCmp?.let { it < 0 } == true
+                (precisePreCmp?.let { it > 0 } ?: (latestPreCmp?.let { it < 0 } == true))
+        val stableHasUpdate = preciseStableCmp?.let { it > 0 }
+            ?: (stableCmp?.let { it < 0 } == true)
         val recommendsPreRelease = hasPreReleaseUpdate &&
             (item.preferPreRelease || (isLocalPreReleaseInstalled && !stableHasUpdate))
         val hasUpdate = stableHasUpdate || recommendsPreRelease
@@ -132,12 +189,13 @@ object GitHubReleaseCheckService {
             else -> ""
         }
 
+        val stableCompared = stableCmp != null || preciseStableCmp != null
         val status = when {
             recommendsPreRelease -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
             stableHasUpdate -> GitHubTrackedReleaseStatus.UpdateAvailable
             hasPreReleaseUpdate -> GitHubTrackedReleaseStatus.PreReleaseOptional
             inspectPreRelease && isLocalPreReleaseInstalled -> GitHubTrackedReleaseStatus.PreReleaseTracked
-            stableCmp != null && hasUpdate == false -> GitHubTrackedReleaseStatus.UpToDate
+            stableCompared && hasUpdate == false -> GitHubTrackedReleaseStatus.UpToDate
             matchedEntry != null -> GitHubTrackedReleaseStatus.MatchedRelease
             else -> GitHubTrackedReleaseStatus.ComparisonUncertain
         }
@@ -157,8 +215,56 @@ object GitHubReleaseCheckService {
             preReleaseInfo = preReleaseInfo,
             showPreReleaseInfo = showPreReleaseInfo,
             releaseHint = releaseHint,
+            preciseStableApkVersion = preciseStableApkVersion,
+            precisePreApkVersion = precisePreReleaseApkVersion,
+            sourceConfigSignature = sourceConfigSignature,
             status = status,
             message = status.defaultMessage
+        )
+    }
+
+    private fun resolvePreciseApkVersions(
+        item: GitHubTrackedApp,
+        localVersion: String,
+        snapshot: GitHubRepositoryReleaseSnapshot,
+        lookupConfig: GitHubLookupConfig,
+        resolver: GitHubPreciseApkVersionResolver
+    ): PreciseApkVersionPair {
+        if (!lookupConfig.preciseApkVersionEnabled) return PreciseApkVersionPair()
+        val localChannel = GitHubVersionUtils.classifyVersionChannel(localVersion)
+        val targets = buildList {
+            snapshot.latestStable.takeIf { snapshot.hasStableRelease }?.let { release ->
+                add(PreciseApkVersionTarget(PreciseApkVersionChannel.Stable, release))
+            }
+            val shouldInspectPreRelease = lookupConfig.checkAllTrackedPreReleases ||
+                    item.preferPreRelease ||
+                    localChannel?.isPreRelease == true ||
+                    !snapshot.hasStableRelease
+            if (shouldInspectPreRelease) {
+                snapshot.latestPreRelease?.let { release ->
+                    add(PreciseApkVersionTarget(PreciseApkVersionChannel.PreRelease, release))
+                }
+            }
+        }
+        if (targets.isEmpty()) return PreciseApkVersionPair()
+        val results = GitHubBoundedRunner.mapOrdered(
+            items = targets,
+            maxConcurrency = 2,
+            threadName = "github-precise-release-check"
+        ) { target ->
+            target.channel to resolver.resolve(
+                GitHubPreciseApkVersionRequest(
+                    owner = item.owner,
+                    repo = item.repo,
+                    release = target.release,
+                    packageName = item.packageName,
+                    lookupConfig = lookupConfig
+                )
+            ).getOrNull()
+        }
+        return PreciseApkVersionPair(
+            stable = results.firstOrNull { it.first == PreciseApkVersionChannel.Stable }?.second,
+            preRelease = results.firstOrNull { it.first == PreciseApkVersionChannel.PreRelease }?.second
         )
     }
 
@@ -299,6 +405,9 @@ object GitHubReleaseCheckService {
             hasPreReleaseUpdate = hasPreReleaseUpdate,
             recommendsPreRelease = recommendsPreRelease,
             releaseHint = releaseHint,
+            latestStableApkVersion = preciseStableApkVersion,
+            latestPreApkVersion = precisePreApkVersion,
+            sourceConfigSignature = sourceConfigSignature,
             sourceStrategyId = strategyId
         )
     }
@@ -343,9 +452,27 @@ object GitHubReleaseCheckService {
             preReleaseInfo = entry.preReleaseInfo,
             showPreReleaseInfo = entry.showPreReleaseInfo,
             releaseHint = entry.releaseHint,
+            preciseStableApkVersion = entry.latestStableApkVersion,
+            precisePreApkVersion = entry.latestPreApkVersion,
+            sourceConfigSignature = entry.sourceConfigSignature,
             status = GitHubTrackedReleaseStatus.fromMessage(entry.message)
                 ?: GitHubTrackedReleaseStatus.ComparisonUncertain,
             message = entry.message
         )
     }
+
+    private data class PreciseApkVersionPair(
+        val stable: GitHubRemoteApkVersionInfo? = null,
+        val preRelease: GitHubRemoteApkVersionInfo? = null
+    )
+
+    private enum class PreciseApkVersionChannel {
+        Stable,
+        PreRelease
+    }
+
+    private data class PreciseApkVersionTarget(
+        val channel: PreciseApkVersionChannel,
+        val release: GitHubReleaseVersionSignals
+    )
 }

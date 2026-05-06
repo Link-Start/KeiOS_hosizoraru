@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.github.state
 
 import os.kei.feature.github.model.GitHubCheckCacheEntry
-import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.ui.page.main.github.VersionCheckUi
 
 internal fun VersionCheckUi.toCacheEntry(): GitHubCheckCacheEntry = GitHubCheckCacheEntry(
@@ -27,7 +27,10 @@ internal fun VersionCheckUi.toCacheEntry(): GitHubCheckCacheEntry = GitHubCheckC
     hasPreReleaseUpdate = hasPreReleaseUpdate,
     recommendsPreRelease = recommendsPreRelease,
     releaseHint = releaseHint,
-    sourceStrategyId = sourceStrategyId
+    sourceStrategyId = sourceStrategyId,
+    sourceConfigSignature = sourceConfigSignature,
+    latestStableApkVersion = latestStableApkVersion,
+    latestPreApkVersion = latestPreApkVersion
 )
 
 internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
@@ -53,7 +56,10 @@ internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
     recommendsPreRelease = recommendsPreRelease,
     releaseHint = releaseHint,
     failed = GitHubTrackedReleaseStatus.isFailureMessage(message),
-    sourceStrategyId = sourceStrategyId
+    sourceStrategyId = sourceStrategyId,
+    sourceConfigSignature = sourceConfigSignature,
+    latestStableApkVersion = latestStableApkVersion,
+    latestPreApkVersion = latestPreApkVersion
 )
 
 internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
@@ -79,5 +85,8 @@ internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
     recommendsPreRelease = recommendsPreRelease,
     releaseHint = releaseHint,
     failed = status == GitHubTrackedReleaseStatus.Failed,
-    sourceStrategyId = strategyId
+    sourceStrategyId = strategyId,
+    sourceConfigSignature = sourceConfigSignature,
+    latestStableApkVersion = preciseStableApkVersion,
+    latestPreApkVersion = precisePreApkVersion
 )

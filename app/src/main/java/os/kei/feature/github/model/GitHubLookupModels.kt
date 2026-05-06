@@ -60,6 +60,7 @@ data class GitHubLookupConfig(
     val apiToken: String = "",
     val checkAllTrackedPreReleases: Boolean = false,
     val aggressiveApkFiltering: Boolean = false,
+    val preciseApkVersionEnabled: Boolean = false,
     val shareImportLinkageEnabled: Boolean = false,
     val onlineShareTargetPackage: String = "",
     val preferredDownloaderPackage: String = "",
@@ -74,4 +75,26 @@ data class GitHubLookupConfig(
     val actionsArtifactDownloadsAvailable: Boolean
         get() = actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink ||
             apiToken.trim().isNotBlank()
+}
+
+fun GitHubLookupConfig.githubCheckSourceSignature(): String {
+    return listOf(
+        "check-v2",
+        selectedStrategy.storageId,
+        apiToken.trim().isNotBlank().toString(),
+        checkAllTrackedPreReleases.toString(),
+        aggressiveApkFiltering.toString(),
+        preciseApkVersionEnabled.toString()
+    ).joinToString("|")
+}
+
+fun GitHubLookupConfig.githubAssetSourceSignature(): String {
+    return listOf(
+        "asset-v3",
+        selectedStrategy.storageId,
+        actionsStrategy.storageId,
+        apiToken.trim().isNotBlank().toString(),
+        aggressiveApkFiltering.toString(),
+        preciseApkVersionEnabled.toString()
+    ).joinToString("|")
 }

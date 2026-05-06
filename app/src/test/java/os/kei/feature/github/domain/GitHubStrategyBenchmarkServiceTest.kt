@@ -102,8 +102,9 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark keeps exported 31-track fixture bounded across dual mode tasks`() {
+    fun `benchmark keeps exported 30-track fixture bounded across dual mode tasks`() {
         val items = GitHubTrackExportFixture.trackedItems
+        val expectedCount = GitHubTrackExportFixture.expectedItemCount
         val targets = GitHubStrategyBenchmarkService.buildTargets(
             trackedItems = items,
             limit = items.size
@@ -170,10 +171,10 @@ class GitHubStrategyBenchmarkServiceTest {
         )
         val result = report.results.single()
 
-        assertEquals(31, items.size)
-        assertEquals(31, targets.size)
-        assertEquals(31, result.totalTargets)
-        assertEquals(31, result.warmSamples.size)
+        assertEquals(expectedCount, items.size)
+        assertEquals(expectedCount, targets.size)
+        assertEquals(expectedCount, result.totalTargets)
+        assertEquals(expectedCount, result.warmSamples.size)
         assertEquals(3, result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseAssets).size)
         assertEquals(3, result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseNotes).size)
         assertEquals(2, result.samplesFor(GitHubStrategyBenchmarkTestType.ApkManifest).size)

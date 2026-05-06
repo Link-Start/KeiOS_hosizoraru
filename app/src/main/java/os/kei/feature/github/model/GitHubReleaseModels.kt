@@ -163,6 +163,9 @@ data class GitHubTrackedReleaseCheck(
     val preReleaseInfo: String = "",
     val showPreReleaseInfo: Boolean = false,
     val releaseHint: String = "",
+    val preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val precisePreApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val sourceConfigSignature: String = "",
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
     val message: String = status.defaultMessage
 )

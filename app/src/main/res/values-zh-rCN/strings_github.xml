@@ -238,6 +238,9 @@
     <string name="github_item_value_local_version_uninstalled">未安装 App</string>
     <string name="github_item_label_stable_version">稳定版本</string>
     <string name="github_item_label_prerelease_version">预发版本</string>
+    <string name="github_item_label_releases">Releases</string>
+    <string name="github_release_meta_prefix_stable">稳定</string>
+    <string name="github_release_meta_prefix_prerelease">预发</string>
     <string name="github_item_label_updated_at">更新时间</string>
     <string name="github_item_label_hint">提示</string>
     <string name="github_item_label_update_assets">更新</string>
@@ -388,6 +391,8 @@
     <string name="github_check_sheet_summary_prerelease_check">额外检查每个项目的最新预发，但不代表自动推荐安装</string>
     <string name="github_check_sheet_label_aggressive_filter">更激进的过滤方式</string>
     <string name="github_check_sheet_summary_aggressive_filter">忽略 `armeabi-v7a`、`armeabi`、`x86_64`、`x86`；若有 arm64-v8a 也忽略 universal</string>
+    <string name="github_check_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
+    <string name="github_check_sheet_summary_precise_apk_version">从远端 APK Manifest 读取真实 versionName 与 versionCode；追踪项目较多时会增加少量解析耗时</string>
     <string name="github_check_sheet_label_downloader">下载器</string>
     <string name="github_check_sheet_summary_downloader">用于直链下载跳转；默认跟随系统</string>
     <string name="github_check_sheet_label_share_import_linkage">分享导入联动</string>

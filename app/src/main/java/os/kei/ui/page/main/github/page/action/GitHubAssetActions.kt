@@ -74,7 +74,8 @@ internal class GitHubAssetActions(
             val result = withContext(Dispatchers.IO) {
                 apkInfoRepository.inspect(
                     asset = asset,
-                    lookupConfig = state.lookupConfig
+                    lookupConfig = state.lookupConfig,
+                    forceRefresh = forceRefresh
                 )
             }
             state.apkInfoLoading[key] = false

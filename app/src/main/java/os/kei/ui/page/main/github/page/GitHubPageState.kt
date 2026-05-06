@@ -34,6 +34,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -128,6 +129,7 @@ internal class GitHubPageState(
     var githubApiTokenInput by mutableStateOf("")
     var checkAllTrackedPreReleasesInput by mutableStateOf(false)
     var aggressiveApkFilteringInput by mutableStateOf(false)
+    var preciseApkVersionEnabledInput by mutableStateOf(false)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
@@ -208,13 +210,7 @@ internal class GitHubPageState(
     fun activeStrategyId(): String = lookupConfig.selectedStrategy.storageId
 
     fun buildAssetSourceSignature(config: GitHubLookupConfig = lookupConfig): String {
-        return listOf(
-            "asset-v2",
-            config.selectedStrategy.storageId,
-            config.actionsStrategy.storageId,
-            config.apiToken.isNotBlank().toString(),
-            config.aggressiveApkFiltering.toString()
-        ).joinToString("|")
+        return config.githubAssetSourceSignature()
     }
 
     fun matchesAssetSourceSignature(bundle: GitHubReleaseAssetBundle): Boolean {

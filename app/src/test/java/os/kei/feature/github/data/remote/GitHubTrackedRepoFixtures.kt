@@ -66,16 +66,6 @@ internal object GitHubTrackedRepoFixtures {
             notes = "Wild numbering where prerelease train outruns stable branch"
         ),
         GitHubTrackedRepoFixture(
-            owner = "xororz",
-            repo = "local-dream",
-            localVersion = "2.3.3",
-            preferPreRelease = false,
-            atomStableRawTag = "v2.3.3",
-            atomPreRawTag = null,
-            tokenStableRawTag = "v2.3.3",
-            tokenPreRawTag = null
-        ),
-        GitHubTrackedRepoFixture(
             owner = "LanRhyme",
             repo = "MicYou",
             localVersion = "1.2.1",

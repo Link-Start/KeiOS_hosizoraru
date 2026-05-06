@@ -28,6 +28,7 @@ class GitHubActionsDownloadHistoryStoreTest {
             artifactSizeBytes = 24_000_000L,
             sourceTrackId = "demo/app|pkg",
             packageName = "demo.app",
+            artifactPackageName = "demo.artifact",
             downloadedAtMillis = 1000L
         )
 

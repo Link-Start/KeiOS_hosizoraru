@@ -1,7 +1,9 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
@@ -9,6 +11,8 @@ import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
+
+private const val ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS = 2_500L
 
 internal class GitHubActionsArtifactActions(
     private val env: GitHubPageActionEnvironment,
@@ -57,7 +61,25 @@ internal class GitHubActionsArtifactActions(
                 val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolution.downloadUrl)
                     ?: error(context.getString(R.string.github_actions_error_download_url_invalid))
                 val fileName = artifactArchiveFileName(artifact)
+                val artifactPackageNameDeferred = if (artifactMatch.traits.androidLike) {
+                    async {
+                        actionsRepository.probeGitHubActionsArtifactPackageName(
+                            artifact = artifact,
+                            resolvedDownloadUrl = resolvedUrl,
+                            lookupConfig = state.lookupConfig
+                        )
+                    }
+                } else {
+                    null
+                }
                 if (openResolvedArtifactDownloadUrl(resolvedUrl, fileName)) {
+                    val artifactPackageName = artifactPackageNameDeferred?.let { deferred ->
+                        withTimeoutOrNull(ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS) {
+                            deferred.await()
+                        }.also { packageName ->
+                            if (packageName == null) deferred.cancel()
+                        }.orEmpty()
+                    }.orEmpty()
                     val record = actionsRepository.buildGitHubActionsDownloadRecord(
                         owner = item.owner,
                         repo = item.repo,
@@ -65,7 +87,8 @@ internal class GitHubActionsArtifactActions(
                         run = runMatch.runArtifacts.run,
                         artifact = artifact,
                         sourceTrackId = item.id,
-                        packageName = item.packageName
+                        packageName = item.packageName,
+                        artifactPackageName = artifactPackageName
                     )
                     actionsRepository.recordGitHubActionsArtifactDownload(record)
                     state.actionsDownloadHistory = actionsRepository.loadGitHubActionsDownloadHistory(
@@ -74,6 +97,8 @@ internal class GitHubActionsArtifactActions(
                     )
                     onDownloadHistoryChanged()
                     env.toast(R.string.github_actions_toast_download_started)
+                } else {
+                    artifactPackageNameDeferred?.cancel()
                 }
             } catch (error: Throwable) {
                 env.toast(

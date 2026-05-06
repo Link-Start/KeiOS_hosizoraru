@@ -117,6 +117,14 @@ internal fun GitHubActionsArtifactCard(
             artifactMatch.traits.abi.takeIf { it.isNotBlank() }?.let { abi ->
                 GitHubActionsInfoPill(label = abi, color = GitHubStatusPalette.Active)
             }
+            artifactMatch.lastDownload?.artifactPackageName
+                ?.takeIf { it.isNotBlank() }
+                ?.let { packageName ->
+                    GitHubActionsInfoPill(
+                        label = packageName,
+                        color = GitHubStatusPalette.Active
+                    )
+                }
             artifactMatch.traits.flavors.forEach { flavor ->
                 GitHubActionsInfoPill(label = flavor, color = GitHubStatusPalette.PreRelease)
             }

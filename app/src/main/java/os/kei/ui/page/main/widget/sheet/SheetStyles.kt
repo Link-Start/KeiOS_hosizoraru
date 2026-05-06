@@ -270,6 +270,7 @@ fun SheetSummaryCard(
     accentColor: Color = MiuixTheme.colorScheme.primary,
     badgeLabel: String? = null,
     badgeColor: Color = accentColor,
+    badgeContentPadding: PaddingValues? = null,
     containerColor: Color? = null,
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
     headerTrailing: (@Composable RowScope.() -> Unit)? = null,
@@ -295,7 +296,8 @@ fun SheetSummaryCard(
                 badgeLabel?.let { label ->
                     StatusPill(
                         label = label,
-                        color = badgeColor
+                        color = badgeColor,
+                        contentPadding = badgeContentPadding
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))

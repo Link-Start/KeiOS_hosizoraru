@@ -1,20 +1,28 @@
 package os.kei.ui.page.main.github
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
@@ -35,6 +43,12 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val BENCHMARK_SAMPLE_DETAIL_LIMIT = 12
+private val BenchmarkComparisonHeaderBadgePadding = PaddingValues(
+    start = 10.dp,
+    top = 4.dp,
+    end = 10.dp,
+    bottom = 6.dp
+)
 
 @Composable
 internal fun GitHubStrategyGuideCard(
@@ -242,6 +256,7 @@ internal fun GitHubStrategyBenchmarkComparisonCard(
         } else {
             GitHubStatusPalette.PreRelease
         },
+        badgeContentPadding = BenchmarkComparisonHeaderBadgePadding,
         modifier = androidx.compose.ui.Modifier.fillMaxWidth()
     ) {
         Text(
@@ -250,48 +265,70 @@ internal fun GitHubStrategyBenchmarkComparisonCard(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight
         )
-        rows.forEach { row ->
-            GitHubBenchmarkComparisonLine(row)
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            rows.forEach { row ->
+                GitHubBenchmarkComparisonLine(row)
+            }
         }
     }
 }
 
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
 private fun GitHubBenchmarkComparisonLine(row: BenchmarkComparisonRow) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = row.testType.label(),
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        FlowRow(
-            modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+    val accentColor = row.level.accentColor()
+    Row(
+        modifier = androidx.compose.ui.Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.48f))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = androidx.compose.ui.Modifier.weight(0.84f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            StatusPill(
-                label = row.winnerLabel,
-                color = when (row.level) {
-                    BenchmarkComparisonLevel.Clear -> GitHubStatusPalette.Update
-                    BenchmarkComparisonLevel.Close -> GitHubStatusPalette.Cache
-                    BenchmarkComparisonLevel.Insufficient -> GitHubStatusPalette.PreRelease
-                }
+            Text(
+                text = row.testType.label(),
+                color = MiuixTheme.colorScheme.onBackground,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            StatusPill(
-                label = row.level.label(),
-                color = when (row.level) {
-                    BenchmarkComparisonLevel.Clear -> GitHubStatusPalette.Update
-                    BenchmarkComparisonLevel.Close -> GitHubStatusPalette.Cache
-                    BenchmarkComparisonLevel.Insufficient -> GitHubStatusPalette.PreRelease
-                }
+            Text(
+                text = row.outcomeLabel(),
+                color = accentColor,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            row.metrics.forEach { metric ->
-                StatusPill(label = metric, color = GitHubStatusPalette.Active)
+        }
+        Column(
+            modifier = androidx.compose.ui.Modifier.weight(1.16f),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            row.stats.take(2).forEachIndexed { index, stat ->
+                val isPrimary = index == 0 && row.level != BenchmarkComparisonLevel.Insufficient
+                Text(
+                    text = stat.metricLabel(),
+                    color = if (isPrimary) accentColor else MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Caption.fontSize,
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
+                    fontWeight = if (isPrimary) {
+                        AppTypographyTokens.BodyEmphasis.fontWeight
+                    } else {
+                        AppTypographyTokens.Caption.fontWeight
+                    },
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -597,9 +634,7 @@ private fun buildBenchmarkComparisonRows(
             testType = testType,
             winnerLabel = winnerLabel,
             level = level,
-            metrics = ranked.map { stat ->
-                "${stat.displayName} ${stat.successCount}/${stat.sampleCount} · ${stat.averageMs} ms"
-            }
+            stats = ranked
         )
     }
 }
@@ -608,7 +643,7 @@ private data class BenchmarkComparisonRow(
     val testType: GitHubStrategyBenchmarkTestType,
     val winnerLabel: String,
     val level: BenchmarkComparisonLevel,
-    val metrics: List<String>
+    val stats: List<BenchmarkStrategyStats>
 )
 
 private data class BenchmarkStrategyStats(
@@ -638,6 +673,27 @@ private enum class BenchmarkComparisonLevel {
     Clear,
     Close,
     Insufficient
+}
+
+@Composable
+private fun BenchmarkComparisonRow.outcomeLabel(): String {
+    return when (level) {
+        BenchmarkComparisonLevel.Clear -> "${winnerLabel} ${level.label()}"
+        BenchmarkComparisonLevel.Close -> "${winnerLabel} ${level.label()}"
+        BenchmarkComparisonLevel.Insufficient -> level.label()
+    }
+}
+
+private fun BenchmarkStrategyStats.metricLabel(): String {
+    return "$displayName $successCount/$sampleCount · $averageMs ms"
+}
+
+private fun BenchmarkComparisonLevel.accentColor(): Color {
+    return when (this) {
+        BenchmarkComparisonLevel.Clear -> GitHubStatusPalette.Update
+        BenchmarkComparisonLevel.Close -> GitHubStatusPalette.Cache
+        BenchmarkComparisonLevel.Insufficient -> GitHubStatusPalette.PreRelease
+    }
 }
 
 @Composable

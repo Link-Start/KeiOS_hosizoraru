@@ -211,6 +211,9 @@ internal fun GitHubPageSheetHost(
         loading = state.apkInfoLoading[apkInfoKey] == true,
         error = state.apkInfoErrors[apkInfoKey].orEmpty(),
         backdrop = backdrops.sheet,
+        onRefresh = { apkInfoAsset?.let(actions::refreshApkInfo) },
+        onDownload = { apkInfoAsset?.let(actions::openApkInDownloader) },
+        onShare = { apkInfoAsset?.let(actions::shareApkLink) },
         onDismissRequest = { state.apkInfoDetailRequest = null }
     )
 

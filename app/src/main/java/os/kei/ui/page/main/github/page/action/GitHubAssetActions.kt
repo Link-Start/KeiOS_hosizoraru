@@ -49,9 +49,17 @@ internal class GitHubAssetActions(
         }
     }
 
-    fun openApkInfo(asset: GitHubReleaseAssetFile) {
+    fun openApkInfo(
+        asset: GitHubReleaseAssetFile,
+        forceRefresh: Boolean = false
+    ) {
         val key = asset.githubApkInfoKey()
         state.apkInfoDetailRequest = asset
+        if (forceRefresh) {
+            state.apkInfoResults.remove(key)
+            state.apkInfoInstalledResults.remove(key)
+            state.apkInfoErrors.remove(key)
+        }
         state.apkInfoResults[key]?.let { cachedInfo ->
             if (!state.apkInfoInstalledResults.containsKey(key)) {
                 state.apkInfoInstalledResults[key] =

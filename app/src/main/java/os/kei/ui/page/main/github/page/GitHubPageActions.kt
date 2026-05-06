@@ -240,6 +240,9 @@ internal class GitHubPageActions(
 
     fun openApkInfo(asset: GitHubReleaseAssetFile) = assetActions.openApkInfo(asset)
 
+    fun refreshApkInfo(asset: GitHubReleaseAssetFile) =
+        assetActions.openApkInfo(asset, forceRefresh = true)
+
     fun clearApkAssetUiState(itemId: String) = assetActions.clearApkAssetUiState(itemId)
 
     fun clearApkAssetCache(item: GitHubTrackedApp, itemState: VersionCheckUi) =

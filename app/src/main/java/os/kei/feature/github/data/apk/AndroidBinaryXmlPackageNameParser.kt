@@ -2,6 +2,7 @@ package os.kei.feature.github.data.apk
 
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkManifestMetadata
+import os.kei.feature.github.model.GitHubApkManifestNode
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -33,6 +34,7 @@ internal object AndroidBinaryXmlPackageNameParser {
         val permissions = linkedSetOf<String>()
         val features = linkedSetOf<String>()
         val metadata = mutableListOf<GitHubApkManifestMetadata>()
+        val nodes = mutableListOf<GitHubApkManifestNode>()
         var offset = 0
         while (offset + 8 <= manifestBytes.size) {
             val chunkType = buffer.u16(offset)
@@ -73,6 +75,7 @@ internal object AndroidBinaryXmlPackageNameParser {
                         }
                     }
                 }
+                nodes += element.toManifestNode()
             }
             offset += nextChunkStep(buffer, offset, chunkType, chunkSize)
         }
@@ -85,7 +88,8 @@ internal object AndroidBinaryXmlPackageNameParser {
             targetSdk = targetSdk,
             permissions = permissions.toList(),
             features = features.toList(),
-            metadata = metadata
+            metadata = metadata,
+            manifestNodes = nodes
         )
     }
 
@@ -244,5 +248,18 @@ internal object AndroidBinaryXmlPackageNameParser {
         val attributes: Map<String, String>
     ) {
         fun attr(name: String): String = attributes[name].orEmpty()
+
+        fun toManifestNode(): GitHubApkManifestNode {
+            val display = attr("name")
+                .ifBlank { attr("authorities") }
+                .ifBlank { attr("scheme") }
+                .ifBlank { attr("host") }
+                .ifBlank { name }
+            return GitHubApkManifestNode(
+                tagName = name,
+                displayName = display,
+                attributes = attributes
+            )
+        }
     }
 }

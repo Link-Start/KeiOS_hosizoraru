@@ -102,6 +102,87 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
+    fun `benchmark keeps exported 31-track fixture bounded across dual mode tasks`() {
+        val items = GitHubTrackExportFixture.trackedItems
+        val targets = GitHubStrategyBenchmarkService.buildTargets(
+            trackedItems = items,
+            limit = items.size
+        )
+        val activeLoads = AtomicInteger(0)
+        val maxActiveLoads = AtomicInteger(0)
+        val firstColdWave = CountDownLatch(4)
+        val runner = benchmarkRunner(
+            strategyId = "fixture",
+            activeLoads = activeLoads,
+            maxActiveLoads = maxActiveLoads,
+            firstColdWave = firstColdWave,
+            loadReleaseAssets = { target ->
+                GitHubStrategyLoadTrace(
+                    result = Result.success(releaseBundle(target = target, notes = "")),
+                    fromCache = false,
+                    elapsedMs = 4L
+                )
+            },
+            loadReleaseNotes = { target ->
+                GitHubStrategyLoadTrace(
+                    result = Result.success(
+                        releaseBundle(
+                            target = target,
+                            notes = "Fixture notes"
+                        )
+                    ),
+                    fromCache = false,
+                    elapsedMs = 5L
+                )
+            },
+            inspectApkManifest = { target ->
+                GitHubStrategyLoadTrace(
+                    result = Result.success(
+                        GitHubApkManifestInfo(
+                            assetName = "${target.repo}.apk",
+                            packageName = target.packageName
+                        )
+                    ),
+                    fromCache = false,
+                    elapsedMs = 6L
+                )
+            },
+            scanPackageName = { target ->
+                GitHubStrategyLoadTrace(
+                    result = Result.success(target.packageName),
+                    fromCache = false,
+                    elapsedMs = 2L
+                )
+            },
+            scanRepository = { target ->
+                GitHubStrategyLoadTrace(
+                    result = Result.success(target.id),
+                    fromCache = false,
+                    elapsedMs = 3L
+                )
+            }
+        )
+
+        val report = GitHubStrategyBenchmarkService.compareTargetsWithRunners(
+            targets = targets,
+            runners = listOf(runner),
+            maxConcurrency = 4
+        )
+        val result = report.results.single()
+
+        assertEquals(31, items.size)
+        assertEquals(31, targets.size)
+        assertEquals(31, result.totalTargets)
+        assertEquals(31, result.warmSamples.size)
+        assertEquals(3, result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseAssets).size)
+        assertEquals(3, result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseNotes).size)
+        assertEquals(2, result.samplesFor(GitHubStrategyBenchmarkTestType.ApkManifest).size)
+        assertEquals(3, result.samplesFor(GitHubStrategyBenchmarkTestType.PackageNameScan).size)
+        assertEquals(2, result.samplesFor(GitHubStrategyBenchmarkTestType.RepositoryScan).size)
+        assertTrue(maxActiveLoads.get() >= 4)
+    }
+
+    @Test
     fun `benchmark includes package and repository scan samples`() {
         val runner = benchmarkRunner(
             strategyId = "atom",
@@ -289,16 +370,19 @@ class GitHubStrategyBenchmarkServiceTest {
         )
     }
 
-    private fun releaseBundle(notes: String): GitHubReleaseAssetBundle {
+    private fun releaseBundle(
+        notes: String,
+        target: GitHubRepoTarget = GitHubRepoTarget("demo", "app")
+    ): GitHubReleaseAssetBundle {
         return GitHubReleaseAssetBundle(
-            releaseName = "Demo",
+            releaseName = target.repo,
             tagName = "v1.0.0",
-            htmlUrl = "https://github.com/demo/app/releases/tag/v1.0.0",
+            htmlUrl = "${target.normalizedRepoUrl}/releases/tag/v1.0.0",
             releaseNotesBody = notes,
             assets = listOf(
                 GitHubReleaseAssetFile(
-                    name = "demo.apk",
-                    downloadUrl = "https://github.com/demo/app/releases/download/v1.0.0/demo.apk",
+                    name = "${target.repo}.apk",
+                    downloadUrl = "${target.normalizedRepoUrl}/releases/download/v1.0.0/${target.repo}.apk",
                     sizeBytes = 1L,
                     downloadCount = 1
                 )

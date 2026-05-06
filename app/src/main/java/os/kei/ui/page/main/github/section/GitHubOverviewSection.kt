@@ -40,6 +40,7 @@ import os.kei.ui.page.main.github.overviewLabel
 import os.kei.ui.page.main.github.surfaceColor
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -79,7 +80,10 @@ internal fun GitHubOverviewCard(
     refreshProgress: Float,
     lastRefreshMs: Long,
     metrics: GitHubOverviewMetrics,
-    onOpenTrackSheetForAdd: () -> Unit
+    showFailedOnly: Boolean,
+    onOpenTrackSheetForAdd: () -> Unit,
+    onRetryFailedTracked: () -> Unit,
+    onShowFailedOnlyChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val overviewTitleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant
@@ -204,7 +208,10 @@ internal fun GitHubOverviewCard(
                     strategyColor = strategyColor,
                     apiValue = apiValue,
                     apiColor = apiColor,
-                    metrics = metrics
+                    metrics = metrics,
+                    showFailedOnly = showFailedOnly,
+                    onRetryFailedTracked = onRetryFailedTracked,
+                    onShowFailedOnlyChange = onShowFailedOnlyChange
                 )
             } else {
                 GitHubOverviewCollapsedContent(
@@ -233,6 +240,9 @@ private fun GitHubOverviewExpandedContent(
     apiValue: String,
     apiColor: Color,
     metrics: GitHubOverviewMetrics,
+    showFailedOnly: Boolean,
+    onRetryFailedTracked: () -> Unit,
+    onShowFailedOnlyChange: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -362,6 +372,38 @@ private fun GitHubOverviewExpandedContent(
                 modifier = Modifier.weight(1f)
             )
         }
+        if (metrics.failedCount > 0) {
+            if (showFailedOnly) {
+                StatusPill(
+                    label = stringResource(R.string.github_overview_failed_filter_active),
+                    color = GitHubStatusPalette.Error,
+                    backdrop = backdrop
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap)
+            ) {
+                AppLiquidDialogActionButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(
+                        if (showFailedOnly) {
+                            R.string.github_overview_action_clear_failed_filter
+                        } else {
+                            R.string.github_overview_action_show_failed
+                        }
+                    ),
+                    onClick = { onShowFailedOnlyChange(!showFailedOnly) },
+                    containerColor = GitHubStatusPalette.Error
+                )
+                AppLiquidDialogActionButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.github_overview_action_retry_failed),
+                    onClick = onRetryFailedTracked,
+                    containerColor = GitHubStatusPalette.Update
+                )
+            }
+        }
     }
 }
 
@@ -445,7 +487,10 @@ private fun GitHubOverviewCardPreview() {
                 preReleaseUpdateCount = 2,
                 failedCount = 1
             ),
-            onOpenTrackSheetForAdd = {}
+            showFailedOnly = false,
+            onOpenTrackSheetForAdd = {},
+            onRetryFailedTracked = {},
+            onShowFailedOnlyChange = {}
         )
     }
 }

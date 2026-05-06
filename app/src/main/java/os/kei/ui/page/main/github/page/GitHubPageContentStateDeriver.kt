@@ -15,6 +15,7 @@ private const val pendingShareImportCardVisibleWindowMs = 90_000L
 internal data class GitHubPageContentInput(
     val trackedItems: List<GitHubTrackedApp>,
     val trackedSearch: String,
+    val showFailedOnly: Boolean,
     val sortMode: GitHubSortMode,
     val checkStates: Map<String, VersionCheckUi>,
     val appList: List<InstalledAppItem>,
@@ -29,12 +30,17 @@ internal class GitHubPageContentStateDeriver(
 ) {
     suspend fun build(input: GitHubPageContentInput): GitHubPageContentDerivedState {
         return withContext(dispatcher) {
-            val filteredTracked = input.trackedItems.filter { item ->
+            val searchedTracked = input.trackedItems.filter { item ->
                 input.trackedSearch.isBlank() ||
                         item.owner.contains(input.trackedSearch, ignoreCase = true) ||
                         item.repo.contains(input.trackedSearch, ignoreCase = true) ||
                         item.appLabel.contains(input.trackedSearch, ignoreCase = true) ||
                         item.packageName.contains(input.trackedSearch, ignoreCase = true)
+            }
+            val filteredTracked = if (input.showFailedOnly) {
+                searchedTracked.filter { item -> input.checkStates[item.id]?.failed == true }
+            } else {
+                searchedTracked
             }
             val isSortUpdatable: (GitHubTrackedApp) -> Boolean = { item ->
                 item.alwaysShowLatestReleaseDownloadButton || input.checkStates[item.id]?.hasUpdate == true

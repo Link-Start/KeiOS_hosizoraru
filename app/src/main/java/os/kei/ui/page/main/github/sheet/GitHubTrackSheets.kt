@@ -402,6 +402,9 @@ private fun GitHubCheckTransferSection(
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_transfer))
+    SheetDescriptionText(
+        text = stringResource(R.string.github_check_sheet_section_transfer_summary)
+    )
     SheetSectionCard {
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_downloader),
@@ -554,6 +557,9 @@ private fun GitHubCheckTracksSection(
     onOpenStarImport: () -> Unit
 ) {
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_tracks))
+    SheetDescriptionText(
+        text = stringResource(R.string.github_check_sheet_section_tracks_summary)
+    )
     SheetSectionCard {
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_track_current_app),

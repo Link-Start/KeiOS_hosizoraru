@@ -173,6 +173,26 @@ internal class GitHubPageActions(
         }
     }
 
+    fun refreshFailedTrackedItems(showToast: Boolean = true) {
+        val failedItems = env.state.trackedItems.filter { item ->
+            env.state.checkStates[item.id]?.failed == true
+        }
+        if (failedItems.isEmpty()) {
+            if (showToast) {
+                env.toast(R.string.github_toast_no_checkable_item)
+            }
+            return
+        }
+        env.scope.launch {
+            refreshActions.reloadApps(forceRefresh = true)
+            failedItems.forEach { item ->
+                if (env.state.trackedItems.any { it.id == item.id }) {
+                    refreshTrackedItem(item = item, showToastOnError = showToast)
+                }
+            }
+        }
+    }
+
     fun runStrategyBenchmark() = configActions.runStrategyBenchmark()
 
     fun runCredentialCheck() = configActions.runCredentialCheck()

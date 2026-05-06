@@ -238,6 +238,7 @@ internal fun rememberHomePageOverviewCardState(
     cacheHitCountLine: String,
     homeStatShare: String,
     githubShareLine: String,
+    githubPendingShareImport: Boolean,
     homeStatStrategy: String,
     githubStrategyText: String,
     homeStatApi: String,
@@ -343,6 +344,7 @@ internal fun rememberHomePageOverviewCardState(
         cacheHitCountLine,
         homeStatShare,
         githubShareLine,
+        githubPendingShareImport,
         homeStatStrategy,
         githubStrategyText,
         homeStatApi,
@@ -350,7 +352,12 @@ internal fun rememberHomePageOverviewCardState(
         homeStatLastUpdate,
         githubLastUpdateLine
     ) {
-        listOf(
+        val shareStat = HomeCardStatItem(
+            label = homeStatShare,
+            value = githubShareLine,
+            emphasize = githubPendingShareImport
+        )
+        val baseStats = listOf(
             HomeCardStatItem(label = homeStatStableUpdates, value = githubUpdatableLine, emphasize = true),
             HomeCardStatItem(
                 label = homeStatPreReleaseUpdates,
@@ -360,11 +367,15 @@ internal fun rememberHomePageOverviewCardState(
             HomeCardStatItem(label = homeStatFailed, value = githubFailedLine),
             HomeCardStatItem(label = homeStatTracked, value = trackedCountLine),
             HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine),
-            HomeCardStatItem(label = homeStatShare, value = githubShareLine),
             HomeCardStatItem(label = homeStatStrategy, value = githubStrategyText),
             HomeCardStatItem(label = homeStatApi, value = githubApiText),
             HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine)
         )
+        if (githubPendingShareImport) {
+            listOf(shareStat) + baseStats
+        } else {
+            baseStats.take(5) + shareStat + baseStats.drop(5)
+        }
     }
     val baOverviewStats = remember(
         homeStatStatus,

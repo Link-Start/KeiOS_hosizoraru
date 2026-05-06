@@ -92,6 +92,14 @@ internal fun MainPagerLayout(
         requestedBottomPageToken = requestedBottomPageToken,
         onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
     )
+    val onOpenGitHubPage = remember(coordinator.tabs, coordinator.onPageSelected) {
+        {
+            val index = coordinator.tabs.indexOf(BottomPage.GitHub)
+            if (index >= 0) {
+                coordinator.onPageSelected(index)
+            }
+        }
+    }
     DisposableEffect(
         context,
         homeIconHdrEnabled,
@@ -206,6 +214,7 @@ internal fun MainPagerLayout(
                         onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
+                        onOpenGitHubPage = onOpenGitHubPage,
                         onOpenPoolGuideDetail = onOpenGuideDetail,
                         onOpenBaGuideCatalog = openBaGuideCatalog,
                         onOpenMcpSkill = onOpenMcpSkill,

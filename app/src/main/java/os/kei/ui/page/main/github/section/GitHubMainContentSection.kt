@@ -57,6 +57,7 @@ internal fun GitHubMainContent(
     searchExpanded: Boolean,
     trackedSearch: String,
     sortMode: GitHubSortMode,
+    showFailedOnly: Boolean,
     showSortPopup: Boolean,
     floatingDockSide: AppFloatingDockSide,
     deleteInProgress: Boolean,
@@ -87,6 +88,8 @@ internal fun GitHubMainContent(
     onOpenStrategySheet: () -> Unit,
     onOpenCheckLogicSheet: () -> Unit,
     onRefreshAllTracked: () -> Unit,
+    onRetryFailedTracked: () -> Unit,
+    onShowFailedOnlyChange: (Boolean) -> Unit,
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
     onOpenTrackSheetForAdd: () -> Unit,
@@ -162,7 +165,10 @@ internal fun GitHubMainContent(
                             refreshProgress = refreshProgress,
                             lastRefreshMs = lastRefreshMs,
                             metrics = overviewMetrics,
-                            onOpenTrackSheetForAdd = onOpenTrackSheetForAdd
+                            showFailedOnly = showFailedOnly,
+                            onOpenTrackSheetForAdd = onOpenTrackSheetForAdd,
+                            onRetryFailedTracked = onRetryFailedTracked,
+                            onShowFailedOnlyChange = onShowFailedOnlyChange
                         )
                     }
                     if (showPendingShareImportCard && pendingShareImportTrack != null) {

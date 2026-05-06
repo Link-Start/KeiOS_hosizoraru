@@ -217,6 +217,7 @@ internal class GitHubPageViewModel : ViewModel() {
                     GitHubPageContentInput(
                         trackedItems = state.trackedItems.toList(),
                         trackedSearch = state.trackedSearch,
+                        showFailedOnly = state.showFailedOnly,
                         sortMode = state.sortMode,
                         checkStates = state.checkStates.toMap(),
                         appList = state.appList.toList(),

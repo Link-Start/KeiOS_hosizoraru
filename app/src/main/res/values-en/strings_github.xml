@@ -205,6 +205,10 @@
     <string name="github_overview_label_prerelease_tracked">Pre-release tracking</string>
     <string name="github_overview_label_prerelease_update">Pre-release updates</string>
     <string name="github_overview_label_check_failed">Check failed</string>
+    <string name="github_overview_action_show_failed">Show failed</string>
+    <string name="github_overview_action_clear_failed_filter">Show all</string>
+    <string name="github_overview_action_retry_failed">Retry failed</string>
+    <string name="github_overview_failed_filter_active">Showing only failed checks</string>
     <string name="github_overview_value_count">%1$d items</string>
     <string name="github_overview_value_api">API: %1$s</string>
     <string name="github_overview_value_strategy_api">%1$s · API: %2$s</string>
@@ -352,7 +356,9 @@
     <string name="github_check_sheet_section_overview">Current settings</string>
     <string name="github_check_sheet_section_checks">Check strategy</string>
     <string name="github_check_sheet_section_transfer">Download &amp; linkage</string>
+    <string name="github_check_sheet_section_transfer_summary">Downloader, system sharing, and post-install tracking linkage</string>
     <string name="github_check_sheet_section_tracks">Tracked projects</string>
+    <string name="github_check_sheet_section_tracks_summary">Current project, import/export, and starred repository batch import</string>
     <string name="github_check_sheet_metric_share_import">Share linkage</string>
     <string name="github_check_sheet_value_enabled">On</string>
     <string name="github_check_sheet_value_disabled">Off</string>
@@ -558,6 +564,18 @@
     <string name="github_import_dialog_action_confirm">Confirm import</string>
     <string name="github_share_import_dialog_title">Share import</string>
     <string name="github_share_import_dialog_summary_parsing">Parsing shared GitHub link...</string>
+    <string name="github_share_import_disabled_title">Share import is off</string>
+    <string name="github_share_import_disabled_summary">The GitHub share entry is currently disabled. Open the GitHub page and enable share import linkage in check settings.</string>
+    <string name="github_share_import_disabled_action_open">Open GitHub</string>
+    <string name="github_share_import_phase_idle">Waiting</string>
+    <string name="github_share_import_phase_resolving">Parsing link</string>
+    <string name="github_share_import_phase_asset_ready">Choose APK</string>
+    <string name="github_share_import_phase_delivering">Sending install</string>
+    <string name="github_share_import_phase_waiting_install">Waiting install</string>
+    <string name="github_share_import_phase_install_detected">Install detected</string>
+    <string name="github_share_import_phase_adding_track">Adding tracking</string>
+    <string name="github_share_import_phase_added">Added</string>
+    <string name="github_share_import_phase_failed">Failed</string>
     <string name="github_share_import_dialog_summary_ready">%1$s/%2$s · release %3$s</string>
     <string name="github_share_import_dialog_label_project">Project</string>
     <string name="github_share_import_dialog_label_strategy">Fetch strategy</string>
@@ -580,6 +598,7 @@
     <string name="github_share_import_attach_dialog_processing_open">Adding and opening KeiOS...</string>
     <string name="github_share_import_pending_title">Share import linkage active</string>
     <string name="github_share_import_pending_armed_minutes">%1$d min ago</string>
+    <string name="github_share_import_pending_remaining_minutes">%1$d min left</string>
     <string name="github_share_import_pending_dialog_summary">After installation finishes, KeiOS will detect the newly installed or updated app and continue adding tracking.</string>
     <string name="github_share_import_pending_label_target">Target</string>
     <string name="github_share_import_pending_label_release">Release</string>

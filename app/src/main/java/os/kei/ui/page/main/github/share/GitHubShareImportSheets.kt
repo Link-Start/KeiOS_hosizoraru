@@ -100,6 +100,7 @@ private fun compactProjectValue(preview: GitHubShareImportPreview): String {
 internal fun GitHubShareImportSheet(
     preview: GitHubShareImportPreview?,
     resolving: Boolean,
+    phase: GitHubShareImportPhase,
     onDismissRequest: () -> Unit,
     onCancel: () -> Unit,
     onConfirmImport: (GitHubReleaseAssetFile) -> Unit
@@ -123,6 +124,11 @@ internal fun GitHubShareImportSheet(
             ) {
                 LiquidCircularProgressBar(size = 24.dp)
                 Spacer(modifier = Modifier.height(12.dp))
+                StatusPill(
+                    label = stringResource(phase.labelRes),
+                    color = phase.color
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.github_share_import_dialog_summary_parsing),
                     color = MiuixTheme.colorScheme.onBackgroundVariant
@@ -164,6 +170,10 @@ internal fun GitHubShareImportSheet(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                 verticalSpacing = 4.dp
             ) {
+                StatusPill(
+                    label = stringResource(phase.labelRes),
+                    color = phase.color
+                )
                 ShareImportCompactInfoRow(
                     key = stringResource(R.string.github_share_import_dialog_label_project),
                     value = compactProjectValue(preview)
@@ -271,6 +281,45 @@ internal fun GitHubShareImportSheet(
 }
 
 @Composable
+internal fun GitHubShareImportDisabledSheet(
+    show: Boolean,
+    onClose: () -> Unit,
+    onOpenGitHub: () -> Unit
+) {
+    SnapshotWindowBottomSheet(
+        show = show,
+        title = stringResource(R.string.github_share_import_disabled_title),
+        onDismissRequest = onClose,
+        insideMargin = shareImportSheetInsideMargin
+    ) {
+        Column(
+            modifier = Modifier.shareImportSheetSafeArea(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SheetDescriptionText(
+                text = stringResource(R.string.github_share_import_disabled_summary)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLiquidDialogActionButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.common_close),
+                    onClick = onClose
+                )
+                AppLiquidDialogActionButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.github_share_import_disabled_action_open),
+                    containerColor = GitHubStatusPalette.Active,
+                    onClick = onOpenGitHub
+                )
+            }
+        }
+    }
+}
+
+@Composable
 internal fun GitHubShareImportPendingSheet(
     pending: GitHubPendingShareImportTrackRecord?,
     onDismissRequest: () -> Unit,
@@ -285,6 +334,7 @@ internal fun GitHubShareImportPendingSheet(
         allowDismiss = false
     ) {
         val pendingTrack = pending ?: return@SnapshotWindowBottomSheet
+        val remainingMinutes = shareImportRemainingMinutes(pendingTrack.armedAtMillis)
         Column(
             modifier = Modifier.shareImportSheetSafeArea(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -296,6 +346,13 @@ internal fun GitHubShareImportPendingSheet(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                 verticalSpacing = 6.dp
             ) {
+                StatusPill(
+                    label = stringResource(
+                        R.string.github_share_import_pending_remaining_minutes,
+                        remainingMinutes
+                    ),
+                    color = GitHubStatusPalette.PreRelease
+                )
                 MiuixInfoItem(
                     key = stringResource(R.string.github_share_import_pending_label_target),
                     value = "${pendingTrack.owner}/${pendingTrack.repo}"

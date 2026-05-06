@@ -71,6 +71,7 @@ fun HomePage(
     visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
+    onOpenGitHubPage: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit = {}
@@ -213,6 +214,7 @@ fun HomePage(
         cacheHitCountLine = contentState.cacheHitCountLine,
         homeStatShare = contentState.homeStatShare,
         githubShareLine = contentState.githubShareLine,
+        githubPendingShareImport = homeGitHubOverview.pendingShareImport,
         homeStatStrategy = contentState.homeStatStrategy,
         githubStrategyText = contentState.githubStrategyText,
         homeStatApi = contentState.homeStatApi,
@@ -338,6 +340,7 @@ fun HomePage(
                                 mcpStats = overviewCardState.mcpOverviewStats,
                                 homeCardGitHub = contentState.homeCardGitHub,
                                 githubStats = overviewCardState.githubOverviewStats,
+                                onOpenGitHubPage = onOpenGitHubPage,
                                 homeCardBa = contentState.homeCardBa,
                                 baStats = overviewCardState.baOverviewStats
                             )

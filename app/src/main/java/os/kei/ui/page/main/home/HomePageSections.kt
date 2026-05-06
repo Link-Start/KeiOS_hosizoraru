@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -126,6 +127,7 @@ internal fun Modifier.homeHeroForegroundBlur(
 internal fun HomeInfoCard(
     backdrop: Backdrop?,
     blurEnabled: Boolean,
+    onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val blurRadius = resolvedGlassBlurDp(8.dp, GlassVariant.Content)
@@ -139,6 +141,7 @@ internal fun HomeInfoCard(
     val cardModifier = Modifier
         .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
         .padding(bottom = 6.dp)
+        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
 
     if (backdrop != null && blurEnabled) {
         LiquidSurface(

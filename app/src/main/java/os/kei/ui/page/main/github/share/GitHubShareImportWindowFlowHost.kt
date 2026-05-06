@@ -47,6 +47,7 @@ internal fun GitHubShareImportWindowFlowHost(
     }
     var pendingPreview by remember { mutableStateOf<GitHubShareImportPreview?>(null) }
     var resolving by remember { mutableStateOf(false) }
+    var phase by remember { mutableStateOf(GitHubShareImportPhase.Idle) }
     var incomingResolveRunning by remember { mutableStateOf(false) }
     var pendingTrack by remember { mutableStateOf<GitHubPendingShareImportTrackRecord?>(null) }
     var attachCandidate by remember { mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null) }
@@ -75,6 +76,7 @@ internal fun GitHubShareImportWindowFlowHost(
             pendingTrack = null
         } else {
             pendingTrack = loaded
+            phase = GitHubShareImportPhase.WaitingInstall
         }
     }
 
@@ -128,6 +130,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 }
                 GitHubTrackStoreSignals.notifyChanged()
                 pendingTrack = null
+                phase = GitHubShareImportPhase.InstallDetected
                 return@LaunchedEffect
             }
 
@@ -143,11 +146,15 @@ internal fun GitHubShareImportWindowFlowHost(
         if (resolving || incomingResolveRunning) return@LaunchedEffect
         incomingResolveRunning = true
         resolving = true
+        phase = GitHubShareImportPhase.Resolving
         onIncomingGitHubShareConsumed()
         pendingPreview = null
         try {
             val lookupConfig = withContext(Dispatchers.IO) { GitHubTrackStore.loadLookupConfig() }
-            if (!lookupConfig.shareImportLinkageEnabled) return@LaunchedEffect
+            if (!lookupConfig.shareImportLinkageEnabled) {
+                phase = GitHubShareImportPhase.Idle
+                return@LaunchedEffect
+            }
             try {
                 val parsedIncoming = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
                     ?: error(context.getString(R.string.github_share_import_error_no_valid_link))
@@ -166,8 +173,10 @@ internal fun GitHubShareImportWindowFlowHost(
                     ).getOrThrow()
                 }
                 if (plan.assets.isEmpty()) {
+                    phase = GitHubShareImportPhase.Failed
                     toast(context, R.string.github_toast_share_import_no_apk)
                 } else {
+                    phase = GitHubShareImportPhase.AssetReady
                     pendingPreview = GitHubShareImportPreview(
                         sourceUrl = plan.parsedLink.sourceUrl,
                         projectUrl = plan.parsedLink.projectUrl,
@@ -182,6 +191,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 }
             } catch (error: Throwable) {
                 if (error.shouldSuppressShareImportFailureToast()) return@LaunchedEffect
+                phase = GitHubShareImportPhase.Failed
                 val reason = localizedGitHubShareImportErrorMessage(
                     context = context,
                     rawMessage = error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
@@ -271,6 +281,7 @@ internal fun GitHubShareImportWindowFlowHost(
             }
             GitHubTrackStoreSignals.notifyChanged()
             pendingTrack = null
+            phase = GitHubShareImportPhase.InstallDetected
         }
     }
 
@@ -282,6 +293,7 @@ internal fun GitHubShareImportWindowFlowHost(
             attachSubmittingAndOpen = false
             return@LaunchedEffect
         }
+        phase = GitHubShareImportPhase.InstallDetected
         val candidateId = "${candidate.owner}/${candidate.repo}|${candidate.packageName}"
         attachDuplicateExists = withContext(Dispatchers.IO) {
             GitHubTrackStore.load().any { it.id == candidateId }
@@ -300,14 +312,19 @@ internal fun GitHubShareImportWindowFlowHost(
     GitHubShareImportSheet(
         preview = pendingPreview,
         resolving = resolving,
+        phase = phase,
         onDismissRequest = {
             if (!resolving) pendingPreview = null
         },
-        onCancel = { pendingPreview = null },
+        onCancel = {
+            pendingPreview = null
+            phase = GitHubShareImportPhase.Idle
+        },
         onConfirmImport = { selectedAsset ->
             scope.launch {
                 val preview = pendingPreview ?: return@launch
                 val lookupConfig = withContext(Dispatchers.IO) { GitHubTrackStore.loadLookupConfig() }
+                phase = GitHubShareImportPhase.Delivering
                 val deliveryResult = sendAssetToConfiguredChannel(
                     context = context,
                     lookupConfig = lookupConfig,
@@ -315,6 +332,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 )
                 when (deliveryResult) {
                     is ShareImportDeliveryResult.Failure -> {
+                        phase = GitHubShareImportPhase.Failed
                         toast(context, deliveryResult.toastResId)
                         return@launch
                     }
@@ -339,6 +357,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 attachCandidate = null
                 handledAtByPackage.clear()
                 pendingPreview = null
+                phase = GitHubShareImportPhase.WaitingInstall
                 toast(context, R.string.github_toast_share_import_wait_install, selectedAsset.name)
             }
         }
@@ -366,6 +385,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 }
                 GitHubTrackStoreSignals.notifyChanged()
                 pendingTrack = null
+                phase = GitHubShareImportPhase.Idle
                 toast(context, R.string.github_toast_share_import_pending_cancelled)
             }
         }
@@ -387,19 +407,23 @@ internal fun GitHubShareImportWindowFlowHost(
             val candidate = attachCandidate ?: return@GitHubShareImportAttachConfirmSheet
             attachSubmitting = true
             attachSubmittingAndOpen = false
+            phase = GitHubShareImportPhase.AddingTrack
             scope.launch {
                 try {
                     when (val result = attachCandidateToTracked(context, candidate)) {
                         ShareImportAttachResult.Duplicate -> {
                             toast(context, R.string.github_toast_share_import_track_exists)
                             attachCandidate = null
+                            phase = GitHubShareImportPhase.Added
                         }
                         is ShareImportAttachResult.Failed -> {
                             toast(context, R.string.github_toast_share_import_failed, result.message)
+                            phase = GitHubShareImportPhase.Failed
                         }
                         is ShareImportAttachResult.Added -> {
                             toast(context, R.string.github_toast_share_import_track_added, result.appLabel)
                             attachCandidate = null
+                            phase = GitHubShareImportPhase.Added
                         }
                     }
                 } finally {
@@ -413,6 +437,7 @@ internal fun GitHubShareImportWindowFlowHost(
             val candidate = attachCandidate ?: return@GitHubShareImportAttachConfirmSheet
             attachSubmitting = true
             attachSubmittingAndOpen = true
+            phase = GitHubShareImportPhase.AddingTrack
             scope.launch {
                 try {
                     when (
@@ -425,13 +450,16 @@ internal fun GitHubShareImportWindowFlowHost(
                         ShareImportAttachResult.Duplicate -> {
                             toast(context, R.string.github_toast_share_import_track_exists)
                             attachCandidate = null
+                            phase = GitHubShareImportPhase.Added
                         }
                         is ShareImportAttachResult.Failed -> {
                             toast(context, R.string.github_toast_share_import_failed, result.message)
+                            phase = GitHubShareImportPhase.Failed
                         }
                         is ShareImportAttachResult.Added -> {
                             toast(context, R.string.github_toast_share_import_track_added, result.appLabel)
                             attachCandidate = null
+                            phase = GitHubShareImportPhase.Added
                             runCatching {
                                 onNavigateToGitHubPage()
                             }.onFailure {

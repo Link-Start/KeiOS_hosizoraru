@@ -49,6 +49,7 @@ internal class GitHubPageState(
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState()
 ) {
     var trackedSearch by mutableStateOf("")
+    var showFailedOnly by mutableStateOf(false)
     var repoUrlInput by mutableStateOf("")
     var packageNameInput by mutableStateOf("")
     var appSearch by mutableStateOf("")

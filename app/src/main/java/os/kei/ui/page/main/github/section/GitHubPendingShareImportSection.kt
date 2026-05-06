@@ -19,6 +19,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.page.main.github.share.shareImportRemainingMinutes
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -30,6 +31,7 @@ internal fun GitHubPendingShareImportCard(
 ) {
     val nowMillis = System.currentTimeMillis()
     val ageMinutes = ((nowMillis - pending.armedAtMillis).coerceAtLeast(0L) / 60_000L).toInt()
+    val remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis, nowMillis)
     AppSurfaceCard(
         containerColor = GitHubStatusPalette.tonedSurface(
             GitHubStatusPalette.Active,
@@ -61,10 +63,18 @@ internal fun GitHubPendingShareImportCard(
                 )
                 StatusPill(
                     label = stringResource(
+                        R.string.github_share_import_pending_remaining_minutes,
+                        remainingMinutes
+                    ),
+                    color = GitHubStatusPalette.Active,
+                    size = AppStatusPillSize.Compact
+                )
+                StatusPill(
+                    label = stringResource(
                         R.string.github_share_import_pending_armed_minutes,
                         ageMinutes.coerceAtLeast(0)
                     ),
-                    color = GitHubStatusPalette.Active,
+                    color = GitHubStatusPalette.PreRelease,
                     size = AppStatusPillSize.Compact
                 )
             }

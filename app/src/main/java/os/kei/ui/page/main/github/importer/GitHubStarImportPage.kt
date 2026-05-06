@@ -63,15 +63,16 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     val trackSnapshot = remember { GitHubTrackStore.loadSnapshot() }
     val lookupConfig = trackSnapshot.lookupConfig
     val refreshIntervalHours = trackSnapshot.refreshIntervalHours
-    var source by remember { mutableStateOf(StarImportUiSource.MyStars) }
-    var usernameInput by remember { mutableStateOf("") }
-    var listUrlInput by remember { mutableStateOf("") }
-    var filterInput by remember { mutableStateOf("") }
-    var viewFilter by remember { mutableStateOf(StarImportViewFilter.All) }
-    var qualityFilters by remember { mutableStateOf(defaultVisibleStarImportQualities()) }
-    var conflictStrategy by remember { mutableStateOf(StarImportConflictStrategy.NewOnly) }
+    val savedDraft = remember { GitHubStarImportDraftStore.load() }
+    var source by remember { mutableStateOf(savedDraft.source) }
+    var usernameInput by remember { mutableStateOf(savedDraft.usernameInput) }
+    var listUrlInput by remember { mutableStateOf(savedDraft.listUrlInput) }
+    var filterInput by remember { mutableStateOf(savedDraft.filterInput) }
+    var viewFilter by remember { mutableStateOf(savedDraft.viewFilter) }
+    var qualityFilters by remember { mutableStateOf(savedDraft.qualityFilters) }
+    var conflictStrategy by remember { mutableStateOf(savedDraft.conflictStrategy) }
     var preview by remember { mutableStateOf<GitHubStarredRepositoryImportPreview?>(null) }
-    var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var selectedIds by remember { mutableStateOf(savedDraft.selectedIds) }
     val apkVerificationStates =
         remember { mutableStateMapOf<String, StarImportApkVerificationUiState>() }
     var pendingImportCandidates by remember {
@@ -116,6 +117,30 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     val selectedImportableCount = listUiState.selectedImportableCount
     val importEnabled = selectedImportableCount > 0 && !loading && !importing
     val hasPendingImportWork = selectedImportableCount > 0 || pendingImportCandidates.isNotEmpty()
+
+    LaunchedEffect(
+        source,
+        usernameInput,
+        listUrlInput,
+        filterInput,
+        viewFilter,
+        qualityFilters,
+        conflictStrategy,
+        selectedIds
+    ) {
+        GitHubStarImportDraftStore.save(
+            GitHubStarImportDraft(
+                source = source,
+                usernameInput = usernameInput,
+                listUrlInput = listUrlInput,
+                filterInput = filterInput,
+                viewFilter = viewFilter,
+                qualityFilters = qualityFilters,
+                conflictStrategy = conflictStrategy,
+                selectedIds = selectedIds
+            )
+        )
+    }
 
     fun requestClose() {
         if (importing) return
@@ -220,10 +245,16 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                         preview = nextPreview
                         starLists = emptyList()
                         apkVerificationStates.clear()
-                        selectedIds = nextPreview.candidates
+                        val importableIds = nextPreview.candidates
+                            .map { it.trackedApp.id }
+                            .toSet()
+                        val restoredSelection = selectedIds.intersect(importableIds)
+                        selectedIds = restoredSelection.ifEmpty {
+                            nextPreview.candidates
                             .filter { GitHubStarImportClassifier.isDefaultSelected(it) }
                             .map { it.trackedApp.id }
                             .toSet()
+                        }
                     }
                 }
             }.onFailure { throwable ->
@@ -294,6 +325,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                     context.getString(R.string.github_star_import_toast_imported, count),
                     Toast.LENGTH_SHORT
                 ).show()
+                GitHubStarImportDraftStore.clearSelection()
                 onClose()
             }.onFailure { throwable ->
                 error = throwable.message.orEmpty().ifBlank { throwable.javaClass.simpleName }

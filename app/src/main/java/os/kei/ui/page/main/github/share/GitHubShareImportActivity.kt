@@ -26,6 +26,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class GitHubShareImportActivity : ComponentActivity() {
     private var incomingGitHubShareText by mutableStateOf<String?>(null)
     private var incomingGitHubShareToken by mutableIntStateOf(0)
+    private var shareImportDisabled by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +44,14 @@ class GitHubShareImportActivity : ComponentActivity() {
 
             MiuixTheme(controller = controller) {
                 Box(modifier = Modifier.fillMaxSize())
+                GitHubShareImportDisabledSheet(
+                    show = shareImportDisabled,
+                    onClose = { finishSafely() },
+                    onOpenGitHub = {
+                        openGitHubPage()
+                        finishSafely()
+                    }
+                )
                 GitHubShareImportWindowFlowHost(
                     incomingGitHubShareText = incomingGitHubShareText,
                     incomingGitHubShareToken = incomingGitHubShareToken,
@@ -50,33 +59,7 @@ class GitHubShareImportActivity : ComponentActivity() {
                         incomingGitHubShareText = null
                     },
                     onNavigateToGitHubPage = {
-                        val targetIntent = Intent(this, MainActivity::class.java).apply {
-                            putExtra(
-                                MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
-                                MainActivity.TARGET_BOTTOM_PAGE_GITHUB
-                            )
-                            addFlags(
-                                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                                    Intent.FLAG_ACTIVITY_NEW_TASK
-                            )
-                        }
-                        val launched = runCatching {
-                            startActivity(targetIntent)
-                            true
-                        }.getOrElse {
-                            runCatching {
-                                startActivity(
-                                    Intent(this, MainActivity::class.java).apply {
-                                        putExtra(
-                                            MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
-                                            MainActivity.TARGET_BOTTOM_PAGE_GITHUB
-                                        )
-                                    }
-                                )
-                                true
-                            }.getOrDefault(false)
-                        }
+                        val launched = openGitHubPage()
                         if (!launched) {
                             Toast.makeText(
                                 this,
@@ -118,11 +101,42 @@ class GitHubShareImportActivity : ComponentActivity() {
         }
         val shareImportEnabled = GitHubTrackStore.loadLookupConfig().shareImportLinkageEnabled
         if (!shareImportEnabled) {
-            finishSafely()
+            shareImportDisabled = true
             return
         }
+        shareImportDisabled = false
         incomingGitHubShareText = sharedText
         incomingGitHubShareToken += 1
+    }
+
+    private fun openGitHubPage(): Boolean {
+        val targetIntent = Intent(this, MainActivity::class.java).apply {
+            putExtra(
+                MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
+                MainActivity.TARGET_BOTTOM_PAGE_GITHUB
+            )
+            addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            )
+        }
+        return runCatching {
+            startActivity(targetIntent)
+            true
+        }.getOrElse {
+            runCatching {
+                startActivity(
+                    Intent(this, MainActivity::class.java).apply {
+                        putExtra(
+                            MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
+                            MainActivity.TARGET_BOTTOM_PAGE_GITHUB
+                        )
+                    }
+                )
+                true
+            }.getOrDefault(false)
+        }
     }
 
     private fun finishSafely() {

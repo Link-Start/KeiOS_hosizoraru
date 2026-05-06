@@ -42,6 +42,7 @@ internal fun MainPagerPageHost(
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenGitHubPage: () -> Unit,
     onOpenPoolGuideDetail: (String) -> Unit,
     onOpenBaGuideCatalog: () -> Unit,
     onOpenMcpSkill: () -> Unit,
@@ -67,6 +68,7 @@ internal fun MainPagerPageHost(
                         visibleOverviewCards = visibleOverviewCards,
                         onBottomPageVisibilityChange = onBottomPageVisibilityChange,
                         onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
+                        onOpenGitHubPage = onOpenGitHubPage,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
                         onActionBarInteractingChanged = onActionBarInteractingChanged

@@ -395,6 +395,7 @@ internal fun HomePageOverviewCards(
     mcpStats: List<HomeCardStatItem>,
     homeCardGitHub: String,
     githubStats: List<HomeCardStatItem>,
+    onOpenGitHubPage: () -> Unit,
     homeCardBa: String,
     baStats: List<HomeCardStatItem>
 ) {
@@ -405,7 +406,8 @@ internal fun HomePageOverviewCards(
         if (visibleOverviewCards.contains(HomeOverviewCard.MCP)) {
             HomeInfoCard(
                 backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled
+                blurEnabled = blurEnabled,
+                onClick = onOpenGitHubPage
             ) {
                 HomeInfoGridCard(
                     title = homeCardMcp,

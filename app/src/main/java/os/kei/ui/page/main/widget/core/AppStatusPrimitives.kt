@@ -1,7 +1,8 @@
 package os.kei.ui.page.main.widget.core
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -17,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -69,7 +70,8 @@ fun AppSupportingBlock(
     modifier: Modifier = Modifier,
     accentColor: Color = MiuixTheme.colorScheme.onBackgroundVariant,
     maxLines: Int = Int.MAX_VALUE,
-    overflow: TextOverflow = TextOverflow.Clip
+    overflow: TextOverflow = TextOverflow.Clip,
+    onClick: (() -> Unit)? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(12.dp)
@@ -91,7 +93,15 @@ fun AppSupportingBlock(
         )
     }
 
-    Box(modifier = modifier.clip(shape)) {
+    val clickModifier = if (onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
+
+    Box(modifier = modifier
+        .clip(shape)
+        .then(clickModifier)) {
         if (LocalLiquidControlsEnabled.current) {
             Box(
                 modifier = Modifier

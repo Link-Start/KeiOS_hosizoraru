@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -22,6 +23,7 @@ internal fun GitHubActionsArtifactsSection(
     onExpandedChange: (Boolean) -> Unit,
     onDownloadArtifact: (Long, Long) -> Unit,
     onShareArtifact: (Long, Long) -> Unit,
+    onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit,
     context: Context
 ) {
     val nightlyLink = state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink
@@ -95,6 +97,13 @@ internal fun GitHubActionsArtifactsSection(
                             onShareArtifact(
                                 selectedRun.runArtifacts.run.id,
                                 artifactMatch.artifact.id
+                            )
+                        },
+                        onOpenDetail = {
+                            onOpenArtifactDetail(
+                                selectedRun,
+                                artifactMatch,
+                                index == 0
                             )
                         }
                     )

@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.sheet.GitHubActionsArtifactDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
+import os.kei.ui.page.main.github.sheet.GitHubDecisionAssistDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
@@ -142,7 +144,52 @@ internal fun GitHubPageSheetHost(
         onRefreshRun = actions::refreshActionsRunStatus,
         onDownloadArtifact = actions::downloadActionsArtifact,
         onShareArtifact = actions::shareActionsArtifact,
-        onOpenRun = actions::openSelectedActionsRun
+        onOpenRun = actions::openSelectedActionsRun,
+        onOpenArtifactDetail = { runMatch, artifactMatch, recommended ->
+            state.actionsArtifactDetailRequest = GitHubActionsArtifactDetailRequest(
+                runMatch = runMatch,
+                artifactMatch = artifactMatch,
+                recommended = recommended
+            )
+        }
+    )
+
+    GitHubDecisionAssistDetailSheet(
+        request = state.decisionAssistDetailRequest,
+        backdrop = backdrops.sheet,
+        versionState = state.decisionAssistDetailRequest?.item?.id
+            ?.let { state.checkStates[it] }
+            ?: os.kei.ui.page.main.github.VersionCheckUi(),
+        assetBundle = state.decisionAssistDetailRequest?.item?.id
+            ?.let { state.apkAssetBundles[it] },
+        assetLoading = state.decisionAssistDetailRequest?.item?.id
+            ?.let { state.apkAssetLoading[it] == true } == true,
+        onDismissRequest = { state.decisionAssistDetailRequest = null },
+        onRefreshHealth = { item -> actions.refreshTrackedItem(item, showToastOnError = true) },
+        onRefreshReleaseNotes = { item, itemState ->
+            val includeAllAssets = state.apkAssetIncludeAll[item.id] == true
+            actions.clearApkAssetCache(item, itemState)
+            actions.loadApkAssets(
+                item = item,
+                itemState = itemState,
+                toggleOnlyWhenCached = false,
+                includeAllAssets = includeAllAssets
+            )
+        }
+    )
+
+    GitHubActionsArtifactDetailSheet(
+        request = state.actionsArtifactDetailRequest,
+        backdrop = backdrops.sheet,
+        hasToken = state.lookupConfig.actionsArtifactDownloadsAvailable,
+        downloading = state.actionsArtifactDetailRequest?.artifactMatch?.artifact?.id
+            ?.let { state.actionsArtifactDownloadLoadingId == it } == true,
+        sharing = state.actionsArtifactDetailRequest?.artifactMatch?.artifact?.id
+            ?.let { state.actionsArtifactShareLoadingId == it } == true,
+        onDismissRequest = { state.actionsArtifactDetailRequest = null },
+        onRefreshRun = actions::refreshActionsRunStatus,
+        onDownload = actions::downloadActionsArtifact,
+        onShare = actions::shareActionsArtifact
     )
 
     GitHubTrackEditSheet(

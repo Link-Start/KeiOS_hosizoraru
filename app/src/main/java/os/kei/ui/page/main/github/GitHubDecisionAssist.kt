@@ -185,6 +185,26 @@ internal fun buildGitHubReleaseNotesLines(
     return lines.take(if (expanded) 5 else 2)
 }
 
+internal fun buildGitHubReleaseNotesDetailLines(
+    item: GitHubTrackedApp,
+    state: VersionCheckUi,
+    assetBundle: GitHubReleaseAssetBundle?
+): List<String> {
+    val releaseNotesBodyLines = assetBundle
+        ?.releaseNotesBody
+        .orEmpty()
+        .toReleaseNotesPreviewLines()
+    if (releaseNotesBodyLines.isNotEmpty()) {
+        return releaseNotesBodyLines.take(30)
+    }
+    return buildGitHubReleaseNotesLines(
+        item = item,
+        state = state,
+        assetBundle = assetBundle,
+        expanded = true
+    )
+}
+
 private const val FRESH_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 14L
 private const val RELEASE_NOTES_LINE_MAX_CHARS = 180
 

@@ -26,6 +26,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -94,6 +95,7 @@ internal fun GitHubMainContent(
     onClearApkAssetUiState: (String) -> Unit,
     onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
+    onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
@@ -193,6 +195,7 @@ internal fun GitHubMainContent(
                         onClearApkAssetUiState = onClearApkAssetUiState,
                         onCollapseApkAssetPanel = onCollapseApkAssetPanel,
                         onLoadApkAssets = onLoadApkAssets,
+                        onOpenDecisionAssistDetail = onOpenDecisionAssistDetail,
                         onOpenExternalUrl = onOpenExternalUrl,
                         onOpenApkInDownloader = onOpenApkInDownloader,
                         onShareApkLink = onShareApkLink,

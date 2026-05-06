@@ -266,6 +266,12 @@ fun GitHubPage(
                     includeAllAssets = includeAllAssets
                 )
             },
+            onOpenDecisionAssistDetail = { type, item ->
+                state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
+                    type = type,
+                    item = item
+                )
+            },
             onOpenExternalUrl = actions::openExternalUrl,
             onOpenApkInDownloader = actions::openApkInDownloader,
             onShareApkLink = actions::shareApkLink,

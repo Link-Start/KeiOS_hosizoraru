@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
+import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsBranchOption
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -104,6 +105,8 @@ internal class GitHubPageState(
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
     var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
     var pendingShareImportAttachCandidate by mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null)
+    var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
+    var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(GitHubSortMode.UpdateFirst)
     var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)
@@ -312,6 +315,7 @@ internal class GitHubPageState(
         actionsRunTrackingPlans = emptyMap()
         actionsArtifactDownloadLoadingId = null
         actionsArtifactShareLoadingId = null
+        actionsArtifactDetailRequest = null
         actionsStatusRefreshingRunIds.clear()
     }
 
@@ -347,6 +351,22 @@ internal class GitHubPageState(
         resetTrackEditor()
     }
 }
+
+internal enum class GitHubDecisionAssistDetailType {
+    RepositoryHealth,
+    ReleaseNotes
+}
+
+internal data class GitHubDecisionAssistDetailRequest(
+    val type: GitHubDecisionAssistDetailType,
+    val item: GitHubTrackedApp
+)
+
+internal data class GitHubActionsArtifactDetailRequest(
+    val runMatch: GitHubActionsRunMatch,
+    val artifactMatch: GitHubActionsArtifactMatch,
+    val recommended: Boolean
+)
 
 @Composable
 internal fun rememberGitHubPageState(viewModel: GitHubPageViewModel): GitHubPageState {

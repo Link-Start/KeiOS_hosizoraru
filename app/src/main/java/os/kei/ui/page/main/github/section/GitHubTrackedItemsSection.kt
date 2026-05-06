@@ -50,6 +50,7 @@ import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.isLocalAppUninstalled
+import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.preReleaseVersionColor
 import os.kei.ui.page.main.github.stableVersionColor
 import os.kei.ui.page.main.github.statusActionUrl
@@ -108,6 +109,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     onClearApkAssetUiState: (String) -> Unit,
     onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
+    onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
@@ -329,7 +331,15 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 score = health.score,
                                 reasons = health.reasons
                             ),
-                            accentColor = health.level.toStatusColor()
+                            accentColor = health.level.toStatusColor(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            onClick = {
+                                onOpenDecisionAssistDetail(
+                                    GitHubDecisionAssistDetailType.RepositoryHealth,
+                                    item
+                                )
+                            }
                         )
                     }
                     if (lookupConfig.decisionAssistEnabled &&
@@ -354,7 +364,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 } else {
                                     3
                                 },
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                onClick = {
+                                    onOpenDecisionAssistDetail(
+                                        GitHubDecisionAssistDetailType.ReleaseNotes,
+                                        item
+                                    )
+                                }
                             )
                         }
                     }

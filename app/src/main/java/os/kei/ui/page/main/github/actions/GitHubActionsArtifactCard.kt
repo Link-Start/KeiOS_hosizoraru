@@ -45,7 +45,8 @@ internal fun GitHubActionsArtifactCard(
     isDark: Boolean,
     backdrop: LayerBackdrop,
     onDownload: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    onOpenDetail: () -> Unit
 ) {
     val artifact = artifactMatch.artifact
     val actionColor = if (artifact.expired) GitHubStatusPalette.Error else MiuixTheme.colorScheme.primary
@@ -70,7 +71,7 @@ internal fun GitHubActionsArtifactCard(
     GitHubActionsSelectableCard(
         selected = false,
         isDark = isDark,
-        onClick = null
+        onClick = onOpenDetail
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -169,12 +170,14 @@ internal fun GitHubActionsArtifactCard(
                         .then(
                             if (hasDigest) {
                                 Modifier.clickable(onClickLabel = copyDigestLabel) {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                        as? ClipboardManager
+                                    val clipboard =
+                                        context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                                as? ClipboardManager
                                     clipboard?.setPrimaryClip(
                                         ClipData.newPlainText("sha256", artifact.digest)
                                     )
-                                    Toast.makeText(context, digestCopiedToast, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, digestCopiedToast, Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                             } else {
                                 Modifier

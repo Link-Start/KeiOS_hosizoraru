@@ -7,7 +7,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.GitHubPageState
@@ -28,7 +30,8 @@ internal fun GitHubActionsSheetContent(
     onRefreshRun: (Long) -> Unit,
     onDownloadArtifact: (Long, Long) -> Unit,
     onShareArtifact: (Long, Long) -> Unit,
-    onOpenRun: () -> Unit
+    onOpenRun: () -> Unit,
+    onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -118,6 +121,7 @@ internal fun GitHubActionsSheetContent(
             onExpandedChange = onArtifactsExpandedChange,
             onDownloadArtifact = onDownloadArtifact,
             onShareArtifact = onShareArtifact,
+            onOpenArtifactDetail = onOpenArtifactDetail,
             context = context
         )
     }

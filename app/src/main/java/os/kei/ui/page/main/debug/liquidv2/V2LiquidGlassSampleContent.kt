@@ -29,6 +29,7 @@ import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideHomeIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.appLucideListIcon
+import os.kei.ui.page.main.os.appLucideMailIcon
 import os.kei.ui.page.main.os.appLucideMediaIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideMusicIcon
@@ -44,7 +45,10 @@ internal fun V2LiquidGlassSampleContent(
     modifier: Modifier = Modifier
 ) {
     if (!active) {
-        Box(modifier = modifier)
+        V2LightPageShell(
+            page = page,
+            modifier = modifier
+        )
         return
     }
 
@@ -95,6 +99,43 @@ private fun V2ControlsPage(
     var intensity by remember { mutableFloatStateOf(0.72f) }
     var segment by remember { mutableIntStateOf(1) }
     val palette = rememberV2LiquidGlassPalette()
+    val playLabel = stringResource(R.string.debug_v2_liquid_action_play)
+    val downloadLabel = stringResource(R.string.debug_v2_liquid_action_download)
+    val favoriteLabel = stringResource(R.string.debug_v2_liquid_action_favorite)
+    val clearLabel = stringResource(R.string.debug_v2_liquid_segment_clear)
+    val balancedLabel = stringResource(R.string.debug_v2_liquid_segment_balanced)
+    val deepLabel = stringResource(R.string.debug_v2_liquid_segment_deep)
+    val playIcon = appLucidePlayIcon()
+    val downloadIcon = appLucideDownloadIcon()
+    val favoriteIcon = appLucideHeartIcon()
+    val actionItems =
+        remember(playLabel, downloadLabel, favoriteLabel, playIcon, downloadIcon, favoriteIcon) {
+            listOf(
+                V2GlassActionItem(
+                    label = playLabel,
+                    icon = playIcon,
+                    role = V2GlassRole.Success,
+                    selected = true,
+                    onClick = {}
+                ),
+                V2GlassActionItem(
+                    label = downloadLabel,
+                    icon = downloadIcon,
+                    role = V2GlassRole.Accent,
+                    loading = true,
+                    onClick = {}
+                ),
+                V2GlassActionItem(
+                    label = favoriteLabel,
+                    icon = favoriteIcon,
+                    role = V2GlassRole.Danger,
+                    onClick = {}
+                )
+            )
+        }
+    val segmentItems = remember(clearLabel, balancedLabel, deepLabel) {
+        listOf(clearLabel, balancedLabel, deepLabel)
+    }
 
     V2SampleColumn(modifier) {
         item {
@@ -110,10 +151,13 @@ private fun V2ControlsPage(
                 ) {
                     V2GlassButton(
                         text = stringResource(R.string.debug_v2_liquid_button_primary),
-                        icon = appLucideConfirmIcon(),
+                        leadingIcon = appLucideConfirmIcon(),
+                        trailingIcon = appLucideMoreIcon(),
                         backdrop = backdrop,
                         modifier = Modifier.weight(1f),
                         tint = palette.accent.copy(alpha = 0.18f),
+                        selected = true,
+                        role = V2GlassRole.Accent,
                         onClick = {}
                     )
                     V2GlassButton(
@@ -130,22 +174,22 @@ private fun V2ControlsPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     V2GlassIconButton(
-                        icon = appLucidePlayIcon(),
-                        contentDescription = stringResource(R.string.debug_v2_liquid_action_play),
+                        icon = playIcon,
+                        contentDescription = playLabel,
                         backdrop = backdrop,
                         tint = palette.success.copy(alpha = 0.18f),
                         onClick = {}
                     )
                     V2GlassIconButton(
-                        icon = appLucideDownloadIcon(),
-                        contentDescription = stringResource(R.string.debug_v2_liquid_action_download),
+                        icon = downloadIcon,
+                        contentDescription = downloadLabel,
                         backdrop = backdrop,
                         tint = palette.accent.copy(alpha = 0.18f),
                         onClick = {}
                     )
                     V2GlassIconButton(
-                        icon = appLucideHeartIcon(),
-                        contentDescription = stringResource(R.string.debug_v2_liquid_action_favorite),
+                        icon = favoriteIcon,
+                        contentDescription = favoriteLabel,
                         backdrop = backdrop,
                         tint = Color(0xFFFF5C8A).copy(alpha = 0.18f),
                         onClick = {}
@@ -154,10 +198,16 @@ private fun V2ControlsPage(
                         text = stringResource(R.string.debug_v2_liquid_button_disabled),
                         backdrop = backdrop,
                         modifier = Modifier.weight(1f),
+                        role = V2GlassRole.Danger,
                         enabled = false,
                         onClick = {}
                     )
                 }
+                V2GlassActionGroup(
+                    actions = actionItems,
+                    backdrop = backdrop,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
         item {
@@ -183,21 +233,19 @@ private fun V2ControlsPage(
                     )
                 }
                 V2GlassSegmentedControl(
-                    items = listOf(
-                        stringResource(R.string.debug_v2_liquid_segment_clear),
-                        stringResource(R.string.debug_v2_liquid_segment_balanced),
-                        stringResource(R.string.debug_v2_liquid_segment_deep)
-                    ),
+                    items = segmentItems,
                     selectedIndex = segment,
                     onSelectedIndexChange = { segment = it },
                     backdrop = backdrop,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    selectionStyle = V2GlassSelectionStyle.Indicator
                 )
                 V2SliderLine(
                     label = stringResource(R.string.debug_v2_liquid_slider_volume),
                     value = volume,
                     onValueChange = { volume = it },
-                    backdrop = backdrop
+                    backdrop = backdrop,
+                    steps = 4
                 )
                 V2SliderLine(
                     label = stringResource(R.string.debug_v2_liquid_slider_intensity),
@@ -219,6 +267,30 @@ private fun V2InputsPage(
     var dropdownIndex by remember { mutableIntStateOf(1) }
     var showSheet by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
+    val compactLabel = stringResource(R.string.debug_v2_liquid_inputs_dropdown_compact)
+    val normalLabel = stringResource(R.string.debug_v2_liquid_inputs_dropdown_normal)
+    val expandedLabel = stringResource(R.string.debug_v2_liquid_inputs_dropdown_expanded)
+    val fastLabel = stringResource(R.string.debug_v2_liquid_dropdown_badge_fast)
+    val lockedLabel = stringResource(R.string.debug_v2_liquid_dropdown_badge_locked)
+    val layersIcon = appLucideLayersIcon()
+    val dropdownItems =
+        remember(compactLabel, normalLabel, expandedLabel, fastLabel, lockedLabel, layersIcon) {
+            listOf(
+                V2GlassDropdownItem(
+                    label = compactLabel,
+                    trailingText = fastLabel
+                ),
+                V2GlassDropdownItem(
+                    label = normalLabel,
+                    leadingIcon = layersIcon
+                ),
+                V2GlassDropdownItem(
+                    label = expandedLabel,
+                    enabled = false,
+                    trailingText = lockedLabel
+                )
+            )
+        }
 
     Box(modifier = modifier) {
         V2SampleColumn(Modifier.fillMaxSize()) {
@@ -234,15 +306,12 @@ private fun V2InputsPage(
                         placeholder = stringResource(R.string.debug_v2_liquid_inputs_search_placeholder),
                         backdrop = backdrop,
                         leadingIcon = appLucideSearchIcon(),
+                        trailingIcon = appLucideMoreIcon(),
                         modifier = Modifier.fillMaxWidth()
                     )
                     V2GlassDropdown(
                         label = stringResource(R.string.debug_v2_liquid_inputs_dropdown_label),
-                        items = listOf(
-                            stringResource(R.string.debug_v2_liquid_inputs_dropdown_compact),
-                            stringResource(R.string.debug_v2_liquid_inputs_dropdown_normal),
-                            stringResource(R.string.debug_v2_liquid_inputs_dropdown_expanded)
-                        ),
+                        items = dropdownItems,
                         selectedIndex = dropdownIndex,
                         onSelectedIndexChange = { dropdownIndex = it },
                         backdrop = backdrop,
@@ -254,7 +323,7 @@ private fun V2InputsPage(
                     ) {
                         V2GlassButton(
                             text = stringResource(R.string.debug_v2_liquid_inputs_sheet_button),
-                            icon = appLucideLayersIcon(),
+                            icon = layersIcon,
                             backdrop = backdrop,
                             modifier = Modifier.weight(1f),
                             onClick = { showSheet = true }
@@ -295,6 +364,66 @@ private fun V2NavigationPage(
     var navIndex by remember { mutableIntStateOf(0) }
     var commandIndex by remember { mutableIntStateOf(1) }
     val palette = rememberV2LiquidGlassPalette()
+    val pullLabel = stringResource(R.string.debug_v2_liquid_command_pull)
+    val pinLabel = stringResource(R.string.debug_v2_liquid_command_pin)
+    val runLabel = stringResource(R.string.debug_v2_liquid_command_run)
+    val homeLabel = stringResource(R.string.debug_v2_liquid_nav_home)
+    val mediaLabel = stringResource(R.string.debug_v2_liquid_nav_media)
+    val toolsLabel = stringResource(R.string.debug_v2_liquid_nav_tools)
+    val statusLabel = stringResource(R.string.debug_v2_liquid_nav_status)
+    val downloadIcon = appLucideDownloadIcon()
+    val heartIcon = appLucideHeartIcon()
+    val playIcon = appLucidePlayIcon()
+    val homeIcon = appLucideHomeIcon()
+    val musicIcon = appLucideMusicIcon()
+    val configIcon = appLucideConfigIcon()
+    val listIcon = appLucideListIcon()
+    val commandItems = remember(pullLabel, pinLabel, runLabel, downloadIcon, heartIcon, playIcon) {
+        listOf(
+            V2GlassTabItem(
+                label = pullLabel,
+                icon = downloadIcon
+            ),
+            V2GlassTabItem(
+                label = pinLabel,
+                icon = heartIcon,
+                badge = "2"
+            ),
+            V2GlassTabItem(
+                label = runLabel,
+                icon = playIcon
+            )
+        )
+    }
+    val navItems = remember(
+        homeLabel,
+        mediaLabel,
+        toolsLabel,
+        statusLabel,
+        homeIcon,
+        musicIcon,
+        configIcon,
+        listIcon
+    ) {
+        listOf(
+            V2GlassTabItem(
+                label = homeLabel,
+                icon = homeIcon
+            ),
+            V2GlassTabItem(
+                label = mediaLabel,
+                icon = musicIcon
+            ),
+            V2GlassTabItem(
+                label = toolsLabel,
+                icon = configIcon
+            ),
+            V2GlassTabItem(
+                label = statusLabel,
+                icon = listIcon
+            )
+        )
+    }
 
     V2SampleColumn(modifier) {
         item {
@@ -331,19 +460,10 @@ private fun V2NavigationPage(
                 }
                 V2SampleLabel(stringResource(R.string.debug_v2_liquid_navigation_command_dock))
                 V2GlassBottomTabs(
-                    items = listOf(
-                        stringResource(R.string.debug_v2_liquid_command_pull),
-                        stringResource(R.string.debug_v2_liquid_command_pin),
-                        stringResource(R.string.debug_v2_liquid_command_run)
-                    ),
+                    items = commandItems,
                     selectedIndex = commandIndex,
                     onSelectedIndexChange = { commandIndex = it },
                     backdrop = backdrop,
-                    icons = listOf(
-                        appLucideDownloadIcon(),
-                        appLucideHeartIcon(),
-                        appLucidePlayIcon()
-                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp),
@@ -359,21 +479,10 @@ private fun V2NavigationPage(
             ) {
                 V2MiniPlayerDock(backdrop)
                 V2GlassBottomTabs(
-                    items = listOf(
-                        stringResource(R.string.debug_v2_liquid_nav_home),
-                        stringResource(R.string.debug_v2_liquid_nav_media),
-                        stringResource(R.string.debug_v2_liquid_nav_tools),
-                        stringResource(R.string.debug_v2_liquid_nav_status)
-                    ),
+                    items = navItems,
                     selectedIndex = navIndex,
                     onSelectedIndexChange = { navIndex = it },
                     backdrop = backdrop,
-                    icons = listOf(
-                        appLucideHomeIcon(),
-                        appLucideMusicIcon(),
-                        appLucideConfigIcon(),
-                        appLucideListIcon()
-                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(66.dp)
@@ -402,6 +511,15 @@ private fun V2ScenariosPage(
                 subtitle = stringResource(R.string.debug_v2_liquid_section_scenarios_subtitle),
                 backdrop = backdrop
             ) {
+                V2PerfPanel(
+                    pageLabel = stringResource(R.string.debug_v2_liquid_page_scenarios),
+                    backdrop = backdrop
+                )
+                V2GroupStressSample(
+                    backdrop = backdrop,
+                    title = stringResource(R.string.debug_v2_liquid_group_stress_title),
+                    subtitle = stringResource(R.string.debug_v2_liquid_group_stress_subtitle)
+                )
                 V2ScenarioActionRow(
                     icon = appLucideBranchIcon(),
                     title = stringResource(R.string.debug_v2_liquid_scenario_github_title),
@@ -428,6 +546,48 @@ private fun V2ScenariosPage(
                     action = stringResource(R.string.debug_v2_liquid_action_play),
                     tint = Color(0xFFFF5C8A).copy(alpha = 0.16f),
                     backdrop = backdrop
+                )
+                V2GlassToolbar(
+                    backdrop = backdrop,
+                    modifier = Modifier.fillMaxWidth(),
+                    role = V2GlassRole.Accent,
+                    leading = { scope ->
+                        V2GlassIconButton(
+                            icon = appLucideMailIcon(),
+                            contentDescription = stringResource(R.string.debug_v2_liquid_scenario_ba_title),
+                            backdrop = scope.childBackdrop,
+                            size = V2GlassControlSize.Compact,
+                            tint = palette.accent.copy(alpha = 0.16f),
+                            onClick = {}
+                        )
+                    },
+                    content = { scope ->
+                        V2GlassButton(
+                            text = stringResource(R.string.debug_v2_liquid_nav_controls),
+                            backdrop = scope.childBackdrop,
+                            size = V2GlassControlSize.Compact,
+                            modifier = Modifier.weight(1f),
+                            onClick = {}
+                        )
+                        V2GlassButton(
+                            text = stringResource(R.string.debug_v2_liquid_nav_media),
+                            backdrop = scope.childBackdrop,
+                            size = V2GlassControlSize.Compact,
+                            modifier = Modifier.weight(1f),
+                            selected = true,
+                            role = V2GlassRole.Accent,
+                            onClick = {}
+                        )
+                    },
+                    trailing = { scope ->
+                        V2GlassIconButton(
+                            icon = appLucideMoreIcon(),
+                            contentDescription = stringResource(R.string.debug_v2_liquid_nav_tools),
+                            backdrop = scope.childBackdrop,
+                            size = V2GlassControlSize.Compact,
+                            onClick = {}
+                        )
+                    }
                 )
             }
         }

@@ -37,9 +37,14 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.os.appLucideBranchIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.appLucideConfigIcon
+import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideMusicIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -56,6 +61,77 @@ internal fun V2SampleColumn(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content
     )
+}
+
+@Composable
+internal fun V2LightPageShell(
+    page: V2SamplePage,
+    modifier: Modifier = Modifier
+) {
+    val palette = rememberV2LiquidGlassPalette()
+    val title = stringResource(
+        when (page) {
+            V2SamplePage.Surfaces -> R.string.debug_v2_liquid_section_surfaces_title
+            V2SamplePage.Controls -> R.string.debug_v2_liquid_section_controls_title
+            V2SamplePage.Inputs -> R.string.debug_v2_liquid_section_inputs_title
+            V2SamplePage.Navigation -> R.string.debug_v2_liquid_section_navigation_title
+            V2SamplePage.Scenarios -> R.string.debug_v2_liquid_section_scenarios_title
+        }
+    )
+    val subtitle = stringResource(
+        when (page) {
+            V2SamplePage.Surfaces -> R.string.debug_v2_liquid_section_surfaces_subtitle
+            V2SamplePage.Controls -> R.string.debug_v2_liquid_section_controls_subtitle
+            V2SamplePage.Inputs -> R.string.debug_v2_liquid_section_inputs_subtitle
+            V2SamplePage.Navigation -> R.string.debug_v2_liquid_section_navigation_subtitle
+            V2SamplePage.Scenarios -> R.string.debug_v2_liquid_section_scenarios_subtitle
+        }
+    )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 36.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(196.dp)
+                .background(palette.clearTint, RoundedCornerShape(V2LiquidGlassTokens.radiusPanel))
+                .padding(18.dp)
+        ) {
+            Column(
+                modifier = Modifier.align(Alignment.CenterStart),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = palette.content,
+                    fontSize = AppTypographyTokens.SectionTitle.fontSize,
+                    lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = subtitle,
+                    color = palette.secondary,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(R.string.debug_v2_liquid_badge_performance),
+                    color = palette.secondary,
+                    fontSize = AppTypographyTokens.Caption.fontSize,
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -257,7 +333,8 @@ internal fun BoxScope.V2InputSheet(
 ) {
     V2GlassSheet(
         visible = visible,
-        backdrop = backdrop
+        backdrop = backdrop,
+        onDismiss = onDismiss
     ) { exported ->
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             V2StageText(
@@ -288,26 +365,15 @@ internal fun BoxScope.V2InputSheet(
 @Composable
 internal fun V2MiniPlayerDock(backdrop: Backdrop) {
     val palette = rememberV2LiquidGlassPalette()
-    V2GlassSurface(
+    V2GlassDockGroup(
         backdrop = backdrop,
         modifier = Modifier
             .fillMaxWidth()
             .height(76.dp),
-        spec = V2GlassSurfaceSpec.capsule(
-            surfaceColor = palette.clearTint,
-            interactive = true
-        ),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-        contentAlignment = Alignment.CenterStart,
-        onClick = {}
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        role = V2GlassRole.Accent
+    ) { scope ->
             V2GlassSurface(
-                backdrop = backdrop,
+                backdrop = scope.childBackdrop,
                 modifier = Modifier.size(48.dp),
                 spec = V2GlassSurfaceSpec(
                     shape = RoundedCornerShape(16.dp),
@@ -349,11 +415,12 @@ internal fun V2MiniPlayerDock(backdrop: Backdrop) {
             V2GlassIconButton(
                 icon = appLucidePlayIcon(),
                 contentDescription = stringResource(R.string.debug_v2_liquid_action_play),
-                backdrop = backdrop,
+                backdrop = scope.childBackdrop,
                 tint = palette.success.copy(alpha = 0.16f),
+                selected = true,
+                role = V2GlassRole.Success,
                 onClick = {}
             )
-        }
     }
 }
 
@@ -367,68 +434,38 @@ internal fun V2ScenarioActionRow(
     tint: Color,
     backdrop: Backdrop
 ) {
-    val palette = rememberV2LiquidGlassPalette()
-    V2GlassSurface(
+    V2GlassGroup(
         backdrop = backdrop,
         modifier = Modifier.fillMaxWidth(),
+        role = V2GlassRole.Accent,
+        contentPadding = PaddingValues(8.dp),
         spec = V2GlassSurfaceSpec(
             shape = RoundedCornerShape(26.dp),
             tint = tint,
-            surfaceColor = palette.clearTint,
+            surfaceColor = rememberV2LiquidGlassPalette().clearTint,
             blur = V2LiquidGlassTokens.blurBalanced,
             lensHeight = 18.dp,
             lensAmount = 24.dp,
             interactive = true
-        ),
-        contentPadding = PaddingValues(14.dp),
-        onClick = {}
+        )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = palette.content,
-                modifier = Modifier.size(22.dp)
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = title,
-                    color = palette.content,
-                    fontSize = AppTypographyTokens.CardHeader.fontSize,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+        V2GlassListRow(
+            title = title,
+            subtitle = body,
+            meta = meta,
+            icon = icon,
+            tint = tint,
+            action = {
+                V2GlassButton(
+                    text = action,
+                    backdrop = childBackdrop,
+                    tint = tint,
+                    size = V2GlassControlSize.Compact,
+                    onClick = {}
                 )
-                Text(
-                    text = body,
-                    color = palette.secondary,
-                    fontSize = AppTypographyTokens.Caption.fontSize,
-                    lineHeight = AppTypographyTokens.Caption.lineHeight,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = meta,
-                    color = palette.secondary.copy(alpha = 0.82f),
-                    fontSize = AppTypographyTokens.Eyebrow.fontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            V2GlassButton(
-                text = action,
-                backdrop = backdrop,
-                tint = tint,
-                onClick = {}
-            )
-        }
+            },
+            onClick = {}
+        )
     }
 }
 
@@ -492,7 +529,8 @@ internal fun V2SliderLine(
     label: String,
     value: Float,
     onValueChange: (Float) -> Unit,
-    backdrop: Backdrop
+    backdrop: Backdrop,
+    steps: Int = 0
 ) {
     val palette = rememberV2LiquidGlassPalette()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -515,7 +553,104 @@ internal fun V2SliderLine(
         V2GlassSlider(
             value = value,
             onValueChange = onValueChange,
-            backdrop = backdrop
+            backdrop = backdrop,
+            steps = steps,
+            showTicks = steps > 0,
+            valueLabel = { it.toV2PercentLabel() }
+        )
+    }
+}
+
+@Composable
+internal fun V2PerfPanel(
+    pageLabel: String,
+    backdrop: Backdrop
+) {
+    val palette = rememberV2LiquidGlassPalette()
+    V2GlassGroup(
+        backdrop = backdrop,
+        modifier = Modifier.fillMaxWidth(),
+        role = V2GlassRole.Success,
+        density = V2GlassContentDensity.Compact,
+        contentPadding = PaddingValues(10.dp),
+        spacing = 8.dp
+    ) {
+        V2GlassListRow(
+            title = stringResource(R.string.debug_v2_liquid_perf_title),
+            subtitle = stringResource(R.string.debug_v2_liquid_perf_body),
+            meta = stringResource(R.string.debug_v2_liquid_perf_current_page_value, pageLabel),
+            icon = appLucideConfigIcon(),
+            tint = palette.success.copy(alpha = 0.14f),
+            role = V2GlassRole.Success
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            V2GlassStatusCapsule(
+                label = stringResource(R.string.debug_v2_liquid_perf_layers_value),
+                backdrop = childBackdrop,
+                modifier = Modifier.weight(1f),
+                tint = palette.accent.copy(alpha = 0.13f)
+            )
+            V2GlassStatusCapsule(
+                label = stringResource(R.string.debug_v2_liquid_perf_gfxinfo_value),
+                backdrop = childBackdrop,
+                modifier = Modifier.weight(1f),
+                tint = palette.success.copy(alpha = 0.13f)
+            )
+        }
+    }
+}
+
+@Composable
+internal fun V2GroupStressSample(
+    backdrop: Backdrop,
+    title: String,
+    subtitle: String
+) {
+    val palette = rememberV2LiquidGlassPalette()
+    V2GlassGroup(
+        backdrop = backdrop,
+        modifier = Modifier.fillMaxWidth(),
+        role = V2GlassRole.Accent,
+        density = V2GlassContentDensity.Compact,
+        spacing = 8.dp,
+        contentPadding = PaddingValues(10.dp)
+    ) {
+        V2GlassListRow(
+            title = title,
+            subtitle = subtitle,
+            meta = stringResource(R.string.debug_v2_liquid_group_stress_meta),
+            icon = appLucideBranchIcon(),
+            tint = palette.accent.copy(alpha = 0.14f),
+            role = V2GlassRole.Accent
+        )
+        V2GlassListRow(
+            title = stringResource(R.string.debug_v2_liquid_group_toolbar_title),
+            subtitle = stringResource(R.string.debug_v2_liquid_group_toolbar_body),
+            icon = appLucideSearchIcon(),
+            tint = palette.warning.copy(alpha = 0.13f),
+            role = V2GlassRole.Warning,
+            action = {
+                V2GlassIconButton(
+                    icon = appLucideDownloadIcon(),
+                    contentDescription = stringResource(R.string.debug_v2_liquid_action_download),
+                    backdrop = childBackdrop,
+                    size = V2GlassControlSize.Compact,
+                    role = V2GlassRole.Accent,
+                    selected = true,
+                    onClick = {}
+                )
+            }
+        )
+        V2GlassListRow(
+            title = stringResource(R.string.debug_v2_liquid_group_shell_title),
+            subtitle = stringResource(R.string.debug_v2_liquid_group_shell_body),
+            meta = stringResource(R.string.debug_v2_liquid_scenario_os_meta),
+            icon = appLucidePackageIcon(),
+            tint = palette.success.copy(alpha = 0.13f),
+            role = V2GlassRole.Success
         )
     }
 }

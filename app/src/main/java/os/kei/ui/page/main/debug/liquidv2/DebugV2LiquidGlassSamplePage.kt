@@ -13,6 +13,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +66,15 @@ internal fun DebugV2LiquidGlassSamplePage(
     val pagerState = rememberPagerState(pageCount = { V2SamplePage.entries.size })
     val coroutineScope = rememberCoroutineScope()
     val destinations = rememberV2SampleDestinations()
+    val tabItems = remember(destinations) {
+        destinations.map {
+            V2GlassTabItem(
+                label = it.title,
+                icon = it.icon,
+                contentDescription = it.title
+            )
+        }
+    }
 
     AppPageScaffold(
         title = stringResource(R.string.debug_v2_liquid_sample_title),
@@ -117,7 +127,7 @@ internal fun DebugV2LiquidGlassSamplePage(
                 verticalAlignment = Alignment.Top
             ) { pageIndex ->
                 val destination = destinations[pageIndex]
-                val active = pageIndex == pagerState.currentPage
+                val active = pageIndex == pagerState.settledPage
                 V2LiquidGlassSampleContent(
                     page = destination.page,
                     active = active,
@@ -127,7 +137,7 @@ internal fun DebugV2LiquidGlassSamplePage(
             }
 
             V2GlassBottomTabs(
-                items = destinations.map { it.title },
+                items = tabItems,
                 selectedIndex = pagerState.currentPage,
                 onSelectedIndexChange = { index ->
                     coroutineScope.launch {
@@ -135,7 +145,6 @@ internal fun DebugV2LiquidGlassSamplePage(
                     }
                 },
                 backdrop = rootBackdrop,
-                icons = destinations.map { it.icon },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
@@ -149,33 +158,56 @@ internal fun DebugV2LiquidGlassSamplePage(
 
 @Composable
 private fun rememberV2SampleDestinations(): List<V2SampleDestination> {
-    return listOf(
-        V2SampleDestination(
-            title = stringResource(R.string.debug_v2_liquid_page_surfaces),
-            icon = appLucideLayersIcon(),
-            page = V2SamplePage.Surfaces
-        ),
-        V2SampleDestination(
-            title = stringResource(R.string.debug_v2_liquid_page_controls),
-            icon = appLucideConfigIcon(),
-            page = V2SamplePage.Controls
-        ),
-        V2SampleDestination(
-            title = stringResource(R.string.debug_v2_liquid_page_inputs),
-            icon = appLucideSearchIcon(),
-            page = V2SamplePage.Inputs
-        ),
-        V2SampleDestination(
-            title = stringResource(R.string.debug_v2_liquid_page_navigation),
-            icon = appLucideHomeIcon(),
-            page = V2SamplePage.Navigation
-        ),
-        V2SampleDestination(
-            title = stringResource(R.string.debug_v2_liquid_page_scenarios),
-            icon = appLucideGridIcon(),
-            page = V2SamplePage.Scenarios
+    val surfacesTitle = stringResource(R.string.debug_v2_liquid_page_surfaces)
+    val controlsTitle = stringResource(R.string.debug_v2_liquid_page_controls)
+    val inputsTitle = stringResource(R.string.debug_v2_liquid_page_inputs)
+    val navigationTitle = stringResource(R.string.debug_v2_liquid_page_navigation)
+    val scenariosTitle = stringResource(R.string.debug_v2_liquid_page_scenarios)
+    val layersIcon = appLucideLayersIcon()
+    val configIcon = appLucideConfigIcon()
+    val searchIcon = appLucideSearchIcon()
+    val homeIcon = appLucideHomeIcon()
+    val gridIcon = appLucideGridIcon()
+    return remember(
+        surfacesTitle,
+        controlsTitle,
+        inputsTitle,
+        navigationTitle,
+        scenariosTitle,
+        layersIcon,
+        configIcon,
+        searchIcon,
+        homeIcon,
+        gridIcon
+    ) {
+        listOf(
+            V2SampleDestination(
+                title = surfacesTitle,
+                icon = layersIcon,
+                page = V2SamplePage.Surfaces
+            ),
+            V2SampleDestination(
+                title = controlsTitle,
+                icon = configIcon,
+                page = V2SamplePage.Controls
+            ),
+            V2SampleDestination(
+                title = inputsTitle,
+                icon = searchIcon,
+                page = V2SamplePage.Inputs
+            ),
+            V2SampleDestination(
+                title = navigationTitle,
+                icon = homeIcon,
+                page = V2SamplePage.Navigation
+            ),
+            V2SampleDestination(
+                title = scenariosTitle,
+                icon = gridIcon,
+                page = V2SamplePage.Scenarios
+            )
         )
-    )
+    }
 }
 
 @Composable

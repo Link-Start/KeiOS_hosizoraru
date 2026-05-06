@@ -1,7 +1,16 @@
 package os.kei.ui.page.main.github
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -13,14 +22,19 @@ import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyBenchmarkResult
+import os.kei.feature.github.model.GitHubStrategyBenchmarkSample
 import os.kei.feature.github.model.GitHubStrategyBenchmarkTestType
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
 import os.kei.ui.page.main.widget.sheet.SheetExpandableCard
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private const val BENCHMARK_SAMPLE_DETAIL_LIMIT = 12
 
 @Composable
 internal fun GitHubStrategyGuideCard(
@@ -208,9 +222,80 @@ internal fun GitHubRecommendedTokenGuideCard(
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
+internal fun GitHubStrategyBenchmarkComparisonCard(
+    report: GitHubStrategyBenchmarkReport
+) {
+    val rows = remember(report.results) { buildBenchmarkComparisonRows(report.results) }
+    if (rows.isEmpty()) return
+    val clearRows = rows.count { it.level == BenchmarkComparisonLevel.Clear }
+    SheetSummaryCard(
+        title = stringResource(R.string.github_strategy_benchmark_compare_title),
+        accentColor = GitHubStatusPalette.Update,
+        badgeLabel = stringResource(
+            R.string.github_strategy_benchmark_compare_badge,
+            clearRows,
+            rows.size
+        ),
+        badgeColor = if (clearRows == rows.size) {
+            GitHubStatusPalette.Update
+        } else {
+            GitHubStatusPalette.PreRelease
+        },
+        modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+    ) {
+        rows.forEach { row ->
+            GitHubBenchmarkComparisonLine(row)
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun GitHubBenchmarkComparisonLine(row: BenchmarkComparisonRow) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = row.testType.label(),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        FlowRow(
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            StatusPill(
+                label = row.winnerLabel,
+                color = when (row.level) {
+                    BenchmarkComparisonLevel.Clear -> GitHubStatusPalette.Update
+                    BenchmarkComparisonLevel.Close -> GitHubStatusPalette.Cache
+                    BenchmarkComparisonLevel.Insufficient -> GitHubStatusPalette.PreRelease
+                }
+            )
+            row.metrics.forEach { metric ->
+                StatusPill(label = metric, color = GitHubStatusPalette.Active)
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
 internal fun GitHubStrategyBenchmarkCard(
     result: GitHubStrategyBenchmarkResult
 ) {
+    var samplesExpanded by remember(
+        result.strategyId,
+        result.authMode,
+        result.coldSamples,
+        result.warmSamples
+    ) {
+        mutableStateOf(false)
+    }
     val accent = when (result.displayName) {
         "API" -> GitHubStatusPalette.Update
         else -> GitHubStatusPalette.Active
@@ -296,6 +381,125 @@ internal fun GitHubStrategyBenchmarkCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
+        GitHubBenchmarkSampleDetails(
+            result = result,
+            expanded = samplesExpanded,
+            onToggle = { samplesExpanded = !samplesExpanded }
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun GitHubBenchmarkSampleDetails(
+    result: GitHubStrategyBenchmarkResult,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    val samples = (result.coldSamples + result.warmSamples)
+        .sortedWith(
+            compareBy<GitHubStrategyBenchmarkSample> { it.testType.ordinal }
+                .thenBy { it.target.id.lowercase() }
+                .thenBy { it.fromCache }
+        )
+    if (samples.isEmpty()) return
+    Text(
+        text = stringResource(
+            if (expanded) {
+                R.string.github_strategy_benchmark_samples_hide
+            } else {
+                R.string.github_strategy_benchmark_samples_show
+            },
+            samples.size
+        ),
+        modifier = androidx.compose.ui.Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle),
+        color = GitHubStatusPalette.Active,
+        fontSize = AppTypographyTokens.Supporting.fontSize,
+        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight
+    )
+    if (!expanded) return
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        samples.take(BENCHMARK_SAMPLE_DETAIL_LIMIT).forEach { sample ->
+            GitHubBenchmarkSampleLine(sample)
+        }
+        val hidden = samples.size - BENCHMARK_SAMPLE_DETAIL_LIMIT
+        if (hidden > 0) {
+            Text(
+                text = stringResource(R.string.github_strategy_benchmark_samples_more, hidden),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun GitHubBenchmarkSampleLine(sample: GitHubStrategyBenchmarkSample) {
+    val stateColor = if (sample.success) GitHubStatusPalette.Update else GitHubStatusPalette.Error
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = "${sample.typeLabel()} · ${sample.target.id}",
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        FlowRow(
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            StatusPill(
+                label = stringResource(
+                    if (sample.success) {
+                        R.string.github_strategy_benchmark_sample_success
+                    } else {
+                        R.string.github_strategy_benchmark_sample_failed
+                    }
+                ),
+                color = stateColor
+            )
+            StatusPill(
+                label = stringResource(
+                    R.string.github_strategy_benchmark_sample_elapsed,
+                    sample.elapsedMs
+                ),
+                color = GitHubStatusPalette.Active
+            )
+            if (sample.fromCache) {
+                StatusPill(
+                    label = stringResource(R.string.github_strategy_benchmark_sample_cache),
+                    color = GitHubStatusPalette.Stable
+                )
+            }
+            sample.detailPills().forEach { pill ->
+                StatusPill(
+                    label = pill,
+                    color = GitHubStatusPalette.Cache
+                )
+            }
+        }
+        sample.message
+            .takeIf { it.isNotBlank() && !sample.success }
+            ?.let { message ->
+                Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Supporting.fontSize,
+                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
     }
 }
 
@@ -318,6 +522,137 @@ private fun GitHubBenchmarkTaskRow(
         ),
         valueColor = valueColor
     )
+}
+
+@Composable
+private fun GitHubStrategyBenchmarkSample.typeLabel(): String = testType.label()
+
+@Composable
+private fun GitHubStrategyBenchmarkTestType.label(): String {
+    return when (this) {
+        GitHubStrategyBenchmarkTestType.ReleaseSnapshot ->
+            stringResource(R.string.github_strategy_metric_release_snapshot)
+
+        GitHubStrategyBenchmarkTestType.ReleaseAssets ->
+            stringResource(R.string.github_strategy_metric_release_assets)
+
+        GitHubStrategyBenchmarkTestType.ReleaseNotes ->
+            stringResource(R.string.github_strategy_metric_release_notes)
+
+        GitHubStrategyBenchmarkTestType.ApkManifest ->
+            stringResource(R.string.github_strategy_metric_apk_manifest)
+
+        GitHubStrategyBenchmarkTestType.PackageNameScan ->
+            stringResource(R.string.github_strategy_metric_package_scan)
+
+        GitHubStrategyBenchmarkTestType.RepositoryScan ->
+            stringResource(R.string.github_strategy_metric_repo_scan)
+    }
+}
+
+private fun buildBenchmarkComparisonRows(
+    results: List<GitHubStrategyBenchmarkResult>
+): List<BenchmarkComparisonRow> {
+    if (results.size < 2) return emptyList()
+    return GitHubStrategyBenchmarkTestType.entries.mapNotNull { testType ->
+        val stats = results.mapNotNull { result ->
+            BenchmarkStrategyStats.from(result, testType)
+        }
+        if (stats.size < 2) return@mapNotNull null
+        val ranked = stats.sortedWith(
+            compareByDescending<BenchmarkStrategyStats> { it.successCount }
+                .thenBy { it.averageMs }
+        )
+        val best = ranked.first()
+        val second = ranked.getOrNull(1)
+        val level = when {
+            best.sampleCount == 0 -> BenchmarkComparisonLevel.Insufficient
+            second == null -> BenchmarkComparisonLevel.Insufficient
+            best.successCount > second.successCount -> BenchmarkComparisonLevel.Clear
+            second.averageMs <= 0L -> BenchmarkComparisonLevel.Close
+            best.averageMs <= 0L -> BenchmarkComparisonLevel.Clear
+            best.averageMs * 100L <= second.averageMs * 85L -> BenchmarkComparisonLevel.Clear
+            else -> BenchmarkComparisonLevel.Close
+        }
+        val winnerLabel = when (level) {
+            BenchmarkComparisonLevel.Clear -> best.displayName
+            BenchmarkComparisonLevel.Close -> "${best.displayName} / ${second?.displayName.orEmpty()}"
+            BenchmarkComparisonLevel.Insufficient -> "-"
+        }
+        BenchmarkComparisonRow(
+            testType = testType,
+            winnerLabel = winnerLabel,
+            level = level,
+            metrics = ranked.map { stat ->
+                "${stat.displayName} ${stat.successCount}/${stat.sampleCount} · ${stat.averageMs} ms"
+            }
+        )
+    }
+}
+
+private data class BenchmarkComparisonRow(
+    val testType: GitHubStrategyBenchmarkTestType,
+    val winnerLabel: String,
+    val level: BenchmarkComparisonLevel,
+    val metrics: List<String>
+)
+
+private data class BenchmarkStrategyStats(
+    val displayName: String,
+    val successCount: Int,
+    val sampleCount: Int,
+    val averageMs: Long
+) {
+    companion object {
+        fun from(
+            result: GitHubStrategyBenchmarkResult,
+            testType: GitHubStrategyBenchmarkTestType
+        ): BenchmarkStrategyStats? {
+            val samples = result.samplesFor(testType)
+            if (samples.isEmpty()) return null
+            return BenchmarkStrategyStats(
+                displayName = result.displayName,
+                successCount = samples.count { it.success },
+                sampleCount = samples.size,
+                averageMs = samples.map { it.elapsedMs }.averageRounded()
+            )
+        }
+    }
+}
+
+private enum class BenchmarkComparisonLevel {
+    Clear,
+    Close,
+    Insufficient
+}
+
+private fun List<Long>.averageRounded(): Long {
+    if (isEmpty()) return 0L
+    return (sumOf { it } / size.toDouble()).toLong()
+}
+
+@Composable
+private fun GitHubStrategyBenchmarkSample.detailPills(): List<String> {
+    return buildList {
+        stableTag.takeIf { it.isNotBlank() }?.let { tag ->
+            add(stringResource(R.string.github_strategy_benchmark_sample_tag, tag))
+        }
+        preReleaseTag.takeIf { it.isNotBlank() }?.let { tag ->
+            add(stringResource(R.string.github_strategy_benchmark_sample_pre_tag, tag))
+        }
+        if (assetCount > 0) {
+            add(stringResource(R.string.github_strategy_benchmark_sample_assets, assetCount))
+        }
+        if (releaseNotesLength > 0) {
+            add(stringResource(R.string.github_strategy_benchmark_sample_notes, releaseNotesLength))
+        }
+        packageName.takeIf { it.isNotBlank() }?.let { value ->
+            add(value)
+        }
+        matchedRepository.takeIf { it.isNotBlank() }?.let { repo ->
+            add(repo)
+        }
+    }
 }
 
 @Composable

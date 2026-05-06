@@ -12,10 +12,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
-import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
@@ -24,15 +25,16 @@ import os.kei.ui.page.main.github.GitHubCredentialStatusCard
 import os.kei.ui.page.main.github.GitHubRecommendedTokenGuideCard
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.GitHubStrategyBenchmarkCard
+import os.kei.ui.page.main.github.GitHubStrategyBenchmarkComparisonCard
 import os.kei.ui.page.main.github.GitHubStrategyDraftSummaryCard
 import os.kei.ui.page.main.github.GitHubStrategyGuideCard
-import os.kei.ui.page.main.os.appLucideCloseIcon
-import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.github.buildGitHubFineGrainedTokenTemplateUrl
-import os.kei.ui.page.main.github.githubFineGrainedPatDocsUrl
 import os.kei.ui.page.main.github.githubActionsStrategyGuides
+import os.kei.ui.page.main.github.githubFineGrainedPatDocsUrl
 import os.kei.ui.page.main.github.githubRecommendedTokenGuide
 import os.kei.ui.page.main.github.githubStrategyGuides
+import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -46,7 +48,6 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -359,7 +360,10 @@ private fun GitHubStrategyBenchmarkSection(
             )
         }
     }
-    strategyBenchmarkReport?.results?.forEach { result ->
-        GitHubStrategyBenchmarkCard(result = result)
+    strategyBenchmarkReport?.let { report ->
+        GitHubStrategyBenchmarkComparisonCard(report = report)
+        report.results.forEach { result ->
+            GitHubStrategyBenchmarkCard(result = result)
+        }
     }
 }

@@ -335,6 +335,8 @@
     <string name="github_strategy_credential_guest_available">Guest API available</string>
     <string name="github_strategy_credential_token_available">Token available</string>
     <string name="github_strategy_benchmark_title_with_auth">%1$s · %2$s</string>
+    <string name="github_strategy_benchmark_compare_title">Strategy tendency</string>
+    <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d clear</string>
     <string name="github_strategy_metric_cold_avg">Cold avg</string>
     <string name="github_strategy_metric_warm_avg">Warm avg</string>
     <string name="github_strategy_metric_cache_hit">Cache hit</string>
@@ -346,6 +348,17 @@
     <string name="github_strategy_metric_package_scan">Package scan</string>
     <string name="github_strategy_metric_repo_scan">Repo scan</string>
     <string name="github_strategy_metric_task_result">%1$d/%2$d · %3$d ms</string>
+    <string name="github_strategy_benchmark_samples_show">Show sample details (%1$d)</string>
+    <string name="github_strategy_benchmark_samples_hide">Hide sample details (%1$d)</string>
+    <string name="github_strategy_benchmark_samples_more">%1$d more samples</string>
+    <string name="github_strategy_benchmark_sample_success">Success</string>
+    <string name="github_strategy_benchmark_sample_failed">Failed</string>
+    <string name="github_strategy_benchmark_sample_elapsed">%1$d ms</string>
+    <string name="github_strategy_benchmark_sample_cache">Cache</string>
+    <string name="github_strategy_benchmark_sample_tag">tag %1$s</string>
+    <string name="github_strategy_benchmark_sample_pre_tag">pre %1$s</string>
+    <string name="github_strategy_benchmark_sample_assets">%1$d assets</string>
+    <string name="github_strategy_benchmark_sample_notes">%1$d chars</string>
     <string name="github_strategy_card_title_credential_status">Credential check</string>
     <string name="github_strategy_label_mode">Mode</string>
     <string name="github_strategy_label_quota">Quota</string>

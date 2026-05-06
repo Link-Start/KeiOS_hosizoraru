@@ -335,6 +335,8 @@
     <string name="github_strategy_credential_guest_available">游客 API 可用</string>
     <string name="github_strategy_credential_token_available">Token 可用</string>
     <string name="github_strategy_benchmark_title_with_auth">%1$s · %2$s</string>
+    <string name="github_strategy_benchmark_compare_title">策略倾向</string>
+    <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d 明确</string>
     <string name="github_strategy_metric_cold_avg">首轮均时</string>
     <string name="github_strategy_metric_warm_avg">缓存均时</string>
     <string name="github_strategy_metric_cache_hit">缓存命中</string>
@@ -346,6 +348,17 @@
     <string name="github_strategy_metric_package_scan">扫包名</string>
     <string name="github_strategy_metric_repo_scan">反扫仓库</string>
     <string name="github_strategy_metric_task_result">%1$d/%2$d · %3$d ms</string>
+    <string name="github_strategy_benchmark_samples_show">展开样本明细（%1$d）</string>
+    <string name="github_strategy_benchmark_samples_hide">收起样本明细（%1$d）</string>
+    <string name="github_strategy_benchmark_samples_more">还有 %1$d 条样本</string>
+    <string name="github_strategy_benchmark_sample_success">成功</string>
+    <string name="github_strategy_benchmark_sample_failed">失败</string>
+    <string name="github_strategy_benchmark_sample_elapsed">%1$d ms</string>
+    <string name="github_strategy_benchmark_sample_cache">缓存</string>
+    <string name="github_strategy_benchmark_sample_tag">tag %1$s</string>
+    <string name="github_strategy_benchmark_sample_pre_tag">pre %1$s</string>
+    <string name="github_strategy_benchmark_sample_assets">%1$d assets</string>
+    <string name="github_strategy_benchmark_sample_notes">%1$d chars</string>
     <string name="github_strategy_card_title_credential_status">凭证检测</string>
     <string name="github_strategy_label_mode">模式</string>
     <string name="github_strategy_label_quota">配额</string>

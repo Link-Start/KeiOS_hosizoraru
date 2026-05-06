@@ -500,6 +500,7 @@
     <string name="github_star_import_apk_not_checked">APK: not verified</string>
     <string name="github_star_import_apk_checking">APK: checking latest stable release</string>
     <string name="github_star_import_apk_has_apk_format">APK: %1$d found, %2$s</string>
+    <string name="github_star_import_apk_has_apk_with_package_format">APK: %1$d found, %2$s, package %3$s</string>
     <string name="github_star_import_apk_no_apk_format">APK: none found in %1$s</string>
     <string name="github_star_import_apk_failed_format">APK: verification failed, %1$s</string>
     <string name="github_star_import_confirm_title">Confirm Star import</string>

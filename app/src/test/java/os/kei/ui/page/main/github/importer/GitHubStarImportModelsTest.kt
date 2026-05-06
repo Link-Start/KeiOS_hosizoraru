@@ -163,6 +163,32 @@ class GitHubStarImportModelsTest {
         assertEquals(emptyList<GitHubRepositoryImportCandidate>(), state.visibleVerificationTargets)
     }
 
+    @Test
+    fun `verified apk package name fills blank tracked package before import`() {
+        val candidate = starImportCandidate(
+            repo = "verified-app",
+            description = "Android APK release",
+            language = "Kotlin"
+        )
+
+        val mapped = applyVerifiedPackageNamesToStarImportCandidates(
+            candidates = listOf(candidate),
+            verificationStates = mapOf(
+                candidate.trackedApp.id to StarImportApkVerificationUiState(
+                    verification = GitHubStarImportApkVerification(
+                        owner = candidate.repository.owner,
+                        repo = candidate.repository.repo,
+                        status = GitHubStarImportApkVerificationStatus.HasApk,
+                        packageName = "demo.verified"
+                    )
+                )
+            )
+        )
+
+        assertEquals("demo.verified", mapped.single().trackedApp.packageName)
+        assertEquals("demo/verified-app|demo.verified", mapped.single().trackedApp.id)
+    }
+
 }
 
 private fun starImportCandidate(

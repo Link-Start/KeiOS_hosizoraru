@@ -169,7 +169,7 @@ object GitHubReleaseAssetRepository {
             val path = uri.rawPath.orEmpty()
             if (!path.contains(marker)) return@runCatching ""
             val encoded = path.substringAfter(marker).trim('/').trim()
-            java.net.URLDecoder.decode(encoded, Charsets.UTF_8.name())
+            URLDecoder.decode(encoded, Charsets.UTF_8.name())
         }.getOrDefault("")
         if (fromPath.isNotBlank()) return fromPath
         return raw.substringAfter(marker, "").trim('/')

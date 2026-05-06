@@ -698,11 +698,20 @@ private fun StarImportApkVerificationLine(state: StarImportApkVerificationUiStat
     val text = when {
         state?.checking == true -> stringResource(R.string.github_star_import_apk_checking)
         verification == null -> stringResource(R.string.github_star_import_apk_not_checked)
-        verification.status == GitHubStarImportApkVerificationStatus.HasApk -> stringResource(
-            R.string.github_star_import_apk_has_apk_format,
+        verification.status == GitHubStarImportApkVerificationStatus.HasApk &&
+                verification.packageName.isNotBlank() -> stringResource(
+            R.string.github_star_import_apk_has_apk_with_package_format,
             verification.apkAssetCount,
-            verification.sampleAssetName.ifBlank { verification.releaseTag }
+            verification.sampleAssetName.ifBlank { verification.releaseTag },
+            verification.packageName
         )
+
+        verification.status == GitHubStarImportApkVerificationStatus.HasApk ->
+            stringResource(
+                R.string.github_star_import_apk_has_apk_format,
+                verification.apkAssetCount,
+                verification.sampleAssetName.ifBlank { verification.releaseTag }
+            )
 
         verification.status == GitHubStarImportApkVerificationStatus.NoApk -> stringResource(
             R.string.github_star_import_apk_no_apk_format,

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.AppIconCache
-import os.kei.feature.github.data.local.GitHubShareImportPreviewStore
+import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -191,21 +191,21 @@ internal class GitHubPageRepository(
     suspend fun clearActiveShareImportFlow() {
         withContext(ioDispatcher) {
             GitHubTrackStore.savePendingShareImportTrack(null)
-            GitHubShareImportPreviewStore.clearActiveFlow()
+            GitHubShareImportFlowStore.clearActiveFlow()
             GitHubTrackStoreSignals.notifyChanged()
         }
     }
 
     suspend fun clearShareImportResult() {
         withContext(ioDispatcher) {
-            GitHubShareImportPreviewStore.clearActiveResult()
+            GitHubShareImportFlowStore.clearActiveResult()
             GitHubTrackStoreSignals.notifyChanged()
         }
     }
 
     suspend fun saveShareImportResult(result: GitHubShareImportResult) {
         withContext(ioDispatcher) {
-            GitHubShareImportPreviewStore.saveActiveResult(result.toRecord())
+            GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
             GitHubTrackStoreSignals.notifyChanged()
         }
     }
@@ -213,16 +213,16 @@ internal class GitHubPageRepository(
     suspend fun loadActiveShareImportFlow(): GitHubActiveShareImportFlow {
         return withContext(ioDispatcher) {
             GitHubActiveShareImportFlow(
-                preview = GitHubShareImportPreviewStore
+                preview = GitHubShareImportFlowStore
                     .loadActivePreview()
                     ?.toShareImportPreview(),
                 pendingTrack = GitHubTrackStore
                     .loadPendingShareImportTrack()
                     ?.toShareImportTrack(),
-                attachCandidate = GitHubShareImportPreviewStore
+                attachCandidate = GitHubShareImportFlowStore
                     .loadActiveAttachCandidate()
                     ?.toShareImportAttachCandidate(),
-                result = GitHubShareImportPreviewStore
+                result = GitHubShareImportFlowStore
                     .loadActiveResult()
                     ?.toShareImportResult()
             )

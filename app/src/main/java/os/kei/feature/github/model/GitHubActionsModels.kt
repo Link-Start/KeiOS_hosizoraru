@@ -312,6 +312,7 @@ data class GitHubActionsDownloadRecord(
     val artifactSizeBytes: Long = 0L,
     val sourceTrackId: String = "",
     val packageName: String = "",
+    val artifactPackageName: String = "",
     val downloadedAtMillis: Long = System.currentTimeMillis()
 )
 

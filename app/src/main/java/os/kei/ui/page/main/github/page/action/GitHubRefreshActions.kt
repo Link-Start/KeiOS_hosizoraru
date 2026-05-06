@@ -9,7 +9,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import os.kei.R
-import os.kei.feature.github.data.local.GitHubShareImportPreviewStore
+import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -436,13 +436,13 @@ internal class GitHubRefreshActions(
         state.trackedAddedAtById.putAll(trackSnapshot.trackedAddedAtById)
         state.retainTrackedAddedAtByTrackedItems()
         state.pendingShareImportTrack = trackSnapshot.pendingShareImportTrack?.toShareImportTrack()
-        state.pendingShareImportPreview = GitHubShareImportPreviewStore
+        state.pendingShareImportPreview = GitHubShareImportFlowStore
             .loadActivePreview()
             ?.toShareImportPreview()
-        state.pendingShareImportAttachCandidate = GitHubShareImportPreviewStore
+        state.pendingShareImportAttachCandidate = GitHubShareImportFlowStore
             .loadActiveAttachCandidate()
             ?.toShareImportAttachCandidate()
-        state.pendingShareImportResult = GitHubShareImportPreviewStore
+        state.pendingShareImportResult = GitHubShareImportFlowStore
             .loadActiveResult()
             ?.toShareImportResult()
 

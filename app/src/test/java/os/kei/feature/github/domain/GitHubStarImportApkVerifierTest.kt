@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import org.junit.Test
+import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStarImportApkVerification
@@ -12,6 +13,7 @@ class GitHubStarImportApkVerifierTest {
     @Test
     fun `verifier reports latest stable apk assets`() {
         val source = FakeApkVerificationSource(
+            manifestBytes = BinaryManifestFixture.build("demo.app"),
             releaseAssets = GitHubStableReleaseApkAssets(
                 release = GitHubStableReleaseTarget(
                     tag = "v1.0.0",
@@ -42,6 +44,7 @@ class GitHubStarImportApkVerifierTest {
         assertEquals("v1.0.0", result.releaseTag)
         assertEquals(1, result.apkAssetCount)
         assertEquals("demo-arm64.apk", result.sampleAssetName)
+        assertEquals("demo.app", result.packageName)
         assertEquals(100L, result.checkedAtMillis)
     }
 
@@ -94,6 +97,7 @@ class GitHubStarImportApkVerifierTest {
 
 private class FakeApkVerificationSource(
     private val releaseAssets: GitHubStableReleaseApkAssets? = null,
+    private val manifestBytes: ByteArray? = null,
     private val error: Throwable? = null
 ) : GitHubApkPackageNameScanSource {
     override fun loadLatestStableRelease(
@@ -126,7 +130,8 @@ private class FakeApkVerificationSource(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray> {
-        return Result.failure(UnsupportedOperationException())
+        return manifestBytes?.let { Result.success(it) }
+            ?: Result.failure(UnsupportedOperationException())
     }
 }
 

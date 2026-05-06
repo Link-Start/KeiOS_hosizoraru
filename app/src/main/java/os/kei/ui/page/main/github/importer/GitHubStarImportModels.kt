@@ -220,6 +220,27 @@ internal fun buildStarImportCandidateListUiState(
     )
 }
 
+internal fun applyVerifiedPackageNamesToStarImportCandidates(
+    candidates: List<GitHubRepositoryImportCandidate>,
+    verificationStates: Map<String, StarImportApkVerificationUiState>
+): List<GitHubRepositoryImportCandidate> {
+    return candidates.map { candidate ->
+        val verification = verificationStates[candidate.trackedApp.id]?.verification
+        val verifiedPackageName = verification
+            ?.takeIf { it.status == GitHubStarImportApkVerificationStatus.HasApk }
+            ?.packageName
+            ?.trim()
+            .orEmpty()
+        if (candidate.trackedApp.packageName.isNotBlank() || verifiedPackageName.isBlank()) {
+            candidate
+        } else {
+            candidate.copy(
+                trackedApp = candidate.trackedApp.copy(packageName = verifiedPackageName)
+            )
+        }
+    }
+}
+
 private fun StarImportApkVerificationUiState?.needsStarImportApkVerification(): Boolean {
     return this?.checking != true &&
             (

@@ -8,7 +8,7 @@ import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_CANCEL
 import os.kei.feature.github.data.local.GitHubPendingShareImportAttachCandidateRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
-import os.kei.feature.github.data.local.GitHubShareImportPreviewStore
+import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubShareImportResultRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -25,17 +25,17 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                 when (action) {
                     ACTION_CANCEL_SHARE_IMPORT -> {
                         val cancelledResult = buildCancelledResult(appContext)
-                        GitHubShareImportPreviewStore.clearActiveFlow()
+                        GitHubShareImportFlowStore.clearActiveFlow()
                         GitHubTrackStore.savePendingShareImportTrack(null)
                         if (cancelledResult != null) {
-                            GitHubShareImportPreviewStore.saveActiveResult(cancelledResult)
+                            GitHubShareImportFlowStore.saveActiveResult(cancelledResult)
                         }
                         GitHubTrackStoreSignals.notifyChanged()
                         GitHubShareImportNotificationHelper.notifyCancelled(appContext)
                     }
 
                     ACTION_MARK_READ_SHARE_IMPORT -> {
-                        GitHubShareImportPreviewStore.clearActiveResult()
+                        GitHubShareImportFlowStore.clearActiveResult()
                         GitHubTrackStoreSignals.notifyChanged()
                         GitHubShareImportNotificationHelper.cancel(appContext)
                     }
@@ -47,13 +47,13 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
     }
 
     private fun buildCancelledResult(context: Context): GitHubShareImportResultRecord? {
-        GitHubShareImportPreviewStore.loadActiveAttachCandidate()?.let { candidate ->
+        GitHubShareImportFlowStore.loadActiveAttachCandidate()?.let { candidate ->
             return candidate.toCancelledResult(context)
         }
         GitHubTrackStore.loadPendingShareImportTrack()?.let { pending ->
             return pending.toCancelledResult(context)
         }
-        GitHubShareImportPreviewStore.loadActivePreview()?.let { preview ->
+        GitHubShareImportFlowStore.loadActivePreview()?.let { preview ->
             return preview.toCancelledResult(context)
         }
         return null

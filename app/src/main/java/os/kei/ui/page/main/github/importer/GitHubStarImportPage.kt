@@ -315,8 +315,12 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         importing = true
         pendingImportCandidates = emptyList()
         scope.launch {
+            val selectedForImport = applyVerifiedPackageNamesToStarImportCandidates(
+                candidates = selected,
+                verificationStates = apkVerificationStates
+            )
             val result = withContext(Dispatchers.IO) {
-                runCatching { applyStarImport(context, selected) }
+                runCatching { applyStarImport(context, selectedForImport) }
             }
             importing = false
             result.onSuccess { count ->

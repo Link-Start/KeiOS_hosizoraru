@@ -500,6 +500,7 @@
     <string name="github_star_import_apk_not_checked">APK：未验证</string>
     <string name="github_star_import_apk_checking">APK：正在验证最新稳定 release</string>
     <string name="github_star_import_apk_has_apk_format">APK：%1$d 个，%2$s</string>
+    <string name="github_star_import_apk_has_apk_with_package_format">APK：%1$d 个，%2$s，包名 %3$s</string>
     <string name="github_star_import_apk_no_apk_format">APK：%1$s 未发现 APK</string>
     <string name="github_star_import_apk_failed_format">APK：验证失败，%1$s</string>
     <string name="github_star_import_confirm_title">确认导入 Star 项目</string>

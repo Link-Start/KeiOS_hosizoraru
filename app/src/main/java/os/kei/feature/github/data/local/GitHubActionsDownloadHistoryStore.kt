@@ -97,6 +97,7 @@ object GitHubActionsDownloadHistoryStore {
             .put("artifactSizeBytes", record.artifactSizeBytes)
             .put("sourceTrackId", record.sourceTrackId)
             .put("packageName", record.packageName)
+            .put("artifactPackageName", record.artifactPackageName)
             .put("downloadedAtMillis", record.downloadedAtMillis)
     }
 
@@ -132,6 +133,7 @@ object GitHubActionsDownloadHistoryStore {
                 artifactSizeBytes = obj.optLong("artifactSizeBytes", 0L),
                 sourceTrackId = obj.optString("sourceTrackId").trim(),
                 packageName = obj.optString("packageName").trim(),
+                artifactPackageName = obj.optString("artifactPackageName").trim(),
                 downloadedAtMillis = downloadedAtMillis
             )
         }.getOrNull()
@@ -153,6 +155,7 @@ object GitHubActionsDownloadHistoryStore {
             artifactDigest = artifactDigest.trim(),
             sourceTrackId = sourceTrackId.trim(),
             packageName = packageName.trim(),
+            artifactPackageName = artifactPackageName.trim(),
             downloadedAtMillis = downloadedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
         )
     }

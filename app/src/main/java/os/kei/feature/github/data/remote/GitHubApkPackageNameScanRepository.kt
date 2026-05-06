@@ -1,6 +1,5 @@
 package os.kei.feature.github.data.remote
 
-import os.kei.feature.github.data.apk.RemoteZipEntryReader
 import os.kei.feature.github.domain.GitHubApkPackageNameScanSource
 import os.kei.feature.github.domain.GitHubStableReleaseApkAssets
 import os.kei.feature.github.domain.GitHubStableReleaseTarget
@@ -9,7 +8,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 
 internal class GitHubApkPackageNameScanRepository(
-    private val zipEntryReader: RemoteZipEntryReader = RemoteZipEntryReader()
+    private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
 ) : GitHubApkPackageNameScanSource {
     override fun loadLatestStableRelease(
         owner: String,
@@ -144,36 +143,10 @@ internal class GitHubApkPackageNameScanRepository(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray> {
-        val primary = zipEntryReader.readEntry(
-            url = asset.downloadUrl,
-            entryName = ANDROID_MANIFEST_ENTRY,
-            apiToken = lookupConfig.apiToken
-        )
-        if (primary.isSuccess || lookupConfig.selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken) {
-            return primary
-        }
-
-        val token = lookupConfig.apiToken.trim()
-        if (token.isBlank() || asset.apiAssetUrl.isBlank()) return primary
-
-        return GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-            asset = asset,
-            useApiAssetUrl = true,
-            apiToken = token
-        ).mapCatching { apiDownloadUrl ->
-            zipEntryReader.readEntry(
-                url = apiDownloadUrl,
-                entryName = ANDROID_MANIFEST_ENTRY,
-                apiToken = token
-            ).getOrThrow()
-        }.recoverCatching {
-            primary.getOrThrow()
-        }
+        return manifestReader.readAndroidManifestBytes(asset = asset, lookupConfig = lookupConfig)
     }
 
     companion object {
-        private const val ANDROID_MANIFEST_ENTRY = "AndroidManifest.xml"
-
         private fun clearScanFallbackCaches(lookupConfig: GitHubLookupConfig) {
             when (lookupConfig.selectedStrategy) {
                 GitHubLookupStrategyOption.AtomFeed -> {

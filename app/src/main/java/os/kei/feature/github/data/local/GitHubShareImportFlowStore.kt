@@ -45,7 +45,7 @@ data class GitHubShareImportResultRecord(
     val completedAtMillis: Long = System.currentTimeMillis()
 )
 
-object GitHubShareImportPreviewStore {
+object GitHubShareImportFlowStore {
     private const val KV_ID = "github_share_import_preview_store"
     private const val KEY_ACTIVE_PREVIEW = "github_active_share_import_preview"
     private const val KEY_ACTIVE_ATTACH_CANDIDATE = "github_active_share_import_attach_candidate"

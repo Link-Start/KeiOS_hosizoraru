@@ -154,6 +154,7 @@ internal object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkV
             .put("releaseUrl", verification.releaseUrl)
             .put("apkAssetCount", verification.apkAssetCount)
             .put("sampleAssetName", verification.sampleAssetName)
+            .put("packageName", verification.packageName)
             .put("checkedAtMillis", verification.checkedAtMillis)
             .put("errorMessage", verification.errorMessage)
     }
@@ -174,6 +175,7 @@ internal object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkV
             releaseUrl = obj.optString("releaseUrl").trim(),
             apkAssetCount = obj.optInt("apkAssetCount", 0).coerceAtLeast(0),
             sampleAssetName = obj.optString("sampleAssetName").trim(),
+            packageName = obj.optString("packageName").trim(),
             checkedAtMillis = obj.optLong("checkedAtMillis", 0L).coerceAtLeast(0L),
             errorMessage = obj.optString("errorMessage").trim()
         )

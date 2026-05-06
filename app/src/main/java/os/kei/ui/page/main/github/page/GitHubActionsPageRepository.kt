@@ -7,6 +7,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubActionsDownloadHistoryStore
+import os.kei.feature.github.data.remote.GitHubActionsArtifactManifestProbe
 import os.kei.feature.github.data.remote.GitHubActionsRepository
 import os.kei.feature.github.domain.GitHubActionsArtifactSelector
 import os.kei.feature.github.domain.GitHubActionsRunSelector
@@ -41,6 +42,8 @@ internal class GitHubActionsPageRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
+    private val artifactManifestProbe = GitHubActionsArtifactManifestProbe()
+
     suspend fun fetchGitHubActionsWorkflows(
         owner: String,
         repo: String,
@@ -310,6 +313,20 @@ internal class GitHubActionsPageRepository(
         }
     }
 
+    suspend fun probeGitHubActionsArtifactPackageName(
+        artifact: GitHubActionsArtifact,
+        resolvedDownloadUrl: String,
+        lookupConfig: GitHubLookupConfig
+    ): String {
+        return withContext(ioDispatcher) {
+            artifactManifestProbe.readPackageName(
+                artifact = artifact,
+                resolvedDownloadUrl = resolvedDownloadUrl,
+                lookupConfig = lookupConfig
+            ).getOrDefault("").trim()
+        }
+    }
+
     fun buildGitHubActionsDownloadRecord(
         owner: String,
         repo: String,
@@ -318,6 +335,7 @@ internal class GitHubActionsPageRepository(
         artifact: GitHubActionsArtifact,
         sourceTrackId: String = "",
         packageName: String = "",
+        artifactPackageName: String = "",
         downloadedAtMillis: Long = System.currentTimeMillis()
     ): GitHubActionsDownloadRecord {
         return GitHubActionsDownloadRecord(
@@ -341,6 +359,7 @@ internal class GitHubActionsPageRepository(
             artifactSizeBytes = artifact.sizeBytes,
             sourceTrackId = sourceTrackId,
             packageName = packageName,
+            artifactPackageName = artifactPackageName,
             downloadedAtMillis = downloadedAtMillis
         )
     }

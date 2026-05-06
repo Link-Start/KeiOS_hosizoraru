@@ -88,6 +88,7 @@ data class GitHubStarImportApkVerification(
     val releaseUrl: String = "",
     val apkAssetCount: Int = 0,
     val sampleAssetName: String = "",
+    val packageName: String = "",
     val checkedAtMillis: Long = 0L,
     val errorMessage: String = "",
     val fromCache: Boolean = false

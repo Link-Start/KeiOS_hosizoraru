@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
@@ -53,6 +54,16 @@ internal class GitHubStarImportApkVerifier(
                     asset.name.endsWith(".apk", ignoreCase = true)
                 }
                 if (apkAssets.isNotEmpty()) {
+                    val packageName = source.readAndroidManifestBytes(
+                        asset = apkAssets.first(),
+                        lookupConfig = lookupConfig
+                    ).mapCatching { manifestBytes ->
+                        AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes)
+                            .getOrThrow()
+                    }.getOrDefault("")
+                        .trim()
+                        .takeIf(GitHubPackageNameValidator::isValid)
+                        .orEmpty()
                     GitHubStarImportApkVerification(
                         owner = owner,
                         repo = repo,
@@ -61,6 +72,7 @@ internal class GitHubStarImportApkVerifier(
                         releaseUrl = releaseAssets.release.releaseUrl,
                         apkAssetCount = apkAssets.size,
                         sampleAssetName = apkAssets.first().name,
+                        packageName = packageName,
                         checkedAtMillis = nowMillis
                     )
                 } else {

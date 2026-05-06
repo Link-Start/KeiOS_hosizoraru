@@ -13,10 +13,17 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.ExecutorCompletionService
+import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.math.sqrt
 
 internal interface GitHubRepositoryDiscoverySource {
+    val supportsParallelSearch: Boolean
+        get() = false
+
     fun fetchAuthenticatedStarredRepositories(limit: Int): Result<List<GitHubRepositoryCandidate>>
     fun fetchUserStarredRepositories(
         username: String,
@@ -102,9 +109,7 @@ internal class GitHubRepositoryDiscoveryService(
         val searchContext = AppRepositorySearchContext.create(request.app)
         val queries = searchContext.queries
         val existingIndex = TrackedRepoIndex.from(existingItems)
-        val fetched = queries.flatMap { query ->
-            source.searchRepositories(query, limit).getOrThrow()
-        }
+        val fetched = fetchAppSearchCandidates(searchContext, limit)
         val candidates = fetched
             .dedupeByRepo()
             .map { candidate ->
@@ -129,6 +134,84 @@ internal class GitHubRepositoryDiscoveryService(
             queryCount = queries.size,
             candidates = candidates
         )
+    }
+
+    private fun fetchAppSearchCandidates(
+        searchContext: AppRepositorySearchContext,
+        limit: Int
+    ): List<GitHubRepositoryCandidate> {
+        val queries = searchContext.queries
+        if (queries.isEmpty()) return emptyList()
+        if (!source.supportsParallelSearch) {
+            return queries.flatMap { query ->
+                source.searchRepositories(query, limit).getOrThrow()
+            }
+        }
+        if (queries.size == 1) {
+            return source.searchRepositories(queries.single(), limit).getOrThrow()
+        }
+        val scheduledQueries = queries
+            .mapIndexed { index, query ->
+                RepositorySearchQuery(
+                    query = query,
+                    originalIndex = index,
+                    priority = if (query == searchContext.packageQuery) 0 else 1
+                )
+            }
+            .sortedWith(
+                compareBy<RepositorySearchQuery> { it.priority }
+                    .thenBy { it.originalIndex }
+            )
+        return fetchQueriesConcurrently(
+            scheduledQueries = scheduledQueries,
+            limit = limit
+        )
+    }
+
+    private fun fetchQueriesConcurrently(
+        scheduledQueries: List<RepositorySearchQuery>,
+        limit: Int
+    ): List<GitHubRepositoryCandidate> {
+        val workerCount = min(MAX_PARALLEL_SEARCH_QUERIES, scheduledQueries.size)
+        val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
+            Thread(runnable, "github-app-repo-search").apply {
+                isDaemon = true
+            }
+        }
+        return try {
+            val completionService =
+                ExecutorCompletionService<RepositorySearchResult>(executor)
+            scheduledQueries.forEach { scheduledQuery ->
+                completionService.submit(
+                    Callable {
+                        RepositorySearchResult(
+                            originalIndex = scheduledQuery.originalIndex,
+                            candidates = source.searchRepositories(
+                                query = scheduledQuery.query,
+                                limit = limit
+                            ).getOrThrow()
+                        )
+                    }
+                )
+            }
+            buildList {
+                repeat(scheduledQueries.size) {
+                    add(completionService.takeResult())
+                }
+            }
+                .sortedBy { it.originalIndex }
+                .flatMap { it.candidates }
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    private fun ExecutorCompletionService<RepositorySearchResult>.takeResult(): RepositorySearchResult {
+        return try {
+            take().get()
+        } catch (error: ExecutionException) {
+            throw error.cause ?: error
+        }
     }
 
     private fun GitHubRepositoryCandidate.toImportCandidate(
@@ -220,6 +303,7 @@ internal class GitHubRepositoryDiscoveryService(
     companion object {
         private const val MAX_IMPORT_LIMIT = 1_000
         private const val MAX_SEARCH_LIMIT = 50
+        private const val MAX_PARALLEL_SEARCH_QUERIES = 2
     }
 }
 
@@ -258,8 +342,8 @@ internal object GitHubRepositoryDiscoveryQueries {
             if (appLabel.isNotBlank()) {
                 add("$appLabel android in:name,description,readme")
             }
-            if (packageName.isNotBlank()) {
-                add("$packageName in:description,readme")
+            exactPackageQuery(packageName).takeIf { it.isNotBlank() }?.let { query ->
+                add(query)
             }
             if (labelTokens.isNotEmpty()) {
                 add("${labelTokens.take(3).joinToString(" ")} android")
@@ -270,6 +354,12 @@ internal object GitHubRepositoryDiscoveryQueries {
         }.map { it.trim() }
             .filter { it.isNotBlank() }
             .distinct()
+    }
+
+    fun exactPackageQuery(packageName: String): String {
+        val normalizedPackageName = packageName.trim()
+        if (normalizedPackageName.isBlank()) return ""
+        return "$normalizedPackageName in:description,readme"
     }
 
     fun normalizedTokens(value: String): List<String> {
@@ -301,6 +391,7 @@ private data class AppRepositorySearchContext(
     val normalizedAppLabel: String,
     val packageTail: String,
     val labelTokens: List<String>,
+    val packageQuery: String,
     val queries: List<String>
 ) {
     companion object {
@@ -316,6 +407,7 @@ private data class AppRepositorySearchContext(
                 normalizedAppLabel = appLabel.lowercase(Locale.ROOT),
                 packageTail = normalizedPackageName.substringAfterLast('.'),
                 labelTokens = labelTokens,
+                packageQuery = GitHubRepositoryDiscoveryQueries.exactPackageQuery(packageName),
                 queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(
                     appLabel = appLabel,
                     packageName = packageName,
@@ -325,6 +417,17 @@ private data class AppRepositorySearchContext(
         }
     }
 }
+
+private data class RepositorySearchQuery(
+    val query: String,
+    val originalIndex: Int,
+    val priority: Int
+)
+
+private data class RepositorySearchResult(
+    val originalIndex: Int,
+    val candidates: List<GitHubRepositoryCandidate>
+)
 
 private data class TrackedRepoIndex(
     private val repoKeys: Set<String>,

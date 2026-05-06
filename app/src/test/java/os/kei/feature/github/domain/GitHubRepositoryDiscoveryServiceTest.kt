@@ -10,6 +10,8 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
+import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -169,6 +171,43 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
+    fun `app repository search runs fallback queries with bounded concurrency`() {
+        val app = InstalledAppItem(
+            label = "Blue Archive",
+            packageName = "com.nexon.bluearchive"
+        )
+        val packageMatch = candidate(
+            owner = "nexon",
+            repo = "bluearchive",
+            description = "Android com.nexon.bluearchive",
+            stars = 256,
+            matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName,
+            sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch
+        )
+        val source = FakeDiscoverySource(
+            supportsParallelSearch = true,
+            searchDelayMillis = 20L,
+            searchResults = mapOf(
+                "Blue Archive android in:name,description,readme" to listOf(packageMatch),
+                "com.nexon.bluearchive in:description,readme" to listOf(packageMatch),
+                "blue archive android" to listOf(packageMatch),
+                "bluearchive android in:name,description,readme" to listOf(packageMatch)
+            )
+        )
+        val service = GitHubRepositoryDiscoveryService(source)
+
+        val result = service.searchRepositoriesForApp(
+            request = GitHubAppRepositorySearchRequest(app = app, limit = 10),
+            existingItems = emptyList()
+        ).getOrThrow()
+
+        assertEquals(4, result.queryCount)
+        assertEquals("nexon/bluearchive", result.candidates.single().repository.fullName)
+        assertTrue(source.maxConcurrentSearches >= 2)
+        assertTrue(source.maxConcurrentSearches <= 2)
+    }
+
+    @Test
     fun `installed app query builder keeps label and package entry points`() {
         val queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(
             InstalledAppItem(
@@ -192,9 +231,15 @@ class GitHubRepositoryDiscoveryServiceTest {
         private val authenticatedStars: List<GitHubRepositoryCandidate> = emptyList(),
         private val publicStars: List<GitHubRepositoryCandidate> = emptyList(),
         private val starList: List<GitHubRepositoryCandidate> = emptyList(),
-        private val searchResults: Map<String, List<GitHubRepositoryCandidate>> = emptyMap()
+        private val searchResults: Map<String, List<GitHubRepositoryCandidate>> = emptyMap(),
+        private val searchDelayMillis: Long = 0L,
+        override val supportsParallelSearch: Boolean = false
     ) : GitHubRepositoryDiscoverySource {
-        val searchQueries = mutableListOf<String>()
+        val searchQueries: MutableList<String> = Collections.synchronizedList(mutableListOf())
+        private val activeSearches = AtomicInteger(0)
+        private val maxConcurrentSearchesCounter = AtomicInteger(0)
+        val maxConcurrentSearches: Int
+            get() = maxConcurrentSearchesCounter.get()
 
         override fun fetchAuthenticatedStarredRepositories(
             limit: Int
@@ -214,7 +259,18 @@ class GitHubRepositoryDiscoveryServiceTest {
             limit: Int
         ): Result<List<GitHubRepositoryCandidate>> {
             searchQueries += query
-            return Result.success(searchResults[query].orEmpty().take(limit))
+            val active = activeSearches.incrementAndGet()
+            maxConcurrentSearchesCounter.updateAndGet { current ->
+                maxOf(current, active)
+            }
+            return try {
+                if (searchDelayMillis > 0L) {
+                    Thread.sleep(searchDelayMillis)
+                }
+                Result.success(searchResults[query].orEmpty().take(limit))
+            } finally {
+                activeSearches.decrementAndGet()
+            }
         }
 
         override fun fetchStarListRepositories(

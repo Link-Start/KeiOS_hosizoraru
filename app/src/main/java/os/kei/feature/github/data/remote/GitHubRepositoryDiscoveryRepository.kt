@@ -23,6 +23,8 @@ internal class GitHubRepositoryDiscoveryRepository(
 ) : GitHubRepositoryDiscoverySource {
     private val sanitizedToken = apiToken.trim()
 
+    override val supportsParallelSearch: Boolean = true
+
     override fun fetchAuthenticatedStarredRepositories(
         limit: Int
     ): Result<List<GitHubRepositoryCandidate>> = runCatching {

@@ -349,11 +349,7 @@ object GitHubShareImportNotificationHelper {
     private fun buildOpenFlowPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActivity::class.java).apply {
             action = GitHubShareImportActivity.ACTION_RESUME_SHARE_IMPORT
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-            )
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,

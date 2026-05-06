@@ -4,15 +4,15 @@ import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -26,8 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -37,15 +37,15 @@ import os.kei.ui.page.main.github.asset.assetLikelyCompatibleWithDevice
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
+import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
+import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
+import os.kei.ui.page.main.widget.sheet.SheetLiquidChoiceIndicator
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
-import os.kei.ui.page.main.widget.sheet.SheetLiquidChoiceIndicator
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
-import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
-import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -396,6 +396,7 @@ internal fun GitHubShareImportAttachConfirmSheet(
     duplicateExists: Boolean,
     submitting: Boolean,
     submittingAndOpen: Boolean,
+    allowDismiss: Boolean = true,
     onDismissRequest: () -> Unit,
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
@@ -405,7 +406,8 @@ internal fun GitHubShareImportAttachConfirmSheet(
         show = candidate != null,
         title = stringResource(R.string.github_share_import_attach_dialog_title),
         onDismissRequest = onDismissRequest,
-        insideMargin = shareImportSheetInsideMargin
+        insideMargin = shareImportSheetInsideMargin,
+        allowDismiss = allowDismiss
     ) {
         val attachCandidate = candidate ?: return@SnapshotWindowBottomSheet
         Column(

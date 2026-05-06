@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.share
 
+import os.kei.feature.github.data.local.GitHubPendingShareImportAttachCandidateRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 
@@ -74,5 +75,31 @@ internal fun GitHubPendingShareImportPreviewRecord.toShareImportPreview(): GitHu
         strategyLabel = strategyLabel,
         assets = assets,
         preferredAssetName = preferredAssetName
+    )
+}
+
+internal fun GitHubPendingShareImportAttachCandidate.toPendingAttachCandidateRecord(): GitHubPendingShareImportAttachCandidateRecord {
+    return GitHubPendingShareImportAttachCandidateRecord(
+        projectUrl = projectUrl,
+        owner = owner,
+        repo = repo,
+        packageName = packageName,
+        appLabel = appLabel,
+        eventAction = eventAction,
+        detectedAtMillis = detectedAtMillis,
+        firstInstallTimeMs = firstInstallTimeMs
+    )
+}
+
+internal fun GitHubPendingShareImportAttachCandidateRecord.toShareImportAttachCandidate(): GitHubPendingShareImportAttachCandidate {
+    return GitHubPendingShareImportAttachCandidate(
+        projectUrl = projectUrl,
+        owner = owner,
+        repo = repo,
+        packageName = packageName,
+        appLabel = appLabel,
+        eventAction = eventAction,
+        detectedAtMillis = detectedAtMillis,
+        firstInstallTimeMs = firstInstallTimeMs
     )
 }

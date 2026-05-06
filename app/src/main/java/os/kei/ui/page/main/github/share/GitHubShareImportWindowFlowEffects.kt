@@ -10,6 +10,7 @@ import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 
 @Composable
 internal fun BindGitHubShareImportIdleCallback(
+    restoringActiveFlow: Boolean,
     resolving: Boolean,
     incomingResolveRunning: Boolean,
     pendingPreview: GitHubShareImportPreview?,
@@ -20,6 +21,7 @@ internal fun BindGitHubShareImportIdleCallback(
 ) {
     var idleCallbackDispatched by remember { mutableStateOf(false) }
     LaunchedEffect(
+        restoringActiveFlow,
         resolving,
         incomingResolveRunning,
         pendingPreview,
@@ -30,7 +32,8 @@ internal fun BindGitHubShareImportIdleCallback(
     ) {
         val onIdle = onIdleWithNoPendingFlow ?: return@LaunchedEffect
         val hasIncomingShareText = !incomingGitHubShareText.isNullOrBlank()
-        val hasActiveFlow = resolving ||
+        val hasActiveFlow = restoringActiveFlow ||
+                resolving ||
             incomingResolveRunning ||
             pendingPreview != null ||
             pendingTrack != null ||

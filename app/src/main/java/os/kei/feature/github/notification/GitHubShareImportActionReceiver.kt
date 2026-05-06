@@ -15,7 +15,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         thread(name = "github-share-import-cancel") {
             try {
-                GitHubShareImportPreviewStore.clearActivePreview()
+                GitHubShareImportPreviewStore.clearActiveFlow()
                 GitHubTrackStore.savePendingShareImportTrack(null)
                 GitHubTrackStoreSignals.notifyChanged()
                 GitHubShareImportNotificationHelper.notifyCancelled(appContext)

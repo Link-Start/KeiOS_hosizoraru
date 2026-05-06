@@ -18,9 +18,21 @@ data class GitHubPendingShareImportPreviewRecord(
     val createdAtMillis: Long = System.currentTimeMillis()
 )
 
+data class GitHubPendingShareImportAttachCandidateRecord(
+    val projectUrl: String,
+    val owner: String,
+    val repo: String,
+    val packageName: String,
+    val appLabel: String,
+    val eventAction: String,
+    val detectedAtMillis: Long = System.currentTimeMillis(),
+    val firstInstallTimeMs: Long = -1L
+)
+
 object GitHubShareImportPreviewStore {
     private const val KV_ID = "github_share_import_preview_store"
     private const val KEY_ACTIVE_PREVIEW = "github_active_share_import_preview"
+    private const val KEY_ACTIVE_ATTACH_CANDIDATE = "github_active_share_import_attach_candidate"
     private const val ACTIVE_PREVIEW_MAX_AGE_MS = 25 * 60 * 1000L
 
     private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
@@ -50,9 +62,46 @@ object GitHubShareImportPreviewStore {
         store.removeValueForKey(KEY_ACTIVE_PREVIEW)
     }
 
+    fun loadActiveAttachCandidate(
+        nowMillis: Long = System.currentTimeMillis()
+    ): GitHubPendingShareImportAttachCandidateRecord? {
+        val raw = store.decodeString(KEY_ACTIVE_ATTACH_CANDIDATE).orEmpty()
+        if (raw.isBlank()) return null
+        val record = runCatching {
+            parseAttachCandidate(JSONObject(raw))
+        }.getOrNull()
+        if (record == null || record.isExpired(nowMillis)) {
+            clearActiveAttachCandidate()
+            return null
+        }
+        return record
+    }
+
+    fun saveActiveAttachCandidate(record: GitHubPendingShareImportAttachCandidateRecord?) {
+        if (record == null) {
+            clearActiveAttachCandidate()
+            return
+        }
+        store.encode(KEY_ACTIVE_ATTACH_CANDIDATE, attachCandidateToJson(record).toString())
+    }
+
+    fun clearActiveAttachCandidate() {
+        store.removeValueForKey(KEY_ACTIVE_ATTACH_CANDIDATE)
+    }
+
+    fun clearActiveFlow() {
+        clearActivePreview()
+        clearActiveAttachCandidate()
+    }
+
     private fun GitHubPendingShareImportPreviewRecord.isExpired(nowMillis: Long): Boolean {
         return createdAtMillis <= 0L ||
                 (nowMillis - createdAtMillis).coerceAtLeast(0L) > ACTIVE_PREVIEW_MAX_AGE_MS
+    }
+
+    private fun GitHubPendingShareImportAttachCandidateRecord.isExpired(nowMillis: Long): Boolean {
+        return detectedAtMillis <= 0L ||
+                (nowMillis - detectedAtMillis).coerceAtLeast(0L) > ACTIVE_PREVIEW_MAX_AGE_MS
     }
 
     private fun parsePreview(obj: JSONObject): GitHubPendingShareImportPreviewRecord? {
@@ -131,5 +180,38 @@ object GitHubShareImportPreviewStore {
             .put("downloadCount", asset.downloadCount)
             .put("contentType", asset.contentType)
             .put("updatedAtMillis", asset.updatedAtMillis ?: -1L)
+    }
+
+    private fun parseAttachCandidate(obj: JSONObject): GitHubPendingShareImportAttachCandidateRecord? {
+        val projectUrl = obj.optString("projectUrl").trim()
+        val owner = obj.optString("owner").trim()
+        val repo = obj.optString("repo").trim()
+        val packageName = obj.optString("packageName").trim()
+        val appLabel = obj.optString("appLabel").trim()
+        if (projectUrl.isBlank() || owner.isBlank() || repo.isBlank() || packageName.isBlank()) {
+            return null
+        }
+        return GitHubPendingShareImportAttachCandidateRecord(
+            projectUrl = projectUrl,
+            owner = owner,
+            repo = repo,
+            packageName = packageName,
+            appLabel = appLabel,
+            eventAction = obj.optString("eventAction").trim(),
+            detectedAtMillis = obj.optLong("detectedAtMillis", 0L),
+            firstInstallTimeMs = obj.optLong("firstInstallTimeMs", -1L)
+        )
+    }
+
+    private fun attachCandidateToJson(record: GitHubPendingShareImportAttachCandidateRecord): JSONObject {
+        return JSONObject()
+            .put("projectUrl", record.projectUrl)
+            .put("owner", record.owner)
+            .put("repo", record.repo)
+            .put("packageName", record.packageName)
+            .put("appLabel", record.appLabel)
+            .put("eventAction", record.eventAction)
+            .put("detectedAtMillis", record.detectedAtMillis)
+            .put("firstInstallTimeMs", record.firstInstallTimeMs)
     }
 }

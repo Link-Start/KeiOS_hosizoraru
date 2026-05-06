@@ -80,6 +80,7 @@ class GitHubShareImportActivity : ComponentActivity() {
                             finishSafely()
                         },
                         showPendingArmedSheet = true,
+                        onMinimizeActiveFlow = { finishSafely() },
                         onClosePendingArmedSheet = { finishSafely() },
                         onIdleWithNoPendingFlow = { finishSafely() }
                     )

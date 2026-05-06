@@ -7,6 +7,11 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 import java.util.zip.Inflater
 
+internal data class RemoteZipSelectedEntries(
+    val entryNames: List<String>,
+    val entries: Map<String, ByteArray>
+)
+
 internal class RemoteZipEntryReader(
     private val client: OkHttpClient = defaultClient
 ) {
@@ -16,6 +21,32 @@ internal class RemoteZipEntryReader(
     ): Result<List<String>> = runCatching {
         val centralDirectory = fetchCentralDirectory(url = url, apiToken = apiToken).bytes
         parseCentralDirectoryEntries(centralDirectory).map { it.name }
+    }
+
+    fun readSelectedEntries(
+        url: String,
+        apiToken: String = "",
+        selectEntryNames: (List<String>) -> List<String>
+    ): Result<RemoteZipSelectedEntries> = runCatching {
+        val directory = fetchCentralDirectory(url = url, apiToken = apiToken)
+        val directoryEntries = parseCentralDirectoryEntries(directory.bytes)
+        val entriesByName = directoryEntries.associateBy { it.name }
+        val entryNames = directoryEntries.map { it.name }
+        val selectedNames = selectEntryNames(entryNames).distinct()
+        val selectedEntries = linkedMapOf<String, ByteArray>()
+        selectedNames.forEach { entryName ->
+            val entry = entriesByName[entryName] ?: error("$entryName was not found in APK")
+            selectedEntries[entryName] = readEntryFromDirectory(
+                directory = directory,
+                entry = entry,
+                apiToken = apiToken,
+                baseOffset = 0L
+            )
+        }
+        RemoteZipSelectedEntries(
+            entryNames = entryNames,
+            entries = selectedEntries
+        )
     }
 
     fun readNestedStoredZipEntry(
@@ -123,14 +154,28 @@ internal class RemoteZipEntryReader(
         val directory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val entry = findCentralDirectoryEntry(directory.bytes, entryName)
             ?: error("$entryName was not found in APK")
+        readEntryFromDirectory(
+            directory = directory,
+            entry = entry,
+            apiToken = apiToken,
+            baseOffset = 0L
+        )
+    }
+
+    private fun readEntryFromDirectory(
+        directory: CentralDirectoryBytes,
+        entry: CentralDirectoryEntry,
+        apiToken: String,
+        baseOffset: Long
+    ): ByteArray {
         val compressedBytes = fetchEntryCompressedBytes(
             url = directory.resolvedUrl,
             entry = entry,
             centralDirectoryOffset = directory.offset,
             apiToken = apiToken,
-            baseOffset = 0L
+            baseOffset = baseOffset
         )
-        when (entry.compressionMethod) {
+        return when (entry.compressionMethod) {
             ZIP_METHOD_STORED -> compressedBytes
             ZIP_METHOD_DEFLATED -> inflateRaw(compressedBytes, entry.uncompressedSize)
             else -> error("APK manifest compression method is unsupported: ${entry.compressionMethod}")

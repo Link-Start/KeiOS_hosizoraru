@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.GitHubBoundedRunner
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -12,9 +13,6 @@ import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Locale
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorCompletionService
-import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -43,6 +41,8 @@ internal class GitHubPackageRepositoryResolver(
         val scannedRepoKeys = mutableSetOf<String>()
         val matchedCandidates = mutableListOf<GitHubPackageRepositoryScanCandidate>()
         val scoreCache = mutableMapOf<String, Pair<GitHubRepositoryCandidate, Int>>()
+        var firstSearchFailure: Throwable? = null
+        var successfulSearchCount = 0
 
         preferredRepositoryCandidate(request.preferredRepoUrl)?.let { preferredCandidate ->
             rawCandidates += preferredCandidate
@@ -80,14 +80,21 @@ internal class GitHubPackageRepositoryResolver(
         }
 
         for ((queryIndex, query) in queries.withIndex()) {
-            rawCandidates += discoverySource.searchRepositories(
+            val searchResult = discoverySource.searchRepositories(
                 query = query,
                 limit = searchLimitForQuery(
                     queryIndex = queryIndex,
                     candidateLimit = candidateLimit
                 )
-            ).getOrThrow()
+            )
             executedQueryCount += 1
+            if (searchResult.isFailure) {
+                if (firstSearchFailure == null) firstSearchFailure = searchResult.exceptionOrNull()
+                continue
+            }
+            val searchCandidates = searchResult.getOrThrow()
+            successfulSearchCount += 1
+            rawCandidates += searchCandidates
 
             val rankedCandidates = rawCandidates.rankedPackageCandidates(
                 searchContext = searchContext,
@@ -116,6 +123,10 @@ internal class GitHubPackageRepositoryResolver(
             failedCount += batchResult.failedCount
 
             if (matchedCandidates.isNotEmpty()) break
+        }
+
+        if (successfulSearchCount == 0 && firstSearchFailure != null) {
+            throw firstSearchFailure
         }
 
         buildScanResult(
@@ -262,36 +273,20 @@ internal class GitHubPackageRepositoryResolver(
             )
         }
         val workerCount = min(MAX_PARALLEL_VERIFICATIONS, targets.size)
-        val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
-            Thread(runnable, "github-package-repo-scan").apply {
-                isDaemon = true
-            }
+        val outcomes = GitHubBoundedRunner.mapOrdered(
+            items = targets,
+            maxConcurrency = workerCount,
+            threadName = "github-package-repo-scan"
+        ) { (candidate, score) ->
+            verifyCandidate(
+                candidate = candidate,
+                score = score,
+                packageName = packageName,
+                appLabel = appLabel,
+                lookupConfig = lookupConfig
+            )
         }
-        return try {
-            val completionService =
-                ExecutorCompletionService<PackageRepositoryVerification>(executor)
-            targets.forEach { (candidate, score) ->
-                completionService.submit(
-                    Callable {
-                        verifyCandidate(
-                            candidate = candidate,
-                            score = score,
-                            packageName = packageName,
-                            appLabel = appLabel,
-                            lookupConfig = lookupConfig
-                        )
-                    }
-                )
-            }
-            val outcomes = buildList {
-                repeat(targets.size) {
-                    add(completionService.take().get())
-                }
-            }
-            PackageRepositoryVerificationBatch.fromOutcomes(outcomes)
-        } finally {
-            executor.shutdownNow()
-        }
+        return PackageRepositoryVerificationBatch.fromOutcomes(outcomes)
     }
 
     private fun verifyCandidate(

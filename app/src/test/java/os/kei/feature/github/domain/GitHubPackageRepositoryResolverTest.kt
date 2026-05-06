@@ -12,6 +12,7 @@ import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Collections
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -263,6 +264,73 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
+    fun `resolver keeps scanning when one repository search query fails`() {
+        val target = candidate(
+            owner = "example",
+            repo = "RealApp",
+            description = "RealApp android client",
+            stars = 200
+        )
+        val discovery = QueryAwareDiscoverySource(
+            failureForQuery = { query ->
+                if (query.contains("com.example.realapp")) {
+                    IllegalStateException("failed exact package query")
+                } else {
+                    null
+                }
+            },
+            candidatesForQuery = { query ->
+                when {
+                    query.contains("RealApp") && query.contains("realapp") -> listOf(target)
+                    else -> emptyList()
+                }
+            }
+        )
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = mapOf("example/realapp" to "com.example.realapp")
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "com.example.realapp",
+                appLabel = "RealApp",
+                lookupConfig = GitHubLookupConfig()
+            )
+        ).getOrThrow()
+
+        assertEquals(2, result.queryCount)
+        assertEquals("example", result.matchedCandidates.single().repository.owner)
+    }
+
+    @Test
+    fun `resolver throws first search error when every repository query fails`() {
+        val discovery = QueryAwareDiscoverySource(
+            failureForQuery = { query -> IllegalStateException("failed $query") },
+            candidatesForQuery = { emptyList() }
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(FakePackageScanSource(emptyMap()))
+        )
+
+        val error = assertFailsWith<IllegalStateException> {
+            resolver.scanRepositoriesForPackage(
+                GitHubPackageRepositoryScanRequest(
+                    packageName = "com.example.realapp",
+                    appLabel = "RealApp",
+                    lookupConfig = GitHubLookupConfig()
+                )
+            ).getOrThrow()
+        }
+
+        assertTrue(error.message.orEmpty().contains("com.example.realapp"))
+    }
+
+    @Test
     fun `package repository queries use installed app label and package tail`() {
         val queries = GitHubPackageRepositoryQueries.forInstalledApp(
             InstalledAppItem(
@@ -325,6 +393,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     private class QueryAwareDiscoverySource(
+        private val failureForQuery: (String) -> Throwable? = { null },
         private val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>
     ) : GitHubRepositoryDiscoverySource {
         override fun fetchAuthenticatedStarredRepositories(
@@ -344,6 +413,9 @@ class GitHubPackageRepositoryResolverTest {
             query: String,
             limit: Int
         ): Result<List<GitHubRepositoryCandidate>> {
+            failureForQuery(query)?.let { error ->
+                return Result.failure(error)
+            }
             return Result.success(candidatesForQuery(query).take(limit))
         }
 

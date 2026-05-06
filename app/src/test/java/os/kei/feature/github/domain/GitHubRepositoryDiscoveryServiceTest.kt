@@ -13,6 +13,7 @@ import os.kei.feature.github.model.InstalledAppItem
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -208,6 +209,67 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
+    fun `app repository search keeps successful candidates when one query fails`() {
+        val app = InstalledAppItem(
+            label = "Blue Archive",
+            packageName = "com.nexon.bluearchive"
+        )
+        val packageMatch = candidate(
+            owner = "nexon",
+            repo = "bluearchive",
+            description = "Android com.nexon.bluearchive",
+            stars = 256,
+            matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName,
+            sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch
+        )
+        val source = FakeDiscoverySource(
+            supportsParallelSearch = true,
+            searchFailures = setOf("Blue Archive android in:name,description,readme"),
+            searchResults = mapOf(
+                "com.nexon.bluearchive in:description,readme" to listOf(packageMatch)
+            )
+        )
+        val service = GitHubRepositoryDiscoveryService(source)
+
+        val result = service.searchRepositoriesForApp(
+            request = GitHubAppRepositorySearchRequest(app = app, limit = 10),
+            existingItems = emptyList()
+        ).getOrThrow()
+
+        assertEquals(4, result.queryCount)
+        assertEquals("nexon/bluearchive", result.candidates.single().repository.fullName)
+    }
+
+    @Test
+    fun `app repository search throws first error when every query fails`() {
+        val app = InstalledAppItem(
+            label = "Blue Archive",
+            packageName = "com.nexon.bluearchive"
+        )
+        val source = FakeDiscoverySource(
+            searchFailures = setOf(
+                "Blue Archive android in:name,description,readme",
+                "com.nexon.bluearchive in:description,readme",
+                "blue archive android",
+                "bluearchive android in:name,description,readme"
+            )
+        )
+        val service = GitHubRepositoryDiscoveryService(source)
+
+        val error = assertFailsWith<IllegalStateException> {
+            service.searchRepositoriesForApp(
+                request = GitHubAppRepositorySearchRequest(app = app, limit = 10),
+                existingItems = emptyList()
+            ).getOrThrow()
+        }
+
+        assertEquals(
+            "failed Blue Archive android in:name,description,readme",
+            error.message
+        )
+    }
+
+    @Test
     fun `installed app query builder keeps label and package entry points`() {
         val queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(
             InstalledAppItem(
@@ -232,6 +294,7 @@ class GitHubRepositoryDiscoveryServiceTest {
         private val publicStars: List<GitHubRepositoryCandidate> = emptyList(),
         private val starList: List<GitHubRepositoryCandidate> = emptyList(),
         private val searchResults: Map<String, List<GitHubRepositoryCandidate>> = emptyMap(),
+        private val searchFailures: Set<String> = emptySet(),
         private val searchDelayMillis: Long = 0L,
         override val supportsParallelSearch: Boolean = false
     ) : GitHubRepositoryDiscoverySource {
@@ -266,6 +329,9 @@ class GitHubRepositoryDiscoveryServiceTest {
             return try {
                 if (searchDelayMillis > 0L) {
                     Thread.sleep(searchDelayMillis)
+                }
+                if (query in searchFailures) {
+                    return Result.failure(IllegalStateException("failed $query"))
                 }
                 Result.success(searchResults[query].orEmpty().take(limit))
             } finally {

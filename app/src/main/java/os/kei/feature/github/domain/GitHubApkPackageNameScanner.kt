@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.GitHubBoundedRunner
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
@@ -7,10 +8,6 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorCompletionService
-import java.util.concurrent.Executors
-import kotlin.math.min
 
 internal data class GitHubStableReleaseTarget(
     val tag: String,
@@ -121,39 +118,17 @@ internal class GitHubApkPackageNameScanner(
             ).getOrThrow()
         }
 
-        val workerCount = min(MAX_PARALLEL_APK_ASSET_SCANS, scanTargets.size)
-        val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
-            Thread(runnable, "github-apk-package-scan").apply {
-                isDaemon = true
-            }
-        }
-        return try {
-            val completionService = ExecutorCompletionService<Result<ScannedApkAsset>>(executor)
-            scanTargets.forEach { asset ->
-                completionService.submit(
-                    Callable {
-                        scanApkAsset(
-                            asset = asset,
-                            lookupConfig = lookupConfig
-                        )
-                    }
-                )
-            }
-            var lastError: Throwable? = null
-            repeat(scanTargets.size) {
-                val result = completionService.take().get()
-                result.fold(
-                    onSuccess = { scanned ->
-                        return scanned
-                    },
-                    onFailure = { error ->
-                        lastError = error
-                    }
-                )
-            }
-            throw lastError ?: IllegalStateException("No APK manifest could be scanned")
-        } finally {
-            executor.shutdownNow()
+        return GitHubBoundedRunner.firstSuccess(
+            items = scanTargets,
+            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS,
+            threadName = "github-apk-package-scan"
+        ) { asset ->
+            scanApkAsset(
+                asset = asset,
+                lookupConfig = lookupConfig
+            )
+        }.getOrElse { error ->
+            throw error
         }
     }
 

@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.apk.RemoteZipEntryReader
+import os.kei.feature.github.data.apk.RemoteZipSelectedEntries
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkSignatureInfo
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -18,13 +19,21 @@ internal class GitHubApkManifestReader(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> = runCatching {
-        val manifest = readAndroidManifestPayload(asset, lookupConfig).getOrThrow()
-        val entryNames = listEntryNames(asset, lookupConfig).getOrDefault(emptyList())
-        AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest.value).getOrThrow().copy(
+        val inspectPayload = readInspectPayload(asset, lookupConfig).getOrThrow()
+        val entries = inspectPayload.value
+        val manifest = entries.entries[ANDROID_MANIFEST_ENTRY]
+            ?: error("$ANDROID_MANIFEST_ENTRY was not found in APK")
+        val signatureEntry = entries.entryNames.firstSignatureEntry()
+        val signatureInfo = signatureEntry?.let { entryName ->
+            entries.entries[entryName]?.let { certBytes ->
+                parseSignatureInfo(entryName, certBytes).getOrNull()
+            }
+        }
+        AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest).getOrThrow().copy(
             assetName = asset.name,
-            fetchSource = manifest.source,
-            nativeAbis = entryNames.extractNativeAbis(),
-            signatureInfo = readSignatureInfo(asset, lookupConfig, entryNames).getOrNull()
+            fetchSource = inspectPayload.source,
+            nativeAbis = entries.entryNames.extractNativeAbis(),
+            signatureInfo = signatureInfo
         )
     }
 
@@ -104,24 +113,30 @@ internal class GitHubApkManifestReader(
         }
     }
 
-    private fun readSignatureInfo(
+    private fun readInspectPayload(
         asset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig,
-        entryNames: List<String>
-    ): Result<GitHubApkSignatureInfo?> = runCatching {
-        val signatureEntry = entryNames.firstOrNull { entry ->
-            entry.startsWith("META-INF/", ignoreCase = true) &&
-                    (entry.endsWith(".RSA", ignoreCase = true) ||
-                            entry.endsWith(".DSA", ignoreCase = true) ||
-                            entry.endsWith(".EC", ignoreCase = true))
-        } ?: return@runCatching null
-        val certBytes = readWithFallback(asset, lookupConfig) { url, token ->
-            zipEntryReader.readEntry(
+        lookupConfig: GitHubLookupConfig
+    ): Result<ManifestReadPayload<RemoteZipSelectedEntries>> {
+        return readWithFallback(asset, lookupConfig) { url, token ->
+            zipEntryReader.readSelectedEntries(
                 url = url,
-                entryName = signatureEntry,
-                apiToken = token
+                apiToken = token,
+                selectEntryNames = ::selectInspectEntryNames
             )
-        }.getOrThrow().value
+        }
+    }
+
+    private fun selectInspectEntryNames(entryNames: List<String>): List<String> {
+        return buildList {
+            add(ANDROID_MANIFEST_ENTRY)
+            entryNames.firstSignatureEntry()?.let(::add)
+        }
+    }
+
+    private fun parseSignatureInfo(
+        signatureEntry: String,
+        certBytes: ByteArray
+    ): Result<GitHubApkSignatureInfo?> = runCatching {
         val certificates = CertificateFactory.getInstance("X.509")
             .generateCertificates(ByteArrayInputStream(certBytes))
         val certificate = certificates.firstOrNull() as? X509Certificate
@@ -213,6 +228,15 @@ internal class GitHubApkManifestReader(
             .distinct()
             .sorted()
             .toList()
+    }
+
+    private fun List<String>.firstSignatureEntry(): String? {
+        return firstOrNull { entry ->
+            entry.startsWith("META-INF/", ignoreCase = true) &&
+                    (entry.endsWith(".RSA", ignoreCase = true) ||
+                            entry.endsWith(".DSA", ignoreCase = true) ||
+                            entry.endsWith(".EC", ignoreCase = true))
+        }
     }
 
     private data class ManifestReadPayload<T>(

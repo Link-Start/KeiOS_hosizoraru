@@ -10,6 +10,9 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.time.Instant
 import java.util.Locale
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToLong
 
@@ -67,6 +70,8 @@ object GitHubReleaseAssetRepository {
     private val apiClient: GitHubReleaseApiClient by lazy {
         GitHubReleaseApiClient(client)
     }
+    private val inFlightAssetFetches =
+        ConcurrentHashMap<String, CompletableFuture<Result<GitHubReleaseAssetBundle>>>()
 
     fun fetchApkAssets(
         owner: String,
@@ -77,6 +82,41 @@ object GitHubReleaseAssetRepository {
         aggressiveFiltering: Boolean = false,
         includeAllAssets: Boolean = false,
         apiToken: String = ""
+    ): Result<GitHubReleaseAssetBundle> {
+        val inFlightKey = buildAssetFetchKey(
+            requestKind = ASSET_FETCH_KIND_TAG,
+            owner = owner,
+            repo = repo,
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            preferHtml = preferHtml,
+            aggressiveFiltering = aggressiveFiltering,
+            includeAllAssets = includeAllAssets,
+            apiToken = apiToken
+        )
+        return runInFlightAssetFetch(inFlightKey) {
+            fetchApkAssetsUnshared(
+                owner = owner,
+                repo = repo,
+                rawTag = rawTag,
+                releaseUrl = releaseUrl,
+                preferHtml = preferHtml,
+                aggressiveFiltering = aggressiveFiltering,
+                includeAllAssets = includeAllAssets,
+                apiToken = apiToken
+            )
+        }
+    }
+
+    private fun fetchApkAssetsUnshared(
+        owner: String,
+        repo: String,
+        rawTag: String,
+        releaseUrl: String,
+        preferHtml: Boolean,
+        aggressiveFiltering: Boolean,
+        includeAllAssets: Boolean,
+        apiToken: String
     ): Result<GitHubReleaseAssetBundle> {
         val normalizedTag = rawTag.trim()
         if (normalizedTag.isBlank()) {
@@ -135,14 +175,29 @@ object GitHubReleaseAssetRepository {
         repo: String,
         aggressiveFiltering: Boolean = false,
         apiToken: String = ""
-    ): Result<GitHubReleaseAssetBundle> = runCatching {
-        val release = apiClient.fetchLatestRelease(owner, repo, apiToken).getOrThrow()
-        parseReleaseBundle(release)
-            .copy(fetchSource = GitHubReleaseAssetFetchSources.API)
-            .selectDisplayAssets(
-                aggressiveFiltering = aggressiveFiltering,
-                includeAllAssets = false
-            )
+    ): Result<GitHubReleaseAssetBundle> {
+        val inFlightKey = buildAssetFetchKey(
+            requestKind = ASSET_FETCH_KIND_LATEST,
+            owner = owner,
+            repo = repo,
+            rawTag = "latest",
+            releaseUrl = "",
+            preferHtml = false,
+            aggressiveFiltering = aggressiveFiltering,
+            includeAllAssets = false,
+            apiToken = apiToken
+        )
+        return runInFlightAssetFetch(inFlightKey) {
+            runCatching {
+                val release = apiClient.fetchLatestRelease(owner, repo, apiToken).getOrThrow()
+                parseReleaseBundle(release)
+                    .copy(fetchSource = GitHubReleaseAssetFetchSources.API)
+                    .selectDisplayAssets(
+                        aggressiveFiltering = aggressiveFiltering,
+                        includeAllAssets = false
+                    )
+            }
+        }
     }
 
     fun resolvePreferredDownloadUrl(
@@ -205,6 +260,63 @@ object GitHubReleaseAssetRepository {
             includeAllAssets = includeAllAssets
         )
     }
+
+    private fun runInFlightAssetFetch(
+        key: String,
+        block: () -> Result<GitHubReleaseAssetBundle>
+    ): Result<GitHubReleaseAssetBundle> {
+        val newFuture = CompletableFuture<Result<GitHubReleaseAssetBundle>>()
+        val activeFuture = inFlightAssetFetches.putIfAbsent(key, newFuture)
+        if (activeFuture != null) {
+            return activeFuture.awaitResult()
+        }
+        val result = try {
+            block()
+        } catch (error: Throwable) {
+            Result.failure(error)
+        }
+        newFuture.complete(result)
+        inFlightAssetFetches.remove(key, newFuture)
+        return result
+    }
+
+    private fun CompletableFuture<Result<GitHubReleaseAssetBundle>>.awaitResult(): Result<GitHubReleaseAssetBundle> {
+        return try {
+            get()
+        } catch (error: ExecutionException) {
+            Result.failure(error.cause ?: error)
+        } catch (error: InterruptedException) {
+            Thread.currentThread().interrupt()
+            Result.failure(error)
+        }
+    }
+
+    private fun buildAssetFetchKey(
+        requestKind: String,
+        owner: String,
+        repo: String,
+        rawTag: String,
+        releaseUrl: String,
+        preferHtml: Boolean,
+        aggressiveFiltering: Boolean,
+        includeAllAssets: Boolean,
+        apiToken: String
+    ): String {
+        return listOf(
+            requestKind,
+            owner.trim().lowercase(Locale.ROOT),
+            repo.trim().lowercase(Locale.ROOT),
+            rawTag.trim(),
+            releaseUrl.trim(),
+            if (preferHtml) GitHubReleaseAssetFetchSources.HTML else GitHubReleaseAssetFetchSources.API,
+            aggressiveFiltering.toString(),
+            includeAllAssets.toString(),
+            apiToken.trim().hashCode().toString()
+        ).joinToString("|")
+    }
+
+    private const val ASSET_FETCH_KIND_TAG = "tag"
+    private const val ASSET_FETCH_KIND_LATEST = "latest"
 
     private fun List<GitHubReleaseAssetFile>.sortForDisplay(): List<GitHubReleaseAssetFile> {
         return GitHubReleaseAssetSelector.run { sortForDisplay() }

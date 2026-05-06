@@ -44,6 +44,30 @@ class RemoteZipEntryReaderTest {
     }
 
     @Test
+    fun `reader lists entries and reads selected entries from one central directory`() {
+        val manifest = BinaryManifestFixture.build(packageName = "os.kei.batch")
+        val apkBytes = zipWithManifest(manifest)
+        MockWebServer().use { server ->
+            server.dispatcher = rangeDispatcher(apkBytes)
+            val reader = RemoteZipEntryReader(client = OkHttpClient())
+
+            val selected = reader.readSelectedEntries(
+                url = server.url("/download/app.apk").toString(),
+                selectEntryNames = { entryNames ->
+                    entryNames.filter { it == "AndroidManifest.xml" }
+                }
+            ).getOrThrow()
+            val packageName = AndroidBinaryXmlPackageNameParser
+                .parsePackageName(selected.entries.getValue("AndroidManifest.xml"))
+                .getOrThrow()
+
+            assertEquals("os.kei.batch", packageName)
+            assertEquals(listOf("AndroidManifest.xml"), selected.entryNames)
+            assertTrue(server.requestCount <= 4)
+        }
+    }
+
+    @Test
     fun `reader fails without downloading full body when range is ignored`() {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.remote")
         val apkBytes = zipWithManifest(manifest)

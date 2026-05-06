@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.GitHubBoundedRunner
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
@@ -21,9 +22,7 @@ import os.kei.feature.github.model.GitHubStrategyBenchmarkSample
 import os.kei.feature.github.model.GitHubStrategyBenchmarkTestType
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
-import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 
 object GitHubStrategyBenchmarkService {
     private const val DEFAULT_TARGET_LIMIT = 6
@@ -316,16 +315,12 @@ object GitHubStrategyBenchmarkService {
         maxConcurrency: Int,
         block: (T) -> R
     ): List<R> {
-        if (items.isEmpty()) return emptyList()
-        val concurrency = items.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
-        if (concurrency <= 1) return items.map(block)
-        val executor = Executors.newFixedThreadPool(concurrency)
-        return try {
-            executor.invokeAll(items.map { item -> Callable { block(item) } })
-                .map { future -> future.get() }
-        } finally {
-            executor.shutdownNow()
-        }
+        return GitHubBoundedRunner.mapOrdered(
+            items = items,
+            maxConcurrency = maxConcurrency,
+            threadName = "github-strategy-benchmark",
+            block = block
+        )
     }
 
     private data class SampleEnvelope(

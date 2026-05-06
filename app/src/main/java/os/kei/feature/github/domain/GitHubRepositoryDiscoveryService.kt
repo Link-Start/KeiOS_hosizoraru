@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.GitHubBoundedRunner
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubRepositoryCandidate
@@ -13,10 +14,6 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Locale
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.ExecutorCompletionService
-import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -143,12 +140,15 @@ internal class GitHubRepositoryDiscoveryService(
         val queries = searchContext.queries
         if (queries.isEmpty()) return emptyList()
         if (!source.supportsParallelSearch) {
-            return queries.flatMap { query ->
-                source.searchRepositories(query, limit).getOrThrow()
-            }
-        }
-        if (queries.size == 1) {
-            return source.searchRepositories(queries.single(), limit).getOrThrow()
+            return collectSearchOutcomes(
+                queries.mapIndexed { index, query ->
+                    fetchSearchOutcome(
+                        query = query,
+                        originalIndex = index,
+                        limit = limit
+                    )
+                }
+            )
         }
         val scheduledQueries = queries
             .mapIndexed { index, query ->
@@ -172,46 +172,46 @@ internal class GitHubRepositoryDiscoveryService(
         scheduledQueries: List<RepositorySearchQuery>,
         limit: Int
     ): List<GitHubRepositoryCandidate> {
-        val workerCount = min(MAX_PARALLEL_SEARCH_QUERIES, scheduledQueries.size)
-        val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
-            Thread(runnable, "github-app-repo-search").apply {
-                isDaemon = true
-            }
+        val outcomes = GitHubBoundedRunner.mapOrdered(
+            items = scheduledQueries,
+            maxConcurrency = MAX_PARALLEL_SEARCH_QUERIES,
+            threadName = "github-app-repo-search"
+        ) { scheduledQuery ->
+            fetchSearchOutcome(
+                query = scheduledQuery.query,
+                originalIndex = scheduledQuery.originalIndex,
+                limit = limit
+            )
         }
-        return try {
-            val completionService =
-                ExecutorCompletionService<RepositorySearchResult>(executor)
-            scheduledQueries.forEach { scheduledQuery ->
-                completionService.submit(
-                    Callable {
-                        RepositorySearchResult(
-                            originalIndex = scheduledQuery.originalIndex,
-                            candidates = source.searchRepositories(
-                                query = scheduledQuery.query,
-                                limit = limit
-                            ).getOrThrow()
-                        )
-                    }
-                )
-            }
-            buildList {
-                repeat(scheduledQueries.size) {
-                    add(completionService.takeResult())
-                }
-            }
-                .sortedBy { it.originalIndex }
-                .flatMap { it.candidates }
-        } finally {
-            executor.shutdownNow()
-        }
+        return collectSearchOutcomes(outcomes.sortedBy { it.originalIndex })
     }
 
-    private fun ExecutorCompletionService<RepositorySearchResult>.takeResult(): RepositorySearchResult {
-        return try {
-            take().get()
-        } catch (error: ExecutionException) {
-            throw error.cause ?: error
+    private fun fetchSearchOutcome(
+        query: String,
+        originalIndex: Int,
+        limit: Int
+    ): RepositorySearchOutcome {
+        val result = source.searchRepositories(
+            query = query,
+            limit = limit
+        )
+        return RepositorySearchOutcome(
+            originalIndex = originalIndex,
+            candidates = result.getOrNull().orEmpty(),
+            error = result.exceptionOrNull()
+        )
+    }
+
+    private fun collectSearchOutcomes(
+        outcomes: List<RepositorySearchOutcome>
+    ): List<GitHubRepositoryCandidate> {
+        val successfulOutcomes = outcomes.filter { it.error == null }
+        if (successfulOutcomes.isNotEmpty()) {
+            return successfulOutcomes.flatMap { it.candidates }
         }
+        val firstFailure = outcomes.firstNotNullOfOrNull { it.error }
+        if (firstFailure != null) throw firstFailure
+        return emptyList()
     }
 
     private fun GitHubRepositoryCandidate.toImportCandidate(
@@ -424,9 +424,10 @@ private data class RepositorySearchQuery(
     val priority: Int
 )
 
-private data class RepositorySearchResult(
+private data class RepositorySearchOutcome(
     val originalIndex: Int,
-    val candidates: List<GitHubRepositoryCandidate>
+    val candidates: List<GitHubRepositoryCandidate>,
+    val error: Throwable?
 )
 
 private data class TrackedRepoIndex(

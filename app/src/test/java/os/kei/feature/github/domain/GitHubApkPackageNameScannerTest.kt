@@ -137,10 +137,9 @@ class GitHubApkPackageNameScannerTest {
         ).getOrThrow()
 
         assertEquals("os.kei.parallel", result.packageName)
-        assertEquals(
-            List(source.scannedStrategies.size) { GitHubLookupStrategyOption.GitHubApiToken },
-            source.scannedStrategies
-        )
+        val scannedStrategies = source.scannedStrategiesSnapshot()
+        assertTrue(scannedStrategies.isNotEmpty())
+        assertTrue(scannedStrategies.all { it == GitHubLookupStrategyOption.GitHubApiToken })
     }
 
     @Test
@@ -220,6 +219,12 @@ class GitHubApkPackageNameScannerTest {
                 Thread.sleep(delayMs)
             }
             return Result.success(manifestBytesByAsset[asset.name] ?: manifestBytes)
+        }
+
+        fun scannedStrategiesSnapshot(): List<GitHubLookupStrategyOption> {
+            return synchronized(scannedStrategies) {
+                scannedStrategies.toList()
+            }
         }
     }
 }

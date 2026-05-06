@@ -1,17 +1,11 @@
 package os.kei.feature.github.domain
 
 import org.junit.Test
-import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
-import os.kei.feature.github.model.GitHubRepositoryCandidate
-import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
-import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
-import os.kei.feature.github.model.GitHubTrackedApp
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -40,7 +34,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     @Test
     fun `project address to package scanner resolves every exported tracked app`() {
         val items = GitHubTrackExportFixture.trackedItems
-        val scanSource = ExportTrackPackageScanSource(items)
+        val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val scanner = GitHubApkPackageNameScanner(scanSource)
 
         items.forEach { item ->
@@ -72,8 +66,8 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     @Test
     fun `package to repository resolver confirms every exported tracked app from preferred repository`() {
         val items = GitHubTrackExportFixture.trackedItems
-        val discovery = ExportTrackDiscoverySource(items)
-        val scanSource = ExportTrackPackageScanSource(items)
+        val discovery = GitHubTrackFixtureSources.discoverySource(items)
+        val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val resolver = GitHubPackageRepositoryResolver(
             discoverySource = discovery,
             packageNameScanner = GitHubApkPackageNameScanner(scanSource)
@@ -109,8 +103,8 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     @Test
     fun `package to repository resolver discovers every exported tracked app from package and label`() {
         val items = GitHubTrackExportFixture.trackedItems
-        val discovery = ExportTrackDiscoverySource(items)
-        val scanSource = ExportTrackPackageScanSource(items)
+        val discovery = GitHubTrackFixtureSources.discoverySource(items)
+        val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val resolver = GitHubPackageRepositoryResolver(
             discoverySource = discovery,
             packageNameScanner = GitHubApkPackageNameScanner(scanSource)
@@ -140,144 +134,6 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
             )
             assertEquals(item.packageName, matched.trackedApp.packageName)
             assertTrue(result.queryCount >= 1)
-        }
-    }
-
-    private class ExportTrackDiscoverySource(
-        items: List<GitHubTrackedApp>
-    ) : GitHubRepositoryDiscoverySource {
-        private val candidates = items.map { item ->
-            GitHubRepositoryCandidate(
-                owner = item.owner,
-                repo = item.repo,
-                repoUrl = item.repoUrl,
-                description = listOf(
-                    item.appLabel,
-                    item.packageName,
-                    "Android"
-                ).filter { it.isNotBlank() }.joinToString(" "),
-                language = "Kotlin",
-                starCount = 100,
-                forkCount = 0,
-                archived = false,
-                fork = false,
-                updatedAtMillis = 1_700_000_000_000,
-                sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch,
-                matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName
-            )
-        }
-
-        override fun fetchAuthenticatedStarredRepositories(
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(candidates.take(limit))
-        }
-
-        override fun fetchUserStarredRepositories(
-            username: String,
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(candidates.take(limit))
-        }
-
-        override fun searchRepositories(
-            query: String,
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            val terms = query
-                .replace(Regex("""\bin:[^\s]+"""), " ")
-                .replace(Regex("""[^A-Za-z0-9_.-]+"""), " ")
-                .split(' ')
-                .map { it.trim().lowercase() }
-                .filter { term ->
-                    term.length >= 2 &&
-                            term != "android" &&
-                            term != "app"
-                }
-                .distinct()
-            if (terms.isEmpty()) return Result.success(emptyList())
-            return Result.success(
-                candidates
-                    .filter { candidate ->
-                        val searchable = listOf(
-                            candidate.owner,
-                            candidate.repo,
-                            candidate.fullName,
-                            candidate.description
-                        ).joinToString(" ").lowercase()
-                        terms.all { term -> searchable.contains(term) }
-                    }
-                    .take(limit)
-            )
-        }
-
-        override fun fetchStarListRepositories(
-            starListUrl: String,
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(candidates.take(limit))
-        }
-    }
-
-    private class ExportTrackPackageScanSource(
-        items: List<GitHubTrackedApp>
-    ) : GitHubApkPackageNameScanSource {
-        private val byRepo = items.associateBy { item ->
-            "${item.owner.lowercase()}/${item.repo.lowercase()}"
-        }
-
-        override fun loadLatestStableRelease(
-            owner: String,
-            repo: String,
-            lookupConfig: GitHubLookupConfig
-        ): Result<GitHubStableReleaseTarget> {
-            val item = requireTrack(owner, repo)
-            return Result.success(
-                GitHubStableReleaseTarget(
-                    tag = "v-fixture",
-                    releaseUrl = "${item.repoUrl}/releases/tag/v-fixture"
-                )
-            )
-        }
-
-        override fun fetchApkAssets(
-            owner: String,
-            repo: String,
-            release: GitHubStableReleaseTarget,
-            lookupConfig: GitHubLookupConfig
-        ): Result<List<GitHubReleaseAssetFile>> {
-            val item = requireTrack(owner, repo)
-            return Result.success(
-                listOf(
-                    GitHubReleaseAssetFile(
-                        name = "${item.repo}.apk",
-                        downloadUrl = "${item.repoUrl}/releases/download/${release.tag}/${item.repo}.apk",
-                        apiAssetUrl = "https://api.github.com/repos/${item.owner}/${item.repo}/releases/assets/1",
-                        sizeBytes = 1024L,
-                        downloadCount = 1
-                    )
-                )
-            )
-        }
-
-        override fun readAndroidManifestBytes(
-            asset: GitHubReleaseAssetFile,
-            lookupConfig: GitHubLookupConfig
-        ): Result<ByteArray> = runCatching {
-            val repoKey = asset.downloadUrl
-                .substringAfter("https://github.com/")
-                .substringBefore("/releases/")
-                .lowercase()
-            val item = byRepo[repoKey] ?: error("No exported track fixture for $repoKey")
-            BinaryManifestFixture.build(item.packageName)
-        }
-
-        private fun requireTrack(
-            owner: String,
-            repo: String
-        ): GitHubTrackedApp {
-            val key = "${owner.lowercase()}/${repo.lowercase()}"
-            return byRepo[key] ?: error("No exported track fixture for $key")
         }
     }
 }

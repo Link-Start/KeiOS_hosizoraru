@@ -9,9 +9,9 @@ import os.kei.feature.github.data.apk.ZipRangeTestFixtures.rangeDispatcher
 import os.kei.feature.github.data.apk.ZipRangeTestFixtures.zipWithManifest
 import os.kei.feature.github.data.apk.ZipRangeTestFixtures.zipWithStoredEntries
 import os.kei.feature.github.domain.GitHubTrackExportFixture
+import os.kei.feature.github.domain.GitHubTrackFixtureSources
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubTrackedApp
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -21,8 +21,11 @@ class GitHubActionsArtifactManifestProbeFixturePerformanceTest {
         val items = GitHubTrackExportFixture.trackedItems
         val selectedItem = items.first()
         val artifactBytes = zipWithStoredEntries(
-            items.mapIndexed { index, item ->
-                artifactEntryName(index, item, selectedItem) to zipWithManifest(
+            GitHubTrackFixtureSources.actionArtifactEntryNames(
+                items = items,
+                selectedItem = selectedItem
+            ).map { (entryName, item) ->
+                entryName to zipWithManifest(
                     BinaryManifestFixture.build(item.packageName)
                 )
             }
@@ -60,20 +63,5 @@ class GitHubActionsArtifactManifestProbeFixturePerformanceTest {
                 message = "Expected a bounded range-only scan, got ${ranges.size} requests"
             )
         }
-    }
-
-    private fun artifactEntryName(
-        index: Int,
-        item: GitHubTrackedApp,
-        selectedItem: GitHubTrackedApp
-    ): String {
-        val prefix = index.toString().padStart(2, '0')
-        val repoName = item.repo.replace(Regex("""[^A-Za-z0-9_.-]+"""), "-")
-        val variant = if (item.id == selectedItem.id) {
-            "universal-release"
-        } else {
-            "arm64-debug"
-        }
-        return "outputs/$prefix-$repoName-$variant.apk"
     }
 }

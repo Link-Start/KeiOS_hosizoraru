@@ -62,7 +62,7 @@ internal fun GitHubShareImportWindowFlowHost(
     var restoringActiveFlow by remember { mutableStateOf(true) }
     val handledAtByPackage = remember { mutableStateMapOf<String, Long>() }
     val installReconciler = remember(context) {
-        ShareImportInstallReconciler(context.applicationContext)
+        GitHubShareImportInstallReconciler(context.applicationContext)
     }
 
     LaunchedEffect(Unit) {

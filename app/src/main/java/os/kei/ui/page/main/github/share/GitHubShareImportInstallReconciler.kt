@@ -7,7 +7,7 @@ import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 
-internal class ShareImportInstallReconciler(
+internal class GitHubShareImportInstallReconciler(
     private val context: Context
 ) {
     suspend fun reconcileRecentInstall(

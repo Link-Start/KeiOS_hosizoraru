@@ -1,6 +1,6 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
@@ -25,7 +25,9 @@ internal interface GitHubStarImportApkVerificationCache {
 
 internal class GitHubStarImportApkVerifier(
     private val source: GitHubApkPackageNameScanSource,
-    private val cache: GitHubStarImportApkVerificationCache? = null
+    private val cache: GitHubStarImportApkVerificationCache? = null,
+    private val packageNameScanner: GitHubApkPackageNameScanner =
+        GitHubApkPackageNameScanner(source)
 ) {
     fun verify(
         candidate: GitHubRepositoryImportCandidate,
@@ -54,16 +56,10 @@ internal class GitHubStarImportApkVerifier(
                     asset.name.endsWith(".apk", ignoreCase = true)
                 }
                 if (apkAssets.isNotEmpty()) {
-                    val packageName = source.readAndroidManifestBytes(
-                        asset = apkAssets.first(),
+                    val scannedPackage = scanFirstPackageName(
+                        assets = apkAssets,
                         lookupConfig = lookupConfig
-                    ).mapCatching { manifestBytes ->
-                        AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes)
-                            .getOrThrow()
-                    }.getOrDefault("")
-                        .trim()
-                        .takeIf(GitHubPackageNameValidator::isValid)
-                        .orEmpty()
+                    )
                     GitHubStarImportApkVerification(
                         owner = owner,
                         repo = repo,
@@ -71,8 +67,8 @@ internal class GitHubStarImportApkVerifier(
                         releaseTag = releaseAssets.release.tag,
                         releaseUrl = releaseAssets.release.releaseUrl,
                         apkAssetCount = apkAssets.size,
-                        sampleAssetName = apkAssets.first().name,
-                        packageName = packageName,
+                        sampleAssetName = scannedPackage?.first?.name ?: apkAssets.first().name,
+                        packageName = scannedPackage?.second.orEmpty(),
                         checkedAtMillis = nowMillis
                     )
                 } else {
@@ -105,7 +101,22 @@ internal class GitHubStarImportApkVerifier(
         return verification
     }
 
+    private fun scanFirstPackageName(
+        assets: List<GitHubReleaseAssetFile>,
+        lookupConfig: GitHubLookupConfig
+    ): Pair<GitHubReleaseAssetFile, String>? {
+        assets.take(MAX_PACKAGE_SCAN_ASSETS).forEach { asset ->
+            val packageName = packageNameScanner.scanAssetPackageName(
+                asset = asset,
+                lookupConfig = lookupConfig
+            ).getOrDefault("").trim()
+            if (packageName.isNotBlank()) return asset to packageName
+        }
+        return null
+    }
+
     companion object {
         private const val DEFAULT_REFRESH_INTERVAL_HOURS = 6
+        private const val MAX_PACKAGE_SCAN_ASSETS = 4
     }
 }

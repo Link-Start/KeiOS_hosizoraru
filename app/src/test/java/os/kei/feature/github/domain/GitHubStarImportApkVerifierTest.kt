@@ -77,6 +77,50 @@ class GitHubStarImportApkVerifierTest {
     }
 
     @Test
+    fun `verifier scans later apk when first manifest is invalid`() {
+        val source = FakeApkVerificationSource(
+            manifestBytesByAsset = mapOf(
+                "demo-metadata.apk" to byteArrayOf(0x01, 0x02),
+                "demo-universal.apk" to BinaryManifestFixture.build("demo.universal")
+            ),
+            releaseAssets = GitHubStableReleaseApkAssets(
+                release = GitHubStableReleaseTarget(
+                    tag = "v1.0.1",
+                    releaseUrl = "https://github.com/demo/app/releases/tag/v1.0.1"
+                ),
+                assets = listOf(
+                    GitHubReleaseAssetFile(
+                        name = "demo-metadata.apk",
+                        downloadUrl = "https://example.com/metadata.apk",
+                        sizeBytes = 10,
+                        downloadCount = 1
+                    ),
+                    GitHubReleaseAssetFile(
+                        name = "demo-universal.apk",
+                        downloadUrl = "https://example.com/universal.apk",
+                        sizeBytes = 20,
+                        downloadCount = 2
+                    )
+                )
+            )
+        )
+
+        val result = GitHubStarImportApkVerifier(source).verify(
+            candidate = importCandidate(
+                repo = "app",
+                description = "Android APK",
+                language = "Kotlin"
+            ),
+            lookupConfig = GitHubLookupConfig(),
+            nowMillis = 200L
+        )
+
+        assertEquals(GitHubStarImportApkVerificationStatus.HasApk, result.status)
+        assertEquals("demo-universal.apk", result.sampleAssetName)
+        assertEquals("demo.universal", result.packageName)
+    }
+
+    @Test
     fun `verifier converts source failure into failed verification`() {
         val result = GitHubStarImportApkVerifier(
             FakeApkVerificationSource(error = IllegalStateException("no stable release"))
@@ -98,6 +142,7 @@ class GitHubStarImportApkVerifierTest {
 private class FakeApkVerificationSource(
     private val releaseAssets: GitHubStableReleaseApkAssets? = null,
     private val manifestBytes: ByteArray? = null,
+    private val manifestBytesByAsset: Map<String, ByteArray> = emptyMap(),
     private val error: Throwable? = null
 ) : GitHubApkPackageNameScanSource {
     override fun loadLatestStableRelease(
@@ -130,6 +175,7 @@ private class FakeApkVerificationSource(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray> {
+        manifestBytesByAsset[asset.name]?.let { return Result.success(it) }
         return manifestBytes?.let { Result.success(it) }
             ?: Result.failure(UnsupportedOperationException())
     }

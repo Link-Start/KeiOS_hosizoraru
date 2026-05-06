@@ -158,6 +158,13 @@ internal fun buildGitHubReleaseNotesLines(
     assetBundle: GitHubReleaseAssetBundle?,
     expanded: Boolean
 ): List<String> {
+    val releaseNotesBodyLines = assetBundle
+        ?.releaseNotesBody
+        .orEmpty()
+        .toReleaseNotesPreviewLines()
+    if (releaseNotesBodyLines.isNotEmpty()) {
+        return releaseNotesBodyLines.take(if (expanded) 5 else 2)
+    }
     val lines = buildList {
         assetBundle?.releaseName?.trim()?.takeIf { it.isNotBlank() }?.let(::add)
         state.releaseHint.trim().takeIf { it.isNotBlank() }?.let(::add)
@@ -179,6 +186,40 @@ internal fun buildGitHubReleaseNotesLines(
 }
 
 private const val FRESH_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 14L
+private const val RELEASE_NOTES_LINE_MAX_CHARS = 180
+
+private fun String.toReleaseNotesPreviewLines(): List<String> {
+    return lines()
+        .asSequence()
+        .map { line ->
+            line.trim()
+                .removePrefix("#")
+                .removePrefix("-")
+                .removePrefix("*")
+                .removePrefix("•")
+                .trim()
+        }
+        .map { line ->
+            line.replace(Regex("""\[(.+?)]\((.+?)\)"""), "$1")
+                .replace(Regex("""[`*_>]+"""), "")
+                .replace(Regex("""\s+"""), " ")
+                .trim()
+        }
+        .filter { it.length >= 3 }
+        .filterNot { line ->
+            line.equals("changelog", ignoreCase = true) ||
+                    line.equals("release notes", ignoreCase = true)
+        }
+        .map { line ->
+            if (line.length > RELEASE_NOTES_LINE_MAX_CHARS) {
+                line.take(RELEASE_NOTES_LINE_MAX_CHARS).trimEnd() + "..."
+            } else {
+                line
+            }
+        }
+        .distinct()
+        .toList()
+}
 
 private val GitHubApkTrustReason.priority: Int
     get() = when (this) {

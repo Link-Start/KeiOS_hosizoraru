@@ -1,10 +1,10 @@
 package os.kei.feature.github.data.local
 
-import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import com.tencent.mmkv.MMKV
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import java.security.MessageDigest
 
 internal object GitHubReleaseAssetCacheStore {
@@ -135,6 +135,7 @@ internal object GitHubReleaseAssetCacheStore {
             put("tagName", bundle.tagName)
             put("htmlUrl", bundle.htmlUrl)
             put("releaseUpdatedAtMillis", bundle.releaseUpdatedAtMillis ?: 0L)
+            put("releaseNotesBody", bundle.releaseNotesBody)
             put("showingAllAssets", bundle.showingAllAssets)
             put("shortCommitSha", bundle.shortCommitSha)
             put("fetchSource", bundle.fetchSource)
@@ -190,6 +191,7 @@ internal object GitHubReleaseAssetCacheStore {
             tagName = tagName,
             htmlUrl = obj.optString("htmlUrl").trim(),
             releaseUpdatedAtMillis = obj.optLong("releaseUpdatedAtMillis", 0L).takeIf { it > 0L },
+            releaseNotesBody = obj.optString("releaseNotesBody").trim(),
             assets = assets,
             showingAllAssets = obj.optBoolean("showingAllAssets", false),
             shortCommitSha = obj.optString("shortCommitSha").trim(),

@@ -10,12 +10,14 @@ internal object GitHubReleaseAssetJsonMapper {
         rawTag: String,
         releaseUrl: String,
         releaseUpdatedAtMillis: Long? = null,
+        releaseNotesBody: String = "",
         assets: List<GitHubReleaseAssetFile> = emptyList()
     ): JSONObject {
         return JSONObject()
             .put("name", releaseName)
             .put("tag_name", rawTag)
             .put("html_url", releaseUrl)
+            .put("body", releaseNotesBody)
             .put(
                 "published_at",
                 releaseUpdatedAtMillis?.let { Instant.ofEpochMilli(it).toString() }
@@ -80,6 +82,7 @@ internal object GitHubReleaseAssetJsonMapper {
             tagName = tagName,
             htmlUrl = htmlUrl,
             releaseUpdatedAtMillis = releaseUpdatedAtMillis,
+            releaseNotesBody = release.optString("body").trim(),
             assets = assets,
             shortCommitSha = ""
         )

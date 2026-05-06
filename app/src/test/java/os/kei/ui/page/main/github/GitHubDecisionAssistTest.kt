@@ -95,6 +95,7 @@ class GitHubDecisionAssistTest {
                 releaseName = "Version 1.0",
                 tagName = "v1.0",
                 htmlUrl = "",
+                releaseNotesBody = "",
                 assets = listOf(asset("demo.apk"))
             ),
             expanded = false
@@ -102,6 +103,29 @@ class GitHubDecisionAssistTest {
 
         assertEquals(2, lines.size)
         assertEquals("Version 1.0", lines.first())
+    }
+
+    @Test
+    fun releaseNotesLinesPreferRealBody() {
+        val lines = buildGitHubReleaseNotesLines(
+            item = trackedItem(),
+            state = VersionCheckUi(releaseHint = "fallback hint"),
+            assetBundle = GitHubReleaseAssetBundle(
+                releaseName = "Version 1.0",
+                tagName = "v1.0",
+                htmlUrl = "",
+                releaseNotesBody = """
+                    # Release Notes
+                    - Added installer flow
+                    - Fixed cache refresh
+                    - Improved APK selection
+                """.trimIndent(),
+                assets = listOf(asset("demo.apk"))
+            ),
+            expanded = false
+        )
+
+        assertEquals(listOf("Added installer flow", "Fixed cache refresh"), lines)
     }
 
     private fun trackedItem(packageName: String = "os.kei.demo"): GitHubTrackedApp {

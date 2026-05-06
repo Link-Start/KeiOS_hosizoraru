@@ -28,6 +28,7 @@ data class GitHubReleaseAssetBundle(
     val tagName: String,
     val htmlUrl: String,
     val releaseUpdatedAtMillis: Long? = null,
+    val releaseNotesBody: String = "",
     val assets: List<GitHubReleaseAssetFile>,
     val showingAllAssets: Boolean = false,
     val shortCommitSha: String = "",
@@ -44,7 +45,8 @@ private data class HtmlReleaseMetadata(
     val releaseName: String,
     val tagName: String,
     val htmlUrl: String,
-    val releaseUpdatedAtMillis: Long?
+    val releaseUpdatedAtMillis: Long?,
+    val releaseNotesBody: String
 )
 
 object GitHubReleaseAssetRepository {
@@ -254,6 +256,7 @@ object GitHubReleaseAssetRepository {
             rawTag = metadata.tagName,
             releaseUrl = metadata.htmlUrl,
             releaseUpdatedAtMillis = metadata.releaseUpdatedAtMillis,
+            releaseNotesBody = metadata.releaseNotesBody,
             assets = assets
         )
     }
@@ -370,8 +373,39 @@ object GitHubReleaseAssetRepository {
             releaseName = releaseName,
             tagName = rawTag.trim(),
             htmlUrl = releaseUrl.trim(),
-            releaseUpdatedAtMillis = releaseUpdatedAtMillis
+            releaseUpdatedAtMillis = releaseUpdatedAtMillis,
+            releaseNotesBody = parseReleaseNotesFromHtml(html)
         )
+    }
+
+    private fun parseReleaseNotesFromHtml(html: String): String {
+        val markdownBlock = Regex(
+            """<div[^>]*class="[^"]*markdown-body[^"]*"[^>]*>(.*?)</div>\s*</div>""",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        ).find(html)
+            ?.groupValues
+            ?.getOrNull(1)
+            .orEmpty()
+            .ifBlank {
+                Regex(
+                    """<div[^>]*class="[^"]*markdown-body[^"]*"[^>]*>(.*?)</div>""",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+                ).find(html)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    .orEmpty()
+            }
+        return markdownBlock
+            .replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("""</(?:p|li|h[1-6]|div|ul|ol)>""", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("<[^>]+>"), " ")
+            .decodeHtmlEntities()
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString("\n")
+            .take(MAX_RELEASE_NOTES_BODY_CHARS)
     }
 
     private fun parseExpandedAssetsUrl(html: String): String? {
@@ -536,12 +570,14 @@ object GitHubReleaseAssetRepository {
         rawTag: String,
         releaseUrl: String,
         releaseUpdatedAtMillis: Long? = null,
+        releaseNotesBody: String = "",
         assets: List<GitHubReleaseAssetFile> = emptyList()
     ): JSONObject = GitHubReleaseAssetJsonMapper.buildReleaseStub(
         releaseName = releaseName,
         rawTag = rawTag,
         releaseUrl = releaseUrl,
         releaseUpdatedAtMillis = releaseUpdatedAtMillis,
+        releaseNotesBody = releaseNotesBody,
         assets = assets
     )
 
@@ -568,3 +604,5 @@ object GitHubReleaseAssetRepository {
     }
 
 }
+
+private const val MAX_RELEASE_NOTES_BODY_CHARS = 24_000

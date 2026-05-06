@@ -6,6 +6,8 @@ import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -13,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -38,9 +41,12 @@ import os.kei.ui.page.main.github.buildGitHubRepositoryHealthImpactLines
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
+import os.kei.ui.page.main.os.appLucideChevronDownIcon
+import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
@@ -348,6 +354,7 @@ private fun GitHubReleaseNotesDetailContent(
 ) {
     val context = LocalContext.current
     var showRawMarkdown by remember(item.id, assetBundle?.tagName) { mutableStateOf(false) }
+    var meaningsExpanded by remember(item.id, assetBundle?.tagName) { mutableStateOf(false) }
     val lines = buildGitHubReleaseNotesDetailLines(
         item = item,
         state = state,
@@ -365,7 +372,14 @@ private fun GitHubReleaseNotesDetailContent(
                 ?: state.latestStableRawTag.ifBlank { state.latestPreRawTag.ifBlank { null } },
             badgeColor = GitHubStatusPalette.Active
         ) {
-            DetailTextLine("${item.owner}/${item.repo}")
+            DetailInfoRow(
+                label = stringResource(R.string.github_release_notes_detail_repo),
+                value = "${item.owner}/${item.repo}"
+            )
+            DetailInfoRow(
+                label = stringResource(R.string.github_release_notes_detail_source),
+                value = releaseNotesSourceLabel(assetBundle?.fetchSource.orEmpty())
+            )
             DetailTextLine(
                 if (assetError.isNotBlank()) {
                     assetError
@@ -376,6 +390,10 @@ private fun GitHubReleaseNotesDetailContent(
                 }
             )
         }
+        ReleaseNotesMeaningSection(
+            expanded = meaningsExpanded,
+            onToggle = { meaningsExpanded = !meaningsExpanded }
+        )
         SheetSectionCard {
             ActionButtonRow {
                 AppLiquidTextButton(
@@ -449,6 +467,64 @@ private fun GitHubReleaseNotesDetailContent(
     }
 }
 
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun ReleaseNotesMeaningSection(
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    SheetSectionTitle(stringResource(R.string.github_release_notes_field_guide_title))
+    SheetSectionCard(verticalSpacing = 8.dp) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AppLiquidIconButton(
+                backdrop = null,
+                icon = appLucideInfoIcon(),
+                contentDescription = stringResource(R.string.github_release_notes_field_guide_title),
+                onClick = onToggle,
+                width = 32.dp,
+                height = 32.dp,
+                variant = GlassVariant.Content
+            )
+            DetailTextLine(
+                text = stringResource(R.string.github_release_notes_field_guide_summary),
+                modifier = Modifier.weight(1f)
+            )
+            AppLiquidIconButton(
+                backdrop = null,
+                icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
+                contentDescription = stringResource(R.string.github_release_notes_field_guide_title),
+                onClick = onToggle,
+                width = 32.dp,
+                height = 32.dp,
+                variant = GlassVariant.Content
+            )
+        }
+        if (expanded) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf(
+                    stringResource(R.string.github_release_notes_field_guide_api),
+                    stringResource(R.string.github_release_notes_field_guide_atom),
+                    stringResource(R.string.github_release_notes_field_guide_markdown),
+                    stringResource(R.string.github_release_notes_field_guide_assets)
+                ).forEach { entry ->
+                    os.kei.ui.page.main.widget.status.StatusPill(
+                        label = entry,
+                        color = GitHubStatusPalette.Active
+                    )
+                }
+            }
+        }
+    }
+}
+
 private fun buildFallbackReleaseUrl(
     item: GitHubTrackedApp,
     state: VersionCheckUi
@@ -474,6 +550,37 @@ private fun buildArtifactCopyPayload(
             add("digest: $value")
         }
     }.joinToString("\n")
+}
+
+@Composable
+private fun DetailInfoRow(
+    label: String,
+    value: String
+) {
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(0.28f),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = value,
+            modifier = Modifier.weight(0.72f),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 private fun copyTextToClipboard(context: Context, label: String, text: String) {
@@ -517,10 +624,12 @@ private fun ArtifactSelectorReasonSection(reasons: List<String>) {
 private fun DetailTextLine(
     text: String,
     maxLines: Int = 3,
-    accent: Boolean = false
+    accent: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
     Text(
         text = text,
+        modifier = modifier,
         color = if (accent) MiuixTheme.colorScheme.onBackground else MiuixTheme.colorScheme.onBackgroundVariant,
         fontSize = if (accent) AppTypographyTokens.Body.fontSize else AppTypographyTokens.Supporting.fontSize,
         lineHeight = if (accent) AppTypographyTokens.Body.lineHeight else AppTypographyTokens.Supporting.lineHeight,
@@ -528,6 +637,15 @@ private fun DetailTextLine(
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis
     )
+}
+
+@Composable
+private fun releaseNotesSourceLabel(source: String): String {
+    return when (source) {
+        "api" -> stringResource(R.string.github_release_notes_source_api)
+        "html" -> stringResource(R.string.github_release_notes_source_atom)
+        else -> stringResource(R.string.common_unknown)
+    }
 }
 
 @Composable

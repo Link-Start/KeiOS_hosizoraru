@@ -22,6 +22,7 @@ internal class GitHubApkInfoRepository(
         val entryNames = listEntryNames(asset, lookupConfig).getOrDefault(emptyList())
         AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifestBytes).getOrThrow().copy(
             assetName = asset.name,
+            fetchSource = resolvePrimarySource(asset, lookupConfig),
             nativeAbis = entryNames.extractNativeAbis(),
             signatureInfo = readSignatureInfo(asset, lookupConfig, entryNames).getOrNull()
         )
@@ -88,20 +89,52 @@ internal class GitHubApkInfoRepository(
         lookupConfig: GitHubLookupConfig,
         read: (String, String) -> Result<T>
     ): Result<T> {
-        val primary = read(asset.downloadUrl, lookupConfig.apiToken)
-        if (primary.isSuccess || lookupConfig.selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken) {
-            return primary
+        val targets = resolveReadTargets(asset, lookupConfig)
+        var firstFailure: Result<T>? = null
+        targets.forEach { target ->
+            val result = read(target.url, target.token)
+            if (result.isSuccess) return result
+            if (firstFailure == null) firstFailure = result
         }
+        return firstFailure ?: Result.failure(IllegalStateException("APK info read target missing"))
+    }
+
+    private fun resolveReadTargets(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): List<ApkInfoReadTarget> {
         val token = lookupConfig.apiToken.trim()
-        if (token.isBlank() || asset.apiAssetUrl.isBlank()) return primary
-        return GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-            asset = asset,
-            useApiAssetUrl = true,
-            apiToken = token
-        ).mapCatching { apiDownloadUrl ->
-            read(apiDownloadUrl, token).getOrThrow()
-        }.recoverCatching {
-            primary.getOrThrow()
+        val apiTarget = if (
+            lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken &&
+            token.isNotBlank() &&
+            asset.apiAssetUrl.isNotBlank()
+        ) {
+            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
+                asset = asset,
+                useApiAssetUrl = true,
+                apiToken = token
+            ).getOrNull()?.let { ApkInfoReadTarget(url = it, token = token) }
+        } else {
+            null
+        }
+        return buildList {
+            apiTarget?.let(::add)
+            add(ApkInfoReadTarget(url = asset.downloadUrl, token = lookupConfig.apiToken))
+        }.distinctBy { it.url }
+    }
+
+    private fun resolvePrimarySource(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): String {
+        val canUseApiAsset =
+            lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken &&
+                    lookupConfig.apiToken.trim().isNotBlank() &&
+                    asset.apiAssetUrl.isNotBlank()
+        return if (canUseApiAsset) {
+            GitHubReleaseAssetFetchSources.API
+        } else {
+            GitHubReleaseAssetFetchSources.HTML
         }
     }
 
@@ -124,6 +157,11 @@ internal class GitHubApkInfoRepository(
         private const val ANDROID_MANIFEST_ENTRY = "AndroidManifest.xml"
     }
 }
+
+private data class ApkInfoReadTarget(
+    val url: String,
+    val token: String
+)
 
 private fun ByteArray.sha256Hex(): String {
     return MessageDigest.getInstance("SHA-256")

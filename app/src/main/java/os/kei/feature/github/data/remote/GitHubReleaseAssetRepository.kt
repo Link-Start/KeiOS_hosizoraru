@@ -102,7 +102,8 @@ object GitHubReleaseAssetRepository {
             resolvedHtmlReleaseUrl.isNotBlank() -> GitHubReleaseAssetFetchSources.HTML
             else -> primarySource
         }
-        val fallback = when {
+        val resolvedSource = if (primary.isSuccess) primarySource else fallbackSource
+        val resolvedRelease = primary.takeIf { it.isSuccess } ?: when {
             preferHtml -> {
                 fetchReleaseByTagWithFallback(
                     owner = owner,
@@ -117,9 +118,8 @@ object GitHubReleaseAssetRepository {
             }
             else -> Result.failure(primary.exceptionOrNull() ?: IllegalStateException("release fetch failed"))
         }
-        val resolvedSource = if (primary.isSuccess) primarySource else fallbackSource
 
-        return (primary.takeIf { it.isSuccess } ?: fallback).mapCatching { release ->
+        return resolvedRelease.mapCatching { release ->
             parseReleaseBundle(release)
                 .copy(fetchSource = resolvedSource)
                 .withResolvedShortCommitSha(owner, repo, normalizedTag, apiToken)

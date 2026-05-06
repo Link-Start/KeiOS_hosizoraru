@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -26,12 +27,17 @@ import os.kei.feature.github.model.GitHubApkManifestNode
 import os.kei.feature.github.model.GitHubApkSignatureInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.os.appLucideChevronDownIcon
+import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
@@ -103,6 +109,10 @@ internal fun GitHubApkInfoSheet(
                                 info.targetSdk.ifBlank { "-" }
                             )
                         )
+                        InfoRow(
+                            label = stringResource(R.string.github_apk_info_label_source),
+                            value = apkInfoSourceLabel(info.fetchSource)
+                        )
                     }
                 }
             }
@@ -159,6 +169,7 @@ internal fun GitHubApkInfoSheet(
                     }.filterStringsByQuery(normalizedQuery)
                 )
                 SignatureSection(info.signatureInfo, normalizedQuery)
+                ApkInfoMeaningSection()
                 ManifestTreeSection(
                     nodes = info.manifestNodes.filterNodesByQuery(normalizedQuery),
                     query = normalizedQuery
@@ -178,32 +189,36 @@ private fun ApkInfoActionRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = if (loading) {
-                stringResource(R.string.github_apk_info_action_refreshing)
-            } else {
-                stringResource(R.string.github_apk_info_action_refresh)
-            },
+            icon = appLucideRefreshIcon(),
+            contentDescription = stringResource(
+                if (loading) R.string.github_apk_info_action_refreshing else R.string.github_apk_info_action_refresh
+            ),
             onClick = onRefresh,
-            modifier = Modifier.weight(1f),
             enabled = !loading,
-            variant = GlassVariant.SheetAction
+            variant = GlassVariant.SheetAction,
+            iconTint = if (loading) {
+                MiuixTheme.colorScheme.onBackgroundVariant
+            } else {
+                MiuixTheme.colorScheme.primary
+            }
         )
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = stringResource(R.string.github_apk_info_action_download),
+            icon = appLucideDownloadIcon(),
+            contentDescription = stringResource(R.string.github_apk_info_action_download),
             onClick = onDownload,
-            modifier = Modifier.weight(1f),
             variant = GlassVariant.SheetPrimaryAction
         )
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = stringResource(R.string.github_apk_info_action_share),
+            icon = appLucideShareIcon(),
+            contentDescription = stringResource(R.string.github_apk_info_action_share),
             onClick = onShare,
-            modifier = Modifier.weight(1f),
             variant = GlassVariant.SheetAction
         )
     }
@@ -385,11 +400,12 @@ private fun ComparisonPillRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
     ) {
         Text(
             text = label,
-            modifier = Modifier.weight(0.24f),
+            modifier = Modifier.weight(0.26f),
             color = MiuixTheme.colorScheme.onBackgroundVariant,
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
@@ -397,7 +413,7 @@ private fun ComparisonPillRow(
             overflow = TextOverflow.Ellipsis
         )
         FlowRow(
-            modifier = Modifier.weight(0.76f),
+            modifier = Modifier.weight(0.74f),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -489,24 +505,45 @@ private fun ManifestNodeGroupCard(
     onToggle: () -> Unit
 ) {
     AppSurfaceCard(onClick = onToggle) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = title, color = MiuixTheme.colorScheme.onBackground)
+                Text(
+                    text = title,
+                    modifier = Modifier.weight(1f),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 StatusPill(label = nodes.size.toString(), color = GitHubStatusPalette.Active)
+                AppLiquidIconButton(
+                    backdrop = null,
+                    icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
+                    contentDescription = title,
+                    onClick = onToggle,
+                    width = 32.dp,
+                    height = 32.dp,
+                    variant = GlassVariant.Content
+                )
             }
             if (expanded) {
                 nodes.take(MANIFEST_NODE_LIMIT).forEach { node ->
-                    DetailLine(node.displayLine(), maxLines = 3)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        node.riskPills().forEach { signal ->
-                            StatusPill(signal.label, signal.color)
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        DetailLine(node.displayLine(), maxLines = 3)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            node.riskPills().forEach { signal ->
+                                StatusPill(signal.label, signal.color)
+                            }
                         }
                     }
                 }
@@ -567,7 +604,8 @@ private fun InfoRow(
     if (value.isBlank()) return
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Top
     ) {
         Text(
             text = label,
@@ -587,6 +625,79 @@ private fun InfoRow(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun ApkInfoMeaningSection() {
+    var expanded by remember { mutableStateOf(false) }
+    SheetSectionTitle(stringResource(R.string.github_apk_info_section_meaning))
+    SheetSectionCard(verticalSpacing = 8.dp) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AppLiquidIconButton(
+                backdrop = null,
+                icon = appLucideInfoIcon(),
+                contentDescription = stringResource(R.string.github_apk_info_section_meaning),
+                onClick = { expanded = !expanded },
+                width = 32.dp,
+                height = 32.dp,
+                variant = GlassVariant.Content
+            )
+            Text(
+                text = stringResource(R.string.github_apk_info_meaning_summary),
+                modifier = Modifier.weight(1f),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight
+            )
+            AppLiquidIconButton(
+                backdrop = null,
+                icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
+                contentDescription = stringResource(R.string.github_apk_info_section_meaning),
+                onClick = { expanded = !expanded },
+                width = 32.dp,
+                height = 32.dp,
+                variant = GlassVariant.Content
+            )
+        }
+        if (expanded) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                apkMeaningEntries().forEach { entry ->
+                    StatusPill(entry, GitHubStatusPalette.Active)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun apkMeaningEntries(): List<String> {
+    return listOf(
+        stringResource(R.string.github_apk_info_meaning_version),
+        stringResource(R.string.github_apk_info_meaning_target_api),
+        stringResource(R.string.github_apk_info_meaning_abi),
+        stringResource(R.string.github_apk_info_meaning_exported),
+        stringResource(R.string.github_apk_info_meaning_permission),
+        stringResource(R.string.github_apk_info_meaning_queries),
+        stringResource(R.string.github_apk_info_meaning_signature)
+    )
+}
+
+@Composable
+private fun apkInfoSourceLabel(source: String): String {
+    return when (source) {
+        "api" -> stringResource(R.string.github_asset_fetch_source_api)
+        "html" -> stringResource(R.string.github_asset_fetch_source_html)
+        else -> stringResource(R.string.common_unknown)
     }
 }
 

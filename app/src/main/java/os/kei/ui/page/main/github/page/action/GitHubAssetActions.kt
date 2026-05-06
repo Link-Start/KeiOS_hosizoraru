@@ -179,7 +179,8 @@ internal class GitHubAssetActions(
         expandPanelOnLoad: Boolean = true,
         openFallbackTarget: Boolean = true,
         showAssetPanelLoading: Boolean = true,
-        requireReleaseNotesBody: Boolean = false
+        requireReleaseNotesBody: Boolean = false,
+        bypassPersistedCache: Boolean = false
     ) {
         val alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton
         val target = itemState.apkAssetTarget(
@@ -248,10 +249,14 @@ internal class GitHubAssetActions(
                 includeAllAssets = includeAllAssets,
                 hasApiToken = state.lookupConfig.apiToken.isNotBlank()
             )
-            val persistedBundle = repository.loadAssetBundle(
-                cacheKey = assetCacheKey,
-                refreshIntervalHours = refreshIntervalHours
-            )
+            val persistedBundle = if (bypassPersistedCache) {
+                null
+            } else {
+                repository.loadAssetBundle(
+                    cacheKey = assetCacheKey,
+                    refreshIntervalHours = refreshIntervalHours
+                )
+            }
             if (
                 persistedBundle != null &&
                 state.matchesAssetSourceSignature(persistedBundle) &&
@@ -327,7 +332,8 @@ internal class GitHubAssetActions(
             expandPanelOnLoad = false,
             openFallbackTarget = false,
             showAssetPanelLoading = false,
-            requireReleaseNotesBody = true
+            requireReleaseNotesBody = true,
+            bypassPersistedCache = clearCache
         )
     }
 

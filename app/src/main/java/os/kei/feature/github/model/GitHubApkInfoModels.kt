@@ -2,6 +2,7 @@ package os.kei.feature.github.model
 
 data class GitHubApkManifestInfo(
     val assetName: String,
+    val fetchSource: String = "",
     val packageName: String = "",
     val versionName: String = "",
     val versionCode: String = "",

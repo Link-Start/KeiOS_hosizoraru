@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -32,14 +33,20 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubCompactInfoRow
+import os.kei.ui.page.main.github.GitHubDecisionLevel
+import os.kei.ui.page.main.github.GitHubRepositoryHealthReason
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
+import os.kei.ui.page.main.github.buildGitHubReleaseNotesLines
+import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -80,6 +87,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.GitHubTrackedItemsSection(
+    lookupConfig: GitHubLookupConfig,
     trackedItems: List<GitHubTrackedApp>,
     filteredTracked: List<GitHubTrackedApp>,
     sortedTracked: List<GitHubTrackedApp>,
@@ -311,9 +319,49 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     val assetLoading = apkAssetLoading[item.id] == true
                     val assetError = apkAssetErrors[item.id].orEmpty()
                     val assetExpanded = apkAssetExpanded[item.id] == true
+                    if (lookupConfig.decisionAssistEnabled &&
+                        lookupConfig.repositoryHealthCardEnabled
+                    ) {
+                        val health = buildGitHubRepositoryHealth(item, state)
+                        AppSupportingBlock(
+                            text = buildGitHubRepositoryHealthText(
+                                context = context,
+                                score = health.score,
+                                reasons = health.reasons
+                            ),
+                            accentColor = health.level.toStatusColor()
+                        )
+                    }
+                    if (lookupConfig.decisionAssistEnabled &&
+                        lookupConfig.releaseNotesMode != GitHubReleaseNotesMode.Off
+                    ) {
+                        val releaseNotesLines = buildGitHubReleaseNotesLines(
+                            item = item,
+                            state = state,
+                            assetBundle = assetBundle,
+                            expanded = lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded
+                        )
+                        if (releaseNotesLines.isNotEmpty()) {
+                            AppSupportingBlock(
+                                text = buildString {
+                                    append(stringResource(R.string.github_release_notes_title))
+                                    append('\n')
+                                    append(releaseNotesLines.joinToString("\n"))
+                                },
+                                accentColor = GitHubStatusPalette.Active,
+                                maxLines = if (lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded) {
+                                    6
+                                } else {
+                                    3
+                                },
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                     GitHubTrackedItemAssetPanel(
                         item = item,
                         state = state,
+                        lookupConfig = lookupConfig,
                         isDark = isDark,
                         contentBackdrop = contentBackdrop,
                         assetBundle = assetBundle,
@@ -330,6 +378,42 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                 }
             }
         }
+    }
+}
+
+private fun buildGitHubRepositoryHealthText(
+    context: Context,
+    score: Int,
+    reasons: List<GitHubRepositoryHealthReason>
+): String {
+    val reasonText = reasons
+        .take(4)
+        .joinToString(" / ") { reason -> context.getString(reason.labelRes()) }
+    return if (reasonText.isBlank()) {
+        context.getString(R.string.github_health_score_value, score)
+    } else {
+        context.getString(R.string.github_health_score_with_reasons, score, reasonText)
+    }
+}
+
+private fun GitHubDecisionLevel.toStatusColor(): Color {
+    return when (this) {
+        GitHubDecisionLevel.Good -> GitHubStatusPalette.Update
+        GitHubDecisionLevel.Review -> GitHubStatusPalette.Cache
+        GitHubDecisionLevel.Risk -> GitHubStatusPalette.Error
+    }
+}
+
+private fun GitHubRepositoryHealthReason.labelRes(): Int {
+    return when (this) {
+        GitHubRepositoryHealthReason.UpdateAvailable -> R.string.github_health_reason_update_available
+        GitHubRepositoryHealthReason.PreReleaseRecommended -> R.string.github_health_reason_prerelease
+        GitHubRepositoryHealthReason.CheckFailed -> R.string.github_health_reason_check_failed
+        GitHubRepositoryHealthReason.MissingPackageName -> R.string.github_health_reason_missing_package
+        GitHubRepositoryHealthReason.MissingStableRelease -> R.string.github_health_reason_missing_stable
+        GitHubRepositoryHealthReason.LocalMissing -> R.string.github_health_reason_local_missing
+        GitHubRepositoryHealthReason.StableDetected -> R.string.github_health_reason_stable_detected
+        GitHubRepositoryHealthReason.FreshRelease -> R.string.github_health_reason_fresh_release
     }
 }
 

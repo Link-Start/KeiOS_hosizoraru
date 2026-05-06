@@ -76,13 +76,19 @@ internal fun GitHubPageSheetHost(
         shareImportLinkageEnabledInput = state.shareImportLinkageEnabledInput,
         onlineShareTargetPackageInput = state.onlineShareTargetPackageInput,
         preferredDownloaderPackageInput = state.preferredDownloaderPackageInput,
+        decisionAssistEnabledInput = state.decisionAssistEnabledInput,
+        repositoryHealthCardEnabledInput = state.repositoryHealthCardEnabledInput,
+        apkTrustCheckEnabledInput = state.apkTrustCheckEnabledInput,
+        releaseNotesModeInput = state.releaseNotesModeInput,
         installedOnlineShareTargets = installedOnlineShareTargets,
         showCheckLogicIntervalPopup = state.showCheckLogicIntervalPopup,
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
+        showReleaseNotesModePopup = state.showReleaseNotesModePopup,
         checkLogicIntervalPopupAnchorBounds = state.checkLogicIntervalPopupAnchorBounds,
         downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
         onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
+        releaseNotesModePopupAnchorBounds = state.releaseNotesModePopupAnchorBounds,
         downloaderOptions = checkLogicDownloaderOptions,
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
         exportInProgress = tracksExporting,
@@ -99,15 +105,23 @@ internal fun GitHubPageSheetHost(
         onShareImportLinkageEnabledInputChange = { state.shareImportLinkageEnabledInput = it },
         onPreferredDownloaderPackageInputChange = { state.preferredDownloaderPackageInput = it },
         onOnlineShareTargetPackageInputChange = { state.onlineShareTargetPackageInput = it },
+        onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },
+        onRepositoryHealthCardEnabledInputChange = { state.repositoryHealthCardEnabledInput = it },
+        onApkTrustCheckEnabledInputChange = { state.apkTrustCheckEnabledInput = it },
+        onReleaseNotesModeInputChange = { state.releaseNotesModeInput = it },
         onShowCheckLogicIntervalPopupChange = { state.showCheckLogicIntervalPopup = it },
         onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
         onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
+        onShowReleaseNotesModePopupChange = { state.showReleaseNotesModePopup = it },
         onCheckLogicIntervalPopupAnchorBoundsChange = {
             state.checkLogicIntervalPopupAnchorBounds = it
         },
         onDownloaderPopupAnchorBoundsChange = { state.downloaderPopupAnchorBounds = it },
         onOnlineShareTargetPopupAnchorBoundsChange = {
             state.onlineShareTargetPopupAnchorBounds = it
+        },
+        onReleaseNotesModePopupAnchorBoundsChange = {
+            state.releaseNotesModePopupAnchorBounds = it
         }
     )
 

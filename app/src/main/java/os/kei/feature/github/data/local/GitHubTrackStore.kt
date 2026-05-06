@@ -1,14 +1,15 @@
 package os.kei.feature.github.data.local
 
-import os.kei.feature.github.model.GitHubCheckCacheEntry
-import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
-import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubLookupStrategyOption
-import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import com.tencent.mmkv.MMKV
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubCheckCacheEntry
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubReleaseNotesMode
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.defaultKeiOsTrackedApp
 
 data class GitHubTrackSnapshot(
     val items: List<GitHubTrackedApp> = emptyList(),
@@ -52,6 +53,10 @@ object GitHubTrackStore {
     private const val KEY_SHARE_IMPORT_LINKAGE_ENABLED = "github_share_import_linkage_enabled"
     private const val KEY_ONLINE_SHARE_TARGET_PACKAGE = "github_online_share_target_package"
     private const val KEY_PREFERRED_DOWNLOADER_PACKAGE = "github_preferred_downloader_package"
+    private const val KEY_DECISION_ASSIST_ENABLED = "github_decision_assist_enabled"
+    private const val KEY_REPOSITORY_HEALTH_CARD_ENABLED = "github_repository_health_card_enabled"
+    private const val KEY_APK_TRUST_CHECK_ENABLED = "github_apk_trust_check_enabled"
+    private const val KEY_RELEASE_NOTES_MODE = "github_release_notes_mode"
     private const val KEY_PENDING_SHARE_IMPORT_TRACK = "github_pending_share_import_track"
     private const val KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE = "github_tracked_first_install_at_by_package"
     private const val KEY_TRACKED_ADDED_AT_BY_ID = "github_tracked_added_at_by_id"
@@ -436,7 +441,17 @@ object GitHubTrackStore {
             aggressiveApkFiltering = kv().decodeBool(KEY_AGGRESSIVE_APK_FILTERING, false),
             shareImportLinkageEnabled = kv().decodeBool(KEY_SHARE_IMPORT_LINKAGE_ENABLED, false),
             onlineShareTargetPackage = kv().decodeString(KEY_ONLINE_SHARE_TARGET_PACKAGE).orEmpty().trim(),
-            preferredDownloaderPackage = kv().decodeString(KEY_PREFERRED_DOWNLOADER_PACKAGE).orEmpty().trim()
+            preferredDownloaderPackage = kv().decodeString(KEY_PREFERRED_DOWNLOADER_PACKAGE)
+                .orEmpty().trim(),
+            decisionAssistEnabled = kv().decodeBool(KEY_DECISION_ASSIST_ENABLED, false),
+            repositoryHealthCardEnabled = kv().decodeBool(
+                KEY_REPOSITORY_HEALTH_CARD_ENABLED,
+                false
+            ),
+            apkTrustCheckEnabled = kv().decodeBool(KEY_APK_TRUST_CHECK_ENABLED, false),
+            releaseNotesMode = GitHubReleaseNotesMode.fromStorageId(
+                kv().decodeString(KEY_RELEASE_NOTES_MODE).orEmpty()
+            )
         )
     }
 
@@ -449,6 +464,10 @@ object GitHubTrackStore {
         kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
         kv().encode(KEY_ONLINE_SHARE_TARGET_PACKAGE, config.onlineShareTargetPackage.trim())
         kv().encode(KEY_PREFERRED_DOWNLOADER_PACKAGE, config.preferredDownloaderPackage.trim())
+        kv().encode(KEY_DECISION_ASSIST_ENABLED, config.decisionAssistEnabled)
+        kv().encode(KEY_REPOSITORY_HEALTH_CARD_ENABLED, config.repositoryHealthCardEnabled)
+        kv().encode(KEY_APK_TRUST_CHECK_ENABLED, config.apkTrustCheckEnabled)
+        kv().encode(KEY_RELEASE_NOTES_MODE, config.releaseNotesMode.storageId)
     }
 
     private fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {

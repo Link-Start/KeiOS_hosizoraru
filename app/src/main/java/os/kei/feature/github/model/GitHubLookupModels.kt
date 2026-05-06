@@ -40,6 +40,20 @@ enum class GitHubActionsLookupStrategyOption(
     }
 }
 
+enum class GitHubReleaseNotesMode(
+    val storageId: String
+) {
+    Off("off"),
+    Compact("compact"),
+    Expanded("expanded");
+
+    companion object {
+        fun fromStorageId(value: String): GitHubReleaseNotesMode {
+            return entries.firstOrNull { it.storageId == value } ?: Off
+        }
+    }
+}
+
 data class GitHubLookupConfig(
     val selectedStrategy: GitHubLookupStrategyOption = GitHubLookupStrategyOption.AtomFeed,
     val actionsStrategy: GitHubActionsLookupStrategyOption = GitHubActionsLookupStrategyOption.NightlyLink,
@@ -48,7 +62,11 @@ data class GitHubLookupConfig(
     val aggressiveApkFiltering: Boolean = false,
     val shareImportLinkageEnabled: Boolean = false,
     val onlineShareTargetPackage: String = "",
-    val preferredDownloaderPackage: String = ""
+    val preferredDownloaderPackage: String = "",
+    val decisionAssistEnabled: Boolean = false,
+    val repositoryHealthCardEnabled: Boolean = false,
+    val apkTrustCheckEnabled: Boolean = false,
+    val releaseNotesMode: GitHubReleaseNotesMode = GitHubReleaseNotesMode.Off
 ) {
     val actionsRequireApiToken: Boolean
         get() = actionsStrategy == GitHubActionsLookupStrategyOption.GitHubApiToken

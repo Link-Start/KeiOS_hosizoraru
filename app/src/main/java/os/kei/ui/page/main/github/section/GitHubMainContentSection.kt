@@ -172,6 +172,7 @@ internal fun GitHubMainContent(
                         }
                     }
                     GitHubTrackedItemsSection(
+                        lookupConfig = lookupConfig,
                         trackedItems = trackedItems,
                         filteredTracked = filteredTracked,
                         sortedTracked = sortedTracked,

@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -9,7 +10,6 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import kotlinx.coroutines.launch
 
 internal class GitHubConfigActions(
     private val env: GitHubPageActionEnvironment,
@@ -46,6 +46,7 @@ internal class GitHubConfigActions(
         state.showCheckLogicIntervalPopup = false
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
+        state.showReleaseNotesModePopup = false
         scope.launch {
             val config = repository.loadLookupConfig()
             state.lookupConfig = config
@@ -54,6 +55,10 @@ internal class GitHubConfigActions(
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
+            state.decisionAssistEnabledInput = config.decisionAssistEnabled
+            state.repositoryHealthCardEnabledInput = config.repositoryHealthCardEnabled
+            state.apkTrustCheckEnabledInput = config.apkTrustCheckEnabled
+            state.releaseNotesModeInput = config.releaseNotesMode
             state.refreshIntervalHoursInput = repository.loadRefreshIntervalHours()
             state.showCheckLogicSheet = true
         }
@@ -91,7 +96,11 @@ internal class GitHubConfigActions(
                 aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
-                preferredDownloaderPackage = previousConfig.preferredDownloaderPackage
+                preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
+                decisionAssistEnabled = previousConfig.decisionAssistEnabled,
+                repositoryHealthCardEnabled = previousConfig.repositoryHealthCardEnabled,
+                apkTrustCheckEnabled = previousConfig.apkTrustCheckEnabled,
+                releaseNotesMode = previousConfig.releaseNotesMode
             )
             repository.saveLookupConfig(newConfig)
             state.lookupConfig = newConfig
@@ -171,7 +180,11 @@ internal class GitHubConfigActions(
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
                     installedOnlineShareTargets.any { it.packageName == selected }
                 }.orEmpty(),
-                preferredDownloaderPackage = state.preferredDownloaderPackageInput.trim()
+                preferredDownloaderPackage = state.preferredDownloaderPackageInput.trim(),
+                decisionAssistEnabled = state.decisionAssistEnabledInput,
+                repositoryHealthCardEnabled = state.repositoryHealthCardEnabledInput,
+                apkTrustCheckEnabled = state.apkTrustCheckEnabledInput,
+                releaseNotesMode = state.releaseNotesModeInput
             )
             repository.saveLookupConfig(newConfig)
             repository.saveRefreshIntervalHours(state.refreshIntervalHoursInput)
@@ -189,11 +202,17 @@ internal class GitHubConfigActions(
                 previousConfig.onlineShareTargetPackage != newConfig.onlineShareTargetPackage
             val downloaderChanged =
                 previousConfig.preferredDownloaderPackage != newConfig.preferredDownloaderPackage
+            val decisionAssistChanged =
+                previousConfig.decisionAssistEnabled != newConfig.decisionAssistEnabled ||
+                        previousConfig.repositoryHealthCardEnabled != newConfig.repositoryHealthCardEnabled ||
+                        previousConfig.apkTrustCheckEnabled != newConfig.apkTrustCheckEnabled ||
+                        previousConfig.releaseNotesMode != newConfig.releaseNotesMode
             val intervalChanged = previousRefreshIntervalHours != state.refreshIntervalHoursInput
             val preferenceChangedCount = listOf(
                 shareImportChanged,
                 onlineShareTargetChanged,
                 downloaderChanged,
+                decisionAssistChanged,
                 intervalChanged
             ).count { it }
             when {
@@ -222,6 +241,9 @@ internal class GitHubConfigActions(
                 }
                 downloaderChanged -> {
                     env.toast(R.string.github_toast_downloader_setting_saved)
+                }
+                decisionAssistChanged -> {
+                    env.toast(R.string.github_toast_preferences_saved)
                 }
                 intervalChanged -> {
                     env.toast(R.string.github_toast_refresh_interval_saved)

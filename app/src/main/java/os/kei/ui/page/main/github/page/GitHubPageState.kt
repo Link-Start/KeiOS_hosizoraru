@@ -99,6 +99,7 @@ internal class GitHubPageState(
     var checkLogicIntervalPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
+    var releaseNotesModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var pendingTrackImportPreview by mutableStateOf<GitHubTrackImportPreview?>(null)
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
     var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
@@ -119,8 +120,13 @@ internal class GitHubPageState(
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
+    var decisionAssistEnabledInput by mutableStateOf(false)
+    var repositoryHealthCardEnabledInput by mutableStateOf(false)
+    var apkTrustCheckEnabledInput by mutableStateOf(false)
+    var releaseNotesModeInput by mutableStateOf(lookupConfig.releaseNotesMode)
     var refreshIntervalHoursInput by mutableStateOf(refreshIntervalHours)
     var showApiTokenPlainText by mutableStateOf(false)
+    var showReleaseNotesModePopup by mutableStateOf(false)
     var strategyBenchmarkRunning by mutableStateOf(false)
     var strategyBenchmarkError by mutableStateOf<String?>(null)
     var strategyBenchmarkReport by mutableStateOf<GitHubStrategyBenchmarkReport?>(null)
@@ -276,6 +282,7 @@ internal class GitHubPageState(
         showCheckLogicIntervalPopup = false
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false
+        showReleaseNotesModePopup = false
         pendingTrackImportPreview = null
         showCheckLogicSheet = false
     }

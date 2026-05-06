@@ -10,21 +10,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
-import com.kyant.backdrop.backdrops.LayerBackdrop
 
 @Composable
 internal fun GitHubTrackedItemAssetPanel(
     item: GitHubTrackedApp,
     state: VersionCheckUi,
+    lookupConfig: GitHubLookupConfig,
     isDark: Boolean,
     contentBackdrop: LayerBackdrop,
     assetBundle: GitHubReleaseAssetBundle?,
@@ -109,6 +111,8 @@ internal fun GitHubTrackedItemAssetPanel(
                             summaryBorderColor = summaryBorderColor,
                             contentBackdrop = contentBackdrop,
                             supportedAbis = supportedAbis,
+                            showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
+                                    lookupConfig.apkTrustCheckEnabled,
                             context = context,
                             onOpenApkInDownloader = onOpenApkInDownloader,
                             onShareApkLink = onShareApkLink

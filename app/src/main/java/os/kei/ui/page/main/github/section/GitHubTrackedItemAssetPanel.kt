@@ -35,6 +35,7 @@ internal fun GitHubTrackedItemAssetPanel(
     assetExpanded: Boolean,
     onOpenExternalUrl: (String) -> Unit,
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
+    onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     context: Context,
@@ -114,6 +115,7 @@ internal fun GitHubTrackedItemAssetPanel(
                             showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
                                     lookupConfig.apkTrustCheckEnabled,
                             context = context,
+                            onOpenApkInfo = onOpenApkInfo,
                             onOpenApkInDownloader = onOpenApkInDownloader,
                             onShareApkLink = onShareApkLink
                         )

@@ -1,5 +1,7 @@
 package os.kei.feature.github.data.apk
 
+import os.kei.feature.github.model.GitHubApkManifestInfo
+import os.kei.feature.github.model.GitHubApkManifestMetadata
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -10,26 +12,81 @@ internal object AndroidBinaryXmlPackageNameParser {
     private const val XML_NODE_HEADER_SIZE = 16
     private const val UTF8_FLAG = 0x00000100
     private const val TYPE_STRING = 0x03
+    private const val TYPE_INT_DEC = 0x10
+    private const val TYPE_INT_HEX = 0x11
+    private const val TYPE_INT_BOOLEAN = 0x12
 
     fun parsePackageName(manifestBytes: ByteArray): Result<String> = runCatching {
+        parseManifestInfo(manifestBytes).getOrThrow().packageName.ifBlank {
+            error("AndroidManifest.xml does not expose a package name")
+        }
+    }
+
+    fun parseManifestInfo(manifestBytes: ByteArray): Result<GitHubApkManifestInfo> = runCatching {
         val buffer = ByteBuffer.wrap(manifestBytes).order(ByteOrder.LITTLE_ENDIAN)
         val strings = readStringPool(buffer)
+        var packageName = ""
+        var versionName = ""
+        var versionCode = ""
+        var minSdk = ""
+        var targetSdk = ""
+        val permissions = linkedSetOf<String>()
+        val features = linkedSetOf<String>()
+        val metadata = mutableListOf<GitHubApkManifestMetadata>()
         var offset = 0
         while (offset + 8 <= manifestBytes.size) {
             val chunkType = buffer.u16(offset)
             val chunkSize = buffer.i32(offset + 4)
             if (chunkSize <= 0 || offset + chunkSize > manifestBytes.size) break
             if (chunkType == CHUNK_XML_START_ELEMENT) {
-                val packageName = readStartElementPackageName(
+                val element = readStartElement(
                     buffer = buffer,
                     chunkOffset = offset,
                     strings = strings
                 )
-                if (packageName.isNotBlank()) return@runCatching packageName
+                when (element.name) {
+                    "manifest" -> {
+                        packageName = element.attr("package")
+                        versionName = element.attr("versionName")
+                        versionCode = element.attr("versionCode")
+                    }
+
+                    "uses-sdk" -> {
+                        minSdk = element.attr("minSdkVersion")
+                        targetSdk = element.attr("targetSdkVersion")
+                    }
+
+                    "uses-permission" -> {
+                        element.attr("name").takeIf { it.isNotBlank() }?.let(permissions::add)
+                    }
+
+                    "uses-feature" -> {
+                        element.attr("name").takeIf { it.isNotBlank() }?.let(features::add)
+                    }
+
+                    "meta-data" -> {
+                        val name = element.attr("name")
+                        val value = element.attr("value")
+                            .ifBlank { element.attr("resource") }
+                        if (name.isNotBlank()) {
+                            metadata += GitHubApkManifestMetadata(name = name, value = value)
+                        }
+                    }
+                }
             }
             offset += nextChunkStep(buffer, offset, chunkType, chunkSize)
         }
-        error("AndroidManifest.xml does not expose a package name")
+        GitHubApkManifestInfo(
+            assetName = "",
+            packageName = packageName,
+            versionName = versionName,
+            versionCode = versionCode,
+            minSdk = minSdk,
+            targetSdk = targetSdk,
+            permissions = permissions.toList(),
+            features = features.toList(),
+            metadata = metadata
+        )
     }
 
     private fun readStringPool(buffer: ByteBuffer): List<String> {
@@ -58,33 +115,60 @@ internal object AndroidBinaryXmlPackageNameParser {
         return emptyList()
     }
 
-    private fun readStartElementPackageName(
+    private fun readStartElement(
         buffer: ByteBuffer,
         chunkOffset: Int,
         strings: List<String>
-    ): String {
+    ): BinaryXmlStartElement {
         val nameIndex = buffer.i32(chunkOffset + 20)
         val elementName = strings.getOrNull(nameIndex).orEmpty()
-        if (elementName != "manifest") return ""
         val attributeStart = buffer.u16(chunkOffset + 24)
         val attributeSize = buffer.u16(chunkOffset + 26)
         val attributeCount = buffer.u16(chunkOffset + 28)
         val attributesOffset = chunkOffset + XML_NODE_HEADER_SIZE + attributeStart
+        val attrs = mutableMapOf<String, String>()
         for (index in 0 until attributeCount) {
             val attributeOffset = attributesOffset + index * attributeSize
             if (attributeOffset + 20 > buffer.capacity()) break
             val attributeName = strings.getOrNull(buffer.i32(attributeOffset + 4)).orEmpty()
-            if (attributeName != "package") continue
             val rawValueIndex = buffer.i32(attributeOffset + 8)
             val valueType = buffer.u8(attributeOffset + 15)
             val valueData = buffer.i32(attributeOffset + 16)
-            return when {
-                rawValueIndex >= 0 -> strings.getOrNull(rawValueIndex).orEmpty()
-                valueType == TYPE_STRING -> strings.getOrNull(valueData).orEmpty()
-                else -> ""
-            }.trim()
+            val value = readAttributeValue(
+                strings = strings,
+                rawValueIndex = rawValueIndex,
+                valueType = valueType,
+                valueData = valueData
+            )
+            if (attributeName.isNotBlank() && value.isNotBlank()) {
+                attrs[attributeName.removeAndroidNamespace()] = value
+            }
         }
-        return ""
+        return BinaryXmlStartElement(
+            name = elementName,
+            attributes = attrs
+        )
+    }
+
+    private fun readAttributeValue(
+        strings: List<String>,
+        rawValueIndex: Int,
+        valueType: Int,
+        valueData: Int
+    ): String {
+        return when {
+            rawValueIndex >= 0 -> strings.getOrNull(rawValueIndex).orEmpty()
+            valueType == TYPE_STRING -> strings.getOrNull(valueData).orEmpty()
+            valueType == TYPE_INT_BOOLEAN -> (valueData != 0).toString()
+            valueType == TYPE_INT_DEC -> valueData.toString()
+            valueType == TYPE_INT_HEX -> "0x${valueData.toUInt().toString(16)}"
+            valueType != 0 -> valueData.toString()
+            else -> ""
+        }.trim()
+    }
+
+    private fun String.removeAndroidNamespace(): String {
+        return substringAfter(':')
     }
 
     private fun nextChunkStep(
@@ -154,4 +238,11 @@ internal object AndroidBinaryXmlPackageNameParser {
         val value: Int,
         val nextOffset: Int
     )
+
+    private data class BinaryXmlStartElement(
+        val name: String,
+        val attributes: Map<String, String>
+    ) {
+        fun attr(name: String): String = attributes[name].orEmpty()
+    }
 }

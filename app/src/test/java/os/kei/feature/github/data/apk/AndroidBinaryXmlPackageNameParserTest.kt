@@ -12,4 +12,13 @@ class AndroidBinaryXmlPackageNameParserTest {
 
         assertEquals("os.kei.debug", packageName)
     }
+
+    @Test
+    fun `parser reads manifest info from binary Android manifest`() {
+        val manifest = BinaryManifestFixture.build(packageName = "os.kei.demo")
+
+        val info = AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest).getOrThrow()
+
+        assertEquals("os.kei.demo", info.packageName)
+    }
 }

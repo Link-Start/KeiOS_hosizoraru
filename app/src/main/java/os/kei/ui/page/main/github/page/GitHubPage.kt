@@ -284,6 +284,7 @@ fun GitHubPage(
                 }
             },
             onOpenExternalUrl = actions::openExternalUrl,
+            onOpenApkInfo = actions::openApkInfo,
             onOpenApkInDownloader = actions::openApkInDownloader,
             onShareApkLink = actions::shareApkLink,
             onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,

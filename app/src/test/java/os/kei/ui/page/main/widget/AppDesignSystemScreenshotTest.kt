@@ -337,6 +337,7 @@ class AppDesignSystemScreenshotTest {
                             supportedAbis = listOf("arm64-v8a"),
                             showApkTrustCheck = true,
                             context = ApplicationProvider.getApplicationContext(),
+                            onOpenApkInfo = {},
                             onOpenApkInDownloader = {},
                             onShareApkLink = {}
                         )

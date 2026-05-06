@@ -10,11 +10,52 @@ import java.util.zip.Inflater
 internal class RemoteZipEntryReader(
     private val client: OkHttpClient = defaultClient
 ) {
+    fun listEntryNames(
+        url: String,
+        apiToken: String = ""
+    ): Result<List<String>> = runCatching {
+        val centralDirectory = fetchCentralDirectory(url = url, apiToken = apiToken).bytes
+        buildList {
+            var offset = 0
+            while (offset + CENTRAL_DIRECTORY_HEADER_SIZE <= centralDirectory.size) {
+                if (centralDirectory.i32(offset) != CENTRAL_DIRECTORY_SIGNATURE) break
+                val nameLength = centralDirectory.u16(offset + 28)
+                val extraLength = centralDirectory.u16(offset + 30)
+                val commentLength = centralDirectory.u16(offset + 32)
+                val nameStart = offset + CENTRAL_DIRECTORY_HEADER_SIZE
+                val nameEnd = nameStart + nameLength
+                if (nameEnd > centralDirectory.size) break
+                add(String(centralDirectory, nameStart, nameLength, Charsets.UTF_8))
+                offset = nameEnd + extraLength + commentLength
+            }
+        }
+    }
+
     fun readEntry(
         url: String,
         entryName: String,
         apiToken: String = ""
     ): Result<ByteArray> = runCatching {
+        val directory = fetchCentralDirectory(url = url, apiToken = apiToken)
+        val entry = findCentralDirectoryEntry(directory.bytes, entryName)
+            ?: error("$entryName was not found in APK")
+        val compressedBytes = fetchEntryCompressedBytes(
+            url = directory.resolvedUrl,
+            entry = entry,
+            centralDirectoryOffset = directory.offset,
+            apiToken = apiToken
+        )
+        when (entry.compressionMethod) {
+            ZIP_METHOD_STORED -> compressedBytes
+            ZIP_METHOD_DEFLATED -> inflateRaw(compressedBytes, entry.uncompressedSize)
+            else -> error("APK manifest compression method is unsupported: ${entry.compressionMethod}")
+        }
+    }
+
+    private fun fetchCentralDirectory(
+        url: String,
+        apiToken: String
+    ): CentralDirectoryBytes {
         val probe = fetchRangeProbe(url = url, apiToken = apiToken)
         val totalSize = probe.totalSize
         val rangeUrl = probe.resolvedUrl
@@ -39,25 +80,16 @@ internal class RemoteZipEntryReader(
         check(eocdAbsoluteOffset >= centralDirectoryOffset) {
             "APK central directory offset is invalid"
         }
-        val centralDirectory = fetchRange(
-            url = rangeUrl,
-            start = centralDirectoryOffset,
-            endInclusive = centralDirectoryOffset + centralDirectorySize - 1L,
-            apiToken = apiToken
-        ).bytes
-        val entry = findCentralDirectoryEntry(centralDirectory, entryName)
-            ?: error("$entryName was not found in APK")
-        val compressedBytes = fetchEntryCompressedBytes(
-            url = rangeUrl,
-            entry = entry,
-            centralDirectoryOffset = centralDirectoryOffset,
-            apiToken = apiToken
+        return CentralDirectoryBytes(
+            bytes = fetchRange(
+                url = rangeUrl,
+                start = centralDirectoryOffset,
+                endInclusive = centralDirectoryOffset + centralDirectorySize - 1L,
+                apiToken = apiToken
+            ).bytes,
+            offset = centralDirectoryOffset,
+            resolvedUrl = rangeUrl
         )
-        when (entry.compressionMethod) {
-            ZIP_METHOD_STORED -> compressedBytes
-            ZIP_METHOD_DEFLATED -> inflateRaw(compressedBytes, entry.uncompressedSize)
-            else -> error("APK manifest compression method is unsupported: ${entry.compressionMethod}")
-        }
     }
 
     private fun fetchEntryCompressedBytes(
@@ -284,6 +316,12 @@ internal class RemoteZipEntryReader(
 
     private data class RangeProbe(
         val totalSize: Long,
+        val resolvedUrl: String
+    )
+
+    private data class CentralDirectoryBytes(
+        val bytes: ByteArray,
+        val offset: Long,
         val resolvedUrl: String
     )
 

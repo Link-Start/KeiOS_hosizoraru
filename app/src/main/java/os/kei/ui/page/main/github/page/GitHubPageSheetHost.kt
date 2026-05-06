@@ -6,6 +6,7 @@ import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.sheet.GitHubActionsArtifactDetailSheet
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
 import os.kei.ui.page.main.github.sheet.GitHubDecisionAssistDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
@@ -199,6 +200,17 @@ internal fun GitHubPageSheetHost(
         onRefreshRun = actions::refreshActionsRunStatus,
         onDownload = actions::downloadActionsArtifact,
         onShare = actions::shareActionsArtifact
+    )
+
+    val apkInfoAsset = state.apkInfoDetailRequest
+    val apkInfoKey = apkInfoAsset?.githubApkInfoKey().orEmpty()
+    GitHubApkInfoSheet(
+        asset = apkInfoAsset,
+        info = state.apkInfoResults[apkInfoKey],
+        loading = state.apkInfoLoading[apkInfoKey] == true,
+        error = state.apkInfoErrors[apkInfoKey].orEmpty(),
+        backdrop = backdrops.sheet,
+        onDismissRequest = { state.apkInfoDetailRequest = null }
     )
 
     GitHubTrackEditSheet(

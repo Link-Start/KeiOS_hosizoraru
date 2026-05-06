@@ -1,15 +1,19 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.statusActionUrl
 
 internal class GitHubAssetActions(
@@ -20,6 +24,7 @@ internal class GitHubAssetActions(
     private val state get() = env.state
     private val repository get() = env.repository
     private val systemDmOption get() = env.systemDmOption
+    private val apkInfoRepository = GitHubApkInfoRepository()
 
     fun openExternalUrl(
         url: String,
@@ -39,6 +44,29 @@ internal class GitHubAssetActions(
     fun openApkInDownloader(asset: GitHubReleaseAssetFile) {
         scope.launch {
             openApkInDownloaderInternal(asset)
+        }
+    }
+
+    fun openApkInfo(asset: GitHubReleaseAssetFile) {
+        val key = asset.githubApkInfoKey()
+        state.apkInfoDetailRequest = asset
+        if (state.apkInfoResults[key] != null || state.apkInfoLoading[key] == true) return
+        state.apkInfoLoading[key] = true
+        state.apkInfoErrors.remove(key)
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                apkInfoRepository.inspect(
+                    asset = asset,
+                    lookupConfig = state.lookupConfig
+                )
+            }
+            state.apkInfoLoading[key] = false
+            result.onSuccess { info ->
+                state.apkInfoResults[key] = info
+            }.onFailure { error ->
+                state.apkInfoErrors[key] = error.message
+                    ?: context.getString(R.string.github_apk_info_error_failed)
+            }
         }
     }
 

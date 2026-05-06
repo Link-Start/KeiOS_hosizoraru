@@ -6,9 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.domain.GitHubStarImportClassifier
@@ -16,6 +20,8 @@ import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.widget.core.AppSurfaceCard
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -33,6 +39,12 @@ internal fun GitHubStarImportConfirmDialog(
 ) {
     if (candidates.isEmpty()) return
     val summary = buildStarImportConfirmSummary(candidates, verificationStates)
+    val groups = buildStarImportConfirmGroups(candidates, verificationStates)
+    val expandedGroups = remember(candidates, verificationStates) {
+        mutableStateMapOf<StarImportConfirmGroupKey, Boolean>().apply {
+            groups.forEach { group -> put(group.key, group.initiallyExpanded) }
+        }
+    }
     WindowDialog(
         show = true,
         title = stringResource(R.string.github_star_import_confirm_title),
@@ -46,42 +58,14 @@ internal fun GitHubStarImportConfirmDialog(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Spacer(modifier = Modifier.height(16.dp))
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_quality_likely_android),
-                value = summary.likelyAndroidCount,
-                color = GitHubStatusPalette.Update
-            )
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_quality_needs_review),
-                value = summary.needsReviewCount,
-                color = GitHubStatusPalette.Active
-            )
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_quality_other_platform),
-                value = summary.otherPlatformCount,
-                color = MiuixTheme.colorScheme.onBackgroundVariant
-            )
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_quality_archived_or_fork),
-                value = summary.archivedOrForkCount,
-                color = GitHubStatusPalette.Error
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_apk_confirm_has_apk),
-                value = summary.hasApkCount,
-                color = GitHubStatusPalette.Update
-            )
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_apk_confirm_no_apk),
-                value = summary.noApkCount,
-                color = MiuixTheme.colorScheme.onBackgroundVariant
-            )
-            StarImportConfirmMetricRow(
-                label = stringResource(R.string.github_star_import_apk_confirm_unverified),
-                value = summary.unverifiedCount,
-                color = GitHubStatusPalette.Active
-            )
+            groups.forEach { group ->
+                StarImportConfirmGroupCard(
+                    group = group,
+                    expanded = expandedGroups[group.key] == true,
+                    onExpandedChange = { expanded -> expandedGroups[group.key] = expanded }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             if (summary.riskyCount > 0) {
                 Text(
                     text = stringResource(
@@ -162,23 +146,85 @@ internal fun GitHubStarImportExitConfirmDialog(
 }
 
 @Composable
-private fun StarImportConfirmMetricRow(
-    label: String,
-    value: Int,
-    color: androidx.compose.ui.graphics.Color
+private fun StarImportConfirmGroupCard(
+    group: StarImportConfirmGroup,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+    AppSurfaceCard(
+        containerColor = MiuixTheme.colorScheme.surfaceContainer,
+        borderColor = MiuixTheme.colorScheme.outline.copy(alpha = 0.16f),
+        onClick = { onExpandedChange(!expanded) }
     ) {
-        Text(
-            text = label,
-            color = MiuixTheme.colorScheme.onBackground
-        )
-        StatusPill(
-            label = value.toString(),
-            color = color
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stringResource(group.titleRes),
+                    modifier = Modifier.weight(1f),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StatusPill(
+                        label = group.candidates.size.toString(),
+                        color = group.color
+                    )
+                    Text(
+                        text = stringResource(
+                            if (expanded) {
+                                R.string.github_star_import_confirm_group_collapse
+                            } else {
+                                R.string.github_star_import_confirm_group_expand
+                            }
+                        ),
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight
+                    )
+                }
+            }
+            Text(
+                text = stringResource(group.summaryRes),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight
+            )
+            if (expanded) {
+                group.candidates.take(STAR_IMPORT_GROUP_PREVIEW_LIMIT).forEach { candidate ->
+                    Text(
+                        text = candidate.repository.fullName,
+                        color = MiuixTheme.colorScheme.onBackground,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                val hiddenCount = group.candidates.size - STAR_IMPORT_GROUP_PREVIEW_LIMIT
+                if (hiddenCount > 0) {
+                    Text(
+                        text = stringResource(
+                            R.string.github_star_import_confirm_group_more,
+                            hiddenCount
+                        ),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -208,6 +254,83 @@ private fun buildStarImportConfirmSummary(
     )
 }
 
+private fun buildStarImportConfirmGroups(
+    candidates: List<GitHubRepositoryImportCandidate>,
+    verificationStates: Map<String, StarImportApkVerificationUiState>
+): List<StarImportConfirmGroup> {
+    val grouped = candidates.groupBy { candidate ->
+        val verificationStatus = verificationStates[candidate.trackedApp.id]?.verification?.status
+        val quality = GitHubStarImportClassifier.classify(candidate)
+        when {
+            verificationStatus == GitHubStarImportApkVerificationStatus.HasApk ->
+                StarImportConfirmGroupKey.VerifiedApk
+
+            verificationStatus == GitHubStarImportApkVerificationStatus.NoApk ||
+                    verificationStatus == GitHubStarImportApkVerificationStatus.Failed ->
+                StarImportConfirmGroupKey.NoApkOrFailed
+
+            quality == GitHubStarImportQuality.OtherPlatform ||
+                    quality == GitHubStarImportQuality.ArchivedOrFork ->
+                StarImportConfirmGroupKey.OtherPlatformOrArchived
+
+            else -> StarImportConfirmGroupKey.Unverified
+        }
+    }
+    return StarImportConfirmGroupKey.entries.mapNotNull { key ->
+        val items = grouped[key].orEmpty()
+        if (items.isEmpty()) return@mapNotNull null
+        StarImportConfirmGroup(
+            key = key,
+            candidates = items.sortedBy { it.repository.fullName.lowercase() },
+            titleRes = key.titleRes,
+            summaryRes = key.summaryRes,
+            color = key.color,
+            initiallyExpanded = key.initiallyExpanded
+        )
+    }
+}
+
+private enum class StarImportConfirmGroupKey(
+    val titleRes: Int,
+    val summaryRes: Int,
+    val color: androidx.compose.ui.graphics.Color,
+    val initiallyExpanded: Boolean
+) {
+    NoApkOrFailed(
+        titleRes = R.string.github_star_import_confirm_group_no_apk,
+        summaryRes = R.string.github_star_import_confirm_group_no_apk_summary,
+        color = GitHubStatusPalette.Error,
+        initiallyExpanded = true
+    ),
+    OtherPlatformOrArchived(
+        titleRes = R.string.github_star_import_confirm_group_other,
+        summaryRes = R.string.github_star_import_confirm_group_other_summary,
+        color = GitHubStatusPalette.Cache,
+        initiallyExpanded = true
+    ),
+    Unverified(
+        titleRes = R.string.github_star_import_confirm_group_unverified,
+        summaryRes = R.string.github_star_import_confirm_group_unverified_summary,
+        color = GitHubStatusPalette.Active,
+        initiallyExpanded = false
+    ),
+    VerifiedApk(
+        titleRes = R.string.github_star_import_confirm_group_verified,
+        summaryRes = R.string.github_star_import_confirm_group_verified_summary,
+        color = GitHubStatusPalette.Update,
+        initiallyExpanded = false
+    )
+}
+
+private data class StarImportConfirmGroup(
+    val key: StarImportConfirmGroupKey,
+    val candidates: List<GitHubRepositoryImportCandidate>,
+    val titleRes: Int,
+    val summaryRes: Int,
+    val color: androidx.compose.ui.graphics.Color,
+    val initiallyExpanded: Boolean
+)
+
 private data class StarImportConfirmSummary(
     val likelyAndroidCount: Int,
     val needsReviewCount: Int,
@@ -218,3 +341,5 @@ private data class StarImportConfirmSummary(
     val unverifiedCount: Int,
     val riskyCount: Int
 )
+
+private const val STAR_IMPORT_GROUP_PREVIEW_LIMIT = 6

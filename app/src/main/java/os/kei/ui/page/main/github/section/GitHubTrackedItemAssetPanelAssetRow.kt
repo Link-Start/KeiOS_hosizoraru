@@ -30,6 +30,7 @@ import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.prefersApiAssetTransport
 import os.kei.ui.page.main.github.buildGitHubApkTrustSignal
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -51,6 +52,7 @@ internal fun GitHubTrackedItemAssetRow(
     supportedAbis: List<String>,
     showApkTrustCheck: Boolean,
     context: Context,
+    onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit
 ) {
@@ -62,6 +64,7 @@ internal fun GitHubTrackedItemAssetRow(
     val actionButtonColor = MiuixTheme.colorScheme.primary
     val abiLabel = assetAbiLabel(asset.name)
     val extensionLabel = assetFileExtensionLabel(asset.name)
+    val isApkAsset = asset.name.endsWith(".apk", ignoreCase = true)
     val displayName = assetDisplayName(asset.name)
     val sizeLabel = formatAssetSize(asset.sizeBytes, context)
     val relativeTimeLabel = assetRelativeTimeLabel(asset.updatedAtMillis, context)
@@ -106,6 +109,18 @@ internal fun GitHubTrackedItemAssetRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (isApkAsset) {
+                    AppCompactIconAction(
+                        icon = appLucideInfoIcon(),
+                        contentDescription = context.getString(
+                            R.string.github_cd_view_apk_info,
+                            asset.name
+                        ),
+                        tint = actionButtonColor,
+                        onClick = { onOpenApkInfo(asset) },
+                        minSize = 34.dp
+                    )
+                }
                 AppCompactIconAction(
                     icon = appLucideDownloadIcon(),
                     contentDescription = sizeLabel,

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsBranchOption
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
@@ -27,6 +28,7 @@ import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -108,6 +110,7 @@ internal class GitHubPageState(
     var pendingShareImportAttachCandidate by mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null)
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
+    var apkInfoDetailRequest by mutableStateOf<GitHubReleaseAssetFile?>(null)
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(GitHubSortMode.UpdateFirst)
     var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)
@@ -156,6 +159,9 @@ internal class GitHubPageState(
     val apkAssetIncludeAll = mutableStateMapOf<String, Boolean>()
     val releaseNotesLoading = mutableStateMapOf<String, Boolean>()
     val releaseNotesErrors = mutableStateMapOf<String, String>()
+    val apkInfoLoading = mutableStateMapOf<String, Boolean>()
+    val apkInfoErrors = mutableStateMapOf<String, String>()
+    val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
@@ -219,6 +225,9 @@ internal class GitHubPageState(
         apkAssetIncludeAll.clear()
         releaseNotesLoading.clear()
         releaseNotesErrors.clear()
+        apkInfoLoading.clear()
+        apkInfoErrors.clear()
+        apkInfoResults.clear()
     }
 
     fun clearAssetRuntimeState(itemId: String) {
@@ -383,6 +392,10 @@ internal data class GitHubActionsArtifactDetailRequest(
     val artifactMatch: GitHubActionsArtifactMatch,
     val recommended: Boolean
 )
+
+internal fun GitHubReleaseAssetFile.githubApkInfoKey(): String {
+    return listOf(name, downloadUrl, apiAssetUrl, sizeBytes.toString()).joinToString("|")
+}
 
 @Composable
 internal fun rememberGitHubPageState(viewModel: GitHubPageViewModel): GitHubPageState {

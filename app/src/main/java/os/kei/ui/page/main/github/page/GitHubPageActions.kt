@@ -218,6 +218,8 @@ internal class GitHubPageActions(
 
     fun openApkInDownloader(asset: GitHubReleaseAssetFile) = assetActions.openApkInDownloader(asset)
 
+    fun openApkInfo(asset: GitHubReleaseAssetFile) = assetActions.openApkInfo(asset)
+
     fun clearApkAssetUiState(itemId: String) = assetActions.clearApkAssetUiState(itemId)
 
     fun clearApkAssetCache(item: GitHubTrackedApp, itemState: VersionCheckUi) =

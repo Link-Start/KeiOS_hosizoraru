@@ -81,6 +81,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
             projectUrl = projectUrl,
             owner = owner,
             repo = repo,
+            packageName = packageName,
             message = context.getString(R.string.github_share_import_notify_content_cancelled)
         )
     }

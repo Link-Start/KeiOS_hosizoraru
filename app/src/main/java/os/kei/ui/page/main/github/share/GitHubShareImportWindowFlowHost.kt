@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -511,10 +512,12 @@ internal fun GitHubShareImportWindowFlowHost(
                 val lookupConfig = withContext(Dispatchers.IO) { GitHubTrackStore.loadLookupConfig() }
                 phase = GitHubShareImportPhase.Delivering
                 notifyShareImportDelivering(context, preview, selectedAsset.name)
-                val scannedPackageName = scanShareImportAssetPackageName(
-                    asset = selectedAsset,
-                    lookupConfig = lookupConfig
-                ).getOrDefault("")
+                val scannedPackageNameDeferred = scope.async {
+                    scanShareImportAssetPackageName(
+                        asset = selectedAsset,
+                        lookupConfig = lookupConfig
+                    ).getOrDefault("")
+                }
                 val deliveryResult = sendAssetToConfiguredChannel(
                     context = context,
                     lookupConfig = lookupConfig,
@@ -522,6 +525,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 )
                 when (deliveryResult) {
                     is ShareImportDeliveryResult.Failure -> {
+                        scannedPackageNameDeferred.cancel()
                         phase = GitHubShareImportPhase.Failed
                         notifyShareImportFailed(
                             context = context,
@@ -535,6 +539,7 @@ internal fun GitHubShareImportWindowFlowHost(
                     }
                 }
 
+                val scannedPackageName = scannedPackageNameDeferred.await()
                 val pending = GitHubPendingShareImportTrackRecord(
                     projectUrl = preview.projectUrl,
                     owner = preview.owner,

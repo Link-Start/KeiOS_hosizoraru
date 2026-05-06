@@ -17,23 +17,27 @@
   <a href="https://github.com/hosizoraru/KeiOS/actions/workflows/ci-benchmark-apk.yml"><img alt="Benchmark APK CI" src="https://github.com/hosizoraru/KeiOS/actions/workflows/ci-benchmark-apk.yml/badge.svg?branch=master"></a>
   <img alt="minSdk" src="https://img.shields.io/badge/minSdk-35-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="targetSdk" src="https://img.shields.io/badge/targetSdk-37-3DDC84?style=flat-square&logo=android&logoColor=white">
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.10.6-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.0-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
 </p>
 
-KeiOS is an Android utility console for system inspection, local MCP service control, GitHub Releases and Actions artifact workflows, and Blue Archive helper tools. It combines a Compose + Miuix interface with liquid-glass style chrome, dense status cards, import/export tools, localized MCP skills, notifications, and cache diagnostics.
+KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
+Releases / Actions workflows, GitHub Star import, and Blue Archive helper tools. It combines a
+Compose + Miuix interface with v2 liquid-glass chrome, dense status cards, import/export tools,
+localized MCP skills, notification helpers, repository discovery, and cache diagnostics.
 
 ## Project Signals
 
-| Item | Value |
-| --- | --- |
-| Stable package | `os.kei` |
-| Supported ABI | `arm64-v8a` |
-| Android baseline | Android 15+ (`minSdk 35`) |
-| Target SDK | Android 17 / API 37 |
-| UI stack | Jetpack Compose, Miuix, liquid-glass chrome |
-| Runtime stack | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
-| Languages | Simplified Chinese, English, Japanese |
+| Item                 | Value                                                |
+|----------------------|------------------------------------------------------|
+| Stable package       | `os.kei`                                             |
+| Supported ABI        | `arm64-v8a`                                          |
+| Android baseline     | Android 15+ (`minSdk 35`)                            |
+| Target SDK           | Android 17 / API 37                                  |
+| UI stack             | Jetpack Compose, Miuix, liquid-glass chrome          |
+| Runtime stack        | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
+| Languages            | Simplified Chinese, English, Japanese                |
+| Current tag baseline | `v1.3.14`                                            |
 
 ## Quick Links
 
@@ -43,16 +47,29 @@ KeiOS is an Android utility console for system inspection, local MCP service con
 - [Benchmark APK CI artifact](https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master)
 - [Feature Overview](readme/FEATURES.md)
 - [Build Guide](readme/BUILD.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
 
 ## Main Features
 
-- Home dashboard with compact MCP, GitHub, BA, Shizuku, and share-import status.
+- Home dashboard with compact MCP, GitHub, BA, Shizuku, Actions, cache, and share-import status.
 - OS tools for system tables, Android/Java/Linux properties, activity shortcuts, Shizuku shell cards, and card import/export.
-- Local MCP server controls with config copy, runtime logs, foreground service support, Claw onboarding, localized SKILL.md output, and tools for Home, OS, GitHub, and BA snapshots.
-- GitHub tracking for Releases and Actions artifacts, with prerelease strategies, nightly.link or token-backed Actions lookup, branch/workflow/run/artifact selection, share-import links, and installed-app linkage.
-- BA office helpers for AP, cafe visit, arena refresh reminders, server-aware timing, media settings, Super Island notifications, and student-guide entry points.
-- Student Guide catalog with search, sorting, media cache, voice-language labels, BGM favorites, gallery viewing, media export, and import/export for favorites.
-- Settings for theme, motion, liquid-glass components, bottom-bar effect policy, background images, app language, permissions, cache diagnostics, logs, and notification compatibility.
+- Local MCP server controls with config copy, runtime logs, foreground service support, Claw
+  onboarding, localized SKILL.md output, and 42 tools across runtime, Home, OS, GitHub
+  discovery/tracking, and BA cache inspection.
+- GitHub tracking for Releases and Actions artifacts, with Atom/API strategy comparison,
+  package-name scanning from release APKs, reverse repository scanning from installed packages,
+  share-import links, app linkage, and Star List import.
+- GitHub Star import activity for authenticated stars, public user stars, and public Star List URLs,
+  with list discovery, quality filters, multi-select import, APK verification, and exit
+  confirmation.
+- BA office helpers for AP, cafe visit, arena refresh reminders, server-aware calendar/pool data,
+  per-server ID cards, media settings, Super Island notifications, and student-guide entry points.
+- Student Guide catalog with full-page search, sorting, media cache, voice-language labels, BGM
+  favorites, gallery viewing, media export, liquid bottom dock, and import/export for favorites.
+- Settings for theme, motion, v2 liquid-glass components, bottom-bar effect policy, search focus
+  behavior, grip-aware floating docks, background images, app language, permissions, cache
+  diagnostics, logs, and notification compatibility.
 
 Read the full feature tour:
 - [Feature Overview (EN)](readme/FEATURES.md)
@@ -61,9 +78,10 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.3.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.2).
+- Current stable tag: [v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
-- Runtime and build baseline: `targetSdk=37`, Java 21, Kotlin/Gradle project toolchain.
+- Runtime and build baseline: `targetSdk=37`, Java 21, Kotlin `2.3.21`, Compose `1.11.0`, Android
+  Gradle Plugin `9.2.0`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
@@ -73,6 +91,9 @@ Read the full feature tour:
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)
 - [待办清单 (CN)](readme/TODO_CN.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
 
 ## Star History
 

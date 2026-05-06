@@ -13,7 +13,7 @@ KeiOS is built primarily with:
 - Android minSdk 35
 - Miuix and custom liquid glass style UI components
 
-For local build instructions, please read `README_BUILD.md` and `README_CN_BUILD.md`.
+For local build instructions, please read `readme/BUILD.md` and `readme/BUILD_CN.md`.
 
 ## Issues
 
@@ -57,5 +57,5 @@ affected screen on a device or emulator, and reviewing logs.
 ## Documentation
 
 Update documentation when the user-facing behavior, build process, setup flow, or contribution
-workflow changes. If your change affects local builds, check whether `README_BUILD.md` or
-`README_CN_BUILD.md` should be updated.
+workflow changes. If your change affects local builds, check whether `readme/BUILD.md` or
+`readme/BUILD_CN.md` should be updated.

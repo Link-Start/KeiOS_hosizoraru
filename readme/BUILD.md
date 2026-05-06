@@ -5,7 +5,8 @@
 ## Install Channels
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- The latest public release is [KeiOS v1.3.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.2).
+- The latest public tag baseline
+  is [KeiOS v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14).
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -18,13 +19,18 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Gradle daemon + Java compile + Kotlin JVM target are all aligned to Java 21.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
+- Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.0`; Compose runtime: `1.11.0`.
 - Keep local JDK paths and tokens in untracked local config files.
 
 ### Versioning
 
 - Release builds use the latest merged semver tag as the base version.
 - Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.2.5+12.gabcdef0`.
-- CI APK file names include variant, ABI, versionName, versionCode, short SHA, run number, and attempt number.
+- Current CI artifact names are intentionally compact: `KeiOS_<versionName>` with an APK file named
+  `KeiOS_<versionName>.apk`.
+- Workflow run names include `D#<run_number>` for debug and `B#<run_number>` for benchmark, and job
+  summaries print the full commit SHA, run number, versionName, versionCode, application ID, and
+  artifact digest.
 
 ### Required Local Secrets (for dependency resolution)
 
@@ -93,15 +99,16 @@ Current baseline scope:
 
 Workflow: `.github/workflows/ci-debug-apk.yml`
 
-- Trigger: `push` on `master`; Markdown/readme-only changes are ignored.
+- Trigger: `push` and non-draft `pull_request` on `master`; Markdown/readme-only changes are
+  ignored.
 - Manual trigger: `workflow_dispatch` with optional `commit` (commit SHA / branch / tag).
 - Job output: debug APK artifact uploaded to GitHub Actions.
 - Intended use: quick preview builds for development validation.
 - Signing: the shared CI debug keystore in `app/signing/` is used only for debug/benchmark artifacts.
 - Retention: 14 days.
 - nightly.link: `https://nightly.link/hosizoraru/KeiOS/workflows/ci-debug-apk/master`
-- APK file name format: `keios-android-debug-apk-arm64-v8a-v<versionName>-<versionCode>-<shortSha>-run-<run_number>-attempt-<attempt>.apk`.
-- Artifact name format: `keios-android-debug-apk-arm64-v8a-v<versionName>-<versionCode>-<shortSha>-run-<run_number>-attempt-<attempt>`.
+- APK file name format: `KeiOS_<versionName>.apk`.
+- Artifact name format: `KeiOS_<versionName>`.
 
 ## GitHub Actions: CI / Benchmark APK
 
@@ -116,12 +123,14 @@ Workflow: `.github/workflows/ci-benchmark-apk.yml`
 - Signing: the shared CI debug keystore in `app/signing/` is used only for debug/benchmark artifacts.
 - Retention: 14 days.
 - nightly.link: `https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master`
-- APK file name format: `keios-android-benchmark-apk-arm64-v8a-v<versionName>-<versionCode>-<shortSha>-run-<run_number>-attempt-<attempt>.apk`.
-- Artifact name format: `keios-android-benchmark-apk-arm64-v8a-v<versionName>-<versionCode>-<shortSha>-run-<run_number>-attempt-<attempt>`.
+- APK file name format: `KeiOS_<versionName>.apk`.
+- Artifact name format: `KeiOS_<versionName>`.
 
 ## GitHub Live Benchmark Test
 
-`GitHubStrategyLiveBenchmarkTest` is an opt-in network test that compares Atom vs API strategy behavior against live repositories.
+`GitHubStrategyLiveBenchmarkTest` is an opt-in network test that compares Atom vs API strategy
+behavior against live repositories. It covers release reads, strategy cache warm samples,
+package-name scanning from release APKs, and reverse repository scans from package names.
 
 ### Enable Gate (default is disabled)
 
@@ -168,5 +177,9 @@ One-off CLI example (without editing local properties):
 - Both strategies execute and produce benchmark results.
 - Target list is non-empty.
 - Warm samples are served from strategy cache.
+- Package-name scan samples can read package IDs from AndroidManifest data inside release APK
+  assets.
+- Repository-scan samples can search candidates by package/app label and verify matches through APK
+  package-name scans.
 
 Because this is a live network benchmark, failures can still come from GitHub API/network/rate-limit conditions.

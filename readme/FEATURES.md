@@ -2,11 +2,16 @@
 
 [中文版本 (CN)](FEATURES_CN.md)
 
-KeiOS is built as a daily Android utility console. The app brings together system inspection, MCP service management, GitHub Releases and Actions artifact tracking, Blue Archive office reminders, and a Student Guide media browser in one phone-first interface.
+KeiOS is built as a daily Android utility console. The app brings together system inspection, MCP
+service management, GitHub Releases / Actions tracking, GitHub Star import, repository discovery,
+Blue Archive office reminders, and a Student Guide media browser in one phone-first interface.
 
 ## Home
 
-Home is the status hub. It summarizes MCP runtime state, GitHub update/cache status, Actions/share-import readiness, BA AP values, cafe AP, AP headroom, active BA server, Shizuku status, and the currently visible page/card layout. Users can adjust bottom-page visibility and Home summary cards from the top action area.
+Home is the status hub. It summarizes MCP runtime state, GitHub stable/prerelease update counts,
+cache status, Actions/share-import readiness, BA AP values, cafe AP, AP headroom, active BA server,
+Shizuku status, and the currently visible page/card layout. Users can adjust bottom-page visibility
+and Home summary cards from the top action area.
 
 ## OS
 
@@ -18,6 +23,7 @@ The OS page focuses on device and system inspection:
 - Separate import/export flows for activity cards and shell cards with preview and merge handling.
 - Shizuku-powered shell runner with command history, formatted output, timeout controls, dangerous-command confirmation, and save-to-card support.
 - Cached system snapshots for faster return visits.
+- v2 liquid floating dock controls for add, refresh, search, and page actions.
 
 ## MCP
 
@@ -26,7 +32,8 @@ The MCP page manages a local KeiOS MCP server:
 - Start/stop controls, local-only or LAN-oriented connection settings, port/path/token display, and config copy.
 - MCP tool overview, runtime logs, and importable config generation.
 - Claw Skill quick setup prompt, localized SKILL.md generation, and tool-level help resources.
-- MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import, and Blue Archive cache inspection.
+- 42 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
+  Star List import, package scans, reverse repository scans, and Blue Archive cache inspection.
 - Foreground keep-alive service and test notifications.
 - HyperOS Super Island template support and AOSP Live Update fallback settings through the notification compatibility controls.
 
@@ -40,9 +47,16 @@ The GitHub page tracks APK releases from GitHub projects:
 - GitHub Actions browser for branches, workflows, runs, and artifacts, with nightly.link public lookup and token-backed GitHub API lookup.
 - Branch recommendation that considers the default branch, recent activity, successful runs, and artifact availability.
 - Artifact ranking that highlights Android packages, build types, universal packages, recency, and previous download history.
-- Tracked-item editing with app package linkage and installed-app matching.
+- Tracked-item editing with app package linkage, installed-app matching, package-name scanning from
+  latest stable release APKs, and reverse repository scanning from package name plus app label.
 - Share-import flow for repository, release, tag, and direct APK links.
-- Refresh notifications, local cache summaries, and self-track shortcut for KeiOS.
+- Star List import from authenticated stars, public user stars, and public Star List URLs, with list
+  discovery, search, multi-select filters, Android/APK quality classification, release APK
+  verification, and import confirmation.
+- Strategy diagnostics that compare Atom and API behavior for release checks, package-name scans,
+  and reverse repository scans.
+- Expandable overview cards, refresh notifications, local cache summaries, and self-track shortcut
+  for KeiOS.
 
 ## BA Office
 
@@ -50,9 +64,11 @@ The BA page acts as a Blue Archive office dashboard:
 
 - AP and cafe AP tracking with server-aware timing.
 - AP threshold notifications, cafe visit reminders, arena refresh reminders, and BA-specific Super Island presentation.
-- Friend code copy and office overview cards.
+- Server-specific nickname and friend-code ID cards, plus friend code copy and office overview
+  cards.
 - Server, cafe level, AP threshold, media rotation, and custom media save-location settings.
-- Calendar and pool cards with student-guide entry points.
+- Server-aware calendar and pool cards with in-title server context, compact time layout,
+  notification settings, and student-guide entry points.
 
 ## Student Guide
 
@@ -61,19 +77,24 @@ The student guide expands the BA workflow into catalog and media browsing:
 - Catalog tabs for students and related entries, with search, sort, compact localized labels, sync status, and local caching.
 - Student detail pages with profile, strategy/simulation sections, gallery media, localized voice-language labels, audio/video content, and source sharing.
 - Gift preference parsing with image and attitude markers.
-- BGM favorites library with playback queue, batch cache, retry, import/export, and jump back into the student guide.
+- BGM favorites library with playback queue, liquid bottom dock, mini player, batch cache, retry,
+  import/export, and jump back into the student guide.
 - Media cache controls and export flows, including archive-style saves for expression/media packs.
 
 ## Settings And Compatibility
 
 Settings collect the runtime controls in one place:
 
-- Theme mode, transition animations, predictive back, preloading, app language shortcut, and Home HDR highlight.
-- Liquid-glass ActionBar, liquid bottom bar, bottom-bar full-effect policy during scrolling, and card press feedback.
+- Theme mode, transition animations, predictive back, search focus behavior, preloading, app
+  language shortcut, and Home HDR highlight.
+- v2 liquid-glass ActionBar, title cards, search fields, floating docks, bottom bar, bottom-bar
+  full-effect policy during scrolling, and scoped card press feedback.
 - Custom non-Home background image and opacity controls.
 - Notification permission, battery optimization, OEM autostart, app-list access, and Shizuku status.
 - Super Island notification style, HyperOS compatibility bypass, and restore-delay tuning.
 - Copy/text-selection mode, cache diagnostics, debug logs, exportable log ZIPs, and clear-cache actions.
+- Debug component lab and liquid catalog for checking shared chrome, buttons, dropdowns, sliders,
+  progress bars, and dock behavior.
 - Simplified Chinese, English, and Japanese resources, with BA terms, Android settings, GitHub, shell, and MCP skill text localized for display surfaces.
 
 ## Platform Baseline
@@ -81,5 +102,7 @@ Settings collect the runtime controls in one place:
 - Package: `os.kei`.
 - ABI: `arm64-v8a`.
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
-- UI stack: Jetpack Compose, Miuix KMP, Lifecycle ViewModel Compose, custom liquid-glass chrome, MMKV-backed preferences.
-- Build baseline: Java 21 and Gradle project tooling.
+- UI stack: Jetpack Compose `1.11.0`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
+  chrome, MMKV-backed preferences.
+- Build baseline: Java 21, Kotlin `2.3.21`, Android Gradle Plugin `9.2.0`, and Gradle project
+  tooling.

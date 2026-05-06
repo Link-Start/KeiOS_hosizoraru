@@ -17,23 +17,26 @@
   <a href="https://github.com/hosizoraru/KeiOS/actions/workflows/ci-benchmark-apk.yml"><img alt="Benchmark APK CI" src="https://github.com/hosizoraru/KeiOS/actions/workflows/ci-benchmark-apk.yml/badge.svg?branch=master"></a>
   <img alt="minSdk" src="https://img.shields.io/badge/minSdk-35-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="targetSdk" src="https://img.shields.io/badge/targetSdk-37-3DDC84?style=flat-square&logo=android&logoColor=white">
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.10.6-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.0-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
 </p>
 
-KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务、GitHub Releases / Actions artifact、Blue Archive 辅助与学生图鉴功能。应用使用 Compose + Miuix 构建，并提供液态玻璃风格界面、高密度状态卡、导入导出、本地化 MCP Skill、通知提醒和缓存诊断。
+KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务、GitHub Releases / Actions、GitHub Star
+导入、Blue Archive 辅助与学生图鉴功能。应用使用 Compose + Miuix 构建，并提供 v2 液态玻璃界面、高密度状态卡、导入导出、本地化
+MCP Skill、通知提醒、仓库发现和缓存诊断。
 
 ## 项目信息
 
-| 项目 | 内容 |
-| --- | --- |
-| 正式包名 | `os.kei` |
-| 支持 ABI | `arm64-v8a` |
-| Android 基线 | Android 15+（`minSdk 35`） |
-| Target SDK | Android 17 / API 37 |
-| UI 技术栈 | Jetpack Compose、Miuix、液态玻璃风格 chrome |
-| 运行技术栈 | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
-| 语言资源 | 简体中文、English、日本語 |
+| 项目         | 内容                                             |
+|------------|------------------------------------------------|
+| 正式包名       | `os.kei`                                       |
+| 支持 ABI     | `arm64-v8a`                                    |
+| Android 基线 | Android 15+（`minSdk 35`）                       |
+| Target SDK | Android 17 / API 37                            |
+| UI 技术栈     | Jetpack Compose、Miuix、液态玻璃风格 chrome            |
+| 运行技术栈      | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
+| 语言资源       | 简体中文、English、日本語                               |
+| 当前标签基线     | `v1.3.14`                                      |
 
 ## 常用入口
 
@@ -43,16 +46,23 @@ KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务
 - [Benchmark APK CI artifact](https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master)
 - [功能完整介绍](FEATURES_CN.md)
 - [构建指南](BUILD_CN.md)
+- [贡献指南](../CONTRIBUTING.md)
+- [安全策略](../SECURITY.md)
 
 ## 主要功能
 
-- Home 仪表盘集中显示 MCP、GitHub、BA、Shizuku 与分享导入状态。
+- Home 仪表盘集中显示 MCP、GitHub、BA、Shizuku、Actions、缓存与分享导入状态。
 - OS 工具支持系统表、Android/Java/Linux 属性、活动快捷入口、Shizuku Shell、Shell 卡片和卡片导入导出。
-- MCP 页面支持本地服务开关、配置复制、运行日志、前台保活、Claw 接入引导、本地化 SKILL.md，以及 Home、OS、GitHub、BA 快照工具。
-- GitHub 页面支持 Releases 与 Actions artifact 追踪、预发版策略、nightly.link 或 Token Actions 读取、分支 / workflow / run / artifact 选择、分享链接导入和本机应用联动。
-- BA 办公室支持 AP、咖啡厅来访、竞技场刷新提醒、分服务器时区、媒体设置、超级岛通知和学生图鉴入口。
-- 学生图鉴支持目录搜索排序、媒体缓存、语音语言标签、BGM 收藏、鉴赏媒体、媒体导出和收藏导入导出。
-- 设置页提供主题、动效、液态玻璃组件、底栏特效策略、背景图、应用语言、权限、缓存诊断、日志与通知兼容配置。
+- MCP 页面支持本地服务开关、配置复制、运行日志、前台保活、Claw 接入引导、本地化
+  SKILL.md，以及覆盖运行态、Home、OS、GitHub 发现/追踪、BA 缓存巡检的 42 个工具。
+- GitHub 页面支持 Releases 与 Actions artifact 追踪、Atom/API 策略对比、从 release APK
+  扫描包名、从本机包名反扫仓库、分享链接导入、本机应用联动和 Star List 导入。
+- GitHub Star 导入 Activity 支持自己的 stars、他人的公开 stars 与公开 Star List
+  链接，提供分类发现、质量筛选、多选导入、APK 验证和退出确认。
+- BA 办公室支持 AP、咖啡厅来访、竞技场刷新提醒、分服务器活动/卡池数据、分服务器 ID 卡、媒体设置、超级岛通知和学生图鉴入口。
+- 学生图鉴支持全页搜索、排序、媒体缓存、语音语言标签、BGM 收藏、鉴赏媒体、媒体导出、液态底栏和收藏导入导出。
+- 设置页提供主题、动效、v2 液态玻璃组件、底栏特效策略、搜索默认聚焦、握姿感知浮动
+  dock、背景图、应用语言、权限、缓存诊断、日志与通知兼容配置。
 
 完整功能介绍：
 - [功能完整介绍 (CN)](FEATURES_CN.md)
@@ -61,9 +71,10 @@ KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务
 ## 当前分发方式
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
-- 当前稳定标签：[v1.3.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.2)。
+- 当前稳定标签：[v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
-- 运行与构建基线：`targetSdk=37`、Java 21、Kotlin/Gradle 项目工具链。
+- 运行与构建基线：`targetSdk=37`、Java 21、Kotlin `2.3.21`、Compose `1.11.0`、Android Gradle Plugin
+  `9.2.0`。
 - 当前应用语言资源覆盖简体中文、English、日本語。
 
 ## 文档
@@ -73,6 +84,9 @@ KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务
 - [构建指南 (CN)](BUILD_CN.md)
 - [Todo List (EN)](TODO.md)
 - [待办清单 (CN)](TODO_CN.md)
+- [行为准则](../CODE_OF_CONDUCT.md)
+- [贡献指南](../CONTRIBUTING.md)
+- [安全策略](../SECURITY.md)
 
 ## Star History
 

@@ -117,6 +117,52 @@ class GitHubStarImportModelsTest {
         assertEquals(1, state.selectedImportableCount)
     }
 
+    @Test
+    fun `candidate list ui state exposes verified apk filter and batch ids`() {
+        val verified = starImportCandidate(
+            repo = "verified-app",
+            description = "Android APK release",
+            language = "Kotlin"
+        )
+        val unchecked = starImportCandidate(
+            repo = "unchecked-app",
+            description = "Android APK release",
+            language = "Java"
+        )
+        val checking = starImportCandidate(
+            repo = "checking-app",
+            description = "Android APK release",
+            language = "Kotlin"
+        )
+
+        val state = buildStarImportCandidateListUiState(
+            candidates = listOf(verified, unchecked, checking),
+            filterInput = "",
+            viewFilter = StarImportViewFilter.VerifiedApk,
+            qualityFilters = setOf(GitHubStarImportQuality.LikelyAndroid),
+            conflictStrategy = StarImportConflictStrategy.NewOnly,
+            selectedIds = emptySet(),
+            verificationStates = mapOf(
+                verified.trackedApp.id to StarImportApkVerificationUiState(
+                    verification = GitHubStarImportApkVerification(
+                        owner = verified.repository.owner,
+                        repo = verified.repository.repo,
+                        status = GitHubStarImportApkVerificationStatus.HasApk,
+                        apkAssetCount = 2,
+                        sampleAssetName = "app-arm64-v8a.apk"
+                    )
+                ),
+                checking.trackedApp.id to StarImportApkVerificationUiState(checking = true)
+            )
+        )
+
+        assertEquals(listOf(verified), state.filteredCandidates)
+        assertEquals(setOf(verified.trackedApp.id), state.visibleVerifiedApkIds)
+        assertEquals(1, state.verifiedApkCount)
+        assertEquals(1, state.checkingCount)
+        assertEquals(emptyList<GitHubRepositoryImportCandidate>(), state.visibleVerificationTargets)
+    }
+
 }
 
 private fun starImportCandidate(

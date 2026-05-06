@@ -320,8 +320,12 @@ internal fun StarImportListControlCard(
     filteredCount: Int,
     visibleImportableCount: Int,
     visibleRecommendedCount: Int,
+    visibleVerifiedApkCount: Int,
     selectedCount: Int,
+    verifiedApkCount: Int,
+    checkingCount: Int,
     verifySelectedEnabled: Boolean,
+    verifyVisibleEnabled: Boolean,
     importEnabled: Boolean,
     importing: Boolean,
     onFilterInputChange: (String) -> Unit,
@@ -329,7 +333,9 @@ internal fun StarImportListControlCard(
     onQualityFilterToggle: (GitHubStarImportQuality) -> Unit,
     onConflictStrategyChange: (StarImportConflictStrategy) -> Unit,
     onVerifySelected: () -> Unit,
+    onVerifyVisible: () -> Unit,
     onSelectRecommendedVisible: () -> Unit,
+    onSelectVerifiedVisible: () -> Unit,
     onSelectVisible: () -> Unit,
     onClearSelection: () -> Unit,
     onImport: () -> Unit
@@ -354,6 +360,19 @@ internal fun StarImportListControlCard(
             )
         }
     ) {
+        StarImportInfoLine(
+            label = stringResource(R.string.github_star_import_verification_overview_label),
+            value = stringResource(
+                R.string.github_star_import_verification_overview_format,
+                verifiedApkCount,
+                checkingCount
+            ),
+            color = if (verifiedApkCount > 0) {
+                GitHubStatusPalette.Update
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant
+            }
+        )
         AppLiquidSearchField(
             value = filterInput,
             onValueChange = onFilterInputChange,
@@ -410,16 +429,27 @@ internal fun StarImportListControlCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StarImportFilterButton(
+                filter = StarImportViewFilter.VerifiedApk,
+                selected = viewFilter == StarImportViewFilter.VerifiedApk,
+                onClick = onViewFilterChange,
+                modifier = Modifier.weight(1f)
+            )
+            StarImportFilterButton(
                 filter = StarImportViewFilter.Selected,
                 selected = viewFilter == StarImportViewFilter.Selected,
                 onClick = onViewFilterChange,
                 modifier = Modifier.weight(1f)
             )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             StarImportFilterButton(
                 filter = StarImportViewFilter.Tracked,
                 selected = viewFilter == StarImportViewFilter.Tracked,
                 onClick = onViewFilterChange,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
         }
         Row(
@@ -438,10 +468,35 @@ internal fun StarImportListControlCard(
             )
             AppLiquidTextButton(
                 backdrop = null,
+                text = stringResource(R.string.github_star_import_action_select_verified),
+                onClick = onSelectVerifiedVisible,
+                modifier = Modifier.weight(1f),
+                enabled = visibleVerifiedApkCount > 0 && !importing,
+                variant = GlassVariant.Content,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AppLiquidTextButton(
+                backdrop = null,
                 text = stringResource(R.string.github_star_import_action_select_visible),
                 onClick = onSelectVisible,
                 modifier = Modifier.weight(1f),
                 enabled = visibleImportableCount > 0 && !importing,
+                variant = GlassVariant.Content,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+            AppLiquidTextButton(
+                backdrop = null,
+                text = stringResource(R.string.github_star_import_action_verify_visible),
+                onClick = onVerifyVisible,
+                modifier = Modifier.weight(1f),
+                enabled = verifyVisibleEnabled,
                 variant = GlassVariant.Content,
                 textMaxLines = 1,
                 textOverflow = TextOverflow.Ellipsis

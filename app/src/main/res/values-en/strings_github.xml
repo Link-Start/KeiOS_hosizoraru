@@ -447,6 +447,7 @@
     <string name="github_star_import_controls_summary_format">%1$d visible, %2$d selected.</string>
     <string name="github_star_import_filter_all">All</string>
     <string name="github_star_import_filter_importable">Importable</string>
+    <string name="github_star_import_filter_verified_apk">Verified APK</string>
     <string name="github_star_import_filter_selected">Selected</string>
     <string name="github_star_import_filter_tracked">Tracked</string>
     <string name="github_star_import_quality_filter_label">Project type</string>
@@ -460,8 +461,12 @@
     <string name="github_star_import_quality_summary_other_platform">Looks closer to desktop, CLI, or server software.</string>
     <string name="github_star_import_quality_summary_archived_or_fork">The repository is archived or a fork. Import carefully.</string>
     <string name="github_star_import_quality_line_format">%1$s: %2$s</string>
+    <string name="github_star_import_verification_overview_label">APK verification</string>
+    <string name="github_star_import_verification_overview_format">%1$d verified, %2$d checking.</string>
     <string name="github_star_import_action_select_recommended">Select recommended</string>
+    <string name="github_star_import_action_select_verified">Select verified</string>
     <string name="github_star_import_action_select_visible">Select visible</string>
+    <string name="github_star_import_action_verify_visible">Verify visible</string>
     <string name="github_star_import_action_verify_selected">Verify selected</string>
     <string name="github_star_import_action_clear_selection">Clear selection</string>
     <string name="github_star_import_action_import_selected">Import selected</string>

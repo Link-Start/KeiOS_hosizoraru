@@ -19,8 +19,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
+import os.kei.ui.page.main.github.importer.StarImportConflictStrategy
+import os.kei.ui.page.main.github.importer.StarImportListControlCard
+import os.kei.ui.page.main.github.importer.StarImportViewFilter
 import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
@@ -366,6 +370,59 @@ class AppDesignSystemScreenshotTest {
                             maxLines = 3,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             onClick = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun githubStarImportControlsLight() {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_controls_light.png") {
+            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFF3F4F6))
+                            .padding(16.dp)
+                    ) {
+                        StarImportListControlCard(
+                            filterInput = "installer",
+                            viewFilter = StarImportViewFilter.VerifiedApk,
+                            qualityFilters = setOf(
+                                GitHubStarImportQuality.LikelyAndroid,
+                                GitHubStarImportQuality.NeedsReview
+                            ),
+                            conflictStrategy = StarImportConflictStrategy.NewOnly,
+                            qualityFilterCounts = mapOf(
+                                GitHubStarImportQuality.LikelyAndroid to 8,
+                                GitHubStarImportQuality.NeedsReview to 4,
+                                GitHubStarImportQuality.OtherPlatform to 2,
+                                GitHubStarImportQuality.ArchivedOrFork to 1
+                            ),
+                            filteredCount = 6,
+                            visibleImportableCount = 5,
+                            visibleRecommendedCount = 4,
+                            visibleVerifiedApkCount = 3,
+                            selectedCount = 3,
+                            verifiedApkCount = 3,
+                            checkingCount = 1,
+                            verifySelectedEnabled = true,
+                            verifyVisibleEnabled = true,
+                            importEnabled = true,
+                            importing = false,
+                            onFilterInputChange = {},
+                            onViewFilterChange = {},
+                            onQualityFilterToggle = {},
+                            onConflictStrategyChange = {},
+                            onVerifySelected = {},
+                            onVerifyVisible = {},
+                            onSelectRecommendedVisible = {},
+                            onSelectVerifiedVisible = {},
+                            onSelectVisible = {},
+                            onClearSelection = {},
+                            onImport = {}
                         )
                     }
                 }

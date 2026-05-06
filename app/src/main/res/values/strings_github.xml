@@ -447,6 +447,7 @@
     <string name="github_star_import_controls_summary_format">当前显示 %1$d 个，已选择 %2$d 个。</string>
     <string name="github_star_import_filter_all">全部</string>
     <string name="github_star_import_filter_importable">可导入</string>
+    <string name="github_star_import_filter_verified_apk">已验证 APK</string>
     <string name="github_star_import_filter_selected">已选择</string>
     <string name="github_star_import_filter_tracked">已追踪</string>
     <string name="github_star_import_quality_filter_label">项目类型</string>
@@ -460,8 +461,12 @@
     <string name="github_star_import_quality_summary_other_platform">更像桌面、命令行或服务端项目。</string>
     <string name="github_star_import_quality_summary_archived_or_fork">仓库已归档或为 fork，建议谨慎导入。</string>
     <string name="github_star_import_quality_line_format">%1$s：%2$s</string>
+    <string name="github_star_import_verification_overview_label">APK 验证</string>
+    <string name="github_star_import_verification_overview_format">已验证 %1$d 个，正在验证 %2$d 个。</string>
     <string name="github_star_import_action_select_recommended">选择推荐</string>
+    <string name="github_star_import_action_select_verified">选择已验证</string>
     <string name="github_star_import_action_select_visible">选择当前</string>
+    <string name="github_star_import_action_verify_visible">验证当前</string>
     <string name="github_star_import_action_verify_selected">验证已选</string>
     <string name="github_star_import_action_clear_selection">清空选择</string>
     <string name="github_star_import_action_import_selected">导入已选</string>

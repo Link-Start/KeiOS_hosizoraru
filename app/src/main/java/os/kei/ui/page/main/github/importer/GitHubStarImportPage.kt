@@ -407,8 +407,14 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                         filteredCount = listUiState.filteredCandidates.size,
                         visibleImportableCount = listUiState.visibleImportableIds.size,
                         visibleRecommendedCount = listUiState.visibleRecommendedIds.size,
+                        visibleVerifiedApkCount = listUiState.visibleVerifiedApkIds.size,
                         selectedCount = selectedImportableCount,
+                        verifiedApkCount = listUiState.verifiedApkCount,
+                        checkingCount = listUiState.checkingCount,
                         verifySelectedEnabled = listUiState.selectedVerificationTargets.isNotEmpty() &&
+                                !loading &&
+                                !importing,
+                        verifyVisibleEnabled = listUiState.visibleVerificationTargets.isNotEmpty() &&
                                 !loading &&
                                 !importing,
                         importEnabled = importEnabled,
@@ -436,8 +442,12 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                             }
                         },
                         onVerifySelected = { verifyApkAssets(listUiState.selectedVerificationTargets) },
+                        onVerifyVisible = { verifyApkAssets(listUiState.visibleVerificationTargets) },
                         onSelectRecommendedVisible = {
                             selectedIds = selectedIds + listUiState.visibleRecommendedIds
+                        },
+                        onSelectVerifiedVisible = {
+                            selectedIds = selectedIds + listUiState.visibleVerifiedApkIds
                         },
                         onSelectVisible = {
                             selectedIds = selectedIds + listUiState.visibleImportableIds

@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -9,6 +10,7 @@ import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -50,7 +52,14 @@ internal class GitHubAssetActions(
     fun openApkInfo(asset: GitHubReleaseAssetFile) {
         val key = asset.githubApkInfoKey()
         state.apkInfoDetailRequest = asset
-        if (state.apkInfoResults[key] != null || state.apkInfoLoading[key] == true) return
+        state.apkInfoResults[key]?.let { cachedInfo ->
+            if (!state.apkInfoInstalledResults.containsKey(key)) {
+                state.apkInfoInstalledResults[key] =
+                    loadInstalledPackageInfo(cachedInfo.packageName)
+            }
+            return
+        }
+        if (state.apkInfoLoading[key] == true) return
         state.apkInfoLoading[key] = true
         state.apkInfoErrors.remove(key)
         scope.launch {
@@ -63,11 +72,35 @@ internal class GitHubAssetActions(
             state.apkInfoLoading[key] = false
             result.onSuccess { info ->
                 state.apkInfoResults[key] = info
+                state.apkInfoInstalledResults[key] = loadInstalledPackageInfo(info.packageName)
             }.onFailure { error ->
                 state.apkInfoErrors[key] = error.message
                     ?: context.getString(R.string.github_apk_info_error_failed)
             }
         }
+    }
+
+    private fun loadInstalledPackageInfo(packageName: String): GitHubInstalledPackageInfo? {
+        val normalizedPackageName = packageName.trim()
+        if (normalizedPackageName.isBlank()) return null
+        val packageInfo = runCatching {
+            context.packageManager.getPackageInfo(
+                normalizedPackageName,
+                PackageManager.PackageInfoFlags.of(0)
+            )
+        }.recoverCatching {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(normalizedPackageName, 0)
+        }.getOrNull() ?: return null
+        val applicationInfo = packageInfo.applicationInfo
+        return GitHubInstalledPackageInfo(
+            packageName = normalizedPackageName,
+            appLabel = applicationInfo?.loadLabel(context.packageManager)?.toString().orEmpty(),
+            versionName = packageInfo.versionName?.trim().orEmpty(),
+            versionCode = packageInfo.longVersionCode,
+            minSdk = applicationInfo?.minSdkVersion ?: -1,
+            targetSdk = applicationInfo?.targetSdkVersion ?: -1
+        )
     }
 
     suspend fun sendAssetToConfiguredChannel(asset: GitHubReleaseAssetFile): Boolean {

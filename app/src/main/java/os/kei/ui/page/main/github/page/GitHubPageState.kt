@@ -29,6 +29,7 @@ import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubApkManifestInfo
+import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -162,6 +163,7 @@ internal class GitHubPageState(
     val apkInfoLoading = mutableStateMapOf<String, Boolean>()
     val apkInfoErrors = mutableStateMapOf<String, String>()
     val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
+    val apkInfoInstalledResults = mutableStateMapOf<String, GitHubInstalledPackageInfo?>()
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
@@ -228,6 +230,7 @@ internal class GitHubPageState(
         apkInfoLoading.clear()
         apkInfoErrors.clear()
         apkInfoResults.clear()
+        apkInfoInstalledResults.clear()
     }
 
     fun clearAssetRuntimeState(itemId: String) {

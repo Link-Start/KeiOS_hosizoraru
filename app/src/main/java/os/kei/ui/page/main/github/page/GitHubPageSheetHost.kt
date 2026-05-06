@@ -207,6 +207,7 @@ internal fun GitHubPageSheetHost(
     GitHubApkInfoSheet(
         asset = apkInfoAsset,
         info = state.apkInfoResults[apkInfoKey],
+        installedInfo = state.apkInfoInstalledResults[apkInfoKey],
         loading = state.apkInfoLoading[apkInfoKey] == true,
         error = state.apkInfoErrors[apkInfoKey].orEmpty(),
         backdrop = backdrops.sheet,

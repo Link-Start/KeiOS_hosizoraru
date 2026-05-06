@@ -17,3 +17,12 @@ data class GitHubApkManifestMetadata(
     val name: String,
     val value: String
 )
+
+data class GitHubInstalledPackageInfo(
+    val packageName: String,
+    val appLabel: String = "",
+    val versionName: String = "",
+    val versionCode: Long = -1L,
+    val minSdk: Int = -1,
+    val targetSdk: Int = -1
+)

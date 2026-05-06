@@ -12,6 +12,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubApkManifestInfo
+import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
@@ -29,6 +30,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun GitHubApkInfoSheet(
     asset: GitHubReleaseAssetFile?,
     info: GitHubApkManifestInfo?,
+    installedInfo: GitHubInstalledPackageInfo?,
     loading: Boolean,
     error: String,
     backdrop: LayerBackdrop,
@@ -52,8 +54,7 @@ internal fun GitHubApkInfoSheet(
         SheetContentColumn(verticalSpacing = 10.dp) {
             SheetSummaryCard(
                 title = asset.name,
-                badgeLabel = info?.packageName?.takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.github_apk_info_badge_manifest),
+                badgeLabel = stringResource(R.string.github_apk_info_badge_manifest),
                 badgeColor = MiuixTheme.colorScheme.primary
             ) {
                 when {
@@ -83,6 +84,10 @@ internal fun GitHubApkInfoSheet(
                 }
             }
             if (info != null) {
+                InstalledPackageSection(
+                    installedInfo = installedInfo,
+                    manifestPackageName = info.packageName
+                )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_abi),
                     empty = stringResource(R.string.github_apk_info_empty_abi),
@@ -106,6 +111,48 @@ internal fun GitHubApkInfoSheet(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun InstalledPackageSection(
+    installedInfo: GitHubInstalledPackageInfo?,
+    manifestPackageName: String
+) {
+    SheetSectionTitle(stringResource(R.string.github_apk_info_section_installed))
+    SheetSectionCard(verticalSpacing = 6.dp) {
+        if (installedInfo == null) {
+            DetailLine(
+                stringResource(
+                    R.string.github_apk_info_installed_missing,
+                    manifestPackageName.ifBlank { "-" }
+                )
+            )
+        } else {
+            InfoRow(
+                label = stringResource(R.string.github_apk_info_label_installed_status),
+                value = stringResource(R.string.github_apk_info_installed_present)
+            )
+            InfoRow(
+                label = stringResource(R.string.github_apk_info_label_app),
+                value = installedInfo.appLabel
+            )
+            InfoRow(
+                label = stringResource(R.string.github_apk_info_label_local_version),
+                value = listOf(
+                    installedInfo.versionName,
+                    installedInfo.versionCode.takeIf { it >= 0L }?.toString().orEmpty()
+                ).filter { it.isNotBlank() }.joinToString(" / ")
+            )
+            InfoRow(
+                label = stringResource(R.string.github_apk_info_label_local_api),
+                value = stringResource(
+                    R.string.github_apk_info_value_api,
+                    installedInfo.minSdk.takeIf { it >= 0 }?.toString().orEmpty().ifBlank { "-" },
+                    installedInfo.targetSdk.takeIf { it >= 0 }?.toString().orEmpty().ifBlank { "-" }
+                )
+            )
         }
     }
 }

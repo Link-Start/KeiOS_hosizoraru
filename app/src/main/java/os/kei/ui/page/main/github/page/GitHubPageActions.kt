@@ -8,6 +8,7 @@ import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
 import os.kei.ui.page.main.github.page.action.GitHubAssetActions
@@ -17,6 +18,7 @@ import os.kei.ui.page.main.github.page.action.GitHubRefreshActions
 import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 
 internal class GitHubPageActions(
     context: Context,
@@ -227,6 +229,30 @@ internal class GitHubPageActions(
         }
     }
 
+    fun openShareImportFlow() {
+        val intent = Intent(env.context, GitHubShareImportActivity::class.java).apply {
+            action = GitHubShareImportActivity.ACTION_RESUME_SHARE_IMPORT
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+        env.context.startActivity(intent)
+    }
+
+    fun cancelActiveShareImportFlow(showToast: Boolean = true) {
+        val hadActiveFlow = env.state.pendingShareImportPreview != null ||
+                env.state.pendingShareImportTrack != null ||
+                env.state.pendingShareImportAttachCandidate != null
+        env.state.pendingShareImportPreview = null
+        env.state.pendingShareImportTrack = null
+        env.state.pendingShareImportAttachCandidate = null
+        env.scope.launch {
+            env.repository.clearActiveShareImportFlow()
+            GitHubShareImportNotificationHelper.notifyCancelled(env.context)
+        }
+        if (hadActiveFlow && showToast) {
+            env.toast(R.string.github_toast_share_import_pending_cancelled)
+        }
+    }
+
     fun trimExpiredPendingShareImportTrack(nowMillis: Long = System.currentTimeMillis()) {
         clearExpiredPendingShareImportTrack(nowMillis)
     }
@@ -355,6 +381,7 @@ internal class GitHubPageActions(
         env.state.pendingShareImportTrack = null
         env.scope.launch {
             env.repository.clearPendingShareImportTrack()
+            GitHubShareImportNotificationHelper.notifyCancelled(env.context)
         }
     }
 

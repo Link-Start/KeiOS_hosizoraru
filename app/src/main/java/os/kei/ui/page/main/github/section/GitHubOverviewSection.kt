@@ -41,6 +41,7 @@ import os.kei.ui.page.main.github.surfaceColor
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -394,7 +395,8 @@ private fun GitHubOverviewExpandedContent(
                         }
                     ),
                     onClick = { onShowFailedOnlyChange(!showFailedOnly) },
-                    containerColor = GitHubStatusPalette.Error
+                    containerColor = GitHubStatusPalette.Error,
+                    variant = GlassVariant.SheetDangerAction
                 )
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),

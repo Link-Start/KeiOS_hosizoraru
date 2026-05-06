@@ -519,7 +519,8 @@ internal enum class GitHubShareImportNotificationPhase(
         primaryActionRes = R.string.github_share_import_notify_action_view_github,
         progressPercent = 100,
         ongoing = false,
-        openGitHubPage = true
+        openGitHubPage = true,
+        promotedLiveUpdate = true
     ),
     Cancelled(
         titleRes = R.string.github_share_import_notify_title_cancelled,

@@ -139,6 +139,32 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `failed notification keeps live update and mark read actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.Failed,
+            primaryLabel = "Network timeout"
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals(
+            "Share import failed",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            "Network timeout",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertEquals(2, notification.actions.size)
+        assertEquals("View GitHub", notification.actions[0].title.toString())
+        assertEquals("Mark read", notification.actions[1].title.toString())
+    }
+
+    @Test
     fun `resolving notification keeps progress action without duplicate secondary action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(

@@ -27,7 +27,9 @@ import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
+import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
+import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -78,7 +80,9 @@ internal fun GitHubMainContent(
     apkAssetErrors: SnapshotStateMap<String, String>,
     apkAssetExpanded: SnapshotStateMap<String, Boolean>,
     trackedCardExpanded: SnapshotStateMap<String, Boolean>,
+    pendingShareImportPreview: GitHubShareImportPreview?,
     pendingShareImportTrack: GitHubPendingShareImportTrack?,
+    pendingShareImportAttachCandidate: GitHubPendingShareImportAttachCandidate?,
     showPendingShareImportCard: Boolean,
     pendingShareImportRepoOverlapCount: Int,
     onTrackedSearchChange: (String) -> Unit,
@@ -103,6 +107,8 @@ internal fun GitHubMainContent(
     onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
+    onOpenShareImportFlow: () -> Unit,
+    onCancelActiveShareImportFlow: () -> Unit,
     onCancelPendingShareImportTrack: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit
 ) {
@@ -176,8 +182,29 @@ internal fun GitHubMainContent(
                             GitHubPendingShareImportCard(
                                 pending = pendingShareImportTrack,
                                 repoOverlapCount = pendingShareImportRepoOverlapCount,
+                                onOpen = onOpenShareImportFlow,
                                 onCancel = onCancelPendingShareImportTrack
                             )
+                        }
+                    }
+                    pendingShareImportAttachCandidate?.let { candidate ->
+                        item {
+                            GitHubShareImportAttachCandidateCard(
+                                candidate = candidate,
+                                onOpen = onOpenShareImportFlow,
+                                onCancel = onCancelActiveShareImportFlow
+                            )
+                        }
+                    }
+                    if (pendingShareImportTrack == null && pendingShareImportAttachCandidate == null) {
+                        pendingShareImportPreview?.let { preview ->
+                            item {
+                                GitHubShareImportPreviewCard(
+                                    preview = preview,
+                                    onOpen = onOpenShareImportFlow,
+                                    onCancel = onCancelActiveShareImportFlow
+                                )
+                            }
                         }
                     }
                     GitHubTrackedItemsSection(

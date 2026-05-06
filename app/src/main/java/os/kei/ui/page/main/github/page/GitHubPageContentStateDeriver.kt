@@ -9,8 +9,7 @@ import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.section.GitHubOverviewMetrics
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
-
-private const val pendingShareImportCardVisibleWindowMs = 90_000L
+import os.kei.ui.page.main.github.share.shareImportTrackMaxAgeMs
 
 internal data class GitHubPageContentInput(
     val trackedItems: List<GitHubTrackedApp>,
@@ -69,7 +68,7 @@ internal class GitHubPageContentStateDeriver(
             } ?: 0
             val showPendingShareImportCard = input.pendingShareImportTrack?.let { pending ->
                 val ageMs = (input.nowMillis - pending.armedAtMillis).coerceAtLeast(0L)
-                ageMs <= pendingShareImportCardVisibleWindowMs ||
+                ageMs <= shareImportTrackMaxAgeMs ||
                         pendingShareImportRepoOverlapCount > 0
             } ?: false
             GitHubPageContentDerivedState(

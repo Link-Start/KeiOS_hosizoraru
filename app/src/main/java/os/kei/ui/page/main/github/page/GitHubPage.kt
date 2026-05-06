@@ -23,11 +23,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.feature.github.data.local.GitHubShareImportPreviewStore
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.importer.GitHubStarImportActivity
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
+import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
+import os.kei.ui.page.main.github.share.toShareImportPreview
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -75,6 +78,12 @@ fun GitHubPage(
     val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsState()
     val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsState()
     val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsState()
+    val storedShareImportPreview = remember(state.lastTrackStoreSignalVersion) {
+        GitHubShareImportPreviewStore.loadActivePreview()?.toShareImportPreview()
+    }
+    val storedShareImportAttachCandidate = remember(state.lastTrackStoreSignalVersion) {
+        GitHubShareImportPreviewStore.loadActiveAttachCandidate()?.toShareImportAttachCandidate()
+    }
     LaunchedEffect(isListScrolling) {
         if (!isListScrolling) {
             state.settleScrollChromeVisibility()
@@ -115,6 +124,9 @@ fun GitHubPage(
     LaunchedEffect(externalRefreshTriggerToken) {
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
+    }
+    LaunchedEffect(actions) {
+        actions.syncTrackSnapshotFromStore(forceRefreshApps = false)
     }
     val appListPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -238,7 +250,10 @@ fun GitHubPage(
             apkAssetErrors = state.apkAssetErrors,
             apkAssetExpanded = state.apkAssetExpanded,
             trackedCardExpanded = state.trackedCardExpanded,
+            pendingShareImportPreview = state.pendingShareImportPreview ?: storedShareImportPreview,
             pendingShareImportTrack = state.pendingShareImportTrack,
+            pendingShareImportAttachCandidate = state.pendingShareImportAttachCandidate
+                ?: storedShareImportAttachCandidate,
             showPendingShareImportCard = contentDerivedState.showPendingShareImportCard,
             pendingShareImportRepoOverlapCount = contentDerivedState.pendingShareImportRepoOverlapCount,
             onTrackedSearchChange = { state.trackedSearch = it },
@@ -290,6 +305,8 @@ fun GitHubPage(
             onOpenApkInfo = actions::openApkInfo,
             onOpenApkInDownloader = actions::openApkInDownloader,
             onShareApkLink = actions::shareApkLink,
+            onOpenShareImportFlow = actions::openShareImportFlow,
+            onCancelActiveShareImportFlow = actions::cancelActiveShareImportFlow,
             onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,
             onActionBarInteractingChanged = onActionBarInteractingChanged
         )

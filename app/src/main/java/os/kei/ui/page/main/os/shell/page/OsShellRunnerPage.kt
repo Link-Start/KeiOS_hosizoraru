@@ -620,7 +620,6 @@ private fun OsShellDangerousCommandConfirmDialog(
                 modifier = Modifier.weight(1f),
                 text = confirmText,
                 containerColor = MiuixTheme.colorScheme.error,
-                textColor = MiuixTheme.colorScheme.onError,
                 variant = GlassVariant.SheetDangerAction,
                 onClick = onConfirm
             )

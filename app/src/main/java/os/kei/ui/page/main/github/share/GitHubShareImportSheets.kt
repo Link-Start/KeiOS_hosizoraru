@@ -35,6 +35,9 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.assetIsPreferredForDevice
 import os.kei.ui.page.main.github.asset.assetLikelyCompatibleWithDevice
 import os.kei.ui.page.main.github.asset.formatAssetSize
+import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.appLucideExternalLinkIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
@@ -264,11 +267,13 @@ internal fun GitHubShareImportSheet(
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.common_cancel),
+                    leadingIcon = appLucideCloseIcon(),
                     onClick = onCancel
                 )
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.github_share_import_dialog_action_confirm),
+                    leadingIcon = appLucidePackageIcon(),
                     containerColor = GitHubStatusPalette.Active,
                     onClick = {
                         selectedAsset?.let(onConfirmImport)
@@ -306,11 +311,13 @@ internal fun GitHubShareImportDisabledSheet(
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.common_close),
+                    leadingIcon = appLucideCloseIcon(),
                     onClick = onClose
                 )
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.github_share_import_disabled_action_open),
+                    leadingIcon = appLucideExternalLinkIcon(),
                     containerColor = GitHubStatusPalette.Active,
                     onClick = onOpenGitHub
                 )
@@ -377,11 +384,13 @@ internal fun GitHubShareImportPendingSheet(
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.common_close),
+                    leadingIcon = appLucideCloseIcon(),
                     onClick = onClose
                 )
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.github_share_import_pending_action_cancel),
+                    leadingIcon = appLucideCloseIcon(),
                     containerColor = GitHubStatusPalette.PreRelease,
                     onClick = onCancel
                 )
@@ -462,6 +471,7 @@ internal fun GitHubShareImportAttachConfirmSheet(
                     AppLiquidDialogActionButton(
                         modifier = Modifier.weight(1f),
                         text = stringResource(R.string.common_close),
+                        leadingIcon = appLucideCloseIcon(),
                         containerColor = GitHubStatusPalette.Active,
                         onClick = onCancel,
                         enabled = !submitting
@@ -475,6 +485,7 @@ internal fun GitHubShareImportAttachConfirmSheet(
                     AppLiquidDialogActionButton(
                         modifier = Modifier.weight(1f),
                         text = stringResource(R.string.common_cancel),
+                        leadingIcon = appLucideCloseIcon(),
                         onClick = onCancel,
                         enabled = !submitting
                     )
@@ -485,6 +496,7 @@ internal fun GitHubShareImportAttachConfirmSheet(
                         } else {
                             stringResource(R.string.github_share_import_attach_dialog_action_confirm)
                         },
+                        leadingIcon = appLucidePackageIcon(),
                         containerColor = GitHubStatusPalette.Active,
                         onClick = onConfirm,
                         enabled = !submitting
@@ -500,6 +512,7 @@ internal fun GitHubShareImportAttachConfirmSheet(
                                 R.string.github_share_import_attach_dialog_action_confirm_and_open_github
                             )
                         },
+                        leadingIcon = appLucideExternalLinkIcon(),
                         containerColor = GitHubStatusPalette.Update,
                         onClick = onConfirmAndOpenGitHub,
                         enabled = !submitting

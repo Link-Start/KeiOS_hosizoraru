@@ -35,7 +35,9 @@ object GitHubShareImportPreviewStore {
     private const val KEY_ACTIVE_ATTACH_CANDIDATE = "github_active_share_import_attach_candidate"
     private const val ACTIVE_PREVIEW_MAX_AGE_MS = 25 * 60 * 1000L
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy {
+        MMKV.mmkvWithID(KV_ID, MMKV.MULTI_PROCESS_MODE)
+    }
 
     fun loadActivePreview(nowMillis: Long = System.currentTimeMillis()): GitHubPendingShareImportPreviewRecord? {
         val raw = store.decodeString(KEY_ACTIVE_PREVIEW).orEmpty()

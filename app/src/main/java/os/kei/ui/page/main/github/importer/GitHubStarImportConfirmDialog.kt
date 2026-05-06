@@ -94,7 +94,6 @@ internal fun GitHubStarImportConfirmDialog(
                         stringResource(R.string.github_star_import_confirm_action)
                     },
                     containerColor = GitHubStatusPalette.Update,
-                    textColor = MiuixTheme.colorScheme.onPrimary,
                     variant = GlassVariant.SheetPrimaryAction,
                     onClick = onConfirmImport,
                     enabled = !importing
@@ -136,8 +135,7 @@ internal fun GitHubStarImportExitConfirmDialog(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.github_star_import_exit_confirm_action),
                     containerColor = GitHubStatusPalette.Error,
-                    textColor = MiuixTheme.colorScheme.onPrimary,
-                    variant = GlassVariant.SheetPrimaryAction,
+                    variant = GlassVariant.SheetDangerAction,
                     onClick = onConfirmExit
                 )
             }

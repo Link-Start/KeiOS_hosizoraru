@@ -9,6 +9,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import os.kei.R
+import os.kei.feature.github.data.local.GitHubShareImportPreviewStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -16,6 +17,8 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
+import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
+import os.kei.ui.page.main.github.share.toShareImportPreview
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
 
@@ -441,7 +444,12 @@ internal class GitHubRefreshActions(
                 armedAtMillis = pending.armedAtMillis
             )
         }
-        state.pendingShareImportAttachCandidate = null
+        state.pendingShareImportPreview = GitHubShareImportPreviewStore
+            .loadActivePreview()
+            ?.toShareImportPreview()
+        state.pendingShareImportAttachCandidate = GitHubShareImportPreviewStore
+            .loadActiveAttachCandidate()
+            ?.toShareImportAttachCandidate()
 
         val cachedStates = trackSnapshot.checkCache
         state.checkStates.clear()

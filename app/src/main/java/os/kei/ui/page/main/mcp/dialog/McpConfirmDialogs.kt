@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -43,7 +43,6 @@ internal fun McpResetConfigDialog(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.common_reset),
                     containerColor = MiuixTheme.colorScheme.error,
-                    textColor = MiuixTheme.colorScheme.onError,
                     variant = GlassVariant.SheetDangerAction,
                     onClick = onConfirm
                 )
@@ -79,7 +78,6 @@ internal fun McpResetTokenDialog(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.common_reset),
                     containerColor = MiuixTheme.colorScheme.error,
-                    textColor = MiuixTheme.colorScheme.onError,
                     variant = GlassVariant.SheetDangerAction,
                     onClick = onConfirm
                 )

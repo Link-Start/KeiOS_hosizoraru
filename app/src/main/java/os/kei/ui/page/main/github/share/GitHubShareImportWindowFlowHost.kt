@@ -199,16 +199,23 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubTrackStore.load().any { it.id == duplicateId }
                 }
                 if (duplicateExists) {
+                    val candidate = GitHubPendingShareImportAttachCandidate(
+                        projectUrl = currentPending.projectUrl,
+                        owner = currentPending.owner,
+                        repo = currentPending.repo,
+                        packageName = reconciled.packageName,
+                        appLabel = reconciled.appLabel.ifBlank { reconciled.packageName },
+                        eventAction = "duplicate",
+                        detectedAtMillis = System.currentTimeMillis(),
+                        firstInstallTimeMs = reconciled.firstInstallTimeMs
+                    )
                     withContext(Dispatchers.IO) {
                         GitHubTrackStore.savePendingShareImportTrack(null)
                         GitHubShareImportPreviewStore.clearActiveFlow()
                     }
                     GitHubTrackStoreSignals.notifyChanged()
                     pendingTrack = null
-                    notifyShareImportFailed(
-                        context = context,
-                        reason = context.getString(R.string.github_toast_share_import_track_exists)
-                    )
+                    notifyShareImportAlreadyTracked(context, candidate)
                     toast(context, R.string.github_toast_share_import_track_exists)
                     return@LaunchedEffect
                 }
@@ -372,16 +379,23 @@ internal fun GitHubShareImportWindowFlowHost(
                 GitHubTrackStore.load().any { it.id == duplicateId }
             }
             if (duplicateExists) {
+                val candidate = GitHubPendingShareImportAttachCandidate(
+                    projectUrl = currentPending.projectUrl,
+                    owner = currentPending.owner,
+                    repo = currentPending.repo,
+                    packageName = packageName,
+                    appLabel = packageSnapshot.appLabel.ifBlank { packageName },
+                    eventAction = "duplicate",
+                    detectedAtMillis = event.atMillis,
+                    firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
+                )
                 withContext(Dispatchers.IO) {
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
                 GitHubTrackStoreSignals.notifyChanged()
                 pendingTrack = null
-                notifyShareImportFailed(
-                    context = context,
-                    reason = context.getString(R.string.github_toast_share_import_track_exists)
-                )
+                notifyShareImportAlreadyTracked(context, candidate)
                 toast(context, R.string.github_toast_share_import_track_exists)
                 return@collect
             }

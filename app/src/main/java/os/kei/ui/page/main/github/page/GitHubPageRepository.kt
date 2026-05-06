@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.AppIconCache
+import os.kei.feature.github.data.local.GitHubShareImportPreviewStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -167,6 +168,14 @@ internal class GitHubPageRepository(
     suspend fun clearPendingShareImportTrack() {
         withContext(ioDispatcher) {
             GitHubTrackStore.savePendingShareImportTrack(null)
+            GitHubTrackStoreSignals.notifyChanged()
+        }
+    }
+
+    suspend fun clearActiveShareImportFlow() {
+        withContext(ioDispatcher) {
+            GitHubTrackStore.savePendingShareImportTrack(null)
+            GitHubShareImportPreviewStore.clearActiveFlow()
             GitHubTrackStoreSignals.notifyChanged()
         }
     }

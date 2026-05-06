@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Test
 import java.io.ByteArrayOutputStream
+import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.assertEquals
@@ -102,11 +103,62 @@ class RemoteZipEntryReaderTest {
         }
     }
 
+    @Test
+    fun `reader fetches manifest from nested stored apk entry through ranges`() {
+        val manifest = BinaryManifestFixture.build(packageName = "os.kei.nested")
+        val apkBytes = zipWithManifest(manifest)
+        val artifactBytes = zipWithStoredEntry(
+            entryName = "outputs/app-universal-release.apk",
+            bytes = apkBytes
+        )
+        MockWebServer().use { server ->
+            server.dispatcher = rangeDispatcher(artifactBytes)
+            val reader = RemoteZipEntryReader(client = OkHttpClient())
+
+            val bytes = reader.readNestedStoredZipEntry(
+                url = server.url("/download/artifact.zip").toString(),
+                outerEntryName = "outputs/app-universal-release.apk",
+                innerEntryName = "AndroidManifest.xml"
+            ).getOrThrow()
+            val packageName = AndroidBinaryXmlPackageNameParser.parsePackageName(bytes).getOrThrow()
+
+            assertEquals("os.kei.nested", packageName)
+            val ranges = buildList {
+                repeat(server.requestCount) {
+                    add(server.takeRequest().getHeader("Range").orEmpty())
+                }
+            }
+            assertEquals("bytes=0-0", ranges.first())
+            assertTrue(ranges.none { it.startsWith("bytes=-") })
+            assertTrue(ranges.all { it.matches(Regex("""bytes=\d+-\d+""")) })
+        }
+    }
+
     private fun zipWithManifest(manifestBytes: ByteArray): ByteArray {
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
             zip.putNextEntry(ZipEntry("AndroidManifest.xml"))
             zip.write(manifestBytes)
+            zip.closeEntry()
+        }
+        return output.toByteArray()
+    }
+
+    private fun zipWithStoredEntry(
+        entryName: String,
+        bytes: ByteArray
+    ): ByteArray {
+        val output = ByteArrayOutputStream()
+        ZipOutputStream(output).use { zip ->
+            val crc = CRC32().apply { update(bytes) }.value
+            val entry = ZipEntry(entryName).apply {
+                method = ZipEntry.STORED
+                size = bytes.size.toLong()
+                compressedSize = bytes.size.toLong()
+                this.crc = crc
+            }
+            zip.putNextEntry(entry)
+            zip.write(bytes)
             zip.closeEntry()
         }
         return output.toByteArray()

@@ -15,19 +15,53 @@ internal class RemoteZipEntryReader(
         apiToken: String = ""
     ): Result<List<String>> = runCatching {
         val centralDirectory = fetchCentralDirectory(url = url, apiToken = apiToken).bytes
-        buildList {
-            var offset = 0
-            while (offset + CENTRAL_DIRECTORY_HEADER_SIZE <= centralDirectory.size) {
-                if (centralDirectory.i32(offset) != CENTRAL_DIRECTORY_SIGNATURE) break
-                val nameLength = centralDirectory.u16(offset + 28)
-                val extraLength = centralDirectory.u16(offset + 30)
-                val commentLength = centralDirectory.u16(offset + 32)
-                val nameStart = offset + CENTRAL_DIRECTORY_HEADER_SIZE
-                val nameEnd = nameStart + nameLength
-                if (nameEnd > centralDirectory.size) break
-                add(String(centralDirectory, nameStart, nameLength, Charsets.UTF_8))
-                offset = nameEnd + extraLength + commentLength
-            }
+        parseCentralDirectoryEntries(centralDirectory).map { it.name }
+    }
+
+    fun readNestedStoredZipEntry(
+        url: String,
+        outerEntryName: String,
+        innerEntryName: String,
+        apiToken: String = ""
+    ): Result<ByteArray> = runCatching {
+        val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
+        val outerEntry = findCentralDirectoryEntry(outerDirectory.bytes, outerEntryName)
+            ?: error("$outerEntryName was not found in ZIP")
+        check(outerEntry.compressionMethod == ZIP_METHOD_STORED) {
+            "Nested APK entry is compressed and cannot be scanned by range"
+        }
+        check(outerEntry.compressedSize == outerEntry.uncompressedSize) {
+            "Nested APK stored entry size is inconsistent"
+        }
+        check(outerEntry.uncompressedSize > 0L) {
+            "Nested APK entry is empty"
+        }
+
+        val outerEntryDataStart = fetchEntryDataStart(
+            url = outerDirectory.resolvedUrl,
+            entry = outerEntry,
+            baseOffset = 0L,
+            apiToken = apiToken
+        )
+        val nestedDirectory = fetchCentralDirectoryAtBase(
+            url = outerDirectory.resolvedUrl,
+            baseOffset = outerEntryDataStart,
+            zipSize = outerEntry.uncompressedSize,
+            apiToken = apiToken
+        )
+        val innerEntry = findCentralDirectoryEntry(nestedDirectory.bytes, innerEntryName)
+            ?: error("$innerEntryName was not found in nested APK")
+        val compressedBytes = fetchEntryCompressedBytes(
+            url = nestedDirectory.resolvedUrl,
+            entry = innerEntry,
+            centralDirectoryOffset = nestedDirectory.offset,
+            apiToken = apiToken,
+            baseOffset = outerEntryDataStart
+        )
+        when (innerEntry.compressionMethod) {
+            ZIP_METHOD_STORED -> compressedBytes
+            ZIP_METHOD_DEFLATED -> inflateRaw(compressedBytes, innerEntry.uncompressedSize)
+            else -> error("Nested APK entry compression method is unsupported: ${innerEntry.compressionMethod}")
         }
     }
 
@@ -43,7 +77,8 @@ internal class RemoteZipEntryReader(
             url = directory.resolvedUrl,
             entry = entry,
             centralDirectoryOffset = directory.offset,
-            apiToken = apiToken
+            apiToken = apiToken,
+            baseOffset = 0L
         )
         when (entry.compressionMethod) {
             ZIP_METHOD_STORED -> compressedBytes
@@ -92,11 +127,52 @@ internal class RemoteZipEntryReader(
         )
     }
 
+    private fun fetchCentralDirectoryAtBase(
+        url: String,
+        baseOffset: Long,
+        zipSize: Long,
+        apiToken: String
+    ): CentralDirectoryBytes {
+        val tailStartRelative = (zipSize - EOCD_SEARCH_WINDOW).coerceAtLeast(0L)
+        val tail = fetchRange(
+            url = url,
+            start = baseOffset + tailStartRelative,
+            endInclusive = baseOffset + zipSize - 1L,
+            apiToken = apiToken
+        )
+        val eocdOffsetInTail = findLastSignature(tail.bytes, EOCD_SIGNATURE)
+        check(eocdOffsetInTail >= 0) { "Nested APK zip end record was not found" }
+        val eocdRelativeOffset = tail.start - baseOffset + eocdOffsetInTail
+        val centralDirectorySize = tail.bytes.i32(eocdOffsetInTail + 12).toLong()
+        val centralDirectoryOffset = tail.bytes.i32(eocdOffsetInTail + 16).toLong()
+        check(centralDirectorySize > 0L && centralDirectoryOffset >= 0L) {
+            "Nested APK central directory is invalid"
+        }
+        check(centralDirectorySize <= CENTRAL_DIRECTORY_SIZE_LIMIT) {
+            "Nested APK central directory is too large"
+        }
+        check(eocdRelativeOffset >= centralDirectoryOffset) {
+            "Nested APK central directory offset is invalid"
+        }
+        val centralDirectoryAbsoluteOffset = baseOffset + centralDirectoryOffset
+        return CentralDirectoryBytes(
+            bytes = fetchRange(
+                url = url,
+                start = centralDirectoryAbsoluteOffset,
+                endInclusive = centralDirectoryAbsoluteOffset + centralDirectorySize - 1L,
+                apiToken = apiToken
+            ).bytes,
+            offset = centralDirectoryAbsoluteOffset,
+            resolvedUrl = url
+        )
+    }
+
     private fun fetchEntryCompressedBytes(
         url: String,
         entry: CentralDirectoryEntry,
         centralDirectoryOffset: Long,
-        apiToken: String
+        apiToken: String,
+        baseOffset: Long
     ): ByteArray {
         check(entry.compressedSize >= 0L) { "APK entry compressed size is invalid" }
         check(entry.compressedSize <= ENTRY_COMPRESSED_SIZE_LIMIT) {
@@ -106,12 +182,13 @@ internal class RemoteZipEntryReader(
             "APK entry uncompressed size is too large"
         }
         if (entry.compressedSize <= INLINE_ENTRY_COMPRESSED_SIZE_LIMIT) {
+            val localHeaderOffset = baseOffset + entry.localHeaderOffset
             val prefetchEnd =
-                (entry.localHeaderOffset + LOCAL_ENTRY_PREFETCH_PREFIX_LIMIT + entry.compressedSize - 1L)
+                (localHeaderOffset + LOCAL_ENTRY_PREFETCH_PREFIX_LIMIT + entry.compressedSize - 1L)
                     .coerceAtMost(centralDirectoryOffset - 1L)
             val prefetchBytes = fetchRange(
                 url = url,
-                start = entry.localHeaderOffset,
+                start = localHeaderOffset,
                 endInclusive = prefetchEnd,
                 apiToken = apiToken
             ).bytes
@@ -124,18 +201,34 @@ internal class RemoteZipEntryReader(
 
         val localHeader = fetchRange(
             url = url,
-            start = entry.localHeaderOffset,
-            endInclusive = entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE - 1L,
+            start = baseOffset + entry.localHeaderOffset,
+            endInclusive = baseOffset + entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE - 1L,
             apiToken = apiToken
         ).bytes
         val localEntry = parseLocalEntry(localHeader)
-        val dataStart = entry.localHeaderOffset + localEntry.dataOffset
+        val dataStart = baseOffset + entry.localHeaderOffset + localEntry.dataOffset
         return fetchRange(
             url = url,
             start = dataStart,
             endInclusive = dataStart + entry.compressedSize - 1L,
             apiToken = apiToken
         ).bytes
+    }
+
+    private fun fetchEntryDataStart(
+        url: String,
+        entry: CentralDirectoryEntry,
+        baseOffset: Long,
+        apiToken: String
+    ): Long {
+        val localHeader = fetchRange(
+            url = url,
+            start = baseOffset + entry.localHeaderOffset,
+            endInclusive = baseOffset + entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE - 1L,
+            apiToken = apiToken
+        ).bytes
+        val localEntry = parseLocalEntry(localHeader)
+        return baseOffset + entry.localHeaderOffset + localEntry.dataOffset
     }
 
     private fun parseLocalEntry(localHeaderBytes: ByteArray): LocalEntry {
@@ -222,31 +315,39 @@ internal class RemoteZipEntryReader(
         centralDirectory: ByteArray,
         entryName: String
     ): CentralDirectoryEntry? {
-        var offset = 0
-        while (offset + CENTRAL_DIRECTORY_HEADER_SIZE <= centralDirectory.size) {
-            if (centralDirectory.i32(offset) != CENTRAL_DIRECTORY_SIGNATURE) break
-            val compressionMethod = centralDirectory.u16(offset + 10)
-            val compressedSize = centralDirectory.i32(offset + 20).toLong()
-            val uncompressedSize = centralDirectory.i32(offset + 24).toLong()
-            val nameLength = centralDirectory.u16(offset + 28)
-            val extraLength = centralDirectory.u16(offset + 30)
-            val commentLength = centralDirectory.u16(offset + 32)
-            val localHeaderOffset = centralDirectory.i32(offset + 42).toLong()
-            val nameStart = offset + CENTRAL_DIRECTORY_HEADER_SIZE
-            val nameEnd = nameStart + nameLength
-            if (nameEnd > centralDirectory.size) return null
-            val name = String(centralDirectory, nameStart, nameLength, Charsets.UTF_8)
-            if (name == entryName) {
-                return CentralDirectoryEntry(
-                    compressionMethod = compressionMethod,
-                    compressedSize = compressedSize,
-                    uncompressedSize = uncompressedSize,
-                    localHeaderOffset = localHeaderOffset
+        return parseCentralDirectoryEntries(centralDirectory).firstOrNull { it.name == entryName }
+    }
+
+    private fun parseCentralDirectoryEntries(
+        centralDirectory: ByteArray
+    ): List<CentralDirectoryEntry> {
+        return buildList {
+            var offset = 0
+            while (offset + CENTRAL_DIRECTORY_HEADER_SIZE <= centralDirectory.size) {
+                if (centralDirectory.i32(offset) != CENTRAL_DIRECTORY_SIGNATURE) break
+                val compressionMethod = centralDirectory.u16(offset + 10)
+                val compressedSize = centralDirectory.i32(offset + 20).toLong()
+                val uncompressedSize = centralDirectory.i32(offset + 24).toLong()
+                val nameLength = centralDirectory.u16(offset + 28)
+                val extraLength = centralDirectory.u16(offset + 30)
+                val commentLength = centralDirectory.u16(offset + 32)
+                val localHeaderOffset = centralDirectory.i32(offset + 42).toLong()
+                val nameStart = offset + CENTRAL_DIRECTORY_HEADER_SIZE
+                val nameEnd = nameStart + nameLength
+                if (nameEnd > centralDirectory.size) return@buildList
+                val name = String(centralDirectory, nameStart, nameLength, Charsets.UTF_8)
+                add(
+                    CentralDirectoryEntry(
+                        name = name,
+                        compressionMethod = compressionMethod,
+                        compressedSize = compressedSize,
+                        uncompressedSize = uncompressedSize,
+                        localHeaderOffset = localHeaderOffset
+                    )
                 )
+                offset = nameEnd + extraLength + commentLength
             }
-            offset = nameEnd + extraLength + commentLength
         }
-        return null
     }
 
     private fun inflateRaw(
@@ -336,6 +437,7 @@ internal class RemoteZipEntryReader(
     )
 
     private data class CentralDirectoryEntry(
+        val name: String,
         val compressionMethod: Int,
         val compressedSize: Long,
         val uncompressedSize: Long,

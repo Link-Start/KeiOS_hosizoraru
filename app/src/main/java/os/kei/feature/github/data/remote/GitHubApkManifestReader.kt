@@ -33,8 +33,29 @@ internal class GitHubApkManifestReader(
         lookupConfig: GitHubLookupConfig
     ): Result<String> {
         return readAndroidManifestBytes(asset, lookupConfig).mapCatching { manifestBytes ->
-            AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes).getOrThrow()
+            parsePackageName(manifestBytes).getOrThrow()
         }
+    }
+
+    fun readNestedApkPackageName(
+        asset: GitHubReleaseAssetFile,
+        nestedApkEntryName: String,
+        lookupConfig: GitHubLookupConfig
+    ): Result<String> {
+        return readWithFallback(asset, lookupConfig) { url, token ->
+            zipEntryReader.readNestedStoredZipEntry(
+                url = url,
+                outerEntryName = nestedApkEntryName,
+                innerEntryName = ANDROID_MANIFEST_ENTRY,
+                apiToken = token
+            )
+        }.mapCatching { payload ->
+            parsePackageName(payload.value).getOrThrow()
+        }
+    }
+
+    fun parsePackageName(manifestBytes: ByteArray): Result<String> {
+        return AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes)
     }
 
     fun readAndroidManifestBytes(

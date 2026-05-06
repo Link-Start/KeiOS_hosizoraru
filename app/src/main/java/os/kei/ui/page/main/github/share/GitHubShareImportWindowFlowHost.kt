@@ -142,7 +142,12 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
-                GitHubTrackStoreSignals.notifyChanged()
+                saveShareImportResult(
+                    loaded.toShareImportResult(
+                        kind = GitHubShareImportResultKind.Cancelled,
+                        message = context.getString(R.string.github_share_import_notify_content_cancelled)
+                    )
+                )
                 pendingTrack = null
                 pendingPreview = null
                 GitHubShareImportNotificationHelper.cancel(context)
@@ -170,7 +175,12 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
-                GitHubTrackStoreSignals.notifyChanged()
+                saveShareImportResult(
+                    current.toShareImportResult(
+                        kind = GitHubShareImportResultKind.Cancelled,
+                        message = context.getString(R.string.github_share_import_notify_content_cancelled)
+                    )
+                )
                 pendingTrack = null
                 pendingPreview = null
                 phase = GitHubShareImportPhase.Idle
@@ -199,35 +209,25 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubTrackStore.load().any { it.id == duplicateId }
                 }
                 if (duplicateExists) {
-                    val candidate = GitHubPendingShareImportAttachCandidate(
-                        projectUrl = currentPending.projectUrl,
-                        owner = currentPending.owner,
-                        repo = currentPending.repo,
-                        packageName = reconciled.packageName,
-                        appLabel = reconciled.appLabel.ifBlank { reconciled.packageName },
-                        eventAction = "duplicate",
-                        detectedAtMillis = System.currentTimeMillis(),
-                        firstInstallTimeMs = reconciled.firstInstallTimeMs
+                    val candidate = currentPending.toAttachCandidate(
+                        packageSnapshot = reconciled,
+                        eventAction = "duplicate"
                     )
                     withContext(Dispatchers.IO) {
                         GitHubTrackStore.savePendingShareImportTrack(null)
                         GitHubShareImportPreviewStore.clearActiveFlow()
                     }
-                    GitHubTrackStoreSignals.notifyChanged()
+                    saveShareImportResult(
+                        candidate.toShareImportResult(GitHubShareImportResultKind.AlreadyTracked)
+                    )
                     pendingTrack = null
                     notifyShareImportAlreadyTracked(context, candidate)
                     toast(context, R.string.github_toast_share_import_track_exists)
                     return@LaunchedEffect
                 }
-                val candidate = GitHubPendingShareImportAttachCandidate(
-                    projectUrl = currentPending.projectUrl,
-                    owner = currentPending.owner,
-                    repo = currentPending.repo,
-                    packageName = reconciled.packageName,
-                    appLabel = reconciled.appLabel.ifBlank { reconciled.packageName },
-                    eventAction = "reconciled",
-                    detectedAtMillis = System.currentTimeMillis(),
-                    firstInstallTimeMs = reconciled.firstInstallTimeMs
+                val candidate = currentPending.toAttachCandidate(
+                    packageSnapshot = reconciled,
+                    eventAction = "reconciled"
                 )
                 attachCandidate = candidate
                 withContext(Dispatchers.IO) {
@@ -292,6 +292,15 @@ internal fun GitHubShareImportWindowFlowHost(
                         GitHubShareImportPreviewStore.clearActiveFlow()
                     }
                     phase = GitHubShareImportPhase.Failed
+                    saveShareImportResult(
+                        GitHubShareImportResult(
+                            kind = GitHubShareImportResultKind.Failed,
+                            projectUrl = plan.parsedLink.projectUrl,
+                            owner = plan.parsedLink.owner,
+                            repo = plan.parsedLink.repo,
+                            message = context.getString(R.string.github_toast_share_import_no_apk)
+                        )
+                    )
                     notifyShareImportFailed(
                         context = context,
                         reason = context.getString(R.string.github_toast_share_import_no_apk)
@@ -313,6 +322,7 @@ internal fun GitHubShareImportWindowFlowHost(
                     withContext(Dispatchers.IO) {
                         GitHubShareImportPreviewStore.saveActivePreview(preview.toPendingPreviewRecord())
                     }
+                    GitHubTrackStoreSignals.notifyChanged()
                     pendingPreview = preview
                     notifyShareImportAssetReady(context, preview)
                 }
@@ -325,6 +335,12 @@ internal fun GitHubShareImportWindowFlowHost(
                 val reason = localizedGitHubShareImportErrorMessage(
                     context = context,
                     rawMessage = error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
+                )
+                saveShareImportResult(
+                    GitHubShareImportResult(
+                        kind = GitHubShareImportResultKind.Failed,
+                        message = reason
+                    )
                 )
                 notifyShareImportFailed(context, reason)
                 toast(context, R.string.github_toast_share_import_failed, reason)
@@ -348,7 +364,12 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
-                GitHubTrackStoreSignals.notifyChanged()
+                saveShareImportResult(
+                    currentPending.toShareImportResult(
+                        kind = GitHubShareImportResultKind.Cancelled,
+                        message = context.getString(R.string.github_share_import_notify_content_cancelled)
+                    )
+                )
                 pendingTrack = null
                 return@collect
             }
@@ -379,21 +400,18 @@ internal fun GitHubShareImportWindowFlowHost(
                 GitHubTrackStore.load().any { it.id == duplicateId }
             }
             if (duplicateExists) {
-                val candidate = GitHubPendingShareImportAttachCandidate(
-                    projectUrl = currentPending.projectUrl,
-                    owner = currentPending.owner,
-                    repo = currentPending.repo,
-                    packageName = packageName,
-                    appLabel = packageSnapshot.appLabel.ifBlank { packageName },
+                val candidate = currentPending.toAttachCandidate(
+                    packageSnapshot = packageSnapshot,
                     eventAction = "duplicate",
-                    detectedAtMillis = event.atMillis,
-                    firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
+                    detectedAtMillis = event.atMillis
                 )
                 withContext(Dispatchers.IO) {
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
-                GitHubTrackStoreSignals.notifyChanged()
+                saveShareImportResult(
+                    candidate.toShareImportResult(GitHubShareImportResultKind.AlreadyTracked)
+                )
                 pendingTrack = null
                 notifyShareImportAlreadyTracked(context, candidate)
                 toast(context, R.string.github_toast_share_import_track_exists)
@@ -410,15 +428,10 @@ internal fun GitHubShareImportWindowFlowHost(
                 return@collect
             }
 
-            val candidate = GitHubPendingShareImportAttachCandidate(
-                projectUrl = currentPending.projectUrl,
-                owner = currentPending.owner,
-                repo = currentPending.repo,
-                packageName = packageName,
-                appLabel = packageSnapshot.appLabel.ifBlank { packageName },
+            val candidate = currentPending.toAttachCandidate(
+                packageSnapshot = packageSnapshot,
                 eventAction = event.action,
-                detectedAtMillis = event.atMillis,
-                firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
+                detectedAtMillis = event.atMillis
             )
             attachCandidate = candidate
             withContext(Dispatchers.IO) {
@@ -470,11 +483,19 @@ internal fun GitHubShareImportWindowFlowHost(
             }
         },
         onCancel = {
+            val result = pendingPreview?.toShareImportResult(
+                kind = GitHubShareImportResultKind.Cancelled,
+                message = context.getString(R.string.github_share_import_notify_content_cancelled)
+            )
             scope.launch {
                 withContext(Dispatchers.IO) {
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
-                GitHubTrackStoreSignals.notifyChanged()
+                if (result != null) {
+                    saveShareImportResult(result)
+                } else {
+                    GitHubTrackStoreSignals.notifyChanged()
+                }
             }
             pendingPreview = null
             phase = GitHubShareImportPhase.Idle
@@ -546,12 +567,20 @@ internal fun GitHubShareImportWindowFlowHost(
             onClosePendingArmedSheet?.invoke()
         },
         onCancel = {
+            val result = pendingTrack?.toShareImportResult(
+                kind = GitHubShareImportResultKind.Cancelled,
+                message = context.getString(R.string.github_share_import_notify_content_cancelled)
+            )
             scope.launch {
                 withContext(Dispatchers.IO) {
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportPreviewStore.clearActiveFlow()
                 }
-                GitHubTrackStoreSignals.notifyChanged()
+                if (result != null) {
+                    saveShareImportResult(result)
+                } else {
+                    GitHubTrackStoreSignals.notifyChanged()
+                }
                 pendingTrack = null
                 phase = GitHubShareImportPhase.Idle
                 GitHubShareImportNotificationHelper.notifyCancelled(context)
@@ -573,11 +602,19 @@ internal fun GitHubShareImportWindowFlowHost(
         },
         onCancel = {
             if (!attachSubmitting) {
+                val result = attachCandidate?.toShareImportResult(
+                    kind = GitHubShareImportResultKind.Cancelled,
+                    message = context.getString(R.string.github_share_import_notify_content_cancelled)
+                )
                 scope.launch {
                     withContext(Dispatchers.IO) {
                         GitHubShareImportPreviewStore.clearActiveAttachCandidate()
                     }
-                    GitHubTrackStoreSignals.notifyChanged()
+                    if (result != null) {
+                        saveShareImportResult(result)
+                    } else {
+                        GitHubTrackStoreSignals.notifyChanged()
+                    }
                 }
                 attachCandidate = null
                 GitHubShareImportNotificationHelper.notifyCancelled(context)
@@ -599,6 +636,9 @@ internal fun GitHubShareImportWindowFlowHost(
                             withContext(Dispatchers.IO) {
                                 GitHubShareImportPreviewStore.clearActiveAttachCandidate()
                             }
+                            saveShareImportResult(
+                                candidate.toShareImportResult(GitHubShareImportResultKind.AlreadyTracked)
+                            )
                             attachCandidate = null
                             phase = GitHubShareImportPhase.Added
                         }
@@ -613,6 +653,12 @@ internal fun GitHubShareImportWindowFlowHost(
                             withContext(Dispatchers.IO) {
                                 GitHubShareImportPreviewStore.clearActiveAttachCandidate()
                             }
+                            saveShareImportResult(
+                                candidate.toShareImportResult(
+                                    kind = GitHubShareImportResultKind.Added,
+                                    appLabelOverride = result.appLabel
+                                )
+                            )
                             attachCandidate = null
                             phase = GitHubShareImportPhase.Added
                         }
@@ -645,6 +691,9 @@ internal fun GitHubShareImportWindowFlowHost(
                             withContext(Dispatchers.IO) {
                                 GitHubShareImportPreviewStore.clearActiveAttachCandidate()
                             }
+                            saveShareImportResult(
+                                candidate.toShareImportResult(GitHubShareImportResultKind.AlreadyTracked)
+                            )
                             attachCandidate = null
                             phase = GitHubShareImportPhase.Added
                         }
@@ -659,6 +708,12 @@ internal fun GitHubShareImportWindowFlowHost(
                             withContext(Dispatchers.IO) {
                                 GitHubShareImportPreviewStore.clearActiveAttachCandidate()
                             }
+                            saveShareImportResult(
+                                candidate.toShareImportResult(
+                                    kind = GitHubShareImportResultKind.Added,
+                                    appLabelOverride = result.appLabel
+                                )
+                            )
                             attachCandidate = null
                             phase = GitHubShareImportPhase.Added
                             runCatching {
@@ -675,4 +730,11 @@ internal fun GitHubShareImportWindowFlowHost(
             }
         }
     )
+}
+
+private suspend fun saveShareImportResult(result: GitHubShareImportResult) {
+    withContext(Dispatchers.IO) {
+        GitHubShareImportPreviewStore.saveActiveResult(result.toRecord())
+    }
+    GitHubTrackStoreSignals.notifyChanged()
 }

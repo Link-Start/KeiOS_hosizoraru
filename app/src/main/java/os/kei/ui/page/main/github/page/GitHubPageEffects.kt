@@ -55,7 +55,7 @@ internal fun BindGitHubPageEffects(
             state.hasInitialized = true
             actions.initializeWarmSnapshot()
         }
-        actions.syncTrackSnapshotFromStore(forceRefreshApps = false)
+        actions.syncActiveShareImportFlowFromStore()
         if (!state.hasActiveInitialized) {
             state.hasActiveInitialized = true
             actions.initializePageActiveWork()

@@ -48,6 +48,15 @@ import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.query.queryDownloaderOptions
 import os.kei.ui.page.main.github.query.queryOnlineShareTargetOptions
+import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
+import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
+import os.kei.ui.page.main.github.share.GitHubShareImportPreview
+import os.kei.ui.page.main.github.share.GitHubShareImportResult
+import os.kei.ui.page.main.github.share.toRecord
+import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
+import os.kei.ui.page.main.github.share.toShareImportPreview
+import os.kei.ui.page.main.github.share.toShareImportResult
+import os.kei.ui.page.main.github.share.toShareImportTrack
 import os.kei.ui.page.main.github.state.toUi
 
 internal data class GitHubTrackEditorDraft(
@@ -67,6 +76,13 @@ internal sealed interface GitHubTrackEditorResult {
 internal data class GitHubOnlineShareTargetInput(
     val shouldResolve: Boolean,
     val appList: List<InstalledAppItem>
+)
+
+internal data class GitHubActiveShareImportFlow(
+    val preview: GitHubShareImportPreview?,
+    val pendingTrack: GitHubPendingShareImportTrack?,
+    val attachCandidate: GitHubPendingShareImportAttachCandidate?,
+    val result: GitHubShareImportResult?
 )
 
 internal class GitHubPageRepository(
@@ -177,6 +193,39 @@ internal class GitHubPageRepository(
             GitHubTrackStore.savePendingShareImportTrack(null)
             GitHubShareImportPreviewStore.clearActiveFlow()
             GitHubTrackStoreSignals.notifyChanged()
+        }
+    }
+
+    suspend fun clearShareImportResult() {
+        withContext(ioDispatcher) {
+            GitHubShareImportPreviewStore.clearActiveResult()
+            GitHubTrackStoreSignals.notifyChanged()
+        }
+    }
+
+    suspend fun saveShareImportResult(result: GitHubShareImportResult) {
+        withContext(ioDispatcher) {
+            GitHubShareImportPreviewStore.saveActiveResult(result.toRecord())
+            GitHubTrackStoreSignals.notifyChanged()
+        }
+    }
+
+    suspend fun loadActiveShareImportFlow(): GitHubActiveShareImportFlow {
+        return withContext(ioDispatcher) {
+            GitHubActiveShareImportFlow(
+                preview = GitHubShareImportPreviewStore
+                    .loadActivePreview()
+                    ?.toShareImportPreview(),
+                pendingTrack = GitHubTrackStore
+                    .loadPendingShareImportTrack()
+                    ?.toShareImportTrack(),
+                attachCandidate = GitHubShareImportPreviewStore
+                    .loadActiveAttachCandidate()
+                    ?.toShareImportAttachCandidate(),
+                result = GitHubShareImportPreviewStore
+                    .loadActiveResult()
+                    ?.toShareImportResult()
+            )
         }
     }
 

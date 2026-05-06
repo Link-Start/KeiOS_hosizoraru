@@ -29,11 +29,29 @@ data class GitHubPendingShareImportAttachCandidateRecord(
     val firstInstallTimeMs: Long = -1L
 )
 
+const val GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED = "added"
+const val GITHUB_SHARE_IMPORT_RESULT_STATUS_ALREADY_TRACKED = "already_tracked"
+const val GITHUB_SHARE_IMPORT_RESULT_STATUS_FAILED = "failed"
+const val GITHUB_SHARE_IMPORT_RESULT_STATUS_CANCELLED = "cancelled"
+
+data class GitHubShareImportResultRecord(
+    val status: String,
+    val projectUrl: String = "",
+    val owner: String = "",
+    val repo: String = "",
+    val appLabel: String = "",
+    val packageName: String = "",
+    val message: String = "",
+    val completedAtMillis: Long = System.currentTimeMillis()
+)
+
 object GitHubShareImportPreviewStore {
     private const val KV_ID = "github_share_import_preview_store"
     private const val KEY_ACTIVE_PREVIEW = "github_active_share_import_preview"
     private const val KEY_ACTIVE_ATTACH_CANDIDATE = "github_active_share_import_attach_candidate"
+    private const val KEY_ACTIVE_RESULT = "github_active_share_import_result"
     private const val ACTIVE_PREVIEW_MAX_AGE_MS = 25 * 60 * 1000L
+    private const val ACTIVE_RESULT_MAX_AGE_MS = 2 * 60 * 60 * 1000L
 
     private val store: MMKV by lazy {
         MMKV.mmkvWithID(KV_ID, MMKV.MULTI_PROCESS_MODE)
@@ -91,9 +109,35 @@ object GitHubShareImportPreviewStore {
         store.removeValueForKey(KEY_ACTIVE_ATTACH_CANDIDATE)
     }
 
+    fun loadActiveResult(nowMillis: Long = System.currentTimeMillis()): GitHubShareImportResultRecord? {
+        val raw = store.decodeString(KEY_ACTIVE_RESULT).orEmpty()
+        if (raw.isBlank()) return null
+        val record = runCatching {
+            parseResult(JSONObject(raw))
+        }.getOrNull()
+        if (record == null || record.isExpired(nowMillis)) {
+            clearActiveResult()
+            return null
+        }
+        return record
+    }
+
+    fun saveActiveResult(record: GitHubShareImportResultRecord?) {
+        if (record == null) {
+            clearActiveResult()
+            return
+        }
+        store.encode(KEY_ACTIVE_RESULT, resultToJson(record).toString())
+    }
+
+    fun clearActiveResult() {
+        store.removeValueForKey(KEY_ACTIVE_RESULT)
+    }
+
     fun clearActiveFlow() {
         clearActivePreview()
         clearActiveAttachCandidate()
+        clearActiveResult()
     }
 
     private fun GitHubPendingShareImportPreviewRecord.isExpired(nowMillis: Long): Boolean {
@@ -104,6 +148,11 @@ object GitHubShareImportPreviewStore {
     private fun GitHubPendingShareImportAttachCandidateRecord.isExpired(nowMillis: Long): Boolean {
         return detectedAtMillis <= 0L ||
                 (nowMillis - detectedAtMillis).coerceAtLeast(0L) > ACTIVE_PREVIEW_MAX_AGE_MS
+    }
+
+    private fun GitHubShareImportResultRecord.isExpired(nowMillis: Long): Boolean {
+        return completedAtMillis <= 0L ||
+                (nowMillis - completedAtMillis).coerceAtLeast(0L) > ACTIVE_RESULT_MAX_AGE_MS
     }
 
     private fun parsePreview(obj: JSONObject): GitHubPendingShareImportPreviewRecord? {
@@ -216,4 +265,48 @@ object GitHubShareImportPreviewStore {
             .put("detectedAtMillis", record.detectedAtMillis)
             .put("firstInstallTimeMs", record.firstInstallTimeMs)
     }
+
+    private fun parseResult(obj: JSONObject): GitHubShareImportResultRecord? {
+        val status = obj.optString("status").trim()
+        if (status !in activeResultStatuses) return null
+        val completedAtMillis = obj.optLong("completedAtMillis", 0L)
+        if (completedAtMillis <= 0L) return null
+        val owner = obj.optString("owner").trim()
+        val repo = obj.optString("repo").trim()
+        val appLabel = obj.optString("appLabel").trim()
+        val packageName = obj.optString("packageName").trim()
+        val message = obj.optString("message").trim()
+        if (owner.isBlank() && repo.isBlank() && appLabel.isBlank() && packageName.isBlank() && message.isBlank()) {
+            return null
+        }
+        return GitHubShareImportResultRecord(
+            status = status,
+            projectUrl = obj.optString("projectUrl").trim(),
+            owner = owner,
+            repo = repo,
+            appLabel = appLabel,
+            packageName = packageName,
+            message = message,
+            completedAtMillis = completedAtMillis
+        )
+    }
+
+    private fun resultToJson(record: GitHubShareImportResultRecord): JSONObject {
+        return JSONObject()
+            .put("status", record.status)
+            .put("projectUrl", record.projectUrl)
+            .put("owner", record.owner)
+            .put("repo", record.repo)
+            .put("appLabel", record.appLabel)
+            .put("packageName", record.packageName)
+            .put("message", record.message)
+            .put("completedAtMillis", record.completedAtMillis)
+    }
+
+    private val activeResultStatuses = setOf(
+        GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED,
+        GITHUB_SHARE_IMPORT_RESULT_STATUS_ALREADY_TRACKED,
+        GITHUB_SHARE_IMPORT_RESULT_STATUS_FAILED,
+        GITHUB_SHARE_IMPORT_RESULT_STATUS_CANCELLED
+    )
 }

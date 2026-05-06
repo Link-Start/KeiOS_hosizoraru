@@ -629,6 +629,7 @@
     <string name="github_share_import_attach_card_title">Share import awaiting confirmation</string>
     <string name="github_share_import_card_action_continue">Continue</string>
     <string name="github_share_import_preview_card_asset_count">%1$d APKs</string>
+    <string name="github_share_import_result_label_detail">Detail</string>
     <string name="github_share_import_notify_action_select_apk">Choose APK</string>
     <string name="github_share_import_notify_action_view_progress">View progress</string>
     <string name="github_share_import_notify_action_view_status">View status</string>

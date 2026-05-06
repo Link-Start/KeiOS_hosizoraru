@@ -41,6 +41,7 @@ import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
+import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 @Stable
@@ -110,6 +111,7 @@ internal class GitHubPageState(
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
     var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
     var pendingShareImportAttachCandidate by mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null)
+    var pendingShareImportResult by mutableStateOf<GitHubShareImportResult?>(null)
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
     var apkInfoDetailRequest by mutableStateOf<GitHubReleaseAssetFile?>(null)

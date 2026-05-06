@@ -10,7 +10,6 @@ import androidx.annotation.StringRes
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
-import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.builder.EnvironmentContext
 import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
@@ -379,9 +378,8 @@ object GitHubShareImportNotificationHelper {
     }
 
     private fun buildMarkReadPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = NotificationActionReceiver.ACTION_MARK_READ
-            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, NOTIFICATION_ID)
+        val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
+            action = GitHubShareImportActionReceiver.ACTION_MARK_READ_SHARE_IMPORT
         }
         return PendingIntent.getBroadcast(
             context,

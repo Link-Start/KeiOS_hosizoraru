@@ -30,6 +30,7 @@ import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
+import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -83,6 +84,7 @@ internal fun GitHubMainContent(
     pendingShareImportPreview: GitHubShareImportPreview?,
     pendingShareImportTrack: GitHubPendingShareImportTrack?,
     pendingShareImportAttachCandidate: GitHubPendingShareImportAttachCandidate?,
+    pendingShareImportResult: GitHubShareImportResult?,
     showPendingShareImportCard: Boolean,
     pendingShareImportRepoOverlapCount: Int,
     onTrackedSearchChange: (String) -> Unit,
@@ -108,8 +110,10 @@ internal fun GitHubMainContent(
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     onOpenShareImportFlow: () -> Unit,
+    onOpenShareImportResult: () -> Unit,
     onCancelActiveShareImportFlow: () -> Unit,
     onCancelPendingShareImportTrack: () -> Unit,
+    onDismissShareImportResult: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -203,6 +207,21 @@ internal fun GitHubMainContent(
                                     preview = preview,
                                     onOpen = onOpenShareImportFlow,
                                     onCancel = onCancelActiveShareImportFlow
+                                )
+                            }
+                        }
+                    }
+                    if (
+                        pendingShareImportPreview == null &&
+                        pendingShareImportTrack == null &&
+                        pendingShareImportAttachCandidate == null
+                    ) {
+                        pendingShareImportResult?.let { result ->
+                            item {
+                                GitHubShareImportResultCard(
+                                    result = result,
+                                    onOpen = onOpenShareImportResult,
+                                    onDismiss = onDismissShareImportResult
                                 )
                             }
                         }

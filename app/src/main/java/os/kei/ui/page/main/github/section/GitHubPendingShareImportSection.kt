@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubCompactInfoRow
@@ -16,8 +17,10 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
+import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.github.share.shareImportRemainingMinutes
 import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
@@ -204,14 +207,67 @@ internal fun GitHubShareImportAttachCandidateCard(
 }
 
 @Composable
+internal fun GitHubShareImportResultCard(
+    result: GitHubShareImportResult,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    GitHubShareImportFlowCard(
+        title = stringResource(result.kind.titleRes),
+        status = stringResource(result.kind.statusRes),
+        statusColor = result.kind.color,
+        primaryText = stringResource(result.kind.primaryActionRes),
+        primaryColor = result.kind.color,
+        secondaryText = stringResource(R.string.common_mark_read),
+        secondaryIcon = appLucideConfirmIcon(),
+        onOpen = onOpen,
+        onCancel = onDismiss
+    ) {
+        GitHubCompactInfoRow(
+            label = stringResource(R.string.github_share_import_pending_label_target),
+            value = result.projectLabel,
+            valueColor = MiuixTheme.colorScheme.onBackground
+        )
+        if (result.appDisplayLabel.isNotBlank()) {
+            GitHubCompactInfoRow(
+                label = stringResource(R.string.github_share_import_attach_dialog_label_app),
+                value = result.appDisplayLabel,
+                valueColor = MiuixTheme.colorScheme.onBackground
+            )
+        }
+        if (result.packageName.isNotBlank()) {
+            GitHubCompactInfoRow(
+                label = stringResource(R.string.github_share_import_attach_dialog_label_package),
+                value = result.packageName,
+                valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+            )
+        }
+        if (result.message.isNotBlank()) {
+            GitHubCompactInfoRow(
+                label = stringResource(R.string.github_share_import_result_label_detail),
+                value = result.message,
+                valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun GitHubShareImportFlowCard(
     title: String,
     status: String,
     statusColor: androidx.compose.ui.graphics.Color,
+    primaryText: String? = null,
+    primaryIcon: ImageVector? = null,
+    primaryColor: androidx.compose.ui.graphics.Color = statusColor,
+    secondaryText: String? = null,
+    secondaryIcon: ImageVector? = null,
     onOpen: () -> Unit,
     onCancel: () -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val resolvedPrimaryIcon = primaryIcon ?: appLucideExternalLinkIcon()
+    val resolvedSecondaryIcon = secondaryIcon ?: appLucideCloseIcon()
     AppSurfaceCard(
         containerColor = GitHubStatusPalette.tonedSurface(
             statusColor,
@@ -254,15 +310,17 @@ private fun GitHubShareImportFlowCard(
             ) {
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.github_share_import_card_action_continue),
-                    leadingIcon = appLucideExternalLinkIcon(),
-                    containerColor = statusColor,
+                    text = primaryText
+                        ?: stringResource(R.string.github_share_import_card_action_continue),
+                    leadingIcon = resolvedPrimaryIcon,
+                    containerColor = primaryColor,
                     onClick = onOpen
                 )
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.github_share_import_pending_action_cancel),
-                    leadingIcon = appLucideCloseIcon(),
+                    text = secondaryText
+                        ?: stringResource(R.string.github_share_import_pending_action_cancel),
+                    leadingIcon = resolvedSecondaryIcon,
                     onClick = onCancel
                 )
             }

@@ -4,27 +4,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.system.AppPackageChangedEvent
-import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
-import os.kei.feature.github.data.remote.GitHubShareImportResolver
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -32,14 +24,6 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 internal const val shareImportTrackMaxAgeMs = 25 * 60 * 1000L
 internal const val shareImportTrackUpdateToleranceMs = 2 * 60 * 1000L
@@ -57,6 +41,23 @@ internal data class ShareImportInstalledPackageSnapshot(
     val lastUpdateTimeMs: Long,
     val firstInstallTimeMs: Long
 )
+
+internal fun GitHubPendingShareImportTrackRecord.toAttachCandidate(
+    packageSnapshot: ShareImportInstalledPackageSnapshot,
+    eventAction: String,
+    detectedAtMillis: Long = System.currentTimeMillis()
+): GitHubPendingShareImportAttachCandidate {
+    return GitHubPendingShareImportAttachCandidate(
+        projectUrl = projectUrl,
+        owner = owner,
+        repo = repo,
+        packageName = packageSnapshot.packageName,
+        appLabel = packageSnapshot.appLabel.ifBlank { packageSnapshot.packageName },
+        eventAction = eventAction,
+        detectedAtMillis = detectedAtMillis,
+        firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
+    )
+}
 
 internal sealed interface ShareImportDeliveryResult {
     data class Success(val toastResId: Int) : ShareImportDeliveryResult

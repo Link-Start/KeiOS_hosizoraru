@@ -1,11 +1,55 @@
 package os.kei.ui.page.main.github.share
 
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import org.junit.Test
+import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
+import os.kei.feature.github.data.local.GitHubShareImportResultRecord
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class GitHubShareImportWindowFlowSupportTest {
+    @Test
+    fun `share import result record converts into ui result`() {
+        val result = GitHubShareImportResultRecord(
+            status = GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo",
+            packageName = "demo.package",
+            completedAtMillis = 12_000L
+        ).toShareImportResult()
+
+        assertNotNull(result)
+        assertEquals(GitHubShareImportResultKind.Added, result.kind)
+        assertEquals("owner/repo", result.projectLabel)
+        assertEquals("Demo", result.appDisplayLabel)
+    }
+
+    @Test
+    fun `pending track converts installed snapshot into attach candidate`() {
+        val pending = pendingTrack(armedAtMillis = 10_000L)
+        val candidate = pending.toAttachCandidate(
+            packageSnapshot = installedPackage(
+                packageName = "new.package",
+                appLabel = "",
+                lastUpdateTimeMs = 12_000L,
+                firstInstallTimeMs = 11_500L
+            ),
+            eventAction = "duplicate",
+            detectedAtMillis = 12_100L
+        )
+
+        assertEquals("https://github.com/asadahimeka/pixiv-viewer-app", candidate.projectUrl)
+        assertEquals("asadahimeka", candidate.owner)
+        assertEquals("pixiv-viewer-app", candidate.repo)
+        assertEquals("new.package", candidate.packageName)
+        assertEquals("new.package", candidate.appLabel)
+        assertEquals("duplicate", candidate.eventAction)
+        assertEquals(12_100L, candidate.detectedAtMillis)
+        assertEquals(11_500L, candidate.firstInstallTimeMs)
+    }
+
     @Test
     fun `reconciliation ignores package updated before current share was armed`() {
         val pending = pendingTrack(armedAtMillis = 10_000L)
@@ -71,11 +115,13 @@ class GitHubShareImportWindowFlowSupportTest {
 
     private fun installedPackage(
         packageName: String,
-        lastUpdateTimeMs: Long
+        lastUpdateTimeMs: Long,
+        appLabel: String = packageName,
+        firstInstallTimeMs: Long = lastUpdateTimeMs
     ) = ShareImportInstalledPackageSnapshot(
         packageName = packageName,
-        appLabel = packageName,
+        appLabel = appLabel,
         lastUpdateTimeMs = lastUpdateTimeMs,
-        firstInstallTimeMs = lastUpdateTimeMs
+        firstInstallTimeMs = firstInstallTimeMs
     )
 }

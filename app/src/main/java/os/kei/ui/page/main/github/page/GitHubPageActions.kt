@@ -19,6 +19,9 @@ import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
+import os.kei.ui.page.main.github.share.GitHubShareImportResult
+import os.kei.ui.page.main.github.share.GitHubShareImportResultKind
+import os.kei.ui.page.main.github.share.toShareImportResult
 
 internal class GitHubPageActions(
     context: Context,
@@ -100,6 +103,14 @@ internal class GitHubPageActions(
 
     suspend fun syncTrackSnapshotFromStore(forceRefreshApps: Boolean = true) =
         refreshActions.syncSnapshotFromStore(forceRefreshApps)
+
+    suspend fun syncActiveShareImportFlowFromStore() {
+        val flow = env.repository.loadActiveShareImportFlow()
+        env.state.pendingShareImportPreview = flow.preview
+        env.state.pendingShareImportTrack = flow.pendingTrack
+        env.state.pendingShareImportAttachCandidate = flow.attachCandidate
+        env.state.pendingShareImportResult = flow.result
+    }
 
     suspend fun syncLocalAppStateOnPageActive() {
         refreshActions.syncLocalAppStateWithInstalledApps(forceRefreshApps = true)
@@ -223,7 +234,8 @@ internal class GitHubPageActions(
 
     fun cancelPendingShareImportTrack(showToast: Boolean = true) {
         val hadPending = env.state.pendingShareImportTrack != null
-        clearPendingShareImportTrack()
+        val cancelledResult = buildCancelledShareImportResult()
+        clearPendingShareImportTrack(cancelledResult)
         if (hadPending && showToast) {
             env.toast(R.string.github_toast_share_import_pending_cancelled)
         }
@@ -241,15 +253,44 @@ internal class GitHubPageActions(
         val hadActiveFlow = env.state.pendingShareImportPreview != null ||
                 env.state.pendingShareImportTrack != null ||
                 env.state.pendingShareImportAttachCandidate != null
+        val cancelledResult = buildCancelledShareImportResult()
         env.state.pendingShareImportPreview = null
         env.state.pendingShareImportTrack = null
         env.state.pendingShareImportAttachCandidate = null
+        env.state.pendingShareImportResult = cancelledResult
         env.scope.launch {
             env.repository.clearActiveShareImportFlow()
+            if (cancelledResult != null) {
+                env.repository.saveShareImportResult(cancelledResult)
+            }
             GitHubShareImportNotificationHelper.notifyCancelled(env.context)
         }
         if (hadActiveFlow && showToast) {
             env.toast(R.string.github_toast_share_import_pending_cancelled)
+        }
+    }
+
+    fun focusShareImportResult() {
+        val result = env.state.pendingShareImportResult ?: return
+        env.state.showFailedOnly = false
+        val query = result.appDisplayLabel
+            .ifBlank { result.packageName }
+            .ifBlank { result.repo }
+            .ifBlank { result.owner }
+        if (query.isNotBlank()) {
+            env.state.trackedSearch = query
+        }
+    }
+
+    fun dismissShareImportResult(showToast: Boolean = false) {
+        val hadResult = env.state.pendingShareImportResult != null
+        env.state.pendingShareImportResult = null
+        env.scope.launch {
+            env.repository.clearShareImportResult()
+            GitHubShareImportNotificationHelper.cancel(env.context)
+        }
+        if (hadResult && showToast) {
+            env.toast(R.string.common_mark_read)
         }
     }
 
@@ -374,15 +415,47 @@ internal class GitHubPageActions(
         val pending = env.state.pendingShareImportTrack ?: return
         val age = (nowMillis - pending.armedAtMillis).coerceAtLeast(0L)
         if (age <= pendingShareImportTrackMaxAgeMs) return
-        clearPendingShareImportTrack()
+        clearPendingShareImportTrack(
+            pending.toShareImportResult(
+                kind = GitHubShareImportResultKind.Cancelled,
+                message = env.string(R.string.github_share_import_notify_content_cancelled)
+            )
+        )
     }
 
-    private fun clearPendingShareImportTrack() {
+    private fun clearPendingShareImportTrack(cancelledResult: GitHubShareImportResult? = null) {
         env.state.pendingShareImportTrack = null
+        env.state.pendingShareImportResult = cancelledResult
         env.scope.launch {
             env.repository.clearPendingShareImportTrack()
+            if (cancelledResult != null) {
+                env.repository.saveShareImportResult(cancelledResult)
+            }
             GitHubShareImportNotificationHelper.notifyCancelled(env.context)
         }
+    }
+
+    private fun buildCancelledShareImportResult(): GitHubShareImportResult? {
+        val message = env.string(R.string.github_share_import_notify_content_cancelled)
+        env.state.pendingShareImportAttachCandidate?.let { candidate ->
+            return candidate.toShareImportResult(
+                kind = GitHubShareImportResultKind.Cancelled,
+                message = message
+            )
+        }
+        env.state.pendingShareImportTrack?.let { pending ->
+            return pending.toShareImportResult(
+                kind = GitHubShareImportResultKind.Cancelled,
+                message = message
+            )
+        }
+        env.state.pendingShareImportPreview?.let { preview ->
+            return preview.toShareImportResult(
+                kind = GitHubShareImportResultKind.Cancelled,
+                message = message
+            )
+        }
+        return null
     }
 
 }

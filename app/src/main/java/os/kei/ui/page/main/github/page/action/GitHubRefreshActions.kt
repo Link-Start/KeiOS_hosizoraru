@@ -16,9 +16,10 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
-import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.toShareImportPreview
+import os.kei.ui.page.main.github.share.toShareImportResult
+import os.kei.ui.page.main.github.share.toShareImportTrack
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
 
@@ -434,22 +435,16 @@ internal class GitHubRefreshActions(
         state.trackedAddedAtById.clear()
         state.trackedAddedAtById.putAll(trackSnapshot.trackedAddedAtById)
         state.retainTrackedAddedAtByTrackedItems()
-        state.pendingShareImportTrack = trackSnapshot.pendingShareImportTrack?.let { pending ->
-            GitHubPendingShareImportTrack(
-                projectUrl = pending.projectUrl,
-                owner = pending.owner,
-                repo = pending.repo,
-                releaseTag = pending.releaseTag,
-                assetName = pending.assetName,
-                armedAtMillis = pending.armedAtMillis
-            )
-        }
+        state.pendingShareImportTrack = trackSnapshot.pendingShareImportTrack?.toShareImportTrack()
         state.pendingShareImportPreview = GitHubShareImportPreviewStore
             .loadActivePreview()
             ?.toShareImportPreview()
         state.pendingShareImportAttachCandidate = GitHubShareImportPreviewStore
             .loadActiveAttachCandidate()
             ?.toShareImportAttachCandidate()
+        state.pendingShareImportResult = GitHubShareImportPreviewStore
+            .loadActiveResult()
+            ?.toShareImportResult()
 
         val cachedStates = trackSnapshot.checkCache
         state.checkStates.clear()

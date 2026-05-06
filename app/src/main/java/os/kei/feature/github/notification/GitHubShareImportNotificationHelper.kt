@@ -235,8 +235,7 @@ object GitHubShareImportNotificationHelper {
         } else {
             buildOpenFlowPendingIntent(context)
         }
-        val cancelImportEnabled = state.phase == GitHubShareImportNotificationPhase.AssetReady ||
-                state.phase == GitHubShareImportNotificationPhase.WaitingInstall
+        val cancelImportEnabled = state.phase.cancelActionEnabled
         val secondaryPendingIntent = if (state.phase.ongoing) {
             if (cancelImportEnabled) {
                 buildCancelImportPendingIntent(context)
@@ -259,6 +258,7 @@ object GitHubShareImportNotificationHelper {
             openPendingIntent = openPendingIntent,
             stopPendingIntent = secondaryPendingIntent,
             focusOpenPendingIntent = openPendingIntent,
+            primaryActionLabel = context.getString(state.phase.primaryActionRes),
             secondaryActionLabel = if (state.phase.ongoing) {
                 if (cancelImportEnabled) {
                     context.getString(R.string.github_share_import_pending_action_cancel)
@@ -266,8 +266,9 @@ object GitHubShareImportNotificationHelper {
                     ""
                 }
             } else {
-                context.getString(R.string.common_acknowledge)
+                context.getString(R.string.common_mark_read)
             },
+            showSecondaryActionWhenStopped = true,
             overrideTitle = context.getString(state.phase.titleRes),
             overrideContent = content,
             overrideOnlineText = shortText,
@@ -435,13 +436,16 @@ internal data class GitHubShareImportNotificationState(
 internal enum class GitHubShareImportNotificationPhase(
     @param:StringRes val titleRes: Int,
     @param:StringRes val shortTextRes: Int,
+    @param:StringRes val primaryActionRes: Int,
     val progressPercent: Int,
     val ongoing: Boolean,
-    val openGitHubPage: Boolean
+    val openGitHubPage: Boolean,
+    val cancelActionEnabled: Boolean = false
 ) {
     Resolving(
         titleRes = R.string.github_share_import_notify_title_resolving,
         shortTextRes = R.string.github_share_import_notify_short_resolving,
+        primaryActionRes = R.string.github_share_import_notify_action_view_progress,
         progressPercent = 12,
         ongoing = true,
         openGitHubPage = false
@@ -449,13 +453,16 @@ internal enum class GitHubShareImportNotificationPhase(
     AssetReady(
         titleRes = R.string.github_share_import_notify_title_asset_ready,
         shortTextRes = R.string.github_share_import_notify_short_asset_ready,
+        primaryActionRes = R.string.github_share_import_notify_action_select_apk,
         progressPercent = 32,
         ongoing = true,
-        openGitHubPage = false
+        openGitHubPage = false,
+        cancelActionEnabled = true
     ),
     Delivering(
         titleRes = R.string.github_share_import_notify_title_delivering,
         shortTextRes = R.string.github_share_import_notify_short_delivering,
+        primaryActionRes = R.string.github_share_import_notify_action_view_progress,
         progressPercent = 52,
         ongoing = true,
         openGitHubPage = false
@@ -463,20 +470,25 @@ internal enum class GitHubShareImportNotificationPhase(
     WaitingInstall(
         titleRes = R.string.github_share_import_notify_title_waiting_install,
         shortTextRes = R.string.github_share_import_notify_short_waiting_install,
+        primaryActionRes = R.string.github_share_import_notify_action_view_status,
         progressPercent = 72,
         ongoing = true,
-        openGitHubPage = false
+        openGitHubPage = false,
+        cancelActionEnabled = true
     ),
     InstallDetected(
         titleRes = R.string.github_share_import_notify_title_install_detected,
         shortTextRes = R.string.github_share_import_notify_short_install_detected,
+        primaryActionRes = R.string.github_share_import_notify_action_confirm_track,
         progressPercent = 86,
         ongoing = true,
-        openGitHubPage = false
+        openGitHubPage = false,
+        cancelActionEnabled = true
     ),
     AddingTrack(
         titleRes = R.string.github_share_import_notify_title_adding_track,
         shortTextRes = R.string.github_share_import_notify_short_adding_track,
+        primaryActionRes = R.string.github_share_import_notify_action_view_progress,
         progressPercent = 94,
         ongoing = true,
         openGitHubPage = false
@@ -484,6 +496,7 @@ internal enum class GitHubShareImportNotificationPhase(
     Added(
         titleRes = R.string.github_share_import_notify_title_added,
         shortTextRes = R.string.github_share_import_notify_short_added,
+        primaryActionRes = R.string.github_share_import_notify_action_view_tracking,
         progressPercent = 100,
         ongoing = false,
         openGitHubPage = true
@@ -491,6 +504,7 @@ internal enum class GitHubShareImportNotificationPhase(
     AlreadyTracked(
         titleRes = R.string.github_share_import_notify_title_already_tracked,
         shortTextRes = R.string.github_share_import_notify_short_already_tracked,
+        primaryActionRes = R.string.github_share_import_notify_action_view_tracking,
         progressPercent = 100,
         ongoing = false,
         openGitHubPage = true
@@ -498,15 +512,17 @@ internal enum class GitHubShareImportNotificationPhase(
     Failed(
         titleRes = R.string.github_share_import_notify_title_failed,
         shortTextRes = R.string.github_share_import_notify_short_failed,
+        primaryActionRes = R.string.github_share_import_notify_action_view_github,
         progressPercent = 100,
         ongoing = false,
-        openGitHubPage = false
+        openGitHubPage = true
     ),
     Cancelled(
         titleRes = R.string.github_share_import_notify_title_cancelled,
         shortTextRes = R.string.github_share_import_notify_short_cancelled,
+        primaryActionRes = R.string.github_share_import_notify_action_view_github,
         progressPercent = 100,
         ongoing = false,
-        openGitHubPage = false
+        openGitHubPage = true
     )
 }

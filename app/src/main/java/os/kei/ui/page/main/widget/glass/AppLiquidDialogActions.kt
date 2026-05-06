@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -12,6 +13,7 @@ fun AppLiquidDialogActionButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    buttonModifier: Modifier = Modifier.fillMaxWidth(),
     enabled: Boolean = true,
     containerColor: Color? = null,
     textColor: Color = if (containerColor != null) {
@@ -29,6 +31,7 @@ fun AppLiquidDialogActionButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
+        buttonModifier = buttonModifier,
         textColor = textColor,
         containerColor = containerColor,
         enabled = enabled,

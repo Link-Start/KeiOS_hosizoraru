@@ -625,6 +625,12 @@
     <string name="github_share_import_pending_label_asset">APK</string>
     <string name="github_share_import_pending_repo_overlap_hint">%1$d local items already track this repository. Same-repository same-package items are deduplicated automatically.</string>
     <string name="github_share_import_pending_action_cancel">Cancel linkage</string>
+    <string name="github_share_import_notify_action_select_apk">Choose APK</string>
+    <string name="github_share_import_notify_action_view_progress">View progress</string>
+    <string name="github_share_import_notify_action_view_status">View status</string>
+    <string name="github_share_import_notify_action_confirm_track">Confirm tracking</string>
+    <string name="github_share_import_notify_action_view_tracking">View tracking</string>
+    <string name="github_share_import_notify_action_view_github">View GitHub</string>
     <string name="github_share_import_notify_title_resolving">Preparing share import</string>
     <string name="github_share_import_notify_title_asset_ready">Installable APK found</string>
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>

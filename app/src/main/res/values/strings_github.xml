@@ -625,6 +625,12 @@
     <string name="github_share_import_pending_label_asset">APK</string>
     <string name="github_share_import_pending_repo_overlap_hint">本地已追踪该仓库 %1$d 项；检测到同仓同包时会自动去重。</string>
     <string name="github_share_import_pending_action_cancel">取消联动</string>
+    <string name="github_share_import_notify_action_select_apk">选择 APK</string>
+    <string name="github_share_import_notify_action_view_progress">查看进度</string>
+    <string name="github_share_import_notify_action_view_status">查看状态</string>
+    <string name="github_share_import_notify_action_confirm_track">确认跟踪</string>
+    <string name="github_share_import_notify_action_view_tracking">查看跟踪</string>
+    <string name="github_share_import_notify_action_view_github">查看 GitHub</string>
     <string name="github_share_import_notify_title_resolving">正在准备分享导入</string>
     <string name="github_share_import_notify_title_asset_ready">已找到可安装 APK</string>
     <string name="github_share_import_notify_title_delivering">正在交给安装器</string>

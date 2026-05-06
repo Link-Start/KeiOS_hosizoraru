@@ -44,12 +44,31 @@ class GitHubShareImportNotificationHelperTest {
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, notification.actions.size)
-        assertEquals("Open", notification.actions[0].title.toString())
+        assertEquals("View status", notification.actions[0].title.toString())
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
     }
 
     @Test
-    fun `completed notification is readable and dismissible`() {
+    fun `asset ready notification uses install selection action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.AssetReady,
+            owner = "owner",
+            repo = "repo",
+            releaseTag = "v1.2.3",
+            count = 2
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(2, notification.actions.size)
+        assertEquals("Choose APK", notification.actions[0].title.toString())
+        assertEquals("Cancel linkage", notification.actions[1].title.toString())
+    }
+
+    @Test
+    fun `completed notification offers tracking and mark read actions`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Added,
@@ -71,12 +90,33 @@ class GitHubShareImportNotificationHelperTest {
             "Demo was added to owner/repo tracking",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
-        assertEquals(1, notification.actions.size)
-        assertEquals("Open", notification.actions[0].title.toString())
+        assertEquals(2, notification.actions.size)
+        assertEquals("View tracking", notification.actions[0].title.toString())
+        assertEquals("Mark read", notification.actions[1].title.toString())
     }
 
     @Test
-    fun `resolving notification avoids duplicate open actions`() {
+    fun `cancelled notification offers github and mark read actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.Cancelled
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals(
+            "Share import cancelled",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(2, notification.actions.size)
+        assertEquals("View GitHub", notification.actions[0].title.toString())
+        assertEquals("Mark read", notification.actions[1].title.toString())
+    }
+
+    @Test
+    fun `resolving notification keeps progress action without duplicate secondary action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Resolving,
@@ -87,7 +127,26 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(1, notification.actions.size)
-        assertEquals("Open", notification.actions[0].title.toString())
+        assertEquals("View progress", notification.actions[0].title.toString())
+    }
+
+    @Test
+    fun `install detected notification offers confirmation and cancel actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.InstallDetected,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo",
+            packageName = "demo.app"
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(2, notification.actions.size)
+        assertEquals("Confirm tracking", notification.actions[0].title.toString())
+        assertEquals("Cancel linkage", notification.actions[1].title.toString())
     }
 
     private fun buildModern(

@@ -15,7 +15,9 @@ data class McpNotificationPayload(
     val openPendingIntent: PendingIntent,
     val stopPendingIntent: PendingIntent,
     val focusOpenPendingIntent: PendingIntent = openPendingIntent,
+    val primaryActionLabel: String? = null,
     val secondaryActionLabel: String? = null,
+    val showSecondaryActionWhenStopped: Boolean = false,
     val outerGlow: Boolean = true,
     val overrideTitle: String? = null,
     val overrideContent: String? = null,
@@ -159,6 +161,11 @@ data class McpNotificationPayload(
         } else {
             context.getString(R.string.mcp_action_toggle_service)
         }
+    }
+
+    fun primaryActionTitle(context: Context): String {
+        primaryActionLabel?.takeIf { it.isNotBlank() }?.let { return it }
+        return context.getString(R.string.common_open)
     }
 
     val expandedTitle: String

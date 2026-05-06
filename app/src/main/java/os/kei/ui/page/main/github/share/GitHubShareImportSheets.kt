@@ -347,7 +347,13 @@ internal fun GitHubShareImportPendingSheet(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             SheetDescriptionText(
-                text = stringResource(R.string.github_share_import_pending_dialog_summary)
+                text = stringResource(
+                    if (pendingTrack.packageName.isNotBlank()) {
+                        R.string.github_share_import_pending_dialog_summary_exact
+                    } else {
+                        R.string.github_share_import_pending_dialog_summary
+                    }
+                )
             )
             SheetSectionCard(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
@@ -374,6 +380,12 @@ internal fun GitHubShareImportPendingSheet(
                     MiuixInfoItem(
                         key = stringResource(R.string.github_share_import_pending_label_asset),
                         value = pendingTrack.assetName
+                    )
+                }
+                if (pendingTrack.packageName.isNotBlank()) {
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_share_import_attach_dialog_label_package),
+                        value = pendingTrack.packageName
                     )
                 }
             }

@@ -15,8 +15,10 @@ import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
+import os.kei.feature.github.domain.GitHubApkPackageNameScanner
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -141,6 +143,23 @@ internal suspend fun resolvePreferredAssetUrl(
     }
 }
 
+internal suspend fun scanShareImportAssetPackageName(
+    asset: GitHubReleaseAssetFile,
+    lookupConfig: GitHubLookupConfig,
+    scanner: GitHubApkPackageNameScanner = GitHubApkPackageNameScanner(
+        GitHubApkPackageNameScanRepository()
+    )
+): Result<String> {
+    return withContext(Dispatchers.IO) {
+        scanner.scanAssetPackageName(
+            asset = asset,
+            lookupConfig = lookupConfig
+        ).map { packageName ->
+            packageName.trim()
+        }
+    }
+}
+
 internal fun enqueueWithSystemDownloadManager(
     context: Context,
     url: String,
@@ -230,39 +249,59 @@ internal suspend fun loadInstalledPackageSnapshot(
     packageName: String
 ): ShareImportInstalledPackageSnapshot? {
     return withContext(Dispatchers.IO) {
-        val pm = context.packageManager
-        val info = runCatching {
-            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            pm.getPackageInfo(packageName, 0)
-        }.getOrNull() ?: return@withContext null
-
-        val label = runCatching {
-            val appInfo = info.applicationInfo ?: pm.getApplicationInfo(
-                packageName,
-                PackageManager.ApplicationInfoFlags.of(0)
-            )
-            pm.getApplicationLabel(appInfo).toString().trim()
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            val appInfo = info.applicationInfo ?: pm.getApplicationInfo(packageName, 0)
-            pm.getApplicationLabel(appInfo).toString().trim()
-        }.getOrDefault("")
-
-        ShareImportInstalledPackageSnapshot(
-            packageName = packageName,
-            appLabel = label,
-            lastUpdateTimeMs = info.lastUpdateTime,
-            firstInstallTimeMs = info.firstInstallTime
-        )
+        loadInstalledPackageSnapshotBlocking(context, packageName)
     }
+}
+
+private fun loadInstalledPackageSnapshotBlocking(
+    context: Context,
+    packageName: String
+): ShareImportInstalledPackageSnapshot? {
+    val normalizedPackageName = packageName.trim()
+    if (normalizedPackageName.isBlank()) return null
+    val pm = context.packageManager
+    val info = runCatching {
+        pm.getPackageInfo(normalizedPackageName, PackageManager.PackageInfoFlags.of(0))
+    }.recoverCatching {
+        @Suppress("DEPRECATION")
+        pm.getPackageInfo(normalizedPackageName, 0)
+    }.getOrNull() ?: return null
+
+    val label = runCatching {
+        val appInfo = info.applicationInfo ?: pm.getApplicationInfo(
+            normalizedPackageName,
+            PackageManager.ApplicationInfoFlags.of(0)
+        )
+        pm.getApplicationLabel(appInfo).toString().trim()
+    }.recoverCatching {
+        @Suppress("DEPRECATION")
+        val appInfo = info.applicationInfo ?: pm.getApplicationInfo(normalizedPackageName, 0)
+        pm.getApplicationLabel(appInfo).toString().trim()
+    }.getOrDefault("")
+
+    return ShareImportInstalledPackageSnapshot(
+        packageName = normalizedPackageName,
+        appLabel = label,
+        lastUpdateTimeMs = info.lastUpdateTime,
+        firstInstallTimeMs = info.firstInstallTime
+    )
 }
 
 internal fun findRecentInstalledCandidateForPendingTrack(
     context: Context,
     pendingTrack: GitHubPendingShareImportTrackRecord
 ): ShareImportInstalledPackageSnapshot? {
+    val expectedPackageName = pendingTrack.packageName.trim()
+    if (expectedPackageName.isNotBlank()) {
+        return loadInstalledPackageSnapshotBlocking(context, expectedPackageName)
+            ?.takeIf { snapshot ->
+                isShareImportExactPackageMatch(
+                    pendingTrack = pendingTrack,
+                    packageSnapshot = snapshot
+                )
+            }
+    }
+
     val pm = context.packageManager
     val installed = runCatching {
         pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
@@ -316,6 +355,16 @@ internal fun selectRecentInstalledCandidateForPendingTrack(
     pendingTrack: GitHubPendingShareImportTrackRecord,
     candidates: List<ShareImportInstalledPackageSnapshot>
 ): ShareImportInstalledPackageSnapshot? {
+    val expectedPackageName = pendingTrack.packageName.trim()
+    if (expectedPackageName.isNotBlank()) {
+        return candidates.firstOrNull { candidate ->
+            isShareImportExactPackageMatch(
+                pendingTrack = pendingTrack,
+                packageSnapshot = candidate
+            )
+        }
+    }
+
     val eligible = candidates.asSequence()
         .filter { it.packageName.isNotBlank() }
         // Polling reconciliation must only pick packages updated after this share was armed.
@@ -334,6 +383,17 @@ internal fun selectRecentInstalledCandidateForPendingTrack(
         }
     }
     return eligible.first()
+}
+
+internal fun isShareImportExactPackageMatch(
+    pendingTrack: GitHubPendingShareImportTrackRecord,
+    packageSnapshot: ShareImportInstalledPackageSnapshot
+): Boolean {
+    val expectedPackageName = pendingTrack.packageName.trim()
+    if (expectedPackageName.isBlank()) return false
+    if (packageSnapshot.packageName.trim() != expectedPackageName) return false
+    val threshold = pendingTrack.armedAtMillis - shareImportTrackUpdateToleranceMs
+    return packageSnapshot.lastUpdateTimeMs >= threshold
 }
 
 internal fun isShareImportAttachEventValid(

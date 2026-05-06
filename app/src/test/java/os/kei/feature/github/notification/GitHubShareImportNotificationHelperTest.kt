@@ -48,6 +48,26 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `waiting install notification shows exact package linkage when package is scanned`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.WaitingInstall,
+            owner = "owner",
+            repo = "repo",
+            assetName = "app-arm64.apk",
+            packageName = "demo.app",
+            count = 12
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(
+            "owner/repo · demo.app · exact match · 12 min left",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+    }
+
+    @Test
     fun `asset ready notification uses install selection action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(

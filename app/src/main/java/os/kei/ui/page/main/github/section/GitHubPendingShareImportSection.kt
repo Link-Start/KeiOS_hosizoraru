@@ -106,6 +106,13 @@ internal fun GitHubPendingShareImportCard(
                     valueColor = MiuixTheme.colorScheme.onBackgroundVariant
                 )
             }
+            if (pending.packageName.isNotBlank()) {
+                GitHubCompactInfoRow(
+                    label = stringResource(R.string.github_share_import_attach_dialog_label_package),
+                    value = pending.packageName,
+                    valueColor = GitHubStatusPalette.Update
+                )
+            }
             if (repoOverlapCount > 0) {
                 Text(
                     text = stringResource(

@@ -620,6 +620,7 @@
     <string name="github_share_import_pending_armed_minutes">%1$d 分钟前</string>
     <string name="github_share_import_pending_remaining_minutes">剩余 %1$d 分钟</string>
     <string name="github_share_import_pending_dialog_summary">安装完成后会自动识别新安装或更新的 App，并继续新增跟踪。</string>
+    <string name="github_share_import_pending_dialog_summary_exact">已识别 APK 包名，安装完成后会按包名精确联动并继续新增跟踪。</string>
     <string name="github_share_import_pending_label_target">目标</string>
     <string name="github_share_import_pending_label_release">Release</string>
     <string name="github_share_import_pending_label_asset">APK</string>
@@ -650,6 +651,7 @@
     <string name="github_share_import_notify_content_asset_ready">%1$s · %2$s · %3$d 个 APK 可选</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · 剩余 %3$d 分钟</string>
+    <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · 精确匹配 · 剩余 %3$d 分钟</string>
     <string name="github_share_import_notify_content_install_detected">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s 已加入 %2$s 跟踪</string>

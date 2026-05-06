@@ -620,6 +620,7 @@
     <string name="github_share_import_pending_armed_minutes">%1$d min ago</string>
     <string name="github_share_import_pending_remaining_minutes">%1$d min left</string>
     <string name="github_share_import_pending_dialog_summary">After installation finishes, KeiOS will detect the newly installed or updated app and continue adding tracking.</string>
+    <string name="github_share_import_pending_dialog_summary_exact">APK package name is identified. After installation finishes, KeiOS will link by package name and continue adding tracking.</string>
     <string name="github_share_import_pending_label_target">Target</string>
     <string name="github_share_import_pending_label_release">Release</string>
     <string name="github_share_import_pending_label_asset">APK</string>
@@ -650,6 +651,7 @@
     <string name="github_share_import_notify_content_asset_ready">%1$s · %2$s · %3$d APKs available</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · %3$d min left</string>
+    <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · exact match · %3$d min left</string>
     <string name="github_share_import_notify_content_install_detected">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s was added to %2$s tracking</string>

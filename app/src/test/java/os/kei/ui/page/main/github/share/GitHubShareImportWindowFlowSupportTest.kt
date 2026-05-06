@@ -87,6 +87,67 @@ class GitHubShareImportWindowFlowSupportTest {
     }
 
     @Test
+    fun `reconciliation uses exact package name when pending track has scanned manifest`() {
+        val pending = pendingTrack(
+            armedAtMillis = 10_000L,
+            packageName = "target.package"
+        )
+        val candidate = selectRecentInstalledCandidateForPendingTrack(
+            pendingTrack = pending,
+            candidates = listOf(
+                installedPackage(
+                    packageName = "other.package",
+                    lastUpdateTimeMs = 13_000L
+                ),
+                installedPackage(
+                    packageName = "target.package",
+                    lastUpdateTimeMs = 10_100L
+                )
+            )
+        )
+
+        assertEquals("target.package", candidate?.packageName)
+    }
+
+    @Test
+    fun `reconciliation allows exact package timestamp tolerance`() {
+        val pending = pendingTrack(
+            armedAtMillis = 200_000L,
+            packageName = "target.package"
+        )
+        val candidate = selectRecentInstalledCandidateForPendingTrack(
+            pendingTrack = pending,
+            candidates = listOf(
+                installedPackage(
+                    packageName = "target.package",
+                    lastUpdateTimeMs = 100_000L
+                )
+            )
+        )
+
+        assertEquals("target.package", candidate?.packageName)
+    }
+
+    @Test
+    fun `reconciliation rejects stale exact package snapshot`() {
+        val pending = pendingTrack(
+            armedAtMillis = 200_000L,
+            packageName = "target.package"
+        )
+        val candidate = selectRecentInstalledCandidateForPendingTrack(
+            pendingTrack = pending,
+            candidates = listOf(
+                installedPackage(
+                    packageName = "target.package",
+                    lastUpdateTimeMs = 70_000L
+                )
+            )
+        )
+
+        assertNull(candidate)
+    }
+
+    @Test
     fun `reconciliation stays empty when recent packages are ambiguous`() {
         val pending = pendingTrack(armedAtMillis = 10_000L)
         val candidate = selectRecentInstalledCandidateForPendingTrack(
@@ -106,10 +167,14 @@ class GitHubShareImportWindowFlowSupportTest {
         assertNull(candidate)
     }
 
-    private fun pendingTrack(armedAtMillis: Long) = GitHubPendingShareImportTrackRecord(
+    private fun pendingTrack(
+        armedAtMillis: Long,
+        packageName: String = ""
+    ) = GitHubPendingShareImportTrackRecord(
         projectUrl = "https://github.com/asadahimeka/pixiv-viewer-app",
         owner = "asadahimeka",
         repo = "pixiv-viewer-app",
+        packageName = packageName,
         armedAtMillis = armedAtMillis
     )
 

@@ -43,6 +43,7 @@ internal data class GitHubPendingShareImportTrack(
     val repo: String,
     val releaseTag: String = "",
     val assetName: String = "",
+    val packageName: String = "",
     val armedAtMillis: Long = System.currentTimeMillis()
 )
 
@@ -53,6 +54,7 @@ internal fun GitHubPendingShareImportTrackRecord.toShareImportTrack(): GitHubPen
         repo = repo,
         releaseTag = releaseTag,
         assetName = assetName,
+        packageName = packageName,
         armedAtMillis = armedAtMillis
     )
 }
@@ -207,6 +209,7 @@ internal fun GitHubPendingShareImportTrackRecord.toShareImportResult(
         projectUrl = projectUrl,
         owner = owner,
         repo = repo,
+        packageName = packageName,
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -222,6 +225,7 @@ internal fun GitHubPendingShareImportTrack.toShareImportResult(
         projectUrl = projectUrl,
         owner = owner,
         repo = repo,
+        packageName = packageName,
         message = message,
         completedAtMillis = completedAtMillis
     )

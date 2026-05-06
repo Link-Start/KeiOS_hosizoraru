@@ -56,6 +56,7 @@ internal fun notifyShareImportWaitingInstall(
         repo = pending.repo,
         releaseTag = pending.releaseTag,
         assetName = pending.assetName,
+        packageName = pending.packageName,
         remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis)
     )
 }

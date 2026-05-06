@@ -358,6 +358,10 @@ internal fun GitHubShareImportWindowFlowHost(
             if (packageName.isBlank()) return@collect
             val currentPending = pendingTrack ?: return@collect
             if (currentPending.armedAtMillis != armedAtMillis) return@collect
+            val expectedPackageName = currentPending.packageName.trim()
+            if (expectedPackageName.isNotBlank() && packageName != expectedPackageName) {
+                return@collect
+            }
             val pendingAge = (event.atMillis - currentPending.armedAtMillis).coerceAtLeast(0L)
             if (pendingAge > shareImportTrackMaxAgeMs) {
                 withContext(Dispatchers.IO) {
@@ -507,6 +511,10 @@ internal fun GitHubShareImportWindowFlowHost(
                 val lookupConfig = withContext(Dispatchers.IO) { GitHubTrackStore.loadLookupConfig() }
                 phase = GitHubShareImportPhase.Delivering
                 notifyShareImportDelivering(context, preview, selectedAsset.name)
+                val scannedPackageName = scanShareImportAssetPackageName(
+                    asset = selectedAsset,
+                    lookupConfig = lookupConfig
+                ).getOrDefault("")
                 val deliveryResult = sendAssetToConfiguredChannel(
                     context = context,
                     lookupConfig = lookupConfig,
@@ -533,6 +541,7 @@ internal fun GitHubShareImportWindowFlowHost(
                     repo = preview.repo,
                     releaseTag = preview.releaseTag,
                     assetName = selectedAsset.name,
+                    packageName = scannedPackageName,
                     armedAtMillis = System.currentTimeMillis()
                 )
                 withContext(Dispatchers.IO) {

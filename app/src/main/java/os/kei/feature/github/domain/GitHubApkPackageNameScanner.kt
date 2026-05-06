@@ -96,6 +96,18 @@ internal class GitHubApkPackageNameScanner(
         )
     }
 
+    fun scanAssetPackageName(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): Result<String> {
+        return scanApkAsset(
+            asset = asset,
+            lookupConfig = lookupConfig
+        ).map { scannedAsset ->
+            scannedAsset.packageName
+        }
+    }
+
     private fun scanApkAssets(
         assets: List<GitHubReleaseAssetFile>,
         lookupConfig: GitHubLookupConfig

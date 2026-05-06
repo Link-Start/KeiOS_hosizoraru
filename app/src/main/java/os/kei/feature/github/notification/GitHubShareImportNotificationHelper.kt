@@ -79,6 +79,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         releaseTag: String,
         assetName: String,
+        packageName: String,
         remainingMinutes: Int
     ) {
         notifyState(
@@ -89,6 +90,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 releaseTag = releaseTag,
                 assetName = assetName,
+                packageName = packageName,
                 count = remainingMinutes.coerceAtLeast(0)
             )
         )
@@ -302,9 +304,17 @@ object GitHubShareImportNotificationHelper {
             )
 
             GitHubShareImportNotificationPhase.WaitingInstall -> context.getString(
-                R.string.github_share_import_notify_content_waiting_install,
+                if (state.packageName.isNotBlank()) {
+                    R.string.github_share_import_notify_content_waiting_install_exact
+                } else {
+                    R.string.github_share_import_notify_content_waiting_install
+                },
                 projectLabel,
-                state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) },
+                state.packageName.ifBlank {
+                    state.assetName.ifBlank {
+                        context.getString(R.string.github_share_import_pending_label_asset)
+                    }
+                },
                 state.count.coerceAtLeast(0)
             )
 

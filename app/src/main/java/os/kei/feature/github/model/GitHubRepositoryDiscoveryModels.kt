@@ -67,6 +67,32 @@ data class GitHubRepositoryImportCandidate(
     val score: Int
 )
 
+enum class GitHubStarImportQuality {
+    LikelyAndroid,
+    NeedsReview,
+    OtherPlatform,
+    ArchivedOrFork
+}
+
+enum class GitHubStarImportApkVerificationStatus {
+    HasApk,
+    NoApk,
+    Failed
+}
+
+data class GitHubStarImportApkVerification(
+    val owner: String,
+    val repo: String,
+    val status: GitHubStarImportApkVerificationStatus,
+    val releaseTag: String = "",
+    val releaseUrl: String = "",
+    val apkAssetCount: Int = 0,
+    val sampleAssetName: String = "",
+    val checkedAtMillis: Long = 0L,
+    val errorMessage: String = "",
+    val fromCache: Boolean = false
+)
+
 data class GitHubStarredRepositoryImportPreview(
     val sourceLabel: String,
     val totalFetchedCount: Int,

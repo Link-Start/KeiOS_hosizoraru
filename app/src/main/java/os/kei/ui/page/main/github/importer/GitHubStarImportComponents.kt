@@ -16,7 +16,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.feature.github.domain.GitHubStarImportClassifier
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
+import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
+import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -311,17 +314,19 @@ private fun StarImportListChoiceButton(
 internal fun StarImportListControlCard(
     filterInput: String,
     viewFilter: StarImportViewFilter,
-    qualityFilters: Set<StarImportQualityFilter>,
-    qualityFilterCounts: Map<StarImportQualityFilter, Int>,
+    qualityFilters: Set<GitHubStarImportQuality>,
+    qualityFilterCounts: Map<GitHubStarImportQuality, Int>,
     filteredCount: Int,
     visibleImportableCount: Int,
     visibleRecommendedCount: Int,
     selectedCount: Int,
+    verifySelectedEnabled: Boolean,
     importEnabled: Boolean,
     importing: Boolean,
     onFilterInputChange: (String) -> Unit,
     onViewFilterChange: (StarImportViewFilter) -> Unit,
-    onQualityFilterToggle: (StarImportQualityFilter) -> Unit,
+    onQualityFilterToggle: (GitHubStarImportQuality) -> Unit,
+    onVerifySelected: () -> Unit,
     onSelectRecommendedVisible: () -> Unit,
     onSelectVisible: () -> Unit,
     onClearSelection: () -> Unit,
@@ -426,9 +431,19 @@ internal fun StarImportListControlCard(
         ) {
             AppLiquidTextButton(
                 backdrop = null,
+                text = stringResource(R.string.github_star_import_action_verify_selected),
+                onClick = onVerifySelected,
+                modifier = Modifier.weight(1f),
+                enabled = verifySelectedEnabled,
+                variant = GlassVariant.Content,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis
+            )
+            AppLiquidTextButton(
+                backdrop = null,
                 text = stringResource(R.string.github_star_import_action_clear_selection),
                 onClick = onClearSelection,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 enabled = selectedCount > 0 && !importing,
                 variant = GlassVariant.Content,
                 textMaxLines = 1,
@@ -454,9 +469,9 @@ internal fun StarImportListControlCard(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StarImportQualityFilterRow(
-    qualityFilters: Set<StarImportQualityFilter>,
-    qualityFilterCounts: Map<StarImportQualityFilter, Int>,
-    onQualityFilterToggle: (StarImportQualityFilter) -> Unit
+    qualityFilters: Set<GitHubStarImportQuality>,
+    qualityFilterCounts: Map<GitHubStarImportQuality, Int>,
+    onQualityFilterToggle: (GitHubStarImportQuality) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
@@ -469,24 +484,24 @@ private fun StarImportQualityFilterRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StarImportQualityFilter.entries.forEach { filter ->
-                val selected = filter in qualityFilters
+            GitHubStarImportQuality.entries.forEach { quality ->
+                val selected = quality in qualityFilters
                 AppLiquidTextButton(
                     backdrop = null,
                     text = stringResource(
                         R.string.github_star_import_quality_chip_format,
-                        stringResource(filter.labelRes),
-                        qualityFilterCounts[filter] ?: 0
+                        stringResource(quality.labelRes()),
+                        qualityFilterCounts[quality] ?: 0
                     ),
-                    onClick = { onQualityFilterToggle(filter) },
+                    onClick = { onQualityFilterToggle(quality) },
                     textColor = if (selected) {
-                        starImportQualityColor(filter)
+                        starImportQualityColor(quality)
                     } else {
                         MiuixTheme.colorScheme.primary
                     },
-                    containerColor = if (selected) starImportQualityColor(filter) else null,
+                    containerColor = if (selected) starImportQualityColor(quality) else null,
                     leadingIcon = if (selected) appLucideConfirmIcon() else null,
-                    iconTint = starImportQualityColor(filter),
+                    iconTint = starImportQualityColor(quality),
                     variant = if (selected) GlassVariant.SheetAction else GlassVariant.Content,
                     textMaxLines = 1,
                     textOverflow = TextOverflow.Ellipsis
@@ -532,15 +547,16 @@ internal fun StarImportEmptyCard() {
 internal fun StarImportCandidateCard(
     candidate: GitHubRepositoryImportCandidate,
     selected: Boolean,
+    apkVerificationState: StarImportApkVerificationUiState?,
     onToggle: () -> Unit
 ) {
     val disabled = candidate.alreadyTracked
-    val quality = candidate.starImportQualityFilter()
+    val quality = GitHubStarImportClassifier.classify(candidate)
     val accent = when {
         disabled -> MiuixTheme.colorScheme.onBackgroundVariant
         selected -> GitHubStatusPalette.Update
-        quality == StarImportQualityFilter.LikelyAndroid -> GitHubStatusPalette.Active
-        quality == StarImportQualityFilter.OtherPlatform -> MiuixTheme.colorScheme.onBackgroundVariant
+        quality == GitHubStarImportQuality.LikelyAndroid -> GitHubStatusPalette.Active
+        quality == GitHubStarImportQuality.OtherPlatform -> MiuixTheme.colorScheme.onBackgroundVariant
         else -> MiuixTheme.colorScheme.primary
     }
     AppFeatureCard(
@@ -570,13 +586,14 @@ internal fun StarImportCandidateCard(
         Text(
             text = stringResource(
                 R.string.github_star_import_quality_line_format,
-                stringResource(quality.labelRes),
-                stringResource(starImportQualitySummaryRes(quality))
+                stringResource(quality.labelRes()),
+                stringResource(quality.summaryRes())
             ),
             color = starImportQualityColor(quality),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+        StarImportApkVerificationLine(state = apkVerificationState)
         Text(
             text = stringResource(
                 R.string.github_star_import_candidate_meta_format,
@@ -598,28 +615,49 @@ internal fun StarImportCandidateCard(
 }
 
 @Composable
-private fun starImportQualityColor(filter: StarImportQualityFilter): Color {
-    return when (filter) {
-        StarImportQualityFilter.LikelyAndroid -> GitHubStatusPalette.Update
-        StarImportQualityFilter.NeedsReview -> GitHubStatusPalette.Active
-        StarImportQualityFilter.OtherPlatform -> MiuixTheme.colorScheme.onBackgroundVariant
-        StarImportQualityFilter.ArchivedOrFork -> GitHubStatusPalette.Error
+private fun StarImportApkVerificationLine(state: StarImportApkVerificationUiState?) {
+    val verification = state?.verification
+    val text = when {
+        state?.checking == true -> stringResource(R.string.github_star_import_apk_checking)
+        verification == null -> stringResource(R.string.github_star_import_apk_not_checked)
+        verification.status == GitHubStarImportApkVerificationStatus.HasApk -> stringResource(
+            R.string.github_star_import_apk_has_apk_format,
+            verification.apkAssetCount,
+            verification.sampleAssetName.ifBlank { verification.releaseTag }
+        )
+
+        verification.status == GitHubStarImportApkVerificationStatus.NoApk -> stringResource(
+            R.string.github_star_import_apk_no_apk_format,
+            verification.releaseTag.ifBlank { stringResource(R.string.common_not_used) }
+        )
+
+        else -> stringResource(
+            R.string.github_star_import_apk_failed_format,
+            verification.errorMessage.ifBlank { stringResource(R.string.common_status_failed) }
+        )
     }
+    val color = when {
+        state?.checking == true -> GitHubStatusPalette.Active
+        verification?.status == GitHubStarImportApkVerificationStatus.HasApk -> GitHubStatusPalette.Update
+        verification?.status == GitHubStarImportApkVerificationStatus.NoApk -> MiuixTheme.colorScheme.onBackgroundVariant
+        verification?.status == GitHubStarImportApkVerificationStatus.Failed -> GitHubStatusPalette.Error
+        else -> MiuixTheme.colorScheme.onBackgroundVariant
+    }
+    Text(
+        text = text,
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
 }
 
-private fun starImportQualitySummaryRes(filter: StarImportQualityFilter): Int {
-    return when (filter) {
-        StarImportQualityFilter.LikelyAndroid ->
-            R.string.github_star_import_quality_summary_likely_android
-
-        StarImportQualityFilter.NeedsReview ->
-            R.string.github_star_import_quality_summary_needs_review
-
-        StarImportQualityFilter.OtherPlatform ->
-            R.string.github_star_import_quality_summary_other_platform
-
-        StarImportQualityFilter.ArchivedOrFork ->
-            R.string.github_star_import_quality_summary_archived_or_fork
+@Composable
+internal fun starImportQualityColor(quality: GitHubStarImportQuality): Color {
+    return when (quality) {
+        GitHubStarImportQuality.LikelyAndroid -> GitHubStatusPalette.Update
+        GitHubStarImportQuality.NeedsReview -> GitHubStatusPalette.Active
+        GitHubStarImportQuality.OtherPlatform -> MiuixTheme.colorScheme.onBackgroundVariant
+        GitHubStarImportQuality.ArchivedOrFork -> GitHubStatusPalette.Error
     }
 }
 

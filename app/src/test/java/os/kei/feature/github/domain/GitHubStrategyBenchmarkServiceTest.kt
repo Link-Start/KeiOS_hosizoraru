@@ -204,6 +204,56 @@ class GitHubStrategyBenchmarkServiceTest {
         )
     }
 
+    @Test
+    fun `benchmark runs extended dual mode tasks concurrently`() {
+        val activeLoads = AtomicInteger(0)
+        val maxActiveLoads = AtomicInteger(0)
+        val firstExtraWave = CountDownLatch(3)
+        val runner = benchmarkRunner(
+            strategyId = "atom",
+            activeLoads = AtomicInteger(0),
+            maxActiveLoads = AtomicInteger(0),
+            firstColdWave = CountDownLatch(1),
+            loadReleaseAssets = {
+                enterExtraTask(activeLoads, maxActiveLoads, firstExtraWave)
+                GitHubStrategyLoadTrace(
+                    result = Result.success(releaseBundle(notes = "")),
+                    fromCache = false,
+                    elapsedMs = 4L
+                )
+            },
+            loadReleaseNotes = {
+                enterExtraTask(activeLoads, maxActiveLoads, firstExtraWave)
+                GitHubStrategyLoadTrace(
+                    result = Result.success(releaseBundle(notes = "Fixed bugs")),
+                    fromCache = false,
+                    elapsedMs = 5L
+                )
+            },
+            inspectApkManifest = {
+                enterExtraTask(activeLoads, maxActiveLoads, firstExtraWave)
+                GitHubStrategyLoadTrace(
+                    result = Result.success(
+                        GitHubApkManifestInfo(
+                            assetName = "demo.apk",
+                            packageName = "com.demo.app"
+                        )
+                    ),
+                    fromCache = false,
+                    elapsedMs = 6L
+                )
+            }
+        )
+
+        GitHubStrategyBenchmarkService.compareTargetsWithRunners(
+            targets = listOf(GitHubRepoTarget("demo", "app")),
+            runners = listOf(runner),
+            maxConcurrency = 3
+        )
+
+        assertTrue(maxActiveLoads.get() >= 2)
+    }
+
     private fun benchmarkRunner(
         strategyId: String,
         activeLoads: AtomicInteger,
@@ -254,6 +304,18 @@ class GitHubStrategyBenchmarkServiceTest {
                 )
             )
         )
+    }
+
+    private fun enterExtraTask(
+        activeLoads: AtomicInteger,
+        maxActiveLoads: AtomicInteger,
+        firstExtraWave: CountDownLatch
+    ) {
+        val active = activeLoads.incrementAndGet()
+        updateMax(maxActiveLoads, active)
+        firstExtraWave.countDown()
+        firstExtraWave.await(500, TimeUnit.MILLISECONDS)
+        activeLoads.decrementAndGet()
     }
 
     private fun updateMax(maxActiveLoads: AtomicInteger, active: Int) {

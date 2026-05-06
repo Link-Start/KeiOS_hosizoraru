@@ -6,6 +6,7 @@ import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
+import os.kei.feature.github.data.remote.GitHubReleaseAssetSelector
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
@@ -170,31 +171,10 @@ object GitHubStrategyBenchmarkService {
             targets = targets,
             maxConcurrency = maxConcurrency
         )
-        val packageSamples = scanPackageNameSamples(
-            targets = targets
-                .filter { it.normalizedRepoUrl.isNotBlank() }
-                .take(DEFAULT_SCAN_TARGET_LIMIT),
-            maxConcurrency = maxConcurrency
-        )
-        val repositorySamples = scanRepositorySamples(
-            targets = targets
-                .filter { it.packageName.isNotBlank() }
-                .take(DEFAULT_REPOSITORY_SCAN_TARGET_LIMIT),
-            maxConcurrency = maxConcurrency.coerceAtMost(2)
-        )
         val authMode = coldSamples.firstOrNull()?.authMode ?: warmSamples.firstOrNull()?.authMode
-        val assetTargets = targets.take(DEFAULT_ASSET_TARGET_LIMIT)
-        val releaseAssetSamples = loadReleaseAssetsSamples(
-            targets = assetTargets,
-            maxConcurrency = maxConcurrency.coerceAtMost(DEFAULT_ASSET_TARGET_LIMIT)
-        )
-        val releaseNotesSamples = loadReleaseNotesSamples(
-            targets = assetTargets,
-            maxConcurrency = maxConcurrency.coerceAtMost(DEFAULT_ASSET_TARGET_LIMIT)
-        )
-        val apkManifestSamples = inspectApkManifestSamples(
-            targets = assetTargets.take(DEFAULT_APK_INFO_TARGET_LIMIT),
-            maxConcurrency = maxConcurrency.coerceAtMost(DEFAULT_APK_INFO_TARGET_LIMIT)
+        val extraSamples = loadExtraSamples(
+            targets = targets,
+            maxConcurrency = maxConcurrency
         )
 
         return GitHubStrategyBenchmarkResult(
@@ -202,13 +182,56 @@ object GitHubStrategyBenchmarkService {
             displayName = displayName,
             authMode = authMode,
             coldSamples = coldSamples.map { it.sample } +
-                    releaseAssetSamples.map { it.sample } +
-                    releaseNotesSamples.map { it.sample } +
-                    apkManifestSamples.map { it.sample } +
-                    packageSamples.map { it.sample } +
-                    repositorySamples.map { it.sample },
+                    extraSamples.flatMap { group -> group.map { it.sample } },
             warmSamples = warmSamples.map { it.sample }
         )
+    }
+
+    private fun GitHubStrategyBenchmarkRunner.loadExtraSamples(
+        targets: List<GitHubRepoTarget>,
+        maxConcurrency: Int
+    ): List<List<SampleEnvelope>> {
+        val assetTargets = targets.take(DEFAULT_ASSET_TARGET_LIMIT)
+        val tasks = listOf<() -> List<SampleEnvelope>>(
+            {
+                loadReleaseAssetsSamples(
+                    targets = assetTargets,
+                    maxConcurrency = maxConcurrency.coerceAtMost(DEFAULT_ASSET_TARGET_LIMIT)
+                )
+            },
+            {
+                loadReleaseNotesSamples(
+                    targets = assetTargets,
+                    maxConcurrency = maxConcurrency.coerceAtMost(DEFAULT_ASSET_TARGET_LIMIT)
+                )
+            },
+            {
+                inspectApkManifestSamples(
+                    targets = assetTargets.take(DEFAULT_APK_INFO_TARGET_LIMIT),
+                    maxConcurrency = maxConcurrency.coerceAtMost(DEFAULT_APK_INFO_TARGET_LIMIT)
+                )
+            },
+            {
+                scanPackageNameSamples(
+                    targets = targets
+                        .filter { it.normalizedRepoUrl.isNotBlank() }
+                        .take(DEFAULT_SCAN_TARGET_LIMIT),
+                    maxConcurrency = maxConcurrency
+                )
+            },
+            {
+                scanRepositorySamples(
+                    targets = targets
+                        .filter { it.packageName.isNotBlank() }
+                        .take(DEFAULT_REPOSITORY_SCAN_TARGET_LIMIT),
+                    maxConcurrency = maxConcurrency.coerceAtMost(2)
+                )
+            }
+        )
+        return runConcurrently(
+            items = tasks,
+            maxConcurrency = maxConcurrency.coerceAtMost(3)
+        ) { task -> task() }
     }
 
     private fun GitHubStrategyBenchmarkRunner.loadReleaseAssetsSamples(
@@ -582,6 +605,15 @@ private class GitHubBenchmarkReleaseAssetFetcher(
         target: GitHubRepoTarget,
         includeAllAssets: Boolean
     ): GitHubReleaseAssetBundle {
+        if (!includeAllAssets) {
+            bundleCache["${target.id}|all=true"]?.getOrNull()?.let { allAssetsBundle ->
+                return GitHubReleaseAssetSelector.selectDisplayAssets(
+                    bundle = allAssetsBundle,
+                    aggressiveFiltering = false,
+                    includeAllAssets = false
+                )
+            }
+        }
         val key = "${target.id}|all=$includeAllAssets"
         return bundleCache.computeIfAbsent(key) {
             runCatching {

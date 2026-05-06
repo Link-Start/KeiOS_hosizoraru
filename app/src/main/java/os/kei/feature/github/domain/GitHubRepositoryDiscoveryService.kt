@@ -12,6 +12,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
+import java.util.Locale
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -44,6 +45,7 @@ internal class GitHubRepositoryDiscoveryService(
         val username = request.username.trim()
         val starListUrl = request.starListUrl.trim()
         val resolvedSource = request.source.resolve(username, starListUrl)
+        val existingIndex = TrackedRepoIndex.from(existingItems)
         val rawCandidates = when (resolvedSource) {
             GitHubStarredRepositoryImportSource.AuthenticatedUser -> {
                 check(request.apiToken.isNotBlank()) {
@@ -68,7 +70,7 @@ internal class GitHubRepositoryDiscoveryService(
                 candidate.toImportCandidate(
                     packageName = "",
                     appLabel = candidate.fullName,
-                    existingItems = existingItems,
+                    existingIndex = existingIndex,
                     score = candidate.starImportScore()
                 )
             }
@@ -97,18 +99,20 @@ internal class GitHubRepositoryDiscoveryService(
         existingItems: List<GitHubTrackedApp>
     ): Result<GitHubAppRepositorySearchResult> = runCatching {
         val limit = request.limit.coerceIn(1, MAX_SEARCH_LIMIT)
-        val queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(request.app)
+        val searchContext = AppRepositorySearchContext.create(request.app)
+        val queries = searchContext.queries
+        val existingIndex = TrackedRepoIndex.from(existingItems)
         val fetched = queries.flatMap { query ->
             source.searchRepositories(query, limit).getOrThrow()
         }
         val candidates = fetched
             .dedupeByRepo()
             .map { candidate ->
-                val scored = candidate.withAppSearchScore(request.app)
+                val scored = candidate.withAppSearchScore(searchContext)
                 scored.first.toImportCandidate(
-                    packageName = request.app.packageName,
-                    appLabel = request.app.label,
-                    existingItems = existingItems,
+                    packageName = searchContext.packageName,
+                    appLabel = searchContext.appLabel,
+                    existingIndex = existingIndex,
                     score = scored.second
                 )
             }
@@ -130,7 +134,7 @@ internal class GitHubRepositoryDiscoveryService(
     private fun GitHubRepositoryCandidate.toImportCandidate(
         packageName: String,
         appLabel: String,
-        existingItems: List<GitHubTrackedApp>,
+        existingIndex: TrackedRepoIndex,
         score: Int
     ): GitHubRepositoryImportCandidate {
         val normalizedPackageName = packageName.trim()
@@ -145,17 +149,11 @@ internal class GitHubRepositoryDiscoveryService(
         return GitHubRepositoryImportCandidate(
             repository = this,
             trackedApp = trackedApp,
-            alreadyTracked = existingItems.any { existing ->
-                existing.owner.equals(owner, ignoreCase = true) &&
-                        existing.repo.equals(repo, ignoreCase = true) &&
-                        (
-                                normalizedPackageName.isBlank() ||
-                                        existing.packageName.equals(
-                                            normalizedPackageName,
-                                            ignoreCase = true
-                                        )
-                                )
-            },
+            alreadyTracked = existingIndex.contains(
+                owner = owner,
+                repo = repo,
+                packageName = normalizedPackageName
+            ),
             score = score
         )
     }
@@ -178,19 +176,21 @@ internal class GitHubRepositoryDiscoveryService(
     }
 
     private fun GitHubRepositoryCandidate.withAppSearchScore(
-        app: InstalledAppItem
+        searchContext: AppRepositorySearchContext
     ): Pair<GitHubRepositoryCandidate, Int> {
-        val labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(app.label)
-        val packageName = app.packageName.lowercase()
-        val packageTail = packageName.substringAfterLast('.')
-        val searchable = listOf(fullName, repo, description).joinToString(" ").lowercase()
-        val hasPackageName = packageName.isNotBlank() && searchable.contains(packageName)
-        val hasFullLabel = app.label.isNotBlank() && searchable.contains(app.label.lowercase())
-        val tokenHits = labelTokens.count { token -> searchable.contains(token) }
+        val searchable = listOf(fullName, repo, description)
+            .joinToString(" ")
+            .lowercase(Locale.ROOT)
+        val hasPackageName = searchContext.normalizedPackageName.isNotBlank() &&
+                searchable.contains(searchContext.normalizedPackageName)
+        val hasFullLabel = searchContext.normalizedAppLabel.isNotBlank() &&
+                searchable.contains(searchContext.normalizedAppLabel)
+        val tokenHits = searchContext.labelTokens.count { token -> searchable.contains(token) }
         val matchReason = when {
             hasPackageName -> GitHubRepositoryCandidateMatchReason.PackageName
             hasFullLabel || tokenHits >= 2 -> GitHubRepositoryCandidateMatchReason.AppLabel
-            packageTail.length >= 3 && repo.lowercase().contains(packageTail) ->
+            searchContext.packageTail.length >= 3 &&
+                    repo.lowercase(Locale.ROOT).contains(searchContext.packageTail) ->
                 GitHubRepositoryCandidateMatchReason.RepositoryName
 
             else -> matchReason
@@ -210,7 +210,11 @@ internal class GitHubRepositoryDiscoveryService(
     }
 
     private fun List<GitHubRepositoryCandidate>.dedupeByRepo(): List<GitHubRepositoryCandidate> {
-        return distinctBy { "${it.owner.lowercase()}/${it.repo.lowercase()}" }
+        return distinctBy { it.repoKey() }
+    }
+
+    private fun GitHubRepositoryCandidate.repoKey(): String {
+        return repoKey(owner, repo)
     }
 
     companion object {
@@ -236,12 +240,23 @@ private fun GitHubStarredRepositoryImportSource.resolve(
 
 internal object GitHubRepositoryDiscoveryQueries {
     fun forInstalledApp(app: InstalledAppItem): List<String> {
-        val labelTokens = normalizedTokens(app.label)
         val packageName = app.packageName.trim()
+        return forInstalledApp(
+            appLabel = app.label.trim(),
+            packageName = packageName,
+            labelTokens = normalizedTokens(app.label)
+        )
+    }
+
+    fun forInstalledApp(
+        appLabel: String,
+        packageName: String,
+        labelTokens: List<String>
+    ): List<String> {
         val packageTail = packageName.substringAfterLast('.').trim()
         return buildList {
-            if (app.label.isNotBlank()) {
-                add("${app.label.trim()} android in:name,description,readme")
+            if (appLabel.isNotBlank()) {
+                add("$appLabel android in:name,description,readme")
             }
             if (packageName.isNotBlank()) {
                 add("$packageName in:description,readme")
@@ -259,8 +274,8 @@ internal object GitHubRepositoryDiscoveryQueries {
 
     fun normalizedTokens(value: String): List<String> {
         return value
-            .lowercase()
-            .replace(Regex("""[^a-z0-9]+"""), " ")
+            .lowercase(Locale.ROOT)
+            .replace(nonTokenRegex, " ")
             .split(' ')
             .map { it.trim() }
             .filter { token -> token.length >= 2 && token !in ignoredTokens }
@@ -276,4 +291,72 @@ internal object GitHubRepositoryDiscoveryQueries {
         "debug",
         "release"
     )
+    private val nonTokenRegex = Regex("""[^a-z0-9]+""")
+}
+
+private data class AppRepositorySearchContext(
+    val appLabel: String,
+    val packageName: String,
+    val normalizedPackageName: String,
+    val normalizedAppLabel: String,
+    val packageTail: String,
+    val labelTokens: List<String>,
+    val queries: List<String>
+) {
+    companion object {
+        fun create(app: InstalledAppItem): AppRepositorySearchContext {
+            val appLabel = app.label.trim()
+            val packageName = app.packageName.trim()
+            val normalizedPackageName = packageName.lowercase(Locale.ROOT)
+            val labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel)
+            return AppRepositorySearchContext(
+                appLabel = appLabel,
+                packageName = packageName,
+                normalizedPackageName = normalizedPackageName,
+                normalizedAppLabel = appLabel.lowercase(Locale.ROOT),
+                packageTail = normalizedPackageName.substringAfterLast('.'),
+                labelTokens = labelTokens,
+                queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(
+                    appLabel = appLabel,
+                    packageName = packageName,
+                    labelTokens = labelTokens
+                )
+            )
+        }
+    }
+}
+
+private data class TrackedRepoIndex(
+    private val repoKeys: Set<String>,
+    private val repoPackageKeys: Set<String>
+) {
+    fun contains(
+        owner: String,
+        repo: String,
+        packageName: String
+    ): Boolean {
+        val key = repoKey(owner, repo)
+        if (packageName.isBlank()) {
+            return key in repoKeys
+        }
+        return "$key|${packageName.lowercase(Locale.ROOT)}" in repoPackageKeys
+    }
+
+    companion object {
+        fun from(items: List<GitHubTrackedApp>): TrackedRepoIndex {
+            return TrackedRepoIndex(
+                repoKeys = items.mapTo(mutableSetOf()) { item ->
+                    repoKey(item.owner, item.repo)
+                },
+                repoPackageKeys = items.mapTo(mutableSetOf()) { item ->
+                    val packageName = item.packageName.trim().lowercase(Locale.ROOT)
+                    "${repoKey(item.owner, item.repo)}|$packageName"
+                }
+            )
+        }
+    }
+}
+
+private fun repoKey(owner: String, repo: String): String {
+    return "${owner.lowercase(Locale.ROOT)}/${repo.lowercase(Locale.ROOT)}"
 }

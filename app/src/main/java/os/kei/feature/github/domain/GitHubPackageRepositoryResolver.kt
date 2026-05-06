@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
+import java.util.Locale
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorCompletionService
 import java.util.concurrent.Executors
@@ -410,15 +411,23 @@ internal class GitHubPackageRepositoryResolver(
                 packageName: String,
                 appLabel: String
             ): PackageSearchContext {
+                val normalizedPackageName = packageName.trim()
+                val normalizedAppLabel = appLabel.trim()
+                val labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(
+                    normalizedAppLabel
+                )
                 return PackageSearchContext(
-                    appLabel = appLabel,
-                    normalizedPackageName = packageName.lowercase(),
-                    normalizedAppLabel = appLabel.lowercase(),
-                    packageTail = packageName.substringAfterLast('.').lowercase(),
-                    labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel),
+                    appLabel = normalizedAppLabel,
+                    normalizedPackageName = normalizedPackageName.lowercase(Locale.ROOT),
+                    normalizedAppLabel = normalizedAppLabel.lowercase(Locale.ROOT),
+                    packageTail = normalizedPackageName
+                        .substringAfterLast('.')
+                        .lowercase(Locale.ROOT),
+                    labelTokens = labelTokens,
                     queries = GitHubPackageRepositoryQueries.forPackage(
-                        packageName = packageName,
-                        appLabel = appLabel
+                        packageName = normalizedPackageName,
+                        appLabel = normalizedAppLabel,
+                        labelTokens = labelTokens
                     )
                 )
             }
@@ -431,9 +440,21 @@ internal object GitHubPackageRepositoryQueries {
         packageName: String,
         appLabel: String
     ): List<String> {
+        return forPackage(
+            packageName = packageName,
+            appLabel = appLabel,
+            labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel)
+        )
+    }
+
+    fun forPackage(
+        packageName: String,
+        appLabel: String,
+        labelTokens: List<String>
+    ): List<String> {
         val normalizedPackageName = packageName.trim()
+        val normalizedAppLabel = appLabel.trim()
         val packageTail = normalizedPackageName.substringAfterLast('.').trim()
-        val labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel)
         val packageTokens = normalizedPackageName
             .split('.')
             .map { it.trim() }
@@ -443,14 +464,14 @@ internal object GitHubPackageRepositoryQueries {
             if (normalizedPackageName.isNotBlank()) {
                 add("$normalizedPackageName android in:description,readme")
             }
-            if (appLabel.isNotBlank() && packageTail.length >= 3) {
-                add("${appLabel.trim()} $packageTail android in:name,description,readme")
+            if (normalizedAppLabel.isNotBlank() && packageTail.length >= 3) {
+                add("$normalizedAppLabel $packageTail android in:name,description,readme")
             }
             if (packageTokens.size >= 2) {
                 add("${packageTokens.joinToString(" ")} android in:name,description,readme")
             }
-            if (appLabel.isNotBlank()) {
-                add("${appLabel.trim()} android in:name,description,readme")
+            if (normalizedAppLabel.isNotBlank()) {
+                add("$normalizedAppLabel android in:name,description,readme")
             }
             if (labelTokens.isNotEmpty()) {
                 add("${labelTokens.take(3).joinToString(" ")} android")

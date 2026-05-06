@@ -11,6 +11,12 @@ import java.util.Locale
 
 object GitHubActionsArtifactSelector {
     fun inspectName(name: String): GitHubActionsArtifactNameTraits {
+        return artifactNameTraitsCache.getOrPut(name) {
+            inspectNameUncached(name)
+        }
+    }
+
+    private fun inspectNameUncached(name: String): GitHubActionsArtifactNameTraits {
         val normalizedName = name.trim().lowercase(Locale.ROOT)
         val extension = detectExtension(normalizedName)
         val flavors = detectFlavors(normalizedName)
@@ -60,9 +66,10 @@ object GitHubActionsArtifactSelector {
         artifacts: List<GitHubActionsArtifact>,
         options: GitHubActionsArtifactSelectionOptions = GitHubActionsArtifactSelectionOptions()
     ): List<GitHubActionsArtifactMatch> {
+        val primaryContext = ArtifactSelectionContext.from(options)
         val primaryMatches = artifacts
             .asSequence()
-            .mapNotNull { artifact -> matchArtifact(artifact, options) }
+            .mapNotNull { artifact -> matchArtifact(artifact, options, primaryContext) }
             .toList()
         if (primaryMatches.isNotEmpty() || !options.fallbackToAllArtifacts) {
             return sortMatches(primaryMatches)
@@ -74,14 +81,33 @@ object GitHubActionsArtifactSelector {
             aggressiveAbiFiltering = false,
             fallbackToAllArtifacts = false
         )
+        val relaxedContext = ArtifactSelectionContext.from(relaxedOptions)
         return sortMatches(
-            artifacts.mapNotNull { artifact -> matchArtifact(artifact, relaxedOptions) }
+            artifacts.mapNotNull { artifact ->
+                matchArtifact(
+                    artifact,
+                    relaxedOptions,
+                    relaxedContext
+                )
+            }
         )
     }
 
     fun matchArtifact(
         artifact: GitHubActionsArtifact,
         options: GitHubActionsArtifactSelectionOptions = GitHubActionsArtifactSelectionOptions()
+    ): GitHubActionsArtifactMatch? {
+        return matchArtifact(
+            artifact = artifact,
+            options = options,
+            context = ArtifactSelectionContext.from(options)
+        )
+    }
+
+    private fun matchArtifact(
+        artifact: GitHubActionsArtifact,
+        options: GitHubActionsArtifactSelectionOptions,
+        context: ArtifactSelectionContext
     ): GitHubActionsArtifactMatch? {
         if (artifact.name.isBlank()) return null
         if (options.hideExpired && artifact.expired) return null
@@ -102,16 +128,13 @@ object GitHubActionsArtifactSelector {
         }
         if (options.includeRegex?.containsMatchIn(artifact.name) == false) return null
         if (options.excludeRegex?.containsMatchIn(artifact.name) == true) return null
-        if (!matchesQuery(traits.normalizedName, options.query)) return null
+        if (!context.matchesQuery(traits.normalizedName)) return null
 
-        val preferredAbis = options.preferredAbis
-            .map { it.trim().lowercase(Locale.ROOT) }
-            .filter { it.isNotBlank() }
         if (
             options.aggressiveAbiFiltering &&
-            preferredAbis.isNotEmpty() &&
+            context.preferredAbis.isNotEmpty() &&
             traits.abi.isNotBlank() &&
-            traits.abi !in preferredAbis &&
+            traits.abi !in context.preferredAbis &&
             !traits.universalLike
         ) {
             return null
@@ -154,7 +177,7 @@ object GitHubActionsArtifactSelector {
             reasons += flavor
         }
         traits.buildTypes
-            .filterNot { it in setOf("release", "debug") }
+            .filterNot { it in buildTypeSkipTokens }
             .forEach { buildType ->
                 score += when (buildType) {
                     "benchmark" -> 6
@@ -172,7 +195,7 @@ object GitHubActionsArtifactSelector {
             reasons += traits.channel.name.lowercase(Locale.ROOT)
         }
         when {
-            traits.abi.isNotBlank() && traits.abi in preferredAbis -> {
+            traits.abi.isNotBlank() && traits.abi in context.preferredAbis -> {
                 score += 22
                 reasons += traits.abi
             }
@@ -181,7 +204,7 @@ object GitHubActionsArtifactSelector {
                 reasons += "universal"
             }
         }
-        if (options.query.isNotBlank()) {
+        if (context.queryActive) {
             score += 20
             reasons += "query"
         }
@@ -318,7 +341,7 @@ object GitHubActionsArtifactSelector {
             containsToken(normalizedName, "alpha") -> GitHubReleaseChannel.ALPHA
             containsToken(normalizedName, "preview") -> GitHubReleaseChannel.PREVIEW
             containsToken(normalizedName, "beta") -> GitHubReleaseChannel.BETA
-            Regex("""(^|[^a-z0-9])rc\d*([^a-z0-9]|$)""").containsMatchIn(normalizedName) -> GitHubReleaseChannel.RC
+            rcChannelRegex.containsMatchIn(normalizedName) -> GitHubReleaseChannel.RC
             containsAny(normalizedName, "nightly", "snapshot", "canary", "unstable") -> GitHubReleaseChannel.DEV
             containsToken(normalizedName, "release") -> GitHubReleaseChannel.STABLE
             else -> GitHubReleaseChannel.UNKNOWN
@@ -348,23 +371,26 @@ object GitHubActionsArtifactSelector {
         )
     }
 
-    private fun matchesQuery(normalizedName: String, query: String): Boolean {
-        val tokens = query
-            .trim()
-            .lowercase(Locale.ROOT)
-            .split(Regex("""\s+"""))
-            .filter { it.isNotBlank() }
-        if (tokens.isEmpty()) return true
-        return tokens.all { token -> normalizedName.contains(token) }
-    }
-
     private fun containsAny(value: String, vararg needles: String): Boolean {
-        return needles.any { value.contains(it, ignoreCase = true) }
+        return needles.any { value.contains(it) }
     }
 
     private fun containsToken(value: String, token: String): Boolean {
-        return Regex("""(^|[^a-z0-9])${Regex.escape(token.lowercase(Locale.ROOT))}([^a-z0-9]|$)""")
-            .containsMatchIn(value)
+        val needle = token.lowercase(Locale.ROOT)
+        if (needle.isBlank()) return false
+        var start = value.indexOf(needle)
+        while (start >= 0) {
+            val end = start + needle.length
+            val beforeBoundary = start == 0 || !value[start - 1].isAsciiLetterOrDigit()
+            val afterBoundary = end == value.length || !value[end].isAsciiLetterOrDigit()
+            if (beforeBoundary && afterBoundary) return true
+            start = value.indexOf(needle, startIndex = start + 1)
+        }
+        return false
+    }
+
+    private fun Char.isAsciiLetterOrDigit(): Boolean {
+        return (this in 'a'..'z') || (this in '0'..'9')
     }
 
     private val androidFlavorTokens = listOf(
@@ -391,10 +417,65 @@ object GitHubActionsArtifactSelector {
         "preview",
         "canary"
     )
+    private val buildTypeSkipTokens = setOf("release", "debug")
     private val semanticVersionRegex = Regex(
         """(?:^|[^a-z0-9])(v?\d+\.\d+(?:\.\d+){0,2}(?:[-._]?(?:alpha|beta|rc|preview|dev|canary|nightly|snapshot)[-._]?\d*)?)(?=$|[^a-z0-9])"""
     )
     private val namedVersionRegex = Regex(
         """(?:^|[^a-z0-9])(?:version|ver|versioncode|vc)[-._ ]?(\d{2,})(?=$|[^a-z0-9])"""
     )
+    private val rcChannelRegex = Regex("""(^|[^a-z0-9])rc\d*([^a-z0-9]|$)""")
+    private val querySplitRegex = Regex("""\s+""")
+    private val artifactNameTraitsCache =
+        BoundedArtifactSelectorCache<String, GitHubActionsArtifactNameTraits>(512)
+
+    private data class ArtifactSelectionContext(
+        val preferredAbis: Set<String>,
+        val queryTokens: List<String>
+    ) {
+        val queryActive: Boolean
+            get() = queryTokens.isNotEmpty()
+
+        fun matchesQuery(normalizedName: String): Boolean {
+            if (queryTokens.isEmpty()) return true
+            return queryTokens.all { normalizedName.contains(it) }
+        }
+
+        companion object {
+            fun from(options: GitHubActionsArtifactSelectionOptions): ArtifactSelectionContext {
+                return ArtifactSelectionContext(
+                    preferredAbis = options.preferredAbis
+                        .asSequence()
+                        .map { it.trim().lowercase(Locale.ROOT) }
+                        .filter { it.isNotBlank() }
+                        .toSet(),
+                    queryTokens = options.query
+                        .trim()
+                        .lowercase(Locale.ROOT)
+                        .split(querySplitRegex)
+                        .filter { it.isNotBlank() }
+                )
+            }
+        }
+    }
+
+    private class BoundedArtifactSelectorCache<K, V>(
+        private val maxSize: Int
+    ) {
+        private val values = object : LinkedHashMap<K, V>(maxSize, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean {
+                return size > maxSize
+            }
+        }
+
+        fun getOrPut(key: K, createValue: () -> V): V {
+            synchronized(values) {
+                if (values.containsKey(key)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return values[key] as V
+                }
+                return createValue().also { value -> values[key] = value }
+            }
+        }
+    }
 }

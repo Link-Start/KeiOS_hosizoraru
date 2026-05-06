@@ -125,6 +125,50 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
+    fun `app repository search marks existing item by repo and package`() {
+        val app = InstalledAppItem(
+            label = "KeiOS",
+            packageName = "os.kei"
+        )
+        val candidate = candidate(
+            owner = "hosizoraru",
+            repo = "KeiOS",
+            description = "Android system utility for os.kei",
+            stars = 64,
+            matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName,
+            sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch
+        )
+        val source = FakeDiscoverySource(
+            searchResults = mapOf(
+                "KeiOS android in:name,description,readme" to listOf(candidate),
+                "os.kei in:description,readme" to listOf(candidate),
+                "keios android" to listOf(candidate),
+                "kei android in:name,description,readme" to listOf(candidate)
+            )
+        )
+        val service = GitHubRepositoryDiscoveryService(source)
+
+        val result = service.searchRepositoriesForApp(
+            request = GitHubAppRepositorySearchRequest(app = app, limit = 10),
+            existingItems = listOf(
+                tracked(owner = "hosizoraru", repo = "KeiOS", packageName = "os.kei"),
+                tracked(owner = "hosizoraru", repo = "KeiOS", packageName = "os.kei.beta")
+            )
+        ).getOrThrow()
+
+        assertTrue(result.candidates.single().alreadyTracked)
+
+        val differentPackageResult = service.searchRepositoriesForApp(
+            request = GitHubAppRepositorySearchRequest(app = app, limit = 10),
+            existingItems = listOf(
+                tracked(owner = "hosizoraru", repo = "KeiOS", packageName = "os.kei.beta")
+            )
+        ).getOrThrow()
+
+        assertFalse(differentPackageResult.candidates.single().alreadyTracked)
+    }
+
+    @Test
     fun `installed app query builder keeps label and package entry points`() {
         val queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(
             InstalledAppItem(

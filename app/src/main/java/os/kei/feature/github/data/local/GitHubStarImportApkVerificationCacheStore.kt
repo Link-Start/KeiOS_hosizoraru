@@ -49,6 +49,13 @@ internal object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkV
         save(buildCacheKey(owner, repo, lookupConfig), verification)
     }
 
+    fun clearAll() {
+        loadIndex().keys.forEach { id ->
+            store.removeValueForKey(entryStoreKey(id))
+        }
+        store.removeValueForKey(KEY_INDEX)
+    }
+
     private fun save(
         cacheKey: String,
         verification: GitHubStarImportApkVerification

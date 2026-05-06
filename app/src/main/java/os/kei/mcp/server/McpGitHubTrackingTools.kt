@@ -5,17 +5,18 @@ import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
+import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
-import os.kei.feature.github.data.remote.GitHubVersionUtils
-import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.data.remote.GitHubShareImportResolver
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
+import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import java.util.Locale
 
-internal class McpGitHubTools(
+internal class McpGitHubTrackingTools(
     private val environment: McpToolEnvironment
 ) {
     private data class GitHubCheckRow(
@@ -31,7 +32,7 @@ internal class McpGitHubTools(
 
     fun register(server: Server) {
         server.addTool(
-            name = "keios.github.tracked.snapshot",
+            name = "keios.github.tracks.snapshot",
             description = "Get GitHub tracked settings and cache snapshot.",
             inputSchema = ToolSchema(properties = buildJsonObject { })
         ) { _ ->
@@ -39,7 +40,7 @@ internal class McpGitHubTools(
         }
 
         server.addTool(
-            name = "keios.github.tracked.list",
+            name = "keios.github.tracks.list",
             description = "List tracked repos. Args: repoFilter(optional), limit(optional).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -49,12 +50,15 @@ internal class McpGitHubTools(
             )
         ) { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
-            val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(1, MAX_TRACK_LIMIT)
+            val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
+                1,
+                MAX_TRACK_LIMIT
+            )
             callText(buildGitHubTrackedListText(repoFilter = repoFilter, limit = limit))
         }
 
         server.addTool(
-            name = "keios.github.tracked.export",
+            name = "keios.github.tracks.export",
             description = "Export tracked repos JSON. Args: repoFilter(optional).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -67,7 +71,7 @@ internal class McpGitHubTools(
         }
 
         server.addTool(
-            name = "keios.github.tracked.import",
+            name = "keios.github.tracks.import",
             description = "Preview or apply tracked repos JSON import. Args: json(required), apply(optional, default=false).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -82,7 +86,7 @@ internal class McpGitHubTools(
         }
 
         server.addTool(
-            name = "keios.github.tracked.check",
+            name = "keios.github.tracks.check",
             description = "Online check tracked repo updates. Args: repoFilter(optional), onlyUpdates(optional), limit(optional).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -94,7 +98,10 @@ internal class McpGitHubTools(
         ) { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val onlyUpdates = argBoolean(request.arguments?.get("onlyUpdates"), false)
-            val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(1, MAX_TRACK_LIMIT)
+            val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
+                1,
+                MAX_TRACK_LIMIT
+            )
             val rows = checkTrackedGitHub(repoFilter)
                 .let { data -> if (onlyUpdates) data.filter { it.hasUpdate } else data }
                 .take(limit)
@@ -104,7 +111,8 @@ internal class McpGitHubTools(
             } else {
                 rows.joinToString("\n") { row ->
                     val repo = "${row.item.owner}/${row.item.repo}"
-                    val pre = if (row.preReleaseVersion.isNotBlank()) " | pre=${row.preReleaseVersion}" else ""
+                    val pre =
+                        if (row.preReleaseVersion.isNotBlank()) " | pre=${row.preReleaseVersion}" else ""
                     "$repo | local=${row.localVersion} | stable=${row.stableVersion}$pre | status=${row.status} | update=${row.hasUpdate}"
                 }
             }
@@ -112,7 +120,7 @@ internal class McpGitHubTools(
         }
 
         server.addTool(
-            name = "keios.github.tracked.summary",
+            name = "keios.github.tracks.summary",
             description = "Get tracked summary. Args: mode(cache|network), repoFilter(optional).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -133,17 +141,18 @@ internal class McpGitHubTools(
         }
 
         server.addTool(
-            name = "keios.github.tracked.cache.clear",
+            name = "keios.github.cache.clear",
             description = "Clear GitHub tracked check cache.",
             inputSchema = ToolSchema(properties = buildJsonObject { })
         ) { _ ->
             GitHubTrackStore.clearCheckCache()
             GitHubReleaseAssetCacheStore.clearAll()
-            callText("cleared=github_check_cache")
+            GitHubStarImportApkVerificationCacheStore.clearAll()
+            callText("cleared=github_check_cache,github_release_asset_cache,github_star_import_apk_verification_cache")
         }
 
         server.addTool(
-            name = "keios.github.share.parse",
+            name = "keios.github.link.parse",
             description = "Parse GitHub shared link text. Args: text(required).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -156,7 +165,7 @@ internal class McpGitHubTools(
         }
 
         server.addTool(
-            name = "keios.github.share.resolve",
+            name = "keios.github.link.resolve",
             description = "Resolve GitHub shared link into APK asset candidates. Args: text(required), limit(optional).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -166,12 +175,15 @@ internal class McpGitHubTools(
             )
         ) { request ->
             val text = argString(request.arguments?.get("text"))
-            val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, MAX_ENTRY_LIMIT)
+            val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(
+                1,
+                MAX_ENTRY_LIMIT
+            )
             callText(buildGitHubShareResolveText(text = text, limit = limit))
         }
 
         server.addTool(
-            name = "keios.github.share.pending",
+            name = "keios.github.link.pending",
             description = "Inspect or clear pending share-import tracking state. Args: clear(optional, default=false).",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
@@ -204,12 +216,15 @@ internal class McpGitHubTools(
         }.trim()
     }
 
-    private fun filterTrackedItems(items: List<GitHubTrackedApp>, repoFilter: String): List<GitHubTrackedApp> {
+    private fun filterTrackedItems(
+        items: List<GitHubTrackedApp>,
+        repoFilter: String
+    ): List<GitHubTrackedApp> {
         if (repoFilter.isBlank()) return items
         return items.filter {
             "${it.owner}/${it.repo}".contains(repoFilter, ignoreCase = true) ||
-                it.packageName.contains(repoFilter, ignoreCase = true) ||
-                it.appLabel.contains(repoFilter, ignoreCase = true)
+                    it.packageName.contains(repoFilter, ignoreCase = true) ||
+                    it.appLabel.contains(repoFilter, ignoreCase = true)
         }
     }
 
@@ -309,7 +324,8 @@ internal class McpGitHubTools(
         val cacheHit = snapshot.checkCache.filterKeys { key -> key in ids }
         val hasUpdate = cacheHit.count { it.value.hasUpdate == true }
         val unknown = cacheHit.count { it.value.hasUpdate == null }
-        val preRelease = cacheHit.count { it.value.showPreReleaseInfo || it.value.hasPreReleaseUpdate || it.value.recommendsPreRelease }
+        val preRelease =
+            cacheHit.count { it.value.showPreReleaseInfo || it.value.hasPreReleaseUpdate || it.value.recommendsPreRelease }
 
         return buildString {
             appendLine("mode=cache")
@@ -459,8 +475,8 @@ internal class McpGitHubTools(
     private fun String.isGitHubCheckFailureMessage(): Boolean {
         val raw = trim()
         return GitHubTrackedReleaseStatus.isFailureMessage(raw) ||
-            raw.contains("failed", ignoreCase = true) ||
-            raw.contains("\u5931\u8d25", ignoreCase = true)
+                raw.contains("failed", ignoreCase = true) ||
+                raw.contains("\u5931\u8d25", ignoreCase = true)
     }
 
     private fun String.toMcpGitHubMessage(): String {
@@ -476,8 +492,10 @@ internal class McpGitHubTools(
             status == GitHubTrackedReleaseStatus.ComparisonUncertain -> "Version comparison uncertain"
             status == GitHubTrackedReleaseStatus.Failed ->
                 GitHubTrackedReleaseStatus.localizedFailureDetail(raw, "Check failed")
+
             GitHubTrackedReleaseStatus.isOnlyPreReleasesHint(raw) ->
                 "This project may currently publish only pre-releases"
+
             else -> {
                 raw
             }

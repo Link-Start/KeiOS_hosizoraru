@@ -31,10 +31,8 @@ internal class GitHubPackageRepositoryResolver(
         }
 
         val appLabel = request.appLabel.trim()
-        val queries = GitHubPackageRepositoryQueries.forPackage(
-            packageName = packageName,
-            appLabel = appLabel
-        )
+        val searchContext = PackageSearchContext.create(packageName, appLabel)
+        val queries = searchContext.queries
         val candidateLimit = request.candidateLimit.coerceIn(1, MAX_CANDIDATE_LIMIT)
         val verificationLimit = request.verificationLimit.coerceIn(1, candidateLimit)
         var executedQueryCount = 0
@@ -43,14 +41,14 @@ internal class GitHubPackageRepositoryResolver(
         val rawCandidates = mutableListOf<GitHubRepositoryCandidate>()
         val scannedRepoKeys = mutableSetOf<String>()
         val matchedCandidates = mutableListOf<GitHubPackageRepositoryScanCandidate>()
+        val scoreCache = mutableMapOf<String, Pair<GitHubRepositoryCandidate, Int>>()
 
         preferredRepositoryCandidate(request.preferredRepoUrl)?.let { preferredCandidate ->
             rawCandidates += preferredCandidate
+            val preferredScored = preferredCandidate.withPackageSearchScore(searchContext)
+            scoreCache[preferredCandidate.repoKey()] = preferredScored
             val preferredTargets = listOf(
-                preferredCandidate.withPackageSearchScore(
-                    packageName = packageName,
-                    appLabel = appLabel
-                )
+                preferredScored
             ).filter { (candidate, _) ->
                 scannedRepoKeys.add(candidate.repoKey())
             }
@@ -71,6 +69,8 @@ internal class GitHubPackageRepositoryResolver(
                     rawCandidates = rawCandidates,
                     scannedRepoKeys = scannedRepoKeys,
                     matchedCandidates = matchedCandidates,
+                    searchContext = searchContext,
+                    scoreCache = scoreCache,
                     mismatchedCount = mismatchedCount,
                     failedCount = failedCount,
                     candidateLimit = candidateLimit
@@ -89,9 +89,9 @@ internal class GitHubPackageRepositoryResolver(
             executedQueryCount += 1
 
             val rankedCandidates = rawCandidates.rankedPackageCandidates(
-                packageName = packageName,
-                appLabel = appLabel,
-                candidateLimit = candidateLimit
+                searchContext = searchContext,
+                candidateLimit = candidateLimit,
+                scoreCache = scoreCache
             )
             val queryVerificationLimit = verificationLimitForQuery(
                 queryIndex = queryIndex,
@@ -124,6 +124,8 @@ internal class GitHubPackageRepositoryResolver(
             rawCandidates = rawCandidates,
             scannedRepoKeys = scannedRepoKeys,
             matchedCandidates = matchedCandidates,
+            searchContext = searchContext,
+            scoreCache = scoreCache,
             mismatchedCount = mismatchedCount,
             failedCount = failedCount,
             candidateLimit = candidateLimit
@@ -151,14 +153,16 @@ internal class GitHubPackageRepositoryResolver(
         rawCandidates: List<GitHubRepositoryCandidate>,
         scannedRepoKeys: Set<String>,
         matchedCandidates: List<GitHubPackageRepositoryScanCandidate>,
+        searchContext: PackageSearchContext,
+        scoreCache: MutableMap<String, Pair<GitHubRepositoryCandidate, Int>>,
         mismatchedCount: Int,
         failedCount: Int,
         candidateLimit: Int
     ): GitHubPackageRepositoryScanResult {
         val rankedCandidates = rawCandidates.rankedPackageCandidates(
-            packageName = packageName,
-            appLabel = appLabel,
-            candidateLimit = candidateLimit
+            searchContext = searchContext,
+            candidateLimit = candidateLimit,
+            scoreCache = scoreCache
         )
         val sortedMatchedCandidates = matchedCandidates.sortedWith(
             compareByDescending<GitHubPackageRepositoryScanCandidate> { it.score }
@@ -178,18 +182,16 @@ internal class GitHubPackageRepositoryResolver(
     }
 
     private fun GitHubRepositoryCandidate.withPackageSearchScore(
-        packageName: String,
-        appLabel: String
+        searchContext: PackageSearchContext
     ): Pair<GitHubRepositoryCandidate, Int> {
-        val labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel)
-        val packageTail = packageName.substringAfterLast('.').lowercase()
         val searchable = listOf(fullName, repo, description).joinToString(" ").lowercase()
-        val normalizedPackageName = packageName.lowercase()
-        val hasPackageName = searchable.contains(normalizedPackageName)
-        val hasFullLabel = appLabel.isNotBlank() && searchable.contains(appLabel.lowercase())
-        val tokenHits = labelTokens.count { token -> searchable.contains(token) }
+        val hasPackageName = searchable.contains(searchContext.normalizedPackageName)
+        val hasFullLabel =
+            searchContext.appLabel.isNotBlank() && searchable.contains(searchContext.normalizedAppLabel)
+        val tokenHits = searchContext.labelTokens.count { token -> searchable.contains(token) }
         val repoContainsPackageTail =
-            packageTail.length >= 3 && repo.lowercase().contains(packageTail)
+            searchContext.packageTail.length >= 3 &&
+                    repo.lowercase().contains(searchContext.packageTail)
         val matchReason = when {
             hasPackageName -> GitHubRepositoryCandidateMatchReason.PackageName
             hasFullLabel || tokenHits >= 2 -> GitHubRepositoryCandidateMatchReason.AppLabel
@@ -215,17 +217,15 @@ internal class GitHubPackageRepositoryResolver(
     }
 
     private fun List<GitHubRepositoryCandidate>.rankedPackageCandidates(
-        packageName: String,
-        appLabel: String,
-        candidateLimit: Int
+        searchContext: PackageSearchContext,
+        candidateLimit: Int,
+        scoreCache: MutableMap<String, Pair<GitHubRepositoryCandidate, Int>>
     ): List<Pair<GitHubRepositoryCandidate, Int>> {
         return dedupeByRepo()
             .map { candidate ->
-                val scored = candidate.withPackageSearchScore(
-                    packageName = packageName,
-                    appLabel = appLabel
-                )
-                scored.first to scored.second
+                scoreCache.getOrPut(candidate.repoKey()) {
+                    candidate.withPackageSearchScore(searchContext)
+                }
             }
             .sortedWith(
                 compareByDescending<Pair<GitHubRepositoryCandidate, Int>> { it.second }
@@ -246,6 +246,20 @@ internal class GitHubPackageRepositoryResolver(
         lookupConfig: GitHubLookupConfig
     ): PackageRepositoryVerificationBatch {
         if (targets.isEmpty()) return PackageRepositoryVerificationBatch()
+        if (targets.size == 1) {
+            val (candidate, score) = targets.single()
+            return PackageRepositoryVerificationBatch.fromOutcomes(
+                listOf(
+                    verifyCandidate(
+                        candidate = candidate,
+                        score = score,
+                        packageName = packageName,
+                        appLabel = appLabel,
+                        lookupConfig = lookupConfig
+                    )
+                )
+            )
+        }
         val workerCount = min(MAX_PARALLEL_VERIFICATIONS, targets.size)
         val executor = Executors.newFixedThreadPool(workerCount) { runnable ->
             Thread(runnable, "github-package-repo-scan").apply {
@@ -273,11 +287,7 @@ internal class GitHubPackageRepositoryResolver(
                     add(completionService.take().get())
                 }
             }
-            PackageRepositoryVerificationBatch(
-                matchedCandidates = outcomes.mapNotNull { it.matchedCandidate },
-                mismatchedCount = outcomes.count { it.mismatched },
-                failedCount = outcomes.count { it.failed }
-            )
+            PackageRepositoryVerificationBatch.fromOutcomes(outcomes)
         } finally {
             executor.shutdownNow()
         }
@@ -373,7 +383,47 @@ internal class GitHubPackageRepositoryResolver(
         val matchedCandidates: List<GitHubPackageRepositoryScanCandidate> = emptyList(),
         val mismatchedCount: Int = 0,
         val failedCount: Int = 0
-    )
+    ) {
+        companion object {
+            fun fromOutcomes(
+                outcomes: List<PackageRepositoryVerification>
+            ): PackageRepositoryVerificationBatch {
+                return PackageRepositoryVerificationBatch(
+                    matchedCandidates = outcomes.mapNotNull { it.matchedCandidate },
+                    mismatchedCount = outcomes.count { it.mismatched },
+                    failedCount = outcomes.count { it.failed }
+                )
+            }
+        }
+    }
+
+    private data class PackageSearchContext(
+        val appLabel: String,
+        val normalizedPackageName: String,
+        val normalizedAppLabel: String,
+        val packageTail: String,
+        val labelTokens: List<String>,
+        val queries: List<String>
+    ) {
+        companion object {
+            fun create(
+                packageName: String,
+                appLabel: String
+            ): PackageSearchContext {
+                return PackageSearchContext(
+                    appLabel = appLabel,
+                    normalizedPackageName = packageName.lowercase(),
+                    normalizedAppLabel = appLabel.lowercase(),
+                    packageTail = packageName.substringAfterLast('.').lowercase(),
+                    labelTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(appLabel),
+                    queries = GitHubPackageRepositoryQueries.forPackage(
+                        packageName = packageName,
+                        appLabel = appLabel
+                    )
+                )
+            }
+        }
+    }
 }
 
 internal object GitHubPackageRepositoryQueries {

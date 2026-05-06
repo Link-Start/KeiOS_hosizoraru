@@ -54,6 +54,23 @@ internal class GitHubApkManifestReader(
         }
     }
 
+    fun readSelectedNestedApkPackageName(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig,
+        selectNestedApkEntryNames: (List<String>) -> List<String>
+    ): Result<String> {
+        return readWithFallback(asset, lookupConfig) { url, token ->
+            zipEntryReader.readSelectedNestedStoredZipEntry(
+                url = url,
+                innerEntryName = ANDROID_MANIFEST_ENTRY,
+                apiToken = token,
+                selectOuterEntryNames = selectNestedApkEntryNames
+            )
+        }.mapCatching { payload ->
+            parsePackageName(payload.value).getOrThrow()
+        }
+    }
+
     fun parsePackageName(manifestBytes: ByteArray): Result<String> {
         return AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes)
     }

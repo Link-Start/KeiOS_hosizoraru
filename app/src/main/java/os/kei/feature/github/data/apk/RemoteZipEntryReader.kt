@@ -27,6 +27,56 @@ internal class RemoteZipEntryReader(
         val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val outerEntry = findCentralDirectoryEntry(outerDirectory.bytes, outerEntryName)
             ?: error("$outerEntryName was not found in ZIP")
+        readNestedStoredZipEntryFromDirectory(
+            outerDirectory = outerDirectory,
+            outerEntry = outerEntry,
+            innerEntryName = innerEntryName,
+            apiToken = apiToken
+        )
+    }
+
+    fun readSelectedNestedStoredZipEntry(
+        url: String,
+        innerEntryName: String,
+        apiToken: String = "",
+        selectOuterEntryNames: (List<String>) -> List<String>
+    ): Result<ByteArray> = runCatching {
+        val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
+        val outerEntries = parseCentralDirectoryEntries(outerDirectory.bytes)
+        val entriesByName = outerEntries.associateBy { it.name }
+        val selectedNames = selectOuterEntryNames(outerEntries.map { it.name }).distinct()
+        check(selectedNames.isNotEmpty()) {
+            "No nested ZIP entry was selected"
+        }
+
+        var lastFailure: Throwable? = null
+        selectedNames.forEach { outerEntryName ->
+            val outerEntry = entriesByName[outerEntryName]
+            if (outerEntry == null) {
+                lastFailure = IllegalStateException("$outerEntryName was not found in ZIP")
+                return@forEach
+            }
+            runCatching {
+                readNestedStoredZipEntryFromDirectory(
+                    outerDirectory = outerDirectory,
+                    outerEntry = outerEntry,
+                    innerEntryName = innerEntryName,
+                    apiToken = apiToken
+                )
+            }.fold(
+                onSuccess = { return@runCatching it },
+                onFailure = { error -> lastFailure = error }
+            )
+        }
+        throw lastFailure ?: IllegalStateException("No readable nested ZIP entry was found")
+    }
+
+    private fun readNestedStoredZipEntryFromDirectory(
+        outerDirectory: CentralDirectoryBytes,
+        outerEntry: CentralDirectoryEntry,
+        innerEntryName: String,
+        apiToken: String
+    ): ByteArray {
         check(outerEntry.compressionMethod == ZIP_METHOD_STORED) {
             "Nested APK entry is compressed and cannot be scanned by range"
         }
@@ -58,7 +108,7 @@ internal class RemoteZipEntryReader(
             apiToken = apiToken,
             baseOffset = outerEntryDataStart
         )
-        when (innerEntry.compressionMethod) {
+        return when (innerEntry.compressionMethod) {
             ZIP_METHOD_STORED -> compressedBytes
             ZIP_METHOD_DEFLATED -> inflateRaw(compressedBytes, innerEntry.uncompressedSize)
             else -> error("Nested APK entry compression method is unsupported: ${innerEntry.compressionMethod}")

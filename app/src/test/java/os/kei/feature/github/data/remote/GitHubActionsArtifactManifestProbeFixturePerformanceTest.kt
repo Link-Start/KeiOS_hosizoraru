@@ -59,7 +59,7 @@ class GitHubActionsArtifactManifestProbeFixturePerformanceTest {
             assertEquals("bytes=0-0", ranges.first())
             assertTrue(ranges.all { it.matches(Regex("""bytes=\d+-\d+""")) })
             assertTrue(
-                actual = ranges.size <= 12,
+                actual = ranges.size <= 8,
                 message = "Expected a bounded range-only scan, got ${ranges.size} requests"
             )
         }

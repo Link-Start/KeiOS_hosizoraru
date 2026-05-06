@@ -41,41 +41,12 @@ internal class GitHubActionsArtifactManifestProbe(
     private fun readNestedApkPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
-    ): Result<String> = runCatching {
-        val apkEntryNames = manifestReader.listEntryNames(
+    ): Result<String> {
+        return manifestReader.readSelectedNestedApkPackageName(
             asset = asset,
-            lookupConfig = lookupConfig
-        ).getOrThrow()
-            .asSequence()
-            .filter { it.endsWith(".apk", ignoreCase = true) }
-            .sortedWith(
-                compareBy<String> { nestedApkEntryScore(it) }
-                    .thenBy { it.length }
-                    .thenBy { it.lowercase() }
-            )
-            .take(MAX_NESTED_APK_SCAN_CANDIDATES)
-            .toList()
-        check(apkEntryNames.isNotEmpty()) {
-            "Actions artifact contains no APK entry"
-        }
-
-        var lastFailure: Throwable? = null
-        apkEntryNames.forEach { apkEntryName ->
-            manifestReader.readNestedApkPackageName(
-                asset = asset,
-                nestedApkEntryName = apkEntryName,
-                lookupConfig = lookupConfig
-            ).mapCatching(::validatedPackageName).fold(
-                onSuccess = { packageName ->
-                    return@runCatching packageName
-                },
-                onFailure = { error ->
-                    lastFailure = error
-                }
-            )
-        }
-        throw lastFailure
-            ?: IllegalStateException("Actions artifact contains no readable APK manifest")
+            lookupConfig = lookupConfig,
+            selectNestedApkEntryNames = ::selectNestedApkEntryNames
+        ).mapCatching(::validatedPackageName)
     }
 
     private fun validatedPackageName(packageName: String): String {
@@ -95,6 +66,19 @@ internal class GitHubActionsArtifactManifestProbe(
             "debug" in name -> 4
             else -> 3
         }
+    }
+
+    private fun selectNestedApkEntryNames(entryNames: List<String>): List<String> {
+        return entryNames
+            .asSequence()
+            .filter { it.endsWith(".apk", ignoreCase = true) }
+            .sortedWith(
+                compareBy<String> { nestedApkEntryScore(it) }
+                    .thenBy { it.length }
+                    .thenBy { it.lowercase() }
+            )
+            .take(MAX_NESTED_APK_SCAN_CANDIDATES)
+            .toList()
     }
 
     private companion object {

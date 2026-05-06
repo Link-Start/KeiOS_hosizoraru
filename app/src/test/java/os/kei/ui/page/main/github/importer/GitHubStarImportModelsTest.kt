@@ -73,6 +73,7 @@ class GitHubStarImportModelsTest {
             filterInput = "app",
             viewFilter = StarImportViewFilter.All,
             qualityFilters = setOf(GitHubStarImportQuality.LikelyAndroid),
+            conflictStrategy = StarImportConflictStrategy.NewOnly,
             selectedIds = setOf(android.trackedApp.id, desktop.trackedApp.id),
             verificationStates = mapOf(
                 android.trackedApp.id to StarImportApkVerificationUiState(
@@ -90,6 +91,30 @@ class GitHubStarImportModelsTest {
         assertEquals(setOf(android.trackedApp.id), state.visibleRecommendedIds)
         assertEquals(listOf(android, desktop), state.selectedCandidates)
         assertEquals(listOf(android, desktop), state.selectedVerificationTargets)
+    }
+
+    @Test
+    fun `candidate list ui state can include tracked conflicts by strategy`() {
+        val tracked = starImportCandidate(
+            repo = "tracked-app",
+            description = "Android APK",
+            language = "Kotlin",
+            alreadyTracked = true
+        )
+
+        val state = buildStarImportCandidateListUiState(
+            candidates = listOf(tracked),
+            filterInput = "",
+            viewFilter = StarImportViewFilter.Tracked,
+            qualityFilters = setOf(GitHubStarImportQuality.LikelyAndroid),
+            conflictStrategy = StarImportConflictStrategy.IncludeTracked,
+            selectedIds = setOf(tracked.trackedApp.id),
+            verificationStates = emptyMap()
+        )
+
+        assertEquals(setOf(tracked.trackedApp.id), state.visibleImportableIds)
+        assertEquals(listOf(tracked), state.selectedCandidates)
+        assertEquals(1, state.selectedImportableCount)
     }
 
 }

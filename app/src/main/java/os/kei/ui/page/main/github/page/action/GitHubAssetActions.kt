@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
@@ -10,7 +11,6 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.statusActionUrl
-import kotlinx.coroutines.launch
 
 internal class GitHubAssetActions(
     private val env: GitHubPageActionEnvironment
@@ -58,12 +58,17 @@ internal class GitHubAssetActions(
         state.clearAssetRuntimeState(itemId)
     }
 
-    fun clearApkAssetCache(item: GitHubTrackedApp, itemState: VersionCheckUi) {
+    fun clearApkAssetCache(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        allowLatestReleaseFallback: Boolean = false
+    ) {
         val target = itemState.apkAssetTarget(
             owner = item.owner,
             repo = item.repo,
             context = context,
-            alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton
+            alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton,
+            allowLatestReleaseFallback = allowLatestReleaseFallback
         ) ?: return
         val preferHtml = state.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
         val hasApiToken = state.lookupConfig.apiToken.isNotBlank()
@@ -100,16 +105,24 @@ internal class GitHubAssetActions(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
         toggleOnlyWhenCached: Boolean = true,
-        includeAllAssets: Boolean = false
+        includeAllAssets: Boolean = false,
+        allowLatestReleaseFallback: Boolean = false,
+        expandPanelOnLoad: Boolean = true,
+        openFallbackTarget: Boolean = true
     ) {
         val alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton
         val target = itemState.apkAssetTarget(
             owner = item.owner,
             repo = item.repo,
             context = context,
-            alwaysLatestRelease = alwaysLatestRelease
+            alwaysLatestRelease = alwaysLatestRelease,
+            allowLatestReleaseFallback = allowLatestReleaseFallback
         )
         if (target == null) {
+            if (!openFallbackTarget) {
+                env.toast(R.string.github_toast_no_apk_to_load)
+                return
+            }
             val fallbackUrl = if (alwaysLatestRelease) {
                 repository.buildReleaseUrl(item.owner, item.repo)
             } else {
@@ -133,12 +146,16 @@ internal class GitHubAssetActions(
             cachedBundle.tagName.equals(target.rawTag, ignoreCase = true) &&
             cachedBundle.showingAllAssets == includeAllAssets
         ) {
-            state.apkAssetExpanded[item.id] = !(state.apkAssetExpanded[item.id] ?: false)
+            if (expandPanelOnLoad) {
+                state.apkAssetExpanded[item.id] = !(state.apkAssetExpanded[item.id] ?: false)
+            }
             state.apkAssetErrors.remove(item.id)
             return
         }
 
-        state.apkAssetExpanded[item.id] = true
+        if (expandPanelOnLoad) {
+            state.apkAssetExpanded[item.id] = true
+        }
         state.apkAssetLoading[item.id] = true
         state.apkAssetErrors.remove(item.id)
         scope.launch {
@@ -161,11 +178,13 @@ internal class GitHubAssetActions(
             if (persistedBundle != null && state.matchesAssetSourceSignature(persistedBundle)) {
                 state.apkAssetLoading[item.id] = false
                 state.apkAssetBundles[item.id] = persistedBundle
-                state.apkAssetErrors[item.id] = buildEmptyAssetMessage(
-                    label = target.label,
-                    includeAllAssets = includeAllAssets,
-                    assetCount = persistedBundle.assets.size
-                )
+                if (expandPanelOnLoad) {
+                    state.apkAssetErrors[item.id] = buildEmptyAssetMessage(
+                        label = target.label,
+                        includeAllAssets = includeAllAssets,
+                        assetCount = persistedBundle.assets.size
+                    )
+                }
                 return@launch
             } else if (persistedBundle != null) {
                 repository.clearAssetCache(assetCacheKey)
@@ -192,16 +211,41 @@ internal class GitHubAssetActions(
                         bundle = persistedBundle
                     )
                 }
-                state.apkAssetErrors[item.id] = buildEmptyAssetMessage(
-                    label = target.label,
-                    includeAllAssets = includeAllAssets,
-                    assetCount = persistedBundle.assets.size
-                )
+                if (expandPanelOnLoad) {
+                    state.apkAssetErrors[item.id] = buildEmptyAssetMessage(
+                        label = target.label,
+                        includeAllAssets = includeAllAssets,
+                        assetCount = persistedBundle.assets.size
+                    )
+                }
             }.onFailure { error ->
                 state.apkAssetErrors[item.id] = error.message
                     ?: context.getString(R.string.github_error_load_apk_assets_failed)
             }
         }
+    }
+
+    fun loadReleaseNotes(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        clearCache: Boolean
+    ) {
+        if (clearCache) {
+            clearApkAssetCache(
+                item = item,
+                itemState = itemState,
+                allowLatestReleaseFallback = true
+            )
+        }
+        loadApkAssets(
+            item = item,
+            itemState = itemState,
+            toggleOnlyWhenCached = !clearCache,
+            includeAllAssets = true,
+            allowLatestReleaseFallback = true,
+            expandPanelOnLoad = false,
+            openFallbackTarget = false
+        )
     }
 
     private suspend fun resolvePreferredAssetUrl(asset: GitHubReleaseAssetFile): String {

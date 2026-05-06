@@ -40,7 +40,8 @@ internal fun VersionCheckUi.apkAssetTarget(
     owner: String,
     repo: String,
     context: Context,
-    alwaysLatestRelease: Boolean = false
+    alwaysLatestRelease: Boolean = false,
+    allowLatestReleaseFallback: Boolean = false
 ): ApkAssetTarget? {
     val stableTag = latestStableRawTag.ifBlank {
         GitHubReleaseAssetRepository.parseReleaseTagFromUrl(latestStableUrl)
@@ -48,7 +49,7 @@ internal fun VersionCheckUi.apkAssetTarget(
     val preTag = latestPreRawTag.ifBlank {
         GitHubReleaseAssetRepository.parseReleaseTagFromUrl(latestPreUrl)
     }
-    if (alwaysLatestRelease) {
+    if (alwaysLatestRelease || allowLatestReleaseFallback) {
         val stableCandidate = LatestReleaseCandidate(
             rawTag = stableTag.trim().ifBlank { latestTag.trim() },
             releaseUrl = latestStableUrl.trim(),
@@ -76,7 +77,13 @@ internal fun VersionCheckUi.apkAssetTarget(
         return ApkAssetTarget(
             rawTag = targetTag,
             releaseUrl = releaseUrl,
-            label = context.getString(R.string.github_asset_target_latest)
+            label = context.getString(
+                if (alwaysLatestRelease) {
+                    R.string.github_asset_target_latest
+                } else {
+                    R.string.github_release_notes_detail_target_latest
+                }
+            )
         )
     }
     return when {

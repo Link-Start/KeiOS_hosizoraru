@@ -167,13 +167,10 @@ internal fun GitHubPageSheetHost(
         onDismissRequest = { state.decisionAssistDetailRequest = null },
         onRefreshHealth = { item -> actions.refreshTrackedItem(item, showToastOnError = true) },
         onRefreshReleaseNotes = { item, itemState ->
-            val includeAllAssets = state.apkAssetIncludeAll[item.id] == true
-            actions.clearApkAssetCache(item, itemState)
-            actions.loadApkAssets(
+            actions.loadReleaseNotes(
                 item = item,
                 itemState = itemState,
-                toggleOnlyWhenCached = false,
-                includeAllAssets = includeAllAssets
+                clearCache = true
             )
         }
     )

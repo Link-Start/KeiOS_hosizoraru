@@ -587,6 +587,9 @@
     <string name="github_health_detail_current_version">Local version: %1$s</string>
     <string name="github_health_detail_reason_title">Score reasons</string>
     <string name="github_health_detail_reason_empty">No obvious risk signal detected</string>
+    <string name="github_health_detail_impact_title">Score impact</string>
+    <string name="github_health_detail_impact_empty">This refresh has no measurable score impact</string>
+    <string name="github_health_detail_impact_line">%1$s · %2$s</string>
     <string name="github_health_detail_rule_title">Scoring rules</string>
     <string name="github_health_detail_rule_check">Check failures, missing package names, and missing local versions reduce the score.</string>
     <string name="github_health_detail_rule_release">Stable release detection, recent releases, and available updates increase attention.</string>
@@ -594,6 +597,7 @@
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">Refreshing release assets and release notes</string>
     <string name="github_release_notes_detail_refresh_hint">Use the top-right button to refresh release assets and release notes only.</string>
+    <string name="github_release_notes_detail_target_latest">Current release</string>
     <string name="github_release_notes_detail_body_title">Release notes</string>
     <string name="github_release_notes_detail_empty">This release has no displayable release notes.</string>
     <string name="github_apk_trust_good">Trusted</string>
@@ -615,6 +619,12 @@
     <string name="github_actions_artifact_detail_selector_title">Selection reasons</string>
     <string name="github_actions_artifact_detail_selector_empty">This artifact was selected by the base rules.</string>
     <string name="github_actions_action_share">Share</string>
+    <string name="github_actions_empty_artifacts_filter">No artifact in this segment</string>
+    <string name="github_actions_artifact_filter_recommended">Best %1$d</string>
+    <string name="github_actions_artifact_filter_alternatives">Alt %1$d</string>
+    <string name="github_actions_artifact_filter_all">All %1$d</string>
+    <string name="github_star_import_conflict_new_only">New only</string>
+    <string name="github_star_import_conflict_include_tracked">Include tracked</string>
     <string name="github_token_guide_collapsed">Fine-grained PAT · Contents/Actions: Read</string>
     <string name="github_token_guide_summary">Create a dedicated Fine-grained PAT for KeiOS. Release API needs `Contents: Read`; Actions artifact API needs `Actions: Read`; public repositories can also be tracked.</string>
     <string name="github_token_guide_field_type">Type</string>

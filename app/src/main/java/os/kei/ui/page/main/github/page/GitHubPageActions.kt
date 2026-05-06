@@ -235,6 +235,16 @@ internal class GitHubPageActions(
         includeAllAssets = includeAllAssets
     )
 
+    fun loadReleaseNotes(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        clearCache: Boolean = false
+    ) = assetActions.loadReleaseNotes(
+        item = item,
+        itemState = itemState,
+        clearCache = clearCache
+    )
+
     fun openTrackSheetForAdd() = trackActions.openTrackSheetForAdd()
 
     fun ensureKeiOsSelfTrack() = trackActions.ensureKeiOsSelfTrack()

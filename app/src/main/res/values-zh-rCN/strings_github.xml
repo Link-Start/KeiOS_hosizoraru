@@ -587,6 +587,9 @@
     <string name="github_health_detail_current_version">本地版本：%1$s</string>
     <string name="github_health_detail_reason_title">评分原因</string>
     <string name="github_health_detail_reason_empty">当前没有明显风险信号</string>
+    <string name="github_health_detail_impact_title">评分影响</string>
+    <string name="github_health_detail_impact_empty">本次刷新没有可量化的评分变动</string>
+    <string name="github_health_detail_impact_line">%1$s · %2$s</string>
     <string name="github_health_detail_rule_title">评分规则</string>
     <string name="github_health_detail_rule_check">检查失败、缺少本地包名、缺少本地版本会降低评分。</string>
     <string name="github_health_detail_rule_release">稳定版识别、近期发布、有可用更新会提高关注度。</string>
@@ -594,6 +597,7 @@
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">正在刷新 release assets 和 release notes</string>
     <string name="github_release_notes_detail_refresh_hint">右上角可单独刷新 release assets 和 release notes</string>
+    <string name="github_release_notes_detail_target_latest">当前 Release</string>
     <string name="github_release_notes_detail_body_title">发布说明</string>
     <string name="github_release_notes_detail_empty">当前 release 暂无可显示的发布说明</string>
     <string name="github_apk_trust_good">可信</string>
@@ -615,6 +619,12 @@
     <string name="github_actions_artifact_detail_selector_title">选择理由</string>
     <string name="github_actions_artifact_detail_selector_empty">当前 artifact 由基础规则选出</string>
     <string name="github_actions_action_share">分享</string>
+    <string name="github_actions_empty_artifacts_filter">当前分段没有可显示的 artifact</string>
+    <string name="github_actions_artifact_filter_recommended">推荐 %1$d</string>
+    <string name="github_actions_artifact_filter_alternatives">备选 %1$d</string>
+    <string name="github_actions_artifact_filter_all">全部 %1$d</string>
+    <string name="github_star_import_conflict_new_only">仅新增</string>
+    <string name="github_star_import_conflict_include_tracked">含已追踪</string>
     <string name="github_token_guide_collapsed">Fine-grained PAT · Contents/Actions: Read</string>
     <string name="github_token_guide_summary">建议为 KeiOS 单独建一个 Fine-grained PAT。Release API 需要 `Contents: Read`；Actions artifact API 需要 `Actions: Read`；公开仓库也能正常追踪。</string>
     <string name="github_token_guide_field_type">类型</string>

@@ -17,6 +17,11 @@ internal enum class StarImportViewFilter(@param:StringRes val labelRes: Int) {
     Tracked(R.string.github_star_import_filter_tracked)
 }
 
+internal enum class StarImportConflictStrategy(@param:StringRes val labelRes: Int) {
+    NewOnly(R.string.github_star_import_conflict_new_only),
+    IncludeTracked(R.string.github_star_import_conflict_include_tracked)
+}
+
 internal enum class StarImportUiSource(
     @param:StringRes val labelRes: Int,
     @param:StringRes val requirementMessageRes: Int,
@@ -115,6 +120,7 @@ internal fun buildStarImportCandidateListUiState(
     filterInput: String,
     viewFilter: StarImportViewFilter,
     qualityFilters: Set<GitHubStarImportQuality>,
+    conflictStrategy: StarImportConflictStrategy,
     selectedIds: Set<String>,
     verificationStates: Map<String, StarImportApkVerificationUiState>
 ): StarImportCandidateListUiState {
@@ -151,8 +157,9 @@ internal fun buildStarImportCandidateListUiState(
     val filteredCandidates = filteredClassifiedCandidates.map { classified ->
         classified.candidate
     }
+    val trackedSelectable = conflictStrategy == StarImportConflictStrategy.IncludeTracked
     val selectedCandidates = candidates.filter { candidate ->
-        !candidate.alreadyTracked && candidate.trackedApp.id in selectedIds
+        (!candidate.alreadyTracked || trackedSelectable) && candidate.trackedApp.id in selectedIds
     }
     val selectedVerificationTargets = selectedCandidates.filter { candidate ->
         val state = verificationStates[candidate.trackedApp.id]
@@ -169,13 +176,13 @@ internal fun buildStarImportCandidateListUiState(
         selectedImportableCount = selectedCandidates.size,
         visibleImportableIds = filteredCandidates
             .asSequence()
-            .filterNot { it.alreadyTracked }
+            .filter { !it.alreadyTracked || trackedSelectable }
             .map { it.trackedApp.id }
             .toSet(),
         visibleRecommendedIds = filteredClassifiedCandidates
             .asSequence()
             .filter { classified ->
-                !classified.candidate.alreadyTracked &&
+                (!classified.candidate.alreadyTracked || trackedSelectable) &&
                         classified.quality == GitHubStarImportQuality.LikelyAndroid
             }
             .map { classified -> classified.candidate.trackedApp.id }

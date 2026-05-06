@@ -78,6 +78,7 @@ internal class GitHubPageState(
     var actionsWorkflowsExpanded by mutableStateOf(actionsSectionExpansionState.workflowsExpanded)
     var actionsRunsExpanded by mutableStateOf(actionsSectionExpansionState.runsExpanded)
     var actionsArtifactsExpanded by mutableStateOf(true)
+    var actionsArtifactFilter by mutableStateOf(GitHubActionsArtifactFilter.Recommended)
     var actionsDownloadHistory by mutableStateOf<List<GitHubActionsDownloadRecord>>(emptyList())
     var actionsRunTrackingPlans by mutableStateOf<Map<Long, GitHubActionsRunTrackingPlan>>(emptyMap())
     var actionsArtifactDownloadLoadingId by mutableStateOf<Long?>(null)
@@ -311,6 +312,7 @@ internal class GitHubPageState(
         actionsRunLimit = 6
         actionsSelectedRunId = null
         actionsArtifactsExpanded = true
+        actionsArtifactFilter = GitHubActionsArtifactFilter.Recommended
         actionsDownloadHistory = emptyList()
         actionsRunTrackingPlans = emptyMap()
         actionsArtifactDownloadLoadingId = null
@@ -355,6 +357,12 @@ internal class GitHubPageState(
 internal enum class GitHubDecisionAssistDetailType {
     RepositoryHealth,
     ReleaseNotes
+}
+
+internal enum class GitHubActionsArtifactFilter {
+    Recommended,
+    Alternatives,
+    All
 }
 
 internal data class GitHubDecisionAssistDetailRequest(

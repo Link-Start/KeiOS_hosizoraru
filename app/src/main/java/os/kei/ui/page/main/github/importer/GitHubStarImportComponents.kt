@@ -315,6 +315,7 @@ internal fun StarImportListControlCard(
     filterInput: String,
     viewFilter: StarImportViewFilter,
     qualityFilters: Set<GitHubStarImportQuality>,
+    conflictStrategy: StarImportConflictStrategy,
     qualityFilterCounts: Map<GitHubStarImportQuality, Int>,
     filteredCount: Int,
     visibleImportableCount: Int,
@@ -326,6 +327,7 @@ internal fun StarImportListControlCard(
     onFilterInputChange: (String) -> Unit,
     onViewFilterChange: (StarImportViewFilter) -> Unit,
     onQualityFilterToggle: (GitHubStarImportQuality) -> Unit,
+    onConflictStrategyChange: (StarImportConflictStrategy) -> Unit,
     onVerifySelected: () -> Unit,
     onSelectRecommendedVisible: () -> Unit,
     onSelectVisible: () -> Unit,
@@ -366,6 +368,26 @@ internal fun StarImportListControlCard(
             qualityFilterCounts = qualityFilterCounts,
             onQualityFilterToggle = onQualityFilterToggle
         )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StarImportConflictStrategy.entries.forEach { strategy ->
+                AppLiquidTextButton(
+                    backdrop = null,
+                    text = stringResource(strategy.labelRes),
+                    onClick = { onConflictStrategyChange(strategy) },
+                    modifier = Modifier.weight(1f),
+                    variant = if (strategy == conflictStrategy) {
+                        GlassVariant.SheetAction
+                    } else {
+                        GlassVariant.Content
+                    },
+                    textMaxLines = 1,
+                    textOverflow = TextOverflow.Ellipsis
+                )
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -547,10 +569,11 @@ internal fun StarImportEmptyCard() {
 internal fun StarImportCandidateCard(
     candidate: GitHubRepositoryImportCandidate,
     selected: Boolean,
+    trackedSelectable: Boolean,
     apkVerificationState: StarImportApkVerificationUiState?,
     onToggle: () -> Unit
 ) {
-    val disabled = candidate.alreadyTracked
+    val disabled = candidate.alreadyTracked && !trackedSelectable
     val quality = GitHubStarImportClassifier.classify(candidate)
     val accent = when {
         disabled -> MiuixTheme.colorScheme.onBackgroundVariant

@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.feature.github.model.isKeiOsSelfTrack
+import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.importer.GitHubStarImportActivity
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
@@ -271,6 +272,16 @@ fun GitHubPage(
                     type = type,
                     item = item
                 )
+                if (
+                    type == GitHubDecisionAssistDetailType.ReleaseNotes &&
+                    state.apkAssetBundles[item.id]?.releaseNotesBody.isNullOrBlank()
+                ) {
+                    actions.loadReleaseNotes(
+                        item = item,
+                        itemState = state.checkStates[item.id] ?: VersionCheckUi(),
+                        clearCache = false
+                    )
+                }
             },
             onOpenExternalUrl = actions::openExternalUrl,
             onOpenApkInDownloader = actions::openApkInDownloader,

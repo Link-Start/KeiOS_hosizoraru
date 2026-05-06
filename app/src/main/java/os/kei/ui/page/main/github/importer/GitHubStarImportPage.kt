@@ -69,6 +69,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     var filterInput by remember { mutableStateOf("") }
     var viewFilter by remember { mutableStateOf(StarImportViewFilter.All) }
     var qualityFilters by remember { mutableStateOf(defaultVisibleStarImportQualities()) }
+    var conflictStrategy by remember { mutableStateOf(StarImportConflictStrategy.NewOnly) }
     var preview by remember { mutableStateOf<GitHubStarredRepositoryImportPreview?>(null) }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     val apkVerificationStates =
@@ -97,6 +98,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         filterInput,
         viewFilter,
         qualityFilters,
+        conflictStrategy,
         selectedIds
     ) {
         derivedStateOf {
@@ -105,6 +107,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                 filterInput = filterInput,
                 viewFilter = viewFilter,
                 qualityFilters = qualityFilters,
+                conflictStrategy = conflictStrategy,
                 selectedIds = selectedIds,
                 verificationStates = apkVerificationStates
             )
@@ -399,6 +402,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                         filterInput = filterInput,
                         viewFilter = viewFilter,
                         qualityFilters = qualityFilters,
+                        conflictStrategy = conflictStrategy,
                         qualityFilterCounts = listUiState.qualityFilterCounts,
                         filteredCount = listUiState.filteredCandidates.size,
                         visibleImportableCount = listUiState.visibleImportableIds.size,
@@ -421,6 +425,16 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                                 GitHubStarImportQuality.entries.toSet()
                             }
                         },
+                        onConflictStrategyChange = { strategy ->
+                            conflictStrategy = strategy
+                            if (strategy == StarImportConflictStrategy.NewOnly) {
+                                selectedIds = selectedIds - candidates
+                                    .asSequence()
+                                    .filter { it.alreadyTracked }
+                                    .map { it.trackedApp.id }
+                                    .toSet()
+                            }
+                        },
                         onVerifySelected = { verifyApkAssets(listUiState.selectedVerificationTargets) },
                         onSelectRecommendedVisible = {
                             selectedIds = selectedIds + listUiState.visibleRecommendedIds
@@ -439,9 +453,13 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                     StarImportCandidateCard(
                         candidate = candidate,
                         selected = candidate.trackedApp.id in selectedIds,
+                        trackedSelectable = conflictStrategy == StarImportConflictStrategy.IncludeTracked,
                         apkVerificationState = apkVerificationStates[candidate.trackedApp.id],
                         onToggle = {
-                            if (candidate.alreadyTracked) return@StarImportCandidateCard
+                            if (
+                                candidate.alreadyTracked &&
+                                conflictStrategy != StarImportConflictStrategy.IncludeTracked
+                            ) return@StarImportCandidateCard
                             selectedIds = if (candidate.trackedApp.id in selectedIds) {
                                 selectedIds - candidate.trackedApp.id
                             } else {

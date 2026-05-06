@@ -14,11 +14,14 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.ui.page.main.about.section.AboutAppCardSection
+import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -303,6 +306,72 @@ class AppDesignSystemScreenshotTest {
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                             expanded = false,
                             onExpandedChange = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun githubAssetRowCompactLight() {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_asset_row_compact_light.png") {
+            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFF3F4F6))
+                            .padding(16.dp)
+                    ) {
+                        GitHubTrackedItemAssetRow(
+                            asset = GitHubReleaseAssetFile(
+                                name = "InstallerX-Revived-offline-v2.3.2.apk",
+                                downloadUrl = "https://github.com/wxxsfxyzm/InstallerX-Revived/releases/download/v2.3.2/app.apk",
+                                sizeBytes = 4_700_000L,
+                                downloadCount = 120,
+                                updatedAtMillis = System.currentTimeMillis() - 58L * 24L * 60L * 60L * 1000L
+                            ),
+                            alwaysLatestReleaseDownload = false,
+                            targetAccent = Color(0xFF06B6D4),
+                            summaryContainerColor = Color(0x3322D3EE),
+                            summaryBorderColor = Color(0x5522D3EE),
+                            contentBackdrop = rememberLayerBackdrop(),
+                            supportedAbis = listOf("arm64-v8a"),
+                            showApkTrustCheck = true,
+                            context = ApplicationProvider.getApplicationContext(),
+                            onOpenApkInDownloader = {},
+                            onShareApkLink = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun githubDecisionAssistSummaryLight() {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_decision_assist_summary_light.png") {
+            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Column(
+                        modifier = Modifier
+                            .background(Color(0xFFF3F4F6))
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AppSupportingBlock(
+                            text = "健康评分 88：稳定版已识别",
+                            accentColor = Color(0xFF22C55E),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            onClick = {}
+                        )
+                        AppSupportingBlock(
+                            text = "Release Notes\nInstallerX Revived stable v2.3.2",
+                            accentColor = Color(0xFF0EA5E9),
+                            maxLines = 3,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            onClick = {}
                         )
                     }
                 }

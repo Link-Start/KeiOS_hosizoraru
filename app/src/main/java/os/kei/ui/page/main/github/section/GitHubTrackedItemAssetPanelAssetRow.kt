@@ -2,11 +2,9 @@ package os.kei.ui.page.main.github.section
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -35,7 +33,6 @@ import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -83,24 +80,48 @@ internal fun GitHubTrackedItemAssetRow(
         containerColor = summaryContainerColor,
         borderColor = summaryBorderColor
     ) {
-        Column(
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = CardLayoutRhythm.cardHorizontalPadding,
-                    vertical = CardLayoutRhythm.cardVerticalPadding
+                    horizontal = 12.dp,
+                    vertical = 10.dp
                 ),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Text(
-                text = displayName,
-                color = MiuixTheme.colorScheme.onBackground,
-                fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight,
-                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(
+                    text = displayName,
+                    modifier = Modifier.weight(1f),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                AppCompactIconAction(
+                    icon = appLucideDownloadIcon(),
+                    contentDescription = sizeLabel,
+                    tint = actionButtonColor,
+                    onClick = { onOpenApkInDownloader(asset) },
+                    minSize = 34.dp
+                )
+                AppCompactIconAction(
+                    icon = appLucideShareIcon(),
+                    contentDescription = context.getString(
+                        R.string.github_cd_share_asset,
+                        asset.name
+                    ),
+                    tint = actionButtonColor,
+                    onClick = { onShareApkLink(asset) },
+                    minSize = 34.dp
+                )
+            }
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -124,6 +145,10 @@ internal fun GitHubTrackedItemAssetRow(
                         color = MiuixTheme.colorScheme.onBackgroundVariant
                     )
                 }
+                StatusPill(
+                    label = sizeLabel,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
                 if (preferredForDevice) {
                     StatusPill(
                         label = stringResource(R.string.github_asset_badge_recommended),
@@ -142,7 +167,13 @@ internal fun GitHubTrackedItemAssetRow(
                     )
                 }
             }
-            apkTrustSignal?.takeIf { it.reasons.isNotEmpty() }?.let { signal ->
+            apkTrustSignal
+                ?.takeIf { signal ->
+                    signal.level != GitHubDecisionLevel.Good ||
+                            signal.reasons.any { it != GitHubApkTrustReason.ApkLike }
+                }
+                ?.takeIf { it.reasons.isNotEmpty() }
+                ?.let { signal ->
                 Text(
                     text = signal.reasons
                         .joinToString(" / ") { reason -> context.getString(reason.labelRes()) },
@@ -151,38 +182,6 @@ internal fun GitHubTrackedItemAssetRow(
                     lineHeight = AppTypographyTokens.Supporting.lineHeight,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Text(
-                    text = sizeLabel,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                AppCompactIconAction(
-                    icon = appLucideDownloadIcon(),
-                    contentDescription = sizeLabel,
-                    tint = actionButtonColor,
-                    onClick = { onOpenApkInDownloader(asset) },
-                    minSize = 36.dp
-                )
-                AppCompactIconAction(
-                    icon = appLucideShareIcon(),
-                    contentDescription = context.getString(
-                        R.string.github_cd_share_asset,
-                        asset.name
-                    ),
-                    tint = actionButtonColor,
-                    onClick = { onShareApkLink(asset) },
-                    minSize = 36.dp
                 )
             }
         }

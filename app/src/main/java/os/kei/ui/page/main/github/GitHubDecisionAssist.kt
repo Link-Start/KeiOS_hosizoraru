@@ -205,6 +205,23 @@ internal fun buildGitHubReleaseNotesDetailLines(
     )
 }
 
+internal fun buildGitHubRepositoryHealthImpactLines(
+    health: GitHubRepositoryHealth
+): List<Pair<GitHubRepositoryHealthReason, Int>> {
+    return health.reasons.map { reason ->
+        reason to when (reason) {
+            GitHubRepositoryHealthReason.UpdateAvailable -> 7
+            GitHubRepositoryHealthReason.PreReleaseRecommended -> -6
+            GitHubRepositoryHealthReason.CheckFailed -> -28
+            GitHubRepositoryHealthReason.MissingPackageName -> -12
+            GitHubRepositoryHealthReason.MissingStableRelease -> -18
+            GitHubRepositoryHealthReason.LocalMissing -> -10
+            GitHubRepositoryHealthReason.StableDetected -> 6
+            GitHubRepositoryHealthReason.FreshRelease -> 5
+        }
+    }
+}
+
 private const val FRESH_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 14L
 private const val RELEASE_NOTES_LINE_MAX_CHARS = 180
 

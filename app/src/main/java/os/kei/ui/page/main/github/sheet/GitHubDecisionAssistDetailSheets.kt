@@ -26,6 +26,7 @@ import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.buildGitHubApkTrustSignal
 import os.kei.ui.page.main.github.buildGitHubReleaseNotesDetailLines
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
+import os.kei.ui.page.main.github.buildGitHubRepositoryHealthImpactLines
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
@@ -246,6 +247,23 @@ private fun GitHubHealthDetailContent(
                 }
             }
         }
+        SheetSectionTitle(stringResource(R.string.github_health_detail_impact_title))
+        SheetSectionCard {
+            val impactLines = buildGitHubRepositoryHealthImpactLines(health)
+            if (impactLines.isEmpty()) {
+                DetailTextLine(stringResource(R.string.github_health_detail_impact_empty))
+            } else {
+                impactLines.forEach { (reason, impact) ->
+                    DetailTextLine(
+                        stringResource(
+                            R.string.github_health_detail_impact_line,
+                            if (impact > 0) "+$impact" else impact.toString(),
+                            context.getString(reason.labelRes())
+                        )
+                    )
+                }
+            }
+        }
         SheetSectionTitle(stringResource(R.string.github_health_detail_rule_title))
         SheetSectionCard {
             SheetDescriptionText(stringResource(R.string.github_health_detail_rule_check))
@@ -289,8 +307,12 @@ private fun GitHubReleaseNotesDetailContent(
             if (lines.isEmpty()) {
                 SheetDescriptionText(stringResource(R.string.github_release_notes_detail_empty))
             } else {
-                lines.forEach { line ->
-                    DetailTextLine(line, maxLines = 8)
+                lines.forEachIndexed { index, line ->
+                    DetailTextLine(
+                        text = if (index == 0) line else "• $line",
+                        maxLines = if (index == 0) 4 else 8,
+                        accent = index == 0
+                    )
                 }
             }
         }
@@ -331,13 +353,15 @@ private fun ArtifactSelectorReasonSection(reasons: List<String>) {
 @Composable
 private fun DetailTextLine(
     text: String,
-    maxLines: Int = 3
+    maxLines: Int = 3,
+    accent: Boolean = false
 ) {
     Text(
         text = text,
-        color = MiuixTheme.colorScheme.onBackgroundVariant,
-        fontSize = AppTypographyTokens.Supporting.fontSize,
-        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        color = if (accent) MiuixTheme.colorScheme.onBackground else MiuixTheme.colorScheme.onBackgroundVariant,
+        fontSize = if (accent) AppTypographyTokens.Body.fontSize else AppTypographyTokens.Supporting.fontSize,
+        lineHeight = if (accent) AppTypographyTokens.Body.lineHeight else AppTypographyTokens.Supporting.lineHeight,
+        fontWeight = if (accent) AppTypographyTokens.BodyEmphasis.fontWeight else null,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis
     )

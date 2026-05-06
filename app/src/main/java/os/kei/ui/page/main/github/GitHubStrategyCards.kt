@@ -244,6 +244,12 @@ internal fun GitHubStrategyBenchmarkComparisonCard(
         },
         modifier = androidx.compose.ui.Modifier.fillMaxWidth()
     ) {
+        Text(
+            text = stringResource(R.string.github_strategy_benchmark_compare_summary),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight
+        )
         rows.forEach { row ->
             GitHubBenchmarkComparisonLine(row)
         }
@@ -270,6 +276,14 @@ private fun GitHubBenchmarkComparisonLine(row: BenchmarkComparisonRow) {
         ) {
             StatusPill(
                 label = row.winnerLabel,
+                color = when (row.level) {
+                    BenchmarkComparisonLevel.Clear -> GitHubStatusPalette.Update
+                    BenchmarkComparisonLevel.Close -> GitHubStatusPalette.Cache
+                    BenchmarkComparisonLevel.Insufficient -> GitHubStatusPalette.PreRelease
+                }
+            )
+            StatusPill(
+                label = row.level.label(),
                 color = when (row.level) {
                     BenchmarkComparisonLevel.Clear -> GitHubStatusPalette.Update
                     BenchmarkComparisonLevel.Close -> GitHubStatusPalette.Cache
@@ -624,6 +638,20 @@ private enum class BenchmarkComparisonLevel {
     Clear,
     Close,
     Insufficient
+}
+
+@Composable
+private fun BenchmarkComparisonLevel.label(): String {
+    return when (this) {
+        BenchmarkComparisonLevel.Clear ->
+            stringResource(R.string.github_strategy_benchmark_compare_level_clear)
+
+        BenchmarkComparisonLevel.Close ->
+            stringResource(R.string.github_strategy_benchmark_compare_level_close)
+
+        BenchmarkComparisonLevel.Insufficient ->
+            stringResource(R.string.github_strategy_benchmark_compare_level_insufficient)
+    }
 }
 
 private fun List<Long>.averageRounded(): Long {

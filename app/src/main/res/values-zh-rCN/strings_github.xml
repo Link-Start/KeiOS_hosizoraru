@@ -336,7 +336,11 @@
     <string name="github_strategy_credential_token_available">Token 可用</string>
     <string name="github_strategy_benchmark_title_with_auth">%1$s · %2$s</string>
     <string name="github_strategy_benchmark_compare_title">策略倾向</string>
-    <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d 明确</string>
+    <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d 项有明显领先</string>
+    <string name="github_strategy_benchmark_compare_summary">成功数优先；成功数一致时，平均耗时快 15% 以上记为明显领先，其余记为接近。</string>
+    <string name="github_strategy_benchmark_compare_level_clear">明显领先</string>
+    <string name="github_strategy_benchmark_compare_level_close">接近</string>
+    <string name="github_strategy_benchmark_compare_level_insufficient">样本不足</string>
     <string name="github_strategy_metric_cold_avg">首轮均时</string>
     <string name="github_strategy_metric_warm_avg">缓存均时</string>
     <string name="github_strategy_metric_cache_hit">缓存命中</string>

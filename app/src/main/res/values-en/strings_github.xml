@@ -336,7 +336,11 @@
     <string name="github_strategy_credential_token_available">Token available</string>
     <string name="github_strategy_benchmark_title_with_auth">%1$s · %2$s</string>
     <string name="github_strategy_benchmark_compare_title">Strategy tendency</string>
-    <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d clear</string>
+    <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d clearly ahead</string>
+    <string name="github_strategy_benchmark_compare_summary">Success count wins first. When success is tied, an average time at least 15% faster is clearly ahead; smaller gaps are close.</string>
+    <string name="github_strategy_benchmark_compare_level_clear">Clearly ahead</string>
+    <string name="github_strategy_benchmark_compare_level_close">Close</string>
+    <string name="github_strategy_benchmark_compare_level_insufficient">Not enough samples</string>
     <string name="github_strategy_metric_cold_avg">Cold avg</string>
     <string name="github_strategy_metric_warm_avg">Warm avg</string>
     <string name="github_strategy_metric_cache_hit">Cache hit</string>

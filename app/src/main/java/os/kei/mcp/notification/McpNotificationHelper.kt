@@ -1,7 +1,6 @@
 package os.kei.mcp.notification
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -38,7 +37,6 @@ object McpNotificationHelper {
     const val CHANNEL_ID = "mcp_keepalive_channel_v2"
     const val LIVE_CHANNEL_ID = "mcp_live_update_channel_v1"
     const val FOREGROUND_SERVICE_CHANNEL_ID = "mcp_keepalive_service_channel_v1"
-    private const val LEGACY_CHANNEL_ID = "mcp_keepalive_channel"
     const val KEEPALIVE_FOREGROUND_NOTIFICATION_ID = 38887
     const val KEEPALIVE_NOTIFICATION_ID = 38888
     const val BA_AP_NOTIFICATION_ID = 38889
@@ -91,49 +89,7 @@ object McpNotificationHelper {
     }
 
     fun ensureChannel(context: Context) {
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        runCatching {
-            val legacy = manager.getNotificationChannel(LEGACY_CHANNEL_ID)
-            if (legacy != null && legacy.importance < NotificationManager.IMPORTANCE_HIGH) {
-                manager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
-            }
-        }
-        if (manager.getNotificationChannel(CHANNEL_ID) == null) {
-            val keepalive = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.mcp_keepalive_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.mcp_keepalive_channel_desc)
-                setShowBadge(false)
-                enableVibration(false)
-            }
-            manager.createNotificationChannel(keepalive)
-        }
-        if (manager.getNotificationChannel(FOREGROUND_SERVICE_CHANNEL_ID) == null) {
-            val foregroundShell = NotificationChannel(
-                FOREGROUND_SERVICE_CHANNEL_ID,
-                context.getString(R.string.mcp_keepalive_service_channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = context.getString(R.string.mcp_keepalive_service_channel_desc)
-                setShowBadge(false)
-                enableVibration(false)
-            }
-            manager.createNotificationChannel(foregroundShell)
-        }
-        if (manager.getNotificationChannel(LIVE_CHANNEL_ID) == null) {
-            val liveUpdate = NotificationChannel(
-                LIVE_CHANNEL_ID,
-                context.getString(R.string.mcp_live_update_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.mcp_live_update_channel_desc)
-                setShowBadge(false)
-                enableVibration(false)
-            }
-            manager.createNotificationChannel(liveUpdate)
-        }
+        McpNotificationChannels.ensure(context)
     }
 
     fun refreshCurrentNotificationStyle(context: Context) {

@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -453,100 +452,6 @@ fun AppLiquidSearchSurface(
         contentAlignment = contentAlignment,
         content = content
     )
-}
-
-private data class AppLiquidSearchMaterialColors(
-    val overlayTop: Color,
-    val overlayBottom: Color,
-    val centerGlow: Color,
-    val bottomGlow: Color,
-    val sideRim: Color,
-    val innerRim: Color,
-    val edge: Color
-)
-
-private fun appLiquidSearchMaterialColors(isDark: Boolean): AppLiquidSearchMaterialColors {
-    return AppLiquidSearchMaterialColors(
-        overlayTop = if (isDark) Color.White.copy(alpha = 0.130f) else Color.White.copy(alpha = 0.235f),
-        overlayBottom = if (isDark) {
-            Color(0xFF82B8FF).copy(alpha = 0.130f)
-        } else {
-            Color(0xFFB9D8FF).copy(alpha = 0.245f)
-        },
-        centerGlow = if (isDark) Color(0xFFBBD9FF).copy(alpha = 0.130f) else Color.White.copy(alpha = 0.340f),
-        bottomGlow = if (isDark) Color(0xFF73AFFF).copy(alpha = 0.115f) else Color(0xFFC6E0FF).copy(
-            alpha = 0.275f
-        ),
-        sideRim = if (isDark) Color.White.copy(alpha = 0.135f) else Color.White.copy(alpha = 0.56f),
-        innerRim = if (isDark) Color.White.copy(alpha = 0.200f) else Color.White.copy(alpha = 0.84f),
-        edge = if (isDark) Color.White.copy(alpha = 0.28f) else Color(0xFF86C3FF).copy(alpha = 0.96f)
-    )
-}
-
-private fun appLiquidSearchMaterialOverlayModifier(
-    shape: Shape,
-    colors: AppLiquidSearchMaterialColors,
-    focusProgress: Float,
-    pressProgress: Float
-): Modifier {
-    val materialProgress = maxOf(focusProgress, pressProgress)
-    return Modifier
-        .background(
-            Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom)),
-            shape
-        )
-        .background(
-            Brush.horizontalGradient(
-                colors = listOf(
-                    colors.sideRim,
-                    Color.Transparent,
-                    Color.Transparent,
-                    colors.sideRim
-                )
-            ),
-            shape
-        )
-        .background(
-            Brush.radialGradient(
-                colors = listOf(
-                    colors.centerGlow.copy(
-                        alpha = (colors.centerGlow.alpha + 0.055f * materialProgress).coerceAtMost(
-                            1f
-                        )
-                    ),
-                    Color.Transparent
-                )
-            ),
-            shape
-        )
-        .background(
-            Brush.verticalGradient(
-                colorStops = arrayOf(
-                    0.00f to Color.Transparent,
-                    0.62f to Color.Transparent,
-                    1.00f to colors.bottomGlow.copy(
-                        alpha = (colors.bottomGlow.alpha + 0.035f * materialProgress).coerceAtMost(
-                            1f
-                        )
-                    )
-                )
-            ),
-            shape
-        )
-        .border(
-            width = 1.1.dp,
-            color = colors.edge.copy(
-                alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f)
-            ),
-            shape = shape
-        )
-        .border(
-            width = 1.dp,
-            color = colors.innerRim.copy(
-                alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f)
-            ),
-            shape = shape
-        )
 }
 
 @Composable

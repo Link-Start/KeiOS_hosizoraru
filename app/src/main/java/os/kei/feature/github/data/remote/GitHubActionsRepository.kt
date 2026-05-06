@@ -1,10 +1,6 @@
 package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactDownloadResolution
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -17,12 +13,8 @@ import os.kei.feature.github.model.GitHubActionsWorkflowRun
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
-import java.net.URLEncoder
-import java.security.MessageDigest
-import java.time.Instant
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.ConcurrentHashMap
 
 class GitHubActionsRepository(
     private val apiToken: String = "",
@@ -49,9 +41,21 @@ class GitHubActionsRepository(
             .followSslRedirects(false)
             .build()
     }
+    private val apiUrls = GitHubActionsApiUrlBuilder(
+        apiBaseUrl = apiBaseUrl,
+        nightlyLinkBaseUrl = nightlyLinkBaseUrl
+    )
+    private val apiClient: GitHubActionsApiClient by lazy {
+        GitHubActionsApiClient(
+            apiToken = sanitizedToken,
+            client = client,
+            noRedirectClient = noRedirectClient,
+            apiBaseUrl = apiBaseUrl
+        )
+    }
 
     val authMode: GitHubApiAuthMode
-        get() = if (sanitizedToken.isBlank()) GitHubApiAuthMode.Guest else GitHubApiAuthMode.Token
+        get() = apiClient.authMode
 
     fun fetchRepositoryInfo(
         owner: String,
@@ -63,7 +67,7 @@ class GitHubActionsRepository(
         } else {
             requireActionsApiToken().mapCatching {
                 fetchJson(
-                    url = buildRepositoryUrl(owner, repo),
+                    url = apiUrls.repository(owner, repo),
                     cacheTtlMillis = ACTIONS_METADATA_CACHE_TTL_MS
                 ).getOrThrow()
                     .let { json -> parseRepositoryInfo(json, owner, repo) }
@@ -82,7 +86,7 @@ class GitHubActionsRepository(
         } else {
             requireActionsApiToken().mapCatching {
                 fetchJson(
-                    url = buildRepositoryUrl(owner, repo),
+                    url = apiUrls.repository(owner, repo),
                     cacheTtlMillis = ACTIONS_METADATA_CACHE_TTL_MS
                 ).getOrThrow()
                     .let { json -> parseRepositoryInfo(json, owner, repo).defaultBranch }
@@ -102,7 +106,7 @@ class GitHubActionsRepository(
         } else {
             requireActionsApiToken().mapCatching {
                 fetchJson(
-                    url = buildWorkflowsUrl(owner, repo, limit),
+                    url = apiUrls.workflows(owner, repo, limit),
                     cacheTtlMillis = ACTIONS_METADATA_CACHE_TTL_MS
                 ).getOrThrow()
                     .let(::parseWorkflows)
@@ -135,7 +139,7 @@ class GitHubActionsRepository(
         } else {
             requireActionsApiToken().mapCatching {
                 fetchJson(
-                    url = buildWorkflowRunsUrl(
+                    url = apiUrls.workflowRuns(
                         owner = owner,
                         repo = repo,
                         workflowId = workflowId,
@@ -165,7 +169,7 @@ class GitHubActionsRepository(
             nightlyRepository.fetchWorkflowRun(owner = owner, repo = repo, runId = runId)
         } else {
             requireActionsApiToken().mapCatching {
-                fetchJson(buildWorkflowRunUrl(owner, repo, runId)).getOrThrow()
+                fetchJson(apiUrls.workflowRun(owner, repo, runId)).getOrThrow()
                     .let(::parseWorkflowRun)
             }
         }
@@ -184,7 +188,7 @@ class GitHubActionsRepository(
         } else {
             requireActionsApiToken().mapCatching {
                 fetchJson(
-                    url = buildRunArtifactsUrl(owner, repo, runId, limit),
+                    url = apiUrls.runArtifacts(owner, repo, runId, limit),
                     cacheTtlMillis = ACTIONS_ARTIFACT_CACHE_TTL_MS
                 ).getOrThrow()
                     .let { json -> parseArtifacts(json, fallbackWorkflowRunId = runId) }
@@ -425,7 +429,7 @@ class GitHubActionsRepository(
     ): Result<GitHubActionsWorkflowArtifactsSnapshot> = runCatching {
         val workflow = findPublicApiWorkflowForNightly(owner, repo, workflowId).getOrThrow()
         val runs = fetchJson(
-            url = buildWorkflowRunsUrl(
+            url = apiUrls.workflowRuns(
                 owner = owner,
                 repo = repo,
                 workflowId = workflow.id.toString(),
@@ -444,13 +448,13 @@ class GitHubActionsRepository(
         val artifactsByRunId = mutableMapOf<Long, List<GitHubActionsArtifact>>()
         artifactRuns.forEach { run ->
             val artifacts = fetchJson(
-                url = buildRunArtifactsUrl(owner, repo, run.id, artifactsPerRun),
+                url = apiUrls.runArtifacts(owner, repo, run.id, artifactsPerRun),
                 cacheTtlMillis = ACTIONS_ARTIFACT_CACHE_TTL_MS
             ).getOrThrow()
                 .let { json -> parseArtifacts(json, fallbackWorkflowRunId = run.id) }
                 .map { artifact ->
                     artifact.copy(
-                        archiveDownloadUrl = buildNightlyRunArtifactDownloadUrl(
+                        archiveDownloadUrl = apiUrls.nightlyRunArtifactDownload(
                             owner = owner,
                             repo = repo,
                             runId = run.id,
@@ -486,7 +490,7 @@ class GitHubActionsRepository(
             )
         }
         val workflows = fetchJson(
-            url = buildWorkflowsUrl(owner, repo, DEFAULT_WORKFLOW_LIMIT),
+            url = apiUrls.workflows(owner, repo, DEFAULT_WORKFLOW_LIMIT),
             cacheTtlMillis = ACTIONS_METADATA_CACHE_TTL_MS
         ).getOrThrow().let(::parseWorkflows)
         selectPublicApiWorkflowForNightly(workflows, workflowId)
@@ -535,7 +539,7 @@ class GitHubActionsRepository(
                 }
                 return nightlyResult
             }
-            return resolveArtifactDownloadUrl(buildArtifactDownloadUrl(owner, repo, artifact.id))
+            return resolveArtifactDownloadUrl(apiUrls.artifactDownload(owner, repo, artifact.id))
                 .map { resolvedUrl ->
                     GitHubActionsArtifactDownloadResolution(
                         artifactId = artifact.id,
@@ -556,7 +560,7 @@ class GitHubActionsRepository(
                     IllegalArgumentException("The artifact is missing a download URL and repository information")
                 )
             }
-            buildArtifactDownloadUrl(owner, repo, artifact.id)
+            apiUrls.artifactDownload(owner, repo, artifact.id)
         }
         return resolveArtifactDownloadUrl(url).map { resolvedUrl ->
             GitHubActionsArtifactDownloadResolution(
@@ -585,233 +589,35 @@ class GitHubActionsRepository(
         )
     }
 
-    internal fun parseWorkflows(json: String): List<GitHubActionsWorkflow> {
-        val root = JSONObject(json)
-        val array = root.optJSONArray("workflows") ?: JSONArray()
-        return buildList {
-            for (index in 0 until array.length()) {
-                val workflow = array.optJSONObject(index) ?: continue
-                val id = workflow.optLong("id", 0L).takeIf { it > 0L } ?: continue
-                add(
-                    GitHubActionsWorkflow(
-                        id = id,
-                        nodeId = workflow.optString("node_id").trim(),
-                        name = workflow.optString("name").trim(),
-                        path = workflow.optString("path").trim(),
-                        state = workflow.optString("state").trim(),
-                        htmlUrl = workflow.optString("html_url").trim(),
-                        badgeUrl = workflow.optString("badge_url").trim(),
-                        createdAtMillis = workflow.optString("created_at").parseIsoInstantOrNull(),
-                        updatedAtMillis = workflow.optString("updated_at").parseIsoInstantOrNull()
-                    )
-                )
-            }
-        }.sortedWith(
-            compareBy<GitHubActionsWorkflow> { it.state != "active" }
-                .thenBy { it.name.lowercase() }
-                .thenBy { it.path.lowercase() }
-        )
-    }
+    internal fun parseWorkflows(json: String): List<GitHubActionsWorkflow> =
+        GitHubActionsJsonParser.parseWorkflows(json)
 
     internal fun parseRepositoryInfo(
         json: String,
         fallbackOwner: String,
         fallbackRepo: String
-    ): GitHubActionsRepositoryInfo {
-        val root = JSONObject(json)
-        return GitHubActionsRepositoryInfo(
-            owner = root.optJSONObject("owner")
-                ?.optString("login")
-                ?.trim()
-                .orEmpty()
-                .ifBlank { fallbackOwner },
-            repo = root.optString("name").trim().ifBlank { fallbackRepo },
-            fullName = root.optString("full_name").trim(),
-            defaultBranch = root.optString("default_branch").trim()
-        )
-    }
+    ): GitHubActionsRepositoryInfo =
+        GitHubActionsJsonParser.parseRepositoryInfo(json, fallbackOwner, fallbackRepo)
 
-    internal fun parseWorkflowRuns(json: String): List<GitHubActionsWorkflowRun> {
-        val root = JSONObject(json)
-        val array = root.optJSONArray("workflow_runs") ?: JSONArray()
-        return buildList {
-            for (index in 0 until array.length()) {
-                val run = array.optJSONObject(index) ?: continue
-                parseWorkflowRunObject(run)?.let(::add)
-            }
-        }.sortedWith(
-            compareByDescending<GitHubActionsWorkflowRun> { it.createdAtMillis ?: Long.MIN_VALUE }
-                .thenByDescending { it.id }
-        )
-    }
+    internal fun parseWorkflowRuns(json: String): List<GitHubActionsWorkflowRun> =
+        GitHubActionsJsonParser.parseWorkflowRuns(json)
 
-    internal fun parseWorkflowRun(json: String): GitHubActionsWorkflowRun {
-        val root = JSONObject(json)
-        return parseWorkflowRunObject(root)
-            ?: throw IllegalArgumentException("workflow run payload missing id")
-    }
-
-    private fun parseWorkflowRunObject(run: JSONObject): GitHubActionsWorkflowRun? {
-        val id = run.optLong("id", 0L).takeIf { it > 0L } ?: return null
-        val actor = run.optJSONObject("actor")
-        val triggeringActor = run.optJSONObject("triggering_actor")
-        val repository = run.optJSONObject("repository")
-        val headRepository = run.optJSONObject("head_repository")
-        val pullRequests = run.optJSONArray("pull_requests")
-        return GitHubActionsWorkflowRun(
-            id = id,
-            name = run.optString("name").trim(),
-            displayTitle = run.optString("display_title").trim(),
-            workflowId = run.optLong("workflow_id", 0L),
-            workflowName = run.optString("workflow_name").trim(),
-            runNumber = run.optLong("run_number", 0L),
-            runAttempt = run.optInt("run_attempt", 0),
-            event = run.optString("event").trim(),
-            status = run.optString("status").trim(),
-            conclusion = run.optString("conclusion").trim(),
-            headBranch = run.optString("head_branch").trim(),
-            headSha = run.optString("head_sha").trim(),
-            htmlUrl = run.optString("html_url").trim(),
-            artifactsUrl = run.optString("artifacts_url").trim(),
-            actorLogin = actor?.optString("login").orEmpty().trim(),
-            triggeringActorLogin = triggeringActor?.optString("login").orEmpty().trim(),
-            repositoryFullName = repository?.optString("full_name").orEmpty().trim(),
-            headRepositoryFullName = headRepository?.optString("full_name").orEmpty().trim(),
-            headRepositoryFork = headRepository?.optBoolean("fork", false) ?: false,
-            pullRequestCount = pullRequests?.length() ?: 0,
-            checkSuiteId = run.optLong("check_suite_id", 0L),
-            createdAtMillis = run.optString("created_at").parseIsoInstantOrNull(),
-            runStartedAtMillis = run.optString("run_started_at").parseIsoInstantOrNull(),
-            updatedAtMillis = run.optString("updated_at").parseIsoInstantOrNull()
-        )
-    }
+    internal fun parseWorkflowRun(json: String): GitHubActionsWorkflowRun =
+        GitHubActionsJsonParser.parseWorkflowRun(json)
 
     internal fun parseArtifacts(
         json: String,
         fallbackWorkflowRunId: Long = 0L
-    ): List<GitHubActionsArtifact> {
-        val root = JSONObject(json)
-        val array = root.optJSONArray("artifacts") ?: JSONArray()
-        return buildList {
-            for (index in 0 until array.length()) {
-                val artifact = array.optJSONObject(index) ?: continue
-                val id = artifact.optLong("id", 0L).takeIf { it > 0L } ?: continue
-                val workflowRun = artifact.optJSONObject("workflow_run")
-                add(
-                    GitHubActionsArtifact(
-                        id = id,
-                        nodeId = artifact.optString("node_id").trim(),
-                        name = artifact.optString("name").trim(),
-                        sizeBytes = artifact.optLong("size_in_bytes", 0L),
-                        expired = artifact.optBoolean("expired", false),
-                        digest = artifact.optString("digest").trim(),
-                        archiveDownloadUrl = artifact.optString("archive_download_url").trim(),
-                        workflowRunId = workflowRun?.optLong("id", 0L)
-                            ?.takeIf { it > 0L }
-                            ?: fallbackWorkflowRunId,
-                        workflowRunHeadBranch = workflowRun?.optString("head_branch").orEmpty().trim(),
-                        workflowRunHeadSha = workflowRun?.optString("head_sha").orEmpty().trim(),
-                        createdAtMillis = artifact.optString("created_at").parseIsoInstantOrNull(),
-                        updatedAtMillis = artifact.optString("updated_at").parseIsoInstantOrNull(),
-                        expiresAtMillis = artifact.optString("expires_at").parseIsoInstantOrNull()
-                    )
-                )
-            }
-        }.sortedWith(
-            compareBy<GitHubActionsArtifact> { it.expired }
-                .thenByDescending { it.updatedAtMillis ?: Long.MIN_VALUE }
-                .thenBy { it.name.lowercase() }
-        )
-    }
+    ): List<GitHubActionsArtifact> =
+        GitHubActionsJsonParser.parseArtifacts(json, fallbackWorkflowRunId)
 
-    private fun resolveArtifactDownloadUrl(url: String): Result<String> = runCatching {
-        val request = Request.Builder()
-            .url(url)
-            .get()
-            .header("Accept", "application/vnd.github+json")
-            .header("Authorization", "Bearer $sanitizedToken")
-            .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
-            .header("User-Agent", GITHUB_USER_AGENT)
-            .build()
-        noRedirectClient.newCall(request).execute().use { response ->
-            when {
-                response.isRedirect -> response.header("Location").orEmpty().ifBlank {
-                    error("GitHub Actions artifact download returned no redirect URL")
-                }
-                response.isSuccessful -> response.request.url.toString()
-                else -> error(buildErrorMessage(response, response.body.string()))
-            }
-        }
-    }
+    private fun resolveArtifactDownloadUrl(url: String): Result<String> =
+        apiClient.resolveRedirectDownloadUrl(url)
 
     private fun fetchJson(
         url: String,
         cacheTtlMillis: Long = 0L
-    ): Result<String> = runCatching {
-        val cacheKey = jsonResponseCacheKey(url)
-        if (cacheTtlMillis > 0L) {
-            cachedValue(jsonResponseCache[cacheKey], cacheTtlMillis)?.let { cached ->
-                return@runCatching cached
-            }
-        }
-        val requestBuilder = Request.Builder()
-            .url(url)
-            .get()
-            .header("Accept", "application/vnd.github+json")
-            .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
-            .header("User-Agent", GITHUB_USER_AGENT)
-        if (sanitizedToken.isNotBlank()) {
-            requestBuilder.header("Authorization", "Bearer $sanitizedToken")
-        }
-        client.newCall(requestBuilder.build()).execute().use { response ->
-            val bodyText = response.body.string()
-            if (!response.isSuccessful) {
-                error(buildErrorMessage(response, bodyText))
-            }
-            if (cacheTtlMillis > 0L) {
-                putCachedValue(jsonResponseCache, cacheKey, bodyText)
-            }
-            bodyText
-        }
-    }
-
-    private fun jsonResponseCacheKey(url: String): String {
-        return listOf(
-            authCachePartition(),
-            apiBaseUrl.trimEnd('/'),
-            url
-        ).joinToString("|")
-    }
-
-    private fun authCachePartition(): String {
-        return sanitizedToken
-            .takeIf { it.isNotBlank() }
-            ?.let { token -> "token:${stableHash(token)}" }
-            ?: "guest"
-    }
-
-    private fun stableHash(value: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray(Charsets.UTF_8))
-        return digest.take(8).joinToString("") { byte -> "%02x".format(byte) }
-    }
-
-    private fun <T> cachedValue(entry: CachedValue<T>?, ttlMillis: Long): T? {
-        if (entry == null) return null
-        val ageMillis = System.currentTimeMillis() - entry.fetchedAtMillis
-        return entry.value.takeIf { ageMillis in 0 until ttlMillis }
-    }
-
-    private fun <T> putCachedValue(
-        cache: ConcurrentHashMap<String, CachedValue<T>>,
-        key: String,
-        value: T
-    ) {
-        if (cache.size >= ACTIONS_CACHE_MAX_ENTRIES) {
-            cache.clear()
-        }
-        cache[key] = CachedValue(value, System.currentTimeMillis())
-    }
+    ): Result<String> = apiClient.fetchJson(url, cacheTtlMillis)
 
     private fun <T> Result<T>.toTrace(startedAt: Long): GitHubStrategyLoadTrace<T> {
         return GitHubStrategyLoadTrace(
@@ -828,89 +634,6 @@ class GitHubActionsRepository(
         } else {
             Result.success(Unit)
         }
-    }
-
-    private fun buildRepositoryUrl(owner: String, repo: String): String {
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo"
-    }
-
-    private fun buildWorkflowsUrl(owner: String, repo: String, limit: Int): String {
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/workflows?per_page=${limit.coerceIn(1, 100)}"
-    }
-
-    private fun buildWorkflowRunsUrl(
-        owner: String,
-        repo: String,
-        workflowId: String,
-        limit: Int,
-        branch: String,
-        event: String,
-        status: String,
-        actor: String,
-        created: String,
-        headSha: String,
-        excludePullRequests: Boolean
-    ): String {
-        val encodedWorkflowId = workflowId.trim().urlEncode()
-        val query = buildList {
-            add("per_page=${limit.coerceIn(1, 100)}")
-            branch.trim().takeIf { it.isNotBlank() }?.let { add("branch=${it.urlEncode()}") }
-            event.trim().takeIf { it.isNotBlank() }?.let { add("event=${it.urlEncode()}") }
-            status.trim().takeIf { it.isNotBlank() }?.let { add("status=${it.urlEncode()}") }
-            actor.trim().takeIf { it.isNotBlank() }?.let { add("actor=${it.urlEncode()}") }
-            created.trim().takeIf { it.isNotBlank() }?.let { add("created=${it.urlEncode()}") }
-            headSha.trim().takeIf { it.isNotBlank() }?.let { add("head_sha=${it.urlEncode()}") }
-            if (excludePullRequests) add("exclude_pull_requests=true")
-        }.joinToString("&")
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/workflows/$encodedWorkflowId/runs?$query"
-    }
-
-    private fun buildWorkflowRunUrl(owner: String, repo: String, runId: Long): String {
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/runs/$runId"
-    }
-
-    private fun buildRunArtifactsUrl(owner: String, repo: String, runId: Long, limit: Int): String {
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/runs/$runId/artifacts?per_page=${limit.coerceIn(1, 100)}"
-    }
-
-    private fun buildArtifactDownloadUrl(owner: String, repo: String, artifactId: Long): String {
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/artifacts/$artifactId/zip"
-    }
-
-    private fun buildNightlyRunArtifactDownloadUrl(
-        owner: String,
-        repo: String,
-        runId: Long,
-        artifactName: String
-    ): String {
-        return "${nightlyLinkBaseUrl.trimEnd('/')}/${owner.urlEncode()}/${repo.urlEncode()}/" +
-            "actions/runs/$runId/${artifactName.urlEncode()}.zip"
-    }
-
-    private fun buildErrorMessage(response: Response, bodyText: String): String {
-        val apiMessage = runCatching {
-            JSONObject(bodyText).optString("message").trim()
-        }.getOrDefault("")
-        val rateRemaining = response.header("X-RateLimit-Remaining").orEmpty()
-        val looksRateLimited = response.code == 429 ||
-            rateRemaining == "0" ||
-            apiMessage.contains("rate limit", ignoreCase = true)
-        return when (response.code) {
-            401 -> "GitHub Actions token is invalid or expired"
-            403, 429 -> when {
-                looksRateLimited && authMode == GitHubApiAuthMode.Guest ->
-                    "GitHub Actions guest API is rate limited. Try again later or enter a token."
-                looksRateLimited -> "GitHub Actions API is rate limited"
-                else -> "GitHub Actions API access was denied${apiMessage.toErrorSuffix()}"
-            }
-            404 -> "The repository or GitHub Actions resource does not exist, or the current token lacks access"
-            410 -> "The GitHub Actions artifact has expired"
-            else -> "GitHub Actions request failed (HTTP ${response.code}${apiMessage.toErrorSuffix(", ")})"
-        }
-    }
-
-    private fun String.toErrorSuffix(prefix: String = ": "): String {
-        return takeIf { it.isNotBlank() }?.let { "$prefix$it" }.orEmpty()
     }
 
     private fun String.nightlyPublicApiRunStatus(): String {
@@ -936,9 +659,7 @@ class GitHubActionsRepository(
     private fun GitHubActionsArtifact.requiresApiBackedNightlyDownload(): Boolean {
         val normalizedName = name.trim().lowercase()
         if (normalizedName.isBlank()) return false
-        val normalizedNightlyBaseUrl = nightlyLinkBaseUrl.trimEnd('/')
-        val nightlyUrl = archiveDownloadUrl.startsWith(normalizedNightlyBaseUrl, ignoreCase = true) ||
-            archiveDownloadUrl.contains("nightly.link", ignoreCase = true)
+        val nightlyUrl = apiUrls.isNightlyUrl(archiveDownloadUrl)
         val rawAndroidArtifact = RAW_ANDROID_ARTIFACT_EXTENSIONS.any { extension ->
             normalizedName.endsWith(extension)
         }
@@ -951,16 +672,6 @@ class GitHubActionsRepository(
             "Enter a GitHub API Token or switch to the GitHub API Token path."
     }
 
-    private fun String.urlEncode(): String {
-        return URLEncoder.encode(this, Charsets.UTF_8.name()).replace("+", "%20")
-    }
-
-    private fun String.parseIsoInstantOrNull(): Long? {
-        return runCatching {
-            if (isBlank()) null else Instant.parse(this).toEpochMilli()
-        }.getOrNull()
-    }
-
     companion object {
         private const val DEFAULT_WORKFLOW_LIMIT = 50
         private const val DEFAULT_RUN_LIMIT = 20
@@ -969,20 +680,10 @@ class GitHubActionsRepository(
         private const val ACTIONS_METADATA_CACHE_TTL_MS = 90_000L
         private const val ACTIONS_RUNS_CACHE_TTL_MS = 10_000L
         private const val ACTIONS_ARTIFACT_CACHE_TTL_MS = 45_000L
-        private const val ACTIONS_CACHE_MAX_ENTRIES = 160
-        private const val GITHUB_API_VERSION = "2022-11-28"
-        private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
         private const val DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com"
         private const val DEFAULT_GITHUB_HTML_BASE_URL = "https://github.com"
         private const val DEFAULT_NIGHTLY_LINK_BASE_URL = "https://nightly.link"
         private val RAW_ANDROID_ARTIFACT_EXTENSIONS = setOf(".apk", ".apks", ".aab")
-
-        private data class CachedValue<T>(
-            val value: T,
-            val fetchedAtMillis: Long
-        )
-
-        private val jsonResponseCache = ConcurrentHashMap<String, CachedValue<String>>()
 
         private val githubClient: OkHttpClient by lazy {
             OkHttpClient.Builder()

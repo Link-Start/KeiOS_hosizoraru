@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -17,11 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,7 +44,6 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
-import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -449,68 +443,8 @@ private fun AppFloatingVerticalDockAction(
     }
 }
 
-@Composable
-private fun appFloatingRefreshTint(
-    status: AppFloatingRefreshStatus,
-    enabled: Boolean,
-    neutral: Color,
-    muted: Color,
-    success: Color,
-    danger: Color,
-    active: Color
-): Color {
-    return when (status) {
-        AppFloatingRefreshStatus.Refreshing -> AppStatusColors.Refreshing
-        AppFloatingRefreshStatus.Success -> success
-        AppFloatingRefreshStatus.Danger -> danger
-        AppFloatingRefreshStatus.Cached -> AppStatusColors.Cached
-        AppFloatingRefreshStatus.Idle -> if (enabled) neutral else muted
-    }
-}
-
-@Composable
-fun rememberAppFloatingKeyboardLift(
-    focusedLift: Dp = 18.dp,
-    restingBottomGap: Dp = 0.dp,
-    label: String = "app_floating_keyboard_lift"
-): Dp {
-    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val targetLift = appFloatingKeyboardLiftTarget(
-        imeBottom = imeBottom,
-        navigationBottom = navigationBottom,
-        focusedLift = focusedLift,
-        restingBottomGap = restingBottomGap
-    )
-    val lift by animateDpAsState(
-        targetValue = targetLift,
-        animationSpec = tween(durationMillis = AppFloatingKeyboardLiftMotionMs),
-        label = label
-    )
-    return lift
-}
-
-internal fun appFloatingKeyboardLiftTarget(
-    imeBottom: Dp,
-    navigationBottom: Dp,
-    focusedLift: Dp,
-    restingBottomGap: Dp = 0.dp
-): Dp {
-    if (imeBottom <= navigationBottom) return 0.dp
-    return (imeBottom + focusedLift - restingBottomGap).coerceAtLeast(focusedLift)
-}
-
-internal fun appFloatingVerticalDockHeight(
-    itemSize: Dp,
-    itemCount: Int
-): Dp {
-    if (itemCount <= 0) return 0.dp
-    return itemSize * itemCount
-}
-
 private const val AppFloatingSearchDockWidthMotionMs = 220
 private const val AppFloatingSearchDockFadeMotionMs = 120
-private const val AppFloatingKeyboardLiftMotionMs = 160
 
 @Composable
 private fun AppFloatingSearchField(

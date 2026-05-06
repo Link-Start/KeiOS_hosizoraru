@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.AppIconCache
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -19,7 +18,6 @@ import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
@@ -44,18 +42,12 @@ import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
-import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
-import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.query.queryDownloaderOptions
 import os.kei.ui.page.main.github.query.queryOnlineShareTargetOptions
-import os.kei.ui.page.main.github.section.GitHubOverviewMetrics
-import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.state.toUi
-
-private const val pendingShareImportCardVisibleWindowMs = 90_000L
 
 internal data class GitHubTrackEditorDraft(
     val repoUrl: String,
@@ -71,18 +63,6 @@ internal sealed interface GitHubTrackEditorResult {
     data object InvalidPackageName : GitHubTrackEditorResult
 }
 
-internal data class GitHubPageContentInput(
-    val trackedItems: List<GitHubTrackedApp>,
-    val trackedSearch: String,
-    val sortMode: GitHubSortMode,
-    val checkStates: Map<String, VersionCheckUi>,
-    val appList: List<InstalledAppItem>,
-    val trackedFirstInstallAtByPackage: Map<String, Long>,
-    val trackedAddedAtById: Map<String, Long>,
-    val pendingShareImportTrack: GitHubPendingShareImportTrack?,
-    val nowMillis: Long
-)
-
 internal data class GitHubOnlineShareTargetInput(
     val shouldResolve: Boolean,
     val appList: List<InstalledAppItem>
@@ -93,81 +73,12 @@ internal class GitHubPageRepository(
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$""")
+    private val contentStateDeriver = GitHubPageContentStateDeriver(defaultDispatcher)
+    private val assetBridge = GitHubPageAssetBridge(ioDispatcher)
+    private val notificationBridge = GitHubPageRefreshNotificationBridge(ioDispatcher)
 
     suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState {
-        return withContext(defaultDispatcher) {
-            val filteredTracked = input.trackedItems.filter { item ->
-                input.trackedSearch.isBlank() ||
-                    item.owner.contains(input.trackedSearch, ignoreCase = true) ||
-                    item.repo.contains(input.trackedSearch, ignoreCase = true) ||
-                    item.appLabel.contains(input.trackedSearch, ignoreCase = true) ||
-                    item.packageName.contains(input.trackedSearch, ignoreCase = true)
-            }
-            val isSortUpdatable: (GitHubTrackedApp) -> Boolean = { item ->
-                item.alwaysShowLatestReleaseDownloadButton || input.checkStates[item.id]?.hasUpdate == true
-            }
-            val sortedTracked = when (input.sortMode) {
-                GitHubSortMode.UpdateFirst -> filteredTracked.sortedWith(
-                    compareByDescending<GitHubTrackedApp> { isSortUpdatable(it) }
-                        .thenByDescending { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
-                        .thenBy { it.appLabel.lowercase() }
-                )
-
-                GitHubSortMode.NameAsc -> filteredTracked.sortedBy { it.appLabel.lowercase() }
-                GitHubSortMode.PreReleaseFirst -> filteredTracked.sortedWith(
-                    compareByDescending<GitHubTrackedApp> {
-                        input.checkStates[it.id]?.isPreRelease == true
-                    }
-                        .thenByDescending { isSortUpdatable(it) }
-                        .thenBy { it.appLabel.lowercase() }
-                )
-            }
-            val trackedCount = input.trackedItems.size
-            val stableUpdateCount =
-                input.trackedItems.count { input.checkStates[it.id]?.hasUpdate == true }
-            val preReleaseCount = input.trackedItems.count { input.checkStates[it.id]?.isPreRelease == true }
-            val preReleaseUpdateCount =
-                input.trackedItems.count { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
-            val totalUpdatableCount = input.trackedItems.count {
-                val itemState = input.checkStates[it.id]
-                itemState?.hasUpdate == true || itemState?.hasPreReleaseUpdate == true
-            }
-            val failedCount = input.trackedItems.count { input.checkStates[it.id]?.failed == true }
-            val stableLatestCount = input.trackedItems.count {
-                val itemState = input.checkStates[it.id]
-                itemState?.hasUpdate == false && itemState.isPreRelease.not()
-            }
-            val appLastUpdatedAtByTrackId = buildAppLastUpdatedAtByTrackId(input)
-            val pendingShareImportRepoOverlapCount = input.pendingShareImportTrack?.let { pending ->
-                input.trackedItems.count { item ->
-                    item.owner.equals(pending.owner, ignoreCase = true) &&
-                        item.repo.equals(pending.repo, ignoreCase = true)
-                }
-            } ?: 0
-            val showPendingShareImportCard = input.pendingShareImportTrack?.let { pending ->
-                val ageMs = (input.nowMillis - pending.armedAtMillis).coerceAtLeast(0L)
-                ageMs <= pendingShareImportCardVisibleWindowMs ||
-                    pendingShareImportRepoOverlapCount > 0
-            } ?: false
-            GitHubPageContentDerivedState(
-                trackedUi = GitHubPageDerivedState(
-                    filteredTracked = filteredTracked,
-                    sortedTracked = sortedTracked,
-                    overviewMetrics = GitHubOverviewMetrics(
-                        trackedCount = trackedCount,
-                        stableUpdateCount = stableUpdateCount,
-                        totalUpdatableCount = totalUpdatableCount,
-                        stableLatestCount = stableLatestCount,
-                        preReleaseCount = preReleaseCount,
-                        preReleaseUpdateCount = preReleaseUpdateCount,
-                        failedCount = failedCount
-                    )
-                ),
-                appLastUpdatedAtByTrackId = appLastUpdatedAtByTrackId,
-                pendingShareImportRepoOverlapCount = pendingShareImportRepoOverlapCount,
-                showPendingShareImportCard = showPendingShareImportCard
-            )
-        }
+        return contentStateDeriver.build(input)
     }
 
     suspend fun queryOnlineShareTargets(
@@ -330,16 +241,14 @@ internal class GitHubPageRepository(
         updatableCount: Int,
         failedCount: Int
     ) {
-        withContext(ioDispatcher) {
-            GitHubRefreshNotificationHelper.notifyProgress(
-                context = context,
-                current = current,
-                total = total,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount
-            )
-        }
+        notificationBridge.notifyProgress(
+            context = context,
+            current = current,
+            total = total,
+            preReleaseUpdateCount = preReleaseUpdateCount,
+            updatableCount = updatableCount,
+            failedCount = failedCount
+        )
     }
 
     suspend fun notifyRefreshCompleted(
@@ -349,15 +258,13 @@ internal class GitHubPageRepository(
         updatableCount: Int,
         failedCount: Int
     ) {
-        withContext(ioDispatcher) {
-            GitHubRefreshNotificationHelper.notifyCompleted(
-                context = context,
-                total = total,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount
-            )
-        }
+        notificationBridge.notifyCompleted(
+            context = context,
+            total = total,
+            preReleaseUpdateCount = preReleaseUpdateCount,
+            updatableCount = updatableCount,
+            failedCount = failedCount
+        )
     }
 
     suspend fun notifyRefreshCancelled(
@@ -368,20 +275,18 @@ internal class GitHubPageRepository(
         updatableCount: Int,
         failedCount: Int
     ) {
-        withContext(ioDispatcher) {
-            GitHubRefreshNotificationHelper.notifyCancelled(
-                context = context,
-                current = current,
-                total = total,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount
-            )
-        }
+        notificationBridge.notifyCancelled(
+            context = context,
+            current = current,
+            total = total,
+            preReleaseUpdateCount = preReleaseUpdateCount,
+            updatableCount = updatableCount,
+            failedCount = failedCount
+        )
     }
 
     fun cancelRefreshNotification(context: Context) {
-        GitHubRefreshNotificationHelper.cancel(context)
+        notificationBridge.cancel(context)
     }
 
     suspend fun clearReleaseStrategyCaches() {
@@ -391,9 +296,7 @@ internal class GitHubPageRepository(
     }
 
     suspend fun clearAllAssetCache() {
-        withContext(ioDispatcher) {
-            GitHubReleaseAssetCacheStore.clearAll()
-        }
+        assetBridge.clearAllAssetCache()
     }
 
     suspend fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload {
@@ -548,7 +451,7 @@ internal class GitHubPageRepository(
     }
 
     fun buildReleaseUrl(owner: String, repo: String): String {
-        return GitHubVersionUtils.buildReleaseUrl(owner, repo)
+        return assetBridge.buildReleaseUrl(owner, repo)
     }
 
     fun buildAssetCacheKey(
@@ -561,7 +464,7 @@ internal class GitHubPageRepository(
         includeAllAssets: Boolean,
         hasApiToken: Boolean
     ): String {
-        return GitHubReleaseAssetCacheStore.buildCacheKey(
+        return assetBridge.buildAssetCacheKey(
             owner = owner,
             repo = repo,
             rawTag = rawTag,
@@ -577,37 +480,22 @@ internal class GitHubPageRepository(
         cacheKey: String,
         refreshIntervalHours: Int
     ): GitHubReleaseAssetBundle? {
-        return withContext(ioDispatcher) {
-            GitHubReleaseAssetCacheStore.load(
-                cacheKey = cacheKey,
-                refreshIntervalHours = refreshIntervalHours
-            )
-        }
+        return assetBridge.loadAssetBundle(cacheKey, refreshIntervalHours)
     }
 
     suspend fun saveAssetBundle(
         cacheKey: String,
         bundle: GitHubReleaseAssetBundle
     ) {
-        withContext(ioDispatcher) {
-            GitHubReleaseAssetCacheStore.save(
-                cacheKey = cacheKey,
-                bundle = bundle
-            )
-        }
+        assetBridge.saveAssetBundle(cacheKey, bundle)
     }
 
     suspend fun clearAssetCache(cacheKey: String) {
-        withContext(ioDispatcher) {
-            GitHubReleaseAssetCacheStore.clear(cacheKey)
-        }
+        assetBridge.clearAssetCache(cacheKey)
     }
 
     suspend fun clearAssetCaches(cacheKeys: List<String>) {
-        if (cacheKeys.isEmpty()) return
-        withContext(ioDispatcher) {
-            cacheKeys.forEach(GitHubReleaseAssetCacheStore::clear)
-        }
+        assetBridge.clearAssetCaches(cacheKeys)
     }
 
     suspend fun fetchApkAssets(
@@ -620,18 +508,16 @@ internal class GitHubPageRepository(
         includeAllAssets: Boolean,
         apiToken: String
     ): Result<GitHubReleaseAssetBundle> {
-        return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.fetchApkAssets(
-                owner = owner,
-                repo = repo,
-                rawTag = rawTag,
-                releaseUrl = releaseUrl,
-                preferHtml = preferHtml,
-                aggressiveFiltering = aggressiveFiltering,
-                includeAllAssets = includeAllAssets,
-                apiToken = apiToken
-            )
-        }
+        return assetBridge.fetchApkAssets(
+            owner = owner,
+            repo = repo,
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            preferHtml = preferHtml,
+            aggressiveFiltering = aggressiveFiltering,
+            includeAllAssets = includeAllAssets,
+            apiToken = apiToken
+        )
     }
 
     suspend fun resolvePreferredDownloadUrl(
@@ -639,13 +525,7 @@ internal class GitHubPageRepository(
         useApiAssetUrl: Boolean,
         apiToken: String
     ): String {
-        return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-                asset = asset,
-                useApiAssetUrl = useApiAssetUrl,
-                apiToken = apiToken
-            ).getOrElse { asset.downloadUrl }
-        }
+        return assetBridge.resolvePreferredDownloadUrl(asset, useApiAssetUrl, apiToken)
     }
 
     suspend fun buildTrackedItemsExportJson(
@@ -681,31 +561,6 @@ internal class GitHubPageRepository(
             contentResolver.openInputStream(uri)?.bufferedReader().use { reader ->
                 checkNotNull(reader) { "openInputStream returned null" }
                 reader.readText()
-            }
-        }
-    }
-
-    private fun buildAppLastUpdatedAtByTrackId(
-        input: GitHubPageContentInput
-    ): Map<String, Long> {
-        val appUpdatedAtByPackage = buildMap {
-            input.trackedFirstInstallAtByPackage.forEach { (packageName, firstInstallAtMillis) ->
-                if (packageName.isNotBlank() && firstInstallAtMillis > 0L) {
-                    put(packageName, firstInstallAtMillis)
-                }
-            }
-            input.appList
-                .filter { it.packageName.isNotBlank() && it.lastUpdateTimeMs > 0L }
-                .forEach { put(it.packageName, it.lastUpdateTimeMs) }
-        }
-        return buildMap {
-            input.trackedItems.forEach { item ->
-                val byPackage = appUpdatedAtByPackage[item.packageName]
-                val byTrackId = input.trackedAddedAtById[item.id]
-                val updatedAt = byPackage?.takeIf { it > 0L } ?: byTrackId?.takeIf { it > 0L }
-                if (updatedAt != null) {
-                    put(item.id, updatedAt)
-                }
             }
         }
     }

@@ -2,8 +2,6 @@ package os.kei.ui.page.main.settings.page
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -37,7 +34,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -85,53 +81,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
-
-private fun LazyListState.canMoveForSettingsChrome(deltaY: Float): Boolean {
-    return when {
-        deltaY < -1f -> canScrollForward
-        deltaY > 1f -> canScrollBackward
-        else -> true
-    }
-}
-
-private fun settingsChromeNestedScrollConnection(
-    listState: LazyListState,
-    delegate: NestedScrollConnection
-): NestedScrollConnection {
-    return object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            if (!listState.canMoveForSettingsChrome(available.y)) return Offset.Zero
-            return delegate.onPreScroll(available, source)
-        }
-
-        override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-            val canMove = listState.canMoveForSettingsChrome(consumed.y) ||
-                listState.canMoveForSettingsChrome(available.y)
-            if (!canMove) return Offset.Zero
-            return delegate.onPostScroll(consumed, available, source)
-        }
-
-        override suspend fun onPreFling(available: Velocity): Velocity {
-            if (!listState.canMoveForSettingsChrome(available.y)) return Velocity.Zero
-            return delegate.onPreFling(available)
-        }
-
-        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-            val canMove = listState.canMoveForSettingsChrome(consumed.y) ||
-                listState.canMoveForSettingsChrome(available.y)
-            if (!canMove) return Velocity.Zero
-            return delegate.onPostFling(consumed, available)
-        }
-    }
-}
-
-private fun settingsPagerSwitchDurationMillis(distance: Int): Int {
-    return (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
-}
-
-private fun SettingsCategory.keepsChromeVisibleOnBounds(): Boolean {
-    return this == SettingsCategory.Access || this == SettingsCategory.Notify
-}
 
 @Composable
 fun SettingsPage(
@@ -356,38 +305,12 @@ fun SettingsPage(
         onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged
     )
 
-    val logExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/zip")
-    ) { uri ->
-        if (uri == null) {
-            settingsPageViewModel.finishLogExport()
-            return@rememberLauncherForActivityResult
-        }
-        scope.launch {
-            val result = settingsPageViewModel.exportLogZip(context, uri)
-            settingsPageViewModel.finishLogExport()
-            if (result.isSuccess) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_log_toast_exported),
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                val reason = result.exceptionOrNull()?.javaClass?.simpleName
-                    ?: context.getString(R.string.common_unknown)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_log_toast_export_failed, reason),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            settingsPageViewModel.reloadLogStats(context)
-        }
-    }
-    LaunchedEffect(logState.pendingExportFileName) {
-        val fileName = settingsPageViewModel.consumePendingExportFileName() ?: return@LaunchedEffect
-        logExportLauncher.launch(fileName)
-    }
+    BindSettingsLogExportAction(
+        context = context,
+        scope = scope,
+        settingsPageViewModel = settingsPageViewModel,
+        pendingExportFileName = logState.pendingExportFileName
+    )
 
     val scrollBehavior = MiuixScrollBehavior()
     val categories = remember { SettingsCategory.entries.toList() }

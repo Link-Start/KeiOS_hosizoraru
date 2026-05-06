@@ -2,7 +2,6 @@ package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -49,9 +48,7 @@ private data class HtmlReleaseMetadata(
 )
 
 object GitHubReleaseAssetRepository {
-    private const val GITHUB_API_VERSION = "2022-11-28"
     private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
-    private const val DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com"
 
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -64,6 +61,9 @@ object GitHubReleaseAssetRepository {
             .followSslRedirects(true)
             .fastFallback(true)
             .build()
+    }
+    private val apiClient: GitHubReleaseApiClient by lazy {
+        GitHubReleaseApiClient(client)
     }
 
     fun fetchApkAssets(
@@ -134,7 +134,7 @@ object GitHubReleaseAssetRepository {
         aggressiveFiltering: Boolean = false,
         apiToken: String = ""
     ): Result<GitHubReleaseAssetBundle> = runCatching {
-        val release = fetchLatestRelease(owner, repo, apiToken).getOrThrow()
+        val release = apiClient.fetchLatestRelease(owner, repo, apiToken).getOrThrow()
         parseReleaseBundle(release)
             .copy(fetchSource = GitHubReleaseAssetFetchSources.API)
             .selectDisplayAssets(
@@ -153,7 +153,7 @@ object GitHubReleaseAssetRepository {
         if (!useApiAssetUrl || token.isBlank() || apiAssetUrl.isBlank()) {
             return Result.success(asset.downloadUrl)
         }
-        return resolveApiAssetDownloadUrl(apiAssetUrl, token).recoverCatching {
+        return apiClient.resolveApiAssetDownloadUrl(apiAssetUrl, token).recoverCatching {
             asset.downloadUrl
         }
     }
@@ -174,35 +174,11 @@ object GitHubReleaseAssetRepository {
     }
 
     internal fun List<GitHubReleaseAssetFile>.filterRelevantApks(aggressiveFiltering: Boolean): List<GitHubReleaseAssetFile> {
-        val apkCandidates = filterNonSourceAssets()
-            .asSequence()
-            .filter { asset ->
-                val lowerName = asset.name.lowercase(Locale.ROOT)
-                lowerName.endsWith(".apk") && !lowerName.contains("metadata")
-            }
-            .toList()
-
-        val hasExplicitArm64 = apkCandidates.any { asset ->
-            val lowerName = asset.name.lowercase(Locale.ROOT)
-            "arm64-v8a" in lowerName
-        }
-
-        return apkCandidates
-            .asSequence()
-            .filter { asset ->
-                val lowerName = asset.name.lowercase(Locale.ROOT)
-                !aggressiveFiltering || !isAggressivelyIgnoredApk(
-                    lowerName = lowerName,
-                    hasExplicitArm64 = hasExplicitArm64
-                )
-            }
-            .sortForDisplay()
+        return GitHubReleaseAssetSelector.filterRelevantApks(this, aggressiveFiltering)
     }
 
     private fun List<GitHubReleaseAssetFile>.filterNonSourceAssets(): List<GitHubReleaseAssetFile> {
-        return asSequence()
-            .filter { asset -> !isSourceCodeArchive(asset.name) }
-            .toList()
+        return GitHubReleaseAssetSelector.run { filterNonSourceAssets() }
     }
 
     private fun GitHubReleaseAssetBundle.withResolvedShortCommitSha(
@@ -213,7 +189,7 @@ object GitHubReleaseAssetRepository {
     ): GitHubReleaseAssetBundle {
         val token = apiToken.trim()
         if (token.isBlank()) return copy(shortCommitSha = "")
-        val commitSha = resolveShortCommitSha(owner, repo, rawTag, token).getOrDefault("")
+        val commitSha = apiClient.resolveShortCommitSha(owner, repo, rawTag, token).getOrDefault("")
         return copy(shortCommitSha = commitSha)
     }
 
@@ -221,40 +197,15 @@ object GitHubReleaseAssetRepository {
         aggressiveFiltering: Boolean,
         includeAllAssets: Boolean
     ): GitHubReleaseAssetBundle {
-        val allAssets = assets.filterNonSourceAssets().sortForDisplay()
-        val apkAssets = allAssets.filterRelevantApks(aggressiveFiltering)
-        val showingAllAssets = includeAllAssets || apkAssets.isEmpty()
-        return copy(
-            assets = if (showingAllAssets) allAssets else apkAssets,
-            showingAllAssets = showingAllAssets
+        return GitHubReleaseAssetSelector.selectDisplayAssets(
+            bundle = this,
+            aggressiveFiltering = aggressiveFiltering,
+            includeAllAssets = includeAllAssets
         )
     }
 
-    private fun Sequence<GitHubReleaseAssetFile>.sortForDisplay(): List<GitHubReleaseAssetFile> {
-        return sortedWith(
-            compareBy<GitHubReleaseAssetFile> { assetDisplayPriority(it.name) }
-                .thenBy { it.name.lowercase(Locale.ROOT) }
-        ).toList()
-    }
-
     private fun List<GitHubReleaseAssetFile>.sortForDisplay(): List<GitHubReleaseAssetFile> {
-        return asSequence().sortForDisplay()
-    }
-
-    private fun isAggressivelyIgnoredApk(
-        lowerName: String,
-        hasExplicitArm64: Boolean
-    ): Boolean {
-        return "armeabi-v7a" in lowerName ||
-            "x86_64" in lowerName ||
-            Regex("(^|[^a-z0-9])armeabi([^a-z0-9]|$)").containsMatchIn(lowerName) ||
-            Regex("(^|[^a-z0-9])x86([^a-z0-9]|$)").containsMatchIn(lowerName) ||
-            (hasExplicitArm64 && ("universal" in lowerName || "fat" in lowerName))
-    }
-
-    private fun isSourceCodeArchive(fileName: String): Boolean {
-        return fileName.equals("Source code.zip", ignoreCase = true) ||
-            fileName.equals("Source code.tar.gz", ignoreCase = true)
+        return GitHubReleaseAssetSelector.run { sortForDisplay() }
     }
 
     private fun fetchReleaseByTagWithFallback(
@@ -264,10 +215,10 @@ object GitHubReleaseAssetRepository {
         releaseUrl: String,
         apiToken: String
     ): Result<JSONObject> {
-        val byTag = fetchReleaseByTag(owner, repo, rawTag, apiToken)
+        val byTag = apiClient.fetchReleaseByTag(owner, repo, rawTag, apiToken)
         if (byTag.isSuccess) return byTag
 
-        val fallback = fetchReleaseList(owner, repo, apiToken).mapCatching { releases ->
+        val fallback = apiClient.fetchReleaseList(owner, repo, apiToken).mapCatching { releases ->
             findMatchingRelease(releases, rawTag)
                 ?: buildReleaseStub(
                     releaseName = rawTag,
@@ -276,160 +227,6 @@ object GitHubReleaseAssetRepository {
                 )
         }
         return fallback.takeIf { it.isSuccess } ?: byTag
-    }
-
-    private fun resolveApiAssetDownloadUrl(
-        apiAssetUrl: String,
-        apiToken: String
-    ): Result<String> = runCatching {
-        val request = Request.Builder()
-            .url(apiAssetUrl)
-            .get()
-            .header("Accept", "application/octet-stream")
-            .header("Authorization", "Bearer ${apiToken.trim()}")
-            .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
-            .header("User-Agent", GITHUB_USER_AGENT)
-            .header("Cache-Control", "no-store")
-            .header("Pragma", "no-cache")
-            .header("Connection", "close")
-            .build()
-
-        client.newCall(request).execute().use { response ->
-            val redirectedUrl = response.request.url.toString()
-            when {
-                response.isSuccessful && redirectedUrl.isNotBlank() -> redirectedUrl
-                response.isRedirect -> response.header("Location").orEmpty().ifBlank {
-                    error("GitHub API asset download returned no redirect URL")
-                }
-                else -> error(buildApiAssetErrorMessage(response))
-            }
-        }
-    }
-
-    private fun buildApiAssetErrorMessage(response: Response): String {
-        return when (response.code) {
-            401 -> "GitHub API token is invalid or expired"
-            403, 429 -> "GitHub API asset download is rate limited"
-            404 -> "GitHub API asset URL has expired"
-            else -> "GitHub API asset download failed (HTTP ${response.code})"
-        }
-    }
-
-    private fun resolveShortCommitSha(
-        owner: String,
-        repo: String,
-        rawTag: String,
-        apiToken: String
-    ): Result<String> = runCatching {
-        val encodedTag = URLEncoder.encode(rawTag, Charsets.UTF_8.name()).replace("+", "%20")
-        val refUrl = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/git/ref/tags/$encodedTag"
-        val refObject = JSONObject(fetchJson(refUrl, apiToken)).optJSONObject("object")
-            ?: error("Git tag ref response is missing object")
-        val refType = refObject.optString("type").trim()
-        val refSha = refObject.optString("sha").trim()
-        val commitSha = when {
-            refType.equals("commit", ignoreCase = true) -> refSha
-            refType.equals("tag", ignoreCase = true) && refSha.isNotBlank() -> {
-                val tagUrl = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/git/tags/$refSha"
-                val tagObject = JSONObject(fetchJson(tagUrl, apiToken)).optJSONObject("object")
-                    ?: error("Annotated tag response is missing object")
-                if (tagObject.optString("type").trim().equals("commit", ignoreCase = true)) {
-                    tagObject.optString("sha").trim()
-                } else {
-                    ""
-                }
-            }
-            else -> ""
-        }
-        commitSha.take(7)
-    }.getOrElse { "" }.let { Result.success(it) }
-
-    private fun fetchReleaseByTag(
-        owner: String,
-        repo: String,
-        rawTag: String,
-        apiToken: String
-    ): Result<JSONObject> = runCatching {
-        val encodedTag = URLEncoder.encode(rawTag, Charsets.UTF_8.name()).replace("+", "%20")
-        val url = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/releases/tags/$encodedTag"
-        JSONObject(fetchJson(url, apiToken))
-    }
-
-    private fun fetchReleaseList(
-        owner: String,
-        repo: String,
-        apiToken: String
-    ): Result<JSONArray> = runCatching {
-        val url = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
-        JSONArray(fetchJson(url, apiToken))
-    }
-
-    private fun fetchLatestRelease(
-        owner: String,
-        repo: String,
-        apiToken: String
-    ): Result<JSONObject> = runCatching {
-        val url = "${DEFAULT_GITHUB_API_BASE_URL.trimEnd('/')}/repos/$owner/$repo/releases/latest"
-        JSONObject(fetchJson(url, apiToken, noStore = true))
-    }
-
-    private fun fetchJson(
-        url: String,
-        apiToken: String,
-        noStore: Boolean = false
-    ): String {
-        val token = apiToken.trim()
-        var lastError: Throwable? = null
-
-        repeat(2) { attempt ->
-            try {
-                val requestBuilder = Request.Builder()
-                    .url(url)
-                    .get()
-                    .header("Accept", "application/vnd.github+json")
-                    .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
-                    .header("User-Agent", GITHUB_USER_AGENT)
-                    .header("Connection", "close")
-                if (noStore) {
-                    requestBuilder
-                        .header("Cache-Control", "no-store")
-                        .header("Pragma", "no-cache")
-                }
-                if (token.isNotBlank()) {
-                    requestBuilder.header("Authorization", "Bearer $token")
-                }
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val bodyText = response.body.string()
-                    if (!response.isSuccessful) {
-                        val apiMessage = runCatching { JSONObject(bodyText).optString("message").trim() }.getOrDefault("")
-                        error(
-                            when (response.code) {
-                                401 -> "GitHub API token is invalid or expired"
-                                403, 429 -> if (token.isBlank()) {
-                                    "GitHub guest API is rate limited. Try again later or enter a token"
-                                } else {
-                                    "GitHub API is rate limited"
-                                }
-                                404 -> "No release was found for this tag"
-                                else -> "GitHub release request failed (HTTP ${response.code}${apiMessage.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""})"
-                            }
-                        )
-                    }
-                    return bodyText
-                }
-            } catch (error: Throwable) {
-                lastError = error
-                if (attempt == 0 && error is IOException) {
-                    Thread.sleep(220)
-                }
-            }
-        }
-
-        val message = lastError?.message.orEmpty()
-        if (message.contains("connection closed", ignoreCase = true)) {
-            error("GitHub connection closed unexpectedly. Try again later.")
-        }
-        throw lastError ?: IllegalStateException("GitHub release request failed")
     }
 
     private fun fetchReleaseFromHtml(
@@ -740,72 +537,16 @@ object GitHubReleaseAssetRepository {
         releaseUrl: String,
         releaseUpdatedAtMillis: Long? = null,
         assets: List<GitHubReleaseAssetFile> = emptyList()
-    ): JSONObject {
-        return JSONObject()
-            .put("name", releaseName)
-            .put("tag_name", rawTag)
-            .put("html_url", releaseUrl)
-            .put("published_at", releaseUpdatedAtMillis?.let { Instant.ofEpochMilli(it).toString() } ?: JSONObject.NULL)
-            .put(
-                "assets",
-                JSONArray().apply {
-                    assets.forEach { asset ->
-                        put(
-                            JSONObject()
-                                .put("name", asset.name)
-                                .put("browser_download_url", asset.downloadUrl)
-                                .put("url", asset.apiAssetUrl)
-                                .put("size", asset.sizeBytes)
-                                .put("download_count", asset.downloadCount)
-                                .put("content_type", asset.contentType)
-                                .put("updated_at", asset.updatedAtMillis?.let { Instant.ofEpochMilli(it).toString() } ?: JSONObject.NULL)
-                        )
-                    }
-                }
-            )
-    }
+    ): JSONObject = GitHubReleaseAssetJsonMapper.buildReleaseStub(
+        releaseName = releaseName,
+        rawTag = rawTag,
+        releaseUrl = releaseUrl,
+        releaseUpdatedAtMillis = releaseUpdatedAtMillis,
+        assets = assets
+    )
 
-    private fun parseReleaseBundle(release: JSONObject): GitHubReleaseAssetBundle {
-        val releaseName = release.optString("name").trim()
-        val tagName = release.optString("tag_name").trim().ifBlank { releaseName }
-        val htmlUrl = release.optString("html_url").trim()
-        val releaseUpdatedAtMillis = release.optString("published_at").parseIsoInstantOrNull()
-            ?: release.optString("updated_at").parseIsoInstantOrNull()
-            ?: release.optString("created_at").parseIsoInstantOrNull()
-        val assetsArray = release.optJSONArray("assets") ?: JSONArray()
-        val assets = buildList {
-            for (index in 0 until assetsArray.length()) {
-                val asset = assetsArray.optJSONObject(index) ?: continue
-                val name = asset.optString("name").trim()
-                val downloadUrl = asset.optString("browser_download_url").trim()
-                if (name.isBlank() || downloadUrl.isBlank()) continue
-                add(
-                    GitHubReleaseAssetFile(
-                        name = name,
-                        downloadUrl = downloadUrl,
-                        apiAssetUrl = asset.optString("url").trim(),
-                        sizeBytes = asset.optLong("size", 0L),
-                        downloadCount = when (val count = asset.opt("download_count")) {
-                            is Number -> count.toInt()
-                            is String -> count.toIntOrNull() ?: 0
-                            else -> 0
-                        },
-                        contentType = asset.optString("content_type").trim(),
-                        updatedAtMillis = asset.optString("updated_at").parseIsoInstantOrNull()
-                            ?: asset.optString("created_at").parseIsoInstantOrNull()
-                    )
-                )
-            }
-        }
-        return GitHubReleaseAssetBundle(
-            releaseName = releaseName,
-            tagName = tagName,
-            htmlUrl = htmlUrl,
-            releaseUpdatedAtMillis = releaseUpdatedAtMillis,
-            assets = assets,
-            shortCommitSha = ""
-        )
-    }
+    private fun parseReleaseBundle(release: JSONObject): GitHubReleaseAssetBundle =
+        GitHubReleaseAssetJsonMapper.parseReleaseBundle(release)
 
     private fun String.parseIsoInstantOrNull(): Long? {
         return runCatching { if (isBlank()) null else Instant.parse(this).toEpochMilli() }.getOrNull()
@@ -826,20 +567,4 @@ object GitHubReleaseAssetRepository {
             .replace("&gt;", ">")
     }
 
-    private fun assetDisplayPriority(fileName: String): Int {
-        val lower = fileName.lowercase(Locale.ROOT)
-        return if (lower.endsWith(".apk")) apkAssetPriority(fileName) else 10
-    }
-
-    private fun apkAssetPriority(fileName: String): Int {
-        val lower = fileName.lowercase(Locale.ROOT)
-        return when {
-            "arm64-v8a" in lower || "aarch64" in lower || Regex("(^|[^a-z0-9])arm64([^a-z0-9]|$)").containsMatchIn(lower) -> 0
-            "universal" in lower || "fat" in lower -> 1
-            "armeabi-v7a" in lower || "armv7" in lower || Regex("(^|[^a-z0-9])armeabi([^a-z0-9]|$)").containsMatchIn(lower) -> 2
-            "x86_64" in lower -> 3
-            Regex("(^|[^a-z0-9])x86([^a-z0-9]|$)").containsMatchIn(lower) -> 4
-            else -> 5
-        }
-    }
 }

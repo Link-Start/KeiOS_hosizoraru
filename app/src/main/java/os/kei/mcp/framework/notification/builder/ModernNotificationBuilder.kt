@@ -48,7 +48,7 @@ class ModernNotificationBuilder(
                     resolveShortCriticalText(spec, state)?.let(builder::setShortCriticalText)
                 }
                 builder.addAction(0, context.getString(R.string.common_open), state.openPendingIntent)
-                if (state.running) {
+                if (state.running && state.stopPendingIntent != state.openPendingIntent) {
                     builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
                 }
             }

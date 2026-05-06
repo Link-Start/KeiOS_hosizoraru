@@ -25,10 +25,12 @@ class LegacyNotificationBuilder(
         val isBlueArchiveCafeVisit = spec.kind == ModernNotificationKind.BA_CAFE_VISIT
         val isBlueArchiveArenaRefresh = spec.kind == ModernNotificationKind.BA_ARENA_REFRESH
         val isBlueArchiveCalendarPool = spec.kind == ModernNotificationKind.BA_CALENDAR_POOL
+        val isGitHubShareImport = spec.kind == ModernNotificationKind.GITHUB_SHARE_IMPORT
         val progressState = computeProgressState(
             state = state,
             isBlueArchiveAp = isBlueArchiveAp,
-            isBlueArchiveCalendarPool = isBlueArchiveCalendarPool
+            isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
+            isGitHubShareImport = isGitHubShareImport
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(spec.iconResId)
@@ -55,7 +57,7 @@ class LegacyNotificationBuilder(
             .applyDeadline(state.deadlineAtMs)
 
         builder.addAction(0, context.getString(R.string.common_open), state.openPendingIntent)
-        if (state.running) {
+        if (state.running && state.stopPendingIntent != state.openPendingIntent) {
             builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
         }
         return builder.build()
@@ -64,12 +66,13 @@ class LegacyNotificationBuilder(
     private fun computeProgressState(
         state: McpNotificationPayload,
         isBlueArchiveAp: Boolean,
-        isBlueArchiveCalendarPool: Boolean
+        isBlueArchiveCalendarPool: Boolean,
+        isGitHubShareImport: Boolean
     ): LiveProgressState {
         if (!state.running) {
             return LiveProgressState(current = 0, indeterminate = false)
         }
-        if (isBlueArchiveCalendarPool) {
+        if (isBlueArchiveCalendarPool || isGitHubShareImport) {
             return LiveProgressState(
                 current = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100,
                 indeterminate = false

@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class GitHubShareImportActivity : ComponentActivity() {
     private var incomingGitHubShareText by mutableStateOf<String?>(null)
     private var incomingGitHubShareToken by mutableIntStateOf(0)
+    private var shareImportResumeToken by mutableIntStateOf(0)
     private var shareImportDisabled by mutableStateOf(false)
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -63,6 +64,7 @@ class GitHubShareImportActivity : ComponentActivity() {
                     GitHubShareImportWindowFlowHost(
                         incomingGitHubShareText = incomingGitHubShareText,
                         incomingGitHubShareToken = incomingGitHubShareToken,
+                        resumeRequestToken = shareImportResumeToken,
                         onIncomingGitHubShareConsumed = {
                             incomingGitHubShareText = null
                         },
@@ -99,6 +101,7 @@ class GitHubShareImportActivity : ComponentActivity() {
         if (intent?.action == ACTION_RESUME_SHARE_IMPORT) {
             shareImportDisabled = false
             incomingGitHubShareText = null
+            shareImportResumeToken += 1
             return
         }
         if (!SafeExternalIntents.isPlainTextSend(intent)) {

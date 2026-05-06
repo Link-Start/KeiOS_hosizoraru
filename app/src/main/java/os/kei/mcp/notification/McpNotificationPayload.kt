@@ -29,6 +29,7 @@ data class McpNotificationPayload(
         const val BA_CAFE_VISIT_SERVER_NAME = "BlueArchive Cafe Visit"
         const val BA_ARENA_REFRESH_SERVER_NAME = "BlueArchive Arena Refresh"
         const val BA_CALENDAR_POOL_SERVER_NAME = "BlueArchive Calendar Pool"
+        const val GITHUB_SHARE_IMPORT_SERVER_NAME = "GitHub Share Import"
         const val BA_CAFE_VISIT_PATH = "student_visit"
         const val BA_ARENA_REFRESH_PATH = "arena_refresh"
 
@@ -46,6 +47,10 @@ data class McpNotificationPayload(
 
         fun isBaCalendarPoolServerName(serverName: String): Boolean {
             return serverName.trim() == BA_CALENDAR_POOL_SERVER_NAME
+        }
+
+        fun isGitHubShareImportServerName(serverName: String): Boolean {
+            return serverName.trim() == GITHUB_SHARE_IMPORT_SERVER_NAME
         }
 
         fun isBaNotificationServerName(serverName: String): Boolean {

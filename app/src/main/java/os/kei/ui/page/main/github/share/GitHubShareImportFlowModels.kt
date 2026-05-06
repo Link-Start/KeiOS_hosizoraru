@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.share
 
+import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 
 internal data class GitHubShareImportPreview(
@@ -44,3 +45,34 @@ internal data class GitHubPendingShareImportAttachCandidate(
     val detectedAtMillis: Long = System.currentTimeMillis(),
     val firstInstallTimeMs: Long = -1L
 )
+
+internal fun GitHubShareImportPreview.toPendingPreviewRecord(
+    createdAtMillis: Long = System.currentTimeMillis()
+): GitHubPendingShareImportPreviewRecord {
+    return GitHubPendingShareImportPreviewRecord(
+        sourceUrl = sourceUrl,
+        projectUrl = projectUrl,
+        owner = owner,
+        repo = repo,
+        releaseTag = releaseTag,
+        releaseUrl = releaseUrl,
+        strategyLabel = strategyLabel,
+        assets = assets,
+        preferredAssetName = preferredAssetName,
+        createdAtMillis = createdAtMillis
+    )
+}
+
+internal fun GitHubPendingShareImportPreviewRecord.toShareImportPreview(): GitHubShareImportPreview {
+    return GitHubShareImportPreview(
+        sourceUrl = sourceUrl,
+        projectUrl = projectUrl,
+        owner = owner,
+        repo = repo,
+        releaseTag = releaseTag,
+        releaseUrl = releaseUrl,
+        strategyLabel = strategyLabel,
+        assets = assets,
+        preferredAssetName = preferredAssetName
+    )
+}

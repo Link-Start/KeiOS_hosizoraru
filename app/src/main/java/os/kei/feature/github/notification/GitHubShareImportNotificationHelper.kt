@@ -2,44 +2,31 @@ package os.kei.feature.github.notification
 
 import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.annotation.StringRes
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.framework.notification.NotificationHelper
+import os.kei.mcp.framework.notification.builder.EnvironmentContext
+import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
+import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
+import os.kei.mcp.framework.notification.builder.NotificationPayload
+import os.kei.mcp.framework.notification.builder.UserSettings
+import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.notification.McpNotificationPayload
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 
 object GitHubShareImportNotificationHelper {
-    const val CHANNEL_ID = "github_share_import_channel_v1"
     const val NOTIFICATION_ID = 38991
-    private const val ICON_RES_ID = R.drawable.ic_github_invertocat_island_blue
     private const val REQUEST_OPEN_FLOW = 2301
     private const val REQUEST_OPEN_GITHUB = 2302
     private const val REQUEST_MARK_READ = 2303
-
-    fun ensureChannel(context: Context) {
-        val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            context.getString(R.string.github_share_import_notify_channel_name),
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = context.getString(R.string.github_share_import_notify_channel_desc)
-            setShowBadge(false)
-            enableVibration(false)
-        }
-        manager.createNotificationChannel(channel)
-    }
+    private const val REQUEST_CANCEL_IMPORT = 2304
 
     fun notifyResolving(context: Context, sourceLabel: String) {
         notifyState(
@@ -198,7 +185,7 @@ object GitHubShareImportNotificationHelper {
     }
 
     fun cancel(context: Context) {
-        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+        McpNotificationHelper.cancelNotification(context, NOTIFICATION_ID)
     }
 
     @SuppressLint("MissingPermission")
@@ -207,84 +194,86 @@ object GitHubShareImportNotificationHelper {
         state: GitHubShareImportNotificationState
     ): Boolean {
         if (!notificationsGranted(context)) return false
-        ensureChannel(context)
-        val helper = NotificationHelper(context)
-        val notification = if (helper.isModernLiveUpdateEligible) {
-            buildModernLiveUpdateNotification(context, state)
-        } else {
-            buildLegacyLiveUpdateNotification(context, state)
-        }
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        McpNotificationHelper.ensureChannel(context)
+        val notification = buildFrameworkLiveUpdateNotification(context, state)
+        McpNotificationHelper.dispatchNotification(
+            context = context,
+            notificationId = NOTIFICATION_ID,
+            notification = notification,
+            useXiaomiMagic = false
+        )
         return true
     }
 
-    internal fun buildModernLiveUpdateNotification(
+    internal fun buildFrameworkLiveUpdateNotification(
         context: Context,
         state: GitHubShareImportNotificationState
     ): Notification {
-        val progressStyle = NotificationCompat.ProgressStyle()
-            .setProgressSegments(
-                listOf(
-                    NotificationCompat.ProgressStyle.Segment(100)
-                        .setColor(state.phase.progressColor)
-                )
+        val helper = NotificationHelper(context)
+        val payload = NotificationPayload(
+            state = buildPayload(context, state),
+            settings = UserSettings(miIslandOuterGlow = false),
+            environment = EnvironmentContext(
+                channelId = McpNotificationHelper.LIVE_CHANNEL_ID,
+                isHyperOS = helper.isHyperOS,
+                preferOemLiveIconLayout = helper.preferOemLiveIconLayout
             )
-            .setStyledByProgress(true)
-            .setProgress(state.phase.progressPercent)
-        return baseBuilder(context, state)
-            .setRequestPromotedOngoing(state.phase.ongoing)
-            .setStyle(progressStyle)
-            .setShortCriticalText(context.getString(state.phase.shortTextRes))
-            .build()
+        )
+        return if (helper.isModernLiveUpdateEligible) {
+            ModernNotificationBuilder(context).build(payload)
+        } else {
+            LegacyNotificationBuilder(context).build(payload)
+        }
     }
 
-    internal fun buildLegacyLiveUpdateNotification(
+    private fun buildPayload(
         context: Context,
         state: GitHubShareImportNotificationState
-    ): Notification {
-        return baseBuilder(context, state)
-            .setColorized(true)
-            .setColor(state.phase.progressColor)
-            .setSubText(context.getString(state.phase.shortTextRes))
-            .setProgress(100, state.phase.progressPercent, false)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .build()
-    }
-
-    private fun baseBuilder(
-        context: Context,
-        state: GitHubShareImportNotificationState
-    ): NotificationCompat.Builder {
+    ): McpNotificationPayload {
         val openPendingIntent = if (state.phase.openGitHubPage) {
             buildOpenGitHubPendingIntent(context)
         } else {
             buildOpenFlowPendingIntent(context)
         }
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(ICON_RES_ID)
-            .setContentTitle(context.getString(state.phase.titleRes))
-            .setContentText(resolveContent(context, state))
-            .setContentIntent(openPendingIntent)
-            .setCategory(
-                if (state.phase.ongoing) {
-                    NotificationCompat.CATEGORY_PROGRESS
-                } else {
-                    NotificationCompat.CATEGORY_STATUS
-                }
-            )
-            .setOngoing(state.phase.ongoing)
-            .setOnlyAlertOnce(state.phase.ongoing)
-            .setSilent(state.phase.ongoing)
-            .setAutoCancel(false)
-            .addAction(0, context.getString(R.string.common_open), openPendingIntent)
-        if (!state.phase.ongoing) {
-            builder.addAction(
-                0,
-                context.getString(R.string.common_acknowledge),
-                buildMarkReadPendingIntent(context)
-            )
+        val cancelImportEnabled = state.phase == GitHubShareImportNotificationPhase.AssetReady ||
+                state.phase == GitHubShareImportNotificationPhase.WaitingInstall
+        val secondaryPendingIntent = if (state.phase.ongoing) {
+            if (cancelImportEnabled) {
+                buildCancelImportPendingIntent(context)
+            } else {
+                openPendingIntent
+            }
+        } else {
+            buildMarkReadPendingIntent(context)
         }
-        return builder
+        val shortText = context.getString(state.phase.shortTextRes)
+        val content = resolveContent(context, state)
+        return McpNotificationPayload(
+            serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
+            running = state.phase.ongoing,
+            port = state.phase.progressPercent,
+            path = content,
+            clients = 1,
+            ongoing = state.phase.ongoing,
+            onlyAlertOnce = true,
+            openPendingIntent = openPendingIntent,
+            stopPendingIntent = secondaryPendingIntent,
+            focusOpenPendingIntent = openPendingIntent,
+            secondaryActionLabel = if (state.phase.ongoing) {
+                if (cancelImportEnabled) {
+                    context.getString(R.string.github_share_import_pending_action_cancel)
+                } else {
+                    ""
+                }
+            } else {
+                context.getString(R.string.common_acknowledge)
+            },
+            overrideTitle = context.getString(state.phase.titleRes),
+            overrideContent = content,
+            overrideOnlineText = shortText,
+            overrideShortText = shortText,
+            overrideProgressPercent = state.phase.progressPercent
+        )
     }
 
     private fun resolveContent(
@@ -403,6 +392,18 @@ object GitHubShareImportNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
+    private fun buildCancelImportPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
+            action = GitHubShareImportActionReceiver.ACTION_CANCEL_SHARE_IMPORT
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            REQUEST_CANCEL_IMPORT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
 }
 
 internal data class GitHubShareImportNotificationState(
@@ -439,7 +440,6 @@ internal enum class GitHubShareImportNotificationPhase(
     @param:StringRes val titleRes: Int,
     @param:StringRes val shortTextRes: Int,
     val progressPercent: Int,
-    val progressColor: Int,
     val ongoing: Boolean,
     val openGitHubPage: Boolean
 ) {
@@ -447,7 +447,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_resolving,
         shortTextRes = R.string.github_share_import_notify_short_resolving,
         progressPercent = 12,
-        progressColor = 0xFF2563EB.toInt(),
         ongoing = true,
         openGitHubPage = false
     ),
@@ -455,15 +454,13 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_asset_ready,
         shortTextRes = R.string.github_share_import_notify_short_asset_ready,
         progressPercent = 32,
-        progressColor = 0xFF7C3AED.toInt(),
-        ongoing = false,
+        ongoing = true,
         openGitHubPage = false
     ),
     Delivering(
         titleRes = R.string.github_share_import_notify_title_delivering,
         shortTextRes = R.string.github_share_import_notify_short_delivering,
         progressPercent = 52,
-        progressColor = 0xFF2563EB.toInt(),
         ongoing = true,
         openGitHubPage = false
     ),
@@ -471,7 +468,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_waiting_install,
         shortTextRes = R.string.github_share_import_notify_short_waiting_install,
         progressPercent = 72,
-        progressColor = 0xFFF59E0B.toInt(),
         ongoing = true,
         openGitHubPage = false
     ),
@@ -479,7 +475,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_install_detected,
         shortTextRes = R.string.github_share_import_notify_short_install_detected,
         progressPercent = 86,
-        progressColor = 0xFF059669.toInt(),
         ongoing = true,
         openGitHubPage = false
     ),
@@ -487,7 +482,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_adding_track,
         shortTextRes = R.string.github_share_import_notify_short_adding_track,
         progressPercent = 94,
-        progressColor = 0xFF2563EB.toInt(),
         ongoing = true,
         openGitHubPage = false
     ),
@@ -495,7 +489,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_added,
         shortTextRes = R.string.github_share_import_notify_short_added,
         progressPercent = 100,
-        progressColor = 0xFF059669.toInt(),
         ongoing = false,
         openGitHubPage = true
     ),
@@ -503,7 +496,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_already_tracked,
         shortTextRes = R.string.github_share_import_notify_short_already_tracked,
         progressPercent = 100,
-        progressColor = 0xFF64748B.toInt(),
         ongoing = false,
         openGitHubPage = true
     ),
@@ -511,7 +503,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_failed,
         shortTextRes = R.string.github_share_import_notify_short_failed,
         progressPercent = 100,
-        progressColor = 0xFFDC2626.toInt(),
         ongoing = false,
         openGitHubPage = false
     ),
@@ -519,7 +510,6 @@ internal enum class GitHubShareImportNotificationPhase(
         titleRes = R.string.github_share_import_notify_title_cancelled,
         shortTextRes = R.string.github_share_import_notify_short_cancelled,
         progressPercent = 100,
-        progressColor = 0xFF64748B.toInt(),
         ongoing = false,
         openGitHubPage = false
     )

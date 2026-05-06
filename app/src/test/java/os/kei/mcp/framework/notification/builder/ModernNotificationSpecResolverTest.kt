@@ -194,6 +194,29 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
+    fun `github share import uses github semantic icon and override progress`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
+                running = true,
+                port = 72,
+                clients = 1,
+                ongoing = true,
+                overrideProgressPercent = 72
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
+        assertEquals(72, spec.progressPercent)
+        assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.iconResId)
+        assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.expandedIconResId)
+        assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.trackerIconResId)
+        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+        assertEquals(true, spec.requestPromotedOngoing)
+    }
+
+    @Test
     fun `default notification keeps standard app status icon`() {
         val spec = ModernNotificationSpecResolver.resolve(
             state = createState(

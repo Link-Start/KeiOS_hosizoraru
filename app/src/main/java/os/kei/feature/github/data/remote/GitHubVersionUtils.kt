@@ -15,9 +15,37 @@ import kotlin.math.abs
 
 object GitHubVersionUtils {
     private const val INSTALLED_APPS_CACHE_TTL_MS = 5L * 60L * 1000L
+    private const val VERSION_NORMALIZATION_CACHE_SIZE = 384
+    private const val VERSION_COMPARABLE_CACHE_SIZE = 512
+    private const val VERSION_PARTS_CACHE_SIZE = 512
+
+    private val datePrefixedVersionRegex =
+        Regex("""^(?:20\d{4}|\d{6,8})[._-]+([vV]?\d+(?:[._-]\d+)+.*)$""")
+    private val versionCandidateRegex = Regex(
+        """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?"""
+    )
+    private val preReleaseKeywordRegex = Regex("""(?i)pre[- ]release""")
+    private val snapshotKeywordRegex = Regex("""(?i)snapshot""")
+    private val nightlyKeywordRegex = Regex("""(?i)nightly""")
+    private val canaryKeywordRegex = Regex("""(?i)canary""")
+    private val whitespaceRegex = Regex("""\s+""")
+    private val separatorCleanupRegex = Regex("""\.\-|\-\.|--""")
+    private val coreVersionRegex = Regex("""\d+(?:[._]\d+)*""")
+    private val channelSuffixRegex = Regex(
+        """(?:^|[^a-z])(dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:[^a-z0-9]*(\d+))?"""
+    )
 
     @Volatile
     private var installedAppsCache: CachedInstalledApps? = null
+
+    private val normalizedCandidateCache =
+        BoundedVersionCache<String, List<String>>(VERSION_NORMALIZATION_CACHE_SIZE)
+    private val comparableCandidateCache =
+        BoundedVersionCache<ComparableCandidateKey, ComparableVersionCandidate?>(
+            VERSION_COMPARABLE_CACHE_SIZE
+        )
+    private val versionPartsCache =
+        BoundedVersionCache<String, VersionParts?>(VERSION_PARTS_CACHE_SIZE)
 
     private data class CachedInstalledApps(
         val updatedAtMs: Long,
@@ -168,6 +196,12 @@ object GitHubVersionUtils {
     }
 
     fun normalizeVersionCandidates(text: String): List<String> {
+        return normalizedCandidateCache.getOrPut(text) {
+            normalizeVersionCandidatesUncached(text)
+        }
+    }
+
+    private fun normalizeVersionCandidatesUncached(text: String): List<String> {
         val base = text.trim()
         if (base.isBlank()) return emptyList()
 
@@ -199,16 +233,13 @@ object GitHubVersionUtils {
 
         addCandidate(base)
 
-        Regex("""^(?:20\d{4}|\d{6,8})[._-]+([vV]?\d+(?:[._-]\d+)+.*)$""")
+        datePrefixedVersionRegex
             .matchEntire(base)
             ?.groupValues
             ?.getOrNull(1)
             ?.let(::addCandidate)
 
-        val versionRegex = Regex(
-            """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?"""
-        )
-        versionRegex.findAll(base).forEach { addCandidate(it.value) }
+        versionCandidateRegex.findAll(base).forEach { addCandidate(it.value) }
 
         return filterLessSpecificCandidates(tokens.toList())
     }
@@ -354,13 +385,13 @@ object GitHubVersionUtils {
 
     private fun canonicalizeCandidate(raw: String): String {
         return raw
-            .replace(Regex("""(?i)pre[- ]release"""), "preview")
-            .replace(Regex("""(?i)snapshot"""), "dev")
-            .replace(Regex("""(?i)nightly"""), "dev")
-            .replace(Regex("""(?i)canary"""), "dev")
+            .replace(preReleaseKeywordRegex, "preview")
+            .replace(snapshotKeywordRegex, "dev")
+            .replace(nightlyKeywordRegex, "dev")
+            .replace(canaryKeywordRegex, "dev")
             .replace('_', '.')
-            .replace(Regex("""\s+"""), "")
-            .replace(Regex("""\.\-|\-\.|--"""), "-")
+            .replace(whitespaceRegex, "")
+            .replace(separatorCleanupRegex, "-")
     }
 
     private fun filterLessSpecificCandidates(candidates: List<String>): List<String> {
@@ -390,6 +421,15 @@ object GitHubVersionUtils {
     )
 
     private fun parseComparableCandidate(
+        raw: String,
+        sourcePriority: Int
+    ): ComparableVersionCandidate? {
+        return comparableCandidateCache.getOrPut(ComparableCandidateKey(raw, sourcePriority)) {
+            parseComparableCandidateUncached(raw, sourcePriority)
+        }
+    }
+
+    private fun parseComparableCandidateUncached(
         raw: String,
         sourcePriority: Int
     ): ComparableVersionCandidate? {
@@ -495,6 +535,11 @@ object GitHubVersionUtils {
         val channelNumber: Int
     )
 
+    private data class ComparableCandidateKey(
+        val raw: String,
+        val sourcePriority: Int
+    )
+
     private fun isMeaningfulReleaseIdentity(parts: VersionParts): Boolean {
         return parts.numbers.size >= 2 || (parts.channel.isPreRelease && parts.channelNumber > 0)
     }
@@ -510,20 +555,24 @@ object GitHubVersionUtils {
     }
 
     private fun parseVersionParts(raw: String): VersionParts? {
+        return versionPartsCache.getOrPut(raw) {
+            parseVersionPartsUncached(raw)
+        }
+    }
+
+    private fun parseVersionPartsUncached(raw: String): VersionParts? {
         val src = raw.trim().lowercase(Locale.ROOT)
         if (src.isBlank()) return null
 
         val normalized = src.removePrefix("v")
-        val coreMatch = Regex("""\d+(?:[._]\d+)*""").find(normalized) ?: return null
+        val coreMatch = coreVersionRegex.find(normalized) ?: return null
         val coreNumbers = coreMatch.value
             .split('.', '_')
             .mapNotNull { it.toIntOrNull() }
         if (coreNumbers.isEmpty()) return null
 
         val suffix = normalized.substring(coreMatch.range.last + 1)
-        val channelMatch = Regex(
-            """(?:^|[^a-z])(dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:[^a-z0-9]*(\d+))?"""
-        ).find(suffix.ifBlank { normalized })
+        val channelMatch = channelSuffixRegex.find(suffix.ifBlank { normalized })
 
         val channel = when (channelMatch?.groupValues?.getOrNull(1).orEmpty()) {
             "dev", "nightly", "canary", "snapshot" -> GitHubReleaseChannel.DEV
@@ -545,6 +594,28 @@ object GitHubVersionUtils {
             channel = channel,
             channelNumber = channelNumber
         )
+    }
+
+    private class BoundedVersionCache<K, V>(
+        private val maxSize: Int
+    ) {
+        private val values = object : LinkedHashMap<K, V>(maxSize, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean {
+                return size > maxSize
+            }
+        }
+
+        fun getOrPut(key: K, createValue: () -> V): V {
+            synchronized(values) {
+                if (values.containsKey(key)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return values[key] as V
+                }
+                return createValue().also { value ->
+                    values[key] = value
+                }
+            }
+        }
     }
 }
 

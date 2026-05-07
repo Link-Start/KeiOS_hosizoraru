@@ -34,6 +34,28 @@ internal data class BaGuideMediaCacheMetadata(
     val valid: Boolean
 )
 
+internal data class BaGuideMediaCacheSessionSummary(
+    val count: Int,
+    val bytes: Long,
+    val latest: Long
+)
+
+internal fun scanBaGuideMediaCacheSession(dir: File): BaGuideMediaCacheSessionSummary {
+    if (!dir.exists()) return BaGuideMediaCacheSessionSummary(count = 0, bytes = 0L, latest = 0L)
+    var count = 0
+    var bytes = 0L
+    var latest = 0L
+    dir.walkTopDown()
+        .filter { it.isFile }
+        .filterNot { it.name.endsWith(".part", ignoreCase = true) }
+        .forEach { file ->
+            count += 1
+            bytes += file.length()
+            latest = maxOf(latest, file.lastModified())
+        }
+    return BaGuideMediaCacheSessionSummary(count = count, bytes = bytes, latest = latest)
+}
+
 object BaGuideTempMediaCache {
     private const val ROOT_DIR = "ba_student_guide_temp_media"
     private const val MAX_PARALLEL_DOWNLOADS = 3
@@ -464,18 +486,12 @@ object BaGuideTempMediaCache {
     }
 
     private fun scanSessionSummary(dir: File): SessionSummary {
-        if (!dir.exists()) return SessionSummary(count = 0, bytes = 0L, latest = 0L)
-        var count = 0
-        var bytes = 0L
-        var latest = 0L
-        dir.walkTopDown()
-            .filter { it.isFile }
-            .forEach { file ->
-                count += 1
-                bytes += file.length()
-                latest = maxOf(latest, file.lastModified())
-            }
-        return SessionSummary(count = count, bytes = bytes, latest = latest)
+        val summary = scanBaGuideMediaCacheSession(dir)
+        return SessionSummary(
+            count = summary.count,
+            bytes = summary.bytes,
+            latest = summary.latest
+        )
     }
 
     private fun rebuildSessionIndex(context: Context, sourceUrl: String) {

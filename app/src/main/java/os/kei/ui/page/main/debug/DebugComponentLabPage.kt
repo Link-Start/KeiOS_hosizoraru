@@ -46,7 +46,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun DebugComponentLabPage(
     onClose: () -> Unit,
-    onOpenV2LiquidSample: () -> Unit,
     onOpenLiquidCatalog: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -97,13 +96,6 @@ internal fun DebugComponentLabPage(
                     DebugLabIntroCard(accent = accent)
                 }
                 item {
-                    DebugV2LiquidSampleCard(
-                        accent = accent,
-                        backdrop = pageBackdrop,
-                        onOpenV2LiquidSample = onOpenV2LiquidSample
-                    )
-                }
-                item {
                     DebugLiquidPreviewCard(
                         accent = accent,
                         backdrop = pageBackdrop,
@@ -114,57 +106,6 @@ internal fun DebugComponentLabPage(
                     DebugIterationQueueCard(accent = accent)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DebugV2LiquidSampleCard(
-    accent: Color,
-    backdrop: Backdrop,
-    onOpenV2LiquidSample: () -> Unit
-) {
-    val openLabel = stringResource(R.string.debug_v2_liquid_sample_open)
-    AppFeatureCard(
-        title = stringResource(R.string.debug_v2_liquid_sample_title),
-        subtitle = stringResource(R.string.debug_v2_liquid_sample_subtitle),
-        sectionIcon = appLucideFlaskIcon(),
-        titleColor = accent,
-        borderColor = accent.copy(alpha = 0.24f),
-        contentVerticalSpacing = CardLayoutRhythm.sectionGap,
-        onClick = onOpenV2LiquidSample,
-        headerEndActions = {
-            AppLiquidIconButton(
-                backdrop = backdrop,
-                icon = appLucideExternalLinkIcon(),
-                contentDescription = openLabel,
-                onClick = onOpenV2LiquidSample,
-                width = 40.dp,
-                height = 40.dp,
-                variant = GlassVariant.Compact,
-                iconTint = accent
-            )
-        }
-    ) {
-        AppSupportingBlock(
-            text = stringResource(R.string.debug_v2_liquid_sample_entry_note),
-            accentColor = accent
-        )
-        AppInfoListBody {
-            AppInfoRow(
-                label = stringResource(R.string.debug_component_lab_row_entry_title),
-                value = stringResource(R.string.debug_v2_liquid_sample_row_entry_value),
-                labelMaxLines = 1,
-                valueMaxLines = 1,
-                valueOverflow = TextOverflow.Ellipsis
-            )
-            AppInfoRow(
-                label = stringResource(R.string.debug_component_lab_row_components_title),
-                value = stringResource(R.string.debug_v2_liquid_sample_row_components_value),
-                labelMaxLines = 1,
-                valueMaxLines = 2,
-                valueOverflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

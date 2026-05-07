@@ -307,6 +307,7 @@
     <string name="ba_catalog_bgm_action_save_offline">保存离线</string>
     <string name="ba_catalog_bgm_action_remove_offline">移除离线</string>
     <string name="ba_catalog_bgm_action_open_queue">回到播放队列</string>
+    <string name="ba_catalog_bgm_action_open_player">打开播放页</string>
     <string name="ba_catalog_bgm_action_delete">移除收藏</string>
     <string name="ba_catalog_bgm_action_cache">缓存 BGM</string>
     <string name="ba_catalog_bgm_action_cache_busy">正在缓存</string>

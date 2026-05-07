@@ -41,6 +41,7 @@ fun MainScreen(
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
+    requestedBaBgmPlaybackToken: Int,
     onRequestedBottomPageConsumed: () -> Unit
 ) {
     val backStack = remember { mutableStateListOf<NavKey>().apply { add(KeiosRoute.Main) } }
@@ -80,6 +81,15 @@ fun MainScreen(
             navigator.popUntil { it == KeiosRoute.Main }
         }
     )
+    LaunchedEffect(requestedBaBgmPlaybackToken) {
+        if (requestedBaBgmPlaybackToken <= 0) return@LaunchedEffect
+        navigator.popUntil { it == KeiosRoute.Main }
+        navigator.push(
+            KeiosRoute.BaGuideCatalog(
+                openBgmPlaybackToken = requestedBaBgmPlaybackToken.toLong()
+            )
+        )
+    }
     val uiPrefsState = rememberMainScreenUiPrefsState(
         snapshot = uiPrefsSnapshot,
         appContext = appContext,

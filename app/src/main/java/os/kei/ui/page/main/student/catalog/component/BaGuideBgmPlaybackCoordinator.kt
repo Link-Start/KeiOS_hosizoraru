@@ -226,6 +226,11 @@ internal class BaGuideBgmPlaybackCoordinator(
                 selectedAudioUrl = currentAudioUrl
                 persistSelection()
             }
+            val nativeQueueMode = activeBackend.currentQueueMode()
+            if (nativeQueueMode != null && queueModeName != nativeQueueMode.name) {
+                queueModeName = nativeQueueMode.name
+                persistSelection()
+            }
         }
         val resolvedFavorite = selectedFavorite ?: favorite
         runtimeState = activeBackend.runtimeState(resolvedFavorite)

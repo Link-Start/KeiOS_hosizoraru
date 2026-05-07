@@ -43,6 +43,19 @@ class MainActivityIntentRoutingTest {
     }
 
     @Test
+    fun `valid ba bgm playback shortcut route is preserved`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_BA,
+            rawMcpServerAction = null,
+            rawShortcutAction = MainActivity.SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, route?.targetBottomPage)
+        assertEquals(MainActivity.SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK, route?.shortcutAction)
+        assertNull(route?.mcpServerAction)
+    }
+
+    @Test
     fun `unknown target is rejected`() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = "Settings",

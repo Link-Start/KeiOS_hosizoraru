@@ -74,7 +74,7 @@ internal fun MainPagerLayout(
         { navigator.pushSingleTop(KeiosRoute.About) }
     }
     val openBaGuideCatalog = remember(navigator) {
-        { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog) }
+        { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog()) }
     }
     val onOpenMcpSkill = remember(navigator) {
         { navigator.pushSingleTop(KeiosRoute.McpSkill) }

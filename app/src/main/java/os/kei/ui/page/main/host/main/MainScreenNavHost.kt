@@ -151,13 +151,14 @@ internal fun MainScreenNavHost(
                 onBack = { navigator.pop() }
             )
         }
-        entry<KeiosRoute.BaGuideCatalog> {
+        entry<KeiosRoute.BaGuideCatalog> { route ->
             BaGuideCatalogPage(
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 preloadingEnabled = prefsState.preloadingEnabled,
                 notificationPermissionGranted = notificationPermissionGranted,
                 onRequestNotificationPermission = onRequestNotificationPermission,
+                openBgmPlaybackToken = route.openBgmPlaybackToken,
                 onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
                 onOpenGuide = pagerCoordinator.onOpenGuideDetail
             )
@@ -208,7 +209,7 @@ private fun handleMainScreenBack(
     navigator: Navigator,
     pagerCoordinator: MainScreenPagerCoordinator
 ) {
-    if (backStack.lastOrNull() == KeiosRoute.BaGuideCatalog) {
+    if (backStack.lastOrNull() is KeiosRoute.BaGuideCatalog) {
         pagerCoordinator.onBaGuideCatalogBack()
     }
     navigator.pop()

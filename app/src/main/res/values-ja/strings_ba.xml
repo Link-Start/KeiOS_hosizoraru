@@ -306,6 +306,7 @@
     <string name="ba_catalog_bgm_action_save_offline">オフライン保存</string>
     <string name="ba_catalog_bgm_action_remove_offline">オフライン解除</string>
     <string name="ba_catalog_bgm_action_open_queue">再生キューへ戻る</string>
+    <string name="ba_catalog_bgm_action_open_player">プレイヤーを開く</string>
     <string name="ba_catalog_bgm_action_delete">お気に入りから削除</string>
     <string name="ba_catalog_bgm_action_cache">BGM をキャッシュ</string>
     <string name="ba_catalog_bgm_action_cache_busy">キャッシュ中</string>

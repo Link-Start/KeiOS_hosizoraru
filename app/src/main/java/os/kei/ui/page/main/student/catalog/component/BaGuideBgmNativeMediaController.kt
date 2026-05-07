@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.student.BaGuideBgmMediaButtonPreferences
 import os.kei.ui.page.main.student.BaGuideBgmMediaSessionService
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
@@ -78,7 +79,8 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
                 mediaController.setMediaItems(mediaItems, resolvedIndex, resolvedStartPositionMs)
                 mediaController.prepare()
             }
-            mediaController.repeatMode = queueMode.toNativeRepeatMode()
+            mediaController.repeatMode =
+                BaGuideBgmMediaButtonPreferences.nativeRepeatMode(queueMode)
             mediaController.volume = GuideBgmFavoritePlaybackStore.volume()
             when (playWhenReady) {
                 true -> mediaController.play()
@@ -114,7 +116,17 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
     }
 
     fun updateRepeatMode(queueMode: BaGuideBgmQueueMode) {
-        submit { mediaController -> mediaController.repeatMode = queueMode.toNativeRepeatMode() }
+        submit { mediaController ->
+            mediaController.repeatMode =
+                BaGuideBgmMediaButtonPreferences.nativeRepeatMode(queueMode)
+        }
+    }
+
+    fun currentQueueMode(): BaGuideBgmQueueMode? {
+        val mediaController = controller ?: return null
+        return runCatching {
+            BaGuideBgmMediaButtonPreferences.queueModeFromNativeRepeatMode(mediaController.repeatMode)
+        }.getOrNull()
     }
 
     fun runtimeState(): BaGuideBgmPlaybackRuntimeState {
@@ -296,13 +308,6 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
             }
     }
 
-    private fun BaGuideBgmQueueMode.toNativeRepeatMode(): Int {
-        return if (this == BaGuideBgmQueueMode.SingleLoop) {
-            Player.REPEAT_MODE_ONE
-        } else {
-            Player.REPEAT_MODE_ALL
-        }
-    }
 }
 
 private const val MAX_NATIVE_ARTWORK_HYDRATION_TARGETS = 8

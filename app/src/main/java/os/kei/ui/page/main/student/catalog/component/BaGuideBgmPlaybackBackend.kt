@@ -73,6 +73,8 @@ internal interface BaGuideBgmPlaybackBackend {
 
     fun currentAudioUrl(): String = ""
 
+    fun currentQueueMode(): BaGuideBgmQueueMode? = null
+
     fun disconnect() = Unit
 
     fun stopSession() = disconnect()
@@ -242,6 +244,10 @@ internal class BaGuideBgmNativePlaybackBackend(
 
     override fun currentAudioUrl(): String {
         return controller.currentAudioUrl()
+    }
+
+    override fun currentQueueMode(): BaGuideBgmQueueMode? {
+        return controller.currentQueueMode()
     }
 
     override fun disconnect() {

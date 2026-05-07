@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
         const val TARGET_BOTTOM_PAGE_BA = "Ba"
         const val MCP_SERVER_ACTION_TOGGLE = "toggle"
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
+        const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
         const val SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED = "github_refresh_tracked"
     }
 
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
     private var requestedBottomPage by mutableStateOf<String?>(null)
     private var requestedBottomPageToken by mutableStateOf(0)
     private var requestedGitHubRefreshToken by mutableStateOf(0)
+    private var requestedBaBgmPlaybackToken by mutableStateOf(0)
     private var pendingMcpServerAction: String? = null
     private var pendingShortcutAction: String? = null
     private var startMcpAfterLocalNetworkPermission = false
@@ -158,6 +160,7 @@ class MainActivity : ComponentActivity() {
                         requestedBottomPage = requestedBottomPage,
                         requestedBottomPageToken = requestedBottomPageToken,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
+                        requestedBaBgmPlaybackToken = requestedBaBgmPlaybackToken,
                         onRequestedBottomPageConsumed = {
                             requestedBottomPage = null
                         }
@@ -243,6 +246,7 @@ class MainActivity : ComponentActivity() {
     private fun applyPendingShortcutActions() {
         applyPendingMcpServerAction()
         applyPendingBaApIslandAction()
+        applyPendingBaBgmPlaybackAction()
         applyPendingGitHubRefreshAction()
         pendingShortcutAction = null
     }
@@ -297,6 +301,13 @@ class MainActivity : ComponentActivity() {
         if (action != SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED) return
         pendingShortcutAction = null
         requestedGitHubRefreshToken += 1
+    }
+
+    private fun applyPendingBaBgmPlaybackAction() {
+        val action = pendingShortcutAction ?: return
+        if (action != SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK) return
+        pendingShortcutAction = null
+        requestedBaBgmPlaybackToken += 1
     }
 }
 

@@ -115,6 +115,7 @@ fun BaGuideCatalogPage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     enableSearchBar: Boolean = true,
+    openBgmPlaybackToken: Long = 0L,
 ) {
     val context = LocalContext.current
     val appContext = remember(context) { context.applicationContext }
@@ -189,6 +190,17 @@ fun BaGuideCatalogPage(
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchInputActive by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
+
+    LaunchedEffect(openBgmPlaybackToken) {
+        if (openBgmPlaybackToken <= 0L) return@LaunchedEffect
+        val playbackTabIndex = tabs.indexOf(BaGuideCatalogPageTab.Bgm)
+        if (playbackTabIndex < 0) return@LaunchedEffect
+        selectedTabIndex = playbackTabIndex
+        searchVisible = false
+        searchInputActive = false
+        pagerState.scrollToPage(playbackTabIndex)
+        chromeScrollState.expand()
+    }
 
     val chromeActivePageIndex = if (pagerState.isScrollInProgress) {
         pagerState.targetPage

@@ -18,6 +18,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubReleaseNotesMode
+import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.RefreshIntervalOption
@@ -55,6 +56,7 @@ internal fun GitHubCheckLogicSheet(
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
     shareImportLinkageEnabledInput: Boolean,
+    shareImportFlowModeInput: GitHubShareImportFlowMode,
     onlineShareTargetPackageInput: String,
     preferredDownloaderPackageInput: String,
     decisionAssistEnabledInput: Boolean,
@@ -65,10 +67,12 @@ internal fun GitHubCheckLogicSheet(
     showCheckLogicIntervalPopup: Boolean,
     showDownloaderPopup: Boolean,
     showOnlineShareTargetPopup: Boolean,
+    showShareImportFlowModePopup: Boolean,
     showReleaseNotesModePopup: Boolean,
     checkLogicIntervalPopupAnchorBounds: IntRect?,
     downloaderPopupAnchorBounds: IntRect?,
     onlineShareTargetPopupAnchorBounds: IntRect?,
+    shareImportFlowModePopupAnchorBounds: IntRect?,
     releaseNotesModePopupAnchorBounds: IntRect?,
     downloaderOptions: List<DownloaderOption>,
     hasKeiOsSelfTrack: Boolean,
@@ -85,6 +89,7 @@ internal fun GitHubCheckLogicSheet(
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
+    onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
@@ -94,10 +99,12 @@ internal fun GitHubCheckLogicSheet(
     onShowCheckLogicIntervalPopupChange: (Boolean) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
+    onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
     onShowReleaseNotesModePopupChange: (Boolean) -> Unit,
     onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
     onReleaseNotesModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     val context = LocalContext.current
@@ -142,6 +149,7 @@ internal fun GitHubCheckLogicSheet(
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
                 preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
             shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
+                shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
             onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
                 preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
                 decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
@@ -181,19 +189,25 @@ internal fun GitHubCheckLogicSheet(
                 showDownloaderPopup = showDownloaderPopup,
                 downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
                 shareImportLinkageEnabledInput = shareImportLinkageEnabledInput,
+                shareImportFlowModeInput = shareImportFlowModeInput,
                 selectedOnlineShareTargetLabel = selectedOnlineShareTargetLabel,
                 onlineShareTargetOptions = onlineShareTargetOptions,
                 installedOnlineShareTargets = installedOnlineShareTargets,
                 onlineShareTargetPackageInput = onlineShareTargetPackageInput,
                 showOnlineShareTargetPopup = showOnlineShareTargetPopup,
+                showShareImportFlowModePopup = showShareImportFlowModePopup,
                 onlineShareTargetPopupAnchorBounds = onlineShareTargetPopupAnchorBounds,
+                shareImportFlowModePopupAnchorBounds = shareImportFlowModePopupAnchorBounds,
                 onPreferredDownloaderPackageInputChange = onPreferredDownloaderPackageInputChange,
                 onShareImportLinkageEnabledInputChange = onShareImportLinkageEnabledInputChange,
+                onShareImportFlowModeInputChange = onShareImportFlowModeInputChange,
                 onOnlineShareTargetPackageInputChange = onOnlineShareTargetPackageInputChange,
                 onShowDownloaderPopupChange = onShowDownloaderPopupChange,
                 onShowOnlineShareTargetPopupChange = onShowOnlineShareTargetPopupChange,
+                onShowShareImportFlowModePopupChange = onShowShareImportFlowModePopupChange,
                 onDownloaderPopupAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
-                onOnlineShareTargetPopupAnchorBoundsChange = onOnlineShareTargetPopupAnchorBoundsChange
+                onOnlineShareTargetPopupAnchorBoundsChange = onOnlineShareTargetPopupAnchorBoundsChange,
+                onShareImportFlowModePopupAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange
             )
             GitHubCheckEnhancementSection(
                 backdrop = backdrop,
@@ -403,20 +417,34 @@ private fun GitHubCheckTransferSection(
     showDownloaderPopup: Boolean,
     downloaderPopupAnchorBounds: IntRect?,
     shareImportLinkageEnabledInput: Boolean,
+    shareImportFlowModeInput: GitHubShareImportFlowMode,
     selectedOnlineShareTargetLabel: String,
     onlineShareTargetOptions: List<OnlineShareTargetOption>,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     onlineShareTargetPackageInput: String,
     showOnlineShareTargetPopup: Boolean,
+    showShareImportFlowModePopup: Boolean,
     onlineShareTargetPopupAnchorBounds: IntRect?,
+    shareImportFlowModePopupAnchorBounds: IntRect?,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
+    onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
+    onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit
+    onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
+    val context = LocalContext.current
+    val flowModeOptions = GitHubShareImportFlowMode.entries
+    val flowModeLabels = flowModeOptions.map { mode ->
+        context.getString(mode.labelRes())
+    }
+    val selectedFlowModeIndex = flowModeOptions
+        .indexOf(shareImportFlowModeInput)
+        .coerceAtLeast(0)
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_transfer))
     SheetDescriptionText(
         text = stringResource(R.string.github_check_sheet_section_transfer_summary)
@@ -452,6 +480,27 @@ private fun GitHubCheckTransferSection(
             AppSwitch(
                 checked = shareImportLinkageEnabledInput,
                 onCheckedChange = onShareImportLinkageEnabledInputChange
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_share_import_flow_mode),
+            summary = stringResource(R.string.github_check_sheet_summary_share_import_flow_mode)
+        ) {
+            AppDropdownSelector(
+                selectedText = flowModeLabels.getOrElse(selectedFlowModeIndex) {
+                    flowModeLabels.firstOrNull().orEmpty()
+                },
+                options = flowModeLabels,
+                selectedIndex = selectedFlowModeIndex,
+                expanded = showShareImportFlowModePopup,
+                anchorBounds = shareImportFlowModePopupAnchorBounds,
+                onExpandedChange = onShowShareImportFlowModePopupChange,
+                onSelectedIndexChange = { selectedIndex ->
+                    onShareImportFlowModeInputChange(flowModeOptions[selectedIndex])
+                },
+                onAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange,
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction
             )
         }
         SheetControlRow(
@@ -653,6 +702,13 @@ private fun GitHubReleaseNotesMode.labelRes(): Int {
         GitHubReleaseNotesMode.Off -> R.string.github_release_notes_mode_off
         GitHubReleaseNotesMode.Compact -> R.string.github_release_notes_mode_compact
         GitHubReleaseNotesMode.Expanded -> R.string.github_release_notes_mode_expanded
+    }
+}
+
+private fun GitHubShareImportFlowMode.labelRes(): Int {
+    return when (this) {
+        GitHubShareImportFlowMode.SheetAssisted -> R.string.github_share_import_flow_mode_sheet
+        GitHubShareImportFlowMode.NotificationFirst -> R.string.github_share_import_flow_mode_notification
     }
 }
 

@@ -416,6 +416,7 @@ internal class GitHubRefreshActions(
         state.aggressiveApkFilteringInput = trackSnapshot.lookupConfig.aggressiveApkFiltering
         state.preciseApkVersionEnabledInput = trackSnapshot.lookupConfig.preciseApkVersionEnabled
         state.shareImportLinkageEnabledInput = trackSnapshot.lookupConfig.shareImportLinkageEnabled
+        state.shareImportFlowModeInput = trackSnapshot.lookupConfig.shareImportFlowMode
         state.onlineShareTargetPackageInput = trackSnapshot.lookupConfig.onlineShareTargetPackage
         state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage
         state.refreshIntervalHours = trackSnapshot.refreshIntervalHours

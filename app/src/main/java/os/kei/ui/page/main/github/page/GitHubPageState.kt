@@ -107,6 +107,7 @@ internal class GitHubPageState(
     var checkLogicIntervalPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
+    var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var releaseNotesModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var pendingTrackImportPreview by mutableStateOf<GitHubTrackImportPreview?>(null)
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
@@ -131,6 +132,7 @@ internal class GitHubPageState(
     var aggressiveApkFilteringInput by mutableStateOf(false)
     var preciseApkVersionEnabledInput by mutableStateOf(false)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
+    var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
     var decisionAssistEnabledInput by mutableStateOf(false)
@@ -139,6 +141,7 @@ internal class GitHubPageState(
     var releaseNotesModeInput by mutableStateOf(lookupConfig.releaseNotesMode)
     var refreshIntervalHoursInput by mutableStateOf(refreshIntervalHours)
     var showApiTokenPlainText by mutableStateOf(false)
+    var showShareImportFlowModePopup by mutableStateOf(false)
     var showReleaseNotesModePopup by mutableStateOf(false)
     var strategyBenchmarkRunning by mutableStateOf(false)
     var strategyBenchmarkError by mutableStateOf<String?>(null)
@@ -305,6 +308,7 @@ internal class GitHubPageState(
         showCheckLogicIntervalPopup = false
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false
+        showShareImportFlowModePopup = false
         showReleaseNotesModePopup = false
         pendingTrackImportPreview = null
         showCheckLogicSheet = false

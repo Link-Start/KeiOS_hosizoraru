@@ -201,13 +201,13 @@ class MiIslandNotificationBuilderTest {
                 openPendingIntent = notificationOpenPendingIntent,
                 stopPendingIntent = cancelPendingIntent,
                 focusOpenPendingIntent = notificationOpenPendingIntent,
-                primaryActionLabel = "View status",
+                primaryActionLabel = "Check install",
                 secondaryActionLabel = "Cancel linkage",
                 showSecondaryActionWhenStopped = true,
                 overrideTitle = "Waiting for install",
                 overrideContent = "owner/repo · demo.app · exact match · 12 min left",
-                overrideOnlineText = "demo.app",
-                overrideShortText = "Waiting",
+                overrideOnlineText = "Install",
+                overrideShortText = "Install",
                 overrideProgressPercent = 72
             ),
             settings = UserSettings(miIslandOuterGlow = true),
@@ -226,9 +226,9 @@ class MiIslandNotificationBuilderTest {
 
         assertEquals(notificationOpenPendingIntent, focusOpenAction.actionIntent)
         assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
-        assertEquals("View status", focusOpenAction.title.toString())
+        assertEquals("Check install", focusOpenAction.title.toString())
         assertEquals("Cancel linkage", focusStopAction.title.toString())
-        assertTrue(focusParam.contains("\"title\":\"demo.app\""))
+        assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("\"colorReach\":\"#2563EB\""))
         assertTrue(focusParam.contains("demo.app"))
         assertFalse(focusParam.contains("\"content\":\"demo.app\""))
@@ -270,8 +270,8 @@ class MiIslandNotificationBuilderTest {
                 showSecondaryActionWhenStopped = true,
                 overrideTitle = "GitHub tracking added",
                 overrideContent = "Demo was added to owner/repo tracking",
-                overrideOnlineText = "Demo",
-                overrideShortText = "Done",
+                overrideOnlineText = "Tracked",
+                overrideShortText = "Tracked",
                 overrideProgressPercent = 100
             ),
             settings = UserSettings(miIslandOuterGlow = true),
@@ -285,7 +285,7 @@ class MiIslandNotificationBuilderTest {
         val notification = MiIslandNotificationBuilder(context).build(payload)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertTrue(focusParam.contains("\"title\":\"Demo\""))
+        assertTrue(focusParam.contains("\"title\":\"Tracked\""))
         assertTrue(focusParam.contains("\"colorReach\":\"#22C55E\""))
         assertTrue(focusParam.contains("\"progress\":100"))
     }

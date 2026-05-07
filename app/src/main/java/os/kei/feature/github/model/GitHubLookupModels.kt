@@ -54,6 +54,19 @@ enum class GitHubReleaseNotesMode(
     }
 }
 
+enum class GitHubShareImportFlowMode(
+    val storageId: String
+) {
+    SheetAssisted("sheet_assisted"),
+    NotificationFirst("notification_first");
+
+    companion object {
+        fun fromStorageId(value: String): GitHubShareImportFlowMode {
+            return entries.firstOrNull { it.storageId == value } ?: SheetAssisted
+        }
+    }
+}
+
 data class GitHubLookupConfig(
     val selectedStrategy: GitHubLookupStrategyOption = GitHubLookupStrategyOption.AtomFeed,
     val actionsStrategy: GitHubActionsLookupStrategyOption = GitHubActionsLookupStrategyOption.NightlyLink,
@@ -62,6 +75,7 @@ data class GitHubLookupConfig(
     val aggressiveApkFiltering: Boolean = false,
     val preciseApkVersionEnabled: Boolean = false,
     val shareImportLinkageEnabled: Boolean = false,
+    val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
     val onlineShareTargetPackage: String = "",
     val preferredDownloaderPackage: String = "",
     val decisionAssistEnabled: Boolean = false,

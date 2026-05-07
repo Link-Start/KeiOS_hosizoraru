@@ -9,6 +9,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 
@@ -55,6 +56,7 @@ object GitHubTrackStore {
     private const val KEY_AGGRESSIVE_APK_FILTERING = "github_aggressive_apk_filtering"
     private const val KEY_PRECISE_APK_VERSION_ENABLED = "github_precise_apk_version_enabled"
     private const val KEY_SHARE_IMPORT_LINKAGE_ENABLED = "github_share_import_linkage_enabled"
+    private const val KEY_SHARE_IMPORT_FLOW_MODE = "github_share_import_flow_mode"
     private const val KEY_ONLINE_SHARE_TARGET_PACKAGE = "github_online_share_target_package"
     private const val KEY_PREFERRED_DOWNLOADER_PACKAGE = "github_preferred_downloader_package"
     private const val KEY_DECISION_ASSIST_ENABLED = "github_decision_assist_enabled"
@@ -470,6 +472,9 @@ object GitHubTrackStore {
             aggressiveApkFiltering = kv().decodeBool(KEY_AGGRESSIVE_APK_FILTERING, false),
             preciseApkVersionEnabled = kv().decodeBool(KEY_PRECISE_APK_VERSION_ENABLED, false),
             shareImportLinkageEnabled = kv().decodeBool(KEY_SHARE_IMPORT_LINKAGE_ENABLED, false),
+            shareImportFlowMode = GitHubShareImportFlowMode.fromStorageId(
+                kv().decodeString(KEY_SHARE_IMPORT_FLOW_MODE).orEmpty()
+            ),
             onlineShareTargetPackage = kv().decodeString(KEY_ONLINE_SHARE_TARGET_PACKAGE).orEmpty().trim(),
             preferredDownloaderPackage = kv().decodeString(KEY_PREFERRED_DOWNLOADER_PACKAGE)
                 .orEmpty().trim(),
@@ -493,6 +498,7 @@ object GitHubTrackStore {
         kv().encode(KEY_AGGRESSIVE_APK_FILTERING, config.aggressiveApkFiltering)
         kv().encode(KEY_PRECISE_APK_VERSION_ENABLED, config.preciseApkVersionEnabled)
         kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
+        kv().encode(KEY_SHARE_IMPORT_FLOW_MODE, config.shareImportFlowMode.storageId)
         kv().encode(KEY_ONLINE_SHARE_TARGET_PACKAGE, config.onlineShareTargetPackage.trim())
         kv().encode(KEY_PREFERRED_DOWNLOADER_PACKAGE, config.preferredDownloaderPackage.trim())
         kv().encode(KEY_DECISION_ASSIST_ENABLED, config.decisionAssistEnabled)

@@ -397,6 +397,10 @@
     <string name="github_check_sheet_summary_downloader">Used for opening direct download links; follows system default by default.</string>
     <string name="github_check_sheet_label_share_import_linkage">Share import linkage</string>
     <string name="github_check_sheet_summary_share_import_linkage">Allows sharing GitHub links from other apps to KeiOS, automatically resolving release APKs and entering install linkage.</string>
+    <string name="github_check_sheet_label_share_import_flow_mode">Share import flow</string>
+    <string name="github_check_sheet_summary_share_import_flow_mode">Choose a sheet-led flow or a quieter live notification / island flow.</string>
+    <string name="github_share_import_flow_mode_sheet">Sheet assisted</string>
+    <string name="github_share_import_flow_mode_notification">Notification first</string>
     <string name="github_check_sheet_label_share_to_installer">Share to installer</string>
     <string name="github_check_sheet_summary_share_available">Share actions can be sent directly to installers that support download-while-install.</string>
     <string name="github_check_sheet_summary_share_unavailable">No supported installer detected, so linkage stays disabled by default.</string>
@@ -639,7 +643,7 @@
     <string name="github_share_import_result_label_detail">Detail</string>
     <string name="github_share_import_notify_action_select_apk">Choose APK</string>
     <string name="github_share_import_notify_action_view_progress">View progress</string>
-    <string name="github_share_import_notify_action_view_status">View status</string>
+    <string name="github_share_import_notify_action_view_status">Check install</string>
     <string name="github_share_import_notify_action_confirm_track">Confirm tracking</string>
     <string name="github_share_import_notify_action_view_tracking">View tracking</string>
     <string name="github_share_import_notify_action_view_github">View GitHub</string>
@@ -667,12 +671,12 @@
     <string name="github_share_import_notify_short_asset_ready">Ready</string>
     <string name="github_share_import_notify_short_delivering">Sending</string>
     <string name="github_share_import_notify_short_waiting_install">Install</string>
-    <string name="github_share_import_notify_short_install_detected">Detect</string>
-    <string name="github_share_import_notify_short_adding_track">Track</string>
-    <string name="github_share_import_notify_short_added">Done</string>
+    <string name="github_share_import_notify_short_install_detected">Confirm</string>
+    <string name="github_share_import_notify_short_adding_track">Tracking</string>
+    <string name="github_share_import_notify_short_added">Tracked</string>
     <string name="github_share_import_notify_short_already_tracked">Exists</string>
     <string name="github_share_import_notify_short_failed">Failed</string>
-    <string name="github_share_import_notify_short_cancelled">Cancel</string>
+    <string name="github_share_import_notify_short_cancelled">Cancelled</string>
     <string name="github_asset_badge_recommended">Recommended for this device</string>
     <string name="github_asset_badge_incompatible">May be incompatible</string>
     <string name="github_release_notes_title">Release Notes</string>

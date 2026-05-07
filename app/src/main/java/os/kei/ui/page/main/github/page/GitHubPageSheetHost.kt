@@ -78,6 +78,7 @@ internal fun GitHubPageSheetHost(
         aggressiveApkFilteringInput = state.aggressiveApkFilteringInput,
         preciseApkVersionEnabledInput = state.preciseApkVersionEnabledInput,
         shareImportLinkageEnabledInput = state.shareImportLinkageEnabledInput,
+        shareImportFlowModeInput = state.shareImportFlowModeInput,
         onlineShareTargetPackageInput = state.onlineShareTargetPackageInput,
         preferredDownloaderPackageInput = state.preferredDownloaderPackageInput,
         decisionAssistEnabledInput = state.decisionAssistEnabledInput,
@@ -88,10 +89,12 @@ internal fun GitHubPageSheetHost(
         showCheckLogicIntervalPopup = state.showCheckLogicIntervalPopup,
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
+        showShareImportFlowModePopup = state.showShareImportFlowModePopup,
         showReleaseNotesModePopup = state.showReleaseNotesModePopup,
         checkLogicIntervalPopupAnchorBounds = state.checkLogicIntervalPopupAnchorBounds,
         downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
         onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
+        shareImportFlowModePopupAnchorBounds = state.shareImportFlowModePopupAnchorBounds,
         releaseNotesModePopupAnchorBounds = state.releaseNotesModePopupAnchorBounds,
         downloaderOptions = checkLogicDownloaderOptions,
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
@@ -108,6 +111,7 @@ internal fun GitHubPageSheetHost(
         onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },
         onPreciseApkVersionEnabledInputChange = { state.preciseApkVersionEnabledInput = it },
         onShareImportLinkageEnabledInputChange = { state.shareImportLinkageEnabledInput = it },
+        onShareImportFlowModeInputChange = { state.shareImportFlowModeInput = it },
         onPreferredDownloaderPackageInputChange = { state.preferredDownloaderPackageInput = it },
         onOnlineShareTargetPackageInputChange = { state.onlineShareTargetPackageInput = it },
         onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },
@@ -117,6 +121,7 @@ internal fun GitHubPageSheetHost(
         onShowCheckLogicIntervalPopupChange = { state.showCheckLogicIntervalPopup = it },
         onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
         onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
+        onShowShareImportFlowModePopupChange = { state.showShareImportFlowModePopup = it },
         onShowReleaseNotesModePopupChange = { state.showReleaseNotesModePopup = it },
         onCheckLogicIntervalPopupAnchorBoundsChange = {
             state.checkLogicIntervalPopupAnchorBounds = it
@@ -124,6 +129,9 @@ internal fun GitHubPageSheetHost(
         onDownloaderPopupAnchorBoundsChange = { state.downloaderPopupAnchorBounds = it },
         onOnlineShareTargetPopupAnchorBoundsChange = {
             state.onlineShareTargetPopupAnchorBounds = it
+        },
+        onShareImportFlowModePopupAnchorBoundsChange = {
+            state.shareImportFlowModePopupAnchorBounds = it
         },
         onReleaseNotesModePopupAnchorBoundsChange = {
             state.releaseNotesModePopupAnchorBounds = it

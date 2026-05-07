@@ -178,6 +178,7 @@ internal class McpGitHubDiscoveryTools(
             appendLine("checkAllTrackedPreReleases=${snapshot.lookupConfig.checkAllTrackedPreReleases}")
             appendLine("aggressiveApkFiltering=${snapshot.lookupConfig.aggressiveApkFiltering}")
             appendLine("shareImportLinkageEnabled=${snapshot.lookupConfig.shareImportLinkageEnabled}")
+            appendLine("shareImportFlowMode=${snapshot.lookupConfig.shareImportFlowMode.storageId}")
             appendLine("trackedCount=${snapshot.items.size}")
             appendLine("checkCacheCount=${snapshot.checkCache.size}")
             appendLine("lastRefreshMs=${snapshot.lastRefreshMs}")

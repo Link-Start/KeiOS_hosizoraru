@@ -46,7 +46,7 @@ class GitHubShareImportNotificationHelperTest {
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, notification.actions.size)
-        assertEquals("View status", notification.actions[0].title.toString())
+        assertEquals("Check install", notification.actions[0].title.toString())
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
     }
 
@@ -240,12 +240,12 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(McpNotificationHelper.CHANNEL_ID, notification.channelId)
-        assertEquals("View status", notification.actions[0].title.toString())
+        assertEquals("Check install", notification.actions[0].title.toString())
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
-        assertEquals("View status", focusOpenAction.title.toString())
+        assertEquals("Check install", focusOpenAction.title.toString())
         assertEquals("Cancel linkage", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"progress\":72"))
-        assertTrue(focusParam.contains("\"title\":\"demo.app\""))
+        assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
     }
 
@@ -290,7 +290,7 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `install detected mi island compact title uses app label`() {
+    fun `install detected mi island compact title uses phase label`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.InstallDetected,
@@ -303,8 +303,8 @@ class GitHubShareImportNotificationHelperTest {
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertTrue(focusParam.contains("\"title\":\"Demo\""))
-        assertFalse(focusParam.contains("\"title\":\"Detect\""))
+        assertTrue(focusParam.contains("\"title\":\"Confirm\""))
+        assertFalse(focusParam.contains("\"title\":\"Demo\""))
         assertFalse(focusParam.contains("\"content\":\"Demo\""))
         assertEquals(
             "Install detected",
@@ -355,7 +355,12 @@ class GitHubShareImportNotificationHelperTest {
             if (state.phase == GitHubShareImportNotificationPhase.Added ||
                 state.phase == GitHubShareImportNotificationPhase.AlreadyTracked
             ) {
-                assertTrue(focusParam.contains("\"title\":\"Demo\""))
+                val expectedTitle = if (state.phase == GitHubShareImportNotificationPhase.Added) {
+                    "Tracked"
+                } else {
+                    "Exists"
+                }
+                assertTrue(focusParam.contains("\"title\":\"$expectedTitle\""))
                 assertTrue(focusParam.contains("\"colorReach\":\"#22C55E\""))
             }
         }

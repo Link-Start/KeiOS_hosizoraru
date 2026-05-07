@@ -46,6 +46,7 @@ internal class GitHubConfigActions(
         state.showCheckLogicIntervalPopup = false
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
+        state.showShareImportFlowModePopup = false
         state.showReleaseNotesModePopup = false
         scope.launch {
             val config = repository.loadLookupConfig()
@@ -54,6 +55,7 @@ internal class GitHubConfigActions(
             state.aggressiveApkFilteringInput = config.aggressiveApkFiltering
             state.preciseApkVersionEnabledInput = config.preciseApkVersionEnabled
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
+            state.shareImportFlowModeInput = config.shareImportFlowMode
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
             state.decisionAssistEnabledInput = config.decisionAssistEnabled
@@ -97,6 +99,7 @@ internal class GitHubConfigActions(
                 aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
                 preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
+                shareImportFlowMode = previousConfig.shareImportFlowMode,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
                 preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
                 decisionAssistEnabled = previousConfig.decisionAssistEnabled,
@@ -180,6 +183,7 @@ internal class GitHubConfigActions(
                 aggressiveApkFiltering = state.aggressiveApkFilteringInput,
                 preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
+                shareImportFlowMode = state.shareImportFlowModeInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
                     installedOnlineShareTargets.any { it.packageName == selected }
                 }.orEmpty(),
@@ -202,7 +206,8 @@ internal class GitHubConfigActions(
             val preciseVersionChanged =
                 previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled
             val shareImportChanged =
-                previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled
+                previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled ||
+                        previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode
             val onlineShareTargetChanged =
                 previousConfig.onlineShareTargetPackage != newConfig.onlineShareTargetPackage
             val downloaderChanged =

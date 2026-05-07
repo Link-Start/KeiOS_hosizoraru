@@ -34,6 +34,8 @@ object GitHubShareImportNotificationHelper {
     private const val REQUEST_OPEN_GITHUB = 2302
     private const val REQUEST_MARK_READ = 2303
     private const val REQUEST_CANCEL_IMPORT = 2304
+    private const val REQUEST_REFRESH_IMPORT = 2305
+    private const val REQUEST_CONFIRM_IMPORT = 2306
 
     fun notifyResolving(context: Context, sourceLabel: String) {
         notifyState(
@@ -297,11 +299,7 @@ object GitHubShareImportNotificationHelper {
         state: GitHubShareImportNotificationState
     ): McpNotificationPayload {
         val liveUpdateActive = state.phase.ongoing || state.phase.promotedLiveUpdate
-        val openPendingIntent = if (state.phase.openGitHubPage) {
-            buildOpenGitHubPendingIntent(context)
-        } else {
-            buildOpenFlowPendingIntent(context)
-        }
+        val openPendingIntent = buildPrimaryPendingIntent(context, state.phase)
         val cancelImportEnabled = state.phase.cancelActionEnabled
         val secondaryPendingIntent = if (state.phase.ongoing) {
             if (cancelImportEnabled) {
@@ -351,6 +349,18 @@ object GitHubShareImportNotificationHelper {
     ) = state.packageName.trim()
         .takeIf { it.isNotBlank() }
         ?.let { packageName -> AppIconCache.getOrLoad(context, packageName) }
+
+    private fun buildPrimaryPendingIntent(
+        context: Context,
+        phase: GitHubShareImportNotificationPhase
+    ): PendingIntent {
+        return when {
+            phase.refreshActionEnabled -> buildRefreshImportPendingIntent(context)
+            phase.confirmActionEnabled -> buildConfirmImportPendingIntent(context)
+            phase.openGitHubPage -> buildOpenGitHubPendingIntent(context)
+            else -> buildOpenFlowPendingIntent(context)
+        }
+    }
 
     private fun resolveContent(
         context: Context,
@@ -483,6 +493,30 @@ object GitHubShareImportNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
+    private fun buildRefreshImportPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
+            action = GitHubShareImportActionReceiver.ACTION_REFRESH_SHARE_IMPORT
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            REQUEST_REFRESH_IMPORT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun buildConfirmImportPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
+            action = GitHubShareImportActionReceiver.ACTION_CONFIRM_SHARE_IMPORT
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            REQUEST_CONFIRM_IMPORT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
 }
 
 private data class ShareImportNotificationBuildResult(
@@ -537,18 +571,7 @@ internal data class GitHubShareImportNotificationState(
             }
 
     fun compactIslandTitle(shortText: String): String {
-        return when (phase) {
-            GitHubShareImportNotificationPhase.WaitingInstall ->
-                compactMetaLabel.ifBlank { shortText }
-
-            GitHubShareImportNotificationPhase.InstallDetected,
-            GitHubShareImportNotificationPhase.AddingTrack,
-            GitHubShareImportNotificationPhase.Added,
-            GitHubShareImportNotificationPhase.AlreadyTracked ->
-                appDisplayLabel.ifBlank { shortText }
-
-            else -> shortText
-        }
+        return shortText
     }
 }
 
@@ -560,6 +583,8 @@ internal enum class GitHubShareImportNotificationPhase(
     val ongoing: Boolean,
     val openGitHubPage: Boolean,
     val cancelActionEnabled: Boolean = false,
+    val refreshActionEnabled: Boolean = false,
+    val confirmActionEnabled: Boolean = false,
     val promotedLiveUpdate: Boolean = false,
     val miIslandProgressColor: String? = null
 ) {
@@ -595,7 +620,8 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 72,
         ongoing = true,
         openGitHubPage = false,
-        cancelActionEnabled = true
+        cancelActionEnabled = true,
+        refreshActionEnabled = true
     ),
     InstallDetected(
         titleRes = R.string.github_share_import_notify_title_install_detected,
@@ -604,7 +630,8 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 86,
         ongoing = true,
         openGitHubPage = false,
-        cancelActionEnabled = true
+        cancelActionEnabled = true,
+        confirmActionEnabled = true
     ),
     AddingTrack(
         titleRes = R.string.github_share_import_notify_title_adding_track,

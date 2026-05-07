@@ -8,13 +8,15 @@ import android.content.IntentFilter
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.gif.AnimatedImageDecoder
+import com.tencent.mmkv.MMKV
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.log.AppLogger
 import os.kei.core.perf.Android17AnomalyProfiler
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.remote.GitHubVersionUtils
-import com.tencent.mmkv.MMKV
+import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
+import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
 
 class KeiOSApp : Application() {
     companion object {
@@ -35,12 +37,15 @@ class KeiOSApp : Application() {
                 Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
                     val pkg = intent.data?.schemeSpecificPart?.trim().orEmpty()
                     if (pkg.isNotBlank()) {
-                        AppPackageChangedEvents.publish(
-                            AppPackageChangedEvent(
-                                packageName = pkg,
-                                action = intent.action.orEmpty(),
-                                replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
-                            )
+                        val event = AppPackageChangedEvent(
+                            packageName = pkg,
+                            action = intent.action.orEmpty(),
+                            replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+                        )
+                        AppPackageChangedEvents.publish(event)
+                        GitHubShareImportFlowCoordinator.handlePackageChangedAsync(
+                            this@KeiOSApp,
+                            event
                         )
                     }
                     GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
@@ -63,6 +68,7 @@ class KeiOSApp : Application() {
         AppLogger.refreshEnabledFromPrefs()
         Android17AnomalyProfiler.install(this)
         AppBackgroundScheduler.scheduleAll(this)
+        GitHubShareImportPendingScheduler.scheduleNext(this)
         registerPackageChangedReceiver()
     }
 

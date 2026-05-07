@@ -67,6 +67,7 @@ internal class McpHomeTools(
             appendLine("github.apiTokenConfigured=${githubSnapshot.lookupConfig.apiToken.isNotBlank()}")
             appendLine("github.lastRefreshMs=${if (cacheHitCount > 0) githubSnapshot.lastRefreshMs else 0L}")
             appendLine("github.shareImportLinkageEnabled=${githubSnapshot.lookupConfig.shareImportLinkageEnabled}")
+            appendLine("github.shareImportFlowMode=${githubSnapshot.lookupConfig.shareImportFlowMode.storageId}")
             appendLine("ba.activated=${friendCode != HOME_BA_DEFAULT_FRIEND_CODE}")
             appendLine("ba.apCurrent=${displayAp(baSnapshot.apCurrent)}")
             appendLine("ba.apLimit=${baSnapshot.apLimit}")

@@ -29,6 +29,7 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
         val sessionPlayer = ExoPlayer.Builder(this)
             .setMediaSourceFactory(createGameKeeMediaSourceFactory(this))
             .build()
@@ -55,6 +56,7 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        BaGuideBgmMediaNotificationProviderFactory.cancelNotification(this)
         mediaSession?.release()
         mediaSession = null
         player?.removeListener(repeatModeListener)
@@ -168,6 +170,7 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
             runCatching { sessionPlayer.clearMediaItems() }
         }
         runCatching { triggerNotificationUpdate() }
+        runCatching { BaGuideBgmMediaNotificationProviderFactory.cancelNotification(this) }
         runCatching { pauseAllPlayersAndStopSelf() }
     }
 }

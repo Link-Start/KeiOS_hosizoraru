@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
@@ -75,6 +76,10 @@ class BaGuideBgmMediaNotificationProviderFactoryTest {
             ApplicationProvider.getApplicationContext()
         )
 
+        assertEquals(
+            DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID,
+            BA_GUIDE_BGM_MEDIA_NOTIFICATION_ID
+        )
         assertNotNull(provider)
         assertTrue(provider is BaGuideBgmMediaIslandShareNotificationProvider)
     }

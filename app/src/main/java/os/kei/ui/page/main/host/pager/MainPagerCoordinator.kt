@@ -142,11 +142,13 @@ internal fun rememberMainPagerCoordinator(
     )
     val onBottomPageVisibilityChange = remember(
         visibleBottomPageNames,
-        onVisibleBottomPageNamesChange
+        onVisibleBottomPageNamesChange,
+        homeOverviewState.onOverviewCardVisibilityChange
     ) {
         buildMainPagerVisibilityChangeAction(
             visibleBottomPageNames = visibleBottomPageNames,
-            onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange
+            onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
+            onOverviewCardVisibilityChange = homeOverviewState.onOverviewCardVisibilityChange
         )
     }
 

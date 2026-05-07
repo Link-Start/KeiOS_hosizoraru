@@ -2,7 +2,9 @@ package os.kei.ui.page.main.host.pager
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.model.toHomeOverviewCardOrNull
 
 internal data class MainPagerBackgroundState(
     val hasNonHomeBackground: Boolean,
@@ -63,7 +65,8 @@ internal fun rememberMainPagerTabsState(
 
 internal fun buildMainPagerVisibilityChangeAction(
     visibleBottomPageNames: Set<String>,
-    onVisibleBottomPageNamesChange: (Set<String>) -> Unit
+    onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
+    onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit
 ): (BottomPage, Boolean) -> Unit {
     return { page, visible ->
         if (page != BottomPage.Home) {
@@ -74,6 +77,11 @@ internal fun buildMainPagerVisibilityChangeAction(
                 }
                 .toSet()
             onVisibleBottomPageNamesChange(updated)
+            if (!visible) {
+                page.toHomeOverviewCardOrNull()?.let { card ->
+                    onOverviewCardVisibilityChange(card, false)
+                }
+            }
         }
     }
 }

@@ -39,6 +39,7 @@ import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.model.toHomeOverviewCardOrNull
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
@@ -145,9 +146,6 @@ internal fun HomePageControlSheet(
                             cardAvailable = overviewCard != null && bottomVisible,
                             onBottomVisibleChange = { checked ->
                                 onBottomPageVisibilityChange(page, checked)
-                                if (!checked && overviewCard != null) {
-                                    onOverviewCardVisibilityChange(overviewCard, false)
-                                }
                             },
                             onCardVisibleChange = { checked ->
                                 if (overviewCard != null) {
@@ -272,16 +270,6 @@ private fun HomePageVisibilityTableRow(
                 )
             }
         }
-    }
-}
-
-private fun BottomPage.toHomeOverviewCardOrNull(): HomeOverviewCard? {
-    return when (this) {
-        BottomPage.Mcp -> HomeOverviewCard.MCP
-        BottomPage.GitHub -> HomeOverviewCard.GITHUB
-        BottomPage.Ba -> HomeOverviewCard.BA
-        BottomPage.Home,
-        BottomPage.Os -> null
     }
 }
 

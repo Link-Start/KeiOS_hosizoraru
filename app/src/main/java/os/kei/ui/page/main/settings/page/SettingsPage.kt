@@ -48,6 +48,7 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.rememberSettingsBackgroundController
 import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
+import os.kei.ui.page.main.settings.state.rememberSettingsPageRouteState
 import os.kei.ui.page.main.settings.support.rememberSettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
@@ -124,6 +125,10 @@ fun SettingsPage(
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
     val cacheState by settingsPageViewModel.cacheState.collectAsState()
     val logState by settingsPageViewModel.logState.collectAsState()
+    val routeState = rememberSettingsPageRouteState(
+        cacheState = cacheState,
+        logState = logState
+    )
 
     val pageUiState = rememberSettingsPageUiState()
     val backgroundController = rememberSettingsBackgroundController(
@@ -199,7 +204,7 @@ fun SettingsPage(
         context = context,
         scope = scope,
         settingsPageViewModel = settingsPageViewModel,
-        pendingExportFileName = logState.pendingExportFileName
+        pendingExportFileName = routeState.logState.pendingExportFileName
     )
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -340,8 +345,8 @@ fun SettingsPage(
         settingsPageViewModel = settingsPageViewModel,
         sectionContracts = sectionContracts,
         backgroundController = backgroundController,
-        cacheState = cacheState,
-        logState = logState,
+        cacheState = routeState.cacheState,
+        logState = routeState.logState,
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
         onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
         logDebugEnabled = logDebugEnabled,

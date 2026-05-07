@@ -14,9 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -31,7 +29,6 @@ import os.kei.ui.page.main.os.state.createOsPageActionState
 import os.kei.ui.page.main.os.state.rememberOsPageCardTransferState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayTransferActions
-import os.kei.ui.page.main.os.state.rememberOsPageSectionStateStore
 import os.kei.ui.page.main.os.state.rememberOsPageUiContext
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -66,8 +63,6 @@ fun OsPage(
     val syncedColor = uiContext.syncedColor
     val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
     val lifecycleOwner = LocalLifecycleOwner.current
-    var cacheLoaded by remember { mutableStateOf(false) }
-    var cachePersisted by remember { mutableStateOf(false) }
     val osPageViewModel: OsPageViewModel = viewModel()
     LaunchedEffect(textBundle.googleSystemServiceDefaults, textBundle.googleSettingsBuiltInSampleDefaults) {
         osPageViewModel.loadPersistentState(
@@ -76,6 +71,7 @@ fun OsPage(
         )
     }
     val persistentState by osPageViewModel.persistentState.collectAsState()
+    val runtimeState by osPageViewModel.runtimeState.collectAsState()
     val queryInput by osPageViewModel.queryInput.collectAsState()
     val queryApplied by osPageViewModel.queryApplied.collectAsState()
     val uiSnapshot = persistentState.uiSnapshot
@@ -102,15 +98,9 @@ fun OsPage(
     }
     val activityCardExpanded = remember { mutableStateMapOf<String, Boolean>() }
     val overlayState = rememberOsPageOverlayState(textBundle.googleSystemServiceDefaults)
-    var uiStatePersistenceReady by remember { mutableStateOf(false) }
     val scrollBehavior = MiuixScrollBehavior()
-    var refreshing by remember { mutableStateOf(false) }
-    var refreshProgress by remember { mutableStateOf(0f) }
     val shellCommandCards = persistentState.shellCommandCards
     val shellCommandCardExpanded = remember { mutableStateMapOf<String, Boolean>() }
-    var runningShellCommandCardIds by remember { mutableStateOf(emptySet<String>()) }
-    val sectionLoadMutex = remember { Mutex() }
-    val sectionLoadDeferreds = remember { mutableStateMapOf<SectionKind, Deferred<List<InfoRow>>>() }
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     val surfaceColor = uiContext.surfaceColor
     val backdrops = uiContext.backdrops
@@ -145,20 +135,18 @@ fun OsPage(
         shellCommandCards = shellCommandCards,
         googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults
     )
-    val sectionStateStore = rememberOsPageSectionStateStore()
-    val sectionStates = sectionStateStore.sectionStates
-    val updateSection = sectionStateStore.updateSection
+    val sectionStates = runtimeState.sectionStates
     val actionState = createOsPageActionState(
         context = context,
         scope = scope,
         shizukuStatus = shizukuStatus,
         shizukuApiUtils = shizukuApiUtils,
-        sectionLoadMutex = sectionLoadMutex,
-        sectionLoadDeferreds = sectionLoadDeferreds,
+        sectionLoadMutex = osPageViewModel.sectionLoadMutex,
+        sectionLoadDeferreds = osPageViewModel.sectionLoadDeferreds,
         visibleCardsProvider = { visibleCards },
         sectionStatesProvider = { sectionStates },
-        updateSection = updateSection,
-        onCachePersistedChanged = { cachePersisted = it },
+        updateSection = osPageViewModel::updateSection,
+        onCachePersistedChanged = osPageViewModel::updateCachePersisted,
         updateVisibleCards = osPageViewModel::updateVisibleCards,
         setTopInfoExpanded = osPageViewModel::updateTopInfoExpanded,
         setShellRunnerExpanded = osPageViewModel::updateShellRunnerExpanded,
@@ -172,10 +160,10 @@ fun OsPage(
         updateActivityShortcutCards = osPageViewModel::updateActivityShortcutCards,
         googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
         updateShellCommandCards = osPageViewModel::updateShellCommandCards,
-        runningShellCommandCardIdsProvider = { runningShellCommandCardIds },
-        onRunningShellCommandCardIdsChange = { runningShellCommandCardIds = it },
-        onRefreshingChange = { refreshing = it },
-        onRefreshProgressChange = { refreshProgress = it },
+        runningShellCommandCardIdsProvider = { runtimeState.runningShellCommandCardIds },
+        onRunningShellCommandCardIdsChange = osPageViewModel::updateRunningShellCommandCardIds,
+        onRefreshingChange = osPageViewModel::updateRefreshing,
+        onRefreshProgressChange = osPageViewModel::updateRefreshProgress,
         shellCardCommandRequiredToast = textBundle.shellCardCommandRequiredToast,
         shellRunNoPermissionText = textBundle.shellRunNoPermissionText,
         shellRunNoOutputText = textBundle.shellRunNoOutputText,
@@ -198,30 +186,30 @@ fun OsPage(
 
     BindOsInitialCacheLoad(
         ready = persistentState.loaded,
-        visibleCards = visibleCards,
-        onVisibleCardsChange = osPageViewModel::updateVisibleCards,
-        onSectionStatesChange = sectionStateStore.onSectionStatesChange,
-        onCachePersistedChange = { cachePersisted = it },
-        onCacheLoadedChange = { cacheLoaded = it },
-        onUiStatePersistenceReadyChange = { uiStatePersistenceReady = it },
         isPageActive = runtime.isDataActive,
-        ensureLoad = actionState.ensureLoad
+        hydrateInitialCache = { isPageActive ->
+            osPageViewModel.hydrateInitialCache(
+                isPageActive = isPageActive,
+                ensureLoad = actionState.ensureLoad
+            )
+        }
     )
 
     BindOsShizukuInvalidation(
         shizukuReady = shizukuReady,
-        updateSection = updateSection
+        onInvalidate = osPageViewModel::invalidateShizukuSections
     )
 
     BindOsExpandedStatePersistence(
-        ready = uiStatePersistenceReady,
+        ready = runtimeState.uiStatePersistenceReady,
         snapshotProvider = {
             uiSnapshot.copy(visibleCards = visibleCards)
-        }
+        },
+        persistSnapshot = osPageViewModel::saveExpandedStateSnapshot
     )
 
     BindOsVisibleSectionLoadEffects(
-        cacheLoaded = cacheLoaded,
+        cacheLoaded = runtimeState.cacheLoaded,
         isDataActive = runtime.isDataActive,
         visibleCards = visibleCards,
         systemTableExpanded = systemTableExpanded,
@@ -250,10 +238,10 @@ fun OsPage(
         activityShortcutCards = activityShortcutCards,
         shellCommandCards = shellCommandCards,
         sectionStates = sectionStates,
-        refreshing = refreshing,
-        refreshProgress = refreshProgress,
-        cachePersisted = cachePersisted,
-        runningShellCommandCardIds = runningShellCommandCardIds
+        refreshing = runtimeState.refreshing,
+        refreshProgress = runtimeState.refreshProgress,
+        cachePersisted = runtimeState.cachePersisted,
+        runningShellCommandCardIds = runtimeState.runningShellCommandCardIds
     )
 
     val derivedState = rememberOsPageDerivedState(
@@ -302,7 +290,7 @@ fun OsPage(
             manageActivitiesContentDescription = textBundle.manageActivitiesContentDescription,
             manageShellCardsContentDescription = textBundle.manageShellCardsContentDescription,
             refreshParamsContentDescription = textBundle.refreshParamsContentDescription,
-            refreshing = refreshing,
+            refreshing = runtimeState.refreshing,
             onOpenCardManager = { overlayState.onShowCardManagerChange(true) },
             onOpenActivityVisibilityManager = { overlayState.onShowActivityVisibilityManagerChange(true) },
             onOpenShellCardVisibilityManager = { overlayState.onShowShellCardVisibilityManagerChange(true) },
@@ -334,7 +322,7 @@ fun OsPage(
                 contentBackdrop = backdrops.content,
                 isDark = isDark,
                 titleColor = titleColor,
-                refreshing = refreshing,
+                refreshing = runtimeState.refreshing,
                 overviewState = overviewState,
                 indicatorProgress = indicatorProgress,
                 statusColor = statusColor,

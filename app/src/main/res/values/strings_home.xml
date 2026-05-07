@@ -51,6 +51,7 @@
     <string name="home_stat_failed">失败</string>
     <string name="home_stat_tracked">追踪</string>
     <string name="home_stat_cached">缓存</string>
+    <string name="home_stat_cache_state">新鲜度</string>
     <string name="home_stat_share">分享</string>
     <string name="home_stat_strategy">策略</string>
     <string name="home_stat_api">API</string>
@@ -67,4 +68,7 @@
     <string name="home_value_on">开</string>
     <string name="home_value_off">关</string>
     <string name="home_value_threshold_plus">%1$d+</string>
+    <string name="home_cache_state_fresh">新鲜</string>
+    <string name="home_cache_state_stale">过期</string>
+    <string name="home_cache_state_empty">空</string>
 </resources>

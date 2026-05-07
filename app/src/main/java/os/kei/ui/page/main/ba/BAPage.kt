@@ -91,25 +91,32 @@ fun BAPage(
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsState()
     val poolUiState by calendarPoolViewModel.poolUiState.collectAsState()
+    val baRouteState = ui.routeState(
+        calendarUiState = calendarUiState,
+        poolUiState = poolUiState,
+    )
 
-    val officeName = when (ui.serverIndex) {
+    val officeName = when (baRouteState.serverIndex) {
         0 -> stringResource(R.string.ba_office_name_cn)
         1 -> stringResource(R.string.ba_office_name_global)
         else -> stringResource(R.string.ba_office_name_jp)
     }
     val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
 
-    val settingsSheetState = buildBaSettingsSheetState(ui)
-    val notificationSettingsSheetState = buildBaNotificationSettingsSheetState(ui)
+    val settingsSheetState = buildBaSettingsSheetState(
+        draft = baRouteState.settingsDraftState,
+        calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
+    )
+    val notificationSettingsSheetState = buildBaNotificationSettingsSheetState(
+        draft = baRouteState.notificationDraftState
+    )
     val pageContentState = buildBaPageContentState(
         isPageActive = runtime.isPageActive,
         officeOverviewTitle = officeOverviewTitle,
         office = office,
-        ui = ui,
+        routeState = baRouteState,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
-        baCalendarEntries = calendarUiState.entries,
-        baPoolEntries = poolUiState.entries,
     )
     val syncPageActive = if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
     val baGlassRuntime = LocalGlassEffectRuntime.current
@@ -214,10 +221,6 @@ fun BAPage(
         onUiNowMsChange = { ui.uiNowMs = it },
         serverIndex = ui.serverIndex,
         onServerChanged = {
-            ui.baCalendarLoading = true
-            ui.baPoolLoading = true
-            ui.baCalendarError = null
-            ui.baPoolError = null
             ui.calendarHydrationReady = false
             ui.poolHydrationReady = false
             ui.calendarHydrationReady = true
@@ -255,16 +258,6 @@ fun BAPage(
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
             hydrationReady = ui.poolHydrationReady
         )
-    }
-    LaunchedEffect(calendarUiState) {
-        ui.baCalendarLoading = calendarUiState.loading
-        ui.baCalendarError = calendarUiState.error
-        ui.baCalendarLastSyncMs = calendarUiState.lastSyncMs
-    }
-    LaunchedEffect(poolUiState) {
-        ui.baPoolLoading = poolUiState.loading
-        ui.baPoolError = poolUiState.error
-        ui.baPoolLastSyncMs = poolUiState.lastSyncMs
     }
     val dockAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
         Alignment.BottomStart
@@ -365,6 +358,7 @@ fun BAPage(
                 applyBaCalendarRefreshInterval(
                     ui = ui,
                     hours = hours,
+                    calendarLastSyncMs = baRouteState.calendarUiState.lastSyncMs,
                     onRefreshCalendar = { refreshCalendar(force = true) },
                     onRefreshPool = { refreshPool(force = true) },
                 )

@@ -24,6 +24,21 @@ internal class BaStudentGuideRepository(
         BaStudentGuideStore.setCurrentUrl(sourceUrl)
     }
 
+    suspend fun prefetchStaticImages(
+        context: Context,
+        sourceUrl: String,
+        rawUrls: List<String>
+    ) {
+        if (sourceUrl.isBlank() || rawUrls.isEmpty()) return
+        withContext(ioDispatcher) {
+            BaGuideTempMediaCache.prefetchForGuide(
+                context = context,
+                sourceUrl = sourceUrl,
+                rawUrls = rawUrls
+            )
+        }
+    }
+
     suspend fun loadGuide(
         context: Context,
         sourceUrl: String,

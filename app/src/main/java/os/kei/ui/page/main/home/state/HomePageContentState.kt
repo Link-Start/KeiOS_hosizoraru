@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import os.kei.R
+import os.kei.core.prefs.CacheFreshnessSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -60,6 +61,8 @@ internal data class HomePageContentState(
     val trackedCountLine: String,
     val homeStatCached: String,
     val cacheHitCountLine: String,
+    val homeStatCacheState: String,
+    val githubCacheFreshnessLine: String,
     val homeStatShare: String,
     val githubShareLine: String,
     val homeStatStrategy: String,
@@ -78,7 +81,8 @@ internal data class HomePageContentState(
     val homeStatBaServer: String,
     val baServerLine: String,
     val homeStatBaNotify: String,
-    val baNotifyLine: String
+    val baNotifyLine: String,
+    val baCacheFreshnessLine: String
 )
 
 @Composable
@@ -100,6 +104,8 @@ internal fun rememberHomePageContentState(
     val failedCount = githubOverview.failedCount
     val cacheStateColor = when {
         !githubOverview.loaded -> inactiveColor
+        githubOverview.cacheFreshness.stale -> AppStatusColors.Failed
+        githubOverview.cacheFreshness.fresh -> AppStatusColors.Fresh
         cacheHitCount > 0 -> githubCacheColor
         else -> inactiveColor
     }
@@ -115,6 +121,9 @@ internal fun rememberHomePageContentState(
     val homeBaStatusInactive = stringResource(R.string.home_ba_status_inactive)
     val homeValueOn = stringResource(R.string.home_value_on)
     val homeValueOff = stringResource(R.string.home_value_off)
+    val homeCacheStateFresh = stringResource(R.string.home_cache_state_fresh)
+    val homeCacheStateStale = stringResource(R.string.home_cache_state_stale)
+    val homeCacheStateEmpty = stringResource(R.string.home_cache_state_empty)
     val homeAppVersionUnknownFallback = stringResource(R.string.home_app_version_unknown_fallback)
     val homeAppVersionUnknown = stringResource(R.string.home_app_version_unknown)
     val appVersionText = remember(homeAppVersionUnknownFallback, homeAppVersionUnknown) {
@@ -191,6 +200,12 @@ internal fun rememberHomePageContentState(
     }
     val trackedCountLine = stringResource(R.string.github_overview_value_count, trackedCount)
     val cacheHitCountLine = stringResource(R.string.github_overview_value_count, cacheHitCount)
+    val githubCacheFreshnessLine = rememberHomeCacheFreshnessLine(
+        freshness = githubOverview.cacheFreshness,
+        freshText = homeCacheStateFresh,
+        staleText = homeCacheStateStale,
+        emptyText = homeCacheStateEmpty
+    )
     val baApLine = if (baOverview.loaded) {
         stringResource(R.string.home_value_fraction, baOverview.apCurrent, baOverview.apLimit)
     } else {
@@ -234,6 +249,12 @@ internal fun rememberHomePageContentState(
     } else {
         homeStatusLoading
     }
+    val baCacheFreshnessLine = rememberHomeCacheFreshnessLine(
+        freshness = baOverview.cacheFreshness,
+        freshText = homeCacheStateFresh,
+        staleText = homeCacheStateStale,
+        emptyText = homeCacheStateEmpty
+    )
     return HomePageContentState(
         homeNa = stringResource(R.string.common_na),
         homeAppName = stringResource(R.string.app_name),
@@ -279,6 +300,8 @@ internal fun rememberHomePageContentState(
         trackedCountLine = trackedCountLine,
         homeStatCached = stringResource(R.string.home_stat_cached),
         cacheHitCountLine = cacheHitCountLine,
+        homeStatCacheState = stringResource(R.string.home_stat_cache_state),
+        githubCacheFreshnessLine = githubCacheFreshnessLine,
         homeStatShare = stringResource(R.string.home_stat_share),
         githubShareLine = githubShareLine,
         homeStatStrategy = stringResource(R.string.home_stat_strategy),
@@ -297,6 +320,23 @@ internal fun rememberHomePageContentState(
         homeStatBaServer = stringResource(R.string.home_stat_ba_server),
         baServerLine = baServerLine,
         homeStatBaNotify = stringResource(R.string.home_stat_ba_notify),
-        baNotifyLine = baNotifyLine
+        baNotifyLine = baNotifyLine,
+        baCacheFreshnessLine = baCacheFreshnessLine
     )
+}
+
+@Composable
+private fun rememberHomeCacheFreshnessLine(
+    freshness: CacheFreshnessSnapshot,
+    freshText: String,
+    staleText: String,
+    emptyText: String
+): String {
+    return remember(freshness, freshText, staleText, emptyText) {
+        when {
+            freshness.fresh -> freshText
+            freshness.stale -> staleText
+            else -> emptyText
+        }
+    }
 }

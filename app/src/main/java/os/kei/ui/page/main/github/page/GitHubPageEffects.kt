@@ -28,6 +28,33 @@ internal fun BindGitHubPageEffects(
     onLaunchAppListPermission: (Intent) -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit
 ) {
+    BindGitHubPageLifecycleCoordinator(
+        context = context,
+        listState = listState,
+        scrollToTopSignal = scrollToTopSignal,
+        isPageWarmActive = isPageWarmActive,
+        isPageDataActive = isPageDataActive,
+        state = state,
+        actions = actions,
+        installedOnlineShareTargets = installedOnlineShareTargets,
+        onLaunchAppListPermission = onLaunchAppListPermission,
+        onActionBarInteractingChanged = onActionBarInteractingChanged
+    )
+}
+
+@Composable
+internal fun BindGitHubPageLifecycleCoordinator(
+    context: Context,
+    listState: LazyListState,
+    scrollToTopSignal: Int,
+    isPageWarmActive: Boolean,
+    isPageDataActive: Boolean,
+    state: GitHubPageState,
+    actions: GitHubPageActions,
+    installedOnlineShareTargets: List<OnlineShareTargetOption>,
+    onLaunchAppListPermission: (Intent) -> Unit,
+    onActionBarInteractingChanged: (Boolean) -> Unit
+) {
     DisposableEffect(Unit) {
         onDispose { onActionBarInteractingChanged(false) }
     }

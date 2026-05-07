@@ -1,6 +1,9 @@
 package os.kei.feature.home.data
 
+import android.content.Context
 import os.kei.core.log.AppLogger
+import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.core.prefs.CacheStores
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.home.model.HOME_BA_AP_MAX
@@ -33,9 +36,11 @@ private const val HOME_VISIBLE_OVERVIEW_CARDS_KEY = "home_visible_overview_cards
 private const val TAG = "HomeOverviewRepository"
 
 internal class HomeOverviewRepository(
+    private val context: Context,
     private val mcpUiState: StateFlow<McpServerUiState>,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+    private val appContext = context.applicationContext
     private val refreshRequests = MutableSharedFlow<String>(
         replay = 1,
         extraBufferCapacity = 1
@@ -88,8 +93,11 @@ internal class HomeOverviewRepository(
                 }
                 .getOrElse { defaultHomeOverviewCards() }
             visibleOverviewCards.value = visibleCards
+            val cacheFreshnessById = loadHomeCacheFreshnessById(appContext)
 
-            val baOverview = runCatching { loadHomeBaOverview() }
+            val baOverview = runCatching {
+                loadHomeBaOverview(cacheFreshnessById["ba_calendar"] ?: CacheFreshnessSnapshot.Empty)
+            }
                 .onFailure { error ->
                     AppLogger.w(
                         TAG,
@@ -98,7 +106,9 @@ internal class HomeOverviewRepository(
                     )
                 }
                 .getOrElse { HomeBaOverview(loaded = true) }
-            val githubOverview = runCatching { loadHomeGitHubOverview() }
+            val githubOverview = runCatching {
+                loadHomeGitHubOverview(cacheFreshnessById["github"] ?: CacheFreshnessSnapshot.Empty)
+            }
                 .onFailure { error ->
                     AppLogger.w(
                         TAG,
@@ -159,7 +169,7 @@ private fun saveHomeVisibleOverviewCards(cards: Set<HomeOverviewCard>) {
     kv.encode(HOME_VISIBLE_OVERVIEW_CARDS_KEY, serialized)
 }
 
-private fun loadHomeGitHubOverview(): HomeGitHubOverview {
+private fun loadHomeGitHubOverview(cacheFreshness: CacheFreshnessSnapshot): HomeGitHubOverview {
     val snapshot = GitHubTrackStore.loadSnapshot()
     val activeStrategyId = snapshot.lookupConfig.selectedStrategy.storageId
     val matchedCacheByTrackId = snapshot.items.associate { item ->
@@ -184,11 +194,12 @@ private fun loadHomeGitHubOverview(): HomeGitHubOverview {
         pendingShareImport = snapshot.pendingShareImportTrack != null,
         refreshIntervalHours = snapshot.refreshIntervalHours,
         cachedRefreshMs = if (cacheHitCount > 0) snapshot.lastRefreshMs else 0L,
+        cacheFreshness = cacheFreshness,
         loaded = true
     )
 }
 
-private fun loadHomeBaOverview(): HomeBaOverview {
+private fun loadHomeBaOverview(cacheFreshness: CacheFreshnessSnapshot): HomeBaOverview {
     val snapshot = BASettingsStore.loadSnapshot()
     val activated = snapshot.idFriendCode != HOME_BA_DEFAULT_FRIEND_CODE
     val apCurrent = snapshot.apCurrent.coerceIn(0.0, HOME_BA_AP_MAX.toDouble()).toInt()
@@ -206,6 +217,13 @@ private fun loadHomeBaOverview(): HomeBaOverview {
         cafeLevel = cafeLevel,
         cafeStored = cafeStored,
         cafeCap = cafeCap,
+        cacheFreshness = cacheFreshness,
         loaded = true
     )
+}
+
+private fun loadHomeCacheFreshnessById(context: Context): Map<String, CacheFreshnessSnapshot> {
+    return runCatching {
+        CacheStores.list(context).associate { entry -> entry.id to entry.freshness }
+    }.getOrNull().orEmpty()
 }

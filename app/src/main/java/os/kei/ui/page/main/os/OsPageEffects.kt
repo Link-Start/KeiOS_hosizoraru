@@ -31,7 +31,8 @@ import kotlin.collections.plus
 @OptIn(FlowPreview::class)
 internal fun BindOsExpandedStatePersistence(
     ready: Boolean,
-    snapshotProvider: () -> OsUiSnapshot
+    snapshotProvider: () -> OsUiSnapshot,
+    persistSnapshot: suspend (OsUiSnapshot) -> Unit
 ) {
     val currentSnapshotProvider = rememberUpdatedState(snapshotProvider)
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
@@ -43,9 +44,7 @@ internal fun BindOsExpandedStatePersistence(
             .debounce(200)
             .distinctUntilChanged()
             .collectLatest { snapshot ->
-                withContext(Dispatchers.IO) {
-                    OsUiStateStore.saveExpandedStates(snapshot)
-                }
+                persistSnapshot(snapshot)
             }
     }
 }
@@ -81,66 +80,22 @@ internal fun BindOsShellCardReloadOnResume(
 @Composable
 internal fun BindOsInitialCacheLoad(
     ready: Boolean,
-    visibleCards: Set<OsSectionCard>,
-    onVisibleCardsChange: (Set<OsSectionCard>) -> Unit,
-    onSectionStatesChange: (Map<SectionKind, SectionState>) -> Unit,
-    onCachePersistedChange: (Boolean) -> Unit,
-    onCacheLoadedChange: (Boolean) -> Unit,
-    onUiStatePersistenceReadyChange: (Boolean) -> Unit,
     isPageActive: Boolean,
-    ensureLoad: suspend (SectionKind, Boolean) -> Unit
+    hydrateInitialCache: suspend (Boolean) -> Unit
 ) {
     LaunchedEffect(ready) {
         if (!ready) return@LaunchedEffect
-        var ensuredVisibleCards = visibleCards
-        if (!ensuredVisibleCards.contains(OsSectionCard.GOOGLE_SYSTEM_SERVICE)) {
-            ensuredVisibleCards = ensuredVisibleCards + OsSectionCard.GOOGLE_SYSTEM_SERVICE
-        }
-        if (!ensuredVisibleCards.contains(OsSectionCard.SHELL_RUNNER)) {
-            ensuredVisibleCards = ensuredVisibleCards + OsSectionCard.SHELL_RUNNER
-        }
-        if (ensuredVisibleCards != visibleCards) {
-            onVisibleCardsChange(ensuredVisibleCards)
-            withContext(Dispatchers.IO) {
-                OsCardVisibilityStore.saveVisibleCards(ensuredVisibleCards)
-            }
-        }
-        val visibleSections = visibleSectionKinds(ensuredVisibleCards)
-        val snapshot = withContext(Dispatchers.IO) {
-            OsInfoCache.readSnapshot(visibleSections)
-        }
-        val cached = snapshot.cached
-        onSectionStatesChange(
-            mapOf(
-                SectionKind.SYSTEM to SectionState(rows = if (visibleSections.contains(SectionKind.SYSTEM)) cached.system else emptyList()),
-                SectionKind.SECURE to SectionState(rows = if (visibleSections.contains(SectionKind.SECURE)) cached.secure else emptyList()),
-                SectionKind.GLOBAL to SectionState(rows = if (visibleSections.contains(SectionKind.GLOBAL)) cached.global else emptyList()),
-                SectionKind.ANDROID to SectionState(rows = if (visibleSections.contains(SectionKind.ANDROID)) cached.android else emptyList()),
-                SectionKind.JAVA to SectionState(rows = if (visibleSections.contains(SectionKind.JAVA)) cached.java else emptyList()),
-                SectionKind.LINUX to SectionState(rows = if (visibleSections.contains(SectionKind.LINUX)) cached.linux else emptyList())
-            )
-        )
-        onCachePersistedChange(snapshot.hasPersistedCache)
-        onCacheLoadedChange(true)
-        onUiStatePersistenceReadyChange(true)
-        if (isPageActive) {
-            visibleSections.forEach { section ->
-                ensureLoad(section, false)
-            }
-        }
+        hydrateInitialCache(isPageActive)
     }
 }
 
 @Composable
 internal fun BindOsShizukuInvalidation(
     shizukuReady: Boolean,
-    updateSection: (SectionKind, (SectionState) -> SectionState) -> Unit
+    onInvalidate: () -> Unit
 ) {
     LaunchedEffect(shizukuReady) {
-        updateSection(SectionKind.SYSTEM) { it.copy(loadedFresh = false) }
-        updateSection(SectionKind.SECURE) { it.copy(loadedFresh = false) }
-        updateSection(SectionKind.GLOBAL) { it.copy(loadedFresh = false) }
-        updateSection(SectionKind.LINUX) { it.copy(loadedFresh = false) }
+        onInvalidate()
     }
 }
 

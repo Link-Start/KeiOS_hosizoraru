@@ -9,29 +9,57 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
+import os.kei.ui.page.main.state.PageRouteState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 @Stable
-internal data class BaPageUiState(
-    val showSettingsSheet: Boolean,
-    val showNotificationSettingsSheet: Boolean,
-    val showDebugSheet: Boolean,
+internal data class BaPagePopupState(
     val showOverviewServerPopup: Boolean,
     val showCafeLevelPopup: Boolean,
     val overviewServerPopupAnchorBounds: IntRect?,
     val cafeLevelPopupAnchorBounds: IntRect?,
     val showCalendarIntervalPopup: Boolean,
+)
+
+@Stable
+internal data class BaPageSettingsDraftState(
+    val cafeLevel: Int,
+    val mediaAdaptiveRotationEnabled: Boolean,
+    val mediaSaveCustomEnabled: Boolean,
+    val mediaSaveFixedTreeUri: String,
+    val idIndependentByServer: Boolean,
+    val showEndedPools: Boolean,
+    val showEndedActivities: Boolean,
+    val showCalendarPoolImages: Boolean,
+)
+
+@Stable
+internal data class BaPageNotificationDraftState(
+    val apNotifyEnabled: Boolean,
+    val arenaRefreshNotifyEnabled: Boolean,
+    val cafeVisitNotifyEnabled: Boolean,
+    val calendarUpcomingNotifyEnabled: Boolean,
+    val calendarEndingNotifyEnabled: Boolean,
+    val poolUpcomingNotifyEnabled: Boolean,
+    val poolEndingNotifyEnabled: Boolean,
+    val calendarPoolChangeNotifyEnabled: Boolean,
+    val calendarPoolNotifyLeadHours: Int,
+    val apNotifyThresholdText: String,
+)
+
+@Stable
+internal data class BaPageRouteState(
+    val showSettingsSheet: Boolean,
+    val showNotificationSettingsSheet: Boolean,
+    val showDebugSheet: Boolean,
+    val popupState: BaPagePopupState,
     val serverIndex: Int,
     val uiNowMs: Long,
-    val baCalendarLoading: Boolean,
-    val baCalendarError: String?,
-    val baCalendarLastSyncMs: Long,
     val baCalendarReloadSignal: Int,
-    val baPoolLoading: Boolean,
-    val baPoolError: String?,
-    val baPoolLastSyncMs: Long,
     val baPoolReloadSignal: Int,
+    val calendarUiState: BaCalendarUiState,
+    val poolUiState: BaPoolUiState,
     val showEndedPools: Boolean,
     val showEndedActivities: Boolean,
     val showCalendarPoolImages: Boolean,
@@ -42,27 +70,11 @@ internal data class BaPageUiState(
     val calendarRefreshIntervalHours: Int,
     val calendarHydrationReady: Boolean,
     val poolHydrationReady: Boolean,
-    val sheetCafeLevel: Int,
-    val sheetApNotifyEnabled: Boolean,
-    val sheetArenaRefreshNotifyEnabled: Boolean,
-    val sheetCafeVisitNotifyEnabled: Boolean,
-    val sheetCalendarUpcomingNotifyEnabled: Boolean,
-    val sheetCalendarEndingNotifyEnabled: Boolean,
-    val sheetPoolUpcomingNotifyEnabled: Boolean,
-    val sheetPoolEndingNotifyEnabled: Boolean,
-    val sheetCalendarPoolChangeNotifyEnabled: Boolean,
-    val sheetCalendarPoolNotifyLeadHours: Int,
+    val settingsDraftState: BaPageSettingsDraftState,
+    val notificationDraftState: BaPageNotificationDraftState,
     val debugUseRealCalendarPoolData: Boolean,
-    val sheetApNotifyThresholdText: String,
-    val sheetMediaAdaptiveRotationEnabled: Boolean,
-    val sheetMediaSaveCustomEnabled: Boolean,
-    val sheetMediaSaveFixedTreeUri: String,
-    val sheetIdIndependentByServer: Boolean,
-    val sheetShowEndedPools: Boolean,
-    val sheetShowEndedActivities: Boolean,
-    val sheetShowCalendarPoolImages: Boolean,
     val consumedScrollToTopSignal: Int,
-)
+) : PageRouteState
 
 
 internal class BaPageUiController(snapshot: BaPageSnapshot) {
@@ -76,13 +88,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var showCalendarIntervalPopup by mutableStateOf(false)
     var serverIndex by mutableIntStateOf(snapshot.serverIndex)
     var uiNowMs by mutableLongStateOf(System.currentTimeMillis())
-    var baCalendarLoading by mutableStateOf(true)
-    var baCalendarError by mutableStateOf<String?>(null)
-    var baCalendarLastSyncMs by mutableLongStateOf(0L)
     var baCalendarReloadSignal by mutableIntStateOf(0)
-    var baPoolLoading by mutableStateOf(true)
-    var baPoolError by mutableStateOf<String?>(null)
-    var baPoolLastSyncMs by mutableLongStateOf(0L)
     var baPoolReloadSignal by mutableIntStateOf(0)
     var showEndedPools by mutableStateOf(snapshot.showEndedPools)
     var showEndedActivities by mutableStateOf(snapshot.showEndedActivities)
@@ -115,26 +121,21 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var sheetShowCalendarPoolImages by mutableStateOf(snapshot.showCalendarPoolImages)
     var consumedScrollToTopSignal by mutableIntStateOf(0)
 
-    fun state(): BaPageUiState {
-        return BaPageUiState(
+    fun routeState(
+        calendarUiState: BaCalendarUiState,
+        poolUiState: BaPoolUiState,
+    ): BaPageRouteState {
+        return BaPageRouteState(
             showSettingsSheet = showSettingsSheet,
             showNotificationSettingsSheet = showNotificationSettingsSheet,
             showDebugSheet = showDebugSheet,
-            showOverviewServerPopup = showOverviewServerPopup,
-            showCafeLevelPopup = showCafeLevelPopup,
-            overviewServerPopupAnchorBounds = overviewServerPopupAnchorBounds,
-            cafeLevelPopupAnchorBounds = cafeLevelPopupAnchorBounds,
-            showCalendarIntervalPopup = showCalendarIntervalPopup,
+            popupState = popupState(),
             serverIndex = serverIndex,
             uiNowMs = uiNowMs,
-            baCalendarLoading = baCalendarLoading,
-            baCalendarError = baCalendarError,
-            baCalendarLastSyncMs = baCalendarLastSyncMs,
             baCalendarReloadSignal = baCalendarReloadSignal,
-            baPoolLoading = baPoolLoading,
-            baPoolError = baPoolError,
-            baPoolLastSyncMs = baPoolLastSyncMs,
             baPoolReloadSignal = baPoolReloadSignal,
+            calendarUiState = calendarUiState,
+            poolUiState = poolUiState,
             showEndedPools = showEndedPools,
             showEndedActivities = showEndedActivities,
             showCalendarPoolImages = showCalendarPoolImages,
@@ -145,26 +146,48 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             calendarRefreshIntervalHours = calendarRefreshIntervalHours,
             calendarHydrationReady = calendarHydrationReady,
             poolHydrationReady = poolHydrationReady,
-            sheetCafeLevel = sheetCafeLevel,
-            sheetApNotifyEnabled = sheetApNotifyEnabled,
-            sheetArenaRefreshNotifyEnabled = sheetArenaRefreshNotifyEnabled,
-            sheetCafeVisitNotifyEnabled = sheetCafeVisitNotifyEnabled,
-            sheetCalendarUpcomingNotifyEnabled = sheetCalendarUpcomingNotifyEnabled,
-            sheetCalendarEndingNotifyEnabled = sheetCalendarEndingNotifyEnabled,
-            sheetPoolUpcomingNotifyEnabled = sheetPoolUpcomingNotifyEnabled,
-            sheetPoolEndingNotifyEnabled = sheetPoolEndingNotifyEnabled,
-            sheetCalendarPoolChangeNotifyEnabled = sheetCalendarPoolChangeNotifyEnabled,
-            sheetCalendarPoolNotifyLeadHours = sheetCalendarPoolNotifyLeadHours,
+            settingsDraftState = settingsDraftState(),
+            notificationDraftState = notificationDraftState(),
             debugUseRealCalendarPoolData = debugUseRealCalendarPoolData,
-            sheetApNotifyThresholdText = sheetApNotifyThresholdText,
-            sheetMediaAdaptiveRotationEnabled = sheetMediaAdaptiveRotationEnabled,
-            sheetMediaSaveCustomEnabled = sheetMediaSaveCustomEnabled,
-            sheetMediaSaveFixedTreeUri = sheetMediaSaveFixedTreeUri,
-            sheetIdIndependentByServer = sheetIdIndependentByServer,
-            sheetShowEndedPools = sheetShowEndedPools,
-            sheetShowEndedActivities = sheetShowEndedActivities,
-            sheetShowCalendarPoolImages = sheetShowCalendarPoolImages,
             consumedScrollToTopSignal = consumedScrollToTopSignal,
+        )
+    }
+
+    private fun popupState(): BaPagePopupState {
+        return BaPagePopupState(
+            showOverviewServerPopup = showOverviewServerPopup,
+            showCafeLevelPopup = showCafeLevelPopup,
+            overviewServerPopupAnchorBounds = overviewServerPopupAnchorBounds,
+            cafeLevelPopupAnchorBounds = cafeLevelPopupAnchorBounds,
+            showCalendarIntervalPopup = showCalendarIntervalPopup,
+        )
+    }
+
+    fun settingsDraftState(): BaPageSettingsDraftState {
+        return BaPageSettingsDraftState(
+            cafeLevel = sheetCafeLevel,
+            mediaAdaptiveRotationEnabled = sheetMediaAdaptiveRotationEnabled,
+            mediaSaveCustomEnabled = sheetMediaSaveCustomEnabled,
+            mediaSaveFixedTreeUri = sheetMediaSaveFixedTreeUri,
+            idIndependentByServer = sheetIdIndependentByServer,
+            showEndedPools = sheetShowEndedPools,
+            showEndedActivities = sheetShowEndedActivities,
+            showCalendarPoolImages = sheetShowCalendarPoolImages,
+        )
+    }
+
+    fun notificationDraftState(): BaPageNotificationDraftState {
+        return BaPageNotificationDraftState(
+            apNotifyEnabled = sheetApNotifyEnabled,
+            arenaRefreshNotifyEnabled = sheetArenaRefreshNotifyEnabled,
+            cafeVisitNotifyEnabled = sheetCafeVisitNotifyEnabled,
+            calendarUpcomingNotifyEnabled = sheetCalendarUpcomingNotifyEnabled,
+            calendarEndingNotifyEnabled = sheetCalendarEndingNotifyEnabled,
+            poolUpcomingNotifyEnabled = sheetPoolUpcomingNotifyEnabled,
+            poolEndingNotifyEnabled = sheetPoolEndingNotifyEnabled,
+            calendarPoolChangeNotifyEnabled = sheetCalendarPoolChangeNotifyEnabled,
+            calendarPoolNotifyLeadHours = sheetCalendarPoolNotifyLeadHours,
+            apNotifyThresholdText = sheetApNotifyThresholdText,
         )
     }
 

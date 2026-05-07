@@ -57,6 +57,25 @@ internal class OsPageRepository(
         }
     }
 
+    suspend fun saveVisibleCards(cards: Set<OsSectionCard>) {
+        updateVisibleCards(cards)
+        withContext(ioDispatcher) {
+            OsCardVisibilityStore.saveVisibleCards(cards)
+        }
+    }
+
+    suspend fun readInfoCache(visibleSections: Set<SectionKind>): CachedSectionsSnapshot {
+        return withContext(ioDispatcher) {
+            OsInfoCache.readSnapshot(visibleSections)
+        }
+    }
+
+    suspend fun saveExpandedStateSnapshot(snapshot: OsUiSnapshot) {
+        withContext(ioDispatcher) {
+            OsUiStateStore.saveExpandedStates(snapshot)
+        }
+    }
+
     fun updateActivityShortcutCards(cards: List<OsActivityShortcutCard>) {
         persistentState.update { state -> state.copy(activityShortcutCards = cards) }
     }

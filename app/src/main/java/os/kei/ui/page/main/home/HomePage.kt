@@ -212,6 +212,8 @@ fun HomePage(
         trackedCountLine = contentState.trackedCountLine,
         homeStatCached = contentState.homeStatCached,
         cacheHitCountLine = contentState.cacheHitCountLine,
+        homeStatCacheState = contentState.homeStatCacheState,
+        githubCacheFreshnessLine = contentState.githubCacheFreshnessLine,
         homeStatShare = contentState.homeStatShare,
         githubShareLine = contentState.githubShareLine,
         githubPendingShareImport = homeGitHubOverview.pendingShareImport,
@@ -231,7 +233,8 @@ fun HomePage(
         homeStatBaServer = contentState.homeStatBaServer,
         baServerLine = contentState.baServerLine,
         homeStatBaNotify = contentState.homeStatBaNotify,
-        baNotifyLine = contentState.baNotifyLine
+        baNotifyLine = contentState.baNotifyLine,
+        baCacheFreshnessLine = contentState.baCacheFreshnessLine
     )
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -236,6 +236,8 @@ internal fun rememberHomePageOverviewCardState(
     trackedCountLine: String,
     homeStatCached: String,
     cacheHitCountLine: String,
+    homeStatCacheState: String,
+    githubCacheFreshnessLine: String,
     homeStatShare: String,
     githubShareLine: String,
     githubPendingShareImport: Boolean,
@@ -255,7 +257,8 @@ internal fun rememberHomePageOverviewCardState(
     homeStatBaServer: String,
     baServerLine: String,
     homeStatBaNotify: String,
-    baNotifyLine: String
+    baNotifyLine: String,
+    baCacheFreshnessLine: String
 ): HomePageOverviewCardState {
     val homeHeaderStatusPills = remember(
         homeStatusMcp,
@@ -342,6 +345,8 @@ internal fun rememberHomePageOverviewCardState(
         trackedCountLine,
         homeStatCached,
         cacheHitCountLine,
+        homeStatCacheState,
+        githubCacheFreshnessLine,
         homeStatShare,
         githubShareLine,
         githubPendingShareImport,
@@ -367,6 +372,7 @@ internal fun rememberHomePageOverviewCardState(
             HomeCardStatItem(label = homeStatFailed, value = githubFailedLine),
             HomeCardStatItem(label = homeStatTracked, value = trackedCountLine),
             HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine),
+            HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine),
             HomeCardStatItem(label = homeStatStrategy, value = githubStrategyText),
             HomeCardStatItem(label = homeStatApi, value = githubApiText),
             HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine)
@@ -389,7 +395,9 @@ internal fun rememberHomePageOverviewCardState(
         homeStatBaServer,
         baServerLine,
         homeStatBaNotify,
-        baNotifyLine
+        baNotifyLine,
+        homeStatCacheState,
+        baCacheFreshnessLine
     ) {
         listOf(
             HomeCardStatItem(label = homeStatStatus, value = baActivationLine, emphasize = true),
@@ -397,7 +405,8 @@ internal fun rememberHomePageOverviewCardState(
             HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine),
             HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine),
             HomeCardStatItem(label = homeStatBaServer, value = baServerLine),
-            HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine)
+            HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine),
+            HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine)
         )
     }
 

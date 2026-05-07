@@ -120,6 +120,7 @@ fun BaStudentGuidePage(
 
     val guideViewModel: BaStudentGuideViewModel = viewModel()
     val guideDataState by guideViewModel.dataState.collectAsState()
+    val guidePrefetchState by guideViewModel.prefetchState.collectAsState()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -136,7 +137,6 @@ fun BaStudentGuidePage(
     }
     val sourceUrl = guideDataState.sourceUrl
     val info = guideDataState.info
-    val guideSyncToken = info?.syncedAtMs ?: -1L
     val loading = guideDataState.loading
     val error = guideDataState.error
     var selectedBottomTabOrdinal by rememberSaveable(sourceUrl) {
@@ -149,9 +149,6 @@ fun BaStudentGuidePage(
     var playingVoiceUrl by rememberSaveable(sourceUrl) { mutableStateOf("") }
     var isVoicePlaying by remember(sourceUrl) { mutableStateOf(false) }
     var voicePlayProgress by remember(sourceUrl) { mutableFloatStateOf(0f) }
-    var galleryPrefetchRequested by rememberSaveable(sourceUrl, guideSyncToken) { mutableStateOf(false) }
-    var staticImagePrefetchStage by rememberSaveable(sourceUrl, guideSyncToken) { mutableIntStateOf(0) }
-    var galleryCacheRevision by remember(sourceUrl) { mutableIntStateOf(0) }
     val bottomTabsList = remember(info) { resolveGuideBottomTabs(info) }
     LaunchedEffect(bottomTabsList, selectedBottomTabOrdinal) {
         if (bottomTabsList.none { it.ordinal == selectedBottomTabOrdinal }) {
@@ -287,18 +284,11 @@ fun BaStudentGuidePage(
         onVoicePlayProgressChange = { voicePlayProgress = it }
     )
     BindBaStudentGuidePrefetchEffects(
-        context = context,
-        sourceUrl = sourceUrl,
-        guideSyncToken = guideSyncToken,
         info = info,
         activeBottomTab = activeBottomTab,
-        galleryPrefetchRequested = galleryPrefetchRequested,
-        onGalleryPrefetchRequestedChange = { galleryPrefetchRequested = it },
-        staticImagePrefetchStage = staticImagePrefetchStage,
-        onStaticImagePrefetchStageChange = { staticImagePrefetchStage = it },
         initialPrefetchCount = preloadPolicy.guideStaticPrefetchInitialCount,
         galleryExtraPrefetchCount = preloadPolicy.guideStaticPrefetchGalleryExtraCount,
-        onGalleryCacheRevisionIncrease = { galleryCacheRevision += 1 }
+        onSyncPrefetch = guideViewModel::syncStaticImagePrefetch
     )
     val shareIcon = appLucideShareIcon()
     val refreshIcon = appLucideRefreshIcon()
@@ -361,7 +351,7 @@ fun BaStudentGuidePage(
                 farJumpAlpha = farJumpAlpha.value,
                 navBackdrop = navBackdrop,
                 topBarBackdrop = topBarBackdrop,
-                galleryCacheRevision = galleryCacheRevision,
+                galleryCacheRevision = guidePrefetchState.galleryCacheRevision,
                 selectedVoiceLanguage = selectedVoiceLanguage,
                 playingVoiceUrl = playingVoiceUrl,
                 isVoicePlaying = isVoicePlaying,

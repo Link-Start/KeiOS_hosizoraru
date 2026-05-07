@@ -1,14 +1,15 @@
 package os.kei.ui.page.main.host.pager
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,23 +53,22 @@ internal class MainPagerHomeOverviewViewModel(
     }
 
     companion object {
-        fun factory(mcpServerManager: McpServerManager): ViewModelProvider.Factory {
+        fun factory(
+            context: Context,
+            mcpServerManager: McpServerManager
+        ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(MainPagerHomeOverviewViewModel::class.java)) {
                         return MainPagerHomeOverviewViewModel(
-                            repository = HomeOverviewRepository(mcpServerManager.uiState)
+                            repository = HomeOverviewRepository(
+                                context = context.applicationContext,
+                                mcpUiState = mcpServerManager.uiState
+                            )
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class ${modelClass.name}")
-                }
-
-                override fun <T : ViewModel> create(
-                    modelClass: Class<T>,
-                    extras: CreationExtras
-                ): T {
-                    return create(modelClass)
                 }
             }
         }
@@ -80,10 +80,14 @@ internal fun rememberMainPagerHomeOverviewState(
     mcpServerManager: McpServerManager,
     settingsReturnToken: Int
 ): MainPagerHomeOverviewState {
+    val context = LocalContext.current
     val homeOverviewViewModel: MainPagerHomeOverviewViewModel = viewModel(
         key = "main_pager_home_overview",
-        factory = remember(mcpServerManager) {
-            MainPagerHomeOverviewViewModel.factory(mcpServerManager)
+        factory = remember(context, mcpServerManager) {
+            MainPagerHomeOverviewViewModel.factory(
+                context = context,
+                mcpServerManager = mcpServerManager
+            )
         }
     )
     val uiState by homeOverviewViewModel.uiState.collectAsState()

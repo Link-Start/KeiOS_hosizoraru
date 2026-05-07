@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaStudentGuideDataUiState(
@@ -19,6 +21,14 @@ internal data class BaStudentGuideDataUiState(
     val info: BaStudentGuideInfo? = null,
     val loading: Boolean = false,
     val error: String? = null
+)
+
+internal data class BaStudentGuidePrefetchUiState(
+    val sourceUrl: String = "",
+    val guideSyncToken: Long = -1L,
+    val galleryPrefetchRequested: Boolean = false,
+    val staticImagePrefetchStage: Int = 0,
+    val galleryCacheRevision: Int = 0
 )
 
 private data class BaStudentGuideBinding(
@@ -35,6 +45,7 @@ internal class BaStudentGuideViewModel(
     private val repository = BaStudentGuideRepository()
     private var binding: BaStudentGuideBinding? = null
     private var loadJob: Job? = null
+    private var prefetchJob: Job? = null
     private var lastLoadedSourceUrl: String = ""
 
     private val initialSourceUrl = repository.loadCurrentUrl()
@@ -45,6 +56,9 @@ internal class BaStudentGuideViewModel(
         )
     )
     val dataState: StateFlow<BaStudentGuideDataUiState> = _dataState.asStateFlow()
+
+    private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
+    val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
 
     fun bind(
         transitionAnimationsEnabled: Boolean,
@@ -107,6 +121,42 @@ internal class BaStudentGuideViewModel(
         )
     }
 
+    fun syncStaticImagePrefetch(
+        info: BaStudentGuideInfo?,
+        activeBottomTab: GuideBottomTab,
+        initialPrefetchCount: Int,
+        galleryExtraPrefetchCount: Int
+    ) {
+        val sourceUrl = _dataState.value.sourceUrl
+        val guideSyncToken = info?.syncedAtMs ?: -1L
+        val existing = _prefetchState.value
+        if (existing.sourceUrl != sourceUrl || existing.guideSyncToken != guideSyncToken) {
+            prefetchJob?.cancel()
+            _prefetchState.value = BaStudentGuidePrefetchUiState(
+                sourceUrl = sourceUrl,
+                guideSyncToken = guideSyncToken
+            )
+        }
+        if (activeBottomTab == GuideBottomTab.Gallery) {
+            _prefetchState.update { state ->
+                state.copy(galleryPrefetchRequested = true)
+            }
+        }
+        val targetStage = if (_prefetchState.value.galleryPrefetchRequested) 2 else 1
+        val currentStage = _prefetchState.value.staticImagePrefetchStage
+        if (info == null || sourceUrl.isBlank() || currentStage >= targetStage) return
+        prefetchJob?.cancel()
+        prefetchJob = viewModelScope.launch {
+            runPrefetchStages(
+                info = info,
+                sourceUrl = sourceUrl,
+                targetStage = targetStage,
+                initialPrefetchCount = initialPrefetchCount,
+                galleryExtraPrefetchCount = galleryExtraPrefetchCount
+            )
+        }
+    }
+
     private fun loadGuide(
         sourceUrl: String,
         manualRefresh: Boolean,
@@ -149,6 +199,46 @@ internal class BaStudentGuideViewModel(
                     state
                 }
             }
+        }
+    }
+
+    private suspend fun runPrefetchStages(
+        info: BaStudentGuideInfo,
+        sourceUrl: String,
+        targetStage: Int,
+        initialPrefetchCount: Int,
+        galleryExtraPrefetchCount: Int
+    ) {
+        val allUrls = collectGuideStaticImagePrefetchUrls(info)
+        if (_prefetchState.value.staticImagePrefetchStage < 1 && targetStage >= 1) {
+            val urls = allUrls.take(initialPrefetchCount)
+            if (urls.isNotEmpty()) {
+                repository.prefetchStaticImages(
+                    context = appContext,
+                    sourceUrl = sourceUrl,
+                    rawUrls = urls
+                )
+                _prefetchState.update { state ->
+                    state.copy(galleryCacheRevision = state.galleryCacheRevision + 1)
+                }
+            }
+            _prefetchState.update { state -> state.copy(staticImagePrefetchStage = 1) }
+        }
+        if (_prefetchState.value.staticImagePrefetchStage < 2 && targetStage >= 2) {
+            val urls = allUrls
+                .drop(initialPrefetchCount)
+                .take(galleryExtraPrefetchCount)
+            if (urls.isNotEmpty()) {
+                repository.prefetchStaticImages(
+                    context = appContext,
+                    sourceUrl = sourceUrl,
+                    rawUrls = urls
+                )
+                _prefetchState.update { state ->
+                    state.copy(galleryCacheRevision = state.galleryCacheRevision + 1)
+                }
+            }
+            _prefetchState.update { state -> state.copy(staticImagePrefetchStage = 2) }
         }
     }
 }

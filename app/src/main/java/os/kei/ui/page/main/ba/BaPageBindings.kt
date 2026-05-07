@@ -5,41 +5,40 @@ import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.ba.support.BaCalendarEntry
-import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
 internal fun buildBaSettingsSheetState(
-    ui: BaPageUiController,
+    draft: BaPageSettingsDraftState,
+    calendarRefreshIntervalHours: Int,
 ): BaSettingsSheetState {
     return BaSettingsSheetState(
-        cafeLevel = ui.sheetCafeLevel,
-        mediaAdaptiveRotationEnabled = ui.sheetMediaAdaptiveRotationEnabled,
-        mediaSaveCustomEnabled = ui.sheetMediaSaveCustomEnabled,
-        mediaSaveFixedTreeUri = ui.sheetMediaSaveFixedTreeUri,
-        idIndependentByServer = ui.sheetIdIndependentByServer,
-        showEndedActivities = ui.sheetShowEndedActivities,
-        showEndedPools = ui.sheetShowEndedPools,
-        showCalendarPoolImages = ui.sheetShowCalendarPoolImages,
-        calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
+        cafeLevel = draft.cafeLevel,
+        mediaAdaptiveRotationEnabled = draft.mediaAdaptiveRotationEnabled,
+        mediaSaveCustomEnabled = draft.mediaSaveCustomEnabled,
+        mediaSaveFixedTreeUri = draft.mediaSaveFixedTreeUri,
+        idIndependentByServer = draft.idIndependentByServer,
+        showEndedActivities = draft.showEndedActivities,
+        showEndedPools = draft.showEndedPools,
+        showCalendarPoolImages = draft.showCalendarPoolImages,
+        calendarRefreshIntervalHours = calendarRefreshIntervalHours,
     )
 }
 
 internal fun buildBaNotificationSettingsSheetState(
-    ui: BaPageUiController,
+    draft: BaPageNotificationDraftState,
 ): BaNotificationSettingsSheetState {
     return BaNotificationSettingsSheetState(
-        apNotifyEnabled = ui.sheetApNotifyEnabled,
-        arenaRefreshNotifyEnabled = ui.sheetArenaRefreshNotifyEnabled,
-        cafeVisitNotifyEnabled = ui.sheetCafeVisitNotifyEnabled,
-        calendarUpcomingNotifyEnabled = ui.sheetCalendarUpcomingNotifyEnabled,
-        calendarEndingNotifyEnabled = ui.sheetCalendarEndingNotifyEnabled,
-        poolUpcomingNotifyEnabled = ui.sheetPoolUpcomingNotifyEnabled,
-        poolEndingNotifyEnabled = ui.sheetPoolEndingNotifyEnabled,
-        calendarPoolChangeNotifyEnabled = ui.sheetCalendarPoolChangeNotifyEnabled,
-        calendarPoolNotifyLeadHours = ui.sheetCalendarPoolNotifyLeadHours,
-        apNotifyThresholdText = ui.sheetApNotifyThresholdText,
+        apNotifyEnabled = draft.apNotifyEnabled,
+        arenaRefreshNotifyEnabled = draft.arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = draft.cafeVisitNotifyEnabled,
+        calendarUpcomingNotifyEnabled = draft.calendarUpcomingNotifyEnabled,
+        calendarEndingNotifyEnabled = draft.calendarEndingNotifyEnabled,
+        poolUpcomingNotifyEnabled = draft.poolUpcomingNotifyEnabled,
+        poolEndingNotifyEnabled = draft.poolEndingNotifyEnabled,
+        calendarPoolChangeNotifyEnabled = draft.calendarPoolChangeNotifyEnabled,
+        calendarPoolNotifyLeadHours = draft.calendarPoolNotifyLeadHours,
+        apNotifyThresholdText = draft.apNotifyThresholdText,
     )
 }
 
@@ -47,35 +46,34 @@ internal fun buildBaPageContentState(
     isPageActive: Boolean,
     officeOverviewTitle: String,
     office: BaOfficeController,
-    ui: BaPageUiController,
+    routeState: BaPageRouteState,
     serverOptions: List<String>,
     cafeLevelOptions: List<Int>,
-    baCalendarEntries: List<BaCalendarEntry>,
-    baPoolEntries: List<BaPoolEntry>,
 ): BaPageContentState {
+    val popupState = routeState.popupState
     return BaPageContentState(
         isPageActive = isPageActive,
         officeOverviewTitle = officeOverviewTitle,
         officeState = office.state(),
-        uiNowMs = ui.uiNowMs,
+        uiNowMs = routeState.uiNowMs,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
-        serverIndex = ui.serverIndex,
-        showOverviewServerPopup = ui.showOverviewServerPopup,
-        showCafeLevelPopup = ui.showCafeLevelPopup,
-        overviewServerPopupAnchorBounds = ui.overviewServerPopupAnchorBounds,
-        cafeLevelPopupAnchorBounds = ui.cafeLevelPopupAnchorBounds,
-        baCalendarEntries = baCalendarEntries,
-        baCalendarLoading = ui.baCalendarLoading,
-        baCalendarError = ui.baCalendarError,
-        baCalendarLastSyncMs = ui.baCalendarLastSyncMs,
-        showEndedActivities = ui.showEndedActivities,
-        showCalendarPoolImages = ui.showCalendarPoolImages,
-        baPoolEntries = baPoolEntries,
-        baPoolLoading = ui.baPoolLoading,
-        baPoolError = ui.baPoolError,
-        baPoolLastSyncMs = ui.baPoolLastSyncMs,
-        showEndedPools = ui.showEndedPools,
+        serverIndex = routeState.serverIndex,
+        showOverviewServerPopup = popupState.showOverviewServerPopup,
+        showCafeLevelPopup = popupState.showCafeLevelPopup,
+        overviewServerPopupAnchorBounds = popupState.overviewServerPopupAnchorBounds,
+        cafeLevelPopupAnchorBounds = popupState.cafeLevelPopupAnchorBounds,
+        baCalendarEntries = routeState.calendarUiState.entries,
+        baCalendarLoading = routeState.calendarUiState.loading,
+        baCalendarError = routeState.calendarUiState.error,
+        baCalendarLastSyncMs = routeState.calendarUiState.lastSyncMs,
+        showEndedActivities = routeState.showEndedActivities,
+        showCalendarPoolImages = routeState.showCalendarPoolImages,
+        baPoolEntries = routeState.poolUiState.entries,
+        baPoolLoading = routeState.poolUiState.loading,
+        baPoolError = routeState.poolUiState.error,
+        baPoolLastSyncMs = routeState.poolUiState.lastSyncMs,
+        showEndedPools = routeState.showEndedPools,
     )
 }
 
@@ -259,13 +257,14 @@ internal fun buildBaPageContentActions(
 internal fun applyBaCalendarRefreshInterval(
     ui: BaPageUiController,
     hours: Int,
+    calendarLastSyncMs: Long,
     onRefreshCalendar: () -> Unit,
     onRefreshPool: () -> Unit,
 ) {
     ui.calendarRefreshIntervalHours = hours
     BASettingsStore.saveCalendarRefreshIntervalHours(hours)
-    val elapsed = (System.currentTimeMillis() - ui.baCalendarLastSyncMs).coerceAtLeast(0L)
-    if (ui.baCalendarLastSyncMs <= 0L || elapsed >= hours * 60L * 60L * 1000L) {
+    val elapsed = (System.currentTimeMillis() - calendarLastSyncMs).coerceAtLeast(0L)
+    if (calendarLastSyncMs <= 0L || elapsed >= hours * 60L * 60L * 1000L) {
         onRefreshCalendar()
         onRefreshPool()
     }

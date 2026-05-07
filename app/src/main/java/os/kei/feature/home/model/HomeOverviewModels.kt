@@ -1,6 +1,7 @@
 package os.kei.feature.home.model
 
 import androidx.compose.runtime.Immutable
+import os.kei.core.prefs.CacheFreshnessSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 
 @Immutable
@@ -28,6 +29,7 @@ data class HomeGitHubOverview(
     val pendingShareImport: Boolean = false,
     val refreshIntervalHours: Int = 3,
     val cachedRefreshMs: Long = 0L,
+    val cacheFreshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty,
     val loaded: Boolean = false
 )
 
@@ -41,6 +43,7 @@ data class HomeBaOverview(
     val cafeLevel: Int = 10,
     val cafeStored: Int = 0,
     val cafeCap: Int = HOME_BA_CAFE_DAILY_AP_BY_LEVEL.last(),
+    val cacheFreshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty,
     val loaded: Boolean = false
 )
 

@@ -1,6 +1,6 @@
 package os.kei.core.prefs
 
-internal data class CacheFreshnessSnapshot(
+data class CacheFreshnessSnapshot(
     val hasData: Boolean,
     val fresh: Boolean,
     val stale: Boolean,

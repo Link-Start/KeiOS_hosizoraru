@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.state.PageRouteState
 
 @Immutable
 internal data class OsPageRouteState(
@@ -18,7 +19,7 @@ internal data class OsPageRouteState(
     val refreshProgress: Float,
     val cachePersisted: Boolean,
     val runningShellCommandCardIds: Set<String>
-)
+) : PageRouteState
 
 @Composable
 internal fun rememberOsPageRouteState(

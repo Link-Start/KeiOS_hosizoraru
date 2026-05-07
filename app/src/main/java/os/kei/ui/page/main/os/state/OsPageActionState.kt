@@ -17,6 +17,7 @@ import os.kei.ui.page.main.os.runOsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.state.PageActionState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.sync.Mutex
@@ -28,7 +29,7 @@ internal data class OsPageActionState(
     val applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit,
     val runShellCommandCard: suspend (OsShellCommandCard) -> Unit,
     val refreshAllSections: suspend () -> Unit
-)
+) : PageActionState
 
 internal fun createOsPageActionState(
     context: Context,

@@ -189,7 +189,7 @@ fun GitHubPage(
         }
     }
 
-    BindGitHubPageEffects(
+    BindGitHubPageLifecycleCoordinator(
         context = context,
         listState = listState,
         scrollToTopSignal = runtime.scrollToTopSignal,

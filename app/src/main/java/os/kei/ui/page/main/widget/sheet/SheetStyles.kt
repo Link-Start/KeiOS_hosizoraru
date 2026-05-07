@@ -273,6 +273,7 @@ fun SheetSummaryCard(
     badgeContentPadding: PaddingValues? = null,
     containerColor: Color? = null,
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
+    verticalSpacing: Dp = 8.dp,
     headerTrailing: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -280,6 +281,7 @@ fun SheetSummaryCard(
         modifier = modifier,
         containerColor = containerColor,
         borderColor = borderColor,
+        verticalSpacing = verticalSpacing,
         content = {
             Row(
                 modifier = Modifier.fillMaxWidth(),

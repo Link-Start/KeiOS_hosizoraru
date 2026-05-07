@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,8 +16,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideFolderIcon
+import os.kei.ui.page.main.os.appLucideHeartIcon
+import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
+import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.os.appLucideUploadIcon
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
@@ -24,7 +31,9 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -58,8 +67,9 @@ internal fun BaGuideCatalogTransferSheet(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalSpacing = 12.dp
         ) {
+            BaGuideCatalogTransferHeroCard()
             BaGuideCatalogTransferRecommendedGroup(
-                title = stringResource(R.string.ba_catalog_transfer_recommended),
+                title = stringResource(R.string.ba_catalog_transfer_all_bundle),
                 summary = stringResource(R.string.ba_catalog_transfer_recommended_summary),
                 exportText = stringResource(R.string.ba_catalog_transfer_export_all),
                 importText = stringResource(R.string.ba_catalog_transfer_import_all),
@@ -67,6 +77,7 @@ internal fun BaGuideCatalogTransferSheet(
                 onExport = onExportAllFavorites,
                 onImport = onImportAllFavorites
             )
+            SheetSectionTitle(stringResource(R.string.ba_catalog_transfer_settings_section))
             BaGuideCatalogTransferSaveLocationGroup(
                 mediaSaveCustomEnabled = mediaSaveCustomEnabled,
                 mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
@@ -74,6 +85,7 @@ internal fun BaGuideCatalogTransferSheet(
                 onPickMediaSaveLocation = onPickMediaSaveLocation
             )
             BaGuideCatalogPlaybackSettingsGroup(playbackSettingsState)
+            SheetSectionTitle(stringResource(R.string.ba_catalog_transfer_parts_section))
             BaGuideCatalogTransferGroup(
                 title = stringResource(R.string.ba_catalog_transfer_student_favorites),
                 summary = stringResource(R.string.ba_catalog_transfer_student_favorites_summary),
@@ -101,6 +113,44 @@ internal fun BaGuideCatalogTransferSheet(
     }
 }
 
+@Composable
+private fun BaGuideCatalogTransferHeroCard() {
+    SheetSummaryCard(
+        title = stringResource(R.string.ba_catalog_transfer_hero_title),
+        badgeLabel = stringResource(R.string.ba_catalog_transfer_hero_badge),
+        accentColor = MiuixTheme.colorScheme.primary,
+        badgeContentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.ba_catalog_transfer_hero_summary),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatusPill(
+                label = stringResource(R.string.ba_catalog_transfer_hero_students),
+                color = MiuixTheme.colorScheme.primary,
+                size = AppStatusPillSize.Compact
+            )
+            StatusPill(
+                label = stringResource(R.string.ba_catalog_transfer_hero_bgm),
+                color = Color(0xFF22C55E),
+                size = AppStatusPillSize.Compact
+            )
+            StatusPill(
+                label = stringResource(R.string.ba_catalog_transfer_hero_settings),
+                color = Color(0xFF38BDF8),
+                size = AppStatusPillSize.Compact
+            )
+        }
+    }
+}
+
 internal data class BaGuideCatalogPlaybackSettingsState(
     val nativeBgmMediaNotificationEnabled: Boolean,
     val notificationPermissionGranted: Boolean,
@@ -111,8 +161,12 @@ internal data class BaGuideCatalogPlaybackSettingsState(
 private fun BaGuideCatalogPlaybackSettingsGroup(
     state: BaGuideCatalogPlaybackSettingsState
 ) {
-    SheetSectionTitle(stringResource(R.string.ba_catalog_playback_settings_title))
-    SheetSectionCard(verticalSpacing = 10.dp) {
+    SheetSummaryCard(
+        title = stringResource(R.string.ba_catalog_playback_settings_title),
+        badgeLabel = stringResource(R.string.ba_catalog_transfer_hero_settings),
+        accentColor = Color(0xFF38BDF8),
+        verticalSpacing = 10.dp
+    ) {
         SheetControlRow(
             label = stringResource(R.string.ba_catalog_bgm_native_media_notification),
             summary = if (state.nativeBgmMediaNotificationEnabled && !state.notificationPermissionGranted) {
@@ -136,8 +190,12 @@ private fun BaGuideCatalogBgmCacheGroup(
     onCleanInvalid: () -> Unit
 ) {
     val accent = Color(0xFF38BDF8)
-    SheetSectionTitle(stringResource(R.string.ba_catalog_bgm_cache_manage_title))
-    SheetSectionCard(verticalSpacing = 10.dp) {
+    SheetSummaryCard(
+        title = stringResource(R.string.ba_catalog_bgm_cache_manage_title),
+        badgeLabel = stringResource(R.string.ba_catalog_transfer_cache_badge),
+        accentColor = accent,
+        verticalSpacing = 10.dp
+    ) {
         Text(
             text = summary,
             color = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -151,7 +209,7 @@ private fun BaGuideCatalogBgmCacheGroup(
             importText = stringResource(R.string.ba_catalog_bgm_cache_clean_invalid),
             accent = accent,
             exportIcon = appLucideDownloadIcon(),
-            importIcon = appLucideUploadIcon(),
+            importIcon = appLucideTrashIcon(),
             onExport = onCacheAll,
             onImport = onCleanInvalid
         )
@@ -165,8 +223,16 @@ private fun BaGuideCatalogTransferSaveLocationGroup(
     onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
     onPickMediaSaveLocation: () -> Unit
 ) {
-    SheetSectionTitle(stringResource(R.string.ba_catalog_transfer_save_location))
-    SheetSectionCard(verticalSpacing = 10.dp) {
+    SheetSummaryCard(
+        title = stringResource(R.string.ba_catalog_transfer_save_location),
+        badgeLabel = if (mediaSaveCustomEnabled) {
+            stringResource(R.string.ba_catalog_transfer_save_location_fixed)
+        } else {
+            stringResource(R.string.ba_catalog_transfer_save_location_saf_badge)
+        },
+        accentColor = MiuixTheme.colorScheme.primary,
+        verticalSpacing = 10.dp
+    ) {
         SheetControlRow(
             label = stringResource(R.string.ba_catalog_transfer_save_location_fixed),
             summary = when {
@@ -185,7 +251,7 @@ private fun BaGuideCatalogTransferSaveLocationGroup(
                 text = stringResource(R.string.ba_settings_action_pick_media_save_location),
                 onClick = onPickMediaSaveLocation,
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = appLucideUploadIcon(),
+                leadingIcon = appLucideFolderIcon(),
                 textColor = MiuixTheme.colorScheme.primary,
                 iconTint = MiuixTheme.colorScheme.primary,
                 variant = GlassVariant.SheetAction,
@@ -206,8 +272,12 @@ private fun BaGuideCatalogTransferRecommendedGroup(
     onExport: () -> Unit,
     onImport: () -> Unit
 ) {
-    SheetSectionTitle(title)
-    SheetSectionCard(verticalSpacing = 10.dp) {
+    SheetSummaryCard(
+        title = title,
+        badgeLabel = stringResource(R.string.ba_catalog_transfer_recommended),
+        accentColor = accent,
+        verticalSpacing = 10.dp
+    ) {
         Text(
             text = summary,
             color = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -238,16 +308,45 @@ private fun BaGuideCatalogTransferGroup(
     onExport: () -> Unit,
     onImport: () -> Unit
 ) {
-    SheetSectionTitle(title)
     SheetSectionCard(verticalSpacing = 10.dp) {
-        Text(
-            text = summary,
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val icon = if (accent == Color(0xFF22C55E)) {
+                appLucideMusicIcon()
+            } else {
+                appLucideHeartIcon()
+            }
+            top.yukonga.miuix.kmp.basic.Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accent
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = accent,
+                    fontSize = AppTypographyTokens.CardHeader.fontSize,
+                    lineHeight = AppTypographyTokens.CardHeader.lineHeight,
+                    fontWeight = AppTypographyTokens.CardHeader.fontWeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = summary,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Supporting.fontSize,
+                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
         BaGuideCatalogTransferActionRow(
             exportText = exportText,
             importText = importText,

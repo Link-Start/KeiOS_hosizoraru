@@ -41,6 +41,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
@@ -108,6 +109,8 @@ private enum class BaGuideCatalogSpecialTab {
 fun BaGuideCatalogPage(
     onBack: () -> Unit,
     onOpenGuide: (String) -> Unit,
+    notificationPermissionGranted: Boolean = true,
+    onRequestNotificationPermission: () -> Unit = {},
     liquidBottomBarEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
@@ -173,7 +176,14 @@ fun BaGuideCatalogPage(
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
-    val playbackCoordinator = rememberBaGuideBgmPlaybackCoordinator(appContext, favoriteBgms)
+    var nativeBgmMediaNotificationEnabled by rememberSaveable {
+        mutableStateOf(BASettingsStore.loadNativeBgmMediaNotificationEnabled())
+    }
+    val playbackCoordinator = rememberBaGuideBgmPlaybackCoordinator(
+        context = appContext,
+        favorites = favoriteBgms,
+        nativeMediaNotificationEnabled = nativeBgmMediaNotificationEnabled
+    )
     var playbackSliderPreview by remember { mutableStateOf<Float?>(null) }
     var bgmCacheRevision by remember { mutableIntStateOf(0) }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
@@ -418,6 +428,18 @@ fun BaGuideCatalogPage(
                 onDismissRequest = { showTransferSheet = false },
                 mediaSaveCustomEnabled = transferExportAction.saveLocationState.mediaSaveCustomEnabled,
                 mediaSaveFixedTreeUri = transferExportAction.saveLocationState.mediaSaveFixedTreeUri,
+                playbackSettingsState = BaGuideCatalogPlaybackSettingsState(
+                    nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    onNativeBgmMediaNotificationChange = { enabled ->
+                        if (enabled && !notificationPermissionGranted) {
+                            onRequestNotificationPermission()
+                        }
+                        nativeBgmMediaNotificationEnabled = enabled
+                        BASettingsStore.saveNativeBgmMediaNotificationEnabled(enabled)
+                        playbackCoordinator.updateNativeMediaNotificationEnabled(enabled)
+                    }
+                ),
                 onMediaSaveCustomEnabledChange = transferExportAction.saveLocationState.onMediaSaveCustomEnabledChange,
                 onPickMediaSaveLocation = transferExportAction.saveLocationState.onPickMediaSaveLocation,
                 onExportAllFavorites = {

@@ -256,6 +256,13 @@ private fun favoritePlaybackUrl(
     context: Context,
     favorite: GuideBgmFavoriteItem
 ): String {
+    return resolveFavoriteBgmPlaybackUrl(context, favorite)
+}
+
+internal fun resolveFavoriteBgmPlaybackUrl(
+    context: Context,
+    favorite: GuideBgmFavoriteItem
+): String {
     val raw = normalizeGuideMediaSource(favorite.audioUrl)
     if (raw.isBlank()) return ""
     return resolveFavoriteBgmMediaUrl(context, favorite, raw)

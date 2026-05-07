@@ -156,6 +156,8 @@ internal fun MainScreenNavHost(
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 preloadingEnabled = prefsState.preloadingEnabled,
+                notificationPermissionGranted = notificationPermissionGranted,
+                onRequestNotificationPermission = onRequestNotificationPermission,
                 onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
                 onOpenGuide = pagerCoordinator.onOpenGuideDetail
             )

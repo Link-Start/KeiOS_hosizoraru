@@ -67,6 +67,28 @@ class BaGuideBgmPlaybackQueueTest {
         assertEquals("b", selection.selectedAudioUrl)
     }
 
+    @Test
+    fun `system media previous and next stay inside active queue`() {
+        val queue = listOf(track("a"), track("b"), track("c"))
+
+        assertEquals(
+            "a",
+            selectBaGuideBgmPlaybackQueueOffset(
+                queue = queue,
+                selectedAudioUrl = "c",
+                offset = 1
+            )?.audioUrl
+        )
+        assertEquals(
+            "c",
+            selectBaGuideBgmPlaybackQueueOffset(
+                queue = queue,
+                selectedAudioUrl = "a",
+                offset = -1
+            )?.audioUrl
+        )
+    }
+
     private fun track(id: String): GuideBgmFavoriteItem {
         return GuideBgmFavoriteItem(
             audioUrl = id,

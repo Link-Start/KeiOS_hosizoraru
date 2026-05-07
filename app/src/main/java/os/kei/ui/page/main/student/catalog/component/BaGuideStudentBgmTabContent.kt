@@ -396,8 +396,10 @@ internal fun BaGuideStudentBgmTabContent(
     DisposableEffect(lifecycleOwner, selectedFavorite?.audioUrl) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                selectedFavorite?.let { favorite ->
-                    playbackCoordinator.pause(favorite)
+                if (!playbackCoordinator.keepsPlaybackAfterPageStop) {
+                    selectedFavorite?.let { favorite ->
+                        playbackCoordinator.pause(favorite)
+                    }
                 }
                 setNowPlayingVisible(false)
             }

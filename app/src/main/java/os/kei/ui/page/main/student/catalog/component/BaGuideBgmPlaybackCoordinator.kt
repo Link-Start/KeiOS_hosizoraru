@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,11 @@ import kotlin.time.Duration.Companion.milliseconds
 internal class BaGuideBgmPlaybackCoordinator(
     private val context: Context
 ) {
+    private val lightweightBackend = BaGuideBgmLightweightPlaybackBackend(context)
+    private val nativeBackend = BaGuideBgmNativePlaybackBackend(
+        BaGuideBgmNativeMediaController(context)
+    )
+
     var favorites by mutableStateOf<List<GuideBgmFavoriteItem>>(emptyList())
         private set
     var queue by mutableStateOf<List<GuideBgmFavoriteItem>>(emptyList())
@@ -25,6 +31,20 @@ internal class BaGuideBgmPlaybackCoordinator(
         private set
     var runtimeState by mutableStateOf(BaGuideBgmPlaybackRuntimeState())
         private set
+    var nativeMediaNotificationEnabled by mutableStateOf(false)
+        private set
+
+    internal val activeBackendMode: BaGuideBgmPlaybackBackendMode
+        get() = activeBackend.mode
+
+    val keepsPlaybackAfterPageStop: Boolean
+        get() = nativeMediaNotificationEnabled
+
+    private val activeBackend: BaGuideBgmPlaybackBackend
+        get() = when (resolveBaGuideBgmPlaybackBackendMode(nativeMediaNotificationEnabled)) {
+            BaGuideBgmPlaybackBackendMode.NativeMedia -> nativeBackend
+            BaGuideBgmPlaybackBackendMode.Lightweight -> lightweightBackend
+        }
 
     val queueMode: BaGuideBgmQueueMode
         get() = BaGuideBgmQueueMode.entries.firstOrNull { it.name == queueModeName }
@@ -46,6 +66,7 @@ internal class BaGuideBgmPlaybackCoordinator(
         if (selectedAudioUrl.isBlank()) {
             selectedAudioUrl = favorites.firstOrNull()?.audioUrl.orEmpty()
         }
+        syncActiveQueue()
     }
 
     fun updateQueue(nextQueue: List<GuideBgmFavoriteItem>) {
@@ -55,6 +76,47 @@ internal class BaGuideBgmPlaybackCoordinator(
         )
         queue = selection.queue
         selectedAudioUrl = selection.selectedAudioUrl
+        syncActiveQueue()
+    }
+
+    fun updateNativeMediaNotificationEnabled(enabled: Boolean) {
+        if (nativeMediaNotificationEnabled == enabled) return
+        val favorite = selectedFavorite
+        val previousBackend = activeBackend
+        val previousState = previousBackend.runtimeState(favorite)
+        if (favorite != null) saveProgress(favorite, previousState)
+        if (enabled) {
+            favorite?.let { selected ->
+                lightweightBackend.pause(selected)
+                nativeBackend.prepare(
+                    favorite = selected,
+                    queue = activePlaybackQueue(selected),
+                    queueMode = queueMode,
+                    startPositionMs = previousState.positionMs
+                )
+                if (previousState.isPlaying) {
+                    nativeBackend.play(
+                        favorite = selected,
+                        queue = activePlaybackQueue(selected),
+                        queueMode = queueMode,
+                        startPositionMs = previousState.positionMs,
+                        restart = false
+                    )
+                }
+            }
+        } else {
+            nativeBackend.stopSession()
+            favorite?.let { selected ->
+                lightweightBackend.prepare(
+                    favorite = selected,
+                    queue = activePlaybackQueue(selected),
+                    queueMode = queueMode,
+                    startPositionMs = previousState.positionMs
+                )
+            }
+        }
+        nativeMediaNotificationEnabled = enabled
+        runtimeState = previousState.copy(isPlaying = previousState.isPlaying && enabled)
     }
 
     fun restoreSnapshot() {
@@ -88,9 +150,9 @@ internal class BaGuideBgmPlaybackCoordinator(
 
     fun prepareSelected() {
         val favorite = selectedQueueFavorite ?: selectedFavorite ?: return
-        prepareFavoriteBgmPlayback(
-            context = context,
+        activeBackend.prepare(
             favorite = favorite,
+            queue = activePlaybackQueue(favorite),
             queueMode = queueMode,
             startPositionMs = resumePosition(favorite)
         )
@@ -100,9 +162,9 @@ internal class BaGuideBgmPlaybackCoordinator(
     fun play(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
         selectedAudioUrl = favorite.audioUrl
         persistSelection()
-        playFavoriteBgm(
-            context = context,
+        activeBackend.play(
             favorite = favorite,
+            queue = activePlaybackQueue(favorite),
             queueMode = queueMode,
             startPositionMs = if (restart) 0L else resumePosition(favorite),
             restart = restart
@@ -113,9 +175,9 @@ internal class BaGuideBgmPlaybackCoordinator(
     fun toggle(favorite: GuideBgmFavoriteItem) {
         selectedAudioUrl = favorite.audioUrl
         persistSelection()
-        toggleFavoriteBgmPlayback(
-            context = context,
+        activeBackend.toggle(
             favorite = favorite,
+            queue = activePlaybackQueue(favorite),
             queueMode = queueMode,
             startPositionMs = resumePosition(favorite)
         )
@@ -123,17 +185,13 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     fun pause(favorite: GuideBgmFavoriteItem): BaGuideBgmPlaybackRuntimeState {
-        runtimeState = pauseFavoriteBgmPlayback(
-            context = context,
-            favorite = favorite
-        )
+        runtimeState = activeBackend.pause(favorite)
         saveProgress(favorite, runtimeState)
         return runtimeState
     }
 
     fun seek(favorite: GuideBgmFavoriteItem, progress: Float): BaGuideBgmPlaybackRuntimeState {
-        runtimeState = seekFavoriteBgmPlayback(
-            context = context,
+        runtimeState = activeBackend.seek(
             favorite = favorite,
             queueMode = queueMode,
             progress = progress
@@ -143,7 +201,7 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     fun updateVolume(favorite: GuideBgmFavoriteItem, volume: Float): BaGuideBgmPlaybackRuntimeState {
-        runtimeState = updateFavoriteBgmVolume(context, favorite, volume)
+        runtimeState = activeBackend.updateVolume(favorite, volume)
         return runtimeState
     }
 
@@ -157,15 +215,21 @@ internal class BaGuideBgmPlaybackCoordinator(
         queueModeName = nextMode.name
         persistSelection()
         if (favorite != null) {
-            applyFavoriteBgmQueueMode(context, favorite, nextMode)
+            activeBackend.applyQueueMode(favorite, nextMode)
         }
     }
 
     fun refreshRuntime(favorite: GuideBgmFavoriteItem? = selectedFavorite) {
-        runtimeState = favorite
-            ?.let { favoriteBgmRuntimeState(context, it) }
-            ?: BaGuideBgmPlaybackRuntimeState(volume = GuideBgmFavoritePlaybackStore.volume())
-        if (favorite != null) saveProgress(favorite, runtimeState)
+        if (nativeMediaNotificationEnabled) {
+            val currentAudioUrl = activeBackend.currentAudioUrl()
+            if (currentAudioUrl.isNotBlank() && queue.any { it.audioUrl == currentAudioUrl }) {
+                selectedAudioUrl = currentAudioUrl
+                persistSelection()
+            }
+        }
+        val resolvedFavorite = selectedFavorite ?: favorite
+        runtimeState = activeBackend.runtimeState(resolvedFavorite)
+        if (resolvedFavorite != null) saveProgress(resolvedFavorite, runtimeState)
     }
 
     fun advanceIfEnded(): Boolean {
@@ -178,6 +242,27 @@ internal class BaGuideBgmPlaybackCoordinator(
             return true
         }
         return false
+    }
+
+    fun dispose() {
+        nativeBackend.disconnect()
+    }
+
+    private fun activePlaybackQueue(favorite: GuideBgmFavoriteItem): List<GuideBgmFavoriteItem> {
+        val baseQueue = queue.takeIf { it.isNotEmpty() } ?: favorites
+        if (baseQueue.any { it.audioUrl == favorite.audioUrl }) return baseQueue
+        return listOf(favorite) + baseQueue
+    }
+
+    private fun syncActiveQueue() {
+        if (!nativeMediaNotificationEnabled) return
+        val favorite = selectedFavorite ?: return
+        activeBackend.updateQueue(
+            queue = activePlaybackQueue(favorite),
+            selectedAudioUrl = favorite.audioUrl,
+            queueMode = queueMode,
+            startPositionMs = resumePosition(favorite)
+        )
     }
 
     private fun persistSelection(audioUrl: String = selectedAudioUrl) {
@@ -209,10 +294,14 @@ internal class BaGuideBgmPlaybackCoordinator(
 @Composable
 internal fun rememberBaGuideBgmPlaybackCoordinator(
     context: Context,
-    favorites: List<GuideBgmFavoriteItem>
+    favorites: List<GuideBgmFavoriteItem>,
+    nativeMediaNotificationEnabled: Boolean
 ): BaGuideBgmPlaybackCoordinator {
     val coordinator = remember(context) {
         BaGuideBgmPlaybackCoordinator(context).apply { restoreSnapshot() }
+    }
+    LaunchedEffect(coordinator, nativeMediaNotificationEnabled) {
+        coordinator.updateNativeMediaNotificationEnabled(nativeMediaNotificationEnabled)
     }
     LaunchedEffect(coordinator, favorites) {
         coordinator.updateFavorites(favorites)
@@ -223,6 +312,9 @@ internal fun rememberBaGuideBgmPlaybackCoordinator(
             coordinator.advanceIfEnded()
             delay(500L.milliseconds)
         }
+    }
+    DisposableEffect(coordinator) {
+        onDispose { coordinator.dispose() }
     }
     return coordinator
 }

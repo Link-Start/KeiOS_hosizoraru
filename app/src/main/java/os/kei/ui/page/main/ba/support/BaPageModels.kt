@@ -36,6 +36,7 @@ internal data class BaPageSnapshot(
     val mediaAdaptiveRotationEnabled: Boolean = true,
     val mediaSaveCustomEnabled: Boolean = false,
     val mediaSaveFixedTreeUri: String = "",
+    val nativeBgmMediaNotificationEnabled: Boolean = false,
     val calendarRefreshIntervalHours: Int = 12
 )
 

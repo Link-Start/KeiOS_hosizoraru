@@ -34,6 +34,7 @@ internal fun BaGuideCatalogTransferSheet(
     onDismissRequest: () -> Unit,
     mediaSaveCustomEnabled: Boolean,
     mediaSaveFixedTreeUri: String,
+    playbackSettingsState: BaGuideCatalogPlaybackSettingsState,
     onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
     onPickMediaSaveLocation: () -> Unit,
     onExportAllFavorites: () -> Unit,
@@ -72,6 +73,7 @@ internal fun BaGuideCatalogTransferSheet(
                 onMediaSaveCustomEnabledChange = onMediaSaveCustomEnabledChange,
                 onPickMediaSaveLocation = onPickMediaSaveLocation
             )
+            BaGuideCatalogPlaybackSettingsGroup(playbackSettingsState)
             BaGuideCatalogTransferGroup(
                 title = stringResource(R.string.ba_catalog_transfer_student_favorites),
                 summary = stringResource(R.string.ba_catalog_transfer_student_favorites_summary),
@@ -94,6 +96,34 @@ internal fun BaGuideCatalogTransferSheet(
                 summary = bgmCacheSummary,
                 onCacheAll = onCacheAllBgm,
                 onCleanInvalid = onCleanInvalidBgmCache
+            )
+        }
+    }
+}
+
+internal data class BaGuideCatalogPlaybackSettingsState(
+    val nativeBgmMediaNotificationEnabled: Boolean,
+    val notificationPermissionGranted: Boolean,
+    val onNativeBgmMediaNotificationChange: (Boolean) -> Unit
+)
+
+@Composable
+private fun BaGuideCatalogPlaybackSettingsGroup(
+    state: BaGuideCatalogPlaybackSettingsState
+) {
+    SheetSectionTitle(stringResource(R.string.ba_catalog_playback_settings_title))
+    SheetSectionCard(verticalSpacing = 10.dp) {
+        SheetControlRow(
+            label = stringResource(R.string.ba_catalog_bgm_native_media_notification),
+            summary = if (state.nativeBgmMediaNotificationEnabled && !state.notificationPermissionGranted) {
+                stringResource(R.string.ba_catalog_bgm_native_media_notification_permission_summary)
+            } else {
+                stringResource(R.string.ba_catalog_bgm_native_media_notification_summary)
+            }
+        ) {
+            AppSwitch(
+                checked = state.nativeBgmMediaNotificationEnabled,
+                onCheckedChange = state.onNativeBgmMediaNotificationChange
             )
         }
     }

@@ -363,6 +363,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
     implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:$okhttpVersion")
     implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-session:$media3Version")
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("io.github.panpf.zoomimage:zoomimage-compose-coil3:$zoomImageVersion")
     implementation("io.coil-kt.coil3:coil-compose:$coil3Version")

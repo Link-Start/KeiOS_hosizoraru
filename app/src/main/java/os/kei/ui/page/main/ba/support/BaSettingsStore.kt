@@ -71,11 +71,11 @@ internal object BASettingsStore {
     }
 
     private fun idSettings(): BaIdSettingsAccessor =
-        BaIdSettingsAccessor(MmkvBaIdKeyValueStore(kv()))
+        BaIdSettingsAccessor(MmkvBaSettingsKeyValueStore(kv()))
 
-    private class MmkvBaIdKeyValueStore(
+    private class MmkvBaSettingsKeyValueStore(
         private val store: MMKV,
-    ) : BaIdKeyValueStore {
+    ) : BaIdKeyValueStore, BaNativeBgmMediaNotificationKeyValueStore {
         override fun decodeBool(key: String, defaultValue: Boolean): Boolean =
             store.decodeBool(key, defaultValue)
 
@@ -166,6 +166,14 @@ internal object BASettingsStore {
 
     fun saveMediaSaveFixedTreeUri(uri: String) {
         kv().encode(KEY_MEDIA_SAVE_FIXED_TREE_URI, uri.trim())
+        notifyChanged()
+    }
+
+    fun loadNativeBgmMediaNotificationEnabled(): Boolean =
+        BaNativeBgmMediaNotificationPrefs(MmkvBaSettingsKeyValueStore(kv())).loadEnabled()
+
+    fun saveNativeBgmMediaNotificationEnabled(enabled: Boolean) {
+        BaNativeBgmMediaNotificationPrefs(MmkvBaSettingsKeyValueStore(kv())).saveEnabled(enabled)
         notifyChanged()
     }
 
@@ -270,6 +278,7 @@ internal object BASettingsStore {
             mediaSaveCustomEnabled = store.decodeBool(KEY_MEDIA_SAVE_CUSTOM_ENABLED, false),
             mediaSaveFixedTreeUri = store.decodeString(KEY_MEDIA_SAVE_FIXED_TREE_URI, "").orEmpty()
                 .trim(),
+            nativeBgmMediaNotificationEnabled = loadNativeBgmMediaNotificationEnabled(),
             calendarRefreshIntervalHours = refreshHours
         )
     }

@@ -199,6 +199,10 @@
     <string name="ba_catalog_transfer_save_location_saf">关闭：导出时每次通过 SAF 选择文件位置。</string>
     <string name="ba_catalog_transfer_save_location_fixed_empty">开启：导出时先选择固定目录，后续直接保存。</string>
     <string name="ba_catalog_transfer_save_location_fixed_ready">开启：导出会直接写入已选择的固定目录。</string>
+    <string name="ba_catalog_playback_settings_title">播放设置</string>
+    <string name="ba_catalog_bgm_native_media_notification">原生媒体通知</string>
+    <string name="ba_catalog_bgm_native_media_notification_summary">开启后，播放页 BGM 会进入系统媒体会话，可在通知中心控制播放、上一首和下一首。</string>
+    <string name="ba_catalog_bgm_native_media_notification_permission_summary">需要通知权限，开启时会先请求系统授权。</string>
     <string name="ba_catalog_transfer_student_favorites">已收藏的学生</string>
     <string name="ba_catalog_transfer_student_favorites_summary">只同步学生图鉴的收藏状态。</string>
     <string name="ba_catalog_transfer_bgm_favorites">已收藏的回忆大厅 BGM</string>

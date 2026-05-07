@@ -8,6 +8,7 @@ import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportResultRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubShareImportFlowMode
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -293,6 +294,28 @@ class GitHubShareImportWindowFlowSupportTest {
         assertEquals(
             GitHubShareImportPhase.Failed,
             ShareImportCoordinatorResult.Failed("failed").toShareImportPhase()
+        )
+    }
+
+    @Test
+    fun `notification first uses notification only flow for single apk`() {
+        assertTrue(
+            shouldUseNotificationOnlySingleApkFlow(
+                flowMode = GitHubShareImportFlowMode.NotificationFirst,
+                assetCount = 1
+            )
+        )
+        assertFalse(
+            shouldUseNotificationOnlySingleApkFlow(
+                flowMode = GitHubShareImportFlowMode.NotificationFirst,
+                assetCount = 2
+            )
+        )
+        assertFalse(
+            shouldUseNotificationOnlySingleApkFlow(
+                flowMode = GitHubShareImportFlowMode.SheetAssisted,
+                assetCount = 1
+            )
         )
     }
 

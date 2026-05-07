@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -85,6 +86,9 @@ class GitHubShareImportActivity : ComponentActivity() {
                             finishSafely()
                         },
                         showPendingArmedSheet = true,
+                        onNotificationOnlyResolveChanged = { notificationOnly ->
+                            setShareImportWindowDim(enabled = !notificationOnly)
+                        },
                         onMinimizeActiveFlow = { finishSafely() },
                         onClosePendingArmedSheet = { finishSafely() },
                         onIdleWithNoPendingFlow = { finishSafely() }
@@ -185,6 +189,14 @@ class GitHubShareImportActivity : ComponentActivity() {
     private fun finishSafely() {
         if (!isFinishing) {
             finish()
+        }
+    }
+
+    private fun setShareImportWindowDim(enabled: Boolean) {
+        if (enabled) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         }
     }
 

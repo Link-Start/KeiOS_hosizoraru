@@ -317,8 +317,8 @@ class MiIslandNotificationBuilder(
 
             picInfo {
                 type = 1
-                pic = lightLogoKey
-                picDark = darkLogoKey
+                pic = displayIconKey
+                picDark = displayIconKey
             }
 
             if (presentation.showTextButtons && actions.isNotEmpty()) {

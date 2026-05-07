@@ -34,7 +34,10 @@ class LegacyNotificationBuilder(
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(spec.iconResId)
-            .setLargeIcon(NotificationLargeIconFactory.create(context, spec.expandedIconResId))
+            .setLargeIcon(
+                payload.semanticIconBitmap
+                    ?: NotificationLargeIconFactory.create(context, spec.expandedIconResId)
+            )
             .setContentTitle(state.title(context))
             .setContentText(state.content(context).ifBlank { " " })
             .setSubText(

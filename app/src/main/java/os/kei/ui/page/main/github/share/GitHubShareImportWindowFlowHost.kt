@@ -35,6 +35,7 @@ internal fun GitHubShareImportWindowFlowHost(
     onIncomingGitHubShareConsumed: () -> Unit,
     onNavigateToGitHubPage: () -> Unit,
     showPendingArmedSheet: Boolean = false,
+    onNotificationOnlyResolveChanged: ((Boolean) -> Unit)? = null,
     onMinimizeActiveFlow: (() -> Unit)? = null,
     onClosePendingArmedSheet: (() -> Unit)? = null,
     onIdleWithNoPendingFlow: (() -> Unit)? = null
@@ -58,6 +59,7 @@ internal fun GitHubShareImportWindowFlowHost(
     var attachSubmitting by remember { mutableStateOf(false) }
     var attachSubmittingAndOpen by remember { mutableStateOf(false) }
     var restoringActiveFlow by remember { mutableStateOf(true) }
+    var notificationOnlyIncomingResolve by remember { mutableStateOf(false) }
     fun applyCoordinatorResult(result: ShareImportCoordinatorResult) {
         phase = result.toShareImportPhase()
         when (result) {
@@ -95,6 +97,10 @@ internal fun GitHubShareImportWindowFlowHost(
 
             is ShareImportCoordinatorResult.Failed -> Unit
         }
+    }
+
+    LaunchedEffect(notificationOnlyIncomingResolve) {
+        onNotificationOnlyResolveChanged?.invoke(notificationOnlyIncomingResolve)
     }
 
     LaunchedEffect(Unit) {
@@ -257,9 +263,6 @@ internal fun GitHubShareImportWindowFlowHost(
         if (sharedText.isBlank()) return@LaunchedEffect
         if (resolving || incomingResolveRunning) return@LaunchedEffect
         incomingResolveRunning = true
-        resolving = true
-        phase = GitHubShareImportPhase.Resolving
-        notifyShareImportResolving(context, sharedText)
         onIncomingGitHubShareConsumed()
         pendingPreview = null
         withContext(Dispatchers.IO) {
@@ -271,6 +274,11 @@ internal fun GitHubShareImportWindowFlowHost(
                 phase = GitHubShareImportPhase.Idle
                 return@LaunchedEffect
             }
+            notificationOnlyIncomingResolve =
+                lookupConfig.shareImportFlowMode == GitHubShareImportFlowMode.NotificationFirst
+            resolving = true
+            phase = GitHubShareImportPhase.Resolving
+            notifyShareImportResolving(context, sharedText)
             try {
                 val parsedIncoming = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
                     ?: error(context.getString(R.string.github_share_import_error_no_valid_link))
@@ -327,17 +335,20 @@ internal fun GitHubShareImportWindowFlowHost(
                         )
                     )
                     val directNotificationSend =
-                        lookupConfig.shareImportFlowMode == GitHubShareImportFlowMode.NotificationFirst &&
-                                preview.assets.size == 1
-                    applyCoordinatorResult(
-                        GitHubShareImportFlowCoordinator.prepareAssetReady(
-                            context = context,
-                            preview = preview,
-                            sendInstallActionEnabled = directNotificationSend
+                        shouldUseNotificationOnlySingleApkFlow(
+                            flowMode = lookupConfig.shareImportFlowMode,
+                            assetCount = preview.assets.size
                         )
+                    val coordinatorResult = GitHubShareImportFlowCoordinator.prepareAssetReady(
+                        context = context,
+                        preview = preview,
+                        sendInstallActionEnabled = directNotificationSend
                     )
                     if (directNotificationSend) {
                         onMinimizeActiveFlow?.invoke()
+                    } else {
+                        notificationOnlyIncomingResolve = false
+                        applyCoordinatorResult(coordinatorResult)
                     }
                 }
             } catch (error: Throwable) {
@@ -362,6 +373,7 @@ internal fun GitHubShareImportWindowFlowHost(
         } finally {
             resolving = false
             incomingResolveRunning = false
+            notificationOnlyIncomingResolve = false
         }
     }
 
@@ -420,7 +432,7 @@ internal fun GitHubShareImportWindowFlowHost(
 
     GitHubShareImportSheet(
         preview = pendingPreview,
-        resolving = resolving,
+        resolving = resolving && !notificationOnlyIncomingResolve,
         phase = phase,
         onDismissRequest = {
             if (!resolving && pendingPreview != null) {
@@ -610,4 +622,11 @@ private suspend fun saveShareImportResult(result: GitHubShareImportResult) {
         GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
     }
     GitHubTrackStoreSignals.notifyChanged()
+}
+
+internal fun shouldUseNotificationOnlySingleApkFlow(
+    flowMode: GitHubShareImportFlowMode,
+    assetCount: Int
+): Boolean {
+    return flowMode == GitHubShareImportFlowMode.NotificationFirst && assetCount == 1
 }

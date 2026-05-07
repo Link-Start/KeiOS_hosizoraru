@@ -249,7 +249,8 @@ object GitHubShareImportNotificationHelper {
                 channelId = McpNotificationHelper.LIVE_CHANNEL_ID,
                 isHyperOS = helper.isHyperOS,
                 preferOemLiveIconLayout = helper.preferOemLiveIconLayout
-            )
+            ),
+            semanticIconBitmap = resolveSemanticIconBitmap(context, state)
         )
         return if (helper.isModernLiveUpdateEligible) {
             ModernNotificationBuilder(context).build(payload)

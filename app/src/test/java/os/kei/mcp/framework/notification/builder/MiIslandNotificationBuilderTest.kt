@@ -241,6 +241,7 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("demo.app"))
         assertFalse(focusParam.contains("\"content\":\"demo.app\""))
         assertTrue(focusParam.contains("\"progress\":72"))
+        assertTrue(focusParam.contains("\"picDark\":\"key_logo_display\""))
         val renderedBitmap = Shadows.shadowOf(focusDisplayIcon).bitmap
         assertNotNull(renderedBitmap)
         assertEquals(appIconBitmap.width, renderedBitmap.width)

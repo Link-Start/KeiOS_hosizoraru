@@ -401,7 +401,9 @@ class GitHubShareImportNotificationHelperTest {
             assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
             assertEquals(primaryAction, notification.actions[0].title.toString())
             assertEquals("Mark read", notification.actions[1].title.toString())
-            assertTrue(focusParam.contains("\"progress\":100"))
+            assertTrue(focusParam.contains("imageTextInfoRight"))
+            assertFalse(focusParam.contains("progressTextInfo"))
+            assertFalse(focusParam.contains("combinePicInfo"))
             assertTrue(focusParam.contains("mcp_action_open"))
             assertTrue(focusParam.contains("mcp_action_stop"))
             if (state.phase == GitHubShareImportNotificationPhase.Added ||
@@ -413,7 +415,6 @@ class GitHubShareImportNotificationHelperTest {
                     "Exists"
                 }
                 assertTrue(focusParam.contains("\"title\":\"$expectedTitle\""))
-                assertTrue(focusParam.contains("\"colorReach\":\"#22C55E\""))
             }
         }
     }

@@ -7,12 +7,12 @@ import android.content.Context
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
@@ -35,7 +35,93 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains("github_action_open"))
     }
 
-    private fun createRefreshState(running: Boolean): Any {
+    @Test
+    fun `mi island running summary uses progress text and small combine progress`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = true,
+            current = 2,
+            total = 4,
+            displayProgressPercent = 50
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"title\":\"50%\""))
+        assertTrue(focusParam.contains("\"content\":\"2/4\""))
+        assertTrue(focusParam.contains("\"progress\":50"))
+    }
+
+    @Test
+    fun `mi island completed summary uses compact state text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(running = false)
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(
+            focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_completed)}\"")
+        )
+        assertTrue(focusParam.contains("\"content\":\"4/4\""))
+        assertTrue(focusParam.contains("github_action_open"))
+        assertTrue(focusParam.contains("github_action_read"))
+    }
+
+    @Test
+    fun `mi island cancelled summary uses compact state text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = false,
+            cancelled = true,
+            current = 2,
+            total = 4,
+            displayProgressPercent = 50
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(
+            focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_cancelled)}\"")
+        )
+        assertTrue(focusParam.contains("\"content\":\"2/4\""))
+    }
+
+    @Test
+    fun `mi island failed summary uses compact failure text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = false,
+            failedCount = 1
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(
+            focusParam.contains(
+                "\"title\":\"${
+                    context.getString(
+                        os.kei.R.string.github_refresh_failed_short_with_count,
+                        1
+                    )
+                }\""
+            )
+        )
+        assertTrue(focusParam.contains("\"content\":\"4/4\""))
+        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
+    }
+
+    private fun createRefreshState(
+        running: Boolean,
+        current: Int = 4,
+        total: Int = 4,
+        preReleaseUpdateCount: Int = 1,
+        updatableCount: Int = 2,
+        failedCount: Int = 0,
+        cancelled: Boolean = false,
+        displayProgressPercent: Int = 100
+    ): Any {
         val stateClass = refreshStateClass()
         return stateClass.getDeclaredConstructor(
             Int::class.javaPrimitiveType,
@@ -49,14 +135,14 @@ class GitHubRefreshNotificationHelperTest {
         ).apply {
             isAccessible = true
         }.newInstance(
-            4,
-            4,
-            1,
-            2,
-            0,
+            current,
+            total,
+            preReleaseUpdateCount,
+            updatableCount,
+            failedCount,
             running,
-            false,
-            100
+            cancelled,
+            displayProgressPercent
         )
     }
 

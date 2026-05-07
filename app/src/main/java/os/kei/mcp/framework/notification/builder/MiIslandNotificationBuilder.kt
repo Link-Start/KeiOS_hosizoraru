@@ -24,16 +24,29 @@ class MiIslandNotificationBuilder(
         val isHighlighted: Boolean = false
     )
 
+    private enum class IslandBigTemplateKind {
+        TEXT,
+        PROGRESS_TEXT,
+        COUNTDOWN_DIGIT
+    }
+
+    private enum class IslandSmallTemplateKind {
+        ICON,
+        PROGRESS_ICON
+    }
+
     private data class IslandPresentation(
         val allowFloat: Boolean,
         val showTextButtons: Boolean,
-        val rightTitle: String,
-        val rightContent: String? = null,
+        val bigTemplateKind: IslandBigTemplateKind = IslandBigTemplateKind.TEXT,
+        val smallTemplateKind: IslandSmallTemplateKind = IslandSmallTemplateKind.ICON,
+        val compactTitle: String,
+        val compactContent: String? = null,
+        val deadlineAtMs: Long? = null,
         val notificationOngoing: Boolean,
         val requestPromotedOngoing: Boolean,
         val focusUpdatable: Boolean,
         val focusShowNotification: Boolean? = null,
-        val showProgressRing: Boolean = false,
         val showExpandedProgress: Boolean = false,
         val progressPercent: Int = 0,
         val progressColor: String = BA_AP_PROGRESS_COLOR,
@@ -218,37 +231,73 @@ class MiIslandNotificationBuilder(
                             pic = displayIconKey
                         }
                     }
-                    if (presentation.showProgressRing) {
-                        progressTextInfo {
-                            progressInfo {
-                                progress = presentation.progressPercent.coerceIn(0, 100)
-                                isCCW = true
-                                colorReach = presentation.progressColor
-                                colorUnReach = presentation.progressTrackColor
-                            }
-                            textInfo {
-                                title = presentation.rightTitle
-                                content = presentation.rightContent
-                                narrowFont = presentation.rightTitle.length >= 6 ||
-                                    (presentation.rightContent?.length ?: 0) >= 12
+                    when (presentation.bigTemplateKind) {
+                        IslandBigTemplateKind.PROGRESS_TEXT -> {
+                            progressTextInfo {
+                                progressInfo {
+                                    progress = presentation.progressPercent.coerceIn(0, 100)
+                                    isCCW = true
+                                    colorReach = presentation.progressColor
+                                    colorUnReach = presentation.progressTrackColor
+                                }
+                                textInfo {
+                                    title = presentation.compactTitle
+                                    content = presentation.compactContent
+                                    narrowFont = shouldUseNarrowFont(presentation)
+                                }
                             }
                         }
-                    } else {
-                        imageTextInfoRight {
-                            type = 3
-                            textInfo {
-                                title = presentation.rightTitle
-                                content = presentation.rightContent
-                                narrowFont = presentation.rightTitle.length >= 6 ||
-                                    (presentation.rightContent?.length ?: 0) >= 12
+
+                        IslandBigTemplateKind.COUNTDOWN_DIGIT -> {
+                            sameWidthDigitInfo {
+                                content = presentation.compactTitle
+                                showHighlightColor = true
+                                val now = System.currentTimeMillis()
+                                val deadlineAtMs = presentation.deadlineAtMs ?: now
+                                timerInfo {
+                                    timerType = -1
+                                    timerWhen = deadlineAtMs
+                                    timerTotal = (deadlineAtMs - now).coerceAtLeast(0L)
+                                    timerSystemCurrent = now
+                                }
+                            }
+                        }
+
+                        IslandBigTemplateKind.TEXT -> {
+                            imageTextInfoRight {
+                                type = 3
+                                textInfo {
+                                    title = presentation.compactTitle
+                                    content = presentation.compactContent
+                                    narrowFont = shouldUseNarrowFont(presentation)
+                                }
                             }
                         }
                     }
                 }
                 smallIslandArea {
-                    picInfo {
-                        type = 1
-                        pic = displayIconKey
+                    when (presentation.smallTemplateKind) {
+                        IslandSmallTemplateKind.PROGRESS_ICON -> {
+                            combinePicInfo {
+                                picInfo {
+                                    type = 1
+                                    pic = displayIconKey
+                                }
+                                progressInfo {
+                                    progress = presentation.progressPercent.coerceIn(0, 100)
+                                    isCCW = true
+                                    colorReach = presentation.progressColor
+                                    colorUnReach = presentation.progressTrackColor
+                                }
+                            }
+                        }
+
+                        IslandSmallTemplateKind.ICON -> {
+                            picInfo {
+                                type = 1
+                                pic = displayIconKey
+                            }
+                        }
                     }
                 }
             }
@@ -312,12 +361,17 @@ class MiIslandNotificationBuilder(
             return IslandPresentation(
                 allowFloat = false,
                 showTextButtons = true,
-                rightTitle = state.port.coerceAtLeast(0).toString(),
+                bigTemplateKind = IslandBigTemplateKind.PROGRESS_TEXT,
+                smallTemplateKind = IslandSmallTemplateKind.PROGRESS_ICON,
+                compactTitle = resolveCompactTitle(
+                    raw = state.port.coerceAtLeast(0).toString(),
+                    fallback = context.getString(R.string.ba_notification_ap_island_text)
+                ),
+                compactContent = context.getString(R.string.ba_notification_ap_island_text),
                 notificationOngoing = true,
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showProgressRing = true,
                 showExpandedProgress = true,
                 progressPercent = resolveApProgressPercent(state),
                 notificationAccentColor = BA_AP_PROGRESS_COLOR
@@ -327,7 +381,7 @@ class MiIslandNotificationBuilder(
             return IslandPresentation(
                 allowFloat = true,
                 showTextButtons = true,
-                rightTitle = context.getString(R.string.ba_cafe_visit_notification_island_text),
+                compactTitle = context.getString(R.string.ba_cafe_visit_notification_island_text),
                 notificationOngoing = false,
                 requestPromotedOngoing = false,
                 focusUpdatable = true,
@@ -339,7 +393,7 @@ class MiIslandNotificationBuilder(
             return IslandPresentation(
                 allowFloat = true,
                 showTextButtons = true,
-                rightTitle = context.getString(R.string.ba_arena_refresh_notification_island_text),
+                compactTitle = context.getString(R.string.ba_arena_refresh_notification_island_text),
                 notificationOngoing = false,
                 requestPromotedOngoing = false,
                 focusUpdatable = true,
@@ -349,16 +403,26 @@ class MiIslandNotificationBuilder(
         }
         if (isBlueArchiveCalendarPool && state.running) {
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
+            val hasCountdown = state.deadlineAtMs != null
             return IslandPresentation(
                 allowFloat = true,
                 showTextButtons = true,
-                rightTitle = state.shortText,
-                rightContent = state.onlineText(context).takeIf { it != state.shortText },
+                bigTemplateKind = if (hasCountdown) {
+                    IslandBigTemplateKind.COUNTDOWN_DIGIT
+                } else {
+                    IslandBigTemplateKind.PROGRESS_TEXT
+                },
+                smallTemplateKind = IslandSmallTemplateKind.PROGRESS_ICON,
+                compactTitle = resolveCompactTitle(
+                    raw = state.shortText,
+                    fallback = context.getString(R.string.common_status_running)
+                ),
+                compactContent = state.onlineText(context).takeIf { it != state.shortText },
+                deadlineAtMs = state.deadlineAtMs,
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showProgressRing = true,
                 showExpandedProgress = true,
                 progressPercent = progressPercent,
                 progressColor = BA_EVENT_ACCENT_COLOR,
@@ -369,16 +433,29 @@ class MiIslandNotificationBuilder(
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
+            val isTerminal = state.clients <= 0 && progressPercent >= 100
             return IslandPresentation(
                 allowFloat = state.clients <= 0,
                 showTextButtons = true,
-                rightTitle = state.onlineText(context),
+                bigTemplateKind = if (isTerminal) {
+                    IslandBigTemplateKind.TEXT
+                } else {
+                    IslandBigTemplateKind.PROGRESS_TEXT
+                },
+                smallTemplateKind = if (isTerminal) {
+                    IslandSmallTemplateKind.ICON
+                } else {
+                    IslandSmallTemplateKind.PROGRESS_ICON
+                },
+                compactTitle = resolveCompactTitle(
+                    raw = state.onlineText(context),
+                    fallback = state.shortText
+                ),
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showProgressRing = true,
-                showExpandedProgress = true,
+                showExpandedProgress = !isTerminal,
                 progressPercent = progressPercent,
                 progressColor = progressColor,
                 notificationAccentColor = progressColor
@@ -388,18 +465,24 @@ class MiIslandNotificationBuilder(
             return IslandPresentation(
                 allowFloat = false,
                 showTextButtons = false,
-                rightTitle = state.onlineText(context),
+                compactTitle = resolveCompactTitle(
+                    raw = state.onlineText(context),
+                    fallback = context.getString(R.string.common_status_running)
+                ),
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
-                rightContent = resolveDefaultEndpointSummary(state),
+                compactContent = resolveDefaultEndpointSummary(state),
                 notificationAccentColor = MCP_RUNNING_ACCENT_COLOR
             )
         }
         return IslandPresentation(
             allowFloat = true,
             showTextButtons = true,
-            rightTitle = state.statusText(context),
+            compactTitle = resolveCompactTitle(
+                raw = state.statusText(context),
+                fallback = context.getString(R.string.common_acknowledge)
+            ),
             notificationOngoing = state.ongoing,
             requestPromotedOngoing = state.ongoing,
             focusUpdatable = true,
@@ -476,6 +559,22 @@ class MiIslandNotificationBuilder(
         val limit = state.clients.coerceAtLeast(1)
         val current = state.port.coerceAtLeast(0).coerceAtMost(limit)
         return ((current.toFloat() / limit.toFloat()) * 100f).roundToInt().coerceIn(0, 100)
+    }
+
+    private fun resolveCompactTitle(raw: String, fallback: String): String {
+        val trimmed = raw.trim()
+        val fallbackTrimmed = fallback.trim()
+        if (trimmed.isBlank()) return fallbackTrimmed
+        val isNumeric = trimmed.all(Char::isDigit)
+        if (isNumeric && trimmed.length <= 3) return trimmed
+        if (isNumeric) return fallbackTrimmed
+        if (trimmed.length <= 4) return trimmed
+        return fallbackTrimmed.ifBlank { trimmed }
+    }
+
+    private fun shouldUseNarrowFont(presentation: IslandPresentation): Boolean {
+        return presentation.compactTitle.length >= 6 ||
+                (presentation.compactContent?.length ?: 0) >= 12
     }
 
     private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {

@@ -269,6 +269,19 @@ object GitHubRefreshNotificationHelper {
         }
     }
 
+    private fun resolveCompactStateTitle(context: Context, state: RefreshState): String {
+        return when {
+            state.cancelled -> context.getString(R.string.github_refresh_island_cancelled)
+            state.failedCount > 0 ->
+                context.getString(
+                    R.string.github_refresh_failed_short_with_count,
+                    state.failedCount
+                )
+
+            else -> context.getString(R.string.github_refresh_island_completed)
+        }
+    }
+
     private fun notifyInternal(
         context: Context,
         state: RefreshState,
@@ -449,8 +462,14 @@ object GitHubRefreshNotificationHelper {
         focusOpenPendingIntent: PendingIntent
     ) = runCatching {
         val progressPercent = state.progressPercent.coerceIn(0, 100)
+        val progressText = resolveCompactProgressText(context, state)
         val fractionText = resolveCompactFractionText(context, state)
-        val compactStateContent = resolveCompactStateContent(context, state)
+        val compactStateTitle = resolveCompactStateTitle(context, state)
+        val compactStateContent = if (state.cancelled || state.failedCount > 0) {
+            fractionText
+        } else {
+            resolveCompactStateContent(context, state) ?: fractionText
+        }
         FocusNotification.buildV3 {
             val lightLogoIcon = Icon.createWithResource(context, iconResId)
             val darkLogoIcon = Icon.createWithResource(context, iconResId)
@@ -484,14 +503,15 @@ object GitHubRefreshNotificationHelper {
                                 colorUnReach = MI_PROGRESS_TRACK_COLOR
                             }
                             textInfo {
-                                this.title = " "
+                                this.title = progressText
+                                this.content = fractionText.takeIf { it != progressText }
                             }
                         }
                     } else {
                         imageTextInfoRight {
                             type = 3
                             textInfo {
-                                this.title = fractionText
+                                this.title = compactStateTitle
                                 this.content = compactStateContent
                                 this.showHighlightColor = state.failedCount > 0
                             }
@@ -499,9 +519,24 @@ object GitHubRefreshNotificationHelper {
                     }
                 }
                 smallIslandArea {
-                    picInfo {
-                        type = 1
-                        pic = dark
+                    if (state.running) {
+                        combinePicInfo {
+                            picInfo {
+                                type = 1
+                                pic = dark
+                            }
+                            progressInfo {
+                                progress = progressPercent
+                                isCCW = true
+                                colorReach = MI_PROGRESS_COLOR
+                                colorUnReach = MI_PROGRESS_TRACK_COLOR
+                            }
+                        }
+                    } else {
+                        picInfo {
+                            type = 1
+                            pic = dark
+                        }
                     }
                 }
             }

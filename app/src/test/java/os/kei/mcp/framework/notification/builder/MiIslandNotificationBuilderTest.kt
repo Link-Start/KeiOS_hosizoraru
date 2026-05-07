@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import androidx.core.graphics.toColorInt
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
@@ -119,10 +120,13 @@ class MiIslandNotificationBuilderTest {
             actual = focusParam.contains("\"title\":\"128\""),
             message = "AP progress island title should show current AP. focusParam=$focusParam"
         )
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"progress\":53"))
     }
 
     @Test
-    fun `calendar pool island uses focus progress and acknowledge action`() {
+    fun `calendar pool island uses countdown digit template and acknowledge action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(
             context = context,
@@ -167,8 +171,10 @@ class MiIslandNotificationBuilderTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals(stopPendingIntent, focusStopAction.actionIntent)
-        assertTrue(focusParam.contains("\"title\":\"活动即将开始\""))
-        assertTrue(focusParam.contains("\"progress\":72"))
+        assertTrue(focusParam.contains("sameWidthDigitInfo"))
+        assertTrue(focusParam.contains("\"timerType\":-1"))
+        assertTrue(focusParam.contains("\"timerWhen\":1778007600000"))
+        assertTrue(focusParam.contains("\"timerSystemCurrent\""))
         assertTrue(focusParam.contains("mcp_action_stop"))
     }
 
@@ -229,6 +235,8 @@ class MiIslandNotificationBuilderTest {
         assertEquals("Check install", focusOpenAction.title.toString())
         assertEquals("Cancel linkage", focusStopAction.title.toString())
         assertTrue(focusParam.contains("\"title\":\"Install\""))
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"colorReach\":\"#2563EB\""))
         assertTrue(focusParam.contains("demo.app"))
         assertFalse(focusParam.contains("\"content\":\"demo.app\""))
@@ -240,7 +248,7 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
-    fun `github share import success island uses green progress`() {
+    fun `github share import success island uses compact completed text`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(
             context = context,
@@ -285,9 +293,13 @@ class MiIslandNotificationBuilderTest {
         val notification = MiIslandNotificationBuilder(context).build(payload)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
+        assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"Tracked\""))
-        assertTrue(focusParam.contains("\"colorReach\":\"#22C55E\""))
-        assertTrue(focusParam.contains("\"progress\":100"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertEquals("#22C55E".toColorInt(), notification.color)
+        assertTrue(focusParam.contains("mcp_action_open"))
+        assertTrue(focusParam.contains("mcp_action_stop"))
     }
 
     private fun buildOpenPendingIntent(

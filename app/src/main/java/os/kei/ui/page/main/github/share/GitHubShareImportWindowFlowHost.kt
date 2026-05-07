@@ -314,7 +314,13 @@ internal fun GitHubShareImportWindowFlowHost(
                         releaseUrl = plan.resolvedReleaseUrl,
                         strategyLabel = lookupConfig.selectedStrategy.label,
                         assets = plan.assets,
-                        preferredAssetName = plan.preferredAssetName
+                        preferredAssetName = plan.preferredAssetName,
+                        targetDisplayName = buildShareImportTargetDisplayName(
+                            repo = plan.parsedLink.repo,
+                            assetName = plan.preferredAssetName.ifBlank {
+                                plan.assets.singleOrNull()?.name.orEmpty()
+                            }
+                        )
                     )
                     withContext(Dispatchers.IO) {
                         GitHubShareImportFlowStore.saveActivePreview(preview.toPendingPreviewRecord())
@@ -518,6 +524,11 @@ internal fun GitHubShareImportWindowFlowHost(
                     releaseTag = preview.releaseTag,
                     assetName = selectedAsset.name,
                     packageName = scannedPackageName,
+                    targetDisplayName = buildShareImportTargetDisplayName(
+                        repo = preview.repo,
+                        assetName = selectedAsset.name,
+                        packageName = scannedPackageName
+                    ).ifBlank { preview.targetDisplayName },
                     armedAtMillis = System.currentTimeMillis()
                 )
                 withContext(Dispatchers.IO) {

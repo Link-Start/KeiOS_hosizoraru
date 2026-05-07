@@ -2,8 +2,10 @@ package os.kei.ui.page.main.github.share
 
 import org.junit.Test
 import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED
+import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportResultRecord
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -24,6 +26,68 @@ class GitHubShareImportWindowFlowSupportTest {
         assertEquals(GitHubShareImportResultKind.Added, result.kind)
         assertEquals("owner/repo", result.projectLabel)
         assertEquals("Demo", result.appDisplayLabel)
+    }
+
+    @Test
+    fun `target display name prefers app label then repo then apk name then package`() {
+        assertEquals(
+            "Demo",
+            buildShareImportTargetDisplayName(
+                appLabel = "Demo",
+                repo = "repo",
+                assetName = "demo-arm64.apk",
+                packageName = "demo.package"
+            )
+        )
+        assertEquals(
+            "repo",
+            buildShareImportTargetDisplayName(
+                repo = "repo",
+                assetName = "demo-arm64.apk",
+                packageName = "demo.package"
+            )
+        )
+        assertEquals(
+            "demo arm64",
+            buildShareImportTargetDisplayName(
+                assetName = "demo-arm64.apk",
+                packageName = "demo.package"
+            )
+        )
+        assertEquals(
+            "demo.package",
+            buildShareImportTargetDisplayName(packageName = "demo.package")
+        )
+    }
+
+    @Test
+    fun `preview record keeps target display name through mapper`() {
+        val record = GitHubPendingShareImportPreviewRecord(
+            sourceUrl = "https://github.com/owner/MicYou/releases/tag/v1",
+            projectUrl = "https://github.com/owner/MicYou",
+            owner = "owner",
+            repo = "MicYou",
+            releaseTag = "v1",
+            releaseUrl = "https://github.com/owner/MicYou/releases/tag/v1",
+            strategyLabel = "Atom Feed",
+            assets = listOf(
+                GitHubReleaseAssetFile(
+                    name = "MicYou.apk",
+                    downloadUrl = "https://github.com/owner/MicYou/releases/download/v1/MicYou.apk",
+                    sizeBytes = 1024L,
+                    downloadCount = 1
+                )
+            ),
+            preferredAssetName = "MicYou.apk",
+            targetDisplayName = "MicYou",
+            createdAtMillis = 10_000L
+        )
+
+        val preview = record.toShareImportPreview()
+        val roundTrip = preview.toPendingPreviewRecord(createdAtMillis = record.createdAtMillis)
+
+        assertEquals("MicYou", preview.targetDisplayName)
+        assertEquals("MicYou", roundTrip.targetDisplayName)
     }
 
     @Test

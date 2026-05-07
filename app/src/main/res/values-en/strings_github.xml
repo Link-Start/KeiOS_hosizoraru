@@ -665,7 +665,7 @@
     <string name="github_share_import_notify_content_cancelled">This share-import linkage has stopped</string>
     <string name="github_share_import_notify_short_resolving">Parse</string>
     <string name="github_share_import_notify_short_asset_ready">Ready</string>
-    <string name="github_share_import_notify_short_delivering">Send</string>
+    <string name="github_share_import_notify_short_delivering">Sending</string>
     <string name="github_share_import_notify_short_waiting_install">Install</string>
     <string name="github_share_import_notify_short_install_detected">Detect</string>
     <string name="github_share_import_notify_short_adding_track">Track</string>

@@ -42,7 +42,13 @@ internal fun notifyShareImportDelivering(
         context = context,
         owner = preview.owner,
         repo = preview.repo,
-        assetName = assetName
+        assetName = assetName,
+        targetDisplayName = preview.targetDisplayName.ifBlank {
+            buildShareImportTargetDisplayName(
+                repo = preview.repo,
+                assetName = assetName
+            )
+        }
     )
 }
 
@@ -57,7 +63,8 @@ internal fun notifyShareImportWaitingInstall(
         releaseTag = pending.releaseTag,
         assetName = pending.assetName,
         packageName = pending.packageName,
-        remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis)
+        remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis),
+        targetDisplayName = pending.targetDisplayName
     )
 }
 
@@ -70,7 +77,12 @@ internal fun notifyShareImportInstallDetected(
         owner = candidate.owner,
         repo = candidate.repo,
         appLabel = candidate.appLabel,
-        packageName = candidate.packageName
+        packageName = candidate.packageName,
+        targetDisplayName = buildShareImportTargetDisplayName(
+            appLabel = candidate.appLabel,
+            repo = candidate.repo,
+            packageName = candidate.packageName
+        )
     )
 }
 
@@ -82,7 +94,13 @@ internal fun notifyShareImportAddingTrack(
         context = context,
         owner = candidate.owner,
         repo = candidate.repo,
-        appLabel = candidate.appLabel
+        appLabel = candidate.appLabel,
+        packageName = candidate.packageName,
+        targetDisplayName = buildShareImportTargetDisplayName(
+            appLabel = candidate.appLabel,
+            repo = candidate.repo,
+            packageName = candidate.packageName
+        )
     )
 }
 
@@ -95,7 +113,13 @@ internal fun notifyShareImportAdded(
         context = context,
         owner = candidate.owner,
         repo = candidate.repo,
-        appLabel = appLabel.ifBlank { candidate.appLabel }
+        appLabel = appLabel.ifBlank { candidate.appLabel },
+        packageName = candidate.packageName,
+        targetDisplayName = buildShareImportTargetDisplayName(
+            appLabel = appLabel.ifBlank { candidate.appLabel },
+            repo = candidate.repo,
+            packageName = candidate.packageName
+        )
     )
 }
 
@@ -107,7 +131,13 @@ internal fun notifyShareImportAlreadyTracked(
         context = context,
         owner = candidate.owner,
         repo = candidate.repo,
-        appLabel = candidate.appLabel
+        appLabel = candidate.appLabel,
+        packageName = candidate.packageName,
+        targetDisplayName = buildShareImportTargetDisplayName(
+            appLabel = candidate.appLabel,
+            repo = candidate.repo,
+            packageName = candidate.packageName
+        )
     )
 }
 

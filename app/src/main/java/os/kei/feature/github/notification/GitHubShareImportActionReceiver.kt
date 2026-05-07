@@ -69,6 +69,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
             repo = repo,
             appLabel = appLabel,
             packageName = packageName,
+            targetDisplayName = appLabel.ifBlank { packageName },
             message = context.getString(R.string.github_share_import_notify_content_cancelled)
         )
     }
@@ -82,6 +83,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
             owner = owner,
             repo = repo,
             packageName = packageName,
+            targetDisplayName = targetDisplayName,
             message = context.getString(R.string.github_share_import_notify_content_cancelled)
         )
     }
@@ -94,6 +96,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
             projectUrl = projectUrl,
             owner = owner,
             repo = repo,
+            targetDisplayName = targetDisplayName,
             message = context.getString(R.string.github_share_import_notify_content_cancelled)
         )
     }

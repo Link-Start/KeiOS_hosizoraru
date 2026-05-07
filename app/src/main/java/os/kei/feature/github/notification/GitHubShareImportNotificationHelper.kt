@@ -11,6 +11,7 @@ import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.prefs.UiPrefs
+import os.kei.feature.github.data.local.AppIconCache
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.builder.EnvironmentContext
 import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
@@ -22,6 +23,10 @@ import os.kei.mcp.framework.notification.builder.UserSettings
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
+
+private const val GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR = "#22C55E"
+private const val GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR = "#EF4444"
+private const val GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR = "#64748B"
 
 object GitHubShareImportNotificationHelper {
     const val NOTIFICATION_ID = 38991
@@ -63,7 +68,8 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
-        assetName: String
+        assetName: String,
+        targetDisplayName: String = ""
     ) {
         notifyState(
             context = context,
@@ -71,7 +77,8 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.Delivering,
                 owner = owner,
                 repo = repo,
-                assetName = assetName
+                assetName = assetName,
+                targetDisplayName = targetDisplayName
             )
         )
     }
@@ -83,7 +90,8 @@ object GitHubShareImportNotificationHelper {
         releaseTag: String,
         assetName: String,
         packageName: String,
-        remainingMinutes: Int
+        remainingMinutes: Int,
+        targetDisplayName: String = ""
     ) {
         notifyState(
             context = context,
@@ -94,6 +102,7 @@ object GitHubShareImportNotificationHelper {
                 releaseTag = releaseTag,
                 assetName = assetName,
                 packageName = packageName,
+                targetDisplayName = targetDisplayName,
                 count = remainingMinutes.coerceAtLeast(0)
             )
         )
@@ -104,7 +113,8 @@ object GitHubShareImportNotificationHelper {
         owner: String,
         repo: String,
         appLabel: String,
-        packageName: String
+        packageName: String,
+        targetDisplayName: String = ""
     ) {
         notifyState(
             context = context,
@@ -113,7 +123,8 @@ object GitHubShareImportNotificationHelper {
                 owner = owner,
                 repo = repo,
                 appLabel = appLabel,
-                packageName = packageName
+                packageName = packageName,
+                targetDisplayName = targetDisplayName
             )
         )
     }
@@ -122,7 +133,9 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
-        appLabel: String
+        appLabel: String,
+        packageName: String = "",
+        targetDisplayName: String = ""
     ) {
         notifyState(
             context = context,
@@ -130,7 +143,9 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.AddingTrack,
                 owner = owner,
                 repo = repo,
-                appLabel = appLabel
+                appLabel = appLabel,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName
             )
         )
     }
@@ -139,7 +154,9 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
-        appLabel: String
+        appLabel: String,
+        packageName: String = "",
+        targetDisplayName: String = ""
     ) {
         notifyState(
             context = context,
@@ -147,7 +164,9 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.Added,
                 owner = owner,
                 repo = repo,
-                appLabel = appLabel
+                appLabel = appLabel,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName
             )
         )
     }
@@ -156,7 +175,9 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
-        appLabel: String
+        appLabel: String,
+        packageName: String = "",
+        targetDisplayName: String = ""
     ) {
         notifyState(
             context = context,
@@ -164,7 +185,9 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.AlreadyTracked,
                 owner = owner,
                 repo = repo,
-                appLabel = appLabel
+                appLabel = appLabel,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName
             )
         )
     }
@@ -242,7 +265,9 @@ object GitHubShareImportNotificationHelper {
                 channelId = helper.resolveChannel(NotificationRenderStyle.MI_ISLAND),
                 isHyperOS = helper.isHyperOS,
                 preferOemLiveIconLayout = helper.preferOemLiveIconLayout
-            )
+            ),
+            semanticIconBitmap = resolveSemanticIconBitmap(context, state),
+            miIslandProgressColorOverride = state.phase.miIslandProgressColor
         )
         return MiIslandNotificationBuilder(context).build(payload)
     }
@@ -289,7 +314,7 @@ object GitHubShareImportNotificationHelper {
         }
         val shortText = context.getString(state.phase.shortTextRes)
         val content = resolveContent(context, state)
-        val islandMetaText = state.compactMetaLabel
+        val islandTitle = state.compactIslandTitle(shortText)
         return McpNotificationPayload(
             serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = liveUpdateActive,
@@ -314,11 +339,18 @@ object GitHubShareImportNotificationHelper {
             showSecondaryActionWhenStopped = true,
             overrideTitle = context.getString(state.phase.titleRes),
             overrideContent = content,
-            overrideOnlineText = islandMetaText.ifBlank { shortText },
+            overrideOnlineText = islandTitle.ifBlank { shortText },
             overrideShortText = shortText,
             overrideProgressPercent = state.phase.progressPercent
         )
     }
+
+    private fun resolveSemanticIconBitmap(
+        context: Context,
+        state: GitHubShareImportNotificationState
+    ) = state.packageName.trim()
+        .takeIf { it.isNotBlank() }
+        ?.let { packageName -> AppIconCache.getOrLoad(context, packageName) }
 
     private fun resolveContent(
         context: Context,
@@ -466,6 +498,7 @@ internal data class GitHubShareImportNotificationState(
     val assetName: String = "",
     val appLabel: String = "",
     val packageName: String = "",
+    val targetDisplayName: String = "",
     val primaryLabel: String = "",
     val count: Int = 0
 ) {
@@ -485,10 +518,14 @@ internal data class GitHubShareImportNotificationState(
         }
 
     val appDisplayLabel: String
-        get() = appLabel.ifBlank { packageName }.ifBlank { projectLabel }
+        get() = appLabel
+            .ifBlank { targetDisplayName }
+            .ifBlank { packageName }
+            .ifBlank { projectLabel }
 
     val compactMetaLabel: String
         get() = appLabel
+            .ifBlank { targetDisplayName }
             .ifBlank { packageName }
             .ifBlank {
                 when {
@@ -498,6 +535,21 @@ internal data class GitHubShareImportNotificationState(
                     else -> primaryLabel
                 }
             }
+
+    fun compactIslandTitle(shortText: String): String {
+        return when (phase) {
+            GitHubShareImportNotificationPhase.WaitingInstall ->
+                compactMetaLabel.ifBlank { shortText }
+
+            GitHubShareImportNotificationPhase.InstallDetected,
+            GitHubShareImportNotificationPhase.AddingTrack,
+            GitHubShareImportNotificationPhase.Added,
+            GitHubShareImportNotificationPhase.AlreadyTracked ->
+                appDisplayLabel.ifBlank { shortText }
+
+            else -> shortText
+        }
+    }
 }
 
 internal enum class GitHubShareImportNotificationPhase(
@@ -508,7 +560,8 @@ internal enum class GitHubShareImportNotificationPhase(
     val ongoing: Boolean,
     val openGitHubPage: Boolean,
     val cancelActionEnabled: Boolean = false,
-    val promotedLiveUpdate: Boolean = false
+    val promotedLiveUpdate: Boolean = false,
+    val miIslandProgressColor: String? = null
 ) {
     Resolving(
         titleRes = R.string.github_share_import_notify_title_resolving,
@@ -568,7 +621,8 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 100,
         ongoing = false,
         openGitHubPage = true,
-        promotedLiveUpdate = true
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
     ),
     AlreadyTracked(
         titleRes = R.string.github_share_import_notify_title_already_tracked,
@@ -577,7 +631,8 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 100,
         ongoing = false,
         openGitHubPage = true,
-        promotedLiveUpdate = true
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
     ),
     Failed(
         titleRes = R.string.github_share_import_notify_title_failed,
@@ -586,7 +641,8 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 100,
         ongoing = false,
         openGitHubPage = true,
-        promotedLiveUpdate = true
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR
     ),
     Cancelled(
         titleRes = R.string.github_share_import_notify_title_cancelled,
@@ -595,6 +651,7 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 100,
         ongoing = false,
         openGitHubPage = true,
-        promotedLiveUpdate = true
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR
     )
 }

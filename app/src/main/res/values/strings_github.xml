@@ -665,7 +665,7 @@
     <string name="github_share_import_notify_content_cancelled">本次分享导入联动已停止</string>
     <string name="github_share_import_notify_short_resolving">解析</string>
     <string name="github_share_import_notify_short_asset_ready">可安装</string>
-    <string name="github_share_import_notify_short_delivering">发送</string>
+    <string name="github_share_import_notify_short_delivering">发送中</string>
     <string name="github_share_import_notify_short_waiting_install">安装</string>
     <string name="github_share_import_notify_short_install_detected">检测</string>
     <string name="github_share_import_notify_short_adding_track">追踪</string>

@@ -23,7 +23,8 @@ internal data class GitHubShareImportPreview(
     val releaseUrl: String,
     val strategyLabel: String,
     val assets: List<GitHubReleaseAssetFile>,
-    val preferredAssetName: String = ""
+    val preferredAssetName: String = "",
+    val targetDisplayName: String = ""
 ) {
     val defaultSelectedIndex: Int
         get() {
@@ -44,6 +45,7 @@ internal data class GitHubPendingShareImportTrack(
     val releaseTag: String = "",
     val assetName: String = "",
     val packageName: String = "",
+    val targetDisplayName: String = "",
     val armedAtMillis: Long = System.currentTimeMillis()
 )
 
@@ -55,8 +57,34 @@ internal fun GitHubPendingShareImportTrackRecord.toShareImportTrack(): GitHubPen
         releaseTag = releaseTag,
         assetName = assetName,
         packageName = packageName,
+        targetDisplayName = targetDisplayName,
         armedAtMillis = armedAtMillis
     )
+}
+
+internal fun buildShareImportTargetDisplayName(
+    appLabel: String = "",
+    repo: String = "",
+    assetName: String = "",
+    packageName: String = ""
+): String {
+    return appLabel.trim()
+        .ifBlank { repo.trim() }
+        .ifBlank { cleanShareImportAssetName(assetName) }
+        .ifBlank { packageName.trim() }
+}
+
+private fun cleanShareImportAssetName(assetName: String): String {
+    val fileName = assetName.trim()
+        .substringAfterLast('/')
+        .substringAfterLast('\\')
+    if (fileName.isBlank()) return ""
+    return fileName
+        .replace(Regex("\\.apk$", RegexOption.IGNORE_CASE), "")
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .replace(Regex("\\s+"), " ")
+        .trim()
 }
 
 internal enum class GitHubShareImportResultKind(
@@ -110,6 +138,7 @@ internal data class GitHubShareImportResult(
     val repo: String = "",
     val appLabel: String = "",
     val packageName: String = "",
+    val targetDisplayName: String = "",
     val message: String = "",
     val completedAtMillis: Long = System.currentTimeMillis()
 ) {
@@ -136,7 +165,7 @@ internal data class GitHubShareImportResult(
         }
 
     val appDisplayLabel: String
-        get() = appLabel.ifBlank { packageName }
+        get() = appLabel.ifBlank { targetDisplayName }.ifBlank { packageName }
 }
 
 internal fun GitHubShareImportResultRecord.toShareImportResult(): GitHubShareImportResult? {
@@ -148,6 +177,7 @@ internal fun GitHubShareImportResultRecord.toShareImportResult(): GitHubShareImp
         repo = repo,
         appLabel = appLabel,
         packageName = packageName,
+        targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -161,6 +191,7 @@ internal fun GitHubShareImportResult.toRecord(): GitHubShareImportResultRecord {
         repo = repo,
         appLabel = appLabel,
         packageName = packageName,
+        targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -179,6 +210,11 @@ internal fun GitHubPendingShareImportAttachCandidate.toShareImportResult(
         repo = repo,
         appLabel = appLabelOverride.ifBlank { appLabel },
         packageName = packageName,
+        targetDisplayName = buildShareImportTargetDisplayName(
+            appLabel = appLabelOverride.ifBlank { appLabel },
+            repo = repo,
+            packageName = packageName
+        ),
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -194,6 +230,7 @@ internal fun GitHubShareImportPreview.toShareImportResult(
         projectUrl = projectUrl,
         owner = owner,
         repo = repo,
+        targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -210,6 +247,7 @@ internal fun GitHubPendingShareImportTrackRecord.toShareImportResult(
         owner = owner,
         repo = repo,
         packageName = packageName,
+        targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -226,6 +264,7 @@ internal fun GitHubPendingShareImportTrack.toShareImportResult(
         owner = owner,
         repo = repo,
         packageName = packageName,
+        targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
     )
@@ -255,6 +294,7 @@ internal fun GitHubShareImportPreview.toPendingPreviewRecord(
         strategyLabel = strategyLabel,
         assets = assets,
         preferredAssetName = preferredAssetName,
+        targetDisplayName = targetDisplayName,
         createdAtMillis = createdAtMillis
     )
 }
@@ -269,7 +309,8 @@ internal fun GitHubPendingShareImportPreviewRecord.toShareImportPreview(): GitHu
         releaseUrl = releaseUrl,
         strategyLabel = strategyLabel,
         assets = assets,
-        preferredAssetName = preferredAssetName
+        preferredAssetName = preferredAssetName,
+        targetDisplayName = targetDisplayName
     )
 }
 

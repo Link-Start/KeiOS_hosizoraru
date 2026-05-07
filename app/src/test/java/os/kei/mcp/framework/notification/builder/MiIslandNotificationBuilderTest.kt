@@ -4,15 +4,20 @@ import android.app.Application
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import os.kei.MainActivity
 import os.kei.mcp.notification.McpNotificationPayload
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -181,6 +186,9 @@ class MiIslandNotificationBuilderTest {
             Intent("os.kei.test.CANCEL_GITHUB_SHARE_IMPORT").setPackage(context.packageName),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val appIconBitmap = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.GREEN)
+        }
         val payload = NotificationPayload(
             state = McpNotificationPayload(
                 serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
@@ -206,21 +214,80 @@ class MiIslandNotificationBuilderTest {
             environment = EnvironmentContext(
                 channelId = "test_mi_island_channel",
                 isHyperOS = true
-            )
+            ),
+            semanticIconBitmap = appIconBitmap
         )
 
         val notification = MiIslandNotificationBuilder(context).build(payload)
         val focusOpenAction = notification.focusAction("mcp_action_open")
         val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusDisplayIcon = notification.focusPicture("key_logo_display")
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals(notificationOpenPendingIntent, focusOpenAction.actionIntent)
         assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
         assertEquals("View status", focusOpenAction.title.toString())
         assertEquals("Cancel linkage", focusStopAction.title.toString())
-        assertTrue(focusParam.contains("\"title\":\"Waiting\""))
+        assertTrue(focusParam.contains("\"title\":\"demo.app\""))
+        assertTrue(focusParam.contains("\"colorReach\":\"#2563EB\""))
         assertTrue(focusParam.contains("demo.app"))
+        assertFalse(focusParam.contains("\"content\":\"demo.app\""))
         assertTrue(focusParam.contains("\"progress\":72"))
+        val renderedBitmap = Shadows.shadowOf(focusDisplayIcon).bitmap
+        assertNotNull(renderedBitmap)
+        assertEquals(appIconBitmap.width, renderedBitmap.width)
+        assertEquals(appIconBitmap.height, renderedBitmap.height)
+    }
+
+    @Test
+    fun `github share import success island uses green progress`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 811,
+            action = "os.kei.test.OPEN_GITHUB_SHARE_IMPORT_SUCCESS"
+        )
+        val markReadPendingIntent = PendingIntent.getBroadcast(
+            context,
+            812,
+            Intent("os.kei.test.MARK_GITHUB_SHARE_IMPORT_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
+                running = true,
+                port = 100,
+                path = "Demo was added to owner/repo tracking",
+                clients = 0,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = markReadPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                primaryActionLabel = "View tracking",
+                secondaryActionLabel = "Mark read",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "GitHub tracking added",
+                overrideContent = "Demo was added to owner/repo tracking",
+                overrideOnlineText = "Demo",
+                overrideShortText = "Done",
+                overrideProgressPercent = 100
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            ),
+            miIslandProgressColorOverride = "#22C55E"
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"title\":\"Demo\""))
+        assertTrue(focusParam.contains("\"colorReach\":\"#22C55E\""))
+        assertTrue(focusParam.contains("\"progress\":100"))
     }
 
     private fun buildOpenPendingIntent(
@@ -251,10 +318,22 @@ class MiIslandNotificationBuilderTest {
         return actions.getActionCompat(key)
     }
 
+    private fun Notification.focusPicture(key: String): Icon {
+        val pics = extras.getBundle("miui.focus.pics")
+        assertNotNull(pics, "Focus pictures bundle should be present")
+        return pics.getPictureCompat(key)
+    }
+
     @Suppress("DEPRECATION")
     private fun Bundle.getActionCompat(key: String): Notification.Action {
         return getParcelable<Notification.Action>(key)
             ?: error("Missing focus action: $key")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun Bundle.getPictureCompat(key: String): Icon {
+        return getParcelable<Icon>(key)
+            ?: error("Missing focus picture: $key")
     }
 }
 

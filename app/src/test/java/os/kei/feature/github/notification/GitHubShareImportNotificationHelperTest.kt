@@ -245,7 +245,7 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("View status", focusOpenAction.title.toString())
         assertEquals("Cancel linkage", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"progress\":72"))
-        assertTrue(focusParam.contains("\"title\":\"Install\""))
+        assertTrue(focusParam.contains("\"title\":\"demo.app\""))
         assertTrue(focusParam.contains("demo.app"))
     }
 
@@ -265,6 +265,55 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("mcp_action_open"))
         assertFalse(focusParam.contains("mcp_action_stop"))
         assertTrue(focusParam.contains("\"progress\":12"))
+    }
+
+    @Test
+    fun `delivering mi island compact text says sending`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.Delivering,
+            owner = "owner",
+            repo = "repo",
+            assetName = "demo.apk",
+            targetDisplayName = "Demo"
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(
+            "Sending",
+            context.getString(GitHubShareImportNotificationPhase.Delivering.shortTextRes)
+        )
+        assertTrue(focusParam.contains("\"title\":\"Sending\""))
+        assertFalse(focusParam.contains("\"content\":\"Demo\""))
+    }
+
+    @Test
+    fun `install detected mi island compact title uses app label`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.InstallDetected,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo",
+            packageName = "demo.app"
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"title\":\"Demo\""))
+        assertFalse(focusParam.contains("\"title\":\"Detect\""))
+        assertFalse(focusParam.contains("\"content\":\"Demo\""))
+        assertEquals(
+            "Install detected",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            "Demo · demo.app",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
     }
 
     @Test
@@ -303,6 +352,12 @@ class GitHubShareImportNotificationHelperTest {
             assertTrue(focusParam.contains("\"progress\":100"))
             assertTrue(focusParam.contains("mcp_action_open"))
             assertTrue(focusParam.contains("mcp_action_stop"))
+            if (state.phase == GitHubShareImportNotificationPhase.Added ||
+                state.phase == GitHubShareImportNotificationPhase.AlreadyTracked
+            ) {
+                assertTrue(focusParam.contains("\"title\":\"Demo\""))
+                assertTrue(focusParam.contains("\"colorReach\":\"#22C55E\""))
+            }
         }
     }
 

@@ -15,6 +15,7 @@ data class GitHubPendingShareImportPreviewRecord(
     val strategyLabel: String,
     val assets: List<GitHubReleaseAssetFile>,
     val preferredAssetName: String = "",
+    val targetDisplayName: String = "",
     val createdAtMillis: Long = System.currentTimeMillis()
 )
 
@@ -41,6 +42,7 @@ data class GitHubShareImportResultRecord(
     val repo: String = "",
     val appLabel: String = "",
     val packageName: String = "",
+    val targetDisplayName: String = "",
     val message: String = "",
     val completedAtMillis: Long = System.currentTimeMillis()
 )
@@ -174,6 +176,7 @@ object GitHubShareImportFlowStore {
             strategyLabel = obj.optString("strategyLabel").trim(),
             assets = assets,
             preferredAssetName = obj.optString("preferredAssetName").trim(),
+            targetDisplayName = obj.optString("targetDisplayName").trim(),
             createdAtMillis = obj.optLong("createdAtMillis", 0L)
         )
     }
@@ -211,6 +214,7 @@ object GitHubShareImportFlowStore {
             .put("releaseUrl", record.releaseUrl)
             .put("strategyLabel", record.strategyLabel)
             .put("preferredAssetName", record.preferredAssetName)
+            .put("targetDisplayName", record.targetDisplayName)
             .put("createdAtMillis", record.createdAtMillis)
             .put(
                 "assets",
@@ -275,8 +279,16 @@ object GitHubShareImportFlowStore {
         val repo = obj.optString("repo").trim()
         val appLabel = obj.optString("appLabel").trim()
         val packageName = obj.optString("packageName").trim()
+        val targetDisplayName = obj.optString("targetDisplayName").trim()
         val message = obj.optString("message").trim()
-        if (owner.isBlank() && repo.isBlank() && appLabel.isBlank() && packageName.isBlank() && message.isBlank()) {
+        if (
+            owner.isBlank() &&
+            repo.isBlank() &&
+            appLabel.isBlank() &&
+            packageName.isBlank() &&
+            targetDisplayName.isBlank() &&
+            message.isBlank()
+        ) {
             return null
         }
         return GitHubShareImportResultRecord(
@@ -286,6 +298,7 @@ object GitHubShareImportFlowStore {
             repo = repo,
             appLabel = appLabel,
             packageName = packageName,
+            targetDisplayName = targetDisplayName,
             message = message,
             completedAtMillis = completedAtMillis
         )
@@ -299,6 +312,7 @@ object GitHubShareImportFlowStore {
             .put("repo", record.repo)
             .put("appLabel", record.appLabel)
             .put("packageName", record.packageName)
+            .put("targetDisplayName", record.targetDisplayName)
             .put("message", record.message)
             .put("completedAtMillis", record.completedAtMillis)
     }

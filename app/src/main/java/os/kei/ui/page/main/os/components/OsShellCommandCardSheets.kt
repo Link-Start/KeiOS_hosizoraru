@@ -55,7 +55,7 @@ internal fun LazyListScope.addShellCommandCards(
     onHeaderLongClick: (OsShellCommandCard) -> Unit,
     onRunCard: (OsShellCommandCard) -> Unit
 ) {
-    cards.filter { it.visible }.forEach { card ->
+    cards.forEach { card ->
         item(key = "os-shell-command-${card.id}") {
             val cardIsRunning = runningCardIds.contains(card.id)
             AppLiquidAccordionCard(

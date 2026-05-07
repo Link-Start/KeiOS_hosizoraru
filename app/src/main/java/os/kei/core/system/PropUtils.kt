@@ -1,8 +1,5 @@
 package os.kei.core.system
 
-import java.io.BufferedReader
-import java.io.InputStreamReader
-
 private inline fun <T> safeOf(default: T, block: () -> T): T = runCatching(block).getOrDefault(default)
 
 /**
@@ -29,17 +26,12 @@ val getAllJavaPropString: Map<String, String>
 
 val getAllSystemProperties: Map<String, String>
     get() = safeOf(emptyMap()) {
-        val process = Runtime.getRuntime().exec("getprop")
-        process.inputStream.use { stream ->
-            BufferedReader(InputStreamReader(stream)).use { reader ->
-                buildMap {
-                    val pattern = Regex("^\\[(.+)]\\:\\s\\[(.*)]$")
-                    reader.forEachLine { line ->
-                        val match = pattern.find(line) ?: return@forEachLine
-                        put(match.groupValues[1], match.groupValues[2])
-                    }
-                }
+        val raw = RuntimeCommandExecutor.execute("getprop").stdout
+        buildMap {
+            val pattern = Regex("^\\[(.+)]\\:\\s\\[(.*)]$")
+            raw.lineSequence().forEach { line ->
+                val match = pattern.find(line) ?: return@forEach
+                put(match.groupValues[1], match.groupValues[2])
             }
         }
     }
-

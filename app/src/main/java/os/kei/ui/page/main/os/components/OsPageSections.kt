@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
@@ -60,7 +62,7 @@ internal fun LazyListScope.addTopInfoCard(
     exportAction: @Composable () -> Unit
 ) {
     if (!visible) return
-    item {
+    item(key = "os-top-info-card") {
         AppLiquidAccordionCard(
             backdrop = contentBackdrop,
             title = stringResource(R.string.os_section_top_info_title),
@@ -88,7 +90,7 @@ internal fun LazyListScope.addTopInfoCard(
             }
         }
     }
-    item { Spacer(modifier = Modifier.height(8.dp)) }
+    item(key = "os-top-info-space") { Spacer(modifier = Modifier.height(8.dp)) }
 }
 
 internal fun LazyListScope.addShortcutActivityCards(
@@ -100,7 +102,7 @@ internal fun LazyListScope.addShortcutActivityCards(
     onOpenActivity: (OsActivityShortcutCard) -> Unit,
     onHeaderLongClick: (OsActivityShortcutCard) -> Unit
 ) {
-    cards.filter { it.visible }.forEach { card ->
+    cards.forEach { card ->
         val shortcutConfig = card.config
         item(key = "os-activity-${card.id}") {
             AppLiquidAccordionCard(
@@ -196,7 +198,7 @@ internal fun LazyListScope.addKeyValueSectionCard(
     exportAction: @Composable () -> Unit
 ) {
     if (!visible) return
-    item {
+    item(key = "os-section-${card.name}") {
         AppLiquidAccordionCard(
             backdrop = contentBackdrop,
             title = title,
@@ -215,7 +217,7 @@ internal fun LazyListScope.addKeyValueSectionCard(
             }
         }
     }
-    item { Spacer(modifier = Modifier.height(8.dp)) }
+    item(key = "os-section-space-${card.name}") { Spacer(modifier = Modifier.height(8.dp)) }
 }
 
 @Composable
@@ -227,6 +229,22 @@ private fun OsVirtualizedInfoRows(
     labelMaxLines: Int = Int.MAX_VALUE,
     valueMinWidth: Dp = Dp.Unspecified
 ) {
+    if (rows.size <= SMALL_INFO_ROW_COUNT) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            rows.forEach { row ->
+                OsSectionInfoRow(
+                    label = row.key,
+                    value = row.value,
+                    valueSingleLine = valueSingleLine,
+                    labelMinWidth = labelMinWidth,
+                    labelMaxWidth = labelMaxWidth,
+                    labelMaxLines = labelMaxLines,
+                    valueMinWidth = valueMinWidth
+                )
+            }
+        }
+        return
+    }
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -257,13 +275,46 @@ private sealed interface TopInfoVirtualizedItem {
 
 @Composable
 private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<InfoRow>>>) {
-    val rows = buildList {
-        groupedRows.forEach { (type, entries) ->
-            if (entries.isNotEmpty()) {
-                add(TopInfoVirtualizedItem.Header(type))
-                entries.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
+    val rows = remember(groupedRows) {
+        buildList {
+            groupedRows.forEach { (type, entries) ->
+                if (entries.isNotEmpty()) {
+                    add(TopInfoVirtualizedItem.Header(type))
+                    entries.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
+                }
             }
         }
+    }
+    if (rows.size <= SMALL_INFO_ROW_COUNT) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            rows.forEachIndexed { index, item ->
+                when (item) {
+                    is TopInfoVirtualizedItem.Header -> {
+                        Text(
+                            text = item.title,
+                            color = MiuixTheme.colorScheme.onBackground,
+                            fontSize = AppTypographyTokens.CompactTitle.fontSize,
+                            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+                            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+                            modifier = Modifier.padding(top = if (index == 0) 0.dp else 8.dp, bottom = 2.dp)
+                        )
+                    }
+
+                    is TopInfoVirtualizedItem.Entry -> {
+                        OsSectionInfoRow(
+                            label = item.row.key,
+                            value = item.row.value,
+                            valueSingleLine = true,
+                            labelMinWidth = 56.dp,
+                            labelMaxWidth = 92.dp,
+                            labelMaxLines = 1,
+                            valueMinWidth = 140.dp
+                        )
+                    }
+                }
+            }
+        }
+        return
     }
     LazyColumn(
         modifier = Modifier
@@ -307,6 +358,8 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
         }
     }
 }
+
+private const val SMALL_INFO_ROW_COUNT = 24
 
 @Composable
 internal fun OsCardVisibilityManagerSheet(

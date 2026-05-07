@@ -7,9 +7,8 @@ import androidx.compose.runtime.remember
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
+import os.kei.ui.page.main.os.transfer.OsCardTransferService
 
 internal data class OsPageOverlayTransferActions(
     val onExportAllActivityCards: () -> Unit,
@@ -38,7 +37,7 @@ internal fun rememberOsPageOverlayTransferActions(
         OsPageOverlayTransferActions(
             onExportAllActivityCards = {
                 runCatching {
-                    val payload = OsActivityShortcutCardStore.buildCardsExportJson(
+                    val payload = OsCardTransferService.buildActivityCardsExportJson(
                         cards = activityShortcutCards,
                         defaults = googleSystemServiceDefaults
                     )
@@ -63,7 +62,7 @@ internal fun rememberOsPageOverlayTransferActions(
             },
             onExportAllShellCards = {
                 runCatching {
-                    val payload = OsShellCommandCardStore.buildCardsExportJson(shellCommandCards)
+                    val payload = OsCardTransferService.buildShellCardsExportJson(shellCommandCards)
                     overlayState.onPendingExportContentChange(payload)
                     cardTransferState.exportLauncher.launch("keios-os-shell-cards.json")
                 }.onFailure { error ->

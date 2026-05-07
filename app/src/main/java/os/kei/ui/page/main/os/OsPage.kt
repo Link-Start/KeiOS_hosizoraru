@@ -243,13 +243,26 @@ fun OsPage(
         onClassSuggestionsChange = overlayState.onGoogleSystemServiceClassSuggestionsChange
     )
 
-    val derivedState = rememberOsPageDerivedState(
-        context = context,
+    val routeState = rememberOsPageRouteState(
         queryApplied = queryApplied,
-        shizukuStatus = shizukuStatus,
-        shellSavedCountLabel = textBundle.shellSavedCountLabel,
+        uiSnapshot = uiSnapshot,
+        visibleCards = visibleCards,
+        activityShortcutCards = activityShortcutCards,
         shellCommandCards = shellCommandCards,
         sectionStates = sectionStates,
+        refreshing = refreshing,
+        refreshProgress = refreshProgress,
+        cachePersisted = cachePersisted,
+        runningShellCommandCardIds = runningShellCommandCardIds
+    )
+
+    val derivedState = rememberOsPageDerivedState(
+        context = context,
+        queryApplied = routeState.queryApplied,
+        shizukuStatus = shizukuStatus,
+        shellSavedCountLabel = textBundle.shellSavedCountLabel,
+        shellCommandCards = routeState.shellCommandCards,
+        sectionStates = routeState.sectionStates,
         topInfoExpanded = topInfoExpanded,
         systemTableExpanded = systemTableExpanded,
         secureTableExpanded = secureTableExpanded,
@@ -263,11 +276,11 @@ fun OsPage(
         refreshingColor = refreshingColor,
         syncedColor = syncedColor,
         surfaceColor = surfaceColor,
-        refreshing = refreshing,
-        refreshProgress = refreshProgress,
-        cachePersisted = cachePersisted,
-        visibleCards = visibleCards,
-        activityShortcutCards = activityShortcutCards
+        refreshing = routeState.refreshing,
+        refreshProgress = routeState.refreshProgress,
+        cachePersisted = routeState.cachePersisted,
+        visibleCards = routeState.visibleCards,
+        activityShortcutCards = routeState.activityShortcutCards
     )
 
     val overviewState = derivedState.overviewUiState.overviewState
@@ -277,7 +290,7 @@ fun OsPage(
     val overviewBorderColor = derivedState.overviewUiState.overviewBorderColor
     val indicatorProgress = derivedState.overviewUiState.indicatorProgress
     val indicatorBg = derivedState.overviewUiState.indicatorBg
-    val overviewMetrics = derivedState.overviewUiState.metrics
+    val overviewMetricRows = derivedState.overviewMetricRows
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides osGlassRuntime) {
         OsPageScaffoldShell(
@@ -329,7 +342,7 @@ fun OsPage(
                 statusLabel = statusLabel,
                 overviewCardColor = overviewCardColor,
                 overviewBorderColor = overviewBorderColor,
-                overviewMetrics = overviewMetrics,
+                overviewMetricRows = overviewMetricRows,
                 noMatchedResultsText = textBundle.noMatchedResultsText,
                 query = derivedState.query,
                 displayedTopInfoRows = derivedState.displayedTopInfoRows,
@@ -340,9 +353,9 @@ fun OsPage(
                 shellRunnerExpanded = shellRunnerExpanded,
                 onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
                 onOpenShellRunner = { OsShellRunnerActivity.launch(context) },
-                shellCommandCards = shellCommandCards,
+                shellCommandCards = derivedState.visibleShellCommandCards,
                 shellCommandCardExpanded = shellCommandCardExpanded,
-                runningShellCommandCardIds = runningShellCommandCardIds,
+                runningShellCommandCardIds = routeState.runningShellCommandCardIds,
                 onShellCommandCardExpandedChange = { cardId, expanded ->
                     shellCommandCardExpanded[cardId] = expanded
                 },
@@ -354,7 +367,7 @@ fun OsPage(
                 onRunShellCommandCard = { card ->
                     scope.launch { actionState.runShellCommandCard(card) }
                 },
-                activityShortcutCards = activityShortcutCards,
+                activityShortcutCards = derivedState.visibleActivityShortcutCards,
                 defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
                 activityCardExpanded = activityCardExpanded,
                 onActivityCardExpandedChange = { cardId, expanded ->

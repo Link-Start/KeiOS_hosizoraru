@@ -36,14 +36,49 @@ internal data class ShortcutActivityClassOption(
     val isExported: Boolean
 )
 
+private object ShortcutSuggestionSessionCache {
+    private const val MAX_CLASS_CACHE_ENTRIES = 48
+
+    private val lock = Any()
+    private var installedApps: List<ShortcutInstalledAppOption>? = null
+    private val classOptions = object : LinkedHashMap<String, List<ShortcutActivityClassOption>>(16, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, List<ShortcutActivityClassOption>>
+        ): Boolean {
+            return size > MAX_CLASS_CACHE_ENTRIES
+        }
+    }
+
+    fun getInstalledApps(): List<ShortcutInstalledAppOption>? = synchronized(lock) {
+        installedApps
+    }
+
+    fun putInstalledApps(options: List<ShortcutInstalledAppOption>) {
+        synchronized(lock) {
+            installedApps = options
+        }
+    }
+
+    fun getClassOptions(packageName: String): List<ShortcutActivityClassOption>? = synchronized(lock) {
+        classOptions[packageName]
+    }
+
+    fun putClassOptions(packageName: String, options: List<ShortcutActivityClassOption>) {
+        synchronized(lock) {
+            classOptions[packageName] = options
+        }
+    }
+}
+
 internal fun loadInstalledAppOptions(context: Context): List<ShortcutInstalledAppOption> {
+    ShortcutSuggestionSessionCache.getInstalledApps()?.let { return it }
     val pm = context.packageManager
     val packageInfos =
         pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong()))
     val overlayFlagMask = runCatching {
         ApplicationInfo::class.java.getField("FLAG_IS_RESOURCE_OVERLAY").getInt(null)
     }.getOrDefault(0)
-    return packageInfos.mapNotNull { info ->
+    val options = packageInfos.mapNotNull { info ->
         val packageName = info.packageName.trim()
         if (packageName.isBlank()) return@mapNotNull null
         val appInfo = info.applicationInfo ?: runCatching {
@@ -73,6 +108,8 @@ internal fun loadInstalledAppOptions(context: Context): List<ShortcutInstalledAp
             compareBy<ShortcutInstalledAppOption> { it.appName.lowercase(Locale.ROOT) }
                 .thenBy { it.packageName.lowercase(Locale.ROOT) }
         )
+    ShortcutSuggestionSessionCache.putInstalledApps(options)
+    return options
 }
 
 internal fun loadActivityClassOptions(
@@ -81,6 +118,7 @@ internal fun loadActivityClassOptions(
 ): List<ShortcutActivityClassOption> {
     val normalizedPackageName = packageName.trim()
     if (normalizedPackageName.isBlank()) return emptyList()
+    ShortcutSuggestionSessionCache.getClassOptions(normalizedPackageName)?.let { return it }
     val pm = context.packageManager
     val packageInfo = runCatching {
         pm.getPackageInfo(
@@ -89,7 +127,7 @@ internal fun loadActivityClassOptions(
         )
     }.getOrNull() ?: return emptyList()
 
-    return packageInfo.activities.orEmpty()
+    val options = packageInfo.activities.orEmpty()
         .asSequence()
         .filter { it.enabled || it.exported }
         .mapNotNull { info ->
@@ -124,6 +162,8 @@ internal fun loadActivityClassOptions(
                 .thenBy { it.className.lowercase(Locale.ROOT) }
         )
         .toList()
+    ShortcutSuggestionSessionCache.putClassOptions(normalizedPackageName, options)
+    return options
 }
 
 private fun shouldIgnoreInstalledAppForShortcut(

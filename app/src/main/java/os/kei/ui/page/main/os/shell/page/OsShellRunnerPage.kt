@@ -50,7 +50,6 @@ import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.osLucideClearAllIcon
 import os.kei.ui.page.main.os.shell.OsShellBehaviorSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellOutputSettingsSheet
-import os.kei.ui.page.main.os.shell.OsShellRunnerCopyMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerExitCleanupMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerStartupBehavior
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
@@ -72,22 +71,6 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
-
-private val dangerousShellPatterns = listOf(
-    Regex("""(^|\s)rm(\s+-[^\n]*)?\s+/(?!sdcard)""", RegexOption.IGNORE_CASE),
-    Regex("""(^|\s)pm\s+uninstall(\s|$)""", RegexOption.IGNORE_CASE),
-    Regex("""(^|\s)settings\s+put\s+global(\s|$)""", RegexOption.IGNORE_CASE),
-    Regex("""(^|\s)settings\s+delete\s+(system|secure|global)(\s|$)""", RegexOption.IGNORE_CASE),
-    Regex("""(^|\s)setprop(\s|$)""", RegexOption.IGNORE_CASE),
-    Regex("""(^|\s)reboot(\s|$)""", RegexOption.IGNORE_CASE),
-    Regex("""(^|\s)am\s+force-stop(\s|$)""", RegexOption.IGNORE_CASE)
-)
-
-private fun isPotentiallyDangerousShellCommand(command: String): Boolean {
-    val normalized = command.trim()
-    if (normalized.isBlank()) return false
-    return dangerousShellPatterns.any { regex -> regex.containsMatchIn(normalized) }
-}
 
 @Composable
 fun OsShellRunnerPage(
@@ -289,17 +272,12 @@ fun OsShellRunnerPage(
     }
 
     fun copyOutput() {
-        val preferred = when (settings.copyMode) {
-            OsShellRunnerCopyMode.FullHistory -> outputText.trim()
-            OsShellRunnerCopyMode.LatestResult -> latestOutputEntry?.result.orEmpty().trim()
-        }
-        val output = preferred.ifBlank {
-            if (settings.copyMode == OsShellRunnerCopyMode.LatestResult) {
-                latestRunResultOutput.trim().ifBlank { outputText.trim() }
-            } else {
-                outputText.trim()
-            }
-        }
+        val output = resolveShellOutputCopyText(
+            settings = settings,
+            latestOutputEntry = latestOutputEntry,
+            latestRunResultOutput = latestRunResultOutput,
+            outputText = outputText
+        )
         if (output.isBlank()) {
             Toast.makeText(context, textBundle.outputCopyEmptyToast, Toast.LENGTH_SHORT).show()
             return

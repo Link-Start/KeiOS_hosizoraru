@@ -33,6 +33,11 @@ internal data class OsOverviewMetric(
     val valueColor: Color? = null
 )
 
+internal data class OsOverviewMetricRow(
+    val first: OsOverviewMetric,
+    val second: OsOverviewMetric?
+)
+
 @Composable
 internal fun sectionCardIcon(card: OsSectionCard): ImageVector = when (card) {
     OsSectionCard.TOP_INFO -> appLucideInfoIcon()

@@ -1,13 +1,13 @@
 package os.kei.feature.os.data
 
 import android.os.Build
+import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.findJavaPropString
 import os.kei.core.system.findPropString
 
-private fun exec(command: String): String = runCatching {
-    val process = Runtime.getRuntime().exec(command)
-    process.inputStream.bufferedReader().use { it.readText() }
-}.getOrDefault("")
+private fun exec(command: String): String {
+    return RuntimeCommandExecutor.execute(command).stdout
+}
 
 object InfoFactory {
     val procVersion
@@ -215,4 +215,3 @@ object InfoFactory {
     val fileSafStatus
         get() = fileSaf != "No activity found"
 }
-

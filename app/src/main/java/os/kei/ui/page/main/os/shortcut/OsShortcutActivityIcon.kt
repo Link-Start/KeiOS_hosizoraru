@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -27,23 +28,44 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
 private object ActivityIconBitmapCache {
-    private val cache = ConcurrentHashMap<String, Bitmap>()
-    private val missingKeys = ConcurrentHashMap.newKeySet<String>()
+    private const val MAX_ICON_CACHE_ENTRIES = 96
+    private const val MAX_MISSING_KEYS = 192
 
-    fun get(key: String): Bitmap? = cache[key]
+    private val lock = Any()
+    private val cache = object : LruCache<String, Bitmap>(MAX_ICON_CACHE_ENTRIES) {
+        override fun sizeOf(key: String, value: Bitmap): Int = 1
+    }
+    private val missingKeys = LinkedHashSet<String>()
 
-    fun isMissing(key: String): Boolean = missingKeys.contains(key)
+    fun get(key: String): Bitmap? = synchronized(lock) {
+        cache.get(key)
+    }
+
+    fun isMissing(key: String): Boolean = synchronized(lock) {
+        missingKeys.contains(key)
+    }
 
     fun put(key: String, bitmap: Bitmap?) {
-        if (bitmap == null) {
-            missingKeys.add(key)
-            return
+        synchronized(lock) {
+            if (bitmap == null) {
+                rememberMissingKey(key)
+                return
+            }
+            missingKeys.remove(key)
+            cache.put(key, bitmap)
         }
-        cache[key] = bitmap
+    }
+
+    private fun rememberMissingKey(key: String) {
+        missingKeys.remove(key)
+        missingKeys.add(key)
+        while (missingKeys.size > MAX_MISSING_KEYS) {
+            val oldest = missingKeys.firstOrNull() ?: return
+            missingKeys.remove(oldest)
+        }
     }
 }
 

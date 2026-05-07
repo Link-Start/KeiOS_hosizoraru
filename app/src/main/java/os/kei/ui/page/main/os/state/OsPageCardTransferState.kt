@@ -11,18 +11,14 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
 import os.kei.ui.page.main.os.transfer.OsCardImportError
 import os.kei.ui.page.main.os.transfer.OsCardImportException
-import os.kei.ui.page.main.os.transfer.OsCardImportFileKind
-import os.kei.ui.page.main.os.transfer.OsCardImportPreview
+import os.kei.ui.page.main.os.transfer.OsCardTransferService
 import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
 import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
 import os.kei.ui.page.main.os.transfer.localizedOsCardImportMessage
-import os.kei.ui.page.main.os.transfer.parseOsCardImportRoot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -71,7 +67,7 @@ internal fun rememberOsPageCardTransferState(
     }
 
     fun applyActivityImport(payload: OsActivityCardImportPayload) {
-        val result = OsActivityShortcutCardStore.applyImportedCards(
+        val result = OsCardTransferService.applyActivityImport(
             payload = payload,
             existingCards = activityShortcutCards,
             defaults = googleSystemServiceDefaults,
@@ -98,7 +94,7 @@ internal fun rememberOsPageCardTransferState(
     }
 
     fun applyShellImport(payload: OsShellCardImportPayload) {
-        val result = OsShellCommandCardStore.applyImportedCards(
+        val result = OsCardTransferService.applyShellImport(
             payload = payload,
             existingCards = shellCommandCards
         )
@@ -138,7 +134,7 @@ internal fun rememberOsPageCardTransferState(
                         reader?.readText().orEmpty()
                     }
                 }
-                buildImportPreview(
+                OsCardTransferService.buildImportPreview(
                     raw = raw,
                     target = target,
                     activityShortcutCards = activityShortcutCards,
@@ -196,92 +192,4 @@ internal fun rememberOsPageCardTransferState(
         importLauncher = importLauncher,
         confirmImport = confirmPendingImport
     )
-}
-
-private fun buildImportPreview(
-    raw: String,
-    target: OsCardImportTarget,
-    activityShortcutCards: List<OsActivityShortcutCard>,
-    shellCommandCards: List<OsShellCommandCard>,
-    googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-    googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig
-): OsCardImportPreview {
-    val root = parseOsCardImportRoot(raw)
-    return when (root.fileKind) {
-        OsCardImportFileKind.Activity -> {
-            val payload = OsActivityShortcutCardStore.parseCardsImport(
-                root = root,
-                defaults = googleSystemServiceDefaults,
-                builtInSampleDefaults = googleSettingsBuiltInSampleDefaults
-            )
-            val result = if (target == OsCardImportTarget.Activity) {
-                OsActivityShortcutCardStore.previewImportedCards(
-                    payload = payload,
-                    existingCards = activityShortcutCards,
-                    defaults = googleSystemServiceDefaults,
-                    builtInSampleDefaults = googleSettingsBuiltInSampleDefaults
-                )
-            } else {
-                null
-            }
-            OsCardImportPreview(
-                target = target,
-                payload = payload,
-                fileItemCount = payload.sourceCount,
-                validCount = payload.cards.size,
-                duplicateCount = payload.duplicateCount,
-                invalidCount = payload.invalidCount,
-                newCount = result?.addedCount ?: 0,
-                updatedCount = result?.updatedCount ?: 0,
-                unchangedCount = result?.unchangedCount ?: 0,
-                mergedCount = result?.cards?.size ?: 0
-            )
-        }
-
-        OsCardImportFileKind.Shell -> {
-            val payload = OsShellCommandCardStore.parseCardsImport(root)
-            val result = if (target == OsCardImportTarget.Shell) {
-                OsShellCommandCardStore.previewImportedCards(
-                    payload = payload,
-                    existingCards = shellCommandCards
-                )
-            } else {
-                null
-            }
-            OsCardImportPreview(
-                target = target,
-                payload = payload,
-                fileItemCount = payload.sourceCount,
-                validCount = payload.cards.size,
-                duplicateCount = payload.duplicateCount,
-                invalidCount = payload.invalidCount,
-                newCount = result?.addedCount ?: 0,
-                updatedCount = result?.updatedCount ?: 0,
-                unchangedCount = result?.unchangedCount ?: 0,
-                mergedCount = result?.cards?.size ?: 0
-            )
-        }
-
-        OsCardImportFileKind.Unknown -> {
-            val payload = OsUnknownCardImportPayload(
-                sourceCount = root.sourceCount,
-                invalidCount = root.sourceCount,
-                duplicateCount = 0,
-                fileKind = root.fileKind,
-                isLegacyFormat = root.isLegacyFormat
-            )
-            OsCardImportPreview(
-                target = target,
-                payload = payload,
-                fileItemCount = payload.sourceCount,
-                validCount = 0,
-                duplicateCount = payload.duplicateCount,
-                invalidCount = payload.invalidCount,
-                newCount = 0,
-                updatedCount = 0,
-                unchangedCount = 0,
-                mergedCount = 0
-            )
-        }
-    }
 }

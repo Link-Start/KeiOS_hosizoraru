@@ -67,7 +67,7 @@ internal fun OsPageMainList(
     statusLabel: String,
     overviewCardColor: Color,
     overviewBorderColor: Color,
-    overviewMetrics: List<OsOverviewMetric>,
+    overviewMetricRows: List<OsOverviewMetricRow>,
     noMatchedResultsText: String,
     query: String,
     displayedTopInfoRows: List<InfoRow>,
@@ -170,7 +170,7 @@ internal fun OsPageMainList(
             innerPadding = innerPadding,
             sectionSpacing = 0.dp
         ) {
-            item {
+            item(key = "os-overview-card") {
                 AppOverviewCard(
                     title = stringResource(R.string.os_overview_title),
                     backdrop = contentBackdrop,
@@ -205,35 +205,36 @@ internal fun OsPageMainList(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
                     ) {
-                        overviewMetrics.chunked(2).forEach { pair ->
+                        overviewMetricRows.forEach { pair ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap)
                             ) {
                                 GitHubOverviewMetricItem(
-                                    label = pair[0].label,
-                                    value = pair[0].value,
+                                    label = pair.first.label,
+                                    value = pair.first.value,
                                     titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                    valueColor = pair[0].valueColor
+                                    valueColor = pair.first.valueColor
                                         ?: MiuixTheme.colorScheme.onBackground,
                                     labelMaxLines = 1,
                                     valueMaxLines = 1,
-                                    labelWeight = metricLabelWeight(pair[0].label),
-                                    valueWeight = metricValueWeight(pair[0].label),
+                                    labelWeight = metricLabelWeight(pair.first.label),
+                                    valueWeight = metricValueWeight(pair.first.label),
                                     backdrop = contentBackdrop,
                                     modifier = Modifier.weight(1f)
                                 )
-                                if (pair.size > 1) {
+                                val second = pair.second
+                                if (second != null) {
                                     GitHubOverviewMetricItem(
-                                        label = pair[1].label,
-                                        value = pair[1].value,
+                                        label = second.label,
+                                        value = second.value,
                                         titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                        valueColor = pair[1].valueColor
+                                        valueColor = second.valueColor
                                             ?: MiuixTheme.colorScheme.onBackground,
                                         labelMaxLines = 1,
                                         valueMaxLines = 1,
-                                        labelWeight = metricLabelWeight(pair[1].label),
-                                        valueWeight = metricValueWeight(pair[1].label),
+                                        labelWeight = metricLabelWeight(second.label),
+                                        valueWeight = metricValueWeight(second.label),
                                         backdrop = contentBackdrop,
                                         modifier = Modifier.weight(1f)
                                     )
@@ -246,7 +247,9 @@ internal fun OsPageMainList(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(AppChromeTokens.pageSectionGap)) }
+            item(key = "os-overview-space") {
+                Spacer(modifier = Modifier.height(AppChromeTokens.pageSectionGap))
+            }
 
             addTopInfoCard(
                 visible = isCardVisible(OsSectionCard.TOP_INFO),

@@ -6,6 +6,7 @@ import android.content.pm.FeatureInfo
 import android.content.pm.PackageManager
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropString
 import os.kei.core.system.getAllSystemProperties
@@ -87,10 +88,7 @@ internal fun cleanRows(rows: List<InfoRow>): List<InfoRow> {
 }
 
 internal fun execRuntimeCommand(command: String): String? {
-    return runCatching {
-        val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
-        process.inputStream.bufferedReader().use { it.readText() }.trim()
-    }.getOrNull()?.ifBlank { null }
+    return RuntimeCommandExecutor.execute(command).stdout.ifBlank { null }
 }
 
 internal fun parseKeyValueLines(raw: String?): List<InfoRow> {
@@ -156,21 +154,24 @@ internal fun boolFeatureRow(pm: PackageManager, featureName: String, label: Stri
     return InfoRow(label, pm.hasSystemFeature(featureName).toString())
 }
 
-internal fun graphicsRows(context: Context): List<InfoRow> {
+internal fun graphicsRows(
+    context: Context,
+    systemProperties: Map<String, String> = getAllSystemProperties
+): List<InfoRow> {
     val pm = context.packageManager
     val features = pm.systemAvailableFeatures
     val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     val glEsVersion = activityManager?.deviceConfigurationInfo?.glEsVersion.orEmpty()
-    val glEsRaw = execRuntimeCommand("getprop ro.opengles.version").orEmpty()
+    val glEsRaw = systemProperties["ro.opengles.version"].orEmpty()
     val glEsDecoded = decodeOpenGlEsVersion(glEsRaw)
 
     val vulkanVersionEncoded = featureVersion(features, "android.hardware.vulkan.version")
     val vulkanLevel = featureVersion(features, "android.hardware.vulkan.level")
     val vulkanVersionText = decodeVulkanApiVersion(vulkanVersionEncoded)
-    val vulkanHardware = execRuntimeCommand("getprop ro.hardware.vulkan").orEmpty()
-    val eglHardware = execRuntimeCommand("getprop ro.hardware.egl").orEmpty()
-    val gfxDriver0 = execRuntimeCommand("getprop ro.gfx.driver.0").orEmpty()
-    val gfxDriver1 = execRuntimeCommand("getprop ro.gfx.driver.1").orEmpty()
+    val vulkanHardware = systemProperties["ro.hardware.vulkan"].orEmpty()
+    val eglHardware = systemProperties["ro.hardware.egl"].orEmpty()
+    val gfxDriver0 = systemProperties["ro.gfx.driver.0"].orEmpty()
+    val gfxDriver1 = systemProperties["ro.gfx.driver.1"].orEmpty()
     val gpuDriverPackage = listOf(gfxDriver1, gfxDriver0).firstOrNull { it.contains('.') }.orEmpty()
     val gpuDriverVersion = if (gpuDriverPackage.isBlank()) "" else packageVersionName(context, gpuDriverPackage)
 
@@ -228,11 +229,14 @@ internal fun buildSectionRows(
         SectionKind.SYSTEM -> cleanRows(commandRows("settings list system", shizukuApiUtils))
         SectionKind.SECURE -> cleanRows(commandRows("settings list secure", shizukuApiUtils))
         SectionKind.GLOBAL -> cleanRows(commandRows("settings list global", shizukuApiUtils))
-        SectionKind.ANDROID -> cleanRows(
-            graphicsRows(context) +
-                capabilityRows(context) +
-                getAllSystemProperties.toSortedMap().map { InfoRow(it.key, it.value) }
-        )
+        SectionKind.ANDROID -> {
+            val systemProperties = getAllSystemProperties
+            cleanRows(
+                graphicsRows(context, systemProperties) +
+                    capabilityRows(context) +
+                    systemProperties.toSortedMap().map { InfoRow(it.key, it.value) }
+            )
+        }
         SectionKind.JAVA -> cleanRows(
             getAllJavaPropString.toSortedMap().map { InfoRow(it.key, it.value) }
         )

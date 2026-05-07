@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import os.kei.R
+import os.kei.ui.page.main.os.components.OsOverviewMetricRow
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 
 internal data class OsPageDerivedState(
     val query: String,
@@ -25,6 +27,9 @@ internal data class OsPageDerivedState(
     val prunedJavaRows: List<InfoRow>,
     val prunedLinuxRows: List<InfoRow>,
     val overviewUiState: OsOverviewUiState,
+    val overviewMetricRows: List<OsOverviewMetricRow>,
+    val visibleActivityShortcutCards: List<OsActivityShortcutCard>,
+    val visibleShellCommandCards: List<OsShellCommandCard>
 )
 
 @Composable
@@ -52,7 +57,7 @@ internal fun rememberOsPageDerivedState(
     refreshProgress: Float,
     cachePersisted: Boolean,
     visibleCards: Set<OsSectionCard>,
-    activityShortcutCards: List<os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard>,
+    activityShortcutCards: List<OsActivityShortcutCard>,
 ): OsPageDerivedState {
     val systemRows = sectionStates[SectionKind.SYSTEM]?.rows ?: emptyList()
     val secureRows = sectionStates[SectionKind.SECURE]?.rows ?: emptyList()
@@ -194,6 +199,19 @@ internal fun rememberOsPageDerivedState(
             shellCommandCards = shellCommandCards
         )
     }
+    val overviewMetricRows = remember(overviewUiState.metrics) {
+        overviewUiState.metrics.chunked(2).mapNotNull { pair ->
+            pair.firstOrNull()?.let { first ->
+                OsOverviewMetricRow(first = first, second = pair.getOrNull(1))
+            }
+        }
+    }
+    val visibleActivityShortcutCards = remember(activityShortcutCards) {
+        activityShortcutCards.filter { it.visible }
+    }
+    val visibleShellCommandCards = remember(shellCommandCards) {
+        shellCommandCards.filter { it.visible }
+    }
 
     return OsPageDerivedState(
         query = query,
@@ -212,6 +230,9 @@ internal fun rememberOsPageDerivedState(
         prunedAndroidRows = prunedAndroidRows,
         prunedJavaRows = prunedJavaRows,
         prunedLinuxRows = prunedLinuxRows,
-        overviewUiState = overviewUiState
+        overviewUiState = overviewUiState,
+        overviewMetricRows = overviewMetricRows,
+        visibleActivityShortcutCards = visibleActivityShortcutCards,
+        visibleShellCommandCards = visibleShellCommandCards
     )
 }

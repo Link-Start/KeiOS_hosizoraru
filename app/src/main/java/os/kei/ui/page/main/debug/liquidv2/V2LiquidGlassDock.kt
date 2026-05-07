@@ -68,6 +68,7 @@ import top.yukonga.miuix.kmp.basic.Text
 @Immutable
 internal data class V2LiquidDockSpec(
     val height: Dp = V2LiquidGlassTokens.dockHeight,
+    val collapsedHeight: Dp = V2LiquidGlassTokens.dockCollapsedHeight,
     val itemMinWidth: Dp = V2LiquidGlassTokens.dockItemMinWidth,
     val outerPadding: Dp = 5.dp,
     val indicatorInset: Dp = V2LiquidGlassTokens.dockIndicatorInset,
@@ -78,6 +79,11 @@ internal data class V2LiquidDockSpec(
     val activeTint: Color = Color.Unspecified,
     val inactiveTint: Color = Color.Unspecified,
     val badgeStyle: Color = Color.Unspecified
+)
+
+@Immutable
+internal data class V2LiquidDockScrollBehavior(
+    val collapsed: Boolean = false
 )
 
 @Stable
@@ -100,6 +106,7 @@ internal fun V2LiquidDock(
     labelPolicy: V2GlassTabLabelPolicy = V2GlassTabLabelPolicy.Always,
     selectionStyle: V2GlassSelectionStyle = V2GlassSelectionStyle.Indicator,
     activeTint: Color = Color.Unspecified,
+    scrollBehavior: V2LiquidDockScrollBehavior = V2LiquidDockScrollBehavior(),
     spec: V2LiquidDockSpec = V2LiquidDockSpec()
 ) {
     val palette = rememberV2LiquidGlassPalette()
@@ -119,9 +126,16 @@ internal fun V2LiquidDock(
         durationMillis = 120,
         label = "v2_liquid_dock_press"
     )
+    val collapseProgress by appMotionFloatState(
+        targetValue = if (scrollBehavior.collapsed) 1f else 0f,
+        durationMillis = V2LiquidGlassTokens.stateMotionMs,
+        label = "v2_liquid_dock_collapse"
+    )
+    val dockHeight = spec.collapsedHeight + (spec.height - spec.collapsedHeight) *
+            (1f - collapseProgress)
 
     BoxWithConstraints(
-        modifier = modifier.height(spec.height),
+        modifier = modifier.height(dockHeight),
         contentAlignment = Alignment.CenterStart
     ) {
         if (items.isEmpty()) {
@@ -143,15 +157,17 @@ internal fun V2LiquidDock(
             with(density) { spec.itemMinWidth.toPx() }
         )
         val indicatorWidthPx = (itemWidthPx - indicatorInsetPx * 2f).coerceAtLeast(36f)
-        val effectiveLabelPolicy = if (labelPolicy == V2GlassTabLabelPolicy.Always) {
+        val effectiveLabelPolicy = if (collapseProgress > 0.55f) {
+            V2GlassTabLabelPolicy.Never
+        } else if (labelPolicy == V2GlassTabLabelPolicy.Always) {
             spec.labelPolicy
         } else {
             labelPolicy
         }
         val indicatorHeight = when {
             compact && effectiveLabelPolicy == V2GlassTabLabelPolicy.Never -> 40.dp
-            compact -> spec.height - 10.dp
-            else -> spec.height - 12.dp
+            compact -> dockHeight - 10.dp
+            else -> dockHeight - 12.dp
         }
         val blobParameters = when (spec.selectedBlobStyle) {
             V2LiquidMaterialStyle.Clear -> V2LiquidParameterSet.sampleClear
@@ -211,8 +227,8 @@ internal fun V2LiquidDock(
                 shapeMorph = 0.7f,
                 gestureTransform = { progress ->
                     translationY = -1.25.dp.toPx() * pressProgress
-                    scaleX = lerp(1f, 1.006f, progress)
-                    scaleY = lerp(1f, 0.996f, progress)
+                    scaleX = lerp(1f, 1.006f, progress) * lerp(1f, 0.985f, collapseProgress)
+                    scaleY = lerp(1f, 0.996f, progress) * lerp(1f, 0.965f, collapseProgress)
                 }
             ),
             contentPadding = PaddingValues(horizontal = spec.outerPadding, vertical = 5.dp),
@@ -307,6 +323,7 @@ internal fun V2LiquidDock(
                     compact = compact,
                     labelPolicy = effectiveLabelPolicy,
                     spec = spec,
+                    contentAlpha = lerp(1f, 0.74f, collapseProgress),
                     onPressedChange = { pressed ->
                         pressedIndex =
                             if (pressed) index else if (pressedIndex == index) -1 else pressedIndex
@@ -327,6 +344,7 @@ private fun RowScope.V2LiquidDockItem(
     compact: Boolean,
     labelPolicy: V2GlassTabLabelPolicy,
     spec: V2LiquidDockSpec,
+    contentAlpha: Float,
     onPressedChange: (Boolean) -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -372,7 +390,7 @@ private fun RowScope.V2LiquidDockItem(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 3.dp)
-                .alpha(1f)
+                .alpha(contentAlpha)
                 .v2DockItemScale(scale)
         )
     }

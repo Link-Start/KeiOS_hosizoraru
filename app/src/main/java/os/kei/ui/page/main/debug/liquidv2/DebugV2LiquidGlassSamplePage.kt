@@ -6,15 +6,18 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -28,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -66,6 +70,18 @@ internal fun DebugV2LiquidGlassSamplePage(
     val pagerState = rememberPagerState(pageCount = { V2SamplePage.entries.size })
     val coroutineScope = rememberCoroutineScope()
     val destinations = rememberV2SampleDestinations()
+    var pageScrollInProgress by remember { mutableStateOf(false) }
+    var heavyReady by remember { mutableStateOf(false) }
+    LaunchedEffect(pagerState.settledPage) {
+        pageScrollInProgress = false
+    }
+    LaunchedEffect(pagerState.settledPage, pagerState.isScrollInProgress) {
+        heavyReady = false
+        if (!pagerState.isScrollInProgress) {
+            delay(260)
+            heavyReady = true
+        }
+    }
     val tabItems = remember(destinations) {
         destinations.map {
             V2GlassTabItem(
@@ -127,18 +143,25 @@ internal fun DebugV2LiquidGlassSamplePage(
                 verticalAlignment = Alignment.Top
             ) { pageIndex ->
                 val destination = destinations[pageIndex]
-                val active = pageIndex == pagerState.currentPage
+                val active = heavyReady &&
+                        !pagerState.isScrollInProgress &&
+                        pageIndex == pagerState.settledPage
                 V2LiquidGlassSampleContent(
                     page = destination.page,
                     active = active,
                     rootBackdrop = rootBackdrop,
+                    onScrollInProgressChange = { scrolling ->
+                        if (active) {
+                            pageScrollInProgress = scrolling
+                        }
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
 
             V2GlassBottomTabs(
                 items = tabItems,
-                selectedIndex = pagerState.currentPage,
+                selectedIndex = pagerState.targetPage,
                 onSelectedIndexChange = { index ->
                     coroutineScope.launch {
                         pagerState.animateScrollToPage(index)
@@ -149,9 +172,11 @@ internal fun DebugV2LiquidGlassSamplePage(
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .fillMaxWidth()
-                    .height(62.dp),
+                    .fillMaxWidth(),
                 compact = true,
+                scrollBehavior = V2LiquidDockScrollBehavior(
+                    collapsed = pagerState.isScrollInProgress || pageScrollInProgress
+                ),
                 spec = V2LiquidDockSpec(
                     height = 62.dp,
                     itemMinWidth = 48.dp,

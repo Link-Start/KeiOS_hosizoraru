@@ -17,9 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -49,6 +56,8 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 
+internal typealias V2RenderTierForIndex = @Composable (Int) -> V2GlassRenderTier
+
 @Composable
 internal fun V2SampleColumn(
     modifier: Modifier,
@@ -61,6 +70,58 @@ internal fun V2SampleColumn(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content
     )
+}
+
+@Composable
+internal fun V2ActiveSampleColumn(
+    modifier: Modifier,
+    onScrollInProgressChange: (Boolean) -> Unit = {},
+    content: LazyListScope.(V2RenderTierForIndex) -> Unit
+) {
+    val listState = rememberLazyListState()
+    val currentOnScrollInProgressChange by rememberUpdatedState(onScrollInProgressChange)
+    val fullRange by remember {
+        derivedStateOf {
+            val indexes = listState.layoutInfo.visibleItemsInfo.map { it.index }
+            if (indexes.isEmpty()) {
+                0..0
+            } else {
+                indexes.minOrNull()!!..indexes.maxOrNull()!!
+            }
+        }
+    }
+    val activeRange by remember {
+        derivedStateOf {
+            (fullRange.first - 1).coerceAtLeast(0)..(fullRange.last + 1)
+        }
+    }
+    val primaryFullIndex by remember {
+        derivedStateOf {
+            listState.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: fullRange.first
+        }
+    }
+    val tierFor: V2RenderTierForIndex = { index ->
+        val scrolling = listState.isScrollInProgress
+        when (index) {
+            in activeRange if scrolling -> V2GlassRenderTier.Shared
+            primaryFullIndex -> V2GlassRenderTier.Full
+            in activeRange -> V2GlassRenderTier.Shared
+            else -> V2GlassRenderTier.Shell
+        }
+    }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
+            currentOnScrollInProgressChange(scrolling)
+        }
+    }
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        state = listState,
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 36.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        content(tierFor)
+    }
 }
 
 @Composable

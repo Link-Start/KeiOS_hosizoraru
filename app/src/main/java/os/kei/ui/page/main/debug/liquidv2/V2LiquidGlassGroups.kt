@@ -39,7 +39,7 @@ internal enum class V2GlassGroupOrientation {
 @Stable
 internal class V2GlassGroupScope internal constructor(
     val groupBackdrop: Backdrop,
-    val childBackdrop: LayerBackdrop,
+    val childBackdrop: Backdrop,
     val combinedChildBackdrop: Backdrop,
     val density: V2GlassContentDensity,
     val role: V2GlassRole,
@@ -49,7 +49,7 @@ internal class V2GlassGroupScope internal constructor(
 @Stable
 internal class V2LiquidGlassScope internal constructor(
     val parentBackdrop: Backdrop,
-    val exportedBackdrop: LayerBackdrop,
+    val exportedBackdrop: Backdrop,
     val combinedChildBackdrop: Backdrop,
     val density: V2GlassContentDensity,
     val role: V2GlassRole,
@@ -77,14 +77,33 @@ internal fun V2GlassGroup(
     defaultSize: V2GlassControlSize = V2GlassControlSize.Regular,
     spacing: Dp = 10.dp,
     contentPadding: PaddingValues = PaddingValues(12.dp),
+    groupBackdropPolicy: V2GlassGroupBackdropPolicy = V2GlassGroupBackdropPolicy.SharedParent,
     spec: V2GlassSurfaceSpec? = null,
     content: @Composable V2GlassGroupScope.() -> Unit
 ) {
     val palette = rememberV2LiquidGlassPalette()
-    val childBackdrop = rememberLayerBackdrop()
-    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
-    val scope =
-        remember(backdrop, childBackdrop, combinedChildBackdrop, density, role, defaultSize) {
+    val childLayer: LayerBackdrop? = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> null
+        V2GlassGroupBackdropPolicy.ExportChild,
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberLayerBackdrop()
+    }
+    val childBackdrop = childLayer ?: backdrop
+    val combinedChildBackdrop = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> backdrop
+        V2GlassGroupBackdropPolicy.ExportChild -> childBackdrop
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberCombinedBackdrop(
+            backdrop,
+            childLayer!!
+        )
+    }
+    val scope = remember(
+        backdrop,
+        childBackdrop,
+        combinedChildBackdrop,
+        density,
+        role,
+        defaultSize
+    ) {
         V2GlassGroupScope(
             groupBackdrop = backdrop,
             childBackdrop = childBackdrop,
@@ -105,9 +124,10 @@ internal fun V2GlassGroup(
             blur = V2LiquidGlassTokens.blurBalanced,
             lensHeight = V2LiquidGlassTokens.lensBalanced,
             lensAmount = V2LiquidGlassTokens.lensStrong,
+            readabilityProfile = V2LiquidReadabilityProfile.RegularText,
             backdropPolicy = V2GlassBackdropPolicy.ExportChild
         ),
-        exportedBackdrop = childBackdrop,
+        exportedBackdrop = childLayer,
         contentPadding = contentPadding
     ) {
         when (orientation) {
@@ -157,6 +177,7 @@ internal fun V2GlassGroupScope.V2GlassListRow(
             interactive = onClick != null,
             disabled = !enabled,
             role = role,
+            readabilityProfile = V2LiquidReadabilityProfile.RegularText,
             backgroundReadability = if (isDark) 0.24f else 0f
         ),
         contentPadding = PaddingValues(12.dp),
@@ -179,6 +200,7 @@ internal fun V2GlassGroupScope.V2GlassListRow(
                         blur = V2LiquidGlassTokens.blurSoft,
                         lensHeight = 10.dp,
                         lensAmount = 14.dp,
+                        readabilityProfile = V2LiquidReadabilityProfile.BrightClear,
                         backgroundReadability = if (isDark) 0.18f else 0f
                     ),
                     contentAlignment = Alignment.Center
@@ -239,13 +261,26 @@ internal fun V2GlassToolbar(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
     role: V2GlassRole = V2GlassRole.Neutral,
+    groupBackdropPolicy: V2GlassGroupBackdropPolicy = V2GlassGroupBackdropPolicy.SharedParent,
     leading: @Composable RowScope.(V2GlassGroupScope) -> Unit = {},
     content: @Composable RowScope.(V2GlassGroupScope) -> Unit,
     trailing: @Composable RowScope.(V2GlassGroupScope) -> Unit = {}
 ) {
     val palette = rememberV2LiquidGlassPalette()
-    val childBackdrop = rememberLayerBackdrop()
-    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
+    val childLayer: LayerBackdrop? = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> null
+        V2GlassGroupBackdropPolicy.ExportChild,
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberLayerBackdrop()
+    }
+    val childBackdrop = childLayer ?: backdrop
+    val combinedChildBackdrop = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> backdrop
+        V2GlassGroupBackdropPolicy.ExportChild -> childBackdrop
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberCombinedBackdrop(
+            backdrop,
+            childLayer!!
+        )
+    }
     val scope = remember(backdrop, childBackdrop, combinedChildBackdrop, role) {
         V2GlassGroupScope(
             groupBackdrop = backdrop,
@@ -263,8 +298,8 @@ internal fun V2GlassToolbar(
             surfaceColor = palette.clearTint,
             interactive = false,
             role = role
-        ),
-        exportedBackdrop = childBackdrop,
+        ).copy(readabilityProfile = V2LiquidReadabilityProfile.BrightClear),
+        exportedBackdrop = childLayer,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Row(
@@ -290,11 +325,24 @@ internal fun V2GlassDockGroup(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
     role: V2GlassRole = V2GlassRole.Neutral,
+    groupBackdropPolicy: V2GlassGroupBackdropPolicy = V2GlassGroupBackdropPolicy.SharedParent,
     content: @Composable RowScope.(V2GlassGroupScope) -> Unit
 ) {
     val palette = rememberV2LiquidGlassPalette()
-    val childBackdrop = rememberLayerBackdrop()
-    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
+    val childLayer: LayerBackdrop? = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> null
+        V2GlassGroupBackdropPolicy.ExportChild,
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberLayerBackdrop()
+    }
+    val childBackdrop = childLayer ?: backdrop
+    val combinedChildBackdrop = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> backdrop
+        V2GlassGroupBackdropPolicy.ExportChild -> childBackdrop
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberCombinedBackdrop(
+            backdrop,
+            childLayer!!
+        )
+    }
     val scope = remember(backdrop, childBackdrop, combinedChildBackdrop, role) {
         V2GlassGroupScope(
             groupBackdrop = backdrop,
@@ -312,8 +360,8 @@ internal fun V2GlassDockGroup(
             surfaceColor = palette.clearTint,
             interactive = true,
             role = role
-        ),
-        exportedBackdrop = childBackdrop,
+        ).copy(readabilityProfile = V2LiquidReadabilityProfile.BrightClear),
+        exportedBackdrop = childLayer,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -332,11 +380,24 @@ internal fun V2GlassActionGroup(
     actions: List<V2GlassActionItem>,
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
-    density: V2GlassContentDensity = V2GlassContentDensity.Compact
+    density: V2GlassContentDensity = V2GlassContentDensity.Compact,
+    groupBackdropPolicy: V2GlassGroupBackdropPolicy = V2GlassGroupBackdropPolicy.SharedParent
 ) {
     val palette = rememberV2LiquidGlassPalette()
-    val childBackdrop = rememberLayerBackdrop()
-    val combinedChildBackdrop = rememberCombinedBackdrop(backdrop, childBackdrop)
+    val childLayer: LayerBackdrop? = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> null
+        V2GlassGroupBackdropPolicy.ExportChild,
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberLayerBackdrop()
+    }
+    val childBackdrop = childLayer ?: backdrop
+    val combinedChildBackdrop = when (groupBackdropPolicy) {
+        V2GlassGroupBackdropPolicy.SharedParent -> backdrop
+        V2GlassGroupBackdropPolicy.ExportChild -> childBackdrop
+        V2GlassGroupBackdropPolicy.CombinedOverlay -> rememberCombinedBackdrop(
+            backdrop,
+            childLayer!!
+        )
+    }
     V2GlassSurface(
         backdrop = backdrop,
         modifier = modifier,
@@ -345,9 +406,10 @@ internal fun V2GlassActionGroup(
             surfaceColor = palette.clearTint,
             blur = V2LiquidGlassTokens.blurBalanced,
             lensHeight = V2LiquidGlassTokens.lensBalanced,
-            lensAmount = V2LiquidGlassTokens.lensStrong
+            lensAmount = V2LiquidGlassTokens.lensStrong,
+            readabilityProfile = V2LiquidReadabilityProfile.RegularText
         ),
-        exportedBackdrop = childBackdrop,
+        exportedBackdrop = childLayer,
         contentPadding = PaddingValues(8.dp),
         contentAlignment = Alignment.Center
     ) {

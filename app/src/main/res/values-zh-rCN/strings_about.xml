@@ -157,10 +157,10 @@
     <string name="debug_v2_liquid_dropdown_badge_fast">fast</string>
     <string name="debug_v2_liquid_dropdown_badge_locked">locked</string>
     <string name="debug_v2_liquid_perf_title">性能拓扑</string>
-    <string name="debug_v2_liquid_perf_body">Root backdrop、导出子层与组合 indicator 都限定在当前 pager 工作集内。</string>
+    <string name="debug_v2_liquid_perf_body">可见 sample 使用 Full，相邻 sample 使用 Shared，远离视口时保留固定 Shell 几何。</string>
     <string name="debug_v2_liquid_perf_current_page_value">page · %1$s</string>
-    <string name="debug_v2_liquid_perf_layers_value">root/export/combined</string>
-    <string name="debug_v2_liquid_perf_gfxinfo_value">baseline 24.22% jank</string>
+    <string name="debug_v2_liquid_perf_layers_value">active layers ≤ 8</string>
+    <string name="debug_v2_liquid_perf_gfxinfo_value" formatted="false">25.86% → ≤14% jank</string>
     <string name="debug_v2_liquid_group_stress_title">Group stress sample</string>
     <string name="debug_v2_liquid_group_stress_subtitle">一个导出子 backdrop 同时承载 row、action、capsule 和 toolbar 控件。</string>
     <string name="debug_v2_liquid_group_stress_meta">group scope · child backdrop · fixed rhythm</string>
@@ -178,6 +178,7 @@
     <string name="debug_v2_liquid_orange_button">Orange</string>
     <string name="debug_v2_liquid_phone_title">Phone mock</string>
     <string name="debug_v2_liquid_phone_subtitle">Layered controls</string>
+    <string name="debug_v2_liquid_phone_body">共享 backdrop 让叠层玻璃保持清晰。</string>
     <string name="debug_v2_liquid_tabbar_three">Three-tab liquid bar</string>
     <string name="debug_v2_liquid_tabbar_four">Four-tab dock bar</string>
     <string name="debug_component_lab_liquid_button_primary">播放样张</string>

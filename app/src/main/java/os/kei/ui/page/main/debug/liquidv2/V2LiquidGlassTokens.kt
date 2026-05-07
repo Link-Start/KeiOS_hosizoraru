@@ -32,6 +32,7 @@ internal object V2LiquidGlassTokens {
     val spacingXl: Dp = 24.dp
     val controlHeight: Dp = 46.dp
     val dockHeight: Dp = 62.dp
+    val dockCollapsedHeight: Dp = 52.dp
     val switchWidth: Dp = 62.dp
     val switchHeight: Dp = 36.dp
     val sliderHeight: Dp = 46.dp
@@ -69,14 +70,14 @@ internal fun rememberV2LiquidGlassPalette(
             Color(0xFF253044).copy(alpha = 0.82f)
         },
         panelTint = if (isDark) {
-            Color(0xFF11161B).copy(alpha = 0.24f)
+            Color(0xFF0D1218).copy(alpha = 0.20f)
         } else {
-            Color.White.copy(alpha = 0.30f)
+            Color.White.copy(alpha = 0.22f)
         },
         clearTint = if (isDark) {
-            Color.White.copy(alpha = 0.075f)
+            Color.White.copy(alpha = 0.060f)
         } else {
-            Color.White.copy(alpha = 0.18f)
+            Color.White.copy(alpha = 0.13f)
         },
         danger = Color(0xFFFF4D6D),
         success = Color(0xFF21C982),
@@ -116,6 +117,18 @@ internal enum class V2GlassBackdropPolicy {
     CombinedChild
 }
 
+internal enum class V2GlassGroupBackdropPolicy {
+    SharedParent,
+    ExportChild,
+    CombinedOverlay
+}
+
+internal enum class V2GlassRenderTier {
+    Full,
+    Shared,
+    Shell
+}
+
 internal enum class V2LiquidMaterialStyle {
     Clear,
     Regular,
@@ -130,6 +143,38 @@ internal enum class V2GlassTabLabelPolicy {
     Always,
     Selected,
     Never
+}
+
+internal enum class V2LiquidReadabilityProfile(
+    val clearDimmingAlpha: Float,
+    val backgroundReadability: Float,
+    val materialFillBoost: Float,
+    val rimLightBoost: Float
+) {
+    Auto(0f, 0f, 0f, 0f),
+    BrightClear(0.35f, 0.10f, 0.02f, 0.10f),
+    DarkClear(0.08f, 0.04f, 0f, 0.06f),
+    RegularText(0.14f, 0.16f, 0.04f, 0.08f);
+
+    companion object {
+        fun resolve(
+            requested: V2LiquidReadabilityProfile,
+            isDark: Boolean,
+            materialStyle: V2LiquidMaterialStyle
+        ): V2LiquidReadabilityProfile {
+            if (requested != Auto) return requested
+            return when (materialStyle) {
+                V2LiquidMaterialStyle.Clear -> if (isDark) DarkClear else BrightClear
+                V2LiquidMaterialStyle.Regular,
+                V2LiquidMaterialStyle.Widget,
+                V2LiquidMaterialStyle.Prominent -> RegularText
+
+                V2LiquidMaterialStyle.Tinted,
+                V2LiquidMaterialStyle.Dock,
+                V2LiquidMaterialStyle.ControlThumb -> if (isDark) DarkClear else BrightClear
+            }
+        }
+    }
 }
 
 @Immutable
@@ -239,6 +284,7 @@ internal data class V2GlassSurfaceSpec(
     val rimLightAlpha: Float = 0.28f,
     val edgeChromaticAlpha: Float = 0.12f,
     val causticAlpha: Float = 0.08f,
+    val readabilityProfile: V2LiquidReadabilityProfile = V2LiquidReadabilityProfile.Auto,
     val contentVibrancy: Float = 1f,
     val backgroundReadability: Float = 0f,
     val shapeMorph: Float = 0f,

@@ -69,15 +69,36 @@ internal fun V2LiquidReferenceStage(
     modifier: Modifier = Modifier,
     stageKind: V2ReferenceStageKind = V2ReferenceStageKind.Media,
     stageHeight: Dp = 356.dp,
+    renderTier: V2GlassRenderTier = V2GlassRenderTier.Full,
+    backdropContent: @Composable BoxScope.() -> Unit = {
+        V2ReferenceBackdropArt(
+            kind = stageKind,
+            modifier = Modifier.matchParentSize()
+        )
+    },
     content: @Composable BoxScope.(V2LiquidGlassScope) -> Unit
 ) {
     val palette = rememberV2LiquidGlassPalette()
-    val stageBackdrop = rememberLayerBackdrop()
-    val combinedBackdrop = rememberCombinedBackdrop(parentBackdrop, stageBackdrop)
-    val scope = remember(parentBackdrop, stageBackdrop, combinedBackdrop) {
+    if (renderTier == V2GlassRenderTier.Shell) {
+        V2ReferenceStageShell(
+            title = title,
+            subtitle = subtitle,
+            stageKind = stageKind,
+            modifier = modifier.height(stageHeight)
+        )
+        return
+    }
+    val stageBackdrop = if (renderTier == V2GlassRenderTier.Full) rememberLayerBackdrop() else null
+    val exportedBackdrop: Backdrop = stageBackdrop ?: parentBackdrop
+    val combinedBackdrop: Backdrop = if (stageBackdrop != null) {
+        rememberCombinedBackdrop(parentBackdrop, stageBackdrop)
+    } else {
+        parentBackdrop
+    }
+    val scope = remember(parentBackdrop, exportedBackdrop, combinedBackdrop) {
         V2LiquidGlassScope(
             parentBackdrop = parentBackdrop,
-            exportedBackdrop = stageBackdrop,
+            exportedBackdrop = exportedBackdrop,
             combinedChildBackdrop = combinedBackdrop,
             density = V2GlassContentDensity.Comfortable,
             role = V2GlassRole.Accent,
@@ -93,15 +114,18 @@ internal fun V2LiquidReferenceStage(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .layerBackdrop(stageBackdrop)
+                .then(
+                    if (stageBackdrop != null) {
+                        Modifier.layerBackdrop(stageBackdrop)
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
-            V2ReferenceBackdropArt(
-                kind = stageKind,
-                modifier = Modifier.matchParentSize()
-            )
+            backdropContent()
         }
         V2GlassSurface(
-            backdrop = stageBackdrop,
+            backdrop = exportedBackdrop,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(14.dp)
@@ -114,7 +138,8 @@ internal fun V2LiquidReferenceStage(
                 clearDimmingAlpha = 0.10f,
                 rimLightAlpha = 0.34f,
                 edgeChromaticAlpha = 0.18f,
-                causticAlpha = 0.12f
+                causticAlpha = 0.12f,
+                readabilityProfile = V2LiquidReadabilityProfile.BrightClear
             ),
             contentPadding = PaddingValues(14.dp)
         ) {
@@ -128,6 +153,47 @@ internal enum class V2ReferenceStageKind {
     Media,
     HomeScreen,
     Controls
+}
+
+@Composable
+private fun V2ReferenceStageShell(
+    title: String,
+    subtitle: String,
+    stageKind: V2ReferenceStageKind,
+    modifier: Modifier = Modifier
+) {
+    val palette = rememberV2LiquidGlassPalette()
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(palette.clearTint, RoundedCornerShape(34.dp))
+            .padding(16.dp)
+    ) {
+        V2ReferenceBackdropArt(
+            kind = stageKind,
+            modifier = Modifier.matchParentSize()
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth(0.70f)
+                .background(palette.panelTint, RoundedCornerShape(24.dp))
+                .padding(14.dp)
+        ) {
+            V2StageText(title = title, body = subtitle)
+        }
+        Text(
+            text = stringResource(R.string.debug_v2_liquid_badge_performance),
+            color = palette.content,
+            fontSize = AppTypographyTokens.Caption.fontSize,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .background(palette.panelTint, RoundedCornerShape(18.dp))
+                .padding(horizontal = 12.dp, vertical = 7.dp)
+        )
+    }
 }
 
 @Composable
@@ -244,7 +310,8 @@ internal fun V2LiquidParameterPanel(
             surfaceColor = rememberV2LiquidGlassPalette().clearTint,
             clearDimmingAlpha = 0.08f,
             rimLightAlpha = 0.34f,
-            edgeChromaticAlpha = 0.14f
+            edgeChromaticAlpha = 0.14f,
+            readabilityProfile = V2LiquidReadabilityProfile.RegularText
         ),
         contentPadding = PaddingValues(16.dp)
     ) {
@@ -327,10 +394,13 @@ internal fun V2LiquidTabBarShowcase(
 @Composable
 internal fun V2LiquidPhoneMock(
     backdrop: Backdrop,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    useOwnBackdrop: Boolean = false,
+    drawWallpaper: Boolean = true
 ) {
     val palette = rememberV2LiquidGlassPalette()
-    val phoneBackdrop = rememberLayerBackdrop()
+    val phoneLayer = if (useOwnBackdrop) rememberLayerBackdrop() else null
+    val glassBackdrop = phoneLayer ?: backdrop
     Box(
         modifier = modifier
             .width(214.dp)
@@ -340,23 +410,27 @@ internal fun V2LiquidPhoneMock(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .layerBackdrop(phoneBackdrop)
+                .then(
+                    if (phoneLayer != null) {
+                        Modifier.layerBackdrop(phoneLayer)
+                    } else {
+                        Modifier
+                    }
+                )
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xFF111826),
-                            Color(0xFF2553A3),
-                            Color(0xFFFF8A52)
-                        )
+                    if (drawWallpaper) V2PhoneWallpaperBrush() else Brush.verticalGradient(
+                        listOf(Color.Transparent, Color.Transparent)
                     ),
                     RoundedCornerShape(38.dp)
                 )
                 .padding(18.dp)
         ) {
-            V2PhoneIconGrid()
+            if (drawWallpaper) {
+                V2PhoneIconGrid()
+            }
         }
         V2GlassSurface(
-            backdrop = phoneBackdrop,
+            backdrop = glassBackdrop,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 22.dp)
@@ -369,7 +443,8 @@ internal fun V2LiquidPhoneMock(
                 materialStyle = V2LiquidMaterialStyle.Clear,
                 parameters = V2LiquidParameterSet.sampleClear,
                 clearDimmingAlpha = 0.08f,
-                rimLightAlpha = 0.36f
+                rimLightAlpha = 0.36f,
+                readabilityProfile = V2LiquidReadabilityProfile.BrightClear
             ),
             contentAlignment = Alignment.Center
         ) {
@@ -382,11 +457,12 @@ internal fun V2LiquidPhoneMock(
             )
         }
         V2GlassSurface(
-            backdrop = phoneBackdrop,
+            backdrop = glassBackdrop,
             modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth(0.78f)
-                .height(76.dp),
+                .align(Alignment.CenterStart)
+                .padding(start = 18.dp)
+                .width(146.dp)
+                .height(84.dp),
             spec = V2GlassSurfaceSpec(
                 shape = RoundedCornerShape(24.dp),
                 materialStyle = V2LiquidMaterialStyle.Widget,
@@ -394,17 +470,18 @@ internal fun V2LiquidPhoneMock(
                 surfaceColor = palette.clearTint,
                 clearDimmingAlpha = 0.12f,
                 rimLightAlpha = 0.34f,
-                edgeChromaticAlpha = 0.16f
+                edgeChromaticAlpha = 0.16f,
+                readabilityProfile = V2LiquidReadabilityProfile.RegularText
             ),
             contentPadding = PaddingValues(12.dp)
         ) {
             V2StageText(
                 title = stringResource(R.string.debug_v2_liquid_phone_subtitle),
-                body = stringResource(R.string.debug_v2_liquid_surface_stage_body)
+                body = stringResource(R.string.debug_v2_liquid_phone_body)
             )
         }
         V2PhoneActionStack(
-            backdrop = phoneBackdrop,
+            backdrop = glassBackdrop,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 12.dp)
@@ -413,7 +490,7 @@ internal fun V2LiquidPhoneMock(
             items = rememberLiquidTabItems(short = true),
             selectedIndex = 1,
             onSelectedIndexChange = {},
-            backdrop = phoneBackdrop,
+            backdrop = glassBackdrop,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 12.dp, vertical = 14.dp)
@@ -431,6 +508,31 @@ internal fun V2LiquidPhoneMock(
             )
         )
     }
+}
+
+@Composable
+internal fun BoxScope.V2PhoneMockBackdropContent(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .width(214.dp)
+            .height(318.dp)
+            .background(V2PhoneWallpaperBrush(), RoundedCornerShape(38.dp))
+            .padding(18.dp)
+    ) {
+        V2PhoneIconGrid()
+    }
+}
+
+private fun V2PhoneWallpaperBrush(): Brush {
+    return Brush.verticalGradient(
+        listOf(
+            Color(0xFF111826),
+            Color(0xFF2553A3),
+            Color(0xFFFF8A52)
+        )
+    )
 }
 
 @Composable
@@ -555,7 +657,7 @@ private fun rememberPhoneIcons(): List<V2ReferenceAppIcon> {
 }
 
 @Composable
-private fun V2ReferenceBackdropArt(
+internal fun V2ReferenceBackdropArt(
     kind: V2ReferenceStageKind,
     modifier: Modifier = Modifier
 ) {

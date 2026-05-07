@@ -161,10 +161,10 @@
     <string name="debug_v2_liquid_dropdown_badge_fast">fast</string>
     <string name="debug_v2_liquid_dropdown_badge_locked">locked</string>
     <string name="debug_v2_liquid_perf_title">Perf topology</string>
-    <string name="debug_v2_liquid_perf_body">Root backdrop, exported child layers, and combined indicators stay scoped to the visible pager workset.</string>
+    <string name="debug_v2_liquid_perf_body">Visible samples use Full, adjacent samples use Shared, and distant samples keep fixed Shell geometry.</string>
     <string name="debug_v2_liquid_perf_current_page_value">page · %1$s</string>
-    <string name="debug_v2_liquid_perf_layers_value">root/export/combined</string>
-    <string name="debug_v2_liquid_perf_gfxinfo_value">baseline 24.22% jank</string>
+    <string name="debug_v2_liquid_perf_layers_value">active layers ≤ 8</string>
+    <string name="debug_v2_liquid_perf_gfxinfo_value" formatted="false">25.86% → ≤14% jank</string>
     <string name="debug_v2_liquid_group_stress_title">Group stress sample</string>
     <string name="debug_v2_liquid_group_stress_subtitle">One exported child backdrop feeds rows, actions, capsules, and toolbar controls.</string>
     <string name="debug_v2_liquid_group_stress_meta">group scope · child backdrop · fixed rhythm</string>
@@ -182,6 +182,7 @@
     <string name="debug_v2_liquid_orange_button">Orange</string>
     <string name="debug_v2_liquid_phone_title">Phone mock</string>
     <string name="debug_v2_liquid_phone_subtitle">Layered controls</string>
+    <string name="debug_v2_liquid_phone_body">Shared backdrop keeps stacked glass crisp.</string>
     <string name="debug_v2_liquid_tabbar_three">Three-tab liquid bar</string>
     <string name="debug_v2_liquid_tabbar_four">Four-tab dock bar</string>
     <string name="debug_component_lab_liquid_button_primary">播放样张</string>

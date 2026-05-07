@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,6 +50,11 @@ internal fun V2GlassSurface(
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val palette = rememberV2LiquidGlassPalette()
+    val readabilityProfile = V2LiquidReadabilityProfile.resolve(
+        requested = spec.readabilityProfile,
+        isDark = isSystemInDarkTheme(),
+        materialStyle = spec.materialStyle
+    )
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     val collectedPressed by resolvedInteractionSource.collectIsPressedAsState()
     val activePressed = (collectedPressed || spec.pressed) && spec.interactive && !spec.disabled
@@ -79,7 +85,7 @@ internal fun V2GlassSurface(
         selected = spec.selected,
         loading = spec.loading
     )
-    val materialFill = v2ResolvedMaterialFill(palette, spec)
+    val materialFill = v2ResolvedMaterialFill(palette, spec, readabilityProfile)
     val parameters = remember(spec) {
         (spec.parameters ?: V2LiquidParameterSet(
             blur = spec.blur,
@@ -147,10 +153,16 @@ internal fun V2GlassSurface(
                 layerBlock = layerBlock,
                 exportedBackdrop = exportedBackdrop,
                 onDrawSurface = {
-                    if (spec.clearDimmingAlpha > 0f) {
+                    val resolvedDimmingAlpha =
+                        if (spec.clearDimmingAlpha > 0f) {
+                            spec.clearDimmingAlpha
+                        } else {
+                            readabilityProfile.clearDimmingAlpha
+                        }
+                    if (resolvedDimmingAlpha > 0f) {
                         drawRect(
                             Color.Black.copy(
-                                alpha = spec.clearDimmingAlpha.coerceIn(
+                                alpha = resolvedDimmingAlpha.coerceIn(
                                     0f,
                                     0.45f
                                 )
@@ -167,19 +179,23 @@ internal fun V2GlassSurface(
                     if (spec.surfaceColor.isSpecified && spec.surfaceColor.alpha > 0f) {
                         drawRect(spec.surfaceColor)
                     }
-                    if (spec.backgroundReadability > 0f) {
+                    val resolvedBackgroundReadability =
+                        maxOf(spec.backgroundReadability, readabilityProfile.backgroundReadability)
+                    if (resolvedBackgroundReadability > 0f) {
                         drawRect(
                             Color.Black.copy(
-                                alpha = spec.backgroundReadability.coerceIn(
+                                alpha = resolvedBackgroundReadability.coerceIn(
                                     0f,
                                     0.32f
                                 )
                             )
                         )
                     }
-                    if (spec.rimLightAlpha > 0f) {
+                    val resolvedRimLight =
+                        (spec.rimLightAlpha + readabilityProfile.rimLightBoost).coerceIn(0f, 0.45f)
+                    if (resolvedRimLight > 0f) {
                         drawRect(
-                            Color.White.copy(alpha = spec.rimLightAlpha.coerceIn(0f, 0.45f)),
+                            Color.White.copy(alpha = resolvedRimLight),
                             blendMode = BlendMode.Screen
                         )
                     }
@@ -257,9 +273,10 @@ private fun v2ResolvedTint(
 
 private fun v2ResolvedMaterialFill(
     palette: V2LiquidGlassPalette,
-    spec: V2GlassSurfaceSpec
+    spec: V2GlassSurfaceSpec,
+    readabilityProfile: V2LiquidReadabilityProfile
 ): Color {
-    return when (spec.materialStyle) {
+    val fill = when (spec.materialStyle) {
         V2LiquidMaterialStyle.Clear -> Color.White.copy(alpha = if (spec.selected) 0.16f else 0.08f)
         V2LiquidMaterialStyle.Regular -> palette.clearTint
         V2LiquidMaterialStyle.Prominent -> Color.White.copy(alpha = 0.22f)
@@ -268,6 +285,12 @@ private fun v2ResolvedMaterialFill(
         V2LiquidMaterialStyle.Widget -> Color.White.copy(alpha = 0.14f)
         V2LiquidMaterialStyle.ControlThumb -> Color.White.copy(alpha = 0.32f)
     }
+    return fill.copy(
+        alpha = (fill.alpha + readabilityProfile.materialFillBoost).coerceIn(
+            0f,
+            0.38f
+        )
+    )
 }
 
 private fun v2ResolvedBorderColor(

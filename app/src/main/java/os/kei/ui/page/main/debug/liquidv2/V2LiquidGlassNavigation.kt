@@ -54,6 +54,7 @@ internal fun V2GlassBottomTabs(
     labelPolicy: V2GlassTabLabelPolicy = V2GlassTabLabelPolicy.Always,
     selectionStyle: V2GlassSelectionStyle = V2GlassSelectionStyle.Indicator,
     activeTint: Color = Color.Unspecified,
+    scrollBehavior: V2LiquidDockScrollBehavior = V2LiquidDockScrollBehavior(),
     spec: V2LiquidDockSpec = V2LiquidDockSpec()
 ) {
     V2LiquidDock(
@@ -67,6 +68,7 @@ internal fun V2GlassBottomTabs(
         labelPolicy = labelPolicy,
         selectionStyle = selectionStyle,
         activeTint = activeTint,
+        scrollBehavior = scrollBehavior,
         spec = spec
     )
 }

@@ -38,6 +38,7 @@ internal fun V2LiquidGlassSampleContent(
     page: V2SamplePage,
     active: Boolean,
     rootBackdrop: Backdrop,
+    onScrollInProgressChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (!active) {
@@ -49,26 +50,33 @@ internal fun V2LiquidGlassSampleContent(
     }
 
     when (page) {
-        V2SamplePage.Surfaces -> V2SurfacesPage(rootBackdrop, modifier)
-        V2SamplePage.Controls -> V2ControlsPage(rootBackdrop, modifier)
-        V2SamplePage.Inputs -> V2InputsPage(rootBackdrop, modifier)
-        V2SamplePage.Navigation -> V2NavigationPage(rootBackdrop, modifier)
-        V2SamplePage.Scenarios -> V2ScenariosPage(rootBackdrop, modifier)
+        V2SamplePage.Surfaces -> V2SurfacesPage(rootBackdrop, modifier, onScrollInProgressChange)
+        V2SamplePage.Controls -> V2ControlsPage(rootBackdrop, modifier, onScrollInProgressChange)
+        V2SamplePage.Inputs -> V2InputsPage(rootBackdrop, modifier, onScrollInProgressChange)
+        V2SamplePage.Navigation -> V2NavigationPage(
+            rootBackdrop,
+            modifier,
+            onScrollInProgressChange
+        )
+
+        V2SamplePage.Scenarios -> V2ScenariosPage(rootBackdrop, modifier, onScrollInProgressChange)
     }
 }
 
 @Composable
 private fun V2SurfacesPage(
     backdrop: Backdrop,
-    modifier: Modifier
+    modifier: Modifier,
+    onScrollInProgressChange: (Boolean) -> Unit
 ) {
-    V2SampleColumn(modifier) {
+    V2ActiveSampleColumn(modifier, onScrollInProgressChange) { tierFor ->
         item {
             V2LiquidReferenceStage(
                 title = stringResource(R.string.debug_v2_liquid_reference_title),
                 subtitle = stringResource(R.string.debug_v2_liquid_section_surfaces_subtitle),
                 parentBackdrop = backdrop,
-                stageKind = V2ReferenceStageKind.Media
+                stageKind = V2ReferenceStageKind.Media,
+                renderTier = tierFor(0)
             ) { scope ->
                 V2KyantHeroSample(
                     backdrop = scope.exportedBackdrop,
@@ -85,7 +93,8 @@ private fun V2SurfacesPage(
                 subtitle = stringResource(R.string.debug_v2_liquid_surface_nested_body),
                 parentBackdrop = backdrop,
                 stageKind = V2ReferenceStageKind.Controls,
-                stageHeight = 380.dp
+                stageHeight = 380.dp,
+                renderTier = tierFor(1)
             ) { scope ->
                 V2NestedExportedBackdropSample(
                     backdrop = scope.exportedBackdrop,
@@ -101,7 +110,8 @@ private fun V2SurfacesPage(
 @Composable
 private fun V2ControlsPage(
     backdrop: Backdrop,
-    modifier: Modifier
+    modifier: Modifier,
+    onScrollInProgressChange: (Boolean) -> Unit
 ) {
     var checked by remember { mutableStateOf(true) }
     var segment by remember { mutableIntStateOf(1) }
@@ -112,13 +122,14 @@ private fun V2ControlsPage(
         stringResource(R.string.debug_v2_liquid_segment_deep)
     )
 
-    V2SampleColumn(modifier) {
+    V2ActiveSampleColumn(modifier, onScrollInProgressChange) { tierFor ->
         item {
             V2LiquidReferenceStage(
                 title = stringResource(R.string.debug_v2_liquid_section_controls_title),
                 subtitle = stringResource(R.string.debug_v2_liquid_reference_subtitle),
                 parentBackdrop = backdrop,
-                stageKind = V2ReferenceStageKind.Controls
+                stageKind = V2ReferenceStageKind.Controls,
+                renderTier = tierFor(0)
             ) { scope ->
                 Column(
                     modifier = Modifier
@@ -177,7 +188,8 @@ private fun V2ControlsPage(
 @Composable
 private fun V2InputsPage(
     backdrop: Backdrop,
-    modifier: Modifier
+    modifier: Modifier,
+    onScrollInProgressChange: (Boolean) -> Unit
 ) {
     var search by remember { mutableStateOf("") }
     var dropdownIndex by remember { mutableIntStateOf(1) }
@@ -186,13 +198,14 @@ private fun V2InputsPage(
     val dropdownItems = rememberDropdownItems()
 
     Box(modifier = modifier) {
-        V2SampleColumn(Modifier.fillMaxSize()) {
+        V2ActiveSampleColumn(Modifier.fillMaxSize(), onScrollInProgressChange) { tierFor ->
             item {
                 V2LiquidReferenceStage(
                     title = stringResource(R.string.debug_v2_liquid_section_inputs_title),
                     subtitle = stringResource(R.string.debug_v2_liquid_section_inputs_subtitle),
                     parentBackdrop = backdrop,
-                    stageKind = V2ReferenceStageKind.HomeScreen
+                    stageKind = V2ReferenceStageKind.HomeScreen,
+                    renderTier = tierFor(0)
                 ) { scope ->
                     Column(
                         modifier = Modifier
@@ -269,15 +282,17 @@ private fun V2InputsPage(
 @Composable
 private fun V2NavigationPage(
     backdrop: Backdrop,
-    modifier: Modifier
+    modifier: Modifier,
+    onScrollInProgressChange: (Boolean) -> Unit
 ) {
-    V2SampleColumn(modifier) {
+    V2ActiveSampleColumn(modifier, onScrollInProgressChange) { tierFor ->
         item {
             V2LiquidReferenceStage(
                 title = stringResource(R.string.debug_v2_liquid_section_navigation_title),
                 subtitle = stringResource(R.string.debug_v2_liquid_section_navigation_subtitle),
                 parentBackdrop = backdrop,
-                stageKind = V2ReferenceStageKind.HomeScreen
+                stageKind = V2ReferenceStageKind.HomeScreen,
+                renderTier = tierFor(0)
             ) { scope ->
                 V2LiquidTabBarShowcase(
                     backdrop = scope.exportedBackdrop,
@@ -309,7 +324,8 @@ private fun V2NavigationPage(
 @Composable
 private fun V2ScenariosPage(
     backdrop: Backdrop,
-    modifier: Modifier
+    modifier: Modifier,
+    onScrollInProgressChange: (Boolean) -> Unit
 ) {
     var corner by remember { mutableFloatStateOf(0.54f) }
     var blur by remember { mutableFloatStateOf(0.70f) }
@@ -318,17 +334,30 @@ private fun V2ScenariosPage(
     var depth by remember { mutableStateOf(true) }
     val palette = rememberV2LiquidGlassPalette()
 
-    V2SampleColumn(modifier) {
+    V2ActiveSampleColumn(modifier, onScrollInProgressChange) { tierFor ->
         item {
             V2LiquidReferenceStage(
                 title = stringResource(R.string.debug_v2_liquid_phone_title),
                 subtitle = stringResource(R.string.debug_v2_liquid_phone_subtitle),
                 parentBackdrop = backdrop,
                 stageKind = V2ReferenceStageKind.HomeScreen,
-                stageHeight = 440.dp
+                stageHeight = 440.dp,
+                renderTier = tierFor(0),
+                backdropContent = {
+                    V2ReferenceBackdropArt(
+                        kind = V2ReferenceStageKind.HomeScreen,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    V2PhoneMockBackdropContent(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 18.dp)
+                    )
+                }
             ) { scope ->
                 V2LiquidPhoneMock(
                     backdrop = scope.exportedBackdrop,
+                    drawWallpaper = false,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 18.dp)

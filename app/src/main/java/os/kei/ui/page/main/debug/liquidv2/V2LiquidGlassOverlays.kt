@@ -74,6 +74,8 @@ internal fun BoxScope.V2GlassSheet(
             lensHeight = V2LiquidGlassTokens.lensBalanced,
             lensAmount = V2LiquidGlassTokens.lensStrong,
             chromaticAberration = true,
+            materialStyle = V2LiquidMaterialStyle.Regular,
+            readabilityProfile = V2LiquidReadabilityProfile.RegularText,
             backdropPolicy = V2GlassBackdropPolicy.ExportChild
         ),
         exportedBackdrop = sheetBackdrop,
@@ -124,7 +126,7 @@ internal fun BoxScope.V2GlassDialog(
     secondaryLabel: String? = null,
     onSecondary: (() -> Unit)? = null,
     dismissOnScrim: Boolean = true,
-    scrimColor: Color = Color.Black.copy(alpha = 0.22f),
+    scrimColor: Color = Color.Black.copy(alpha = 0.26f),
     closeAction: (@Composable RowScope.(LayerBackdrop) -> Unit)? = null
 ) {
     if (!visible) return
@@ -153,6 +155,11 @@ internal fun BoxScope.V2GlassDialog(
             blur = V2LiquidGlassTokens.blurStrong,
             lensHeight = V2LiquidGlassTokens.lensBalanced,
             lensAmount = V2LiquidGlassTokens.lensStrong,
+            materialStyle = V2LiquidMaterialStyle.Regular,
+            readabilityProfile = V2LiquidReadabilityProfile.RegularText,
+            clearDimmingAlpha = 0.18f,
+            backgroundReadability = 0.28f,
+            rimLightAlpha = 0.30f,
             backdropPolicy = V2GlassBackdropPolicy.ExportChild
         ),
         exportedBackdrop = dialogBackdrop,

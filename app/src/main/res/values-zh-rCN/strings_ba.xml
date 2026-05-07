@@ -275,6 +275,7 @@
     <string name="ba_catalog_bgm_playlist_title">播放列表</string>
     <string name="ba_catalog_bgm_playlist_count">%1$d 首</string>
     <string name="ba_catalog_bgm_track_fallback">回忆大厅 BGM</string>
+    <string name="ba_catalog_bgm_media_subtitle">回忆大厅BGM</string>
     <string name="ba_catalog_bgm_status_current">当前</string>
     <string name="ba_catalog_bgm_student_note">学生：%1$s</string>
     <string name="ba_catalog_bgm_sort_recent">最近收藏</string>

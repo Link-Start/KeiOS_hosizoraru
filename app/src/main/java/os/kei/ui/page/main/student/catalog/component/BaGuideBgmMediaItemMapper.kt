@@ -13,17 +13,28 @@ internal fun GuideBgmFavoriteItem.toBaGuideBgmMediaItem(
     playbackUrlResolver: (Context, GuideBgmFavoriteItem) -> String = ::resolveFavoriteBgmPlaybackUrl,
     artworkUrlResolver: (GuideBgmFavoriteItem) -> String = { favorite ->
         favorite.resolvePlaybackArtworkImageUrl()
-    }
+    },
+    artworkData: ByteArray? = null
 ): MediaItem? {
     val mediaId = normalizeGuideMediaSource(audioUrl)
     if (mediaId.isBlank()) return null
     val playbackUrl = playbackUrlResolver(context, this)
     if (playbackUrl.isBlank()) return null
-    val titleText = title.trim().ifBlank {
-        context.getString(R.string.ba_catalog_bgm_track_fallback)
-    }
-    val artistText = studentTitle.trim().ifBlank {
-        context.getString(R.string.ba_catalog_bgm_student_unknown)
+    val studentText = studentTitle.trim()
+        .ifBlank { title.trim() }
+        .ifBlank { context.getString(R.string.ba_catalog_bgm_student_unknown) }
+    val subtitleText = context.getString(R.string.ba_catalog_bgm_media_subtitle)
+    val metadataBuilder = MediaMetadata.Builder()
+        .setTitle(studentText)
+        .setDisplayTitle(studentText)
+        .setArtist(subtitleText)
+        .setSubtitle(subtitleText)
+        .setAlbumTitle(context.getString(R.string.ba_catalog_bgm_album_title))
+    if (artworkData != null) {
+        metadataBuilder.setArtworkData(
+            artworkData,
+            MediaMetadata.PICTURE_TYPE_FRONT_COVER
+        )
     }
     val artworkUri = artworkUrlResolver(this)
         .takeIf { it.isNotBlank() }
@@ -31,19 +42,21 @@ internal fun GuideBgmFavoriteItem.toBaGuideBgmMediaItem(
     return MediaItem.Builder()
         .setMediaId(mediaId)
         .setUri(playbackUrl)
-        .setMediaMetadata(
-            MediaMetadata.Builder()
-                .setTitle(titleText)
-                .setArtist(artistText)
-                .setAlbumTitle(context.getString(R.string.ba_catalog_bgm_album_title))
-                .setArtworkUri(artworkUri)
-                .build()
-        )
+        .setMediaMetadata(metadataBuilder.setArtworkUri(artworkUri).build())
         .build()
 }
 
-internal fun List<GuideBgmFavoriteItem>.toBaGuideBgmMediaItems(context: Context): List<MediaItem> {
+internal fun List<GuideBgmFavoriteItem>.toBaGuideBgmMediaItems(
+    context: Context,
+    artworkDataByMediaId: Map<String, ByteArray> = emptyMap()
+): List<MediaItem> {
     return filter { it.audioUrl.isNotBlank() }
         .distinctBy { normalizeGuideMediaSource(it.audioUrl) }
-        .mapNotNull { favorite -> favorite.toBaGuideBgmMediaItem(context) }
+        .mapNotNull { favorite ->
+            val mediaId = normalizeGuideMediaSource(favorite.audioUrl)
+            favorite.toBaGuideBgmMediaItem(
+                context = context,
+                artworkData = artworkDataByMediaId[mediaId]
+            )
+        }
 }

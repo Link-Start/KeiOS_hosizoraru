@@ -4,10 +4,17 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.BaGuideBgmMediaSessionService
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
@@ -16,12 +23,15 @@ import os.kei.ui.page.main.student.normalizeGuideMediaSource
 internal class BaGuideBgmNativeMediaController(context: Context) {
     private val appContext = context.applicationContext
     private val mainExecutor = ContextCompat.getMainExecutor(appContext)
+    private val artworkScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lock = Any()
     private val pendingCommands = ArrayDeque<(MediaController) -> Unit>()
 
     @Volatile
     private var controller: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var artworkHydrationJob: Job? = null
+    private var artworkHydrationGeneration = 0L
 
     fun syncQueue(
         queue: List<GuideBgmFavoriteItem>,
@@ -31,6 +41,7 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
         playWhenReady: Boolean? = null,
         restart: Boolean = false
     ) {
+        val artworkGeneration = nextArtworkHydrationGeneration()
         val mediaItems = queue.toBaGuideBgmMediaItems(appContext)
         if (mediaItems.isEmpty()) return
         val targetMediaId = normalizeGuideMediaSource(selectedAudioUrl)
@@ -75,6 +86,11 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
                 null -> Unit
             }
         }
+        scheduleArtworkHydration(
+            generation = artworkGeneration,
+            queue = queue,
+            selectedAudioUrl = selectedAudioUrl
+        )
     }
 
     fun pause() {
@@ -143,6 +159,7 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
     }
 
     fun disconnect() {
+        cancelArtworkHydration()
         val futureToCancel: ListenableFuture<MediaController>?
         val controllerToRelease: MediaController?
         synchronized(lock) {
@@ -158,6 +175,71 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
             }
         }
         futureToCancel?.cancel(true)
+    }
+
+    private fun nextArtworkHydrationGeneration(): Long {
+        return synchronized(lock) {
+            artworkHydrationJob?.cancel()
+            artworkHydrationJob = null
+            artworkHydrationGeneration += 1L
+            artworkHydrationGeneration
+        }
+    }
+
+    private fun cancelArtworkHydration() {
+        synchronized(lock) {
+            artworkHydrationGeneration += 1L
+            artworkHydrationJob?.cancel()
+            artworkHydrationJob = null
+        }
+    }
+
+    private fun scheduleArtworkHydration(
+        generation: Long,
+        queue: List<GuideBgmFavoriteItem>,
+        selectedAudioUrl: String
+    ) {
+        val targets = queue.orderedArtworkHydrationTargets(selectedAudioUrl)
+        if (targets.isEmpty()) return
+        val job = artworkScope.launch {
+            targets.forEach { favorite ->
+                if (!isArtworkHydrationCurrent(generation)) return@launch
+                val mediaId = normalizeGuideMediaSource(favorite.audioUrl)
+                val artworkData =
+                    BaGuideBgmMediaArtworkPayloadResolver.resolve(appContext, favorite)
+                        ?: return@forEach
+                if (!isArtworkHydrationCurrent(generation)) return@launch
+                submit { mediaController ->
+                    if (!isArtworkHydrationCurrent(generation)) return@submit
+                    mediaController.replaceArtworkMetadata(mediaId, artworkData)
+                }
+            }
+        }
+        synchronized(lock) {
+            if (artworkHydrationGeneration == generation) {
+                artworkHydrationJob = job
+            } else {
+                job.cancel()
+            }
+        }
+    }
+
+    private fun isArtworkHydrationCurrent(generation: Long): Boolean {
+        return synchronized(lock) {
+            artworkHydrationGeneration == generation
+        }
+    }
+
+    private fun MediaController.replaceArtworkMetadata(
+        mediaId: String,
+        artworkData: ByteArray
+    ) {
+        val index = (0 until mediaItemCount)
+            .firstOrNull { itemIndex -> getMediaItemAt(itemIndex).mediaId == mediaId }
+            ?: return
+        val currentItem = getMediaItemAt(index)
+        if (currentItem.mediaMetadata.artworkData?.contentEquals(artworkData) == true) return
+        replaceMediaItem(index, currentItem.withArtworkData(artworkData))
     }
 
     private fun submit(command: (MediaController) -> Unit) {
@@ -221,4 +303,33 @@ internal class BaGuideBgmNativeMediaController(context: Context) {
             Player.REPEAT_MODE_ALL
         }
     }
+}
+
+private const val MAX_NATIVE_ARTWORK_HYDRATION_TARGETS = 8
+
+internal fun List<GuideBgmFavoriteItem>.orderedArtworkHydrationTargets(
+    selectedAudioUrl: String,
+    maxCount: Int = MAX_NATIVE_ARTWORK_HYDRATION_TARGETS
+): List<GuideBgmFavoriteItem> {
+    if (isEmpty() || maxCount <= 0) return emptyList()
+    val selectedMediaId = normalizeGuideMediaSource(selectedAudioUrl)
+    val selectedIndex = indexOfFirst { favorite ->
+        normalizeGuideMediaSource(favorite.audioUrl) == selectedMediaId
+    }.takeIf { it >= 0 } ?: 0
+    return indices
+        .asSequence()
+        .map { offset -> (selectedIndex + offset) % size }
+        .map { index -> this[index] }
+        .distinctBy { favorite -> normalizeGuideMediaSource(favorite.audioUrl) }
+        .take(maxCount)
+        .toList()
+}
+
+private fun MediaItem.withArtworkData(artworkData: ByteArray): MediaItem {
+    val metadata = mediaMetadata.buildUpon()
+        .setArtworkData(artworkData, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+        .build()
+    return buildUpon()
+        .setMediaMetadata(metadata)
+        .build()
 }

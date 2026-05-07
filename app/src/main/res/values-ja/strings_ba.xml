@@ -274,6 +274,7 @@
     <string name="ba_catalog_bgm_playlist_title">プレイリスト</string>
     <string name="ba_catalog_bgm_playlist_count">%1$d 曲</string>
     <string name="ba_catalog_bgm_track_fallback">メモリアルロビー BGM</string>
+    <string name="ba_catalog_bgm_media_subtitle">メモリアルロビーBGM</string>
     <string name="ba_catalog_bgm_status_current">再生中</string>
     <string name="ba_catalog_bgm_student_note">生徒: %1$s</string>
     <string name="ba_catalog_bgm_sort_recent">最近お気に入り</string>

@@ -74,7 +74,7 @@ MCP Skill、通知提醒、仓库发现和缓存诊断。
 - 当前稳定标签：[v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Kotlin `2.3.21`、Compose `1.11.1`、Android Gradle Plugin
-  `9.2.0`。
+  `9.2.1`。
 - 当前应用语言资源覆盖简体中文、English、日本語。
 
 ## 文档

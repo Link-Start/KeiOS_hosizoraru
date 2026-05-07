@@ -81,7 +81,7 @@ Read the full feature tour:
 - Current stable tag: [v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Kotlin `2.3.21`, Compose `1.11.1`, Android
-  Gradle Plugin `9.2.0`.
+  Gradle Plugin `9.2.1`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation

@@ -19,7 +19,7 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Gradle daemon + Java compile + Kotlin JVM target are all aligned to Java 21.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
-- Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.0`; Compose runtime: `1.11.1`.
+- Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.1`; Compose runtime: `1.11.1`.
 - Keep local JDK paths and tokens in untracked local config files.
 
 ### Versioning

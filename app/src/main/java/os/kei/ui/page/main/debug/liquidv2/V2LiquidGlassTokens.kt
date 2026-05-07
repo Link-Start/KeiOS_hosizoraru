@@ -31,14 +31,14 @@ internal object V2LiquidGlassTokens {
     val spacingLg: Dp = 18.dp
     val spacingXl: Dp = 24.dp
     val controlHeight: Dp = 46.dp
-    val dockHeight: Dp = 62.dp
-    val dockCollapsedHeight: Dp = 52.dp
+    val dockHeight: Dp = 72.dp
+    val dockCollapsedHeight: Dp = 64.dp
     val switchWidth: Dp = 62.dp
     val switchHeight: Dp = 36.dp
     val sliderHeight: Dp = 46.dp
     val sliderCompactHeight: Dp = 38.dp
-    val dockIndicatorInset: Dp = 6.dp
-    val dockItemMinWidth: Dp = 54.dp
+    val dockIndicatorInset: Dp = 7.dp
+    val dockItemMinWidth: Dp = 58.dp
     const val pressMotionMs: Int = 130
     const val stateMotionMs: Int = 180
     const val overlayMotionMs: Int = 190
@@ -234,9 +234,9 @@ internal data class V2LiquidParameterSet(
             depthEffect = true
         )
         val dockProminent = V2LiquidParameterSet(
-            blur = 5.dp,
-            refractionHeight = 18.dp,
-            refractionAmount = 34.dp,
+            blur = 7.dp,
+            refractionHeight = 24.dp,
+            refractionAmount = 42.dp,
             chromaticAberration = true,
             depthEffect = true
         )

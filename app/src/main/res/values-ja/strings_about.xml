@@ -121,6 +121,9 @@
     <string name="debug_v2_liquid_navigation_actionbar">Action bar</string>
     <string name="debug_v2_liquid_navigation_command_dock">Morphing command dock</string>
     <string name="debug_v2_liquid_navigation_mini_player">Mini player dock</string>
+    <string name="debug_v2_liquid_navigation_kyant_dock">Kyant bottom bar</string>
+    <string name="debug_v2_liquid_navigation_split_dock">iOS 26 split dock</string>
+    <string name="debug_v2_liquid_navigation_split_dock_body">選択 tab capsule、mini player、search capsule が親 backdrop を共有し、浮いた dock 階層を検証します。</string>
     <string name="debug_v2_liquid_nav_home">Home</string>
     <string name="debug_v2_liquid_nav_controls">Controls</string>
     <string name="debug_v2_liquid_nav_sheets">Sheets</string>
@@ -132,6 +135,7 @@
     <string name="debug_v2_liquid_command_run">Run</string>
     <string name="debug_v2_liquid_mini_title">Liquid Motion</string>
     <string name="debug_v2_liquid_mini_subtitle">03:18 · Backdrop sample</string>
+    <string name="debug_v2_liquid_mini_time">03:18</string>
     <string name="debug_v2_liquid_scenario_github_title">GitHub action row</string>
     <string name="debug_v2_liquid_scenario_github_body">キャッシュ、同期、共有フローは同じコンパクトな glass action row にまとめられます。</string>
     <string name="debug_v2_liquid_scenario_github_meta">branch · release · apk</string>
@@ -156,10 +160,10 @@
     <string name="debug_v2_liquid_dropdown_badge_fast">fast</string>
     <string name="debug_v2_liquid_dropdown_badge_locked">locked</string>
     <string name="debug_v2_liquid_perf_title">Perf topology</string>
-    <string name="debug_v2_liquid_perf_body">表示中の sample は Full、隣接 sample は Shared、遠い sample は固定 Shell ジオメトリを使います。</string>
+    <string name="debug_v2_liquid_perf_body">Round 5 は dock の素材を保ち、pager と表示中 sample の窓で active Backdrop layer を抑えます。</string>
     <string name="debug_v2_liquid_perf_current_page_value">page · %1$s</string>
     <string name="debug_v2_liquid_perf_layers_value">active layers ≤ 8</string>
-    <string name="debug_v2_liquid_perf_gfxinfo_value" formatted="false">25.86% → ≤14% jank</string>
+    <string name="debug_v2_liquid_perf_gfxinfo_value" formatted="false">9.02% → ≤12% jank</string>
     <string name="debug_v2_liquid_group_stress_title">Group stress sample</string>
     <string name="debug_v2_liquid_group_stress_subtitle">1 つの exported child backdrop が row、action、capsule、toolbar を支えます。</string>
     <string name="debug_v2_liquid_group_stress_meta">group scope · child backdrop · fixed rhythm</string>
@@ -167,6 +171,8 @@
     <string name="debug_v2_liquid_group_toolbar_body">検索、アクション、状態コントロールが density と role token を共有します。</string>
     <string name="debug_v2_liquid_group_shell_title">Shell command group</string>
     <string name="debug_v2_liquid_group_shell_body">グループ化された row で OS コマンドプリセットをコンパクトに保ちます。</string>
+    <string name="debug_v2_liquid_dock_stress_title">Dock stress row</string>
+    <string name="debug_v2_liquid_dock_stress_body">Dock、GitHub action、OS command、BA toolbar control が group 内の child backdrop を共有します。</string>
     <string name="debug_v2_liquid_reference_title">Android Liquid Glass reference</string>
     <string name="debug_v2_liquid_reference_subtitle">Kyant sample のボタン、toggle、tab bar、slider、phone mock を視覚検収セットにします。</string>
     <string name="debug_v2_liquid_refraction_height">Refraction height</string>

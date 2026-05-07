@@ -137,7 +137,7 @@ internal fun DebugV2LiquidGlassSamplePage(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(bottom = 94.dp),
+                    .padding(bottom = 110.dp),
                 beyondViewportPageCount = 0,
                 pageSpacing = 12.dp,
                 verticalAlignment = Alignment.Top
@@ -162,6 +162,9 @@ internal fun DebugV2LiquidGlassSamplePage(
             V2GlassBottomTabs(
                 items = tabItems,
                 selectedIndex = pagerState.targetPage,
+                selectedPosition = (
+                        pagerState.currentPage + pagerState.currentPageOffsetFraction
+                        ).coerceIn(0f, (tabItems.size - 1).toFloat()),
                 onSelectedIndexChange = { index ->
                     coroutineScope.launch {
                         pagerState.animateScrollToPage(index)
@@ -174,15 +177,26 @@ internal fun DebugV2LiquidGlassSamplePage(
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .fillMaxWidth(),
                 compact = true,
-                scrollBehavior = V2LiquidDockScrollBehavior(
-                    collapsed = pagerState.isScrollInProgress || pageScrollInProgress
-                ),
+                scrollBehavior = V2LiquidDockScrollBehavior(V2LiquidDockMode.Expanded),
                 spec = V2LiquidDockSpec(
-                    height = 62.dp,
-                    itemMinWidth = 48.dp,
-                    outerPadding = 4.dp,
-                    indicatorInset = 5.dp,
-                    selectedBlobStyle = V2LiquidMaterialStyle.Dock
+                    height = 72.dp,
+                    itemMinWidth = 52.dp,
+                    outerPadding = 6.dp,
+                    indicatorInset = 7.dp,
+                    selectedBlobStyle = V2LiquidMaterialStyle.Dock,
+                    labelPolicy = V2GlassTabLabelPolicy.Always,
+                    materialSpec = V2LiquidDockMaterialSpec(
+                        rimLightAlpha = 0.42f,
+                        edgeChromaticAlpha = 0.18f,
+                        causticAlpha = 0.12f,
+                        readabilityFillAlpha = 0.08f
+                    ),
+                    blobSpec = V2LiquidDockBlobSpec(
+                        minWidthFraction = 1.00f,
+                        stretchOnPress = 0.07f,
+                        stretchOnDrag = 0.20f,
+                        liftDp = 1.4.dp
+                    )
                 )
             )
         }

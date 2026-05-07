@@ -46,6 +46,7 @@ internal data class V2GlassTabItem(
 internal fun V2GlassBottomTabs(
     items: List<V2GlassTabItem>,
     selectedIndex: Int,
+    selectedPosition: Float? = null,
     onSelectedIndexChange: (Int) -> Unit,
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
@@ -60,6 +61,7 @@ internal fun V2GlassBottomTabs(
     V2LiquidDock(
         items = items,
         selectedIndex = selectedIndex,
+        selectedPosition = selectedPosition,
         onSelectedIndexChange = onSelectedIndexChange,
         backdrop = backdrop,
         modifier = modifier,

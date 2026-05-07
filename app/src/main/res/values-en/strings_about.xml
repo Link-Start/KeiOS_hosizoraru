@@ -122,6 +122,9 @@
     <string name="debug_v2_liquid_navigation_actionbar">Action bar</string>
     <string name="debug_v2_liquid_navigation_command_dock">Morphing command dock</string>
     <string name="debug_v2_liquid_navigation_mini_player">Mini player dock</string>
+    <string name="debug_v2_liquid_navigation_kyant_dock">Kyant bottom bar</string>
+    <string name="debug_v2_liquid_navigation_split_dock">iOS 26 split dock</string>
+    <string name="debug_v2_liquid_navigation_split_dock_body">The active tab capsule, mini player, and search capsule share the parent backdrop for a floating layered dock.</string>
     <string name="debug_v2_liquid_nav_home">Home</string>
     <string name="debug_v2_liquid_nav_controls">Controls</string>
     <string name="debug_v2_liquid_nav_sheets">Sheets</string>
@@ -133,6 +136,7 @@
     <string name="debug_v2_liquid_command_run">Run</string>
     <string name="debug_v2_liquid_mini_title">Liquid Motion</string>
     <string name="debug_v2_liquid_mini_subtitle">03:18 · Backdrop sample</string>
+    <string name="debug_v2_liquid_mini_time">03:18</string>
     <string name="debug_v2_liquid_scenario_github_title">GitHub action row</string>
     <string name="debug_v2_liquid_scenario_github_body">Cache, sync, and share flows can use the same compact glass action row.</string>
     <string name="debug_v2_liquid_scenario_github_meta">branch · release · apk</string>
@@ -157,10 +161,10 @@
     <string name="debug_v2_liquid_dropdown_badge_fast">fast</string>
     <string name="debug_v2_liquid_dropdown_badge_locked">locked</string>
     <string name="debug_v2_liquid_perf_title">Perf topology</string>
-    <string name="debug_v2_liquid_perf_body">Visible samples use Full, adjacent samples use Shared, and distant samples keep fixed Shell geometry.</string>
+    <string name="debug_v2_liquid_perf_body">Round 5 keeps full dock material while limiting active Backdrop layers through pager and visible sample windows.</string>
     <string name="debug_v2_liquid_perf_current_page_value">page · %1$s</string>
     <string name="debug_v2_liquid_perf_layers_value">active layers ≤ 8</string>
-    <string name="debug_v2_liquid_perf_gfxinfo_value" formatted="false">25.86% → ≤14% jank</string>
+    <string name="debug_v2_liquid_perf_gfxinfo_value" formatted="false">9.02% → ≤12% jank</string>
     <string name="debug_v2_liquid_group_stress_title">Group stress sample</string>
     <string name="debug_v2_liquid_group_stress_subtitle">One exported child backdrop feeds rows, actions, capsules, and toolbar controls.</string>
     <string name="debug_v2_liquid_group_stress_meta">group scope · child backdrop · fixed rhythm</string>
@@ -168,6 +172,8 @@
     <string name="debug_v2_liquid_group_toolbar_body">Search, actions, and status controls share density and role tokens.</string>
     <string name="debug_v2_liquid_group_shell_title">Shell command group</string>
     <string name="debug_v2_liquid_group_shell_body">Grouped rows keep OS-style command presets compact and scan-friendly.</string>
+    <string name="debug_v2_liquid_dock_stress_title">Dock stress row</string>
+    <string name="debug_v2_liquid_dock_stress_body">Dock, GitHub actions, OS commands, and BA toolbar controls share one child backdrop inside a group.</string>
     <string name="debug_v2_liquid_reference_title">Android Liquid Glass reference</string>
     <string name="debug_v2_liquid_reference_subtitle">Kyant-style buttons, toggle, tab bars, sliders, and phone mock form the visual acceptance set.</string>
     <string name="debug_v2_liquid_refraction_height">Refraction height</string>

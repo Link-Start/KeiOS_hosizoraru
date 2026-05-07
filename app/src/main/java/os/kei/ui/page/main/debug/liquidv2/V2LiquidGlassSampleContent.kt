@@ -292,9 +292,10 @@ private fun V2NavigationPage(
                 subtitle = stringResource(R.string.debug_v2_liquid_section_navigation_subtitle),
                 parentBackdrop = backdrop,
                 stageKind = V2ReferenceStageKind.HomeScreen,
+                stageHeight = 520.dp,
                 renderTier = tierFor(0)
             ) { scope ->
-                V2LiquidTabBarShowcase(
+                V2NavigationDockShowcase(
                     backdrop = scope.exportedBackdrop,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -379,6 +380,7 @@ private fun V2ScenariosPage(
                     title = stringResource(R.string.debug_v2_liquid_group_stress_title),
                     subtitle = stringResource(R.string.debug_v2_liquid_group_stress_subtitle)
                 )
+                V2DockStressRow(backdrop = backdrop)
                 V2ScenarioActionRow(
                     icon = appLucideBranchIcon(),
                     title = stringResource(R.string.debug_v2_liquid_scenario_github_title),

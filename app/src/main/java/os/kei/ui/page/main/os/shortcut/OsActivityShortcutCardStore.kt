@@ -3,6 +3,7 @@ package os.kei.ui.page.main.os.shortcut
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsShortcutCardStore
 import os.kei.ui.page.main.os.transfer.OS_ACTIVITY_CARD_EXPORT_SCHEMA
+import os.kei.ui.page.main.os.transfer.OS_CARD_EXPORT_SCHEMA_VERSION
 import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
 import os.kei.ui.page.main.os.transfer.OsCardImportError
 import os.kei.ui.page.main.os.transfer.OsCardImportException
@@ -42,6 +43,7 @@ internal object OsActivityShortcutCardStore {
     private const val KEY_EXTRA_TYPE = "type"
     private const val KEY_EXTRA_VALUE = "value"
     private const val KEY_EXPORT_SCHEMA = "schema"
+    private const val KEY_EXPORT_SCHEMA_VERSION = "schemaVersion"
     private const val KEY_EXPORT_EXPORTED_AT = "exportedAtMillis"
     private const val KEY_EXPORT_ITEM_COUNT = "itemCount"
     private const val KEY_EXPORT_ITEMS = "items"
@@ -128,6 +130,7 @@ internal object OsActivityShortcutCardStore {
         val items = JSONArray(encodeCards(normalized))
         return JSONObject().apply {
             put(KEY_EXPORT_SCHEMA, OS_ACTIVITY_CARD_EXPORT_SCHEMA)
+            put(KEY_EXPORT_SCHEMA_VERSION, OS_CARD_EXPORT_SCHEMA_VERSION)
             put(KEY_EXPORT_EXPORTED_AT, exportedAtMillis)
             put(KEY_EXPORT_ITEM_COUNT, normalized.size)
             put(KEY_EXPORT_ITEMS, items)
@@ -146,6 +149,7 @@ internal object OsActivityShortcutCardStore {
                 invalidCount = 0,
                 duplicateCount = 0,
                 fileKind = root.fileKind,
+                schemaVersion = root.schemaVersion,
                 isLegacyFormat = root.isLegacyFormat
             )
         }
@@ -185,6 +189,7 @@ internal object OsActivityShortcutCardStore {
             invalidCount = (root.sourceCount - decoded.size).coerceAtLeast(0),
             duplicateCount = duplicateCount,
             fileKind = root.fileKind,
+            schemaVersion = root.schemaVersion,
             isLegacyFormat = root.isLegacyFormat
         )
     }

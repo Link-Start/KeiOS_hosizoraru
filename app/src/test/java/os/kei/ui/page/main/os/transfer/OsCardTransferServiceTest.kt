@@ -3,6 +3,7 @@ package os.kei.ui.page.main.os.transfer
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import org.json.JSONObject
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -25,6 +26,7 @@ class OsCardTransferServiceTest {
 
         assertEquals(OsCardImportFileKind.Activity, root.fileKind)
         assertEquals(1, root.sourceCount)
+        assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, root.schemaVersion)
         assertFalse(root.isLegacyFormat)
     }
 
@@ -44,7 +46,43 @@ class OsCardTransferServiceTest {
 
         assertEquals(OsCardImportFileKind.Shell, root.fileKind)
         assertEquals(1, root.sourceCount)
+        assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, root.schemaVersion)
         assertFalse(root.isLegacyFormat)
+    }
+
+    @Test
+    fun `activity and bundle exports include schema version`() {
+        val activityJson = JSONObject(
+            OsCardTransferService.buildActivityCardsExportJson(
+                cards = emptyList(),
+                defaults = OsGoogleSystemServiceConfig(),
+            )
+        )
+        val bundleJson = JSONObject(
+            OsCardTransferService.buildCardsBundleExportJson(
+                activityCards = emptyList(),
+                shellCards = emptyList(),
+                defaults = OsGoogleSystemServiceConfig(),
+            )
+        )
+
+        assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, activityJson.optInt("schemaVersion"))
+        assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, bundleJson.optInt("schemaVersion"))
+        assertEquals(OS_CARD_BUNDLE_EXPORT_SCHEMA, bundleJson.optString("schema"))
+    }
+
+    @Test
+    fun `legacy array imports report legacy schema version`() {
+        val root = parseOsCardImportRoot(
+            """
+            [
+              {"id":"shell-1","command":"id"}
+            ]
+            """.trimIndent()
+        )
+
+        assertEquals(OS_CARD_LEGACY_SCHEMA_VERSION, root.schemaVersion)
+        assertTrue(root.isLegacyFormat)
     }
 
     @Test
@@ -82,6 +120,7 @@ class OsCardTransferServiceTest {
             invalidCount = 0,
             duplicateCount = 0,
             fileKind = OsCardImportFileKind.Activity,
+            schemaVersion = OS_CARD_EXPORT_SCHEMA_VERSION,
             isLegacyFormat = false
         )
 
@@ -123,6 +162,7 @@ class OsCardTransferServiceTest {
             invalidCount = 0,
             duplicateCount = 0,
             fileKind = OsCardImportFileKind.Shell,
+            schemaVersion = OS_CARD_EXPORT_SCHEMA_VERSION,
             isLegacyFormat = false
         )
 
@@ -160,6 +200,7 @@ class OsCardTransferServiceTest {
 
         assertTrue(summary.lines().contains("target=shell"))
         assertTrue(summary.lines().contains("fileKind=Unknown"))
+        assertTrue(summary.lines().contains("schemaVersion=0"))
         assertTrue(summary.lines().contains("validCount=0"))
         assertTrue(summary.lines().contains("applied=false"))
     }

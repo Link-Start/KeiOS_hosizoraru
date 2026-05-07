@@ -31,7 +31,8 @@ internal object OsCardTransferService {
         defaults: OsGoogleSystemServiceConfig
     ): String {
         return JSONObject().apply {
-            put("schema", "keios.os.cards.bundle.v1")
+            put("schema", OS_CARD_BUNDLE_EXPORT_SCHEMA)
+            put("schemaVersion", OS_CARD_EXPORT_SCHEMA_VERSION)
             put("exportedAtMillis", System.currentTimeMillis())
             put(
                 "activity",
@@ -99,6 +100,7 @@ internal object OsCardTransferService {
                     invalidCount = root.sourceCount,
                     duplicateCount = 0,
                     fileKind = root.fileKind,
+                    schemaVersion = root.schemaVersion,
                     isLegacyFormat = root.isLegacyFormat
                 )
                 buildPreview(
@@ -188,6 +190,7 @@ internal object OsCardTransferService {
         return buildString {
             appendLine("target=$target")
             appendLine("fileKind=${payload.fileKind.name}")
+            appendLine("schemaVersion=${payload.schemaVersion}")
             appendLine("legacyFormat=${payload.isLegacyFormat}")
             appendLine("apply=$apply")
             appendLine("applied=$applied")

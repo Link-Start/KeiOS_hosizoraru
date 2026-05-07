@@ -11,6 +11,9 @@ import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 
 internal const val OS_ACTIVITY_CARD_EXPORT_SCHEMA = "keios.os.activity.cards.v1"
 internal const val OS_SHELL_CARD_EXPORT_SCHEMA = "keios.os.shell.cards.v1"
+internal const val OS_CARD_BUNDLE_EXPORT_SCHEMA = "keios.os.cards.bundle.v1"
+internal const val OS_CARD_EXPORT_SCHEMA_VERSION = 1
+internal const val OS_CARD_LEGACY_SCHEMA_VERSION = 0
 
 internal enum class OsCardImportFileKind {
     Activity,
@@ -43,6 +46,7 @@ internal data class OsCardImportRoot(
     val items: JSONArray,
     val sourceCount: Int,
     val fileKind: OsCardImportFileKind,
+    val schemaVersion: Int,
     val isLegacyFormat: Boolean
 )
 
@@ -51,6 +55,7 @@ internal sealed interface OsCardImportPayload {
     val invalidCount: Int
     val duplicateCount: Int
     val fileKind: OsCardImportFileKind
+    val schemaVersion: Int
     val isLegacyFormat: Boolean
 }
 
@@ -60,6 +65,7 @@ internal data class OsActivityCardImportPayload(
     override val invalidCount: Int,
     override val duplicateCount: Int,
     override val fileKind: OsCardImportFileKind,
+    override val schemaVersion: Int,
     override val isLegacyFormat: Boolean
 ) : OsCardImportPayload
 
@@ -69,6 +75,7 @@ internal data class OsShellCardImportPayload(
     override val invalidCount: Int,
     override val duplicateCount: Int,
     override val fileKind: OsCardImportFileKind,
+    override val schemaVersion: Int,
     override val isLegacyFormat: Boolean
 ) : OsCardImportPayload
 
@@ -77,6 +84,7 @@ internal data class OsUnknownCardImportPayload(
     override val invalidCount: Int,
     override val duplicateCount: Int,
     override val fileKind: OsCardImportFileKind = OsCardImportFileKind.Unknown,
+    override val schemaVersion: Int = OS_CARD_LEGACY_SCHEMA_VERSION,
     override val isLegacyFormat: Boolean = false
 ) : OsCardImportPayload
 
@@ -120,6 +128,7 @@ internal fun parseOsCardImportRoot(raw: String): OsCardImportRoot {
             items = items,
             sourceCount = items.length(),
             fileKind = detectCardImportFileKind(items),
+            schemaVersion = OS_CARD_LEGACY_SCHEMA_VERSION,
             isLegacyFormat = true
         )
     }
@@ -134,6 +143,10 @@ internal fun parseOsCardImportRoot(raw: String): OsCardImportRoot {
         OS_SHELL_CARD_EXPORT_SCHEMA -> OsCardImportFileKind.Shell
         else -> OsCardImportFileKind.Unknown
     }
+    val schemaVersion = root.optInt(
+        "schemaVersion",
+        defaultSchemaVersionFor(declaredSchema)
+    ).coerceAtLeast(OS_CARD_LEGACY_SCHEMA_VERSION)
     return OsCardImportRoot(
         items = items,
         sourceCount = if (root.has("itemCount")) {
@@ -146,8 +159,18 @@ internal fun parseOsCardImportRoot(raw: String): OsCardImportRoot {
         } else {
             detectCardImportFileKind(items)
         },
+        schemaVersion = schemaVersion,
         isLegacyFormat = declaredSchema.isBlank()
     )
+}
+
+private fun defaultSchemaVersionFor(schema: String): Int {
+    return when (schema) {
+        OS_ACTIVITY_CARD_EXPORT_SCHEMA,
+        OS_SHELL_CARD_EXPORT_SCHEMA,
+        OS_CARD_BUNDLE_EXPORT_SCHEMA -> OS_CARD_EXPORT_SCHEMA_VERSION
+        else -> OS_CARD_LEGACY_SCHEMA_VERSION
+    }
 }
 
 private fun detectCardImportFileKind(items: JSONArray): OsCardImportFileKind {

@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.clearBaGuideCatalogCache
 import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.hydrateBaGuideCatalogReleaseDateIndex
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
@@ -19,10 +18,18 @@ internal data class BaGuideCatalogLoadResult(
 )
 
 internal class BaGuideCatalogRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val refreshIntervalLoader: () -> Int = BASettingsStore::loadCalendarRefreshIntervalHours,
+    private val cachedBundleLoader: () -> BaGuideCatalogBundle? = ::loadCachedBaGuideCatalogBundle,
+    private val catalogFetcher: suspend (forceRefresh: Boolean) -> BaGuideCatalogBundle =
+        ::fetchBaGuideCatalogBundle,
+    private val completeChecker: (BaGuideCatalogBundle?) -> Boolean =
+        ::isBaGuideCatalogBundleComplete,
+    private val expiredChecker: (BaGuideCatalogBundle?, Int, Long) -> Boolean =
+        ::isBaGuideCatalogCacheExpired
 ) {
     suspend fun loadCatalog(
-        context: Context,
+        context: Context?,
         currentCatalog: BaGuideCatalogBundle,
         manualRefresh: Boolean,
         loadFailedText: String,
@@ -30,17 +37,13 @@ internal class BaGuideCatalogRepository(
     ): BaGuideCatalogLoadResult {
         val now = System.currentTimeMillis()
         val refreshIntervalHours = withContext(ioDispatcher) {
-            BASettingsStore.loadCalendarRefreshIntervalHours()
+            refreshIntervalLoader()
         }
         val cachedBundle = withContext(ioDispatcher) {
-            loadCachedBaGuideCatalogBundle()
+            cachedBundleLoader()
         }
-        val cacheComplete = isBaGuideCatalogBundleComplete(cachedBundle)
-        val cacheExpired = isBaGuideCatalogCacheExpired(
-            bundle = cachedBundle,
-            refreshIntervalHours = refreshIntervalHours,
-            nowMs = now
-        )
+        val cacheComplete = completeChecker(cachedBundle)
+        val cacheExpired = expiredChecker(cachedBundle, refreshIntervalHours, now)
 
         if (!manualRefresh && cacheComplete && !cacheExpired) {
             return BaGuideCatalogLoadResult(
@@ -49,15 +52,8 @@ internal class BaGuideCatalogRepository(
             )
         }
 
-        val shouldClearLocalCache = manualRefresh || (cachedBundle != null && (cacheExpired || !cacheComplete))
-        if (shouldClearLocalCache) {
-            withContext(ioDispatcher) {
-                clearBaGuideCatalogCache(context)
-            }
-        }
-
         val result = withContext(ioDispatcher) {
-            runCatching { fetchBaGuideCatalogBundle(forceRefresh = true) }
+            runCatching { catalogFetcher(true) }
         }
         return result.fold(
             onSuccess = { latest ->

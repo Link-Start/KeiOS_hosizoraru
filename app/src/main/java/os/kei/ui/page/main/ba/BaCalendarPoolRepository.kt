@@ -11,8 +11,8 @@ import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.decodeBaCalendarEntries
 import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
-import os.kei.ui.page.main.ba.support.fetchBaCalendarEntries
-import os.kei.ui.page.main.ba.support.fetchBaPoolEntries
+import os.kei.ui.page.main.ba.support.fetchBaCalendarRemoteResult
+import os.kei.ui.page.main.ba.support.fetchBaPoolRemoteResult
 import os.kei.ui.page.main.ba.support.runWithHardTimeout
 
 internal data class BaCalendarSyncSnapshot(
@@ -106,12 +106,12 @@ internal object BaCalendarPoolRepository {
         val result = withContext(Dispatchers.IO) {
             runCatching {
                 runWithHardTimeout(15_000L) {
-                    fetchBaCalendarEntries(serverIndex, now)
+                    fetchBaCalendarRemoteResult(serverIndex, now)
                 }
             }
         }
         if (result.isSuccess) {
-            val entries = result.getOrThrow()
+            val entries = result.getOrThrow().entries
             if (entries.isNotEmpty()) {
                 val entriesWithLocalImages = BaCalendarPoolCacheWriter.saveCalendarAndHydrateImages(
                     context = context,
@@ -235,12 +235,12 @@ internal object BaCalendarPoolRepository {
         val result = withContext(Dispatchers.IO) {
             runCatching {
                 runWithHardTimeout(15_000L) {
-                    fetchBaPoolEntries(serverIndex, now)
+                    fetchBaPoolRemoteResult(serverIndex, now)
                 }
             }
         }
         if (result.isSuccess) {
-            val entries = result.getOrThrow()
+            val entries = result.getOrThrow().entries
             if (entries.isNotEmpty()) {
                 val entriesWithLocalImages = BaCalendarPoolCacheWriter.savePoolAndHydrateImages(
                     context = context,

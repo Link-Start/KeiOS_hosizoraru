@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba.support
 
 import org.json.JSONArray
 import org.json.JSONObject
-import os.kei.feature.ba.data.remote.GameKeeRepository
 import java.util.Locale
 
 internal fun gameKeeServerId(serverIndex: Int): Int {
@@ -83,7 +82,8 @@ internal fun extractGameKeeImageLink(item: JSONObject): String {
         "image", "img", "pic_url", "pic", "thumb", "thumbnail", "avatar", "banner", "icon", "logo"
     )
     directKeys.forEach { key ->
-        val value = normalizeGameKeeImageLink(item.optString(key))
+        val rawValue = item.opt(key) as? String ?: return@forEach
+        val value = normalizeGameKeeImageLink(rawValue)
         if (looksLikeImageUrl(value)) return value
     }
 
@@ -121,46 +121,7 @@ internal fun fetchBaCalendarEntries(
     serverIndex: Int,
     nowMs: Long = System.currentTimeMillis()
 ): List<BaCalendarEntry> {
-    val serverId = gameKeeServerId(serverIndex)
-    val endpointPath = "$BA_CALENDAR_ENDPOINT?importance=0&sort=-1&keyword=&limit=999&page_no=1&serverId=$serverId&status=0"
-    val body = runWithRetry {
-        GameKeeRepository.fetchBaApiJson(
-            pathOrUrl = endpointPath,
-            refererPath = "/ba/huodong/$serverId"
-        )
-    }
-    val root = JSONObject(body)
-    if (root.optInt("code", -1) != 0) {
-        error("API ${root.optInt("code", -1)}")
-    }
-    val data = root.optJSONArray("data") ?: return emptyList()
-    val entries = mutableListOf<BaCalendarEntry>()
-    for (index in 0 until data.length()) {
-        val item = data.optJSONObject(index) ?: continue
-        val title = item.optString("title").trim()
-        if (title.isBlank()) continue
-
-        val beginSec = item.optLong("begin_at", 0L)
-        val endSec = item.optLong("end_at", 0L)
-        if (beginSec <= 0L || endSec <= 0L) continue
-        val beginAtMs = beginSec * 1000L
-        val endAtMs = endSec * 1000L
-
-        val kindId = item.optInt("activity_kind_id", 31)
-        val kindName = normalizeBaCalendarKindFallback(item.optString("activity_kind_name"))
-        entries += BaCalendarEntry(
-            id = item.optInt("id", 0),
-            title = title,
-            kindId = kindId,
-            kindName = kindName,
-            beginAtMs = beginAtMs,
-            endAtMs = endAtMs,
-            linkUrl = normalizeGameKeeLink(item.optString("link_url")),
-            imageUrl = extractGameKeeImageLink(item),
-            isRunning = nowMs in beginAtMs until endAtMs
-        )
-    }
-    return normalizeBaCalendarEntries(entries, nowMs)
+    return fetchBaCalendarRemoteResult(serverIndex, nowMs).entries
 }
 
 internal fun normalizeBaCalendarEntries(
@@ -306,82 +267,12 @@ internal fun fetchBaPoolEntriesFromAll(
     serverIndex: Int,
     nowMs: Long
 ): List<BaPoolEntry> {
-    val serverId = gameKeeServerId(serverIndex)
-    val endpointPath = "$BA_POOL_ENDPOINT?order_by=-1&card_tag_id=&keyword=&kind_id=6&status=0&serverId=$serverId"
-    val body = runWithRetry {
-        GameKeeRepository.fetchBaApiJson(
-            pathOrUrl = endpointPath,
-            refererPath = "/ba/kachi/$serverId"
-        )
-    }
-    val root = JSONObject(body)
-    if (root.optInt("code", -1) != 0) {
-        error("API ${root.optInt("code", -1)}")
-    }
-    val data = root.optJSONArray("data") ?: return emptyList()
-    val entries = mutableListOf<BaPoolEntry>()
-    for (index in 0 until data.length()) {
-        val item = data.optJSONObject(index) ?: continue
-        val name = item.optString("name").trim()
-        if (name.isBlank()) continue
-
-        val startSec = item.optLong("start_at", 0L)
-        val endSec = item.optLong("end_at", 0L)
-        if (startSec <= 0L || endSec <= 0L) continue
-        val startAtMs = startSec * 1000L
-        val endAtMs = endSec * 1000L
-        val isRunning = nowMs in startAtMs until endAtMs
-        val isUpcoming = startAtMs > nowMs
-
-        val knownTagId = parsePoolTagIds(item.optString("tag_id"))
-            .firstOrNull { it in BA_POOL_TAG_ID_SET }
-        val normalizedTagId = when {
-            knownTagId != null -> knownTagId
-            isRunning || isUpcoming -> BA_POOL_FALLBACK_ACTIVE_TAG_ID
-            else -> null
-        } ?: continue
-        entries += BaPoolEntry(
-            id = item.optInt("id", 0),
-            name = name,
-            tagId = normalizedTagId,
-            tagName = "",
-            startAtMs = startAtMs,
-            endAtMs = endAtMs,
-            linkUrl = normalizeGameKeeLink(item.optString("link_url")),
-            imageUrl = extractGameKeeImageLink(item),
-            isRunning = isRunning
-        )
-    }
-    return entries
+    return fetchBaPoolEntriesFromAllRemote(serverIndex, nowMs).entries
 }
 
 internal fun fetchBaPoolEntries(
     serverIndex: Int,
     nowMs: Long = System.currentTimeMillis()
 ): List<BaPoolEntry> {
-    val merged = mutableMapOf<Int, BaPoolEntry>()
-    val sourceErrors = mutableListOf<Throwable>()
-    runCatching { fetchBaPoolEntriesFromAll(serverIndex, nowMs) }
-        .onSuccess { entries ->
-            entries.forEach { entry ->
-                val existing = merged[entry.id]
-                if (
-                    existing == null ||
-                    (existing.endAtMs <= nowMs && entry.endAtMs > nowMs) ||
-                    (entry.endAtMs > existing.endAtMs) ||
-                    (entry.startAtMs > existing.startAtMs)
-                ) {
-                    merged[entry.id] = entry
-                }
-            }
-        }
-        .onFailure { sourceErrors += it }
-
-    if (merged.isEmpty() && sourceErrors.isNotEmpty()) {
-        val aggregate = IllegalStateException("pool all sources failed")
-        sourceErrors.forEach { aggregate.addSuppressed(it) }
-        throw aggregate
-    }
-
-    return normalizeBaPoolEntries(merged.values.toList(), nowMs)
+    return fetchBaPoolRemoteResult(serverIndex, nowMs).entries
 }

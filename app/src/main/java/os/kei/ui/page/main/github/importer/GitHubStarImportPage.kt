@@ -22,27 +22,17 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
-import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
-import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
-import os.kei.feature.github.domain.GitHubStarImportApkVerifier
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.domain.GitHubStarImportClassifier
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
-import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -60,9 +50,9 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
-    val trackSnapshot = remember { GitHubTrackStore.loadSnapshot() }
+    val repository = remember { GitHubStarImportPageRepository() }
+    var trackSnapshot by remember { mutableStateOf(GitHubTrackStore.loadSnapshot()) }
     val lookupConfig = trackSnapshot.lookupConfig
-    val refreshIntervalHours = trackSnapshot.refreshIntervalHours
     val savedDraft = remember { GitHubStarImportDraftStore.load() }
     var source by remember { mutableStateOf(savedDraft.source) }
     var usernameInput by remember { mutableStateOf(savedDraft.usernameInput) }
@@ -87,6 +77,12 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     var loadingPhase by remember { mutableStateOf("") }
     var importing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        GitHubTrackStoreSignals.version.collect {
+            trackSnapshot = GitHubTrackStore.loadSnapshot()
+        }
+    }
 
     val sourceReady = source.isReady(
         token = lookupConfig.apiToken,
@@ -173,58 +169,21 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         }
         val targetUsername = usernameInput.toGitHubUsernameInput()
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                runCatching {
-                    val repository =
-                        GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken)
-                    if (
-                        targetSource == StarImportUiSource.ListUrl &&
-                        forcedStarListUrl == null &&
-                        targetListUrl.isGitHubStarsOverviewInput()
-                    ) {
-                        withContext(Dispatchers.Main) {
-                            loadingProgress = 0.34f
-                            loadingPhase =
-                                context.getString(R.string.github_star_import_loading_lists)
-                        }
-                        val lists = repository.fetchStarLists(targetListUrl).getOrThrow()
-                        if (lists.isNotEmpty()) {
-                            return@runCatching StarImportLoadResult.Lists(lists)
+            val result = runCatching {
+                repository.loadPreview(
+                    request = StarImportLoadRequest(
+                        source = source,
+                        usernameInput = targetUsername,
+                        listUrlInput = targetListUrl,
+                        forcedStarListUrl = forcedStarListUrl
+                    ),
+                    onProgress = { progress ->
+                        withContext(Dispatchers.Main.immediate) {
+                            loadingProgress = progress.progress
+                            loadingPhase = context.getString(progress.phaseRes)
                         }
                     }
-                    val resolvedListUrl = if (
-                        targetSource == StarImportUiSource.ListUrl &&
-                        forcedStarListUrl == null &&
-                        targetListUrl.isGitHubStarsOverviewInput()
-                    ) {
-                        targetListUrl.toGitHubStarsRepositoryUrlInput()
-                    } else {
-                        targetListUrl
-                    }
-                    withContext(Dispatchers.Main) {
-                        loadingProgress = 0.64f
-                        loadingPhase =
-                            context.getString(R.string.github_star_import_loading_repositories)
-                    }
-                    val request = GitHubStarredRepositoryImportRequest(
-                        source = targetSource.toRequestSource(),
-                        username = targetUsername,
-                        starListUrl = resolvedListUrl,
-                        apiToken = lookupConfig.apiToken,
-                        limit = 1_000
-                    )
-                    val preview =
-                        GitHubRepositoryDiscoveryService(repository).previewStarredRepositoryImport(
-                        request = request,
-                        existingItems = GitHubTrackStore.load()
-                    ).getOrThrow()
-                    withContext(Dispatchers.Main) {
-                        loadingProgress = 0.88f
-                        loadingPhase =
-                            context.getString(R.string.github_star_import_loading_preview)
-                    }
-                    StarImportLoadResult.Preview(preview)
-                }
+                )
             }
             loading = false
             loadingProgress = 1f
@@ -276,26 +235,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
             )
         }
         scope.launch {
-            val results = withContext(Dispatchers.IO) {
-                val verifier = GitHubStarImportApkVerifier(
-                    source = GitHubApkPackageNameScanRepository(),
-                    cache = GitHubStarImportApkVerificationCacheStore
-                )
-                val semaphore = Semaphore(MAX_PARALLEL_APK_VERIFICATIONS)
-                coroutineScope {
-                    uniqueTargets.map { candidate ->
-                        async {
-                            semaphore.withPermit {
-                                candidate.trackedApp.id to verifier.verify(
-                                    candidate = candidate,
-                                    lookupConfig = lookupConfig,
-                                    refreshIntervalHours = refreshIntervalHours
-                                )
-                            }
-                        }
-                    }.awaitAll()
-                }
-            }
+            val results = repository.verifyApkAssets(uniqueTargets)
             results.forEach { (id, verification) ->
                 apkVerificationStates[id] = StarImportApkVerificationUiState(
                     checking = false,
@@ -315,12 +255,12 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         importing = true
         pendingImportCandidates = emptyList()
         scope.launch {
-            val selectedForImport = applyVerifiedPackageNamesToStarImportCandidates(
-                candidates = selected,
-                verificationStates = apkVerificationStates
-            )
-            val result = withContext(Dispatchers.IO) {
-                runCatching { applyStarImport(context, selectedForImport) }
+            val result = runCatching {
+                repository.importCandidates(
+                    context = context,
+                    candidates = selected,
+                    verificationStates = apkVerificationStates.toMap()
+                )
             }
             importing = false
             result.onSuccess { count ->
@@ -540,10 +480,4 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
     )
 }
 
-private sealed interface StarImportLoadResult {
-    data class Lists(val items: List<GitHubStarListSummary>) : StarImportLoadResult
-    data class Preview(val preview: GitHubStarredRepositoryImportPreview) : StarImportLoadResult
-}
-
 private const val MAX_APK_VERIFICATION_BATCH = 30
-private const val MAX_PARALLEL_APK_VERIFICATIONS = 4

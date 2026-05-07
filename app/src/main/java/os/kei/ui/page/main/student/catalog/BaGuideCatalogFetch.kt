@@ -10,10 +10,11 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import os.kei.R
 import os.kei.feature.ba.data.remote.GameKeeRepository
+import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
-import os.kei.ui.page.main.student.fetchGuideInfo
+import os.kei.ui.page.main.student.fetch.parseGuideDetailFromContentJson
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
@@ -350,10 +351,20 @@ private suspend fun collectReleaseDatePatchFromNetwork(
         val contentId = entry.contentId
         if (contentId <= 0L || entry.detailUrl.isBlank()) return@forEachIndexed
         probeUpdates[contentId] = System.currentTimeMillis().coerceAtLeast(1L)
-        runCatching { fetchGuideInfo(entry.detailUrl) }
-            .onSuccess { info ->
-                runCatching { BaStudentGuideStore.saveInfo(info) }
-                val releaseDateSec = extractReleaseDateSec(info)
+        runCatching {
+            val contentDetail = GameKeeRepository.fetchBaContentDetail(
+                contentId = contentId,
+                refererPath = "/ba/tj/$contentId.html"
+            )
+            val detail = parseGuideDetailFromContentJson(
+                raw = contentDetail.resolvedContentJson,
+                sourceUrl = entry.detailUrl
+            )
+            extractReleaseDateSec(
+                profileRows = detail.profileRows,
+                stats = detail.stats
+            )
+        }.onSuccess { releaseDateSec ->
                 if (releaseDateSec > 0L) {
                     releaseDateUpdates[contentId] = releaseDateSec
                 }
@@ -407,13 +418,23 @@ private fun BaGuideCatalogBundle.applyReleaseDatePatch(
 }
 
 private fun extractReleaseDateSec(info: BaStudentGuideInfo): Long {
+    return extractReleaseDateSec(
+        profileRows = info.profileRows,
+        stats = info.stats
+    )
+}
+
+private fun extractReleaseDateSec(
+    profileRows: List<BaGuideRow>,
+    stats: List<Pair<String, String>>
+): Long {
     val candidates = sequence {
-        info.profileRows.forEach { row ->
+        profileRows.forEach { row ->
             if (row.key.contains("实装日期", ignoreCase = true)) {
                 yield(row.value)
             }
         }
-        info.stats.forEach { (key, value) ->
+        stats.forEach { (key, value) ->
             if (key.contains("实装日期", ignoreCase = true)) {
                 yield(value)
             }

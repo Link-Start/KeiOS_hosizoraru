@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.tabcontent.profile
 
 import androidx.core.net.toUri
 import os.kei.feature.ba.data.remote.GameKeeRepository
+import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.util.concurrent.ConcurrentHashMap
 
@@ -49,11 +50,43 @@ internal fun resolveProfileLinkTitle(url: String): String {
 }
 
 internal fun fetchProfileLinkTitle(url: String): String {
-    if (url.isBlank()) return ""
-    val html = GameKeeRepository.fetchHtml(
-        pathOrUrl = url,
-        refererPath = "/ba/"
+    return fetchProfileLinkTitle(
+        url = url,
+        fetchDetailTitle = { contentId, refererPath ->
+            GameKeeRepository.fetchBaContentDetail(
+                contentId = contentId,
+                refererPath = refererPath
+            ).title
+        },
+        fetchHtml = { targetUrl ->
+            GameKeeRepository.fetchHtml(
+                pathOrUrl = targetUrl,
+                refererPath = "/ba/"
+            )
+        }
     )
+}
+
+internal fun fetchProfileLinkTitle(
+    url: String,
+    fetchDetailTitle: (contentId: Long, refererPath: String) -> String,
+    fetchHtml: (url: String) -> String
+): String {
+    if (url.isBlank()) return ""
+    val normalizedGuideUrl = normalizeGuideUrl(url)
+    val contentId = extractGuideContentIdFromUrl(normalizedGuideUrl)
+    if (contentId != null) {
+        val detailTitle = runCatching {
+            fetchDetailTitle(
+                contentId,
+                runCatching { normalizedGuideUrl.toUri().path.orEmpty() }
+                    .getOrDefault("/ba/tj/$contentId.html")
+                    .ifBlank { "/ba/tj/$contentId.html" }
+            )
+        }.getOrDefault("")
+        if (detailTitle.isNotBlank()) return cleanProfileLinkTitle(detailTitle)
+    }
+    val html = fetchHtml(url)
     if (html.isBlank()) return ""
 
     val ogTitle = Regex(

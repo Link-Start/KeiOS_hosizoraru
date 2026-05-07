@@ -66,6 +66,10 @@ internal object BASettingsStore {
 
     private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
     private fun kv(): MMKV = store
+    private fun notifyChanged() {
+        BASettingsStoreSignals.notifyChanged()
+    }
+
     private fun idSettings(): BaIdSettingsAccessor =
         BaIdSettingsAccessor(MmkvBaIdKeyValueStore(kv()))
 
@@ -98,6 +102,7 @@ internal object BASettingsStore {
         store.encode(calendarCacheKey(serverIndex), encodedEntries)
         store.encode(calendarSyncKey(serverIndex), syncMs.coerceAtLeast(0L))
         store.encode(calendarCacheVersionKey(serverIndex), BA_CALENDAR_CACHE_SCHEMA_VERSION)
+        notifyChanged()
     }
 
     fun loadCalendarCacheVersion(serverIndex: Int): Int {
@@ -115,6 +120,7 @@ internal object BASettingsStore {
         store.encode(poolCacheKey(serverIndex), encodedEntries)
         store.encode(poolSyncKey(serverIndex), syncMs.coerceAtLeast(0L))
         store.encode(poolCacheVersionKey(serverIndex), BA_POOL_CACHE_SCHEMA_VERSION)
+        notifyChanged()
     }
 
     fun loadPoolCacheVersion(serverIndex: Int): Int {
@@ -124,16 +130,19 @@ internal object BASettingsStore {
     fun loadPoolShowEnded(): Boolean = kv().decodeBool(KEY_POOL_SHOW_ENDED, false)
     fun savePoolShowEnded(enabled: Boolean) {
         kv().encode(KEY_POOL_SHOW_ENDED, enabled)
+        notifyChanged()
     }
 
     fun loadActivityShowEnded(): Boolean = kv().decodeBool(KEY_ACTIVITY_SHOW_ENDED, false)
     fun saveActivityShowEnded(enabled: Boolean) {
         kv().encode(KEY_ACTIVITY_SHOW_ENDED, enabled)
+        notifyChanged()
     }
 
     fun loadShowCalendarPoolImages(): Boolean = kv().decodeBool(KEY_SHOW_CALENDAR_POOL_IMAGES, true)
     fun saveShowCalendarPoolImages(enabled: Boolean) {
         kv().encode(KEY_SHOW_CALENDAR_POOL_IMAGES, enabled)
+        notifyChanged()
     }
 
     fun loadMediaAdaptiveRotationEnabled(): Boolean =
@@ -141,6 +150,7 @@ internal object BASettingsStore {
 
     fun saveMediaAdaptiveRotationEnabled(enabled: Boolean) {
         kv().encode(KEY_MEDIA_ADAPTIVE_ROTATION_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadMediaSaveCustomEnabled(): Boolean =
@@ -148,6 +158,7 @@ internal object BASettingsStore {
 
     fun saveMediaSaveCustomEnabled(enabled: Boolean) {
         kv().encode(KEY_MEDIA_SAVE_CUSTOM_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadMediaSaveFixedTreeUri(): String =
@@ -155,6 +166,7 @@ internal object BASettingsStore {
 
     fun saveMediaSaveFixedTreeUri(uri: String) {
         kv().encode(KEY_MEDIA_SAVE_FIXED_TREE_URI, uri.trim())
+        notifyChanged()
     }
 
     fun loadCalendarRefreshIntervalHours(): Int {
@@ -170,6 +182,7 @@ internal object BASettingsStore {
             KEY_CALENDAR_REFRESH_INTERVAL_HOURS,
             BaCalendarRefreshIntervalOption.fromHours(hours).hours
         )
+        notifyChanged()
     }
 
     fun loadSnapshot(): BaPageSnapshot {
@@ -283,11 +296,13 @@ internal object BASettingsStore {
     fun saveServerIndex(index: Int) {
         kv().encode(KEY_SERVER_INDEX, index.coerceIn(0, 2))
         pruneCalendarPoolNotifiedKeysForCurrentPolicy()
+        notifyChanged()
     }
 
     fun loadCafeLevel(): Int = kv().decodeInt(KEY_CAFE_LEVEL, DEFAULT_CAFE_LEVEL).coerceIn(1, 10)
     fun saveCafeLevel(level: Int) {
         kv().encode(KEY_CAFE_LEVEL, level.coerceIn(1, 10))
+        notifyChanged()
     }
 
     fun loadCafeStoredAp(): Double {
@@ -297,11 +312,13 @@ internal object BASettingsStore {
 
     fun saveCafeStoredAp(storedAp: Double) {
         kv().encode(KEY_CAFE_STORED_AP, normalizeAp(storedAp).toString())
+        notifyChanged()
     }
 
     fun loadCafeLastHourMs(): Long = kv().decodeLong(KEY_CAFE_LAST_HOUR_MS, 0L)
     fun saveCafeLastHourMs(epochMs: Long) {
         kv().encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
+        notifyChanged()
     }
 
     fun loadIdIndependentByServerEnabled(): Boolean =
@@ -309,6 +326,7 @@ internal object BASettingsStore {
 
     fun saveIdIndependentByServerEnabled(enabled: Boolean) {
         idSettings().saveIndependentByServerEnabled(enabled)
+        notifyChanged()
     }
 
     fun loadIdNickname(serverIndex: Int? = null): String {
@@ -317,6 +335,7 @@ internal object BASettingsStore {
 
     fun saveIdNickname(name: String, serverIndex: Int? = null) {
         idSettings().saveNickname(name, serverIndex)
+        notifyChanged()
     }
 
     fun loadIdFriendCode(serverIndex: Int? = null): String {
@@ -325,6 +344,7 @@ internal object BASettingsStore {
 
     fun saveIdFriendCode(code: String, serverIndex: Int? = null) {
         idSettings().saveFriendCode(code, serverIndex)
+        notifyChanged()
     }
 
     fun loadApLimit(): Int = kv().decodeInt(KEY_AP_LIMIT, DEFAULT_AP_LIMIT).coerceIn(0,
@@ -332,11 +352,13 @@ internal object BASettingsStore {
     )
     fun saveApLimit(limit: Int) {
         kv().encode(KEY_AP_LIMIT, limit.coerceIn(0, BA_AP_LIMIT_MAX))
+        notifyChanged()
     }
 
     fun loadApNotifyEnabled(): Boolean = kv().decodeBool(KEY_AP_NOTIFY_ENABLED, false)
     fun saveApNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_AP_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadApNotifyThreshold(): Int =
@@ -344,6 +366,7 @@ internal object BASettingsStore {
 
     fun saveApNotifyThreshold(threshold: Int) {
         kv().encode(KEY_AP_NOTIFY_THRESHOLD, threshold.coerceIn(0, BA_AP_MAX))
+        notifyChanged()
     }
 
     fun loadApLastNotifiedLevel(): Int =
@@ -351,11 +374,13 @@ internal object BASettingsStore {
 
     fun saveApLastNotifiedLevel(level: Int) {
         kv().encode(KEY_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
+        notifyChanged()
     }
 
     fun loadArenaRefreshNotifyEnabled(): Boolean = kv().decodeBool(KEY_ARENA_REFRESH_NOTIFY_ENABLED, false)
     fun saveArenaRefreshNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_ARENA_REFRESH_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadArenaRefreshLastNotifiedSlotMs(): Long =
@@ -363,11 +388,13 @@ internal object BASettingsStore {
 
     fun saveArenaRefreshLastNotifiedSlotMs(slotMs: Long) {
         kv().encode(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun loadCafeVisitNotifyEnabled(): Boolean = kv().decodeBool(KEY_CAFE_VISIT_NOTIFY_ENABLED, false)
     fun saveCafeVisitNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_CAFE_VISIT_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadCafeVisitLastNotifiedSlotMs(): Long =
@@ -375,6 +402,7 @@ internal object BASettingsStore {
 
     fun saveCafeVisitLastNotifiedSlotMs(slotMs: Long) {
         kv().encode(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun loadCalendarUpcomingNotifyEnabled(): Boolean =
@@ -382,6 +410,7 @@ internal object BASettingsStore {
 
     fun saveCalendarUpcomingNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadCalendarEndingNotifyEnabled(): Boolean =
@@ -389,6 +418,7 @@ internal object BASettingsStore {
 
     fun saveCalendarEndingNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_CALENDAR_ENDING_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadPoolUpcomingNotifyEnabled(): Boolean =
@@ -396,6 +426,7 @@ internal object BASettingsStore {
 
     fun savePoolUpcomingNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_POOL_UPCOMING_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadPoolEndingNotifyEnabled(): Boolean =
@@ -403,6 +434,7 @@ internal object BASettingsStore {
 
     fun savePoolEndingNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_POOL_ENDING_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadCalendarPoolChangeNotifyEnabled(): Boolean =
@@ -410,6 +442,7 @@ internal object BASettingsStore {
 
     fun saveCalendarPoolChangeNotifyEnabled(enabled: Boolean) {
         kv().encode(KEY_CALENDAR_POOL_CHANGE_NOTIFY_ENABLED, enabled)
+        notifyChanged()
     }
 
     fun loadCalendarPoolNotifyLeadHours(): Int {
@@ -423,6 +456,7 @@ internal object BASettingsStore {
             KEY_CALENDAR_POOL_NOTIFY_LEAD_HOURS,
             BaCalendarPoolNotifyLeadOption.fromHours(hours).hours
         )
+        notifyChanged()
     }
 
     fun loadCalendarPoolNotifiedKeys(): Set<String> {
@@ -439,6 +473,7 @@ internal object BASettingsStore {
         if (normalized.isBlank()) return
         val keys = (loadCalendarPoolNotifiedKeys() + normalized).toList().takeLast(500)
         kv().encode(KEY_CALENDAR_POOL_NOTIFIED_KEYS, keys.joinToString(separator = "\n"))
+        notifyChanged()
     }
 
     fun replaceCalendarPoolNotifiedKeys(keys: Set<String>) {
@@ -449,9 +484,11 @@ internal object BASettingsStore {
             .takeLast(500)
         if (normalized.isEmpty()) {
             kv().removeValueForKey(KEY_CALENDAR_POOL_NOTIFIED_KEYS)
+            notifyChanged()
             return
         }
         kv().encode(KEY_CALENDAR_POOL_NOTIFIED_KEYS, normalized.joinToString(separator = "\n"))
+        notifyChanged()
     }
 
     fun pruneCalendarPoolNotifiedKeysForCurrentPolicy() {
@@ -506,31 +543,37 @@ internal object BASettingsStore {
         val normalized = normalizeAp(current)
         kv().encode(KEY_AP_CURRENT_EXACT, normalized.toString())
         kv().encode(KEY_AP_CURRENT, displayAp(normalized))
+        notifyChanged()
     }
 
     fun loadApRegenBaseMs(): Long = kv().decodeLong(KEY_AP_REGEN_BASE_MS, 0L)
     fun saveApRegenBaseMs(epochMs: Long) {
         kv().encode(KEY_AP_REGEN_BASE_MS, epochMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun loadApSyncMs(): Long = kv().decodeLong(KEY_AP_SYNC_MS, 0L)
     fun saveApSyncMs(epochMs: Long) {
         kv().encode(KEY_AP_SYNC_MS, epochMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)
     fun saveCoffeeHeadpatMs(epochMs: Long) {
         kv().encode(KEY_COFFEE_HEADPAT_MS, epochMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun loadCoffeeInvite1UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE1_USED_MS, 0L)
     fun saveCoffeeInvite1UsedMs(epochMs: Long) {
         kv().encode(KEY_COFFEE_INVITE1_USED_MS, epochMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun loadCoffeeInvite2UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE2_USED_MS, 0L)
     fun saveCoffeeInvite2UsedMs(epochMs: Long) {
         kv().encode(KEY_COFFEE_INVITE2_USED_MS, epochMs.coerceAtLeast(0L))
+        notifyChanged()
     }
 
     fun clearCalendarAndPoolCaches() {
@@ -544,6 +587,7 @@ internal object BASettingsStore {
             store.removeValueForKey(poolCacheVersionKey(serverIndex))
         }
         store.trim()
+        notifyChanged()
     }
 
     fun storageFootprintBytes(): Long = kv().totalSize()

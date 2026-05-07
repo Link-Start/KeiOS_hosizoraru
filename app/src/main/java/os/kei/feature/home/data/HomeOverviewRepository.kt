@@ -9,13 +9,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.CacheFreshnessSnapshot
 import os.kei.core.prefs.CacheStores
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.home.model.HOME_BA_AP_MAX
@@ -29,6 +32,7 @@ import os.kei.feature.home.model.HomeOverviewSnapshot
 import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
 
 private const val TAG = "HomeOverviewRepository"
 
@@ -46,7 +50,11 @@ internal class HomeOverviewRepository(
     private val showCacheFreshnessInCards = MutableStateFlow(false)
 
     fun observeOverview(): Flow<HomeOverviewSnapshot> {
-        val storedOverviewFlow = refreshRequests
+        val storedOverviewFlow = buildHomeOverviewStoreRefreshFlow(
+            refreshRequests = refreshRequests,
+            githubVersions = GitHubTrackStoreSignals.version,
+            baVersions = BASettingsStoreSignals.version
+        )
             .onStart { emit("initial") }
             .map { reason ->
                 loadStoredOverview(reason)
@@ -157,6 +165,22 @@ private fun buildTokenPreview(token: String): String {
     if (trimmed.isBlank()) return ""
     if (trimmed.length <= 4) return trimmed
     return "${trimmed.take(2)}…${trimmed.takeLast(2)}"
+}
+
+internal fun buildHomeOverviewStoreRefreshFlow(
+    refreshRequests: Flow<String>,
+    githubVersions: Flow<Long>,
+    baVersions: Flow<Long>
+): Flow<String> {
+    return merge(
+        refreshRequests,
+        githubVersions
+            .drop(1)
+            .map { version -> "github_store_$version" },
+        baVersions
+            .drop(1)
+            .map { version -> "ba_store_$version" }
+    )
 }
 
 private fun loadHomeGitHubOverview(cacheFreshness: CacheFreshnessSnapshot): HomeGitHubOverview {

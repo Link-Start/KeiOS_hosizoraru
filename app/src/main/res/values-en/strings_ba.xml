@@ -273,6 +273,7 @@
     <string name="ba_catalog_bgm_track_fallback">Memorial Lobby BGM</string>
     <string name="ba_catalog_bgm_media_subtitle">Memorial Lobby BGM</string>
     <string name="ba_catalog_bgm_media_share_content">Listening to %1$s Memorial Lobby BGM</string>
+    <string name="ba_catalog_bgm_media_share_text">Listening to %1$s Memorial Lobby BGM in KeiOS.\nSource: %2$s</string>
     <string name="ba_catalog_bgm_status_current">Current</string>
     <string name="ba_catalog_bgm_student_note">Student: %1$s</string>
     <string name="ba_catalog_bgm_sort_recent">Recently favorited</string>

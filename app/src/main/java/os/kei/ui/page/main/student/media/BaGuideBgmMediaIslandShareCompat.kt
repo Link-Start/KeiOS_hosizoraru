@@ -83,9 +83,14 @@ internal object BaGuideBgmMediaIslandShareCompat {
     fun buildShareParams(context: Context, mediaItem: MediaItem?): String? {
         if (mediaItem == null) return null
         val title = mediaItem.mediaMetadata.resolveShareTitle(context)
-        val shareContent = mediaItem.resolveShareContent()
-        if (shareContent.isBlank()) return null
+        val shareLink = mediaItem.resolveShareLink()
+        if (shareLink.isBlank()) return null
         val content = context.getString(R.string.ba_catalog_bgm_media_share_content, title)
+        val shareContent = context.getString(
+            R.string.ba_catalog_bgm_media_share_text,
+            title,
+            shareLink
+        )
         val shareData = JSONObject()
             .put("title", title)
             .put("content", content)
@@ -116,7 +121,7 @@ private fun MediaMetadata.resolveShareTitle(context: Context): String {
         .ifBlank { context.getString(R.string.ba_catalog_bgm_student_unknown) }
 }
 
-private fun MediaItem.resolveShareContent(): String {
+private fun MediaItem.resolveShareLink(): String {
     val metadataExtras = mediaMetadata.extras
     return metadataExtras
         ?.getString(BA_GUIDE_BGM_MEDIA_METADATA_SOURCE_URL)

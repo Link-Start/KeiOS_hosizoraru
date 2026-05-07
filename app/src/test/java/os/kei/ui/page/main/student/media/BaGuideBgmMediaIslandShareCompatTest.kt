@@ -71,7 +71,8 @@ class BaGuideBgmMediaIslandShareCompatTest {
             shareData.getString("content")
         )
         assertEquals(
-            "https://www.gamekee.com/ba/tj/591006.html",
+            "Listening to MicYou Memorial Lobby BGM in KeiOS.\n" +
+                    "Source: https://www.gamekee.com/ba/tj/591006.html",
             shareData.getString("shareContent")
         )
     }

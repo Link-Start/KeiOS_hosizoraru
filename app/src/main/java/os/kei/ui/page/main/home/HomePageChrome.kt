@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,18 +31,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.BasicText
-import kotlin.math.max
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.appLucideCloseIcon
-import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
@@ -50,10 +50,10 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
-import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.max
 import androidx.compose.ui.graphics.Shadow as ComposeTextShadow
 
 private val HOME_KEI_TITLE_GRADIENT_COLORS = listOf(
@@ -81,16 +81,19 @@ internal fun HomePageControlSheet(
     visibleBottomPages: Set<BottomPage>,
     visibleOverviewCards: Set<HomeOverviewCard>,
     homeSheetTitle: String,
-    visiblePagesTitle: String,
-    visiblePagesDesc: String,
-    visibleCardsTitle: String,
-    visibleCardsDesc: String,
+    tableTitle: String,
+    tableDesc: String,
     homeCardMcp: String,
     homeCardGitHub: String,
     homeCardBa: String,
+    showCacheFreshnessInCards: Boolean,
+    cacheFreshnessToggleLabel: String,
+    cacheFreshnessToggleDesc: String,
+    debugSectionTitle: String,
     onDismissRequest: () -> Unit,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
-    onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit
+    onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
+    onCacheFreshnessVisibilityChange: (Boolean) -> Unit
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -107,75 +110,178 @@ internal fun HomePageControlSheet(
         }
     ) {
         SheetContentColumn(
-            scrollable = false,
+            scrollable = true,
             verticalSpacing = 10.dp
         ) {
-            SheetSectionTitle(visiblePagesTitle)
-            SheetSectionCard(verticalSpacing = 10.dp) {
-                SheetControlRow(
-                    labelContent = {
-                        HomeBottomPageLabel(
-                            page = BottomPage.Home,
-                            modifier = Modifier.defaultMinSize(minHeight = 24.dp)
-                        )
-                    }
-                ) {
-                    StatusPill(
-                        label = androidx.compose.ui.res.stringResource(R.string.common_status_fixed_visible),
-                        color = Color(0xFF2563EB)
-                    )
-                }
-
+            SheetSectionTitle(tableTitle)
+            SheetSectionCard(verticalSpacing = 8.dp) {
+                HomePageVisibilityTableHeader()
+                HomePageVisibilityTableRow(
+                    page = BottomPage.Home,
+                    cardLabel = null,
+                    bottomVisible = true,
+                    cardVisible = false,
+                    bottomFixed = true,
+                    cardAvailable = false,
+                    onBottomVisibleChange = {},
+                    onCardVisibleChange = {}
+                )
                 BottomPage.entries
                     .filter { it != BottomPage.Home }
                     .forEach { page ->
-                        SheetControlRow(
-                            labelContent = {
-                                HomeBottomPageLabel(
-                                    page = page,
-                                    modifier = Modifier.defaultMinSize(minHeight = 24.dp)
-                                )
-                            }
-                        ) {
-                            AppSwitch(
-                                checked = visibleBottomPages.contains(page),
-                                onCheckedChange = { checked ->
-                                    onBottomPageVisibilityChange(page, checked)
+                        val overviewCard = page.toHomeOverviewCardOrNull()
+                        val bottomVisible = visibleBottomPages.contains(page)
+                        HomePageVisibilityTableRow(
+                            page = page,
+                            cardLabel = when (overviewCard) {
+                                HomeOverviewCard.MCP -> homeCardMcp
+                                HomeOverviewCard.GITHUB -> homeCardGitHub
+                                HomeOverviewCard.BA -> homeCardBa
+                                null -> null
+                            },
+                            bottomVisible = bottomVisible,
+                            cardVisible = overviewCard?.let(visibleOverviewCards::contains) == true,
+                            bottomFixed = false,
+                            cardAvailable = overviewCard != null && bottomVisible,
+                            onBottomVisibleChange = { checked ->
+                                onBottomPageVisibilityChange(page, checked)
+                                if (!checked && overviewCard != null) {
+                                    onOverviewCardVisibilityChange(overviewCard, false)
                                 }
-                            )
-                        }
+                            },
+                            onCardVisibleChange = { checked ->
+                                if (overviewCard != null) {
+                                    onOverviewCardVisibilityChange(overviewCard, checked)
+                                }
+                            }
+                        )
                     }
+                SheetDescriptionText(text = tableDesc)
             }
-            SheetSectionTitle(visibleCardsTitle)
+            SheetSectionTitle(debugSectionTitle)
             SheetSectionCard(verticalSpacing = 10.dp) {
-                SheetControlRow(label = homeCardMcp) {
+                SheetControlRow(label = cacheFreshnessToggleLabel) {
                     AppSwitch(
-                        checked = visibleOverviewCards.contains(HomeOverviewCard.MCP),
-                        onCheckedChange = { checked ->
-                            onOverviewCardVisibilityChange(HomeOverviewCard.MCP, checked)
-                        }
+                        checked = showCacheFreshnessInCards,
+                        onCheckedChange = onCacheFreshnessVisibilityChange
                     )
                 }
-                SheetControlRow(label = homeCardGitHub) {
-                    AppSwitch(
-                        checked = visibleOverviewCards.contains(HomeOverviewCard.GITHUB),
-                        onCheckedChange = { checked ->
-                            onOverviewCardVisibilityChange(HomeOverviewCard.GITHUB, checked)
-                        }
-                    )
-                }
-                SheetControlRow(label = homeCardBa) {
-                    AppSwitch(
-                        checked = visibleOverviewCards.contains(HomeOverviewCard.BA),
-                        onCheckedChange = { checked ->
-                            onOverviewCardVisibilityChange(HomeOverviewCard.BA, checked)
-                        }
-                    )
-                }
+                SheetDescriptionText(text = cacheFreshnessToggleDesc)
             }
-            SheetDescriptionText(text = visiblePagesDesc)
-            SheetDescriptionText(text = visibleCardsDesc)
         }
+    }
+}
+
+@Composable
+private fun HomePageVisibilityTableHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = androidx.compose.ui.res.stringResource(R.string.home_sheet_column_section),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1.35f)
+        )
+        Text(
+            text = androidx.compose.ui.res.stringResource(R.string.home_sheet_column_bottom),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = androidx.compose.ui.res.stringResource(R.string.home_sheet_column_card),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun HomePageVisibilityTableRow(
+    page: BottomPage,
+    cardLabel: String?,
+    bottomVisible: Boolean,
+    cardVisible: Boolean,
+    bottomFixed: Boolean,
+    cardAvailable: Boolean,
+    onBottomVisibleChange: (Boolean) -> Unit,
+    onCardVisibleChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 58.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.weight(1.35f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            HomeBottomPageLabel(
+                page = page,
+                modifier = Modifier.defaultMinSize(minHeight = 24.dp)
+            )
+            if (cardLabel != null && cardLabel != page.label) {
+                Text(
+                    text = cardLabel,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp
+                )
+            }
+        }
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            if (bottomFixed) {
+                StatusPill(
+                    label = androidx.compose.ui.res.stringResource(R.string.common_status_fixed_visible),
+                    color = Color(0xFF2563EB)
+                )
+            } else {
+                AppSwitch(
+                    checked = bottomVisible,
+                    onCheckedChange = onBottomVisibleChange
+                )
+            }
+        }
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            if (cardAvailable) {
+                AppSwitch(
+                    checked = cardVisible,
+                    onCheckedChange = onCardVisibleChange
+                )
+            } else {
+                StatusPill(
+                    label = androidx.compose.ui.res.stringResource(R.string.home_sheet_card_unavailable),
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
+            }
+        }
+    }
+}
+
+private fun BottomPage.toHomeOverviewCardOrNull(): HomeOverviewCard? {
+    return when (this) {
+        BottomPage.Mcp -> HomeOverviewCard.MCP
+        BottomPage.GitHub -> HomeOverviewCard.GITHUB
+        BottomPage.Ba -> HomeOverviewCard.BA
+        BottomPage.Home,
+        BottomPage.Os -> null
     }
 }
 
@@ -283,9 +389,9 @@ internal fun HomePageHero(
                     sweepProgress = hdrSweepProgress,
                     radialAlpha = 0.26f,
                     radialRadiusScale = 0.82f,
-                        radialCenterX = 0.32f,
-                        radialCenterY = 0.34f
-                    )
+                    radialCenterX = 0.32f,
+                    radialCenterY = 0.34f
+                )
         ) {
             BasicText(
                 text = homeAppName,
@@ -374,9 +480,9 @@ internal fun HomePageHeroSpacer(
             .fillMaxWidth()
             .height(
                 logoHeightDp + 36.dp +
-                    logoPadding.calculateTopPadding() -
-                    listContentPadding.calculateTopPadding() + 90.dp +
-                    homeHeaderSinkOffset
+                        logoPadding.calculateTopPadding() -
+                        listContentPadding.calculateTopPadding() + 90.dp +
+                        homeHeaderSinkOffset
             )
             .onSizeChanged { size -> onLogoHeightPxChanged(size.height) }
             .onGloballyPositioned { coordinates ->

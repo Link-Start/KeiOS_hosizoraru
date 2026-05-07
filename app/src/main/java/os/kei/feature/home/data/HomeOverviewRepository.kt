@@ -1,23 +1,6 @@
 package os.kei.feature.home.data
 
 import android.content.Context
-import os.kei.core.log.AppLogger
-import os.kei.core.prefs.CacheFreshnessSnapshot
-import os.kei.core.prefs.CacheStores
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.model.GitHubLookupStrategyOption
-import os.kei.feature.home.model.HOME_BA_AP_MAX
-import os.kei.feature.home.model.HOME_BA_CAFE_DAILY_AP_BY_LEVEL
-import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
-import os.kei.feature.home.model.HomeBaOverview
-import os.kei.feature.home.model.HomeGitHubOverview
-import os.kei.feature.home.model.HomeMcpOverview
-import os.kei.feature.home.model.HomeOverviewCard
-import os.kei.feature.home.model.HomeOverviewSnapshot
-import os.kei.feature.home.model.defaultHomeOverviewCards
-import os.kei.feature.github.model.GitHubTrackedReleaseStatus
-import os.kei.mcp.server.McpServerUiState
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -30,9 +13,27 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
+import os.kei.core.log.AppLogger
+import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.core.prefs.CacheStores
+import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.home.model.HOME_BA_AP_MAX
+import os.kei.feature.home.model.HOME_BA_CAFE_DAILY_AP_BY_LEVEL
+import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
+import os.kei.feature.home.model.HomeBaOverview
+import os.kei.feature.home.model.HomeGitHubOverview
+import os.kei.feature.home.model.HomeMcpOverview
+import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.feature.home.model.HomeOverviewSnapshot
+import os.kei.feature.home.model.defaultHomeOverviewCards
+import os.kei.mcp.server.McpServerUiState
+import os.kei.ui.page.main.ba.support.BASettingsStore
 
 private const val HOME_PAGE_PREFS_KV_ID = "home_page_prefs"
 private const val HOME_VISIBLE_OVERVIEW_CARDS_KEY = "home_visible_overview_cards"
+private const val HOME_SHOW_CACHE_FRESHNESS_IN_CARDS_KEY = "home_show_cache_freshness_in_cards"
 private const val TAG = "HomeOverviewRepository"
 
 internal class HomeOverviewRepository(
@@ -46,6 +47,7 @@ internal class HomeOverviewRepository(
         extraBufferCapacity = 1
     )
     private val visibleOverviewCards = MutableStateFlow(defaultHomeOverviewCards())
+    private val showCacheFreshnessInCards = MutableStateFlow(false)
 
     fun observeOverview(): Flow<HomeOverviewSnapshot> {
         val storedOverviewFlow = refreshRequests
@@ -56,13 +58,15 @@ internal class HomeOverviewRepository(
         return combine(
             mcpUiState,
             storedOverviewFlow,
-            visibleOverviewCards
-        ) { mcpState, storedOverview, visibleCards ->
+            visibleOverviewCards,
+            showCacheFreshnessInCards
+        ) { mcpState, storedOverview, visibleCards, showCacheFreshness ->
             HomeOverviewSnapshot(
                 mcpOverview = mcpState.toHomeOverview(),
                 githubOverview = storedOverview.githubOverview,
                 baOverview = storedOverview.baOverview,
-                visibleOverviewCards = visibleCards
+                visibleOverviewCards = visibleCards,
+                showCacheFreshnessInCards = showCacheFreshness
             )
         }.distinctUntilChanged()
     }
@@ -81,6 +85,13 @@ internal class HomeOverviewRepository(
         }
     }
 
+    suspend fun setCacheFreshnessVisibleInCards(visible: Boolean) {
+        showCacheFreshnessInCards.value = visible
+        withContext(ioDispatcher) {
+            saveHomeCacheFreshnessVisibleInCards(visible)
+        }
+    }
+
     private suspend fun loadStoredOverview(reason: String): StoredHomeOverview {
         return withContext(ioDispatcher) {
             val visibleCards = runCatching { loadHomeVisibleOverviewCards() }
@@ -93,6 +104,7 @@ internal class HomeOverviewRepository(
                 }
                 .getOrElse { defaultHomeOverviewCards() }
             visibleOverviewCards.value = visibleCards
+            showCacheFreshnessInCards.value = loadHomeCacheFreshnessVisibleInCards()
             val cacheFreshnessById = loadHomeCacheFreshnessById(appContext)
 
             val baOverview = runCatching {
@@ -167,6 +179,16 @@ private fun saveHomeVisibleOverviewCards(cards: Set<HomeOverviewCard>) {
     val kv = MMKV.mmkvWithID(HOME_PAGE_PREFS_KV_ID)
     val serialized = cards.joinToString(",") { it.name }
     kv.encode(HOME_VISIBLE_OVERVIEW_CARDS_KEY, serialized)
+}
+
+private fun loadHomeCacheFreshnessVisibleInCards(): Boolean {
+    val kv = MMKV.mmkvWithID(HOME_PAGE_PREFS_KV_ID)
+    return kv.decodeBool(HOME_SHOW_CACHE_FRESHNESS_IN_CARDS_KEY, false)
+}
+
+private fun saveHomeCacheFreshnessVisibleInCards(visible: Boolean) {
+    val kv = MMKV.mmkvWithID(HOME_PAGE_PREFS_KV_ID)
+    kv.encode(HOME_SHOW_CACHE_FRESHNESS_IN_CARDS_KEY, visible)
 }
 
 private fun loadHomeGitHubOverview(cacheFreshness: CacheFreshnessSnapshot): HomeGitHubOverview {

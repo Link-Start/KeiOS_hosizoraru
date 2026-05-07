@@ -50,9 +50,9 @@ import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.isRenderEffectSupported
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
@@ -69,8 +69,10 @@ fun HomePage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     visibleBottomPages: Set<BottomPage>,
     visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
+    showCacheFreshnessInCards: Boolean = false,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
+    onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
     onOpenGitHubPage: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -214,6 +216,7 @@ fun HomePage(
         cacheHitCountLine = contentState.cacheHitCountLine,
         homeStatCacheState = contentState.homeStatCacheState,
         githubCacheFreshnessLine = contentState.githubCacheFreshnessLine,
+        showCacheFreshnessInCards = showCacheFreshnessInCards,
         homeStatShare = contentState.homeStatShare,
         githubShareLine = contentState.githubShareLine,
         githubPendingShareImport = homeGitHubOverview.pendingShareImport,
@@ -254,16 +257,19 @@ fun HomePage(
                 visibleBottomPages = visibleBottomPages,
                 visibleOverviewCards = visibleOverviewCards,
                 homeSheetTitle = stringResource(R.string.home_sheet_bottom_pages_title),
-                visiblePagesTitle = stringResource(R.string.home_sheet_visible_pages_title),
-                visiblePagesDesc = stringResource(R.string.home_sheet_visible_pages_desc),
-                visibleCardsTitle = contentState.homeVisibleCardsTitle,
-                visibleCardsDesc = contentState.homeVisibleCardsDesc,
+                tableTitle = stringResource(R.string.home_sheet_table_title),
+                tableDesc = stringResource(R.string.home_sheet_table_desc),
                 homeCardMcp = contentState.homeCardMcp,
                 homeCardGitHub = contentState.homeCardGitHub,
                 homeCardBa = contentState.homeCardBa,
+                showCacheFreshnessInCards = showCacheFreshnessInCards,
+                cacheFreshnessToggleLabel = stringResource(R.string.home_sheet_show_cache_freshness),
+                cacheFreshnessToggleDesc = stringResource(R.string.home_sheet_show_cache_freshness_desc),
+                debugSectionTitle = stringResource(R.string.home_sheet_debug_title),
                 onDismissRequest = { showBottomPageEditor = false },
                 onBottomPageVisibilityChange = onBottomPageVisibilityChange,
-                onOverviewCardVisibilityChange = onOverviewCardVisibilityChange
+                onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
+                onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange
             )
 
             val horizontalSafeInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal).asPaddingValues()

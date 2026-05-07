@@ -11,15 +11,15 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import os.kei.mcp.server.McpServerManager
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.perf.ReportPagerPerformanceState
-import com.kyant.backdrop.backdrops.LayerBackdrop
 
 internal data class MainPagerInsets(
     val navigationBarBottom: Dp,
@@ -37,6 +37,7 @@ internal data class MainPagerCoordinatorState(
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
     val visibleOverviewCards: Set<HomeOverviewCard>,
+    val showCacheFreshnessInCards: Boolean,
     val pagerScrollEnabled: Boolean,
     val showBottomBar: Boolean,
     val selectedPageIndex: Int,
@@ -50,6 +51,7 @@ internal data class MainPagerCoordinatorState(
     val onActionBarInteractingChanged: (Boolean) -> Unit,
     val onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
+    val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
     val osScrollToTopSignal: Int,
     val baScrollToTopSignal: Int,
     val mcpScrollToTopSignal: Int,
@@ -101,7 +103,8 @@ internal fun rememberMainPagerCoordinator(
     val visibleTabsSnapshot = tabsState.visibleTabsSnapshot
     val pagerState = rememberMainLoadedPagerState(
         initialPage = tabsState.initialPageIndex,
-        pageCount = tabs.size
+        pageCount = tabs.size,
+        pageKeys = tabs.map { page -> page.name }
     )
     val homeOverviewState = rememberMainPagerHomeOverviewState(
         mcpServerManager = mcpServerManager,
@@ -179,6 +182,7 @@ internal fun rememberMainPagerCoordinator(
             homeGitHubOverview = homeOverviewState.homeGitHubOverview,
             homeBaOverview = homeOverviewState.homeBaOverview,
             visibleOverviewCards = homeOverviewState.visibleOverviewCards,
+            showCacheFreshnessInCards = homeOverviewState.showCacheFreshnessInCards,
             pagerScrollEnabled = tabJumpController.pagerScrollEnabled,
             showBottomBar = tabJumpController.showBottomBar,
             selectedPageIndex = tabJumpController.selectedPageIndex,
@@ -192,6 +196,7 @@ internal fun rememberMainPagerCoordinator(
             onActionBarInteractingChanged = tabJumpController.onActionBarInteractingChanged,
             onBottomPageVisibilityChange = onBottomPageVisibilityChange,
             onOverviewCardVisibilityChange = homeOverviewState.onOverviewCardVisibilityChange,
+            onCacheFreshnessVisibilityChange = homeOverviewState.onCacheFreshnessVisibilityChange,
             osScrollToTopSignal = scrollSignalController.osScrollToTopSignal,
             baScrollToTopSignal = scrollSignalController.baScrollToTopSignal,
             mcpScrollToTopSignal = scrollSignalController.mcpScrollToTopSignal,

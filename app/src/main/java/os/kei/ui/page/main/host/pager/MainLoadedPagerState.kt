@@ -209,18 +209,30 @@ internal class MainLoadedPagerState internal constructor(
 @Composable
 internal fun rememberMainLoadedPagerState(
     initialPage: Int,
-    pageCount: Int
+    pageCount: Int,
+    pageKeys: List<String> = List(pageCount.coerceAtLeast(0)) { index -> index.toString() }
 ): MainLoadedPagerState {
-    var savedPage by rememberSaveable { mutableIntStateOf(initialPage.coerceAtLeast(0)) }
-    val state = remember {
+    var savedPageKey by rememberSaveable { mutableStateOf("") }
+    val safePageCount = pageCount.coerceAtLeast(0)
+    val safeLastIndex = (pageKeys.size - 1).coerceAtLeast(0)
+    val resolvedInitialPage = remember(pageKeys, initialPage, savedPageKey) {
+        val requestedPage = initialPage.coerceIn(0, safeLastIndex)
+        val preferredKey = savedPageKey.ifBlank {
+            pageKeys.getOrNull(requestedPage).orEmpty()
+        }
+        pageKeys.indexOf(preferredKey)
+            .takeIf { it >= 0 }
+            ?: requestedPage
+    }
+    val state = remember(pageKeys) {
         MainLoadedPagerState(
-            initialPage = savedPage.coerceAtLeast(0),
-            initialPageCount = pageCount
+            initialPage = resolvedInitialPage,
+            initialPageCount = safePageCount
         )
     }
     SideEffect {
-        state.updatePageCount(pageCount)
-        savedPage = state.settledPage
+        state.updatePageCount(safePageCount)
+        savedPageKey = pageKeys.getOrNull(state.settledPage).orEmpty()
     }
     return state
 }

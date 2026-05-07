@@ -29,7 +29,9 @@ internal data class MainPagerHomeOverviewState(
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
     val visibleOverviewCards: Set<HomeOverviewCard>,
-    val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit
+    val showCacheFreshnessInCards: Boolean,
+    val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
+    val onCacheFreshnessVisibilityChange: (Boolean) -> Unit
 )
 
 internal class MainPagerHomeOverviewViewModel(
@@ -49,6 +51,12 @@ internal class MainPagerHomeOverviewViewModel(
     fun setOverviewCardVisible(card: HomeOverviewCard, visible: Boolean) {
         viewModelScope.launch {
             repository.setOverviewCardVisible(card, visible)
+        }
+    }
+
+    fun setCacheFreshnessVisibleInCards(visible: Boolean) {
+        viewModelScope.launch {
+            repository.setCacheFreshnessVisibleInCards(visible)
         }
     }
 
@@ -100,13 +108,20 @@ internal fun rememberMainPagerHomeOverviewState(
             homeOverviewViewModel.setOverviewCardVisible(card, visible)
         }
     }
-    return remember(uiState, onOverviewCardVisibilityChange) {
+    val onCacheFreshnessVisibilityChange = remember(homeOverviewViewModel) {
+        { visible: Boolean ->
+            homeOverviewViewModel.setCacheFreshnessVisibleInCards(visible)
+        }
+    }
+    return remember(uiState, onOverviewCardVisibilityChange, onCacheFreshnessVisibilityChange) {
         MainPagerHomeOverviewState(
             homeMcpOverview = uiState.mcpOverview,
             homeGitHubOverview = uiState.githubOverview,
             homeBaOverview = uiState.baOverview,
             visibleOverviewCards = uiState.visibleOverviewCards.ifEmpty { defaultHomeOverviewCards() },
-            onOverviewCardVisibilityChange = onOverviewCardVisibilityChange
+            showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,
+            onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
+            onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange
         )
     }
 }

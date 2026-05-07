@@ -57,7 +57,8 @@ data class HomeOverviewSnapshot(
     val mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     val githubOverview: HomeGitHubOverview = HomeGitHubOverview(),
     val baOverview: HomeBaOverview = HomeBaOverview(),
-    val visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards()
+    val visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
+    val showCacheFreshnessInCards: Boolean = false
 )
 
 internal const val HOME_BA_AP_LIMIT_MAX = 240

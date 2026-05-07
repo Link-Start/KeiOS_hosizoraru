@@ -6,17 +6,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import os.kei.mcp.server.McpServerManager
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BAPage
 import os.kei.ui.page.main.github.page.GitHubPage
 import os.kei.ui.page.main.home.HomePage
-import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.mcp.McpPage
+import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.OsPage
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -37,9 +37,11 @@ internal fun MainPagerPageHost(
     homeGitHubOverview: HomeGitHubOverview,
     homeBaOverview: HomeBaOverview,
     visibleOverviewCards: Set<HomeOverviewCard>,
+    showCacheFreshnessInCards: Boolean,
     requestedGitHubRefreshToken: Int,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
+    onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenGitHubPage: () -> Unit,
@@ -66,8 +68,10 @@ internal fun MainPagerPageHost(
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         visibleBottomPages = visibleBottomPages,
                         visibleOverviewCards = visibleOverviewCards,
+                        showCacheFreshnessInCards = showCacheFreshnessInCards,
                         onBottomPageVisibilityChange = onBottomPageVisibilityChange,
                         onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
+                        onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
                         onOpenGitHubPage = onOpenGitHubPage,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,

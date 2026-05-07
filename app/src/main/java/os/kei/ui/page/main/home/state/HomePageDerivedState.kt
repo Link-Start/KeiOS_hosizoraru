@@ -19,14 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.host.pager.MainPageRuntime
+import kotlinx.coroutines.flow.onEach
+import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.home.HomeCardStatItem
 import os.kei.ui.page.main.home.HomeHeaderStatusPillState
-import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
+import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
-import kotlinx.coroutines.flow.onEach
 
 private const val HOME_HEADER_SINK_PER_HIDDEN_CARD_DP = 22
 private val HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP = 128.dp
@@ -238,6 +238,7 @@ internal fun rememberHomePageOverviewCardState(
     cacheHitCountLine: String,
     homeStatCacheState: String,
     githubCacheFreshnessLine: String,
+    showCacheFreshnessInCards: Boolean,
     homeStatShare: String,
     githubShareLine: String,
     githubPendingShareImport: Boolean,
@@ -347,6 +348,7 @@ internal fun rememberHomePageOverviewCardState(
         cacheHitCountLine,
         homeStatCacheState,
         githubCacheFreshnessLine,
+        showCacheFreshnessInCards,
         homeStatShare,
         githubShareLine,
         githubPendingShareImport,
@@ -362,21 +364,31 @@ internal fun rememberHomePageOverviewCardState(
             value = githubShareLine,
             emphasize = githubPendingShareImport
         )
-        val baseStats = listOf(
-            HomeCardStatItem(label = homeStatStableUpdates, value = githubUpdatableLine, emphasize = true),
-            HomeCardStatItem(
-                label = homeStatPreReleaseUpdates,
-                value = githubPreReleaseUpdateLine,
-                emphasize = true
-            ),
-            HomeCardStatItem(label = homeStatFailed, value = githubFailedLine),
-            HomeCardStatItem(label = homeStatTracked, value = trackedCountLine),
-            HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine),
-            HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine),
-            HomeCardStatItem(label = homeStatStrategy, value = githubStrategyText),
-            HomeCardStatItem(label = homeStatApi, value = githubApiText),
-            HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine)
-        )
+        val baseStats = buildList {
+            add(
+                HomeCardStatItem(
+                    label = homeStatStableUpdates,
+                    value = githubUpdatableLine,
+                    emphasize = true
+                )
+            )
+            add(
+                HomeCardStatItem(
+                    label = homeStatPreReleaseUpdates,
+                    value = githubPreReleaseUpdateLine,
+                    emphasize = true
+                )
+            )
+            add(HomeCardStatItem(label = homeStatFailed, value = githubFailedLine))
+            add(HomeCardStatItem(label = homeStatTracked, value = trackedCountLine))
+            add(HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine))
+            if (showCacheFreshnessInCards) {
+                add(HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine))
+            }
+            add(HomeCardStatItem(label = homeStatStrategy, value = githubStrategyText))
+            add(HomeCardStatItem(label = homeStatApi, value = githubApiText))
+            add(HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine))
+        }
         if (githubPendingShareImport) {
             listOf(shareStat) + baseStats
         } else {
@@ -397,17 +409,26 @@ internal fun rememberHomePageOverviewCardState(
         homeStatBaNotify,
         baNotifyLine,
         homeStatCacheState,
+        showCacheFreshnessInCards,
         baCacheFreshnessLine
     ) {
-        listOf(
-            HomeCardStatItem(label = homeStatStatus, value = baActivationLine, emphasize = true),
-            HomeCardStatItem(label = homeStatAp, value = baApLine, emphasize = true),
-            HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine),
-            HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine),
-            HomeCardStatItem(label = homeStatBaServer, value = baServerLine),
-            HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine),
-            HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine)
-        )
+        buildList {
+            add(
+                HomeCardStatItem(
+                    label = homeStatStatus,
+                    value = baActivationLine,
+                    emphasize = true
+                )
+            )
+            add(HomeCardStatItem(label = homeStatAp, value = baApLine, emphasize = true))
+            add(HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine))
+            add(HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine))
+            add(HomeCardStatItem(label = homeStatBaServer, value = baServerLine))
+            add(HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine))
+            if (showCacheFreshnessInCards) {
+                add(HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine))
+            }
+        }
     }
 
     return remember(

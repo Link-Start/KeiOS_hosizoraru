@@ -6,6 +6,12 @@
     <string name="home_sheet_visible_pages_desc">Home stays pinned. Other pages can be hidden, restored, or reordered.</string>
     <string name="home_sheet_visible_cards_title">Home cards</string>
     <string name="home_sheet_visible_cards_desc">Control the MCP, GitHub, and BA cards shown on Home.</string>
+    <string name="home_sheet_table_title">Page display table</string>
+    <string name="home_sheet_table_desc">Bottom controls the bottom entry. Home card controls the overview card on Home. Turning off a bottom entry also turns off its Home card.</string>
+    <string name="home_sheet_column_section">Page</string>
+    <string name="home_sheet_column_bottom">Bottom</string>
+    <string name="home_sheet_column_card">Home card</string>
+    <string name="home_sheet_card_unavailable">No card</string>
     <string name="home_status_loading">Loading</string>
     <string name="home_app_version_unknown_fallback">unknown</string>
     <string name="home_app_version_unknown">Unknown version</string>

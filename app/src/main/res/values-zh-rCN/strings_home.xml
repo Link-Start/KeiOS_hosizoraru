@@ -6,6 +6,15 @@
     <string name="home_sheet_visible_pages_desc">Home 固定显示，其他板块可按需隐藏或重新显示。</string>
     <string name="home_sheet_visible_cards_title">Home 卡片</string>
     <string name="home_sheet_visible_cards_desc">控制 Home 页面 MCP、GitHub、BA 三张卡片的显示状态。</string>
+    <string name="home_sheet_table_title">板块显示表</string>
+    <string name="home_sheet_table_desc">底栏控制底部入口，Home 卡片控制主页概览卡片。关闭底栏时，对应 Home 卡片会同步关闭。</string>
+    <string name="home_sheet_column_section">板块</string>
+    <string name="home_sheet_column_bottom">底栏</string>
+    <string name="home_sheet_column_card">Home 卡片</string>
+    <string name="home_sheet_card_unavailable">无卡片</string>
+    <string name="home_sheet_debug_title">调试</string>
+    <string name="home_sheet_show_cache_freshness">显示缓存新鲜度</string>
+    <string name="home_sheet_show_cache_freshness_desc">用于验证缓存状态，开启后 GitHub 与 BA 卡片会显示新鲜度字段。</string>
     <string name="home_status_loading">读取中</string>
     <string name="home_app_version_unknown_fallback">unknown</string>
     <string name="home_app_version_unknown">版本未知</string>

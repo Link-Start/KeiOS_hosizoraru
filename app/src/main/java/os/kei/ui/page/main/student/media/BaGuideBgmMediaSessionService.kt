@@ -1,8 +1,9 @@
 package os.kei.ui.page.main.student
 
 import android.app.PendingIntent
-import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -12,7 +13,6 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import os.kei.MainActivity
 
 internal const val BA_GUIDE_BGM_MEDIA_SESSION_ID = "ba_guide_bgm_media_session"
 
@@ -20,6 +20,7 @@ internal const val BA_GUIDE_BGM_MEDIA_SESSION_ID = "ba_guide_bgm_media_session"
 class BaGuideBgmMediaSessionService : MediaSessionService() {
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private val repeatModeListener = object : Player.Listener {
         override fun onRepeatModeChanged(repeatMode: Int) {
             updateMediaButtonPreferences()
@@ -63,13 +64,7 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
     }
 
     private fun createSessionActivity(): PendingIntent {
-        val intent = createBaGuideBgmPlaybackIntent()
-        return PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        return BaGuideBgmPlaybackRouteIntentFactory.createPendingIntent(this)
     }
 
     private fun updateMediaButtonPreferences() {
@@ -82,19 +77,6 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
                 )
             )
         )
-    }
-
-    private fun createBaGuideBgmPlaybackIntent(): Intent {
-        return Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
-            putExtra(
-                MainActivity.EXTRA_SHORTCUT_ACTION,
-                MainActivity.SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK
-            )
-        }
     }
 
     private class BaGuideBgmMediaSessionCallback(
@@ -133,8 +115,8 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
                     successResult()
                 }
 
-                BA_GUIDE_BGM_COMMAND_OPEN_PLAYER -> {
-                    service.startActivity(service.createBaGuideBgmPlaybackIntent())
+                BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK -> {
+                    service.stopPlaybackAndDismiss()
                     successResult()
                 }
 
@@ -169,5 +151,23 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
         private fun successResult(): ListenableFuture<SessionResult> {
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
+    }
+
+    private fun stopPlaybackAndDismiss() {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            stopPlaybackAndDismissOnMain()
+        } else {
+            mainHandler.post { stopPlaybackAndDismissOnMain() }
+        }
+    }
+
+    private fun stopPlaybackAndDismissOnMain() {
+        player?.let { sessionPlayer ->
+            runCatching { sessionPlayer.playWhenReady = false }
+            runCatching { sessionPlayer.stop() }
+            runCatching { sessionPlayer.clearMediaItems() }
+        }
+        runCatching { triggerNotificationUpdate() }
+        runCatching { pauseAllPlayersAndStopSelf() }
     }
 }

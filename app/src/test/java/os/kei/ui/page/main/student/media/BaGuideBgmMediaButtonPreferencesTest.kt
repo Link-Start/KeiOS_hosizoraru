@@ -23,7 +23,7 @@ import kotlin.test.assertTrue
 @Config(application = Application::class, sdk = [35])
 class BaGuideBgmMediaButtonPreferencesTest {
     @Test
-    fun `repeat and open player buttons use stable actions and slots`() {
+    fun `repeat and stop buttons use stable actions and slots`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val buttons = BaGuideBgmMediaButtonPreferences.mediaButtonPreferences(
             context = context,
@@ -40,13 +40,16 @@ class BaGuideBgmMediaButtonPreferencesTest {
             repeat.slots.toArray().toList()
         )
 
-        val openPlayer = buttons[1]
-        assertEquals(CommandButton.ICON_QUEUE_NEXT, openPlayer.icon)
-        assertEquals(BA_GUIDE_BGM_COMMAND_OPEN_PLAYER, openPlayer.sessionCommand?.customAction)
-        assertEquals("Open player", openPlayer.displayName.toString())
+        val stop = buttons[1]
+        assertEquals(CommandButton.ICON_STOP, stop.icon)
+        assertEquals(
+            BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK,
+            stop.sessionCommand?.customAction
+        )
+        assertEquals("Stop playback", stop.displayName.toString())
         assertEquals(
             listOf(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW),
-            openPlayer.slots.toArray().toList()
+            stop.slots.toArray().toList()
         )
     }
 
@@ -79,7 +82,7 @@ class BaGuideBgmMediaButtonPreferencesTest {
         assertTrue(
             commands.contains(
                 SessionCommand(
-                    BA_GUIDE_BGM_COMMAND_OPEN_PLAYER,
+                    BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK,
                     android.os.Bundle.EMPTY
                 )
             )
@@ -108,7 +111,8 @@ class BaGuideBgmMediaButtonPreferencesTest {
 
     @Test
     fun `provider small icon is the KeiOS notification icon`() {
-        assertEquals(R.drawable.ic_launcher_monochrome, BA_GUIDE_BGM_MEDIA_SMALL_ICON_RES)
+        assertEquals(R.drawable.ic_launcher_monochrome, BA_GUIDE_BGM_MEDIA_AOSP_SMALL_ICON_RES)
+        assertEquals(R.drawable.ic_kei_logo_notification, BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES)
         assertNotNull(
             BaGuideBgmMediaNotificationProviderFactory.create(
                 ApplicationProvider.getApplicationContext()

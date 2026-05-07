@@ -13,8 +13,8 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
 
 internal const val BA_GUIDE_BGM_COMMAND_TOGGLE_REPEAT =
     "os.kei.ba.bgm.media.TOGGLE_REPEAT"
-internal const val BA_GUIDE_BGM_COMMAND_OPEN_PLAYER =
-    "os.kei.ba.bgm.media.OPEN_PLAYER"
+internal const val BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK =
+    "os.kei.ba.bgm.media.STOP_PLAYBACK"
 
 @OptIn(UnstableApi::class)
 internal object BaGuideBgmMediaButtonPreferences {
@@ -22,8 +22,8 @@ internal object BaGuideBgmMediaButtonPreferences {
         return SessionCommand(BA_GUIDE_BGM_COMMAND_TOGGLE_REPEAT, Bundle.EMPTY)
     }
 
-    fun openPlayerCommand(): SessionCommand {
-        return SessionCommand(BA_GUIDE_BGM_COMMAND_OPEN_PLAYER, Bundle.EMPTY)
+    fun stopPlaybackCommand(): SessionCommand {
+        return SessionCommand(BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK, Bundle.EMPTY)
     }
 
     fun availableSessionCommands(
@@ -31,7 +31,7 @@ internal object BaGuideBgmMediaButtonPreferences {
     ): SessionCommands {
         return base.buildUpon()
             .add(repeatCommand())
-            .add(openPlayerCommand())
+            .add(stopPlaybackCommand())
             .build()
     }
 
@@ -41,7 +41,7 @@ internal object BaGuideBgmMediaButtonPreferences {
     ): List<CommandButton> {
         return listOf(
             repeatButton(context, queueMode),
-            openPlayerButton(context)
+            stopPlaybackButton(context)
         )
     }
 
@@ -85,10 +85,10 @@ internal object BaGuideBgmMediaButtonPreferences {
             .build()
     }
 
-    private fun openPlayerButton(context: Context): CommandButton {
-        return CommandButton.Builder(CommandButton.ICON_QUEUE_NEXT)
-            .setSessionCommand(openPlayerCommand())
-            .setDisplayName(context.getString(R.string.ba_catalog_bgm_action_open_player))
+    private fun stopPlaybackButton(context: Context): CommandButton {
+        return CommandButton.Builder(CommandButton.ICON_STOP)
+            .setSessionCommand(stopPlaybackCommand())
+            .setDisplayName(context.getString(R.string.ba_catalog_bgm_action_stop_playback))
             .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
             .build()
     }

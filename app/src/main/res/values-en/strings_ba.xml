@@ -304,6 +304,7 @@
     <string name="ba_catalog_bgm_action_remove_offline">Remove offline</string>
     <string name="ba_catalog_bgm_action_open_queue">Back to playback queue</string>
     <string name="ba_catalog_bgm_action_open_player">Open player</string>
+    <string name="ba_catalog_bgm_action_stop_playback">Stop playback</string>
     <string name="ba_catalog_bgm_action_delete">Remove favorite</string>
     <string name="ba_catalog_bgm_action_cache">Cache BGM</string>
     <string name="ba_catalog_bgm_action_cache_busy">Caching</string>

@@ -622,10 +622,11 @@ private fun calendarNotifyKey(
     atMs: Long,
     leadHours: Int,
 ): String {
-    return "${
-        serverIndex.coerceIn(
-            0,
-            2
-        )
-    }|$type|$id|${atMs.coerceAtLeast(0L)}|${leadHours.coerceAtLeast(0)}"
+    return BaReminderKey(
+        serverIndex = serverIndex,
+        type = type,
+        id = id,
+        atMs = atMs,
+        leadHours = leadHours
+    ).encode()
 }

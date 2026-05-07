@@ -37,6 +37,19 @@ const val GITHUB_SHARE_IMPORT_RESULT_STATUS_ALREADY_TRACKED = "already_tracked"
 const val GITHUB_SHARE_IMPORT_RESULT_STATUS_FAILED = "failed"
 const val GITHUB_SHARE_IMPORT_RESULT_STATUS_CANCELLED = "cancelled"
 
+internal const val GITHUB_SHARE_IMPORT_ACTIVE_PREVIEW_MAX_AGE_MS = 25 * 60 * 1000L
+internal const val GITHUB_SHARE_IMPORT_ACTIVE_RESULT_MAX_AGE_MS = 2 * 60 * 60 * 1000L
+
+internal fun isGitHubShareImportPreviewExpired(createdAtMillis: Long, nowMillis: Long): Boolean {
+    return createdAtMillis <= 0L ||
+        (nowMillis - createdAtMillis).coerceAtLeast(0L) > GITHUB_SHARE_IMPORT_ACTIVE_PREVIEW_MAX_AGE_MS
+}
+
+internal fun isGitHubShareImportResultExpired(completedAtMillis: Long, nowMillis: Long): Boolean {
+    return completedAtMillis <= 0L ||
+        (nowMillis - completedAtMillis).coerceAtLeast(0L) > GITHUB_SHARE_IMPORT_ACTIVE_RESULT_MAX_AGE_MS
+}
+
 data class GitHubShareImportResultRecord(
     val status: String,
     val projectUrl: String = "",
@@ -54,8 +67,6 @@ object GitHubShareImportFlowStore {
     private const val KEY_ACTIVE_PREVIEW = "github_active_share_import_preview"
     private const val KEY_ACTIVE_ATTACH_CANDIDATE = "github_active_share_import_attach_candidate"
     private const val KEY_ACTIVE_RESULT = "github_active_share_import_result"
-    private const val ACTIVE_PREVIEW_MAX_AGE_MS = 25 * 60 * 1000L
-    private const val ACTIVE_RESULT_MAX_AGE_MS = 2 * 60 * 60 * 1000L
 
     private val store: MMKV by lazy {
         MMKV.mmkvWithID(KV_ID, MMKV.MULTI_PROCESS_MODE)
@@ -145,18 +156,15 @@ object GitHubShareImportFlowStore {
     }
 
     private fun GitHubPendingShareImportPreviewRecord.isExpired(nowMillis: Long): Boolean {
-        return createdAtMillis <= 0L ||
-                (nowMillis - createdAtMillis).coerceAtLeast(0L) > ACTIVE_PREVIEW_MAX_AGE_MS
+        return isGitHubShareImportPreviewExpired(createdAtMillis, nowMillis)
     }
 
     private fun GitHubPendingShareImportAttachCandidateRecord.isExpired(nowMillis: Long): Boolean {
-        return detectedAtMillis <= 0L ||
-                (nowMillis - detectedAtMillis).coerceAtLeast(0L) > ACTIVE_PREVIEW_MAX_AGE_MS
+        return isGitHubShareImportPreviewExpired(detectedAtMillis, nowMillis)
     }
 
     private fun GitHubShareImportResultRecord.isExpired(nowMillis: Long): Boolean {
-        return completedAtMillis <= 0L ||
-                (nowMillis - completedAtMillis).coerceAtLeast(0L) > ACTIVE_RESULT_MAX_AGE_MS
+        return isGitHubShareImportResultExpired(completedAtMillis, nowMillis)
     }
 
     private fun parsePreview(obj: JSONObject): GitHubPendingShareImportPreviewRecord? {

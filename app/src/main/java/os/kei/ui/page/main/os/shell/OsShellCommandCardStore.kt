@@ -334,7 +334,9 @@ internal object OsShellCommandCardStore {
     }
 
     private const val MAX_OUTPUT_LENGTH = 24_000
+    private const val EXPORT_SCHEMA_VERSION = 1
     private const val KEY_EXPORT_SCHEMA = "schema"
+    private const val KEY_EXPORT_SCHEMA_VERSION = "schemaVersion"
     private const val KEY_EXPORT_EXPORTED_AT = "exportedAtMillis"
     private const val KEY_EXPORT_ITEM_COUNT = "itemCount"
     private const val KEY_EXPORT_ITEMS = "items"
@@ -347,6 +349,7 @@ internal object OsShellCommandCardStore {
         val items = JSONArray(encodeCards(normalized))
         return JSONObject().apply {
             put(KEY_EXPORT_SCHEMA, OS_SHELL_CARD_EXPORT_SCHEMA)
+            put(KEY_EXPORT_SCHEMA_VERSION, EXPORT_SCHEMA_VERSION)
             put(KEY_EXPORT_EXPORTED_AT, exportedAtMillis)
             put(KEY_EXPORT_ITEM_COUNT, normalized.size)
             put(KEY_EXPORT_ITEMS, items)

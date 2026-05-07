@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.runBlocking
+import os.kei.core.log.AppLogger
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import kotlin.concurrent.thread
 
@@ -35,6 +36,8 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                             GitHubShareImportFlowCoordinator.confirmActiveAttachCandidate(appContext)
                     }
                 }
+            } catch (error: Throwable) {
+                AppLogger.w(TAG, "share import action failed: $action", error)
             } finally {
                 pendingResult.finish()
             }
@@ -48,6 +51,8 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
         const val ACTION_SEND_INSTALL_SHARE_IMPORT =
             "os.kei.github.share_import.action.SEND_INSTALL"
         const val ACTION_CONFIRM_SHARE_IMPORT = "os.kei.github.share_import.action.CONFIRM"
+
+        private const val TAG = "GitHubShareImportAction"
 
         private val supportedActions = setOf(
             ACTION_CANCEL_SHARE_IMPORT,

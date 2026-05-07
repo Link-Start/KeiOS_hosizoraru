@@ -3,19 +3,16 @@ package os.kei.core.background
 import android.content.Context
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.domain.GitHubReleaseCheckService
-import os.kei.feature.github.model.GitHubCheckCacheEntry
-import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.support.BASettingsStore
-import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.BaApReminderPlan
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
 import os.kei.ui.page.main.ba.BaArenaRefreshNotificationDispatcher
 import os.kei.ui.page.main.ba.BaCafeVisitNotificationDispatcher
+import os.kei.ui.page.main.ba.BaReminderCoordinator
+import os.kei.ui.page.main.ba.BaSlotReminderPlan
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
-import os.kei.ui.page.main.ba.applyBaApRegenTick
-import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
-import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
-import os.kei.ui.page.main.ba.support.displayAp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -39,30 +36,23 @@ object AppForegroundInfoHandler {
                 return
             }
 
-            val states = LinkedHashMap<String, GitHubCheckCacheEntry>()
-            var updatableCount = 0
-            var preReleaseUpdateCount = 0
-            var failedCount = 0
-            tracked.forEach { item ->
-                val check = withContext(Dispatchers.IO) {
-                    GitHubReleaseCheckService.evaluateTrackedApp(context, item)
-                }
-                if (check.hasUpdate == true) updatableCount += 1
-                if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
-                if (check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
-                states[item.id] = with(GitHubReleaseCheckService) { check.toCacheEntry() }
+            val result = GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = tracked,
+                refreshTimestampMs = nowMs
+            ) { item ->
+                GitHubReleaseCheckService.evaluateTrackedApp(context, item)
             }
 
             withContext(Dispatchers.IO) {
-                GitHubTrackStore.saveCheckCache(states, nowMs)
+                GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)
             }
-            if (updatableCount > 0 || preReleaseUpdateCount > 0 || failedCount > 0) {
+            if (result.hasNotifiableOutcome) {
                 GitHubRefreshNotificationHelper.notifyCompleted(
                     context = context,
-                    total = tracked.size,
-                    preReleaseUpdateCount = preReleaseUpdateCount,
-                    updatableCount = updatableCount,
-                    failedCount = failedCount
+                    total = result.totalCount,
+                    preReleaseUpdateCount = result.preReleaseUpdateCount,
+                    updatableCount = result.updatableCount,
+                    failedCount = result.failedCount
                 )
             }
         }
@@ -115,37 +105,33 @@ object AppForegroundInfoHandler {
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
-        val (nextAp, nextBase) = applyBaApRegenTick(
-            apLimit = snapshot.apLimit,
-            apCurrent = snapshot.apCurrent,
-            apRegenBaseMs = snapshot.apRegenBaseMs,
-            nowMs = nowMs
-        )
-        if (nextAp != snapshot.apCurrent) {
-            withContext(Dispatchers.IO) {
-                BASettingsStore.saveApCurrent(nextAp)
-                BASettingsStore.saveApRegenBaseMs(nextBase)
-            }
-        }
-
-        val threshold = snapshot.apNotifyThreshold.coerceIn(0, BA_AP_MAX)
-        val currentDisplay = displayAp(nextAp)
-        if (currentDisplay < threshold) {
-            withContext(Dispatchers.IO) { BASettingsStore.saveApLastNotifiedLevel(-1) }
-            return
-        }
-
-        val lastNotifiedLevel = withContext(Dispatchers.IO) { BASettingsStore.loadApLastNotifiedLevel() }
-        if (currentDisplay == lastNotifiedLevel) return
-
+        val plan = BaReminderCoordinator.evaluateApThreshold(snapshot = snapshot, nowMs = nowMs)
+        persistBaApReminderPlan(plan)
+        val notification = plan.notification ?: return
         val sent = BaApNotificationDispatcher.send(
             context = context,
-            currentDisplay = currentDisplay,
-            limitDisplay = snapshot.apLimit.coerceIn(0, BA_AP_MAX),
-            thresholdDisplay = threshold
+            currentDisplay = notification.currentDisplay,
+            limitDisplay = notification.limitDisplay,
+            thresholdDisplay = notification.thresholdDisplay
         )
         if (sent) {
-            withContext(Dispatchers.IO) { BASettingsStore.saveApLastNotifiedLevel(currentDisplay) }
+            withContext(Dispatchers.IO) {
+                BASettingsStore.saveApLastNotifiedLevel(notification.currentDisplay)
+            }
+        }
+    }
+
+    private suspend fun persistBaApReminderPlan(plan: BaApReminderPlan) {
+        if (plan.shouldSaveAp) {
+            withContext(Dispatchers.IO) {
+                BASettingsStore.saveApCurrent(plan.nextAp)
+                BASettingsStore.saveApRegenBaseMs(plan.nextApRegenBaseMs)
+            }
+        }
+        if (plan.resetLastNotifiedLevel) {
+            withContext(Dispatchers.IO) {
+                BASettingsStore.saveApLastNotifiedLevel(-1)
+            }
         }
     }
 
@@ -154,26 +140,26 @@ object AppForegroundInfoHandler {
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
-        val currentSlotMs = currentCafeStudentRefreshSlotMs(
-            nowMs = nowMs,
-            serverIndex = snapshot.serverIndex
-        )
-        val lastSlotMs = withContext(Dispatchers.IO) { BASettingsStore.loadCafeVisitLastNotifiedSlotMs() }
-        if (lastSlotMs <= 0L) {
-            withContext(Dispatchers.IO) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(currentSlotMs) }
-            return
-        }
-        if (currentSlotMs <= lastSlotMs) {
-            return
-        }
+        when (val plan = BaReminderCoordinator.evaluateCafeVisit(snapshot = snapshot, nowMs = nowMs)) {
+            BaSlotReminderPlan.None -> Unit
+            BaSlotReminderPlan.Reset -> {
+                withContext(Dispatchers.IO) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L) }
+            }
 
-        val sent = BaCafeVisitNotificationDispatcher.send(
-            context = context,
-            serverIndex = snapshot.serverIndex,
-            slotMs = currentSlotMs
-        )
-        if (sent) {
-            withContext(Dispatchers.IO) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(currentSlotMs) }
+            is BaSlotReminderPlan.SeedBaseline -> {
+                withContext(Dispatchers.IO) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(plan.slotMs) }
+            }
+
+            is BaSlotReminderPlan.Notify -> {
+                val sent = BaCafeVisitNotificationDispatcher.send(
+                    context = context,
+                    serverIndex = snapshot.serverIndex,
+                    slotMs = plan.slotMs
+                )
+                if (sent) {
+                    withContext(Dispatchers.IO) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(plan.slotMs) }
+                }
+            }
         }
     }
 
@@ -182,26 +168,26 @@ object AppForegroundInfoHandler {
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
-        val currentSlotMs = currentArenaRefreshSlotMs(
-            nowMs = nowMs,
-            serverIndex = snapshot.serverIndex
-        )
-        val lastSlotMs = withContext(Dispatchers.IO) { BASettingsStore.loadArenaRefreshLastNotifiedSlotMs() }
-        if (lastSlotMs <= 0L) {
-            withContext(Dispatchers.IO) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(currentSlotMs) }
-            return
-        }
-        if (currentSlotMs <= lastSlotMs) {
-            return
-        }
+        when (val plan = BaReminderCoordinator.evaluateArenaRefresh(snapshot = snapshot, nowMs = nowMs)) {
+            BaSlotReminderPlan.None -> Unit
+            BaSlotReminderPlan.Reset -> {
+                withContext(Dispatchers.IO) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L) }
+            }
 
-        val sent = BaArenaRefreshNotificationDispatcher.send(
-            context = context,
-            serverIndex = snapshot.serverIndex,
-            slotMs = currentSlotMs
-        )
-        if (sent) {
-            withContext(Dispatchers.IO) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(currentSlotMs) }
+            is BaSlotReminderPlan.SeedBaseline -> {
+                withContext(Dispatchers.IO) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(plan.slotMs) }
+            }
+
+            is BaSlotReminderPlan.Notify -> {
+                val sent = BaArenaRefreshNotificationDispatcher.send(
+                    context = context,
+                    serverIndex = snapshot.serverIndex,
+                    slotMs = plan.slotMs
+                )
+                if (sent) {
+                    withContext(Dispatchers.IO) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(plan.slotMs) }
+                }
+            }
         }
     }
 

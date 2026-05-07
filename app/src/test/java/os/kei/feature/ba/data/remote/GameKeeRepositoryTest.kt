@@ -24,6 +24,17 @@ class GameKeeRepositoryTest {
     }
 
     @Test
+    fun `ba api repository builds calendar and pool requests with shared headers`() {
+        assertEquals(
+            mapOf(
+                "device-num" to "1",
+                "game-alias" to "ba"
+            ),
+            GameKeeRepository.baApiHeaders()
+        )
+    }
+
+    @Test
     fun `network result failure keeps compact preview and throwable`() {
         val result = GameKeeNetworkResult.Failure(
             request = GameKeeNetworkRequest(

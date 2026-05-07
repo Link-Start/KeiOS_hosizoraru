@@ -214,15 +214,12 @@ internal fun rememberMainLoadedPagerState(
 ): MainLoadedPagerState {
     var savedPageKey by rememberSaveable { mutableStateOf("") }
     val safePageCount = pageCount.coerceAtLeast(0)
-    val safeLastIndex = (pageKeys.size - 1).coerceAtLeast(0)
     val resolvedInitialPage = remember(pageKeys, initialPage, savedPageKey) {
-        val requestedPage = initialPage.coerceIn(0, safeLastIndex)
-        val preferredKey = savedPageKey.ifBlank {
-            pageKeys.getOrNull(requestedPage).orEmpty()
-        }
-        pageKeys.indexOf(preferredKey)
-            .takeIf { it >= 0 }
-            ?: requestedPage
+        resolveMainLoadedPagerInitialPage(
+            pageKeys = pageKeys,
+            initialPage = initialPage,
+            savedPageKey = savedPageKey
+        )
     }
     val state = remember(pageKeys) {
         MainLoadedPagerState(
@@ -239,3 +236,18 @@ internal fun rememberMainLoadedPagerState(
 
 private const val MainLoadedPagerVelocityThreshold = 0.55f
 private const val MainLoadedPagerSettleDurationMillis = 220
+
+internal fun resolveMainLoadedPagerInitialPage(
+    pageKeys: List<String>,
+    initialPage: Int,
+    savedPageKey: String
+): Int {
+    val safeLastIndex = (pageKeys.size - 1).coerceAtLeast(0)
+    val requestedPage = initialPage.coerceIn(0, safeLastIndex)
+    val preferredKey = savedPageKey.ifBlank {
+        pageKeys.getOrNull(requestedPage).orEmpty()
+    }
+    return pageKeys.indexOf(preferredKey)
+        .takeIf { it >= 0 }
+        ?: requestedPage
+}

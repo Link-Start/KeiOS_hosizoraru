@@ -49,48 +49,75 @@ internal data class CacheEntrySummary(
 internal object CacheStores {
     private const val CACHE_EVENT_KV_ID = "cache_events"
 
-    fun list(context: Context): List<CacheEntrySummary> {
-        val entries = listOf(
-            githubSummary(context),
-            baCalendarSummary(context),
-            baStudentGuideSummary(context),
-            osSummary(context),
-            appIconSummary(context),
-            baMediaPlaybackSummary(context),
-            baTempMediaSummary(context),
-            debugUiDumpSummary(context),
-            mcpSummary(context)
-        )
-        return listOf(buildOverview(context, entries)) + entries
-    }
-
-    fun clear(context: Context, id: String) {
-        when (id) {
-            "github" -> {
+    private val providers = listOf(
+        CacheEntryProvider(
+            id = "github",
+            summary = { context -> githubSummary(context) },
+            clear = {
                 GitHubReleaseStrategyRegistry.clearAllCaches()
                 GitHubTrackStore.clearCheckCache()
                 GitHubReleaseAssetCacheStore.clearAll()
                 AppIconCache.clear()
                 CacheEventStore.markCleared("app_icon")
             }
-            "ba_calendar" -> {
+        ),
+        CacheEntryProvider(
+            id = "ba_calendar",
+            summary = { context -> baCalendarSummary(context) },
+            clear = { context ->
                 BASettingsStore.clearCalendarAndPoolCaches()
                 BaCalendarPoolImageCache.clearAll(context)
             }
-            "ba_student_guide" -> {
+        ),
+        CacheEntryProvider(
+            id = "ba_student_guide",
+            summary = { context -> baStudentGuideSummary(context) },
+            clear = { context ->
                 BaStudentGuideStore.clearAllCachedInfo()
                 clearBaGuideCatalogCache(context)
             }
-            "os_info" -> OsInfoCache.clearAll()
-            "app_icon" -> AppIconCache.clear()
-            "ba_media_playback" -> clearGameKeeMediaPlaybackCache(context)
-            "ba_temp_media" -> BaGuideTempMediaCache.clearAll(context)
-            "debug_ui_dump" -> clearDebugUiDump(context)
-            "mcp_prefs" -> McpServerManager.clearSavedCacheOnly()
-        }
-        if (id != "cache_overview") {
-            CacheEventStore.markCleared(id)
-        }
+        ),
+        CacheEntryProvider(
+            id = "os_info",
+            summary = { context -> osSummary(context) },
+            clear = { OsInfoCache.clearAll() }
+        ),
+        CacheEntryProvider(
+            id = "app_icon",
+            summary = { context -> appIconSummary(context) },
+            clear = { AppIconCache.clear() }
+        ),
+        CacheEntryProvider(
+            id = "ba_media_playback",
+            summary = { context -> baMediaPlaybackSummary(context) },
+            clear = { context -> clearGameKeeMediaPlaybackCache(context) }
+        ),
+        CacheEntryProvider(
+            id = "ba_temp_media",
+            summary = { context -> baTempMediaSummary(context) },
+            clear = { context -> BaGuideTempMediaCache.clearAll(context) }
+        ),
+        CacheEntryProvider(
+            id = "debug_ui_dump",
+            summary = { context -> debugUiDumpSummary(context) },
+            clear = { context -> clearDebugUiDump(context) }
+        ),
+        CacheEntryProvider(
+            id = "mcp_prefs",
+            summary = { context -> mcpSummary(context) },
+            clear = { McpServerManager.clearSavedCacheOnly() }
+        )
+    )
+
+    fun list(context: Context): List<CacheEntrySummary> {
+        val entries = providers.map { provider -> provider.summary(context) }
+        return listOf(buildOverview(context, entries)) + entries
+    }
+
+    fun clear(context: Context, id: String) {
+        val provider = providers.firstOrNull { provider -> provider.id == id } ?: return
+        provider.clear(context)
+        CacheEventStore.markCleared(id)
     }
 
     fun clearAll(context: Context) {
@@ -101,6 +128,12 @@ internal object CacheStores {
                 clear(context, entry.id)
             }
     }
+
+    private data class CacheEntryProvider(
+        val id: String,
+        val summary: (Context) -> CacheEntrySummary,
+        val clear: (Context) -> Unit
+    )
 
     private fun buildOverview(context: Context, entries: List<CacheEntrySummary>): CacheEntrySummary {
         val cacheBytes = entries.sumOf(CacheEntrySummary::cacheBytes)

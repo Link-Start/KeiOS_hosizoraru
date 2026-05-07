@@ -21,7 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeNetworkClient
+import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -112,12 +113,13 @@ internal fun GameKeeCoverImage(
             return@LaunchedEffect
         }
         val loaded = withContext(Dispatchers.IO) {
-            runCatching {
-                GameKeeFetchHelper.fetchImage(
-                    imageUrl = normalizedUrl,
-                    maxDecodeDimension = 720
-                )
-            }.getOrNull()
+            when (val result = GameKeeNetworkClient.fetchImage(
+                imageUrl = normalizedUrl,
+                maxDecodeDimension = 720
+            )) {
+                is GameKeeNetworkResult.Success -> result.value
+                is GameKeeNetworkResult.Failure -> null
+            }
         }
         if (loaded != null) {
             bitmap = loaded

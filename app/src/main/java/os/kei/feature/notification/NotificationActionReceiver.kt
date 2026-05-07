@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
-import os.kei.mcp.service.McpKeepAliveService
+import os.kei.core.background.BackgroundAsyncReceiverRunner
 import os.kei.mcp.server.McpServerRuntimeRegistry
-import kotlin.concurrent.thread
+import os.kei.mcp.service.McpKeepAliveService
 
 class NotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -19,28 +19,29 @@ class NotificationActionReceiver : BroadcastReceiver() {
             }
 
             ACTION_STOP_MCP_SERVER -> {
-                val pendingResult = goAsync()
-                val appContext = context.applicationContext
-                thread(name = "mcp-notification-stop") {
-                    try {
-                        Log.i(TAG, "Received MCP stop action from notification")
-                        val stopped = runCatching {
-                            McpServerRuntimeRegistry.stopCurrentServer()
-                        }.getOrElse { throwable ->
-                            Log.e(TAG, "Failed to stop MCP server from notification", throwable)
-                            false
-                        }
-                        if (!stopped) {
-                            Log.w(TAG, "MCP stop requested from notification but runtime registry is empty")
-                            runCatching { McpKeepAliveService.stop(appContext) }
-                                .onFailure { throwable ->
-                                    Log.e(TAG, "Failed to stop MCP keepalive fallback", throwable)
-                                }
-                        } else {
-                            Log.i(TAG, "MCP server stopped from notification")
-                        }
-                    } finally {
-                        pendingResult.finish()
+                BackgroundAsyncReceiverRunner.launch(
+                    receiver = this,
+                    context = context,
+                    tag = TAG
+                ) { appContext ->
+                    Log.i(TAG, "Received MCP stop action from notification")
+                    val stopped = runCatching {
+                        McpServerRuntimeRegistry.stopCurrentServer()
+                    }.getOrElse { throwable ->
+                        Log.e(TAG, "Failed to stop MCP server from notification", throwable)
+                        false
+                    }
+                    if (!stopped) {
+                        Log.w(
+                            TAG,
+                            "MCP stop requested from notification but runtime registry is empty"
+                        )
+                        runCatching { McpKeepAliveService.stop(appContext) }
+                            .onFailure { throwable ->
+                                Log.e(TAG, "Failed to stop MCP keepalive fallback", throwable)
+                            }
+                    } else {
+                        Log.i(TAG, "MCP server stopped from notification")
                     }
                 }
             }

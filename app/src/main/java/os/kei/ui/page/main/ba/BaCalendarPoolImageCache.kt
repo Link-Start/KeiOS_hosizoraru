@@ -16,7 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeNetworkClient
+import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
@@ -158,8 +159,11 @@ internal object BaCalendarPoolImageCache {
                     semaphore.withPermit {
                         val file = targetFile(context, category, serverIndex, url)
                         if (file.exists() && file.length() > 0L) return@withPermit
-                        runCatching { GameKeeFetchHelper.downloadToFile(url, file) }
-                        if (file.exists() && file.length() <= 0L) {
+                        val result = GameKeeNetworkClient.downloadToFile(url, file)
+                        if (result !is GameKeeNetworkResult.Success ||
+                            !file.exists() ||
+                            file.length() <= 0L
+                        ) {
                             runCatching { file.delete() }
                         }
                     }
@@ -418,13 +422,19 @@ internal object BaCalendarPoolImageCache {
         var latest = 0L
         dir.listFiles()
             .orEmpty()
-            .filter { it.isFile }
+            .filter(::isIndexedCacheFile)
             .forEach { file ->
                 count += 1
                 bytes += file.length()
                 latest = maxOf(latest, file.lastModified())
             }
         return ScopeSummary(count = count, bytes = bytes, latest = latest)
+    }
+
+    private fun isIndexedCacheFile(file: File): Boolean {
+        return file.isFile &&
+                !file.name.endsWith(".part", ignoreCase = true) &&
+                file.length() > 0L
     }
 
     private fun rebuildScopeIndex(context: Context, category: Category, serverIndex: Int) {

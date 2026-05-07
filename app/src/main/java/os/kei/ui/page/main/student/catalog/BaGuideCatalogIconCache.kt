@@ -3,7 +3,8 @@ package os.kei.ui.page.main.student.catalog
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.LruCache
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeNetworkClient
+import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import java.io.File
 import java.security.MessageDigest
@@ -71,12 +72,13 @@ internal object BaGuideCatalogIconCache {
         } else if (diskFile.exists()) {
             runCatching { diskFile.delete() }
         }
-        val bitmap = runCatching {
-            GameKeeFetchHelper.fetchImage(
-                imageUrl = key,
-                maxDecodeDimension = MAX_DECODE_EDGE
-            )
-        }.getOrNull() ?: return null
+        val bitmap = when (val result = GameKeeNetworkClient.fetchImage(
+            imageUrl = key,
+            maxDecodeDimension = MAX_DECODE_EDGE
+        )) {
+            is GameKeeNetworkResult.Success -> result.value
+            is GameKeeNetworkResult.Failure -> null
+        } ?: return null
         runCatching {
             diskFile.outputStream().use { output ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)

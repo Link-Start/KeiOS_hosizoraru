@@ -15,7 +15,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeNetworkClient
+import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.io.File
 import java.io.RandomAccessFile
@@ -206,9 +207,10 @@ object BaGuideTempMediaCache {
                 attempt > 0 -> withForceNetworkQuery(normalizedUrl)
                 else -> normalizedUrl
             }
-            val ok = runCatching {
-                GameKeeFetchHelper.downloadToFile(requestUrl, targetFile)
-            }.getOrDefault(false)
+            val ok = GameKeeNetworkClient.downloadToFile(
+                requestUrl,
+                targetFile
+            ) is GameKeeNetworkResult.Success
             if (ok && isUsableCachedMedia(normalizedUrl, targetFile)) {
                 return true
             }

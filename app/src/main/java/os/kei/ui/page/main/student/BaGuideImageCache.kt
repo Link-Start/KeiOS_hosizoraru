@@ -5,7 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.core.net.toUri
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeNetworkClient
+import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.io.File
@@ -134,13 +135,11 @@ internal object BaGuideImageCache {
             runCatching { diskFile.delete() }
         }
 
-        val downloaded = runCatching {
-            GameKeeFetchHelper.downloadToFile(
-                mediaUrl = normalized,
-                targetFile = diskFile,
-                onProgress = onProgress
-            )
-        }.getOrDefault(false)
+        val downloaded = GameKeeNetworkClient.downloadToFile(
+            mediaUrl = normalized,
+            targetFile = diskFile,
+            onProgress = onProgress
+        ) is GameKeeNetworkResult.Success
         if (downloaded && diskFile.exists() && diskFile.length() > 0L) {
             val bitmap = decodeSampledFile(diskFile, maxDecodeDimension)
             if (bitmap != null) {
@@ -150,17 +149,13 @@ internal object BaGuideImageCache {
             runCatching { diskFile.delete() }
         }
 
-        val fallback = if (onProgress != null) {
-            GameKeeFetchHelper.fetchImageWithProgress(
-                imageUrl = normalized,
-                onProgress = onProgress,
-                maxDecodeDimension = maxDecodeDimension
-            )
-        } else {
-            GameKeeFetchHelper.fetchImage(
-                imageUrl = normalized,
-                maxDecodeDimension = maxDecodeDimension
-            )
+        val fallback = when (val result = GameKeeNetworkClient.fetchImage(
+            imageUrl = normalized,
+            maxDecodeDimension = maxDecodeDimension,
+            onProgress = onProgress
+        )) {
+            is GameKeeNetworkResult.Success -> result.value
+            is GameKeeNetworkResult.Failure -> null
         }
         if (fallback != null) {
             synchronized(memory) { memory.put(key, fallback) }

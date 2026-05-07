@@ -58,14 +58,23 @@ internal object GameKeeNetworkClient {
 
     fun fetchImage(
         imageUrl: String,
-        maxDecodeDimension: Int = 2560
+        maxDecodeDimension: Int = 2560,
+        onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null
     ): GameKeeNetworkResult<Bitmap?> {
         val request = GameKeeNetworkRequest(pathOrUrl = imageUrl, refererPath = "")
         return capture(request) {
-            GameKeeFetchHelper.fetchImage(
-                imageUrl = imageUrl,
-                maxDecodeDimension = maxDecodeDimension
-            )
+            if (onProgress != null) {
+                GameKeeFetchHelper.fetchImageWithProgress(
+                    imageUrl = imageUrl,
+                    onProgress = onProgress,
+                    maxDecodeDimension = maxDecodeDimension
+                )
+            } else {
+                GameKeeFetchHelper.fetchImage(
+                    imageUrl = imageUrl,
+                    maxDecodeDimension = maxDecodeDimension
+                )
+            }
         }
     }
 
@@ -145,6 +154,19 @@ internal object GameKeeRepository {
         return GameKeeNetworkClient.fetchJson(
             GameKeeNetworkRequest(
                 pathOrUrl = "/v1/entry/treesByPid?pid=${pid.coerceAtLeast(0)}",
+                refererPath = refererPath,
+                extraHeaders = baApiHeaders()
+            )
+        ).getOrThrow()
+    }
+
+    fun fetchBaApiJson(
+        pathOrUrl: String,
+        refererPath: String
+    ): String {
+        return GameKeeNetworkClient.fetchJson(
+            GameKeeNetworkRequest(
+                pathOrUrl = pathOrUrl,
                 refererPath = refererPath,
                 extraHeaders = baApiHeaders()
             )

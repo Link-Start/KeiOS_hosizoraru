@@ -4,18 +4,16 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 
 class AppBackgroundTickReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
         if (action != ACTION_GITHUB_TICK && action != ACTION_BA_AP_TICK) return
-        val pendingResult = goAsync()
-        val appContext = context.applicationContext
-        scope.launch {
+        BackgroundAsyncReceiverRunner.launch(
+            receiver = this,
+            context = context,
+            tag = TAG
+        ) { appContext ->
             try {
                 when (action) {
                     ACTION_GITHUB_TICK -> AppForegroundInfoHandler.handleGitHubTick(appContext)
@@ -23,7 +21,6 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
                 }
             } finally {
                 AppBackgroundScheduler.onTickHandled(appContext, action)
-                pendingResult.finish()
             }
         }
     }
@@ -33,8 +30,7 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         const val ACTION_BA_AP_TICK = "os.kei.background.action.BA_AP_TICK"
         private const val REQUEST_CODE_GITHUB_TICK = 42001
         private const val REQUEST_CODE_BA_AP_TICK = 42002
-
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private const val TAG = "AppBackgroundTickReceiver"
 
         fun githubTickPendingIntent(context: Context): PendingIntent {
             val intent = Intent(context, AppBackgroundTickReceiver::class.java).apply {

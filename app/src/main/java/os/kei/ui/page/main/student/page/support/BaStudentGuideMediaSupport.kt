@@ -12,7 +12,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeNetworkClient
+import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
@@ -353,7 +354,11 @@ private inline fun copyGuideMediaFromSource(
                     if (!tempDir.exists()) tempDir.mkdirs()
                     val tempFile = File(tempDir, "tmp_${System.nanoTime().toString(16)}")
                     try {
-                        val downloaded = GameKeeFetchHelper.downloadToFile(normalized, tempFile)
+                        val downloaded =
+                            GameKeeNetworkClient.downloadToFile(
+                                normalized,
+                                tempFile
+                            ) is GameKeeNetworkResult.Success
                         if (!downloaded || !tempFile.exists() || tempFile.length() <= 0L) {
                             false
                         } else {

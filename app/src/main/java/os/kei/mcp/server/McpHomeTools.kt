@@ -1,12 +1,10 @@
 package os.kei.mcp.server
 
-import com.tencent.mmkv.MMKV
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.home.data.HomeOverviewPrefs
 import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
-import os.kei.feature.home.model.HomeOverviewCard
-import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.displayAp
@@ -45,7 +43,11 @@ internal class McpHomeTools(
         val cafeStored = baSnapshot.cafeStoredAp.coerceIn(0.0, cafeCap)
 
         return buildString {
-            appendLine("visibleCards=${loadHomeVisibleOverviewCards().joinToString(",") { it.name }}")
+            appendLine(
+                "visibleCards=${
+                    HomeOverviewPrefs.loadVisibleOverviewCards().joinToString(",") { it.name }
+                }"
+            )
             appendLine("mcp.running=${mcpState?.running ?: false}")
             appendLine("mcp.serverName=${mcpState?.serverName.orEmpty()}")
             appendLine("mcp.port=${mcpState?.port ?: 0}")
@@ -71,20 +73,4 @@ internal class McpHomeTools(
         }.trim()
     }
 
-    private fun loadHomeVisibleOverviewCards(): Set<HomeOverviewCard> {
-        val kv = MMKV.mmkvWithID(HOME_PAGE_PREFS_KV_ID)
-        val raw = kv.decodeString(HOME_VISIBLE_OVERVIEW_CARDS_KEY, "").orEmpty().trim()
-        if (raw.isBlank()) return defaultHomeOverviewCards()
-        val parsed = raw.split(',')
-            .mapNotNull { name ->
-                HomeOverviewCard.entries.firstOrNull { it.name == name.trim() }
-            }
-            .toSet()
-        return parsed.ifEmpty { defaultHomeOverviewCards() }
-    }
-
-    private companion object {
-        const val HOME_PAGE_PREFS_KV_ID = "home_page_prefs"
-        const val HOME_VISIBLE_OVERVIEW_CARDS_KEY = "home_visible_overview_cards"
-    }
 }

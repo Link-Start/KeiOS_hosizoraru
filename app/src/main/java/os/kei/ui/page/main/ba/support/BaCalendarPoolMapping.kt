@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.ba.support
 
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.feature.ba.data.remote.GameKeeRepository
 import java.util.Locale
 
 internal fun gameKeeServerId(serverIndex: Int): Int {
@@ -124,13 +124,9 @@ internal fun fetchBaCalendarEntries(
     val serverId = gameKeeServerId(serverIndex)
     val endpointPath = "$BA_CALENDAR_ENDPOINT?importance=0&sort=-1&keyword=&limit=999&page_no=1&serverId=$serverId&status=0"
     val body = runWithRetry {
-        GameKeeFetchHelper.fetchJson(
+        GameKeeRepository.fetchBaApiJson(
             pathOrUrl = endpointPath,
-            refererPath = "/ba/huodong/$serverId",
-            extraHeaders = mapOf(
-                "device-num" to "1",
-                "game-alias" to "ba"
-            )
+            refererPath = "/ba/huodong/$serverId"
         )
     }
     val root = JSONObject(body)
@@ -313,13 +309,9 @@ internal fun fetchBaPoolEntriesFromAll(
     val serverId = gameKeeServerId(serverIndex)
     val endpointPath = "$BA_POOL_ENDPOINT?order_by=-1&card_tag_id=&keyword=&kind_id=6&status=0&serverId=$serverId"
     val body = runWithRetry {
-        GameKeeFetchHelper.fetchJson(
+        GameKeeRepository.fetchBaApiJson(
             pathOrUrl = endpointPath,
-            refererPath = "/ba/kachi/$serverId",
-            extraHeaders = mapOf(
-                "device-num" to "1",
-                "game-alias" to "ba"
-            )
+            refererPath = "/ba/kachi/$serverId"
         )
     }
     val root = JSONObject(body)

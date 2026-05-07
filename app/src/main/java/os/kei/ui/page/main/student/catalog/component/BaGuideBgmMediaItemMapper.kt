@@ -2,9 +2,13 @@ package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
 import android.net.Uri
+import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import os.kei.R
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_AUDIO_URL
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_SOURCE_URL
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_STUDENT_TITLE
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 
@@ -24,12 +28,19 @@ internal fun GuideBgmFavoriteItem.toBaGuideBgmMediaItem(
         .ifBlank { title.trim() }
         .ifBlank { context.getString(R.string.ba_catalog_bgm_student_unknown) }
     val subtitleText = context.getString(R.string.ba_catalog_bgm_media_subtitle)
+    val normalizedSourceUrl = normalizeGuideMediaSource(this.sourceUrl)
+    val metadataExtras = Bundle().apply {
+        putString(BA_GUIDE_BGM_MEDIA_METADATA_AUDIO_URL, mediaId)
+        putString(BA_GUIDE_BGM_MEDIA_METADATA_SOURCE_URL, normalizedSourceUrl)
+        putString(BA_GUIDE_BGM_MEDIA_METADATA_STUDENT_TITLE, studentText)
+    }
     val metadataBuilder = MediaMetadata.Builder()
         .setTitle(studentText)
         .setDisplayTitle(studentText)
         .setArtist(subtitleText)
         .setSubtitle(subtitleText)
         .setAlbumTitle(context.getString(R.string.ba_catalog_bgm_album_title))
+        .setExtras(metadataExtras)
     if (artworkData != null) {
         metadataBuilder.setArtworkData(
             artworkData,

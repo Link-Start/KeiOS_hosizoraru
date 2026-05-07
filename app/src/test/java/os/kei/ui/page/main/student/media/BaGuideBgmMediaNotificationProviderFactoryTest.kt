@@ -12,6 +12,7 @@ import org.robolectric.annotation.Config
 import os.kei.R
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @OptIn(UnstableApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -69,11 +70,12 @@ class BaGuideBgmMediaNotificationProviderFactoryTest {
     }
 
     @Test
-    fun `provider uses the default Media3 notification implementation`() {
+    fun `provider wraps the default Media3 notification implementation`() {
         val provider = BaGuideBgmMediaNotificationProviderFactory.create(
             ApplicationProvider.getApplicationContext()
         )
 
         assertNotNull(provider)
+        assertTrue(provider is BaGuideBgmMediaIslandShareNotificationProvider)
     }
 }

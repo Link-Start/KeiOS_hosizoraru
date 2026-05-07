@@ -12,6 +12,9 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_AUDIO_URL
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_SOURCE_URL
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_STUDENT_TITLE
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -49,6 +52,18 @@ class BaGuideBgmMediaItemMapperTest {
         assertEquals("Memorial Lobby BGM", item.mediaMetadata.artist.toString())
         assertEquals("Memorial Lobby BGM", item.mediaMetadata.subtitle.toString())
         assertEquals("https://example.com/hoshino.png", item.mediaMetadata.artworkUri.toString())
+        assertEquals(
+            "https://example.com/bgm.mp3?token=1",
+            item.mediaMetadata.extras?.getString(BA_GUIDE_BGM_MEDIA_METADATA_AUDIO_URL)
+        )
+        assertEquals(
+            "https://www.gamekee.com/ba/tj/1.html",
+            item.mediaMetadata.extras?.getString(BA_GUIDE_BGM_MEDIA_METADATA_SOURCE_URL)
+        )
+        assertEquals(
+            "Hoshino",
+            item.mediaMetadata.extras?.getString(BA_GUIDE_BGM_MEDIA_METADATA_STUDENT_TITLE)
+        )
         assertContentEquals(artworkData, item.mediaMetadata.artworkData)
         assertEquals(MediaMetadata.PICTURE_TYPE_FRONT_COVER, item.mediaMetadata.artworkDataType)
     }

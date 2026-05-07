@@ -9,10 +9,15 @@ import androidx.media3.session.MediaNotification
 @OptIn(UnstableApi::class)
 internal object BaGuideBgmMediaNotificationProviderFactory {
     fun create(context: Context): MediaNotification.Provider {
-        return DefaultMediaNotificationProvider.Builder(context)
+        val delegate = DefaultMediaNotificationProvider.Builder(context)
             .build()
             .apply {
                 setSmallIcon(BaGuideBgmMediaOemCompat.mediaSmallIconRes())
             }
+        return BaGuideBgmMediaIslandShareNotificationProvider(
+            context = context.applicationContext,
+            delegate = delegate,
+            enabled = BaGuideBgmMediaOemCompat.mediaIslandDragShareSupported()
+        )
     }
 }

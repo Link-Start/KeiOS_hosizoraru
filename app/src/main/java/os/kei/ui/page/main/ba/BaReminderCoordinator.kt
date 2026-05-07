@@ -188,9 +188,74 @@ internal object BaReminderCoordinator {
         ).encode()
     }
 
+    fun retainNotifiedKeysForPolicy(
+        keys: Set<String>,
+        serverIndex: Int,
+        leadHours: Int,
+        calendarUpcomingEnabled: Boolean,
+        calendarEndingEnabled: Boolean,
+        poolUpcomingEnabled: Boolean,
+        poolEndingEnabled: Boolean,
+        calendarPoolChangeEnabled: Boolean
+    ): Set<String> {
+        val normalizedServerIndex = serverIndex.coerceIn(0, 2)
+        val normalizedLeadHours = leadHours.coerceAtLeast(1)
+        val allowedTypes = buildSet {
+            if (calendarUpcomingEnabled) add(TYPE_CALENDAR_START)
+            if (calendarEndingEnabled) add(TYPE_CALENDAR_END)
+            if (poolUpcomingEnabled) add(TYPE_POOL_START)
+            if (poolEndingEnabled) add(TYPE_POOL_END)
+            if (calendarPoolChangeEnabled) {
+                add(TYPE_CALENDAR_CHANGE)
+                add(TYPE_POOL_CHANGE)
+            }
+        }
+        if (allowedTypes.isEmpty()) return emptySet()
+        return keys.mapNotNull { raw ->
+            decodeReminderKey(raw)?.takeIf { key ->
+                key.serverIndex == normalizedServerIndex &&
+                        key.type in allowedTypes &&
+                        (key.isChangeKey || key.leadHours == normalizedLeadHours)
+            }?.encoded
+        }.toCollection(LinkedHashSet())
+    }
+
+    internal fun decodeReminderKey(raw: String): BaReminderKeyParts? {
+        val parts = raw.trim().split("|")
+        if (parts.size != 5) return null
+        val serverIndex = parts[0].toIntOrNull()?.coerceIn(0, 2) ?: return null
+        val type = parts[1].trim()
+        if (type.isBlank()) return null
+        val id = parts[2].toIntOrNull() ?: return null
+        val atMs = parts[3].toLongOrNull()?.coerceAtLeast(0L) ?: return null
+        val leadHours = parts[4].toIntOrNull()?.coerceAtLeast(0) ?: return null
+        val encoded = BaReminderKey(
+            serverIndex = serverIndex,
+            type = type,
+            id = id,
+            atMs = atMs,
+            leadHours = leadHours
+        ).encode()
+        return BaReminderKeyParts(
+            serverIndex = serverIndex,
+            type = type,
+            id = id,
+            atMs = atMs,
+            leadHours = leadHours,
+            encoded = encoded
+        )
+    }
+
     private fun leadMs(leadHours: Int): Long {
         return leadHours.coerceAtLeast(1) * 60L * 60L * 1000L
     }
+
+    private const val TYPE_CALENDAR_START = "calendar_start"
+    private const val TYPE_CALENDAR_END = "calendar_end"
+    private const val TYPE_POOL_START = "pool_start"
+    private const val TYPE_POOL_END = "pool_end"
+    private const val TYPE_CALENDAR_CHANGE = "calendar_change"
+    private const val TYPE_POOL_CHANGE = "pool_change"
 
     private fun <T> Sequence<T>.toReminderGroups(
         serverIndex: Int,
@@ -263,6 +328,18 @@ internal data class BaReminderEventGroup<T>(
     val entries: List<T>,
     val keys: List<String>
 )
+
+internal data class BaReminderKeyParts(
+    val serverIndex: Int,
+    val type: String,
+    val id: Int,
+    val atMs: Long,
+    val leadHours: Int,
+    val encoded: String
+) {
+    val isChangeKey: Boolean
+        get() = type == "calendar_change" || type == "pool_change"
+}
 
 private data class BaReminderEvent<T>(
     val entry: T,

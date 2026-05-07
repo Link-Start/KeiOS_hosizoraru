@@ -9,7 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import os.kei.R
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeRepository
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
@@ -242,13 +242,9 @@ internal fun List<BaGuideCatalogEntry>.filterByQuery(query: String): List<BaGuid
 }
 
 private fun fetchRawEntriesByPid(pid: Int): List<RawEntry> {
-    val body = GameKeeFetchHelper.fetchJson(
-        pathOrUrl = "/v1/entry/treesByPid?pid=$pid",
-        refererPath = BA_GUIDE_INDEX_REFERER_PATH,
-        extraHeaders = mapOf(
-            "device-num" to "1",
-            "game-alias" to "ba"
-        )
+    val body = GameKeeRepository.fetchBaCatalogTreeJson(
+        pid = pid,
+        refererPath = BA_GUIDE_INDEX_REFERER_PATH
     )
     val root = JSONObject(body)
     if (root.optInt("code", -1) != 0) {

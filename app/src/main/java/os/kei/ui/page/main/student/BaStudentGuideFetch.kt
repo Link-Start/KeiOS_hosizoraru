@@ -2,7 +2,7 @@ package os.kei.ui.page.main.student
 
 import androidx.core.net.toUri
 import org.json.JSONObject
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeRepository
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.extractMeta
 import os.kei.ui.page.main.student.fetch.extractStatsFromHtml
@@ -22,13 +22,9 @@ private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
         .getOrDefault("/ba/tj/$contentId.html")
         .ifBlank { "/ba/tj/$contentId.html" }
 
-    val body = GameKeeFetchHelper.fetchJson(
-        pathOrUrl = "/v1/content/detail/$contentId",
-        refererPath = refererPath,
-        extraHeaders = mapOf(
-            "device-num" to "1",
-            "game-alias" to "ba"
-        )
+    val body = GameKeeRepository.fetchBaContentDetailJson(
+        contentId = contentId,
+        refererPath = refererPath
     )
     val root = JSONObject(body)
     if (root.optInt("code", -1) != 0) {
@@ -89,7 +85,7 @@ private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
 private fun fetchGuideInfoFromHtml(sourceUrl: String): BaStudentGuideInfo {
     val target = normalizeGuideUrl(sourceUrl)
     require(target.isNotBlank()) { "empty url" }
-    val html = GameKeeFetchHelper.fetchHtml(
+    val html = GameKeeRepository.fetchHtml(
         pathOrUrl = target,
         refererPath = "/ba/"
     )

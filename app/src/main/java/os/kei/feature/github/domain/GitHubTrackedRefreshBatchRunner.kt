@@ -21,11 +21,19 @@ internal data class GitHubTrackedRefreshBatchResult(
     val refreshTimestampMs: Long,
     val updatableCount: Int,
     val preReleaseUpdateCount: Int,
-    val failedCount: Int
+    val failedCount: Int,
+    val performance: GitHubTrackedRefreshBatchPerformance = GitHubTrackedRefreshBatchPerformance()
 ) {
     val hasNotifiableOutcome: Boolean
         get() = updatableCount > 0 || preReleaseUpdateCount > 0 || failedCount > 0
 }
+
+internal data class GitHubTrackedRefreshBatchPerformance(
+    val elapsedMs: Long = 0L,
+    val p50ItemMs: Long = 0L,
+    val p95ItemMs: Long = 0L,
+    val maxItemMs: Long = 0L
+)
 
 internal object GitHubTrackedRefreshBatchRunner {
     suspend fun run(
@@ -60,17 +68,25 @@ internal object GitHubTrackedRefreshBatchRunner {
                 refreshTimestampMs = refreshTimestampMs,
                 updatableCount = 0,
                 preReleaseUpdateCount = 0,
-                failedCount = 0
+                failedCount = 0,
+                performance = GitHubTrackedRefreshBatchPerformance()
             )
         }
 
+        val batchStartNs = System.nanoTime()
         val semaphore = Semaphore(maxConcurrency.coerceAtLeast(1))
         val checks = coroutineScope {
             trackedItems.map { item ->
                 async(dispatcher) {
-                    item to semaphore.withPermit {
-                        runCatching { evaluator(item) }
+                    semaphore.withPermit {
+                        val itemStartNs = System.nanoTime()
+                        val check = runCatching { evaluator(item) }
                             .getOrElse { error -> failedCheck(error) }
+                        GitHubTrackedRefreshItemResult(
+                            item = item,
+                            check = check,
+                            elapsedMs = elapsedMsSince(itemStartNs)
+                        )
                     }
                 }
             }.awaitAll()
@@ -80,7 +96,9 @@ internal object GitHubTrackedRefreshBatchRunner {
         var preReleaseUpdateCount = 0
         var failedCount = 0
         val cacheEntries = LinkedHashMap<String, GitHubCheckCacheEntry>(trackedItems.size)
-        checks.forEach { (item, check) ->
+        checks.forEach { result ->
+            val item = result.item
+            val check = result.check
             if (check.hasUpdate == true) updatableCount += 1
             if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
             if (check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
@@ -93,8 +111,36 @@ internal object GitHubTrackedRefreshBatchRunner {
             refreshTimestampMs = refreshTimestampMs,
             updatableCount = updatableCount,
             preReleaseUpdateCount = preReleaseUpdateCount,
-            failedCount = failedCount
+            failedCount = failedCount,
+            performance = buildPerformance(
+                batchStartNs = batchStartNs,
+                itemElapsedMs = checks.map { it.elapsedMs }
+            )
         )
+    }
+
+    private fun buildPerformance(
+        batchStartNs: Long,
+        itemElapsedMs: List<Long>
+    ): GitHubTrackedRefreshBatchPerformance {
+        val sorted = itemElapsedMs.sorted()
+        return GitHubTrackedRefreshBatchPerformance(
+            elapsedMs = elapsedMsSince(batchStartNs),
+            p50ItemMs = percentile(sorted, 50),
+            p95ItemMs = percentile(sorted, 95),
+            maxItemMs = sorted.lastOrNull() ?: 0L
+        )
+    }
+
+    private fun percentile(sorted: List<Long>, percentile: Int): Long {
+        if (sorted.isEmpty()) return 0L
+        val index = (((sorted.size * percentile.coerceIn(1, 100)) + 99) / 100 - 1)
+            .coerceIn(0, sorted.lastIndex)
+        return sorted[index]
+    }
+
+    private fun elapsedMsSince(startNs: Long): Long {
+        return ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
     }
 
     private fun failedCheck(error: Throwable): GitHubTrackedReleaseCheck {
@@ -108,4 +154,10 @@ internal object GitHubTrackedRefreshBatchRunner {
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
         )
     }
+
+    private data class GitHubTrackedRefreshItemResult(
+        val item: GitHubTrackedApp,
+        val check: GitHubTrackedReleaseCheck,
+        val elapsedMs: Long
+    )
 }

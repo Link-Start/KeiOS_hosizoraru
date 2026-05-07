@@ -3,8 +3,8 @@ package os.kei.core.system
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
-import os.kei.core.log.AppLogger
 import kotlinx.coroutines.suspendCancellableCoroutine
+import os.kei.core.log.AppLogger
 import rikka.shizuku.Shizuku
 import java.io.InputStream
 import java.lang.reflect.Method
@@ -140,27 +140,95 @@ class ShizukuApiUtils(
         return resolveRuntimeState().commandReady
     }
 
-    fun execCommand(command: String, timeoutMs: Long = 2000L): String? {
-        if (!canUseCommand()) return null
-        val process = createShellProcess(command) ?: return null
+    fun execCommandResult(command: String, timeoutMs: Long = 2000L): AppCommandResult {
+        val normalizedCommand = command.trim()
+        if (normalizedCommand.isBlank()) {
+            return AppCommandResult(
+                stdout = "",
+                stderr = "",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+        if (!canUseCommand()) {
+            return AppCommandResult(
+                stdout = "",
+                stderr = currentStatus(),
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+        val process = createShellProcess(normalizedCommand)
+            ?: return AppCommandResult(
+                stdout = "",
+                stderr = "Shizuku process unavailable",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
         return runCatching {
-            executeProcessAndRead(process = process, timeoutMs = timeoutMs)
+            executeProcess(process = process, timeoutMs = timeoutMs)
         }.onFailure {
             AppLogger.w(
                 TAG,
                 "execCommand failed: ${it.javaClass.simpleName}${it.message?.let { msg -> ": $msg" }.orEmpty()}"
             )
-        }.getOrNull()
+        }.getOrElse { error ->
+            AppCommandResult(
+                stdout = "",
+                stderr = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
     }
 
-    suspend fun execCommandCancellable(command: String, timeoutMs: Long = 2000L): String? {
-        if (!canUseCommand()) return null
-        val process = createShellProcess(command) ?: return null
+    fun execCommand(command: String, timeoutMs: Long = 2000L): String? {
+        val result = execCommandResult(command = command, timeoutMs = timeoutMs)
+        if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
+        return result.combinedOutput().ifBlank { null }
+    }
+
+    suspend fun execCommandCancellableResult(
+        command: String,
+        timeoutMs: Long = 2000L
+    ): AppCommandResult {
+        val normalizedCommand = command.trim()
+        if (normalizedCommand.isBlank()) {
+            return AppCommandResult(
+                stdout = "",
+                stderr = "",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+        if (!canUseCommand()) {
+            return AppCommandResult(
+                stdout = "",
+                stderr = currentStatus(),
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+        val process = createShellProcess(normalizedCommand)
+            ?: return AppCommandResult(
+                stdout = "",
+                stderr = "Shizuku process unavailable",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
 
         return suspendCancellableCoroutine { continuation ->
             val worker = Thread(
                 {
-                    val result = runCatching { executeProcessAndRead(process = process, timeoutMs = timeoutMs) }
+                    val result =
+                        runCatching { executeProcess(process = process, timeoutMs = timeoutMs) }
                     if (!continuation.isActive) return@Thread
                     result.onSuccess { output ->
                         continuation.resume(output)
@@ -178,6 +246,12 @@ class ShizukuApiUtils(
                 runCatching { worker.interrupt() }
             }
         }
+    }
+
+    suspend fun execCommandCancellable(command: String, timeoutMs: Long = 2000L): String? {
+        val result = execCommandCancellableResult(command = command, timeoutMs = timeoutMs)
+        if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
+        return result.combinedOutput().ifBlank { null }
     }
 
     private fun createShellProcess(command: String): Process? {
@@ -226,7 +300,7 @@ class ShizukuApiUtils(
         )
     }
 
-    private fun executeProcessAndRead(process: Process, timeoutMs: Long): String? {
+    private fun executeProcess(process: Process, timeoutMs: Long): AppCommandResult {
         val stdout = StringBuilder()
         val stderr = StringBuilder()
         val stdoutReader = startStreamCollector(
@@ -264,14 +338,24 @@ class ShizukuApiUtils(
             }
             stdoutReader.join(300)
             stderrReader.join(300)
-            val partialOutput = stdout.toString().trim().ifBlank { stderr.toString().trim() }
-            if (partialOutput.isNotBlank()) return partialOutput
-            throw IllegalStateException("command timed out after ${timeoutMs}ms")
+            return AppCommandResult(
+                stdout = stdout.toString().trim(),
+                stderr = stderr.toString().trim(),
+                exitCode = null,
+                timedOut = true,
+                cancelled = false
+            )
         }
         waitThrowable?.let { throw it }
         stdoutReader.join(600)
         stderrReader.join(600)
-        return stdout.toString().trim().ifBlank { stderr.toString().trim() }.ifBlank { null }
+        return AppCommandResult(
+            stdout = stdout.toString().trim(),
+            stderr = stderr.toString().trim(),
+            exitCode = process.exitValue(),
+            timedOut = false,
+            cancelled = false
+        )
     }
 
     private fun startStreamCollector(

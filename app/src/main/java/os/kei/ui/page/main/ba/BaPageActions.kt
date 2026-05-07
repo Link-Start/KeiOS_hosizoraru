@@ -141,6 +141,15 @@ internal fun persistBaNotificationSettingsDraft(
     BASettingsStore.saveCalendarPoolChangeNotifyEnabled(sheetState.calendarPoolChangeNotifyEnabled)
     BASettingsStore.saveCalendarPoolNotifyLeadHours(sheetState.calendarPoolNotifyLeadHours)
     BASettingsStore.saveApNotifyThreshold(savedThreshold)
+    BASettingsStore.pruneCalendarPoolNotifiedKeysForPolicy(
+        serverIndex = BASettingsStore.loadServerIndex(),
+        leadHours = sheetState.calendarPoolNotifyLeadHours,
+        calendarUpcomingEnabled = sheetState.calendarUpcomingNotifyEnabled,
+        calendarEndingEnabled = sheetState.calendarEndingNotifyEnabled,
+        poolUpcomingEnabled = sheetState.poolUpcomingNotifyEnabled,
+        poolEndingEnabled = sheetState.poolEndingNotifyEnabled,
+        calendarPoolChangeEnabled = sheetState.calendarPoolChangeNotifyEnabled
+    )
 
     return BaNotificationSettingsPersistenceResult(
         savedThreshold = savedThreshold,

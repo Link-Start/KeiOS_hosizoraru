@@ -35,8 +35,9 @@ internal fun BindSettingsLogExportAction(
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                val reason = result.exceptionOrNull()?.javaClass?.simpleName
-                    ?: context.getString(R.string.common_unknown)
+                val reason = result.errorPreview.ifBlank {
+                    context.getString(R.string.common_unknown)
+                }
                 Toast.makeText(
                     context,
                     context.getString(R.string.settings_log_toast_export_failed, reason),

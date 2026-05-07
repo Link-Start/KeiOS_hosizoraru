@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogStore
 import os.kei.core.prefs.CacheEntrySummary
 import kotlin.time.Duration.Companion.milliseconds
@@ -153,7 +154,7 @@ internal class SettingsPageViewModel : ViewModel() {
     suspend fun exportLogZip(
         context: Context,
         uri: Uri
-    ): Result<Unit> {
+    ): ExportJobResult {
         return repository.exportLogZip(
             context = context.applicationContext,
             uri = uri

@@ -59,4 +59,34 @@ class RuntimeCommandExecutorTest {
         assertTrue(result.stderr.contains("__keios_missing_command__"))
         assertFalse(result.succeeded)
     }
+
+    @Test
+    fun `app command result prefers stdout for combined output`() {
+        val stdoutResult = AppCommandResult(
+            stdout = "out",
+            stderr = "err",
+            exitCode = 0,
+            timedOut = false
+        )
+        val stderrResult = AppCommandResult(
+            stdout = "",
+            stderr = "err",
+            exitCode = 7,
+            timedOut = false
+        )
+
+        assertEquals("out", stdoutResult.combinedOutput())
+        assertEquals("err", stderrResult.combinedOutput())
+    }
+
+    @Test
+    fun `app command executor returns empty result for blank commands`() {
+        val result = AppCommandExecutor.execute("   ", timeoutMs = 1_000L)
+
+        assertEquals("", result.stdout)
+        assertEquals("", result.stderr)
+        assertNull(result.exitCode)
+        assertFalse(result.timedOut)
+        assertFalse(result.succeeded)
+    }
 }

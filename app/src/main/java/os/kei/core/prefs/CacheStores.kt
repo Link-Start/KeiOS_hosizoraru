@@ -1,12 +1,13 @@
 package os.kei.core.prefs
 
 import android.content.Context
+import com.tencent.mmkv.MMKV
 import os.kei.R
+import os.kei.core.system.AppBuildEnv
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
-import os.kei.core.system.AppBuildEnv
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BaCalendarPoolImageCache
 import os.kei.ui.page.main.ba.support.BASettingsStore
@@ -16,12 +17,11 @@ import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.OsUiStateStore
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaStudentGuideStore
-import os.kei.ui.page.main.student.clearGameKeeMediaPlaybackCache
-import os.kei.ui.page.main.student.loadGameKeeMediaCacheDiagnostics
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.clearBaGuideCatalogCache
-import com.tencent.mmkv.MMKV
+import os.kei.ui.page.main.student.clearGameKeeMediaPlaybackCache
+import os.kei.ui.page.main.student.loadGameKeeMediaCacheDiagnostics
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,7 +42,8 @@ internal data class CacheEntrySummary(
     val diskBytes: Long = 0L,
     val memoryBytes: Long = 0L,
     val updatedAtMs: Long = 0L,
-    val clearedAtMs: Long = 0L
+    val clearedAtMs: Long = 0L,
+    val freshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty
 )
 
 internal object CacheStores {
@@ -130,7 +131,12 @@ internal object CacheStores {
             diskBytes = diskBytes,
             memoryBytes = memoryBytes,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = cacheBytes + configBytes,
+                rebuildable = true
+            )
         )
     }
 
@@ -174,7 +180,13 @@ internal object CacheStores {
             diskBytes = GitHubTrackStore.actualDataBytes(),
             memoryBytes = iconMemory,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = GitHubTrackStore.cacheBytesEstimated() + GitHubTrackStore.configBytesEstimated(),
+                rebuildable = true,
+                ttlMs = snapshot.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
+            )
         )
     }
 
@@ -216,7 +228,13 @@ internal object CacheStores {
             configBytes = BASettingsStore.configBytesEstimated(),
             diskBytes = BASettingsStore.actualDataBytes() + mediaBytes,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = mergedCacheBytes + BASettingsStore.configBytesEstimated(),
+                rebuildable = true,
+                ttlMs = snapshot.calendarRefreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
+            )
         )
     }
 
@@ -259,7 +277,12 @@ internal object CacheStores {
             configBytes = configBytes,
             diskBytes = diskBytes,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = cacheBytes + configBytes,
+                rebuildable = true
+            )
         )
     }
 
@@ -292,7 +315,12 @@ internal object CacheStores {
             configBytes = configBytes,
             diskBytes = OsInfoCache.actualDataBytes() + OsUiStateStore.actualDataBytes(),
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = cacheBytes + configBytes,
+                rebuildable = true
+            )
         )
     }
 
@@ -317,7 +345,12 @@ internal object CacheStores {
             configBytes = 0L,
             memoryBytes = memoryBytes,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = memoryBytes,
+                rebuildable = true
+            )
         )
     }
 
@@ -343,7 +376,12 @@ internal object CacheStores {
             configBytes = 0L,
             diskBytes = diskBytes,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = diskBytes,
+                rebuildable = true
+            )
         )
     }
 
@@ -382,7 +420,12 @@ internal object CacheStores {
             configBytes = 0L,
             diskBytes = diagnostics.diskBytes,
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = diagnostics.diskBytes,
+                rebuildable = true
+            )
         )
     }
 
@@ -412,7 +455,12 @@ internal object CacheStores {
             configBytes = 0L,
             diskBytes = stats.totalBytes,
             updatedAtMs = stats.latestModifiedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = stats.latestModifiedAtMs,
+                bytes = stats.totalBytes,
+                rebuildable = false
+            )
         )
     }
 
@@ -437,7 +485,26 @@ internal object CacheStores {
             configBytes = McpServerManager.configBytesEstimated(),
             diskBytes = McpServerManager.actualDataBytes(),
             updatedAtMs = updatedAtMs,
-            clearedAtMs = clearedAtMs
+            clearedAtMs = clearedAtMs,
+            freshness = freshness(
+                updatedAtMs = updatedAtMs,
+                bytes = McpServerManager.configBytesEstimated(),
+                rebuildable = true
+            )
+        )
+    }
+
+    private fun freshness(
+        updatedAtMs: Long,
+        bytes: Long,
+        rebuildable: Boolean,
+        ttlMs: Long? = null
+    ): CacheFreshnessSnapshot {
+        return CacheFreshnessSnapshot.from(
+            lastUpdatedAtMs = updatedAtMs,
+            bytes = bytes,
+            rebuildable = rebuildable,
+            ttlMs = ttlMs
         )
     }
 

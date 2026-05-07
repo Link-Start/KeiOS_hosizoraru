@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba.support
 
 import com.tencent.mmkv.MMKV
+import os.kei.ui.page.main.ba.BaReminderCoordinator
 
 internal object BASettingsStore {
     private const val KV_ID = "ba_page_settings"
@@ -281,6 +282,7 @@ internal object BASettingsStore {
     fun loadServerIndex(): Int = kv().decodeInt(KEY_SERVER_INDEX, DEFAULT_SERVER_INDEX).coerceIn(0, 2)
     fun saveServerIndex(index: Int) {
         kv().encode(KEY_SERVER_INDEX, index.coerceIn(0, 2))
+        pruneCalendarPoolNotifiedKeysForCurrentPolicy()
     }
 
     fun loadCafeLevel(): Int = kv().decodeInt(KEY_CAFE_LEVEL, DEFAULT_CAFE_LEVEL).coerceIn(1, 10)
@@ -437,6 +439,57 @@ internal object BASettingsStore {
         if (normalized.isBlank()) return
         val keys = (loadCalendarPoolNotifiedKeys() + normalized).toList().takeLast(500)
         kv().encode(KEY_CALENDAR_POOL_NOTIFIED_KEYS, keys.joinToString(separator = "\n"))
+    }
+
+    fun replaceCalendarPoolNotifiedKeys(keys: Set<String>) {
+        val normalized = keys
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .takeLast(500)
+        if (normalized.isEmpty()) {
+            kv().removeValueForKey(KEY_CALENDAR_POOL_NOTIFIED_KEYS)
+            return
+        }
+        kv().encode(KEY_CALENDAR_POOL_NOTIFIED_KEYS, normalized.joinToString(separator = "\n"))
+    }
+
+    fun pruneCalendarPoolNotifiedKeysForCurrentPolicy() {
+        val snapshot = loadSnapshot()
+        pruneCalendarPoolNotifiedKeysForPolicy(
+            serverIndex = snapshot.serverIndex,
+            leadHours = snapshot.calendarPoolNotifyLeadHours,
+            calendarUpcomingEnabled = snapshot.calendarUpcomingNotifyEnabled,
+            calendarEndingEnabled = snapshot.calendarEndingNotifyEnabled,
+            poolUpcomingEnabled = snapshot.poolUpcomingNotifyEnabled,
+            poolEndingEnabled = snapshot.poolEndingNotifyEnabled,
+            calendarPoolChangeEnabled = snapshot.calendarPoolChangeNotifyEnabled
+        )
+    }
+
+    fun pruneCalendarPoolNotifiedKeysForPolicy(
+        serverIndex: Int,
+        leadHours: Int,
+        calendarUpcomingEnabled: Boolean,
+        calendarEndingEnabled: Boolean,
+        poolUpcomingEnabled: Boolean,
+        poolEndingEnabled: Boolean,
+        calendarPoolChangeEnabled: Boolean
+    ) {
+        val current = loadCalendarPoolNotifiedKeys()
+        val retained = BaReminderCoordinator.retainNotifiedKeysForPolicy(
+            keys = current,
+            serverIndex = serverIndex,
+            leadHours = leadHours,
+            calendarUpcomingEnabled = calendarUpcomingEnabled,
+            calendarEndingEnabled = calendarEndingEnabled,
+            poolUpcomingEnabled = poolUpcomingEnabled,
+            poolEndingEnabled = poolEndingEnabled,
+            calendarPoolChangeEnabled = calendarPoolChangeEnabled
+        )
+        if (retained != current) {
+            replaceCalendarPoolNotifiedKeys(retained)
+        }
     }
 
     fun loadApCurrent(): Double {

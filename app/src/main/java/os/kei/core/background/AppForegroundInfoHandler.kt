@@ -1,22 +1,23 @@
 package os.kei.core.background
 
 import android.content.Context
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.domain.GitHubReleaseCheckService
-import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
-import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
-import os.kei.ui.page.main.ba.support.BASettingsStore
-import os.kei.ui.page.main.ba.BaApReminderPlan
-import os.kei.ui.page.main.ba.BaApNotificationDispatcher
-import os.kei.ui.page.main.ba.BaArenaRefreshNotificationDispatcher
-import os.kei.ui.page.main.ba.BaCafeVisitNotificationDispatcher
-import os.kei.ui.page.main.ba.BaReminderCoordinator
-import os.kei.ui.page.main.ba.BaSlotReminderPlan
-import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import os.kei.core.log.AppLogger
+import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
+import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
+import os.kei.ui.page.main.ba.BaApNotificationDispatcher
+import os.kei.ui.page.main.ba.BaApReminderPlan
+import os.kei.ui.page.main.ba.BaArenaRefreshNotificationDispatcher
+import os.kei.ui.page.main.ba.BaCafeVisitNotificationDispatcher
+import os.kei.ui.page.main.ba.BaReminderCoordinator
+import os.kei.ui.page.main.ba.BaSlotReminderPlan
+import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 object AppForegroundInfoHandler {
     private val githubTickMutex = Mutex()
@@ -42,6 +43,12 @@ object AppForegroundInfoHandler {
             ) { item ->
                 GitHubReleaseCheckService.evaluateTrackedApp(context, item)
             }
+            AppLogger.d(
+                "AppForegroundInfoHandler",
+                "github tick refreshed total=${result.totalCount} elapsed=${result.performance.elapsedMs}ms " +
+                        "p50=${result.performance.p50ItemMs}ms p95=${result.performance.p95ItemMs}ms " +
+                        "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}"
+            )
 
             withContext(Dispatchers.IO) {
                 GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)

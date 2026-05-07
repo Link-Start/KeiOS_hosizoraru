@@ -1,12 +1,12 @@
 package os.kei.ui.page.main.ba
 
+import org.junit.Test
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -166,6 +166,82 @@ class BaReminderCoordinatorTest {
         )
 
         assertEquals("2|pool_change|3|0|0", key)
+    }
+
+    @Test
+    fun `notified key policy clears disabled server and stale lead keys`() {
+        val keptCalendar = BaReminderKey(
+            serverIndex = 1,
+            type = "calendar_start",
+            id = 10,
+            atMs = NOW_MS,
+            leadHours = 6
+        ).encode()
+        val staleLead = BaReminderKey(
+            serverIndex = 1,
+            type = "calendar_end",
+            id = 11,
+            atMs = NOW_MS,
+            leadHours = 12
+        ).encode()
+        val otherServer = BaReminderKey(
+            serverIndex = 2,
+            type = "pool_start",
+            id = 12,
+            atMs = NOW_MS,
+            leadHours = 6
+        ).encode()
+        val keptChange = BaReminderKey(
+            serverIndex = 1,
+            type = "pool_change",
+            id = 2,
+            atMs = NOW_MS,
+            leadHours = 0
+        ).encode()
+
+        val retained = BaReminderCoordinator.retainNotifiedKeysForPolicy(
+            keys = setOf(keptCalendar, staleLead, otherServer, keptChange, "broken"),
+            serverIndex = 1,
+            leadHours = 6,
+            calendarUpcomingEnabled = true,
+            calendarEndingEnabled = true,
+            poolUpcomingEnabled = true,
+            poolEndingEnabled = false,
+            calendarPoolChangeEnabled = true
+        )
+
+        assertEquals(setOf(keptCalendar, keptChange), retained)
+    }
+
+    @Test
+    fun `notified key policy clears all keys when calendar pool notifications are disabled`() {
+        val retained = BaReminderCoordinator.retainNotifiedKeysForPolicy(
+            keys = setOf(
+                BaReminderKey(
+                    serverIndex = 1,
+                    type = "calendar_start",
+                    id = 10,
+                    atMs = NOW_MS,
+                    leadHours = 6
+                ).encode(),
+                BaReminderKey(
+                    serverIndex = 1,
+                    type = "calendar_change",
+                    id = 1,
+                    atMs = NOW_MS,
+                    leadHours = 0
+                ).encode()
+            ),
+            serverIndex = 1,
+            leadHours = 6,
+            calendarUpcomingEnabled = false,
+            calendarEndingEnabled = false,
+            poolUpcomingEnabled = false,
+            poolEndingEnabled = false,
+            calendarPoolChangeEnabled = false
+        )
+
+        assertTrue(retained.isEmpty())
     }
 
     private fun calendarEntry(

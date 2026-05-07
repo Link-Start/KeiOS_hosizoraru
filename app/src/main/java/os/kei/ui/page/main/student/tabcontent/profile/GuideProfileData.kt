@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.tabcontent.profile
 
 import androidx.core.net.toUri
-import os.kei.feature.ba.data.remote.GameKeeFetchHelper
+import os.kei.feature.ba.data.remote.GameKeeRepository
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.util.concurrent.ConcurrentHashMap
 
@@ -50,7 +50,7 @@ internal fun resolveProfileLinkTitle(url: String): String {
 
 internal fun fetchProfileLinkTitle(url: String): String {
     if (url.isBlank()) return ""
-    val html = GameKeeFetchHelper.fetchHtml(
+    val html = GameKeeRepository.fetchHtml(
         pathOrUrl = url,
         refererPath = "/ba/"
     )

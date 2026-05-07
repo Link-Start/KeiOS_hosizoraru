@@ -2,10 +2,10 @@ package os.kei.feature.github.domain
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
-import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -51,6 +51,8 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(2, result.updatableCount)
         assertEquals(1, result.preReleaseUpdateCount)
         assertEquals(1, result.failedCount)
+        assertTrue(result.performance.elapsedMs > 0L)
+        assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
         assertTrue(result.hasNotifiableOutcome)
     }
 
@@ -71,6 +73,37 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(1, result.failedCount)
         assertTrue(entry.message.contains("network unavailable"))
         assertTrue(result.hasNotifiableOutcome)
+    }
+
+    @Test
+    fun `run exposes performance evidence for 30 and 100 item fixtures`() = runBlocking {
+        listOf(30, 100).forEach { count ->
+            val result = GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = (1..count).map { index -> tracked(index) },
+                maxConcurrency = 8,
+                dispatcher = Dispatchers.Default,
+                refreshTimestampMs = NOW_MS
+            ) { item ->
+                Thread.sleep((item.repo.removePrefix("repo-").toInt() % 3 + 5).toLong())
+                check(
+                    status = when {
+                        item.repo.endsWith("7") -> GitHubTrackedReleaseStatus.Failed
+                        item.repo.endsWith("3") -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
+                        item.repo.endsWith("1") -> GitHubTrackedReleaseStatus.UpdateAvailable
+                        else -> GitHubTrackedReleaseStatus.UpToDate
+                    },
+                    hasUpdate = item.repo.endsWith("1") || item.repo.endsWith("3"),
+                    hasPreReleaseUpdate = item.repo.endsWith("3")
+                )
+            }
+
+            assertEquals(count, result.totalCount)
+            assertEquals(count, result.cacheEntries.size)
+            assertTrue(result.performance.elapsedMs > 0L)
+            assertTrue(result.performance.p50ItemMs > 0L)
+            assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
+            assertTrue(result.performance.maxItemMs >= result.performance.p95ItemMs)
+        }
     }
 
     private fun tracked(index: Int): GitHubTrackedApp {

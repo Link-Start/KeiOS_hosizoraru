@@ -5,6 +5,7 @@ import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogStore
 import os.kei.core.prefs.CacheEntrySummary
 import os.kei.core.prefs.CacheStores
@@ -52,9 +53,23 @@ internal class SettingsPageRepository(
     suspend fun exportLogZip(
         context: Context,
         uri: Uri
-    ): Result<Unit> {
+    ): ExportJobResult {
         return withContext(ioDispatcher) {
+            val fileName = uri.lastPathSegment
+                ?.substringAfterLast('/')
+                ?.trim()
+                .orEmpty()
+                .ifBlank { "keios-logs.zip" }
             AppLogStore.exportZipToUri(context, uri)
+                .fold(
+                    onSuccess = { ExportJobResult.success(fileName = fileName) },
+                    onFailure = { error ->
+                        ExportJobResult.failure(
+                            fileName = fileName,
+                            error = error
+                        )
+                    }
+                )
         }
     }
 

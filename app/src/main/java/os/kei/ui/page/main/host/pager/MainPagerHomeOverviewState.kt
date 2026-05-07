@@ -21,7 +21,6 @@ import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.HomeOverviewSnapshot
-import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.mcp.server.McpServerManager
 
 internal data class MainPagerHomeOverviewState(
@@ -118,7 +117,7 @@ internal fun rememberMainPagerHomeOverviewState(
             homeMcpOverview = uiState.mcpOverview,
             homeGitHubOverview = uiState.githubOverview,
             homeBaOverview = uiState.baOverview,
-            visibleOverviewCards = uiState.visibleOverviewCards.ifEmpty { defaultHomeOverviewCards() },
+            visibleOverviewCards = uiState.visibleOverviewCards,
             showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,
             onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
             onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange

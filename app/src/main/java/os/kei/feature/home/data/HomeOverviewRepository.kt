@@ -165,14 +165,15 @@ private fun buildTokenPreview(token: String): String {
 
 private fun loadHomeVisibleOverviewCards(): Set<HomeOverviewCard> {
     val kv = MMKV.mmkvWithID(HOME_PAGE_PREFS_KV_ID)
+    if (!kv.containsKey(HOME_VISIBLE_OVERVIEW_CARDS_KEY)) return defaultHomeOverviewCards()
     val raw = kv.decodeString(HOME_VISIBLE_OVERVIEW_CARDS_KEY, "").orEmpty().trim()
-    if (raw.isBlank()) return defaultHomeOverviewCards()
+    if (raw.isBlank()) return emptySet()
     val parsed = raw.split(',')
         .mapNotNull { name ->
             HomeOverviewCard.entries.firstOrNull { it.name == name.trim() }
         }
         .toSet()
-    return parsed.ifEmpty { defaultHomeOverviewCards() }
+    return parsed
 }
 
 private fun saveHomeVisibleOverviewCards(cards: Set<HomeOverviewCard>) {

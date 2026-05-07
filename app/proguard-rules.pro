@@ -38,7 +38,7 @@
 # focus-api ships without consumer rules. Keep only the payload contract that HyperOS reads:
 # 1) kotlinx.serialization entry points for miui.focus.param JSON
 # 2) sealed factory names because their fully qualified subclass names become the JSON "type"
-# 3) template fields used by declaredFields copy helpers
+# 3) template/model fields used by declaredFields copy helpers and serializer-generated JSON
 # This keeps the Bundle/JSON schema stable while letting R8 shrink and optimize unused helpers.
 -keepnames class com.xzakota.hyper.notification.focus.FocusNotification
 -keepnames class com.xzakota.hyper.notification.focus.FocusNotification$FocusTemplateFactory
@@ -61,10 +61,24 @@
 -keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.CustomFocusTemplateV3 {
     <fields>;
 }
+-keepclassmembers,allowoptimization class com.xzakota.hyper.notification.focus.model.** {
+    <fields>;
+}
+-keepclassmembers,allowoptimization class com.xzakota.hyper.notification.island.model.** {
+    <fields>;
+}
+-keepclassmembers,allowoptimization class com.xzakota.hyper.notification.island.template.** {
+    <fields>;
+}
+-keepclassmembers,allowoptimization class com.xzakota.hyper.notification.common.model.** {
+    <fields>;
+}
 
-# Keep notification boundary class names readable for release-only payload debugging.
-# Their members stay optimizable because the system consumes the Focus extras, not these helpers.
--keepnames class os.kei.core.notification.focus.MiFocusNotificationTemplate
+# Keep the project Super Island facade readable for release-only payload debugging.
+# Specs are internal Kotlin data/sealed types, but stable names make mapping and focus payload
+# diagnosis much faster when adding future templates. Members stay optimizable because HyperOS
+# consumes the serialized focus-api payload, not these facade classes directly.
+-keepnames class os.kei.core.notification.focus.**
 -keepnames class os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder
 -keepnames class os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 -keepnames class os.kei.feature.github.notification.GitHubShareImportNotificationHelper

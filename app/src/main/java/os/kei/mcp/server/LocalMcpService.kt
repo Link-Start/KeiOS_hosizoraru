@@ -17,10 +17,13 @@ class LocalMcpService(
     appLabel: String
 ) {
     @Volatile
-    private var cachedServer: Server? = null
+    private var activeServer: Server? = null
 
     @Volatile
     private var mcpStateProvider: (() -> McpServerUiState)? = null
+
+    @Volatile
+    private var toolCallLogger: ((name: String, elapsedMs: Long, success: Boolean, error: String?) -> Unit)? = null
 
     private val environment = McpToolEnvironment(
         appContext = appContext,
@@ -29,7 +32,10 @@ class LocalMcpService(
         appVersionCode = appVersionCode,
         appPackageName = appPackageName,
         appLabel = appLabel,
-        stateProvider = { mcpStateProvider?.invoke() }
+        stateProvider = { mcpStateProvider?.invoke() },
+        toolCallLogger = { name, elapsedMs, success, error ->
+            toolCallLogger?.invoke(name, elapsedMs, success, error)
+        }
     )
     private val runtimeTools = McpRuntimeTools(environment)
     private val skillContent = McpSkillContent(environment, runtimeTools::buildRuntimeConfigJson)
@@ -47,11 +53,26 @@ class LocalMcpService(
         mcpStateProvider = provider
     }
 
-    fun getOrCreateServer(): Server {
-        cachedServer?.let { return it }
-        val created = createServer()
-        cachedServer = created
-        return created
+    fun bindToolCallLogger(
+        logger: (name: String, elapsedMs: Long, success: Boolean, error: String?) -> Unit
+    ) {
+        toolCallLogger = logger
+    }
+
+    fun createRuntimeServer(): Server {
+        val server = createServer()
+        activeServer = server
+        return server
+    }
+
+    fun currentRuntimeServer(): Server? {
+        return activeServer
+    }
+
+    fun clearRuntimeServer(server: Server) {
+        if (activeServer === server) {
+            activeServer = null
+        }
     }
 
     fun getSkillMarkdownForUi(): String {
@@ -91,7 +112,6 @@ class LocalMcpService(
     }
 
     private fun currentLocale(): Locale {
-        val configuration = environment.appContext.resources.configuration
-        return configuration.locales[0] ?: Locale.getDefault()
+        return environment.currentLocale()
     }
 }

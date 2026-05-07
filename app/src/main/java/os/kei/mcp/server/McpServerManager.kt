@@ -1,16 +1,6 @@
 package os.kei.mcp.server
 
 import android.content.Context
-import com.tencent.mmkv.MMKV
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCallPipeline
-import io.ktor.server.cio.CIO
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.request.path
-import io.ktor.server.response.respond
-import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,24 +11,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import os.kei.R
-import os.kei.core.log.AppLogger
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.service.McpKeepAliveService
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
-import java.security.SecureRandom
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
-
-data class McpLogEntry(
-    val time: String,
-    val level: String,
-    val message: String
-)
 
 data class McpServerUiState(
     val running: Boolean = false,
@@ -62,24 +41,13 @@ data class McpServerUiState(
         get() = addresses.map { "http://$it:$port$endpointPath" }
 }
 
-private data class McpPrefsSnapshot(
-    val authToken: String = "",
-    val serverName: String = "KeiOS MCP",
-    val port: Int = 38888,
-    val allowExternal: Boolean = false
-)
-
 class McpServerManager(
     private val appContext: Context,
     private val localMcpService: LocalMcpService
 ) {
     companion object {
-        private const val TAG = "McpServerManager"
-        private const val DEFAULT_SERVER_NAME = "KeiOS MCP"
-        private const val DEFAULT_PORT = 38888
-
         fun loadSavedCacheSummary(context: Context): String {
-            val snapshot = Prefs.loadSnapshot()
+            val snapshot = McpServerPrefs.loadSnapshot()
             val tokenState = context.getString(
                 if (snapshot.authToken.isBlank()) {
                     R.string.settings_cache_entry_mcp_token_empty
@@ -103,101 +71,27 @@ class McpServerManager(
         }
 
         fun clearSavedCacheOnly() {
-            Prefs.clear()
+            McpServerPrefs.clear()
         }
 
-        fun storageFootprintBytes(): Long = Prefs.storageFootprintBytes()
+        fun storageFootprintBytes(): Long = McpServerPrefs.storageFootprintBytes()
 
-        fun actualDataBytes(): Long = Prefs.actualDataBytes()
+        fun actualDataBytes(): Long = McpServerPrefs.actualDataBytes()
 
-        fun configBytesEstimated(): Long = Prefs.configBytesEstimated()
+        fun configBytesEstimated(): Long = McpServerPrefs.configBytesEstimated()
     }
 
-    private object Prefs {
-        private const val KV_ID = "mcp_server_prefs"
-        private const val KEY_AUTH_TOKEN = "auth_token"
-        private const val KEY_SERVER_NAME = "server_name"
-        private const val KEY_PORT = "port"
-        private const val KEY_ALLOW_EXTERNAL = "allow_external"
-        private val random = SecureRandom()
-        private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
-
-        private fun kv() = store
-
-        fun loadSnapshot(): McpPrefsSnapshot {
-            val store = kv()
-            val port = store.decodeInt(KEY_PORT, DEFAULT_PORT).let { value ->
-                if (value in 1..65535) value else DEFAULT_PORT
-            }
-            return McpPrefsSnapshot(
-                authToken = store.decodeString(KEY_AUTH_TOKEN).orEmpty(),
-                serverName = store.decodeString(KEY_SERVER_NAME, DEFAULT_SERVER_NAME).orEmpty().ifBlank { DEFAULT_SERVER_NAME },
-                port = port,
-                allowExternal = store.decodeBool(KEY_ALLOW_EXTERNAL, false)
-            )
-        }
-
-        fun ensureAuthToken(current: String): String {
-            if (current.isNotBlank()) return current
-            val generated = generateToken()
-            saveAuthToken(generated)
-            return generated
-        }
-
-        fun saveAuthToken(token: String) {
-            kv().encode(KEY_AUTH_TOKEN, token)
-        }
-
-        fun saveServerName(name: String) {
-            kv().encode(KEY_SERVER_NAME, name)
-        }
-
-        fun savePort(port: Int) {
-            if (port in 1..65535) {
-                kv().encode(KEY_PORT, port)
-            }
-        }
-
-        fun saveAllowExternal(allowExternal: Boolean) {
-            kv().encode(KEY_ALLOW_EXTERNAL, allowExternal)
-        }
-
-        fun regenerateToken(): String {
-            val token = generateToken()
-            saveAuthToken(token)
-            return token
-        }
-
-        fun clear() {
-            val store = kv()
-            store.removeValueForKey(KEY_AUTH_TOKEN)
-            store.removeValueForKey(KEY_SERVER_NAME)
-            store.removeValueForKey(KEY_PORT)
-            store.removeValueForKey(KEY_ALLOW_EXTERNAL)
-            store.trim()
-        }
-
-        fun storageFootprintBytes(): Long = kv().totalSize()
-
-        fun actualDataBytes(): Long = kv().actualSize()
-
-        fun configBytesEstimated(): Long {
-            val snapshot = loadSnapshot()
-            return (snapshot.authToken.length + snapshot.serverName.length).toLong() * 2 + 32L
-        }
-
-        private fun generateToken(): String {
-            val bytes = ByteArray(32)
-            random.nextBytes(bytes)
-            return bytes.joinToString("") { b -> "%02x".format(b) }
-        }
-    }
-
-    private var engine: EmbeddedServer<*, *>? = null
+    private var endpointSession: McpEndpointSession? = null
     private var monitorJob: Job? = null
     private var lastConnectedCount: Int = 0
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val initialPrefsSnapshot = Prefs.loadSnapshot()
+    private val endpointHost = McpKtorEndpointHost(::appendLog)
+    private val logStore by lazy {
+        McpRuntimeLogStore { logs ->
+        _uiState.value = _uiState.value.copy(logs = logs)
+        }
+    }
+    private val initialPrefsSnapshot = McpServerPrefs.loadSnapshot()
     private val _uiState = MutableStateFlow(
         McpServerUiState(
             port = initialPrefsSnapshot.port,
@@ -211,6 +105,11 @@ class McpServerManager(
 
     init {
         localMcpService.bindMcpStateProvider { _uiState.value }
+        localMcpService.bindToolCallLogger { name, elapsedMs, success, error ->
+            val status = if (success) "ok" else "error"
+            val suffix = error?.takeIf { it.isNotBlank() }?.let { " reason=$it" }.orEmpty()
+            appendLog("INFO", "Tool call $status: name=$name elapsedMs=$elapsedMs$suffix")
+        }
     }
 
     @Synchronized
@@ -234,49 +133,31 @@ class McpServerManager(
             stopInternal()
             ensurePortAvailable(host, port)
 
-            val server = localMcpService.getOrCreateServer()
-            val newEngine = embeddedServer(
-                factory = CIO,
+            val addresses = if (allowExternal) ipv4Addresses() else emptyList()
+            val session = endpointHost.start(
                 host = host,
-                port = port
-            ) {
-                intercept(ApplicationCallPipeline.Plugins) {
-                    val appCall = context
-                    val requestPath = appCall.request.path()
-                    if (!requestPath.startsWith("/mcp")) return@intercept
-
-                    val authHeaderRaw = appCall.request.headers["Authorization"].orEmpty()
-                    val providedToken = extractBearerToken(authHeaderRaw)
-                    val expectedToken = _uiState.value.authToken
-                    if (providedToken != expectedToken) {
-                        val mode = describeAuthHeader(authHeaderRaw)
-                        val message = "Rejected unauthorized request: path=$requestPath auth=$mode"
-                        appendLog("WARN", message)
-                        AppLogger.w(TAG, message)
-                        appCall.respond(HttpStatusCode.Unauthorized, "Unauthorized")
-                        finish()
-                        return@intercept
-                    }
-                }
-                mcpStreamableHttp(path = "/mcp") { server }
-            }
-            newEngine.start(wait = false)
-            engine = newEngine
+                port = port,
+                path = McpServerDefaults.ENDPOINT_PATH,
+                expectedTokenProvider = { _uiState.value.authToken },
+                allowedHosts = buildAllowedHosts(port = port, allowExternal = allowExternal, addresses = addresses),
+                serverFactory = { localMcpService.createRuntimeServer() }
+            )
+            endpointSession = session
             McpServerRuntimeRegistry.registerRunning(this)
             lastConnectedCount = 0
-            startSessionMonitor(server)
+            startSessionMonitor(session)
             _uiState.value = _uiState.value.copy(
                 running = true,
                 runningSinceEpochMs = System.currentTimeMillis(),
                 host = host,
                 port = port,
                 allowExternal = allowExternal,
-                addresses = if (allowExternal) ipv4Addresses() else emptyList(),
+                addresses = addresses,
                 connectedClients = 0,
                 lastError = null
             )
-            Prefs.savePort(port)
-            Prefs.saveAllowExternal(allowExternal)
+            McpServerPrefs.savePort(port)
+            McpServerPrefs.saveAllowExternal(allowExternal)
             syncKeepAliveNotification(forceStart = true)
             appendLog("INFO", "MCP server started on $host:$port/mcp")
         }.onFailure {
@@ -291,33 +172,33 @@ class McpServerManager(
 
     @Synchronized
     fun regenerateAuthToken() {
-        val token = Prefs.regenerateToken()
+        val token = McpServerPrefs.regenerateToken()
         _uiState.value = _uiState.value.copy(authToken = token)
         appendLog("INFO", "Authorization token regenerated")
     }
 
     @Synchronized
     fun updateServerName(name: String) {
-        val fixed = name.trim().ifBlank { DEFAULT_SERVER_NAME }
-        Prefs.saveServerName(fixed)
+        val fixed = name.trim().ifBlank { McpServerDefaults.SERVER_NAME }
+        McpServerPrefs.saveServerName(fixed)
         _uiState.value = _uiState.value.copy(serverName = fixed)
     }
 
     @Synchronized
     fun resetServerConfigPreservingToken(): Boolean {
-        Prefs.saveServerName(DEFAULT_SERVER_NAME)
-        Prefs.savePort(DEFAULT_PORT)
-        Prefs.saveAllowExternal(false)
+        McpServerPrefs.saveServerName(McpServerDefaults.SERVER_NAME)
+        McpServerPrefs.savePort(McpServerDefaults.PORT)
+        McpServerPrefs.saveAllowExternal(false)
         val running = _uiState.value.running
         _uiState.value = if (running) {
             _uiState.value.copy(
-                serverName = DEFAULT_SERVER_NAME,
+                serverName = McpServerDefaults.SERVER_NAME,
                 lastError = null
             )
         } else {
             _uiState.value.copy(
-                serverName = DEFAULT_SERVER_NAME,
-                port = DEFAULT_PORT,
+                serverName = McpServerDefaults.SERVER_NAME,
+                port = McpServerDefaults.PORT,
                 allowExternal = false,
                 addresses = emptyList(),
                 lastError = null
@@ -337,7 +218,7 @@ class McpServerManager(
             _uiState.value = _uiState.value.copy(lastError = message)
             return Result.failure(IllegalArgumentException(message))
         }
-        Prefs.savePort(port)
+        McpServerPrefs.savePort(port)
         val current = _uiState.value
         _uiState.value = if (current.running) {
             current.copy(lastError = null)
@@ -349,7 +230,7 @@ class McpServerManager(
 
     @Synchronized
     fun updateAllowExternal(allowExternal: Boolean): Result<Unit> {
-        Prefs.saveAllowExternal(allowExternal)
+        McpServerPrefs.saveAllowExternal(allowExternal)
         val current = _uiState.value
         _uiState.value = if (current.running) {
             current.copy(lastError = null)
@@ -370,30 +251,12 @@ class McpServerManager(
         val authToken = ensureAuthToken()
         val state = _uiState.value
         val endpoint = url ?: state.localEndpoint
-        val escapedName = state.serverName.replace("\"", "\\\"")
-        val headersText = if (includeJsonContentTypeHeader) {
-            """
-        "Authorization": "Bearer $authToken",
-        "Content-Type": "application/json"
-            """.trimIndent()
-        } else {
-            """
-        "Authorization": "Bearer $authToken"
-            """.trimIndent()
-        }
-        return """
-{
-  "mcpServers": {
-    "$escapedName": {
-      "type": "streamablehttp",
-      "url": "$endpoint",
-      "headers": {
-${headersText.prependIndent("        ")}
-      }
-    }
-  }
-}
-        """.trim()
+        return McpClientConfigBuilder.buildSingleServerConfig(
+            serverName = state.serverName,
+            endpoint = endpoint,
+            authToken = authToken,
+            includeJsonContentTypeHeader = includeJsonContentTypeHeader
+        )
     }
 
     @Synchronized
@@ -411,7 +274,7 @@ ${headersText.prependIndent("        ")}
 
     @Synchronized
     fun clearLogs() {
-        _uiState.value = _uiState.value.copy(logs = emptyList())
+        logStore.clear()
     }
 
     @Synchronized
@@ -421,7 +284,7 @@ ${headersText.prependIndent("        ")}
             _uiState.value = _uiState.value.copy(addresses = ipv4Addresses())
         }
         if (running) {
-            val sessions = runCatching { localMcpService.getOrCreateServer().sessions.size }.getOrDefault(0)
+            val sessions = endpointSession?.server?.sessions?.size ?: 0
             _uiState.value = _uiState.value.copy(connectedClients = sessions)
             syncKeepAliveNotification(forceStart = false)
             appendLog("INFO", "Snapshot refreshed: clients=$sessions")
@@ -465,17 +328,18 @@ ${headersText.prependIndent("        ")}
         monitorJob?.cancel()
         monitorJob = null
         lastConnectedCount = 0
-        val current = engine ?: return
-        runCatching { current.stop(gracePeriodMillis = 500, timeoutMillis = 2_000) }
-        engine = null
+        val current = endpointSession ?: return
+        endpointHost.stop(current)
+        localMcpService.clearRuntimeServer(current.server)
+        endpointSession = null
         McpServerRuntimeRegistry.clearRunning(this)
     }
 
-    private fun startSessionMonitor(server: Server) {
+    private fun startSessionMonitor(session: McpEndpointSession) {
         monitorJob?.cancel()
         monitorJob = scope.launch {
             while (true) {
-                val count = runCatching { server.sessions.size }.getOrDefault(0)
+                val count = runCatching { session.server.sessions.size }.getOrDefault(0)
                 if (count != lastConnectedCount) {
                     val old = lastConnectedCount
                     lastConnectedCount = count
@@ -493,10 +357,7 @@ ${headersText.prependIndent("        ")}
     }
 
     private fun appendLog(level: String, message: String) {
-        val now = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        val entry = McpLogEntry(time = now, level = level, message = message)
-        val current = _uiState.value.logs
-        _uiState.value = _uiState.value.copy(logs = (current + entry).takeLast(120))
+        logStore.append(level = level, message = message)
     }
 
     private fun ipv4Addresses(): List<String> {
@@ -532,18 +393,18 @@ ${headersText.prependIndent("        ")}
         }
     }
 
-    private fun extractBearerToken(rawHeader: String): String {
-        if (rawHeader.isBlank()) return ""
-        val parts = rawHeader.trim().split(Regex("\\s+"), limit = 2)
-        if (parts.size < 2 || !parts[0].equals("Bearer", ignoreCase = true)) return ""
-        return parts[1].trim().trim('"')
-    }
-
-    private fun describeAuthHeader(rawHeader: String): String {
-        if (rawHeader.isBlank()) return "missing"
-        val token = extractBearerToken(rawHeader)
-        if (token.isBlank()) return "invalid-format"
-        return "bearer(len=${token.length})"
+    private fun buildAllowedHosts(
+        port: Int,
+        allowExternal: Boolean,
+        addresses: List<String>
+    ): List<String> {
+        return buildList {
+            add("127.0.0.1:$port")
+            add("localhost:$port")
+            if (allowExternal) {
+                addresses.forEach { address -> add("$address:$port") }
+            }
+        }
     }
 
     private fun syncKeepAliveNotification(forceStart: Boolean) {
@@ -567,7 +428,7 @@ ${headersText.prependIndent("        ")}
     @Synchronized
     private fun ensureAuthToken(): String {
         val current = _uiState.value.authToken
-        val token = Prefs.ensureAuthToken(current)
+        val token = McpServerPrefs.ensureAuthToken(current)
         if (token != current) {
             _uiState.value = _uiState.value.copy(authToken = token)
         }

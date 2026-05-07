@@ -1,16 +1,12 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
 import os.kei.feature.github.domain.GitHubPackageNameValidator
 import os.kei.feature.github.domain.GitHubPackageRepositoryResolver
@@ -19,14 +15,10 @@ import os.kei.feature.github.domain.GitHubStarImportApkVerifier
 import os.kei.feature.github.domain.GitHubStarImportClassifier
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
-import os.kei.feature.github.model.GitHubRepositoryCandidate
-import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
-import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
-import os.kei.feature.github.model.GitHubTrackedApp
 import java.util.Locale
 
 internal class McpGitHubDiscoveryTools(
@@ -35,59 +27,22 @@ internal class McpGitHubDiscoveryTools(
     private val appContext get() = environment.appContext
 
     fun register(server: Server) {
-        server.addTool(
-            name = "keios.github.config.snapshot",
-            description = "Read GitHub strategy, token, refresh, and import settings.",
-            inputSchema = ToolSchema(properties = buildJsonObject { })
-        ) { _ ->
-            callText(buildGitHubConfigSnapshotText())
+        server.addMcpTextTool(environment, name = "keios.github.config.snapshot") { _ ->
+            buildGitHubConfigSnapshotText()
         }
 
-        server.addTool(
-            name = "keios.github.discovery.search",
-            description = "Search GitHub repositories with current API token. Args: query(required), limit(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("query", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.discovery.search") { request ->
             val query = argString(request.arguments?.get("query")).trim()
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, 50)
-            callText(buildRepositorySearchText(query = query, limit = limit))
+            buildRepositorySearchText(query = query, limit = limit)
         }
 
-        server.addTool(
-            name = "keios.github.repo.package.scan",
-            description = "Scan latest stable release APK and read package name. Args: repoUrl(required).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("repoUrl", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.repo.package.scan") { request ->
             val repoUrl = argString(request.arguments?.get("repoUrl")).trim()
-            callText(buildRepoPackageScanText(repoUrl))
+            buildRepoPackageScanText(repoUrl)
         }
 
-        server.addTool(
-            name = "keios.github.package.repo.scan",
-            description = "Find repositories whose latest stable APK package matches a package name. Args: packageName(required), appLabel(optional), preferredRepoUrl(optional), candidateLimit(optional), verificationLimit(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("packageName", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("appLabel", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put(
-                        "preferredRepoUrl",
-                        buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("candidateLimit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                    put(
-                        "verificationLimit",
-                        buildJsonObject { put("type", JsonPrimitive("integer")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.package.repo.scan") { request ->
             val packageName = argString(request.arguments?.get("packageName")).trim()
             val appLabel = argString(request.arguments?.get("appLabel")).trim()
             val preferredRepoUrl = argString(request.arguments?.get("preferredRepoUrl")).trim()
@@ -95,77 +50,33 @@ internal class McpGitHubDiscoveryTools(
                 argInt(request.arguments?.get("candidateLimit"), 16).coerceIn(1, 50)
             val verificationLimit = argInt(request.arguments?.get("verificationLimit"), 5)
                 .coerceIn(1, candidateLimit)
-            callText(
-                buildPackageRepoScanText(
-                    packageName = packageName,
-                    appLabel = appLabel,
-                    preferredRepoUrl = preferredRepoUrl,
-                    candidateLimit = candidateLimit,
-                    verificationLimit = verificationLimit
-                )
+            buildPackageRepoScanText(
+                packageName = packageName,
+                appLabel = appLabel,
+                preferredRepoUrl = preferredRepoUrl,
+                candidateLimit = candidateLimit,
+                verificationLimit = verificationLimit
             )
         }
 
-        server.addTool(
-            name = "keios.github.stars.lists",
-            description = "Discover public GitHub Star Lists from a profile stars URL. Args: url(required).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("url", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.stars.lists") { request ->
             val url = argString(request.arguments?.get("url")).trim()
-            callText(buildStarListsText(url))
+            buildStarListsText(url)
         }
 
-        server.addTool(
-            name = "keios.github.stars.preview",
-            description = "Preview Star import candidates. Args: source(me|user|list|auto), username, listUrl, limit, quality(default|all|android|review|other|archived).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("source", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("username", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("listUrl", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                    put("quality", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
-            callText(buildStarImportText(request.arguments.orEmpty(), apply = false))
+        server.addMcpTextTool(environment, name = "keios.github.stars.preview") { request ->
+            buildStarImportText(request.arguments.orEmpty(), apply = false)
         }
 
-        server.addTool(
-            name = "keios.github.stars.import",
-            description = "Preview or apply Star import using the same selector as stars.preview. Args include apply(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("source", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("username", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("listUrl", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                    put("quality", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("apply", buildJsonObject { put("type", JsonPrimitive("boolean")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.stars.import") { request ->
             val apply = argBoolean(request.arguments?.get("apply"), false)
-            callText(buildStarImportText(request.arguments.orEmpty(), apply = apply))
+            buildStarImportText(request.arguments.orEmpty(), apply = apply)
         }
 
-        server.addTool(
-            name = "keios.github.stars.apk.verify",
-            description = "Verify latest stable release APK presence for repository URLs. Args: repoUrls(required, comma or newline separated), limit(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("repoUrls", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.stars.apk.verify") { request ->
             val repoUrls = argString(request.arguments?.get("repoUrls"))
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, 30)
-            callText(buildStarApkVerificationText(repoUrls = repoUrls, limit = limit))
+            buildStarApkVerificationText(repoUrls = repoUrls, limit = limit)
         }
     }
 
@@ -362,8 +273,8 @@ internal class McpGitHubDiscoveryTools(
             source = GitHubApkPackageNameScanRepository(),
             cache = GitHubStarImportApkVerificationCacheStore
         )
-        val candidates = repoUrls.parseRepoUrls()
-            .mapNotNull { url -> url.toSyntheticImportCandidate() }
+        val candidates = repoUrls.parseGitHubRepoUrls()
+            .mapNotNull { url -> url.toSyntheticGitHubImportCandidate() }
             .take(limit)
         if (candidates.isEmpty()) return "ok=false\nmessage=repoUrls_required"
         return buildString {
@@ -449,57 +360,4 @@ internal class McpGitHubDiscoveryTools(
         return changedCount
     }
 
-    private fun StringBuilder.appendStarImportQualityCounts(
-        candidates: List<GitHubRepositoryImportCandidate>
-    ) {
-        val counts = candidates.groupingBy { candidate ->
-            GitHubStarImportClassifier.classify(candidate)
-        }.eachCount()
-        GitHubStarImportQuality.entries.forEach { quality ->
-            appendLine("quality.${quality.name}=${counts[quality] ?: 0}")
-        }
-    }
-
-    private fun GitHubRepositoryCandidate.toMcpRepositoryRow(prefix: String): String {
-        return "$prefix=repo:$fullName | stars:$starCount | forks:$forkCount | archived:$archived | fork:$fork | language:$language | url:${repoUrl.ifBlank { "https://github.com/$owner/$repo" }} | description:$description"
-    }
-
-    private fun GitHubRepositoryImportCandidate.toMcpImportCandidateRow(prefix: String): String {
-        val quality = GitHubStarImportClassifier.classify(this)
-        return "$prefix=repo:${repository.fullName} | quality:${quality.name} | score:$score | tracked:$alreadyTracked | stars:${repository.starCount} | package:${trackedApp.packageName} | label:${trackedApp.appLabel} | url:${trackedApp.repoUrl}"
-    }
-
-    private fun String.parseRepoUrls(): List<String> {
-        return split('\n', ',', ';', ' ')
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-    }
-
-    private fun String.toSyntheticImportCandidate(): GitHubRepositoryImportCandidate? {
-        val parsed = GitHubVersionUtils.parseOwnerRepo(this) ?: return null
-        val owner = parsed.first.trim()
-        val repo = parsed.second.trim().removeSuffix(".git")
-        if (owner.isBlank() || repo.isBlank()) return null
-        val repoUrl = "https://github.com/$owner/$repo"
-        val repository = GitHubRepositoryCandidate(
-            owner = owner,
-            repo = repo,
-            repoUrl = repoUrl,
-            sourceType = GitHubRepositoryDiscoverySourceType.PreferredRepository,
-            matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName
-        )
-        return GitHubRepositoryImportCandidate(
-            repository = repository,
-            trackedApp = GitHubTrackedApp(
-                repoUrl = repoUrl,
-                owner = owner,
-                repo = repo,
-                packageName = "",
-                appLabel = repository.fullName
-            ),
-            alreadyTracked = false,
-            score = 0
-        )
-    }
 }

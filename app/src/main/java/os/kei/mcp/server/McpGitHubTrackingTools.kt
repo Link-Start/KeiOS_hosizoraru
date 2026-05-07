@@ -1,9 +1,6 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -31,71 +28,31 @@ internal class McpGitHubTrackingTools(
     private val appContext get() = environment.appContext
 
     fun register(server: Server) {
-        server.addTool(
-            name = "keios.github.tracks.snapshot",
-            description = "Get GitHub tracked settings and cache snapshot.",
-            inputSchema = ToolSchema(properties = buildJsonObject { })
-        ) { _ ->
-            callText(buildGitHubTrackedSnapshotText())
+        server.addMcpTextTool(environment, name = "keios.github.tracks.snapshot") { _ ->
+            buildGitHubTrackedSnapshotText()
         }
 
-        server.addTool(
-            name = "keios.github.tracks.list",
-            description = "List tracked repos. Args: repoFilter(optional), limit(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("repoFilter", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.tracks.list") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
                 MAX_TRACK_LIMIT
             )
-            callText(buildGitHubTrackedListText(repoFilter = repoFilter, limit = limit))
+            buildGitHubTrackedListText(repoFilter = repoFilter, limit = limit)
         }
 
-        server.addTool(
-            name = "keios.github.tracks.export",
-            description = "Export tracked repos JSON. Args: repoFilter(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("repoFilter", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.tracks.export") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
-            callText(buildGitHubTrackedExportText(repoFilter = repoFilter))
+            buildGitHubTrackedExportText(repoFilter = repoFilter)
         }
 
-        server.addTool(
-            name = "keios.github.tracks.import",
-            description = "Preview or apply tracked repos JSON import. Args: json(required), apply(optional, default=false).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("json", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("apply", buildJsonObject { put("type", JsonPrimitive("boolean")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.tracks.import") { request ->
             val rawJson = argString(request.arguments?.get("json"))
             val apply = argBoolean(request.arguments?.get("apply"), false)
-            callText(buildGitHubTrackedImportText(rawJson = rawJson, apply = apply))
+            buildGitHubTrackedImportText(rawJson = rawJson, apply = apply)
         }
 
-        server.addTool(
-            name = "keios.github.tracks.check",
-            description = "Online check tracked repo updates. Args: repoFilter(optional), onlyUpdates(optional), limit(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("repoFilter", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("onlyUpdates", buildJsonObject { put("type", JsonPrimitive("boolean")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.tracks.check") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val onlyUpdates = argBoolean(request.arguments?.get("onlyUpdates"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
@@ -116,83 +73,43 @@ internal class McpGitHubTrackingTools(
                     "$repo | local=${row.localVersion} | stable=${row.stableVersion}$pre | status=${row.status} | update=${row.hasUpdate}"
                 }
             }
-            callText(text)
+            text
         }
 
-        server.addTool(
-            name = "keios.github.tracks.summary",
-            description = "Get tracked summary. Args: mode(cache|network), repoFilter(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("mode", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("repoFilter", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.tracks.summary") { request ->
             val mode = argString(request.arguments?.get("mode")).trim().lowercase(Locale.ROOT)
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
-            callText(
-                if (mode == "network") {
-                    buildGitHubTrackedSummaryFromNetwork(repoFilter)
-                } else {
-                    buildGitHubTrackedSummaryFromCache(repoFilter)
-                }
-            )
+            if (mode == "network") {
+                buildGitHubTrackedSummaryFromNetwork(repoFilter)
+            } else {
+                buildGitHubTrackedSummaryFromCache(repoFilter)
+            }
         }
 
-        server.addTool(
-            name = "keios.github.cache.clear",
-            description = "Clear GitHub tracked check cache.",
-            inputSchema = ToolSchema(properties = buildJsonObject { })
-        ) { _ ->
+        server.addMcpTextTool(environment, name = "keios.github.cache.clear") { _ ->
             GitHubTrackStore.clearCheckCache()
             GitHubReleaseAssetCacheStore.clearAll()
             GitHubStarImportApkVerificationCacheStore.clearAll()
-            callText("cleared=github_check_cache,github_release_asset_cache,github_star_import_apk_verification_cache")
+            "cleared=github_check_cache,github_release_asset_cache,github_star_import_apk_verification_cache"
         }
 
-        server.addTool(
-            name = "keios.github.link.parse",
-            description = "Parse GitHub shared link text. Args: text(required).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("text", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.link.parse") { request ->
             val text = argString(request.arguments?.get("text"))
-            callText(buildGitHubShareParseText(text))
+            buildGitHubShareParseText(text)
         }
 
-        server.addTool(
-            name = "keios.github.link.resolve",
-            description = "Resolve GitHub shared link into APK asset candidates. Args: text(required), limit(optional).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("text", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("limit", buildJsonObject { put("type", JsonPrimitive("integer")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.link.resolve") { request ->
             val text = argString(request.arguments?.get("text"))
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(
                 1,
                 MAX_ENTRY_LIMIT
             )
-            callText(buildGitHubShareResolveText(text = text, limit = limit))
+            buildGitHubShareResolveText(text = text, limit = limit)
         }
 
-        server.addTool(
-            name = "keios.github.link.pending",
-            description = "Inspect or clear pending share-import tracking state. Args: clear(optional, default=false).",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("clear", buildJsonObject { put("type", JsonPrimitive("boolean")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.github.link.pending") { request ->
             val clear = argBoolean(request.arguments?.get("clear"), false)
-            callText(buildGitHubSharePendingText(clear = clear))
+            buildGitHubSharePendingText(clear = clear)
         }
     }
 

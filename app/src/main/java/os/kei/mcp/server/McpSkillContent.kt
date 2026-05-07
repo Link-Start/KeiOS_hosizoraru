@@ -6,9 +6,6 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import java.util.Locale
 
 internal class McpSkillContent(
@@ -16,26 +13,13 @@ internal class McpSkillContent(
     private val runtimeConfigBuilder: (McpServerUiState?, String, String, String) -> String
 ) {
     fun registerClawGuideTool(server: Server) {
-        val locale = currentLocale()
-        server.addTool(
-            name = "keios.mcp.claw.skill.guide",
-            description = McpToolCatalog.descriptionFor("keios.mcp.claw.skill.guide", locale),
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("mode", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("endpoint", buildJsonObject { put("type", JsonPrimitive("string")) })
-                    put("serverName", buildJsonObject { put("type", JsonPrimitive("string")) })
-                }
-            )
-        ) { request ->
+        server.addMcpTextTool(environment, name = "keios.mcp.claw.skill.guide") { request ->
             val state = environment.currentState()
-            callText(
-                buildClawSkillGuideText(
-                    state = state,
-                    mode = argString(request.arguments?.get("mode")),
-                    endpointOverride = argString(request.arguments?.get("endpoint")).trim(),
-                    serverNameOverride = argString(request.arguments?.get("serverName")).trim()
-                )
+            buildClawSkillGuideText(
+                state = state,
+                mode = argString(request.arguments?.get("mode")),
+                endpointOverride = argString(request.arguments?.get("endpoint")).trim(),
+                serverNameOverride = argString(request.arguments?.get("serverName")).trim()
             )
         }
     }
@@ -322,15 +306,7 @@ internal class McpSkillContent(
     }
 
     private fun toolGroup(name: String): String {
-        return when (name) {
-            in McpToolCatalog.runtimeToolNames -> "runtime"
-            in McpToolCatalog.homeToolNames -> "home"
-            in McpToolCatalog.systemToolNames -> "system"
-            in McpToolCatalog.osToolNames -> "os"
-            in McpToolCatalog.githubToolNames -> "github"
-            in McpToolCatalog.baToolNames -> "ba"
-            else -> "unknown"
-        }
+        return McpToolCatalog.metaForName(name, currentLocale())?.group ?: "unknown"
     }
 
     private fun localizedSkillAssetPath(locale: Locale): String {
@@ -342,8 +318,7 @@ internal class McpSkillContent(
     }
 
     private fun currentLocale(): Locale {
-        val configuration = environment.appContext.resources.configuration
-        return configuration.locales[0] ?: Locale.getDefault()
+        return environment.currentLocale()
     }
 
     private fun isSimplifiedChinese(locale: Locale): Boolean {

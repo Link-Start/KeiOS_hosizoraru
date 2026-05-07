@@ -4,8 +4,19 @@ import java.util.Locale
 
 data class McpToolMeta(
     val name: String,
-    val description: String
-)
+    val description: String,
+    val group: String = "",
+    val title: String? = null,
+    val arguments: List<McpToolArgumentSpec> = emptyList(),
+    val readOnly: Boolean = true,
+    val destructive: Boolean = false,
+    val idempotent: Boolean = true,
+    val openWorld: Boolean = false,
+    val executionProfile: McpToolExecutionProfile = McpToolExecutionProfile.CacheRead
+) {
+    val requiredArguments: List<String>
+        get() = arguments.filter { it.required }.map { it.name }
+}
 
 internal object McpToolCatalog {
     val runtimeToolNames = listOf(
@@ -78,11 +89,28 @@ internal object McpToolCatalog {
             else -> enDescriptions
         }
         return orderedToolNames.map { name ->
+            val definition = definitions.getValue(name)
             McpToolMeta(
                 name = name,
-                description = descriptions[name] ?: enDescriptions[name].orEmpty()
+                description = descriptions[name] ?: enDescriptions[name].orEmpty(),
+                group = definition.group,
+                title = titleForName(name),
+                arguments = definition.arguments,
+                readOnly = definition.readOnly,
+                destructive = definition.destructive,
+                idempotent = definition.idempotent,
+                openWorld = definition.openWorld,
+                executionProfile = definition.executionProfile
             )
         }
+    }
+
+    fun metaForName(name: String, locale: Locale): McpToolMeta? {
+        return forLocale(locale).firstOrNull { it.name == name }
+    }
+
+    fun schemaFor(name: String): io.modelcontextprotocol.kotlin.sdk.types.ToolSchema {
+        return McpSchema.toolSchema(definitions[name]?.arguments.orEmpty())
     }
 
     fun descriptionFor(name: String, locale: Locale): String {
@@ -94,9 +122,192 @@ internal object McpToolCatalog {
         runtimeToolNames + homeToolNames + systemToolNames + osToolNames + githubToolNames + baToolNames
 
     private val englishTools: List<McpToolMeta>
-        get() = orderedToolNames.map { name ->
-            McpToolMeta(name = name, description = enDescriptions[name].orEmpty())
+        get() = forLocale(Locale.ENGLISH)
+
+    private data class ToolDefinition(
+        val group: String,
+        val arguments: List<McpToolArgumentSpec> = emptyList(),
+        val readOnly: Boolean = true,
+        val destructive: Boolean = false,
+        val idempotent: Boolean = true,
+        val openWorld: Boolean = false,
+        val executionProfile: McpToolExecutionProfile = McpToolExecutionProfile.CacheRead
+    )
+
+    private val writeTools = setOf(
+        "keios.os.cards.import",
+        "keios.github.tracks.import",
+        "keios.github.link.pending",
+        "keios.github.stars.import",
+        "keios.github.cache.clear",
+        "keios.ba.guide.bgm.favorites",
+        "keios.ba.cache.clear"
+    )
+
+    private val networkTools = setOf(
+        "keios.github.tracks.check",
+        "keios.github.tracks.summary",
+        "keios.github.link.resolve",
+        "keios.github.discovery.search",
+        "keios.github.repo.package.scan",
+        "keios.github.stars.lists",
+        "keios.github.stars.preview",
+        "keios.github.stars.import",
+        "keios.github.stars.apk.verify"
+    )
+
+    private val deepScanTools = setOf(
+        "keios.github.package.repo.scan"
+    )
+
+    private val toolArguments: Map<String, List<McpToolArgumentSpec>> = mapOf(
+        "keios.mcp.runtime.logs" to listOf(McpSchema.integer("limit")),
+        "keios.mcp.runtime.config" to listOf(
+            McpSchema.string("mode"),
+            McpSchema.string("endpoint"),
+            McpSchema.string("serverName")
+        ),
+        "keios.mcp.claw.skill.guide" to listOf(
+            McpSchema.string("mode"),
+            McpSchema.string("endpoint"),
+            McpSchema.string("serverName")
+        ),
+        "keios.system.topinfo.query" to listOf(McpSchema.string("query"), McpSchema.integer("limit")),
+        "keios.os.activity.cards" to listOf(
+            McpSchema.string("query"),
+            McpSchema.boolean("onlyVisible"),
+            McpSchema.integer("limit")
+        ),
+        "keios.os.shell.cards" to listOf(
+            McpSchema.string("query"),
+            McpSchema.boolean("onlyVisible"),
+            McpSchema.boolean("includeOutput"),
+            McpSchema.integer("limit")
+        ),
+        "keios.os.cards.export" to listOf(McpSchema.string("target")),
+        "keios.os.cards.import" to listOf(
+            McpSchema.string("target", required = true),
+            McpSchema.string("json", required = true),
+            McpSchema.boolean("apply")
+        ),
+        "keios.github.tracks.list" to listOf(McpSchema.string("repoFilter"), McpSchema.integer("limit")),
+        "keios.github.tracks.export" to listOf(McpSchema.string("repoFilter")),
+        "keios.github.tracks.import" to listOf(
+            McpSchema.string("json", required = true),
+            McpSchema.boolean("apply")
+        ),
+        "keios.github.tracks.check" to listOf(
+            McpSchema.string("repoFilter"),
+            McpSchema.boolean("onlyUpdates"),
+            McpSchema.integer("limit")
+        ),
+        "keios.github.tracks.summary" to listOf(McpSchema.string("mode"), McpSchema.string("repoFilter")),
+        "keios.github.link.parse" to listOf(McpSchema.string("text", required = true)),
+        "keios.github.link.resolve" to listOf(
+            McpSchema.string("text", required = true),
+            McpSchema.integer("limit")
+        ),
+        "keios.github.link.pending" to listOf(McpSchema.boolean("clear")),
+        "keios.github.discovery.search" to listOf(
+            McpSchema.string("query", required = true),
+            McpSchema.integer("limit")
+        ),
+        "keios.github.repo.package.scan" to listOf(McpSchema.string("repoUrl", required = true)),
+        "keios.github.package.repo.scan" to listOf(
+            McpSchema.string("packageName", required = true),
+            McpSchema.string("appLabel"),
+            McpSchema.string("preferredRepoUrl"),
+            McpSchema.integer("candidateLimit"),
+            McpSchema.integer("verificationLimit")
+        ),
+        "keios.github.stars.lists" to listOf(McpSchema.string("url", required = true)),
+        "keios.github.stars.preview" to starImportArguments(),
+        "keios.github.stars.import" to starImportArguments(),
+        "keios.github.stars.apk.verify" to listOf(
+            McpSchema.string("repoUrls", required = true),
+            McpSchema.integer("limit")
+        ),
+        "keios.ba.calendar.cache" to cacheEntryArguments(),
+        "keios.ba.pool.cache" to cacheEntryArguments(),
+        "keios.ba.guide.catalog.cache" to listOf(
+            McpSchema.string("tab"),
+            McpSchema.boolean("includeEntries"),
+            McpSchema.integer("limit")
+        ),
+        "keios.ba.guide.cache.inspect" to listOf(
+            McpSchema.string("url"),
+            McpSchema.boolean("includeSections"),
+            McpSchema.integer("refreshIntervalHours")
+        ),
+        "keios.ba.guide.media.list" to listOf(
+            McpSchema.string("url"),
+            McpSchema.string("kind"),
+            McpSchema.integer("limit")
+        ),
+        "keios.ba.guide.bgm.favorites" to listOf(
+            McpSchema.string("action"),
+            McpSchema.string("query"),
+            McpSchema.integer("limit"),
+            McpSchema.string("json"),
+            McpSchema.boolean("apply")
+        ),
+        "keios.ba.cache.clear" to listOf(McpSchema.string("scope"), McpSchema.string("url"))
+    )
+
+    private val definitions: Map<String, ToolDefinition> = orderedToolNames.associateWith { name ->
+        val profile = when (name) {
+            in deepScanTools -> McpToolExecutionProfile.DeepScan
+            in networkTools -> McpToolExecutionProfile.Network
+            in writeTools -> McpToolExecutionProfile.NormalWrite
+            else -> McpToolExecutionProfile.CacheRead
         }
+        ToolDefinition(
+            group = groupForName(name),
+            arguments = toolArguments[name].orEmpty(),
+            readOnly = name !in writeTools,
+            destructive = name.endsWith(".clear") || name == "keios.github.link.pending",
+            idempotent = name !in networkTools && name !in writeTools,
+            openWorld = name in networkTools,
+            executionProfile = profile
+        )
+    }
+
+    private fun cacheEntryArguments(): List<McpToolArgumentSpec> {
+        return listOf(
+            McpSchema.integer("serverIndex"),
+            McpSchema.boolean("includeEntries"),
+            McpSchema.integer("limit")
+        )
+    }
+
+    private fun starImportArguments(): List<McpToolArgumentSpec> {
+        return listOf(
+            McpSchema.string("source"),
+            McpSchema.string("username"),
+            McpSchema.string("listUrl"),
+            McpSchema.integer("limit"),
+            McpSchema.string("quality"),
+            McpSchema.boolean("apply")
+        )
+    }
+
+    private fun groupForName(name: String): String {
+        return when (name) {
+            in runtimeToolNames -> "runtime"
+            in homeToolNames -> "home"
+            in systemToolNames -> "system"
+            in osToolNames -> "os"
+            in githubToolNames -> "github"
+            in baToolNames -> "ba"
+            else -> "unknown"
+        }
+    }
+
+    private fun titleForName(name: String): String {
+        return name.removePrefix("keios.").split('.').joinToString(" ") { segment ->
+            segment.replaceFirstChar { char -> char.uppercase(Locale.ROOT) }
+        }
+    }
 
     private val enDescriptions = mapOf(
         "keios.health.ping" to "Connectivity probe; returns pong.",

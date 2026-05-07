@@ -2,8 +2,6 @@ package os.kei.mcp.server
 
 import com.tencent.mmkv.MMKV
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
-import kotlinx.serialization.json.buildJsonObject
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
@@ -18,12 +16,8 @@ internal class McpHomeTools(
     private val environment: McpToolEnvironment
 ) {
     fun register(server: Server) {
-        server.addTool(
-            name = "keios.home.overview.snapshot",
-            description = "Get Home overview cards snapshot for MCP/GitHub/BA.",
-            inputSchema = ToolSchema(properties = buildJsonObject { })
-        ) { _ ->
-            callText(buildHomeOverviewSnapshotText())
+        server.addMcpTextTool(environment, name = "keios.home.overview.snapshot") { _ ->
+            buildHomeOverviewSnapshotText()
         }
     }
 

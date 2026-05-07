@@ -1,9 +1,10 @@
 package os.kei.ui.page.main.student.fetch.parser
 
-import kotlin.test.assertEquals
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
+import os.kei.ui.page.main.student.fetch.parseGuideDetailFromContentJson
+import kotlin.test.assertEquals
 
 class GuideFetchJsonContentParserTest {
     @Test
@@ -70,6 +71,26 @@ class GuideFetchJsonContentParserTest {
         assertEquals("2 / 3 / 5", profileValues["MomoTalk解锁等级"])
     }
 
+    @Test
+    fun `cdn content wrapper unwraps into normal guide detail`() {
+        val content = objectContentJson(
+            row("角色名称", textCell("胡桃")),
+            row("立绘", imageCell("//cdn.example/hutao.png")),
+            row("技能名称", textCell("防护盾，启动"))
+        )
+        val detail = parseGuideDetailFromContentJson(
+            raw = JSONObject()
+                .put("content", content)
+                .put("editor_type", 3)
+                .toString(),
+            sourceUrl = "https://www.gamekee.com/ba/tj/591006.html"
+        )
+
+        assertEquals("胡桃", detail.profileRows.associate { it.key to it.value }["角色名称"])
+        assertEquals("防护盾，启动", detail.skillRows.associate { it.key to it.value }["技能名称"])
+        assertEquals("https://cdn.example/hutao.png", detail.galleryItems.first().mediaUrl)
+    }
+
     private fun objectContentJson(vararg rows: JSONArray): String {
         return JSONObject()
             .put(
@@ -103,4 +124,5 @@ class GuideFetchJsonContentParserTest {
             .put("type", "image")
             .put("value", value)
     }
+
 }

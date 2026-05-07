@@ -77,19 +77,19 @@ internal class BaStudentGuideRepository(
         }
         val shouldClearLocalCache =
             manualRefresh || (cacheSnapshot.hasCache && (cacheExpired || !cacheSnapshot.isComplete))
-        if (shouldClearLocalCache) {
-            withContext(ioDispatcher) {
-                BaStudentGuideStore.clearCachedInfo(requestUrl)
-                BaGuideTempMediaCache.clearGuideCache(context, requestUrl)
-            }
-        }
 
         val result = withContext(ioDispatcher) {
             runCatching { fetchGuideInfo(requestUrl) }
         }
         return result.fold(
             onSuccess = { latest ->
-                withContext(ioDispatcher) { BaStudentGuideStore.saveInfo(latest) }
+                withContext(ioDispatcher) {
+                    if (shouldClearLocalCache) {
+                        BaStudentGuideStore.clearCachedInfo(requestUrl)
+                        BaGuideTempMediaCache.clearGuideCache(context, requestUrl)
+                    }
+                    BaStudentGuideStore.saveInfo(latest)
+                }
                 BaStudentGuideLoadResult(info = latest, error = null)
             },
             onFailure = {

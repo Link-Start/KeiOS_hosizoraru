@@ -36,23 +36,25 @@ internal class BaGuideBgmPlaybackCoordinator(
             ?: queue.firstOrNull()
             ?: favorites.firstOrNull()
 
+    val selectedQueueFavorite: GuideBgmFavoriteItem?
+        get() = queue.firstOrNull { it.audioUrl == selectedAudioUrl }
+
     fun updateFavorites(nextFavorites: List<GuideBgmFavoriteItem>) {
         favorites = nextFavorites
-        if (queue.isEmpty()) queue = nextFavorites
-        if (selectedAudioUrl.isBlank() || nextFavorites.none { it.audioUrl == selectedAudioUrl }) {
-            selectedAudioUrl = nextFavorites.firstOrNull()?.audioUrl.orEmpty()
+            .filter { it.audioUrl.isNotBlank() }
+            .distinctBy { it.audioUrl }
+        if (selectedAudioUrl.isBlank()) {
+            selectedAudioUrl = favorites.firstOrNull()?.audioUrl.orEmpty()
         }
     }
 
     fun updateQueue(nextQueue: List<GuideBgmFavoriteItem>) {
-        queue = nextQueue
-        val selectedStillKnown = favorites.any { it.audioUrl == selectedAudioUrl } ||
-                nextQueue.any { it.audioUrl == selectedAudioUrl }
-        if (selectedAudioUrl.isBlank() || !selectedStillKnown) {
-            selectedAudioUrl = nextQueue.firstOrNull()?.audioUrl
-                ?: favorites.firstOrNull()?.audioUrl
-                ?: ""
-        }
+        val selection = resolveBaGuideBgmPlaybackQueueSelection(
+            nextQueue = nextQueue,
+            currentSelectedAudioUrl = selectedAudioUrl
+        )
+        queue = selection.queue
+        selectedAudioUrl = selection.selectedAudioUrl
     }
 
     fun restoreSnapshot() {
@@ -69,23 +71,23 @@ internal class BaGuideBgmPlaybackCoordinator(
         persistSelection()
     }
 
-    fun selectOffset(offset: Int, startPlayback: Boolean = true, restart: Boolean = true) {
-        if (queue.isEmpty()) return
-        val currentIndex = queue.indexOfFirst { it.audioUrl == selectedAudioUrl }
-            .takeIf { it >= 0 }
-            ?: 0
-        val nextIndex = (currentIndex + offset + queue.size) % queue.size
-        val favorite = queue[nextIndex]
+    fun selectOffset(offset: Int, startPlayback: Boolean = true, restart: Boolean = true): Boolean {
+        val favorite = selectBaGuideBgmPlaybackQueueOffset(
+            queue = queue,
+            selectedAudioUrl = selectedAudioUrl,
+            offset = offset
+        ) ?: return false
         selectedAudioUrl = favorite.audioUrl
         if (startPlayback) {
             play(favorite, restart = restart)
         } else {
             persistSelection()
         }
+        return true
     }
 
     fun prepareSelected() {
-        val favorite = selectedFavorite ?: return
+        val favorite = selectedQueueFavorite ?: selectedFavorite ?: return
         prepareFavoriteBgmPlayback(
             context = context,
             favorite = favorite,

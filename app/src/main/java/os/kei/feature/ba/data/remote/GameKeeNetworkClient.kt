@@ -134,6 +134,22 @@ internal object GameKeeNetworkClient {
 }
 
 internal object GameKeeRepository {
+    fun fetchBaContentDetail(
+        contentId: Long,
+        refererPath: String
+    ): GameKeeBaContentDetail {
+        val body = fetchBaContentDetailJson(
+            contentId = contentId,
+            refererPath = refererPath
+        )
+        return resolveBaContentDetailFromApiJson(
+            contentId = contentId.coerceAtLeast(0L),
+            refererPath = refererPath,
+            apiBody = body,
+            fetchCdnJson = GameKeeNetworkClient::fetchJson
+        )
+    }
+
     fun fetchBaContentDetailJson(
         contentId: Long,
         refererPath: String

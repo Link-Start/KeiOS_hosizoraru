@@ -311,8 +311,10 @@ internal fun BaGuideStudentBgmTabContent(
             stateWithFavoriteFallback(entry, lookupState).readyFavoriteOrNull()
         }.distinctBy { it.audioUrl }
     }
-    LaunchedEffect(playbackCoordinator, displayedPlayableFavorites) {
-        playbackCoordinator.updateQueue(displayedPlayableFavorites)
+    LaunchedEffect(playbackCoordinator, displayedPlayableFavorites, isPageActive) {
+        if (isPageActive) {
+            playbackCoordinator.updateQueue(displayedPlayableFavorites)
+        }
     }
     val selectedIndex = displayedPlayableFavorites.indexOfFirst { it.audioUrl == selectedAudioUrl }
     val selectedFavorite = displayedPlayableFavorites.getOrNull(selectedIndex)

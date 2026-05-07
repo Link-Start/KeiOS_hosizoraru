@@ -50,6 +50,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
     bottomBarScrollConnection: NestedScrollConnection,
     topPadding: Dp,
     bottomPadding: Dp,
+    isPageActive: Boolean,
     onSliderInteractionChanged: (Boolean) -> Unit,
     onOpenGuide: (String) -> Unit
 ) {
@@ -67,8 +68,10 @@ internal fun BaGuideFavoriteBgmMusicContent(
             sortMode = os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode.Recent
         )
     }
-    LaunchedEffect(displayedFavorites) {
-        playbackCoordinator.updateQueue(displayedFavorites)
+    LaunchedEffect(playbackCoordinator, displayedFavorites, isPageActive) {
+        if (isPageActive) {
+            playbackCoordinator.updateQueue(displayedFavorites)
+        }
     }
     val selectedFavorite = playbackCoordinator.selectedFavorite
         ?: displayedFavorites.firstOrNull { it.audioUrl == playbackCoordinator.selectedAudioUrl }

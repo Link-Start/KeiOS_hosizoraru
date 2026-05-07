@@ -164,6 +164,7 @@ object GameKeeFetchHelper {
         val raw = pathOrUrl.trim()
         if (raw.startsWith("http://", ignoreCase = true)) return raw.upgradeHttpSchemeToHttps()
         if (raw.startsWith("https://", ignoreCase = true)) return raw
+        if (raw.startsWith("//")) return "https:$raw"
         return if (raw.startsWith("/")) "$base$raw" else "$base/$raw"
     }
 

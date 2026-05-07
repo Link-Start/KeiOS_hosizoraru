@@ -388,6 +388,7 @@ fun BaGuideCatalogPage(
                                 bottomBarScrollConnection = chromeScrollState,
                                 topPadding = CatalogMusicContentTopPadding,
                                 bottomPadding = CatalogMusicContentBottomPadding,
+                                isPageActive = pageIndex == pagerState.settledPage,
                                 onSliderInteractionChanged = { sliderInteractionActive = it },
                                 onOpenGuide = onOpenGuide
                             )

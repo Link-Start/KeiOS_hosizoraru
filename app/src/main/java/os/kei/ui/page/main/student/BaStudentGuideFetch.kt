@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student
 
 import androidx.core.net.toUri
-import org.json.JSONObject
+import os.kei.feature.ba.data.remote.GameKeeBaContentSource
 import os.kei.feature.ba.data.remote.GameKeeRepository
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.extractMeta
@@ -22,26 +22,20 @@ private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
         .getOrDefault("/ba/tj/$contentId.html")
         .ifBlank { "/ba/tj/$contentId.html" }
 
-    val body = GameKeeRepository.fetchBaContentDetailJson(
+    val contentDetail = GameKeeRepository.fetchBaContentDetail(
         contentId = contentId,
         refererPath = refererPath
     )
-    val root = JSONObject(body)
-    if (root.optInt("code", -1) != 0) {
-        error("api code=${root.optInt("code", -1)}")
+    if (contentDetail.contentSource == GameKeeBaContentSource.Empty) {
+        error("empty guide content ${contentDetail.errorSummary}")
     }
-    val data = root.optJSONObject("data") ?: error("empty data")
-    val title = data.optString("title").trim().ifBlank { "图鉴信息" }
-    val subtitle = data.optJSONObject("game")?.optString("name").orEmpty().ifBlank { "GameKee" }
-    val summaryFromApi = stripHtml(data.optString("summary"))
-    val detail = parseGuideDetailFromContentJson(data.optString("content_json"), target)
+    val summaryFromApi = stripHtml(contentDetail.summary)
+    val detail = parseGuideDetailFromContentJson(contentDetail.resolvedContentJson, target)
+    if (!isGuideDetailExtractComplete(detail)) {
+        error("incomplete guide content source=${contentDetail.contentSource} ${contentDetail.errorSummary}")
+    }
     val imageFromData = firstImageFromAny(
-        any = JSONObject().apply {
-            put("thumb", data.opt("thumb"))
-            put("image_list", data.opt("image_list"))
-            put("thumb_list", data.opt("thumb_list"))
-            put("video_list", data.opt("video_list"))
-        },
+        any = contentDetail.mediaPayload,
         sourceUrl = target
     )
     val imageUrl = detail.imageUrl.ifBlank { imageFromData }
@@ -56,8 +50,8 @@ private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
 
     return BaStudentGuideInfo(
         sourceUrl = target,
-        title = title,
-        subtitle = subtitle,
+        title = contentDetail.title,
+        subtitle = contentDetail.subtitle,
         description = description,
         imageUrl = imageUrl,
         summary = summary,
@@ -131,7 +125,40 @@ private fun fetchGuideInfoFromHtml(sourceUrl: String): BaStudentGuideInfo {
 }
 
 fun fetchGuideInfo(sourceUrl: String): BaStudentGuideInfo {
-    return runCatching { fetchGuideInfoByApi(sourceUrl) }
-        .recoverCatching { fetchGuideInfoFromHtml(sourceUrl) }
-        .getOrThrow()
+    val apiResult = runCatching { fetchGuideInfoByApi(sourceUrl) }
+    apiResult.getOrNull()?.let { return it }
+
+    val htmlResult = runCatching { fetchGuideInfoFromHtml(sourceUrl) }
+    htmlResult.getOrNull()?.takeIf(::isGuideInfoPayloadComplete)?.let { return it }
+
+    val apiError = apiResult.exceptionOrNull()?.guideFetchErrorPreview().orEmpty()
+    val htmlError = htmlResult.exceptionOrNull()?.guideFetchErrorPreview().orEmpty()
+        .ifBlank { "incomplete html fallback" }
+    error("guide fetch failed api=$apiError html=$htmlError")
+}
+
+private fun isGuideDetailExtractComplete(detail: os.kei.ui.page.main.student.fetch.GuideDetailExtract): Boolean {
+    return detail.stats.isNotEmpty() ||
+            detail.skillRows.isNotEmpty() ||
+            detail.profileRows.isNotEmpty() ||
+            detail.galleryItems.isNotEmpty() ||
+            detail.growthRows.isNotEmpty() ||
+            detail.simulateRows.isNotEmpty() ||
+            detail.voiceRows.isNotEmpty() ||
+            detail.voiceEntries.isNotEmpty()
+}
+
+private fun Throwable.guideFetchErrorPreview(limit: Int = 180): String {
+    val root = generateSequence(this) { it.cause }.last()
+    val raw = if (root === this) {
+        "${javaClass.simpleName}:${message.orEmpty()}"
+    } else {
+        "${javaClass.simpleName}:${message.orEmpty()} root=${root.javaClass.simpleName}:${root.message.orEmpty()}"
+    }
+    val compact = raw
+        .replace('\n', ' ')
+        .replace('\r', ' ')
+        .replace('\t', ' ')
+        .trim()
+    return if (compact.length <= limit) compact else compact.take(limit) + "..."
 }

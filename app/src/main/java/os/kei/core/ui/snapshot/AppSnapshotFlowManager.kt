@@ -3,8 +3,8 @@ package os.kei.core.ui.snapshot
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow as composeSnapshotFlow
 import kotlinx.coroutines.flow.Flow
+import androidx.compose.runtime.snapshotFlow as composeSnapshotFlow
 
 internal class AppSnapshotFlowManager {
     private var disposed = false
@@ -15,6 +15,7 @@ internal class AppSnapshotFlowManager {
     }
 
     fun <T> snapshotFlow(block: () -> T): Flow<T> {
+        // Keep this wrapper on Compose's stable snapshotFlow path during 1.11.x migration.
         return composeSnapshotFlow(block)
     }
 }

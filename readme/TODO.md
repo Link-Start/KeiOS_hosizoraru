@@ -21,7 +21,7 @@ Official references checked on 2026-04-29:
 [16 KB page-size support](https://developer.android.com/guide/practices/page-sizes).
 
 - [x] Build baseline is `minSdk=35`, `compileSdk=37`, `targetSdk=37`, Java 21, Kotlin `2.3.21`,
-  Compose `1.11.0`, and Android Gradle Plugin `9.2.0`.
+  Compose `1.11.1`, and Android Gradle Plugin `9.2.0`.
 - [x] Manifest declares `NEARBY_WIFI_DEVICES(maxSdk=36)`, `ACCESS_LOCAL_NETWORK`, `USE_LOOPBACK_INTERFACE`, `POST_PROMOTED_NOTIFICATIONS`, and `FOREGROUND_SERVICE_SPECIAL_USE`.
 - [x] Main Activity enables `enableEdgeToEdge()`, launcher icons provide monochrome assets, main navigation plus guide fullscreen image flow use predictive-back paths, and `OnBackInvokedCallback` is explicitly enabled.
 - [x] Source search currently finds zero Contacts, Bluetooth, Health Connect / sensor permission, `READ_MEDIA*`, custom RemoteViews, `MediaStore#getVersion()`, `scheduleAtFixedRate`, WorkManager, direct JobScheduler, `announceForAccessibility` / `TYPE_ANNOUNCEMENT`, project JNI, or `System.load*` adaptation surfaces.

@@ -20,7 +20,7 @@
 [本地网络权限](https://developer.android.com/privacy-and-security/local-network-permission)、
 [16 KB page-size 支持](https://developer.android.com/guide/practices/page-sizes)。
 
-- [x] 构建基线为 `minSdk=35`、`compileSdk=37`、`targetSdk=37`，Java 21、Kotlin `2.3.21`、Compose `1.11.0`
+- [x] 构建基线为 `minSdk=35`、`compileSdk=37`、`targetSdk=37`，Java 21、Kotlin `2.3.21`、Compose `1.11.1`
   、Android Gradle Plugin `9.2.0`。
 - [x] Manifest 已声明 `NEARBY_WIFI_DEVICES(maxSdk=36)`、`ACCESS_LOCAL_NETWORK`、`USE_LOOPBACK_INTERFACE`、`POST_PROMOTED_NOTIFICATIONS`、`FOREGROUND_SERVICE_SPECIAL_USE`。
 - [x] 主 Activity 已启用 `enableEdgeToEdge()`，启动图标已提供 monochrome 资源，主导航与图鉴全屏图已接入预测返回路径，并显式开启 `OnBackInvokedCallback`。

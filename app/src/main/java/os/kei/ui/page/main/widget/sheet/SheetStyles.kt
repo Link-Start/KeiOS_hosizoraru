@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -293,7 +292,10 @@ fun SheetSummaryCard(
                     color = accentColor,
                     fontWeight = AppTypographyTokens.CardHeader.fontWeight,
                     fontSize = AppTypographyTokens.CardHeader.fontSize,
-                    lineHeight = AppTypographyTokens.CardHeader.lineHeight
+                    lineHeight = AppTypographyTokens.CardHeader.lineHeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
                 badgeLabel?.let { label ->
                     StatusPill(
@@ -302,7 +304,6 @@ fun SheetSummaryCard(
                         contentPadding = badgeContentPadding
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
                 headerTrailing?.invoke(this)
             }
             content()

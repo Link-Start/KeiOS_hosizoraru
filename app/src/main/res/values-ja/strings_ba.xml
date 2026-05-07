@@ -188,7 +188,7 @@
     <string name="ba_catalog_action_sort">並べ替え</string>
     <string name="ba_catalog_action_refresh">リストを更新</string>
     <string name="ba_catalog_action_transfer">お気に入りデータ</string>
-    <string name="ba_catalog_transfer_sheet_title">お気に入りとバックアップ</string>
+    <string name="ba_catalog_transfer_sheet_title">お気に入りバックアップ</string>
     <string name="ba_catalog_transfer_hero_title">お気に入りデータパック</string>
     <string name="ba_catalog_transfer_hero_badge">端末内で統合</string>
     <string name="ba_catalog_transfer_hero_summary">読み込み時は現在のお気に入りへ統合します。既存の BGM はバックアップ内容で更新し、生徒のお気に入り状態も同期します。</string>
@@ -206,9 +206,9 @@
     <string name="ba_catalog_transfer_import_all">すべて読み込み</string>
     <string name="ba_catalog_transfer_save_location">保存先</string>
     <string name="ba_catalog_transfer_save_location_fixed">固定フォルダ</string>
-    <string name="ba_catalog_transfer_save_location_saf">オフ: 書き出しごとに SAF でファイル位置を選択します。</string>
-    <string name="ba_catalog_transfer_save_location_fixed_empty">オン: 最初に固定フォルダを選び、以降は直接保存します。</string>
-    <string name="ba_catalog_transfer_save_location_fixed_ready">オン: 選択済みの固定フォルダに直接保存します。</string>
+    <string name="ba_catalog_transfer_save_location_saf">標準: 書き出し時に SAF でファイル位置を選択します。</string>
+    <string name="ba_catalog_transfer_save_location_fixed_empty">固定フォルダを一度選ぶと、以降の書き出しは直接保存します。</string>
+    <string name="ba_catalog_transfer_save_location_fixed_ready">選択済みの固定フォルダに直接保存します。</string>
     <string name="ba_catalog_playback_settings_title">再生設定</string>
     <string name="ba_catalog_bgm_native_media_notification">ネイティブメディア通知</string>
     <string name="ba_catalog_bgm_native_media_notification_summary">オンにすると、再生ページの BGM をシステムのメディアセッションで扱い、通知センターから再生、一時停止、前後の曲を操作できます。</string>

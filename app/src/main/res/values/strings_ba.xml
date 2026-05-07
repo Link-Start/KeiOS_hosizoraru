@@ -189,7 +189,7 @@
     <string name="ba_catalog_action_sort">排序</string>
     <string name="ba_catalog_action_refresh">刷新列表</string>
     <string name="ba_catalog_action_transfer">收藏数据</string>
-    <string name="ba_catalog_transfer_sheet_title">收藏与备份</string>
+    <string name="ba_catalog_transfer_sheet_title">收藏备份</string>
     <string name="ba_catalog_transfer_hero_title">收藏数据包</string>
     <string name="ba_catalog_transfer_hero_badge">本机合并</string>
     <string name="ba_catalog_transfer_hero_summary">导入会合并到当前收藏；已有 BGM 会按备份内容更新，学生收藏状态会同步保留。</string>

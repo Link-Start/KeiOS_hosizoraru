@@ -189,7 +189,7 @@
     <string name="ba_catalog_action_sort">Sort</string>
     <string name="ba_catalog_action_refresh">Refresh list</string>
     <string name="ba_catalog_action_transfer">Favorites data</string>
-    <string name="ba_catalog_transfer_sheet_title">Favorites &amp; backup</string>
+    <string name="ba_catalog_transfer_sheet_title">Favorites backup</string>
     <string name="ba_catalog_transfer_hero_title">Favorites bundle</string>
     <string name="ba_catalog_transfer_hero_badge">Local merge</string>
     <string name="ba_catalog_transfer_hero_summary">Imports merge into current favorites. Existing BGM updates from the backup, and student favorite states stay synced.</string>
@@ -207,9 +207,9 @@
     <string name="ba_catalog_transfer_import_all">Import all</string>
     <string name="ba_catalog_transfer_save_location">Save location</string>
     <string name="ba_catalog_transfer_save_location_fixed">Fixed folder</string>
-    <string name="ba_catalog_transfer_save_location_saf">Off: choose a file location through SAF each time.</string>
-    <string name="ba_catalog_transfer_save_location_fixed_empty">On: choose a fixed folder first, then exports save there directly.</string>
-    <string name="ba_catalog_transfer_save_location_fixed_ready">On: exports save directly to the selected fixed folder.</string>
+    <string name="ba_catalog_transfer_save_location_saf">Default: choose a file location through SAF for export.</string>
+    <string name="ba_catalog_transfer_save_location_fixed_empty">Choose a fixed folder once, then future exports save there directly.</string>
+    <string name="ba_catalog_transfer_save_location_fixed_ready">Exports save directly to the selected fixed folder.</string>
     <string name="ba_catalog_transfer_student_favorites">Favorited students</string>
     <string name="ba_catalog_transfer_student_favorites_summary">Sync only student archive favorites.</string>
     <string name="ba_catalog_transfer_bgm_favorites">Favorited Memorial Lobby BGM</string>

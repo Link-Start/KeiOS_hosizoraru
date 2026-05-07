@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student
 
 import android.app.Application
 import androidx.annotation.OptIn
+import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,8 +52,20 @@ class BaGuideBgmMediaNotificationProviderFactoryTest {
             )
         )
 
-        assertEquals(R.drawable.ic_kei_logo_notification, hyperOsIcon)
-        assertEquals(R.drawable.ic_kei_logo_notification, miuiIcon)
+        assertEquals(R.drawable.ic_launcher_foreground, hyperOsIcon)
+        assertEquals(R.drawable.ic_launcher_foreground, miuiIcon)
+    }
+
+    @Test
+    fun `Xiaomi media source icon is square to avoid HyperOS stretching`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val icon = ContextCompat.getDrawable(
+            context,
+            BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES
+        )
+
+        assertNotNull(icon)
+        assertEquals(icon.intrinsicWidth, icon.intrinsicHeight)
     }
 
     @Test

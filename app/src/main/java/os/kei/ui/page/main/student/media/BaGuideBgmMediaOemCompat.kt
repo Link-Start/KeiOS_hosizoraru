@@ -7,7 +7,7 @@ import os.kei.core.system.findPropString
 import java.util.Locale
 
 internal val BA_GUIDE_BGM_MEDIA_AOSP_SMALL_ICON_RES: Int = R.drawable.ic_launcher_monochrome
-internal val BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES: Int = R.drawable.ic_kei_logo_notification
+internal val BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES: Int = R.drawable.ic_launcher_foreground
 
 internal object BaGuideBgmMediaOemCompat {
     data class DeviceSignals(

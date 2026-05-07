@@ -112,7 +112,7 @@ class BaGuideBgmMediaButtonPreferencesTest {
     @Test
     fun `provider small icon is the KeiOS notification icon`() {
         assertEquals(R.drawable.ic_launcher_monochrome, BA_GUIDE_BGM_MEDIA_AOSP_SMALL_ICON_RES)
-        assertEquals(R.drawable.ic_kei_logo_notification, BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES)
+        assertEquals(R.drawable.ic_launcher_foreground, BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES)
         assertNotNull(
             BaGuideBgmMediaNotificationProviderFactory.create(
                 ApplicationProvider.getApplicationContext()

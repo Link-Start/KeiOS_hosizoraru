@@ -61,6 +61,13 @@ internal fun GitHubShareImportWindowFlowHost(
     fun applyCoordinatorResult(result: ShareImportCoordinatorResult) {
         when (result) {
             ShareImportCoordinatorResult.None -> Unit
+            is ShareImportCoordinatorResult.AssetReady -> {
+                pendingPreview = result.preview
+                pendingTrack = null
+                attachCandidate = null
+                phase = GitHubShareImportPhase.AssetReady
+            }
+
             is ShareImportCoordinatorResult.Pending -> {
                 pendingTrack = result.pending
                 pendingPreview = null
@@ -102,19 +109,29 @@ internal fun GitHubShareImportWindowFlowHost(
                 GitHubTrackStore.loadPendingShareImportTrack()
             }
             val currentTrack = pendingTrack
-            if (
-                currentTrack != null &&
-                storedTrack?.armedAtMillis != currentTrack.armedAtMillis
-            ) {
+            if (storedTrack != null && storedTrack.armedAtMillis != currentTrack?.armedAtMillis) {
+                pendingTrack = storedTrack
+                pendingPreview = null
+                attachCandidate = null
+                phase = GitHubShareImportPhase.WaitingInstall
+                return@collect
+            }
+            if (currentTrack != null && storedTrack == null) {
                 pendingTrack = null
                 if (phase == GitHubShareImportPhase.WaitingInstall) {
                     phase = GitHubShareImportPhase.Idle
                 }
             }
-            if (pendingPreview != null) {
-                val storedPreview = withContext(Dispatchers.IO) {
-                    GitHubShareImportFlowStore.loadActivePreview()
+            val storedPreview = withContext(Dispatchers.IO) {
+                GitHubShareImportFlowStore.loadActivePreview()
+            }?.toShareImportPreview()
+            if (storedTrack == null && storedPreview != null) {
+                if (pendingPreview?.sourceUrl != storedPreview.sourceUrl) {
+                    pendingPreview = storedPreview
+                    attachCandidate = null
+                    phase = GitHubShareImportPhase.AssetReady
                 }
+            } else if (pendingPreview != null) {
                 if (storedPreview == null) {
                     pendingPreview = null
                     if (phase == GitHubShareImportPhase.AssetReady) {
@@ -122,10 +139,16 @@ internal fun GitHubShareImportWindowFlowHost(
                     }
                 }
             }
-            if (attachCandidate != null) {
-                val storedCandidate = withContext(Dispatchers.IO) {
-                    GitHubShareImportFlowStore.loadActiveAttachCandidate()
+            val storedCandidate = withContext(Dispatchers.IO) {
+                GitHubShareImportFlowStore.loadActiveAttachCandidate()
+            }?.toShareImportAttachCandidate()
+            if (storedTrack == null && storedPreview == null && storedCandidate != null) {
+                if (attachCandidate?.packageName != storedCandidate.packageName) {
+                    pendingPreview = null
+                    attachCandidate = storedCandidate
+                    phase = GitHubShareImportPhase.InstallDetected
                 }
+            } else if (attachCandidate != null) {
                 if (storedCandidate == null) {
                     attachCandidate = null
                     if (phase == GitHubShareImportPhase.InstallDetected) {
@@ -309,45 +332,18 @@ internal fun GitHubShareImportWindowFlowHost(
                             }
                         )
                     )
-                    val singleAsset = preview.assets.singleOrNull()
-                    if (
+                    val directNotificationSend =
                         lookupConfig.shareImportFlowMode == GitHubShareImportFlowMode.NotificationFirst &&
-                        singleAsset != null
-                    ) {
-                        phase = GitHubShareImportPhase.Delivering
-                        when (
-                            val delivery = GitHubShareImportFlowCoordinator.startDelivery(
-                                context = context,
-                                preview = preview,
-                                selectedAsset = singleAsset,
-                                lookupConfig = lookupConfig
-                            )
-                        ) {
-                            is ShareImportDeliveryCoordinatorResult.Failed -> {
-                                phase = GitHubShareImportPhase.Failed
-                                toast(context, delivery.toastResId)
-                            }
-
-                            is ShareImportDeliveryCoordinatorResult.WaitingInstall -> {
-                                pendingPreview = null
-                                pendingTrack = delivery.pending
-                                attachCandidate = null
-                                phase = GitHubShareImportPhase.WaitingInstall
-                                toast(
-                                    context,
-                                    R.string.github_toast_share_import_wait_install,
-                                    delivery.assetName
-                                )
-                                onMinimizeActiveFlow?.invoke()
-                            }
-                        }
-                    } else {
-                        withContext(Dispatchers.IO) {
-                            GitHubShareImportFlowStore.saveActivePreview(preview.toPendingPreviewRecord())
-                        }
-                        GitHubTrackStoreSignals.notifyChanged()
-                        pendingPreview = preview
-                        notifyShareImportAssetReady(context, preview)
+                                preview.assets.size == 1
+                    applyCoordinatorResult(
+                        GitHubShareImportFlowCoordinator.prepareAssetReady(
+                            context = context,
+                            preview = preview,
+                            sendInstallActionEnabled = directNotificationSend
+                        )
+                    )
+                    if (directNotificationSend) {
+                        onMinimizeActiveFlow?.invoke()
                     }
                 }
             } catch (error: Throwable) {
@@ -538,6 +534,7 @@ internal fun GitHubShareImportWindowFlowHost(
                         GitHubShareImportFlowCoordinator.confirmActiveAttachCandidate(context)
                     when (result) {
                         ShareImportCoordinatorResult.None,
+                        is ShareImportCoordinatorResult.AssetReady,
                         is ShareImportCoordinatorResult.Pending,
                         is ShareImportCoordinatorResult.Detected -> Unit
 
@@ -576,6 +573,7 @@ internal fun GitHubShareImportWindowFlowHost(
                     )
                     when (result) {
                         ShareImportCoordinatorResult.None,
+                        is ShareImportCoordinatorResult.AssetReady,
                         is ShareImportCoordinatorResult.Pending,
                         is ShareImportCoordinatorResult.Detected -> Unit
 

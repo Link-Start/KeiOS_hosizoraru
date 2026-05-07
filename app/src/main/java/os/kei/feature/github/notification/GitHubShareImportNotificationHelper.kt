@@ -36,6 +36,7 @@ object GitHubShareImportNotificationHelper {
     private const val REQUEST_CANCEL_IMPORT = 2304
     private const val REQUEST_REFRESH_IMPORT = 2305
     private const val REQUEST_CONFIRM_IMPORT = 2306
+    private const val REQUEST_SEND_INSTALL = 2307
 
     fun notifyResolving(context: Context, sourceLabel: String) {
         notifyState(
@@ -52,7 +53,8 @@ object GitHubShareImportNotificationHelper {
         owner: String,
         repo: String,
         releaseTag: String,
-        assetCount: Int
+        assetCount: Int,
+        sendInstallActionEnabled: Boolean = false
     ) {
         notifyState(
             context = context,
@@ -61,7 +63,8 @@ object GitHubShareImportNotificationHelper {
                 owner = owner,
                 repo = repo,
                 releaseTag = releaseTag,
-                count = assetCount.coerceAtLeast(0)
+                count = assetCount.coerceAtLeast(0),
+                sendInstallActionEnabled = sendInstallActionEnabled
             )
         )
     }
@@ -299,8 +302,9 @@ object GitHubShareImportNotificationHelper {
         state: GitHubShareImportNotificationState
     ): McpNotificationPayload {
         val liveUpdateActive = state.phase.ongoing || state.phase.promotedLiveUpdate
-        val openPendingIntent = buildPrimaryPendingIntent(context, state.phase)
+        val openPendingIntent = buildPrimaryPendingIntent(context, state)
         val cancelImportEnabled = state.phase.cancelActionEnabled
+        val primaryActionLabel = context.getString(state.primaryActionRes)
         val secondaryPendingIntent = if (state.phase.ongoing) {
             if (cancelImportEnabled) {
                 buildCancelImportPendingIntent(context)
@@ -324,7 +328,7 @@ object GitHubShareImportNotificationHelper {
             openPendingIntent = openPendingIntent,
             stopPendingIntent = secondaryPendingIntent,
             focusOpenPendingIntent = openPendingIntent,
-            primaryActionLabel = context.getString(state.phase.primaryActionRes),
+            primaryActionLabel = primaryActionLabel,
             secondaryActionLabel = if (state.phase.ongoing) {
                 if (cancelImportEnabled) {
                     context.getString(R.string.github_share_import_pending_action_cancel)
@@ -352,9 +356,12 @@ object GitHubShareImportNotificationHelper {
 
     private fun buildPrimaryPendingIntent(
         context: Context,
-        phase: GitHubShareImportNotificationPhase
+        state: GitHubShareImportNotificationState
     ): PendingIntent {
+        val phase = state.phase
         return when {
+            phase == GitHubShareImportNotificationPhase.AssetReady &&
+                    state.sendInstallActionEnabled -> buildSendInstallPendingIntent(context)
             phase.refreshActionEnabled -> buildRefreshImportPendingIntent(context)
             phase.confirmActionEnabled -> buildConfirmImportPendingIntent(context)
             phase.openGitHubPage -> buildOpenGitHubPendingIntent(context)
@@ -517,6 +524,19 @@ object GitHubShareImportNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
+    private fun buildSendInstallPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, GitHubShareImportActivity::class.java).apply {
+            action = GitHubShareImportActivity.ACTION_SEND_INSTALL_SHARE_IMPORT
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+        return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
+            context,
+            REQUEST_SEND_INSTALL,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
 }
 
 private data class ShareImportNotificationBuildResult(
@@ -534,7 +554,8 @@ internal data class GitHubShareImportNotificationState(
     val packageName: String = "",
     val targetDisplayName: String = "",
     val primaryLabel: String = "",
-    val count: Int = 0
+    val count: Int = 0,
+    val sendInstallActionEnabled: Boolean = false
 ) {
     val projectLabel: String
         get() {
@@ -573,6 +594,17 @@ internal data class GitHubShareImportNotificationState(
     fun compactIslandTitle(shortText: String): String {
         return shortText
     }
+
+    val primaryActionRes: Int
+        get() {
+            if (
+                phase == GitHubShareImportNotificationPhase.AssetReady &&
+                sendInstallActionEnabled
+            ) {
+                return R.string.github_share_import_notify_action_send_install
+            }
+            return phase.primaryActionRes
+        }
 }
 
 internal enum class GitHubShareImportNotificationPhase(

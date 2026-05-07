@@ -8,8 +8,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -87,6 +89,30 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals(2, notification.actions.size)
         assertEquals("Choose APK", notification.actions[0].title.toString())
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
+    }
+
+    @Test
+    fun `single asset ready notification uses send install action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.AssetReady,
+            owner = "owner",
+            repo = "repo",
+            releaseTag = "v1.2.3",
+            count = 1,
+            sendInstallActionEnabled = true
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(2, notification.actions.size)
+        assertEquals("Send install", notification.actions[0].title.toString())
+        assertEquals("Cancel linkage", notification.actions[1].title.toString())
+        assertEquals(
+            GitHubShareImportActivity::class.java.name,
+            shadowOf(notification.actions[0].actionIntent).savedIntent.component?.className
+        )
     }
 
     @Test
@@ -247,6 +273,32 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("\"progress\":72"))
         assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
+    }
+
+    @Test
+    fun `single asset ready mi island notification exposes send install action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.AssetReady,
+            owner = "owner",
+            repo = "repo",
+            releaseTag = "v1.2.3",
+            count = 1,
+            sendInstallActionEnabled = true
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusCancelAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(2, notification.actions.size)
+        assertEquals("Send install", notification.actions[0].title.toString())
+        assertEquals("Cancel linkage", notification.actions[1].title.toString())
+        assertEquals("Send install", focusOpenAction.title.toString())
+        assertEquals("Cancel linkage", focusCancelAction.title.toString())
+        assertTrue(focusParam.contains("\"title\":\"Ready\""))
+        assertTrue(focusParam.contains("\"progress\":32"))
     }
 
     @Test

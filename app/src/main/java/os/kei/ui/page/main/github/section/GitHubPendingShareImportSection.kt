@@ -154,7 +154,13 @@ internal fun GitHubShareImportPreviewCard(
 ) {
     GitHubShareImportFlowCard(
         title = stringResource(R.string.github_share_import_preview_card_title),
-        status = stringResource(R.string.github_share_import_notify_action_select_apk),
+        status = stringResource(
+            if (preview.sendInstallActionEnabled) {
+                R.string.github_share_import_notify_action_send_install
+            } else {
+                R.string.github_share_import_notify_action_select_apk
+            }
+        ),
         statusColor = GitHubStatusPalette.Update,
         onOpen = onOpen,
         onCancel = onCancel

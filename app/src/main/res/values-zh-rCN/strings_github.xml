@@ -642,6 +642,7 @@
     <string name="github_share_import_preview_card_asset_count">%1$d 个 APK</string>
     <string name="github_share_import_result_label_detail">详情</string>
     <string name="github_share_import_notify_action_select_apk">选择 APK</string>
+    <string name="github_share_import_notify_action_send_install">发送安装</string>
     <string name="github_share_import_notify_action_view_progress">查看进度</string>
     <string name="github_share_import_notify_action_view_status">检测安装</string>
     <string name="github_share_import_notify_action_confirm_track">确认跟踪</string>

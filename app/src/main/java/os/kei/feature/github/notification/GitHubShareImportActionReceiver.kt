@@ -26,6 +26,11 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                         ACTION_REFRESH_SHARE_IMPORT ->
                             GitHubShareImportFlowCoordinator.refreshPendingInstall(appContext)
 
+                        ACTION_SEND_INSTALL_SHARE_IMPORT ->
+                            GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(
+                                appContext
+                            )
+
                         ACTION_CONFIRM_SHARE_IMPORT ->
                             GitHubShareImportFlowCoordinator.confirmActiveAttachCandidate(appContext)
                     }
@@ -40,12 +45,15 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
         const val ACTION_CANCEL_SHARE_IMPORT = "os.kei.github.share_import.action.CANCEL"
         const val ACTION_MARK_READ_SHARE_IMPORT = "os.kei.github.share_import.action.MARK_READ"
         const val ACTION_REFRESH_SHARE_IMPORT = "os.kei.github.share_import.action.REFRESH"
+        const val ACTION_SEND_INSTALL_SHARE_IMPORT =
+            "os.kei.github.share_import.action.SEND_INSTALL"
         const val ACTION_CONFIRM_SHARE_IMPORT = "os.kei.github.share_import.action.CONFIRM"
 
         private val supportedActions = setOf(
             ACTION_CANCEL_SHARE_IMPORT,
             ACTION_MARK_READ_SHARE_IMPORT,
             ACTION_REFRESH_SHARE_IMPORT,
+            ACTION_SEND_INSTALL_SHARE_IMPORT,
             ACTION_CONFIRM_SHARE_IMPORT
         )
     }

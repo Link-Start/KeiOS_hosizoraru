@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
@@ -31,6 +33,7 @@ class GitHubShareImportActivity : ComponentActivity() {
     private var incomingGitHubShareToken by mutableIntStateOf(0)
     private var shareImportResumeToken by mutableIntStateOf(0)
     private var shareImportDisabled by mutableStateOf(false)
+    private var sendInstallInProgress by mutableStateOf(false)
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -51,7 +54,9 @@ class GitHubShareImportActivity : ComponentActivity() {
 
             MiuixTheme(controller = controller) {
                 Box(modifier = Modifier.fillMaxSize())
-                if (shareImportDisabled) {
+                if (sendInstallInProgress) {
+                    Box(modifier = Modifier.fillMaxSize())
+                } else if (shareImportDisabled) {
                     GitHubShareImportDisabledSheet(
                         show = true,
                         onClose = { finishSafely() },
@@ -101,10 +106,18 @@ class GitHubShareImportActivity : ComponentActivity() {
     private fun consumeIncomingShareIntent(intent: Intent?) {
         if (intent?.action == ACTION_RESUME_SHARE_IMPORT) {
             shareImportDisabled = false
+            sendInstallInProgress = false
             incomingGitHubShareText = null
             shareImportResumeToken += 1
             return
         }
+        if (intent?.action == ACTION_SEND_INSTALL_SHARE_IMPORT) {
+            shareImportDisabled = false
+            incomingGitHubShareText = null
+            launchSendInstallAndFinish()
+            return
+        }
+        sendInstallInProgress = false
         if (!SafeExternalIntents.isPlainTextSend(intent)) {
             finishSafely()
             return
@@ -128,6 +141,15 @@ class GitHubShareImportActivity : ComponentActivity() {
         shareImportDisabled = false
         incomingGitHubShareText = sharedText
         incomingGitHubShareToken += 1
+    }
+
+    private fun launchSendInstallAndFinish() {
+        if (sendInstallInProgress) return
+        sendInstallInProgress = true
+        lifecycleScope.launch {
+            GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(this@GitHubShareImportActivity)
+            finishSafely()
+        }
     }
 
     private fun openGitHubPage(): Boolean {
@@ -167,6 +189,7 @@ class GitHubShareImportActivity : ComponentActivity() {
     }
 
     private fun requestNotificationPermissionIfNeededForActiveFlow() {
+        if (sendInstallInProgress) return
         if (shareImportDisabled) return
         if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
             return
@@ -176,5 +199,7 @@ class GitHubShareImportActivity : ComponentActivity() {
 
     companion object {
         const val ACTION_RESUME_SHARE_IMPORT = "os.kei.github.share_import.action.RESUME"
+        const val ACTION_SEND_INSTALL_SHARE_IMPORT =
+            "os.kei.github.share_import.action.SEND_INSTALL"
     }
 }

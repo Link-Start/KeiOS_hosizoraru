@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.share
 
+import android.app.Activity
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -23,11 +24,93 @@ import os.kei.feature.github.notification.GitHubShareImportActionReceiver
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 
 internal object GitHubShareImportFlowCoordinator {
+    suspend fun prepareAssetReady(
+        context: Context,
+        preview: GitHubShareImportPreview,
+        sendInstallActionEnabled: Boolean
+    ): ShareImportCoordinatorResult.AssetReady {
+        val selectedAsset = preview.selectedAssetForSend
+        val readyPreview = preview.copy(
+            selectedAssetName = if (sendInstallActionEnabled) {
+                selectedAsset?.name.orEmpty()
+            } else {
+                preview.selectedAssetName
+            },
+            sendInstallActionEnabled = sendInstallActionEnabled && selectedAsset != null
+        )
+        withContext(Dispatchers.IO) {
+            GitHubTrackStore.savePendingShareImportTrack(null)
+            GitHubShareImportFlowStore.saveActivePreview(readyPreview.toPendingPreviewRecord())
+        }
+        GitHubShareImportPendingScheduler.cancel(context)
+        GitHubTrackStoreSignals.notifyChanged()
+        GitHubShareImportNotificationHelper.notifyAssetReady(
+            context = context.applicationContext,
+            owner = readyPreview.owner,
+            repo = readyPreview.repo,
+            releaseTag = readyPreview.releaseTag,
+            assetCount = readyPreview.assets.size,
+            sendInstallActionEnabled = readyPreview.sendInstallActionEnabled
+        )
+        return ShareImportCoordinatorResult.AssetReady(
+            preview = readyPreview,
+            sendInstallActionEnabled = readyPreview.sendInstallActionEnabled
+        )
+    }
+
+    suspend fun sendActivePreviewAssetToInstaller(
+        context: Context
+    ): ShareImportDeliveryCoordinatorResult {
+        val appContext = context.applicationContext
+        val preview = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActivePreview()?.toShareImportPreview()
+        }
+        if (preview == null) {
+            val reason = appContext.getString(R.string.github_share_import_error_resolve_failed)
+            GitHubShareImportNotificationHelper.notifyFailed(appContext, reason)
+            return ShareImportDeliveryCoordinatorResult.Failed(
+                R.string.github_share_import_error_resolve_failed
+            )
+        }
+        if (!preview.sendInstallActionEnabled) {
+            GitHubShareImportNotificationHelper.notifyAssetReady(
+                context = appContext,
+                owner = preview.owner,
+                repo = preview.repo,
+                releaseTag = preview.releaseTag,
+                assetCount = preview.assets.size,
+                sendInstallActionEnabled = false
+            )
+            return ShareImportDeliveryCoordinatorResult.Failed(
+                R.string.github_share_import_notify_action_select_apk
+            )
+        }
+        val selectedAsset = preview.selectedAssetForSend
+        if (selectedAsset == null) {
+            val reason = appContext.getString(R.string.github_share_import_error_no_usable_apk)
+            GitHubShareImportNotificationHelper.notifyFailed(appContext, reason)
+            return ShareImportDeliveryCoordinatorResult.Failed(
+                R.string.github_share_import_error_no_usable_apk
+            )
+        }
+        val lookupConfig = withContext(Dispatchers.IO) {
+            GitHubTrackStore.loadLookupConfig()
+        }
+        return startDelivery(
+            context = context,
+            preview = preview,
+            selectedAsset = selectedAsset,
+            lookupConfig = lookupConfig,
+            launchInNewTask = context !is Activity
+        )
+    }
+
     suspend fun startDelivery(
         context: Context,
         preview: GitHubShareImportPreview,
         selectedAsset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig
+        lookupConfig: GitHubLookupConfig,
+        launchInNewTask: Boolean = false
     ): ShareImportDeliveryCoordinatorResult = coroutineScope {
         GitHubShareImportNotificationHelper.notifyDelivering(
             context = context,
@@ -50,7 +133,8 @@ internal object GitHubShareImportFlowCoordinator {
         val deliveryResult = sendAssetToConfiguredChannel(
             context = context,
             lookupConfig = lookupConfig,
-            asset = selectedAsset
+            asset = selectedAsset,
+            newTask = launchInNewTask
         )
         when (deliveryResult) {
             is ShareImportDeliveryResult.Failure -> {
@@ -406,6 +490,11 @@ internal sealed interface ShareImportDeliveryCoordinatorResult {
 
 internal sealed interface ShareImportCoordinatorResult {
     data object None : ShareImportCoordinatorResult
+    data class AssetReady(
+        val preview: GitHubShareImportPreview,
+        val sendInstallActionEnabled: Boolean
+    ) : ShareImportCoordinatorResult
+
     data class Pending(val pending: GitHubPendingShareImportTrackRecord) :
         ShareImportCoordinatorResult
 

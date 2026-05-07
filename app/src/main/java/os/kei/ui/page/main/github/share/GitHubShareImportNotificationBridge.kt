@@ -22,14 +22,16 @@ internal fun notifyShareImportResolving(
 
 internal fun notifyShareImportAssetReady(
     context: Context,
-    preview: GitHubShareImportPreview
+    preview: GitHubShareImportPreview,
+    sendInstallActionEnabled: Boolean = preview.sendInstallActionEnabled
 ) {
     GitHubShareImportNotificationHelper.notifyAssetReady(
         context = context,
         owner = preview.owner,
         repo = preview.repo,
         releaseTag = preview.releaseTag,
-        assetCount = preview.assets.size
+        assetCount = preview.assets.size,
+        sendInstallActionEnabled = sendInstallActionEnabled
     )
 }
 

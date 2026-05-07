@@ -642,6 +642,7 @@
     <string name="github_share_import_preview_card_asset_count">%1$d APKs</string>
     <string name="github_share_import_result_label_detail">Detail</string>
     <string name="github_share_import_notify_action_select_apk">Choose APK</string>
+    <string name="github_share_import_notify_action_send_install">Send install</string>
     <string name="github_share_import_notify_action_view_progress">View progress</string>
     <string name="github_share_import_notify_action_view_status">Check install</string>
     <string name="github_share_import_notify_action_confirm_track">Confirm tracking</string>

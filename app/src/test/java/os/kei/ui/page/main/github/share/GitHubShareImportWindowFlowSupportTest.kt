@@ -80,6 +80,8 @@ class GitHubShareImportWindowFlowSupportTest {
             ),
             preferredAssetName = "MicYou.apk",
             targetDisplayName = "MicYou",
+            selectedAssetName = "MicYou.apk",
+            sendInstallActionEnabled = true,
             createdAtMillis = 10_000L
         )
 
@@ -87,7 +89,11 @@ class GitHubShareImportWindowFlowSupportTest {
         val roundTrip = preview.toPendingPreviewRecord(createdAtMillis = record.createdAtMillis)
 
         assertEquals("MicYou", preview.targetDisplayName)
+        assertEquals("MicYou.apk", preview.selectedAssetForSend?.name)
+        assertEquals(true, preview.sendInstallActionEnabled)
         assertEquals("MicYou", roundTrip.targetDisplayName)
+        assertEquals("MicYou.apk", roundTrip.selectedAssetName)
+        assertEquals(true, roundTrip.sendInstallActionEnabled)
     }
 
     @Test

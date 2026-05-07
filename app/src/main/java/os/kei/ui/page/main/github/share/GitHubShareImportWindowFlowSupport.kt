@@ -74,7 +74,8 @@ internal sealed interface ShareImportAttachResult {
 internal suspend fun sendAssetToConfiguredChannel(
     context: Context,
     lookupConfig: GitHubLookupConfig,
-    asset: GitHubReleaseAssetFile
+    asset: GitHubReleaseAssetFile,
+    newTask: Boolean = false
 ): ShareImportDeliveryResult {
     val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(
         resolvePreferredAssetUrl(lookupConfig, asset)
@@ -90,7 +91,9 @@ internal suspend fun sendAssetToConfiguredChannel(
                 "extra_channel" to "Online",
                 "online_channel" to true
             )
-        )
+        ).apply {
+            if (newTask) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         return runCatching {
             context.startActivity(intent)
             ShareImportDeliveryResult.Success(R.string.github_toast_downloader_selected)
@@ -110,7 +113,7 @@ internal suspend fun sendAssetToConfiguredChannel(
         }
     }
     if (preferredPackage.isBlank()) {
-        return if (SafeExternalIntents.startBrowsableUrl(context, resolvedUrl)) {
+        return if (SafeExternalIntents.startBrowsableUrl(context, resolvedUrl, newTask = newTask)) {
             ShareImportDeliveryResult.Success(R.string.github_toast_downloader_system_default)
         } else {
             ShareImportDeliveryResult.Failure(R.string.github_toast_open_downloader_failed)
@@ -118,10 +121,17 @@ internal suspend fun sendAssetToConfiguredChannel(
     }
 
     return runCatching {
-        require(SafeExternalIntents.startBrowsableUrl(context, resolvedUrl, preferredPackage))
+        require(
+            SafeExternalIntents.startBrowsableUrl(
+                context = context,
+                url = resolvedUrl,
+                targetPackage = preferredPackage,
+                newTask = newTask
+            )
+        )
         ShareImportDeliveryResult.Success(R.string.github_toast_downloader_selected)
     }.recoverCatching {
-        require(SafeExternalIntents.startBrowsableUrl(context, resolvedUrl))
+        require(SafeExternalIntents.startBrowsableUrl(context, resolvedUrl, newTask = newTask))
         ShareImportDeliveryResult.Success(R.string.github_toast_downloader_fallback_system)
     }.getOrElse {
         ShareImportDeliveryResult.Failure(R.string.github_toast_open_downloader_failed)

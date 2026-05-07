@@ -16,6 +16,8 @@ data class GitHubPendingShareImportPreviewRecord(
     val assets: List<GitHubReleaseAssetFile>,
     val preferredAssetName: String = "",
     val targetDisplayName: String = "",
+    val selectedAssetName: String = "",
+    val sendInstallActionEnabled: Boolean = false,
     val createdAtMillis: Long = System.currentTimeMillis()
 )
 
@@ -177,6 +179,8 @@ object GitHubShareImportFlowStore {
             assets = assets,
             preferredAssetName = obj.optString("preferredAssetName").trim(),
             targetDisplayName = obj.optString("targetDisplayName").trim(),
+            selectedAssetName = obj.optString("selectedAssetName").trim(),
+            sendInstallActionEnabled = obj.optBoolean("sendInstallActionEnabled", false),
             createdAtMillis = obj.optLong("createdAtMillis", 0L)
         )
     }
@@ -215,6 +219,8 @@ object GitHubShareImportFlowStore {
             .put("strategyLabel", record.strategyLabel)
             .put("preferredAssetName", record.preferredAssetName)
             .put("targetDisplayName", record.targetDisplayName)
+            .put("selectedAssetName", record.selectedAssetName)
+            .put("sendInstallActionEnabled", record.sendInstallActionEnabled)
             .put("createdAtMillis", record.createdAtMillis)
             .put(
                 "assets",

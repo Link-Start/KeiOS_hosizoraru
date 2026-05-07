@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
-import android.net.Uri
 import android.os.Bundle
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import os.kei.R
@@ -49,7 +49,7 @@ internal fun GuideBgmFavoriteItem.toBaGuideBgmMediaItem(
     }
     val artworkUri = artworkUrlResolver(this)
         .takeIf { it.isNotBlank() }
-        ?.let { raw -> runCatching { Uri.parse(raw) }.getOrNull() }
+        ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
     return MediaItem.Builder()
         .setMediaId(mediaId)
         .setUri(playbackUrl)

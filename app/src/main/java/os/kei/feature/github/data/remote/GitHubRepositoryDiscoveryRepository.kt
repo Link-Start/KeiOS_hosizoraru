@@ -13,7 +13,7 @@ import os.kei.feature.github.model.GitHubStarListSummary
 import java.net.URI
 import java.net.URLEncoder
 import java.time.Instant
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 internal class GitHubRepositoryDiscoveryRepository(
     apiToken: String = "",
@@ -458,10 +458,10 @@ internal class GitHubRepositoryDiscoveryRepository(
 
         private val githubClient: OkHttpClient by lazy {
             OkHttpClient.Builder()
-                .callTimeout(18, TimeUnit.SECONDS)
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(14, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .callTimeout(18.seconds)
+                .connectTimeout(10.seconds)
+                .readTimeout(14.seconds)
+                .writeTimeout(10.seconds)
                 .retryOnConnectionFailure(true)
                 .followRedirects(true)
                 .followSslRedirects(true)

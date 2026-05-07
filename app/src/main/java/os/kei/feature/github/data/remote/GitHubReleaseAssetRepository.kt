@@ -13,8 +13,8 @@ import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeUnit
 import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.seconds
 
 data class GitHubReleaseAssetFile(
     val name: String,
@@ -57,10 +57,10 @@ object GitHubReleaseAssetRepository {
 
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .callTimeout(16, TimeUnit.SECONDS)
-            .connectTimeout(8, TimeUnit.SECONDS)
-            .readTimeout(12, TimeUnit.SECONDS)
-            .writeTimeout(8, TimeUnit.SECONDS)
+            .callTimeout(16.seconds)
+            .connectTimeout(8.seconds)
+            .readTimeout(12.seconds)
+            .writeTimeout(8.seconds)
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .followSslRedirects(true)

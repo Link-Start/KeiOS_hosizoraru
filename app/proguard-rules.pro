@@ -35,33 +35,42 @@
 # Keep annotation/signature metadata used by Kotlin + library runtime features.
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
 
-# focus-api ships without consumer rules, but its HyperOS payload builder relies on:
-# 1) kotlinx.serialization for miui.focus.param JSON
-# 2) a sealed factory whose fully qualified subclass name becomes the JSON "type"
-# 3) declaredFields reflection when copying template state
-# Preserve the library surface so release builds keep the same island/live-update payload shape.
--keep class com.xzakota.hyper.notification.** { *; }
+# focus-api ships without consumer rules. Keep only the payload contract that HyperOS reads:
+# 1) kotlinx.serialization entry points for miui.focus.param JSON
+# 2) sealed factory names because their fully qualified subclass names become the JSON "type"
+# 3) template fields used by declaredFields copy helpers
+# This keeps the Bundle/JSON schema stable while letting R8 shrink and optimize unused helpers.
 -keepnames class com.xzakota.hyper.notification.focus.FocusNotification
 -keepnames class com.xzakota.hyper.notification.focus.FocusNotification$FocusTemplateFactory
 -keepnames class com.xzakota.hyper.notification.focus.FocusNotification$FocusTemplateFactory$*
--keep class com.xzakota.hyper.notification.**$$serializer { *; }
+-keep,allowoptimization class com.xzakota.hyper.notification.**$$serializer { *; }
 -keepclassmembers class com.xzakota.hyper.notification.** {
     public static ** Companion;
     public static ** INSTANCE;
     public static *** serializer(...);
+}
+-keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.BaseFocusTemplate {
+    <fields>;
+}
+-keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.FocusTemplate {
+    <fields>;
+}
+-keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.FocusTemplateV3 {
+    <fields>;
+}
+-keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.CustomFocusTemplateV3 {
     <fields>;
 }
 
-# Keep our thin Focus builders readable and stable around the payload boundary.
-# The system only consumes the Bundle/JSON emitted by focus-api; these helpers should not
-# be reshaped in ways that make release-only notification debugging opaque.
--keep class os.kei.core.notification.focus.** { *; }
--keep class os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder { *; }
--keep class os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder$* { *; }
--keep class os.kei.feature.github.notification.GitHubRefreshNotificationHelper { *; }
--keep class os.kei.feature.github.notification.GitHubRefreshNotificationHelper$* { *; }
+# Keep notification boundary class names readable for release-only payload debugging.
+# Their members stay optimizable because the system consumes the Focus extras, not these helpers.
+-keepnames class os.kei.core.notification.focus.MiFocusNotificationTemplate
+-keepnames class os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder
+-keepnames class os.kei.feature.github.notification.GitHubRefreshNotificationHelper
+-keepnames class os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 
-# Drop release log calls to reduce overhead and method count.
+# Drop direct release Log calls to reduce overhead and method count.
+# AppLogger warning/error paths still run because this rule only targets android.util.Log calls.
 -assumenosideeffects class android.util.Log {
     public static int v(...);
     public static int d(...);
@@ -73,3 +82,7 @@
 # Ktor debug probe references JDK-only management APIs on Android.
 -dontwarn java.lang.management.ManagementFactory
 -dontwarn java.lang.management.RuntimeMXBean
+
+# R8 diagnostics:
+# - Compare app/build/outputs/mapping/{release,benchmark}/configuration.txt, mapping.txt, and usage.txt.
+# - Use temporary -whyareyoukeeping rules only during local diagnosis; do not commit them.

@@ -222,7 +222,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 .semantics {
                                     contentDescription = checkingContentDescription
                                 },
-                            contentAlignment = androidx.compose.ui.Alignment.Center
+                            contentAlignment = Alignment.Center
                         ) {
                             LiquidCircularProgressBar(
                                 size = 16.dp,

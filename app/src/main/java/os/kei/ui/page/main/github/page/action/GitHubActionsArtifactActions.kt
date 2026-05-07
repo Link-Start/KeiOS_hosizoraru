@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS = 2_500L
 
@@ -74,7 +75,7 @@ internal class GitHubActionsArtifactActions(
                 }
                 if (openResolvedArtifactDownloadUrl(resolvedUrl, fileName)) {
                     val artifactPackageName = artifactPackageNameDeferred?.let { deferred ->
-                        withTimeoutOrNull(ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS) {
+                        withTimeoutOrNull(ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS.milliseconds) {
                             deferred.await()
                         }.also { packageName ->
                             if (packageName == null) deferred.cancel()

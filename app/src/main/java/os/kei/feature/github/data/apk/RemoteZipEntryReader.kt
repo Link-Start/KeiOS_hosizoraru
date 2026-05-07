@@ -4,13 +4,37 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.ByteArrayOutputStream
 import java.net.URI
-import java.util.concurrent.TimeUnit
 import java.util.zip.Inflater
+import kotlin.time.Duration.Companion.seconds
 
 internal data class RemoteZipSelectedEntries(
     val entryNames: List<String>,
     val entries: Map<String, ByteArray>
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RemoteZipSelectedEntries
+
+        if (entryNames != other.entryNames) return false
+        if (entries.keys != other.entries.keys) return false
+        for ((name, bytes) in entries) {
+            val otherBytes = other.entries[name] ?: return false
+            if (!bytes.contentEquals(otherBytes)) return false
+        }
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = entryNames.hashCode()
+        val entriesHash = entries.entries.fold(0) { acc, (name, bytes) ->
+            acc + (31 * name.hashCode() + bytes.contentHashCode())
+        }
+        result = 31 * result + entriesHash
+        return result
+    }
+}
 
 internal class RemoteZipEntryReader(
     private val client: OkHttpClient = defaultClient
@@ -508,7 +532,25 @@ internal class RemoteZipEntryReader(
     private data class RangeBytes(
         val bytes: ByteArray,
         val start: Long
-    )
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as RangeBytes
+
+            if (start != other.start) return false
+            if (!bytes.contentEquals(other.bytes)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = start.hashCode()
+            result = 31 * result + bytes.contentHashCode()
+            return result
+        }
+    }
 
     private data class RangeProbe(
         val totalSize: Long,
@@ -519,7 +561,27 @@ internal class RemoteZipEntryReader(
         val bytes: ByteArray,
         val offset: Long,
         val resolvedUrl: String
-    )
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as CentralDirectoryBytes
+
+            if (offset != other.offset) return false
+            if (!bytes.contentEquals(other.bytes)) return false
+            if (resolvedUrl != other.resolvedUrl) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = offset.hashCode()
+            result = 31 * result + bytes.contentHashCode()
+            result = 31 * result + resolvedUrl.hashCode()
+            return result
+        }
+    }
 
     private data class LocalEntry(
         val dataOffset: Long
@@ -560,10 +622,10 @@ internal class RemoteZipEntryReader(
 
         private val defaultClient: OkHttpClient by lazy {
             OkHttpClient.Builder()
-                .callTimeout(18, TimeUnit.SECONDS)
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(14, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .callTimeout(18.seconds)
+                .connectTimeout(10.seconds)
+                .readTimeout(14.seconds)
+                .writeTimeout(10.seconds)
                 .retryOnConnectionFailure(true)
                 .followRedirects(true)
                 .followSslRedirects(true)

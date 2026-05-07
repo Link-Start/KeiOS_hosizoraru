@@ -94,7 +94,7 @@ internal fun GitHubStarImportQuality.summaryRes(): Int {
     }
 }
 
-internal fun os.kei.feature.github.model.GitHubRepositoryImportCandidate.matchesStarImportQuality(
+internal fun GitHubRepositoryImportCandidate.matchesStarImportQuality(
     quality: GitHubStarImportQuality
 ): Boolean {
     return GitHubStarImportClassifier.classify(this) == quality

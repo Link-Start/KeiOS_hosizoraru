@@ -14,6 +14,21 @@ import kotlin.test.assertTrue
 
 class RemoteZipEntryReaderTest {
     @Test
+    fun `selected entries compare byte arrays by content`() {
+        val left = RemoteZipSelectedEntries(
+            entryNames = listOf("AndroidManifest.xml"),
+            entries = mapOf("AndroidManifest.xml" to byteArrayOf(1, 2, 3))
+        )
+        val right = RemoteZipSelectedEntries(
+            entryNames = listOf("AndroidManifest.xml"),
+            entries = mapOf("AndroidManifest.xml" to byteArrayOf(1, 2, 3))
+        )
+
+        assertEquals(left, right)
+        assertEquals(left.hashCode(), right.hashCode())
+    }
+
+    @Test
     fun `reader fetches AndroidManifest entry through explicit byte ranges`() {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.remote")
         val apkBytes = zipWithManifest(manifest)

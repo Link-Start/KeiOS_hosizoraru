@@ -2,8 +2,6 @@ package os.kei.feature.ba.data.remote
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import os.kei.KeiOSApp
-import os.kei.core.log.AppLogger
 import okhttp3.Cache
 import okhttp3.Cookie
 import okhttp3.CookieJar
@@ -12,10 +10,12 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import os.kei.KeiOSApp
+import os.kei.core.log.AppLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 object GameKeeFetchHelper {
     private const val TAG = "GameKeeFetch"
@@ -141,10 +141,10 @@ object GameKeeFetchHelper {
     }
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .callTimeout(12, TimeUnit.SECONDS)
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
+        .callTimeout(12.seconds)
+        .connectTimeout(8.seconds)
+        .readTimeout(10.seconds)
+        .writeTimeout(10.seconds)
         .retryOnConnectionFailure(true)
         .fastFallback(true)
         .followRedirects(true)

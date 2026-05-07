@@ -81,6 +81,6 @@ class KeiOSApp : Application() {
             addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
             addDataScheme("package")
         }
-        registerReceiver(packageChangedReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        registerReceiver(packageChangedReceiver, filter, RECEIVER_NOT_EXPORTED)
     }
 }

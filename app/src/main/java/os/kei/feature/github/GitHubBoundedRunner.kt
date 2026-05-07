@@ -73,7 +73,7 @@ internal object GitHubBoundedRunner {
         return try {
             val completionService = ExecutorCompletionService<Result<R>>(executor)
             items.forEach { item ->
-                completionService.submit(Callable { block(item) })
+                completionService.submit { block(item) }
             }
             var lastError: Throwable? = null
             repeat(items.size) {

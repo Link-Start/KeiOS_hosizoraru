@@ -1,5 +1,9 @@
 package os.kei.feature.github.data.remote
 
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseSignalSource
@@ -7,14 +11,10 @@ import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubVersionCandidateSource
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
 import java.net.URLDecoder
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 private data class CachedValue<T>(
     val value: T,
@@ -37,10 +37,10 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
 
     private val githubClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .callTimeout(18, TimeUnit.SECONDS)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(14, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
+            .callTimeout(18.seconds)
+            .connectTimeout(10.seconds)
+            .readTimeout(14.seconds)
+            .writeTimeout(10.seconds)
             .retryOnConnectionFailure(true)
             .followRedirects(true)
             .followSslRedirects(true)

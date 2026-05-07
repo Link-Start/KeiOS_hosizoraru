@@ -423,24 +423,24 @@ object GitHubReleaseCheckService {
                         (it.latestStableRawTag.isNotBlank() || it.latestStableName.isNotBlank() || it.latestTag.isNotBlank())
                 }
                 ?.let {
-                os.kei.feature.github.model.GitHubReleaseVersionSignals(
-                    displayVersion = it.latestStableName.ifBlank { it.latestTag.ifBlank { it.latestStableRawTag } },
-                    rawTag = it.latestStableRawTag.ifBlank { it.latestTag },
-                    rawName = it.latestStableName.ifBlank { it.latestTag.ifBlank { it.latestStableRawTag } },
-                    link = entry.latestStableUrl,
-                    updatedAtMillis = entry.latestStableUpdatedAtMillis.takeIf { ts -> ts > 0L }
-                )
+                    GitHubReleaseVersionSignals(
+                        displayVersion = it.latestStableName.ifBlank { it.latestTag.ifBlank { it.latestStableRawTag } },
+                        rawTag = it.latestStableRawTag.ifBlank { it.latestTag },
+                        rawName = it.latestStableName.ifBlank { it.latestTag.ifBlank { it.latestStableRawTag } },
+                        link = entry.latestStableUrl,
+                        updatedAtMillis = entry.latestStableUpdatedAtMillis.takeIf { ts -> ts > 0L }
+                    )
             },
             preRelease = entry
                 .takeIf { it.latestPreRawTag.isNotBlank() || it.latestPreName.isNotBlank() || it.preReleaseInfo.isNotBlank() }
                 ?.let {
-                os.kei.feature.github.model.GitHubReleaseVersionSignals(
-                    displayVersion = it.latestPreName.ifBlank { it.preReleaseInfo.ifBlank { it.latestPreRawTag } },
-                    rawTag = it.latestPreRawTag.ifBlank { it.preReleaseInfo },
-                    rawName = it.latestPreName.ifBlank { it.preReleaseInfo.ifBlank { it.latestPreRawTag } },
-                    link = entry.latestPreUrl,
-                    updatedAtMillis = entry.latestPreUpdatedAtMillis.takeIf { ts -> ts > 0L }
-                )
+                    GitHubReleaseVersionSignals(
+                        displayVersion = it.latestPreName.ifBlank { it.preReleaseInfo.ifBlank { it.latestPreRawTag } },
+                        rawTag = it.latestPreRawTag.ifBlank { it.preReleaseInfo },
+                        rawName = it.latestPreName.ifBlank { it.preReleaseInfo.ifBlank { it.latestPreRawTag } },
+                        link = entry.latestPreUrl,
+                        updatedAtMillis = entry.latestPreUpdatedAtMillis.takeIf { ts -> ts > 0L }
+                    )
             },
             hasStableRelease = entry.hasStableRelease,
             hasUpdate = entry.hasUpdate,

@@ -296,6 +296,28 @@ class GitHubShareImportWindowFlowSupportTest {
         )
     }
 
+    @Test
+    fun `notification first single apk minimizes only when notifications can be posted`() {
+        assertTrue(
+            shouldMinimizeNotificationFirstShareImport(
+                directNotificationSend = true,
+                canPostNotifications = true
+            )
+        )
+        assertFalse(
+            shouldMinimizeNotificationFirstShareImport(
+                directNotificationSend = true,
+                canPostNotifications = false
+            )
+        )
+        assertFalse(
+            shouldMinimizeNotificationFirstShareImport(
+                directNotificationSend = false,
+                canPostNotifications = true
+            )
+        )
+    }
+
     private fun pendingTrack(
         armedAtMillis: Long,
         packageName: String = ""

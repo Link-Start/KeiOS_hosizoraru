@@ -1,5 +1,9 @@
 package os.kei.ui.page.main.github.share
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -336,7 +340,11 @@ internal fun GitHubShareImportWindowFlowHost(
                             sendInstallActionEnabled = directNotificationSend
                         )
                     )
-                    if (directNotificationSend) {
+                    if (shouldMinimizeNotificationFirstShareImport(
+                            directNotificationSend = directNotificationSend,
+                            canPostNotifications = context.canPostNotifications()
+                        )
+                    ) {
                         onMinimizeActiveFlow?.invoke()
                     }
                 }
@@ -610,4 +618,17 @@ private suspend fun saveShareImportResult(result: GitHubShareImportResult) {
         GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
     }
     GitHubTrackStoreSignals.notifyChanged()
+}
+
+internal fun shouldMinimizeNotificationFirstShareImport(
+    directNotificationSend: Boolean,
+    canPostNotifications: Boolean
+): Boolean {
+    return directNotificationSend && canPostNotifications
+}
+
+private fun Context.canPostNotifications(): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+    return checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
 }

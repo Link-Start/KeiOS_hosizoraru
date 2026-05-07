@@ -23,6 +23,7 @@ import os.kei.mcp.framework.notification.builder.UserSettings
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
+import os.kei.ui.page.main.github.share.GitHubShareImportSendInstallActivity
 
 private const val GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR = "#22C55E"
 private const val GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR = "#EF4444"
@@ -526,7 +527,7 @@ object GitHubShareImportNotificationHelper {
     }
 
     private fun buildSendInstallPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, GitHubShareImportActivity::class.java).apply {
+        val intent = Intent(context, GitHubShareImportSendInstallActivity::class.java).apply {
             action = GitHubShareImportActivity.ACTION_SEND_INSTALL_SHARE_IMPORT
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }

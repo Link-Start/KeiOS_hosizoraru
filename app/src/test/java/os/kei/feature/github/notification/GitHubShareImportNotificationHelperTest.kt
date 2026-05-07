@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.mcp.notification.McpNotificationHelper
-import os.kei.ui.page.main.github.share.GitHubShareImportActivity
+import os.kei.ui.page.main.github.share.GitHubShareImportSendInstallActivity
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -110,7 +110,7 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Send install", notification.actions[0].title.toString())
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
         assertEquals(
-            GitHubShareImportActivity::class.java.name,
+            GitHubShareImportSendInstallActivity::class.java.name,
             shadowOf(notification.actions[0].actionIntent).savedIntent.component?.className
         )
     }
@@ -297,6 +297,10 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
         assertEquals("Send install", focusOpenAction.title.toString())
         assertEquals("Cancel linkage", focusCancelAction.title.toString())
+        assertEquals(
+            GitHubShareImportSendInstallActivity::class.java.name,
+            shadowOf(notification.actions[0].actionIntent).savedIntent.component?.className
+        )
         assertTrue(focusParam.contains("\"title\":\"Ready\""))
         assertTrue(focusParam.contains("\"progress\":32"))
     }

@@ -87,6 +87,14 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.page.main.github.share.GitHubShareImportSendInstallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:finishOnTaskLaunch="true"
+            android:launchMode="singleTop"
+            android:noHistory="true"
+            android:theme="@style/Theme.KeiOS.ShareImportDispatch" />
 
         <activity
             android:name=".ui.page.main.github.importer.GitHubStarImportActivity"

@@ -58,15 +58,7 @@ internal fun currentRowsForCard(
     context: Context
 ): List<InfoRow> {
     return when (card) {
-        OsSectionCard.TOP_INFO -> {
-            val system = sectionStates[SectionKind.SYSTEM]?.rows ?: emptyList()
-            val secure = sectionStates[SectionKind.SECURE]?.rows ?: emptyList()
-            val global = sectionStates[SectionKind.GLOBAL]?.rows ?: emptyList()
-            val android = sectionStates[SectionKind.ANDROID]?.rows ?: emptyList()
-            val java = sectionStates[SectionKind.JAVA]?.rows ?: emptyList()
-            val linux = sectionStates[SectionKind.LINUX]?.rows ?: emptyList()
-            buildTopInfoRows(system, secure, global, android, java, linux)
-        }
+        OsSectionCard.TOP_INFO -> buildTopInfoRowsSnapshot(sectionStates).rows
 
         OsSectionCard.SHELL_RUNNER -> emptyList()
 

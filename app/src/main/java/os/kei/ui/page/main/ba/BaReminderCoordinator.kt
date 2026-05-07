@@ -1,7 +1,9 @@
 package os.kei.ui.page.main.ba
 
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.displayAp
@@ -90,6 +92,135 @@ internal object BaReminderCoordinator {
         if (currentSlotMs <= lastSlotMs) return BaSlotReminderPlan.None
         return BaSlotReminderPlan.Notify(currentSlotMs)
     }
+
+    fun calendarUpcomingGroups(
+        entries: List<BaCalendarEntry>,
+        nowMs: Long,
+        serverIndex: Int,
+        leadHours: Int,
+        notifiedKeys: Set<String>
+    ): List<BaReminderEventGroup<BaCalendarEntry>> {
+        return entries.asSequence()
+            .filter { it.beginAtMs > nowMs && it.beginAtMs - nowMs <= leadMs(leadHours) }
+            .sortedBy { it.beginAtMs }
+            .toReminderGroups(
+                serverIndex = serverIndex,
+                type = "calendar_start",
+                leadHours = leadHours,
+                notifiedKeys = notifiedKeys,
+                idOf = { it.id },
+                atMsOf = { it.beginAtMs }
+            )
+    }
+
+    fun calendarEndingGroups(
+        entries: List<BaCalendarEntry>,
+        nowMs: Long,
+        serverIndex: Int,
+        leadHours: Int,
+        notifiedKeys: Set<String>
+    ): List<BaReminderEventGroup<BaCalendarEntry>> {
+        return entries.asSequence()
+            .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs(leadHours) }
+            .sortedBy { it.endAtMs }
+            .toReminderGroups(
+                serverIndex = serverIndex,
+                type = "calendar_end",
+                leadHours = leadHours,
+                notifiedKeys = notifiedKeys,
+                idOf = { it.id },
+                atMsOf = { it.endAtMs }
+            )
+    }
+
+    fun poolUpcomingGroups(
+        entries: List<BaPoolEntry>,
+        nowMs: Long,
+        serverIndex: Int,
+        leadHours: Int,
+        notifiedKeys: Set<String>
+    ): List<BaReminderEventGroup<BaPoolEntry>> {
+        return entries.asSequence()
+            .filter { it.startAtMs > nowMs && it.startAtMs - nowMs <= leadMs(leadHours) }
+            .sortedBy { it.startAtMs }
+            .toReminderGroups(
+                serverIndex = serverIndex,
+                type = "pool_start",
+                leadHours = leadHours,
+                notifiedKeys = notifiedKeys,
+                idOf = { it.id },
+                atMsOf = { it.startAtMs }
+            )
+    }
+
+    fun poolEndingGroups(
+        entries: List<BaPoolEntry>,
+        nowMs: Long,
+        serverIndex: Int,
+        leadHours: Int,
+        notifiedKeys: Set<String>
+    ): List<BaReminderEventGroup<BaPoolEntry>> {
+        return entries.asSequence()
+            .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs(leadHours) }
+            .sortedBy { it.endAtMs }
+            .toReminderGroups(
+                serverIndex = serverIndex,
+                type = "pool_end",
+                leadHours = leadHours,
+                notifiedKeys = notifiedKeys,
+                idOf = { it.id },
+                atMsOf = { it.endAtMs }
+            )
+    }
+
+    fun changeKey(
+        serverIndex: Int,
+        type: String,
+        changedCount: Int,
+        fingerprint: Long
+    ): String {
+        return BaReminderKey(
+            serverIndex = serverIndex,
+            type = type,
+            id = changedCount,
+            atMs = fingerprint,
+            leadHours = 0
+        ).encode()
+    }
+
+    private fun leadMs(leadHours: Int): Long {
+        return leadHours.coerceAtLeast(1) * 60L * 60L * 1000L
+    }
+
+    private fun <T> Sequence<T>.toReminderGroups(
+        serverIndex: Int,
+        type: String,
+        leadHours: Int,
+        notifiedKeys: Set<String>,
+        idOf: (T) -> Int,
+        atMsOf: (T) -> Long
+    ): List<BaReminderEventGroup<T>> {
+        return map { entry ->
+            val atMs = atMsOf(entry)
+            val key = BaReminderKey(
+                serverIndex = serverIndex,
+                type = type,
+                id = idOf(entry),
+                atMs = atMs,
+                leadHours = leadHours
+            ).encode()
+            BaReminderEvent(entry = entry, atMs = atMs, key = key)
+        }
+            .filter { it.key !in notifiedKeys }
+            .groupBy { it.atMs }
+            .map { (_, events) ->
+                BaReminderEventGroup(
+                    atMs = events.firstOrNull()?.atMs ?: 0L,
+                    entries = events.map { it.entry },
+                    keys = events.map { it.key }
+                )
+            }
+    }
 }
 
 internal data class BaApReminderPlan(
@@ -126,3 +257,15 @@ internal data class BaReminderKey(
         }"
     }
 }
+
+internal data class BaReminderEventGroup<T>(
+    val atMs: Long,
+    val entries: List<T>,
+    val keys: List<String>
+)
+
+private data class BaReminderEvent<T>(
+    val entry: T,
+    val atMs: Long,
+    val key: String
+)

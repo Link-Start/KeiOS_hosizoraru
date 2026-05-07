@@ -1,14 +1,18 @@
 package os.kei.ui.page.main.github.share
 
+import android.content.Intent
 import org.junit.Test
+import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED
 import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportResultRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GitHubShareImportWindowFlowSupportTest {
     @Test
@@ -235,6 +239,61 @@ class GitHubShareImportWindowFlowSupportTest {
         )
 
         assertNull(candidate)
+    }
+
+    @Test
+    fun `package changed event requires fresh package snapshot`() {
+        val event = AppPackageChangedEvent(
+            action = Intent.ACTION_PACKAGE_CHANGED,
+            packageName = "target.package",
+            atMillis = 12_000L
+        )
+
+        assertFalse(
+            isShareImportAttachEventValid(
+                event = event,
+                armedAtMillis = 200_000L,
+                packageLastUpdateTimeMs = 70_000L
+            )
+        )
+        assertTrue(
+            isShareImportAttachEventValid(
+                event = event,
+                armedAtMillis = 200_000L,
+                packageLastUpdateTimeMs = 200_000L - shareImportTrackUpdateToleranceMs
+            )
+        )
+    }
+
+    @Test
+    fun `coordinator result maps to share import phase consistently`() {
+        val pending = pendingTrack(armedAtMillis = 10_000L)
+        val candidate = pending.toAttachCandidate(
+            packageSnapshot = installedPackage(
+                packageName = "target.package",
+                lastUpdateTimeMs = 11_000L
+            ),
+            eventAction = Intent.ACTION_PACKAGE_ADDED,
+            detectedAtMillis = 12_000L
+        )
+
+        assertEquals(GitHubShareImportPhase.Idle, ShareImportCoordinatorResult.None.toShareImportPhase())
+        assertEquals(
+            GitHubShareImportPhase.WaitingInstall,
+            ShareImportCoordinatorResult.Pending(pending).toShareImportPhase()
+        )
+        assertEquals(
+            GitHubShareImportPhase.InstallDetected,
+            ShareImportCoordinatorResult.Detected(candidate).toShareImportPhase()
+        )
+        assertEquals(
+            GitHubShareImportPhase.Added,
+            ShareImportCoordinatorResult.AlreadyTracked(candidate).toShareImportPhase()
+        )
+        assertEquals(
+            GitHubShareImportPhase.Failed,
+            ShareImportCoordinatorResult.Failed("failed").toShareImportPhase()
+        )
     }
 
     private fun pendingTrack(

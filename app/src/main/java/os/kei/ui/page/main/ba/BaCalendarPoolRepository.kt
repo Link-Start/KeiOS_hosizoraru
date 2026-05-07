@@ -336,91 +336,57 @@ private fun dispatchCalendarSyncNotifications(
     hadCache: Boolean,
 ) {
     val leadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
-    val leadMs = leadHours.coerceAtLeast(1) * 60L * 60L * 1000L
     val notifiedKeys = BASettingsStore.loadCalendarPoolNotifiedKeys()
 
     if (BASettingsStore.loadCalendarUpcomingNotifyEnabled()) {
-        val targetsByTime = nextEntries
-            .asSequence()
-            .filter { it.beginAtMs > nowMs && it.beginAtMs - nowMs <= leadMs }
-            .sortedBy { it.beginAtMs }
-            .filter { entry ->
-                calendarNotifyKey(
-                    serverIndex,
-                    "calendar_start",
-                    entry.id,
-                    entry.beginAtMs,
-                    leadHours
-                ) !in notifiedKeys
-            }
-            .groupBy { it.beginAtMs }
-        targetsByTime.forEach { (_, targets) ->
+        val groups = BaReminderCoordinator.calendarUpcomingGroups(
+            entries = nextEntries,
+            nowMs = nowMs,
+            serverIndex = serverIndex,
+            leadHours = leadHours,
+            notifiedKeys = notifiedKeys
+        )
+        groups.forEach { group ->
+            val targets = group.entries
             if (BaCalendarPoolNotificationDispatcher.sendCalendarUpcomingGroup(
                     context,
                     serverIndex,
                     targets
                 )
             ) {
-                targets.forEach { target ->
-                    BASettingsStore.markCalendarPoolNotified(
-                        calendarNotifyKey(
-                            serverIndex,
-                            "calendar_start",
-                            target.id,
-                            target.beginAtMs,
-                            leadHours
-                        )
-                    )
-                }
+                group.keys.forEach(BASettingsStore::markCalendarPoolNotified)
             }
         }
     }
 
     if (BASettingsStore.loadCalendarEndingNotifyEnabled()) {
-        val targetsByTime = nextEntries
-            .asSequence()
-            .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs }
-            .sortedBy { it.endAtMs }
-            .filter { entry ->
-                calendarNotifyKey(
-                    serverIndex,
-                    "calendar_end",
-                    entry.id,
-                    entry.endAtMs,
-                    leadHours
-                ) !in notifiedKeys
-            }
-            .groupBy { it.endAtMs }
-        targetsByTime.forEach { (_, targets) ->
+        val groups = BaReminderCoordinator.calendarEndingGroups(
+            entries = nextEntries,
+            nowMs = nowMs,
+            serverIndex = serverIndex,
+            leadHours = leadHours,
+            notifiedKeys = notifiedKeys
+        )
+        groups.forEach { group ->
+            val targets = group.entries
             if (BaCalendarPoolNotificationDispatcher.sendCalendarEndingGroup(
                     context,
                     serverIndex,
                     targets
                 )
             ) {
-                targets.forEach { target ->
-                    BASettingsStore.markCalendarPoolNotified(
-                        calendarNotifyKey(
-                            serverIndex,
-                            "calendar_end",
-                            target.id,
-                            target.endAtMs,
-                            leadHours
-                        )
-                    )
-                }
+                group.keys.forEach(BASettingsStore::markCalendarPoolNotified)
             }
         }
     }
 
     if (hadCache && BASettingsStore.loadCalendarPoolChangeNotifyEnabled()) {
         val changedCount = countCalendarEntryChanges(previousEntries, nextEntries)
-        val changeKey = calendarNotifyKey(
-            serverIndex,
-            "calendar_change",
-            changedCount,
-            calendarEntriesFingerprint(nextEntries),
-            0
+        val changeKey = BaReminderCoordinator.changeKey(
+            serverIndex = serverIndex,
+            type = "calendar_change",
+            changedCount = changedCount,
+            fingerprint = calendarEntriesFingerprint(nextEntries)
         )
         if (changedCount > 0 &&
             changeKey !in notifiedKeys &&
@@ -445,91 +411,57 @@ private fun dispatchPoolSyncNotifications(
     hadCache: Boolean,
 ) {
     val leadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
-    val leadMs = leadHours.coerceAtLeast(1) * 60L * 60L * 1000L
     val notifiedKeys = BASettingsStore.loadCalendarPoolNotifiedKeys()
 
     if (BASettingsStore.loadPoolUpcomingNotifyEnabled()) {
-        val targetsByTime = nextEntries
-            .asSequence()
-            .filter { it.startAtMs > nowMs && it.startAtMs - nowMs <= leadMs }
-            .sortedBy { it.startAtMs }
-            .filter { entry ->
-                calendarNotifyKey(
-                    serverIndex,
-                    "pool_start",
-                    entry.id,
-                    entry.startAtMs,
-                    leadHours
-                ) !in notifiedKeys
-            }
-            .groupBy { it.startAtMs }
-        targetsByTime.forEach { (_, targets) ->
+        val groups = BaReminderCoordinator.poolUpcomingGroups(
+            entries = nextEntries,
+            nowMs = nowMs,
+            serverIndex = serverIndex,
+            leadHours = leadHours,
+            notifiedKeys = notifiedKeys
+        )
+        groups.forEach { group ->
+            val targets = group.entries
             if (BaCalendarPoolNotificationDispatcher.sendPoolUpcomingGroup(
                     context,
                     serverIndex,
                     targets
                 )
             ) {
-                targets.forEach { target ->
-                    BASettingsStore.markCalendarPoolNotified(
-                        calendarNotifyKey(
-                            serverIndex,
-                            "pool_start",
-                            target.id,
-                            target.startAtMs,
-                            leadHours
-                        )
-                    )
-                }
+                group.keys.forEach(BASettingsStore::markCalendarPoolNotified)
             }
         }
     }
 
     if (BASettingsStore.loadPoolEndingNotifyEnabled()) {
-        val targetsByTime = nextEntries
-            .asSequence()
-            .filter { it.isRunning && it.endAtMs > nowMs && it.endAtMs - nowMs <= leadMs }
-            .sortedBy { it.endAtMs }
-            .filter { entry ->
-                calendarNotifyKey(
-                    serverIndex,
-                    "pool_end",
-                    entry.id,
-                    entry.endAtMs,
-                    leadHours
-                ) !in notifiedKeys
-            }
-            .groupBy { it.endAtMs }
-        targetsByTime.forEach { (_, targets) ->
+        val groups = BaReminderCoordinator.poolEndingGroups(
+            entries = nextEntries,
+            nowMs = nowMs,
+            serverIndex = serverIndex,
+            leadHours = leadHours,
+            notifiedKeys = notifiedKeys
+        )
+        groups.forEach { group ->
+            val targets = group.entries
             if (BaCalendarPoolNotificationDispatcher.sendPoolEndingGroup(
                     context,
                     serverIndex,
                     targets
                 )
             ) {
-                targets.forEach { target ->
-                    BASettingsStore.markCalendarPoolNotified(
-                        calendarNotifyKey(
-                            serverIndex,
-                            "pool_end",
-                            target.id,
-                            target.endAtMs,
-                            leadHours
-                        )
-                    )
-                }
+                group.keys.forEach(BASettingsStore::markCalendarPoolNotified)
             }
         }
     }
 
     if (hadCache && BASettingsStore.loadCalendarPoolChangeNotifyEnabled()) {
         val changedCount = countPoolEntryChanges(previousEntries, nextEntries)
-        val changeKey = calendarNotifyKey(
-            serverIndex,
-            "pool_change",
-            changedCount,
-            poolEntriesFingerprint(nextEntries),
-            0
+        val changeKey = BaReminderCoordinator.changeKey(
+            serverIndex = serverIndex,
+            type = "pool_change",
+            changedCount = changedCount,
+            fingerprint = poolEntriesFingerprint(nextEntries)
         )
         if (changedCount > 0 &&
             changeKey !in notifiedKeys &&
@@ -613,20 +545,4 @@ private fun firstChangedPoolTitle(
     return nextEntries.firstOrNull { entry ->
         previousSignatures[entry.id] != "${entry.name}|${entry.tagId}|${entry.startAtMs}|${entry.endAtMs}|${entry.linkUrl}"
     }?.name.orEmpty()
-}
-
-private fun calendarNotifyKey(
-    serverIndex: Int,
-    type: String,
-    id: Int,
-    atMs: Long,
-    leadHours: Int,
-): String {
-    return BaReminderKey(
-        serverIndex = serverIndex,
-        type = type,
-        id = id,
-        atMs = atMs,
-        leadHours = leadHours
-    ).encode()
 }

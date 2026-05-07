@@ -9,6 +9,25 @@ internal data class TopInfoTopic(
     @param:StringRes val titleRes: Int
 )
 
+internal enum class TopInfoRowsStatus {
+    NotLoaded,
+    EmptyFresh,
+    Cached,
+    Refreshing,
+    Fresh
+}
+
+internal data class TopInfoRowsSnapshot(
+    val rows: List<InfoRow>,
+    val status: TopInfoRowsStatus
+) {
+    val hasRows: Boolean
+        get() = rows.isNotEmpty()
+
+    val loadedFresh: Boolean
+        get() = status == TopInfoRowsStatus.Fresh || status == TopInfoRowsStatus.EmptyFresh
+}
+
 internal fun topInfoTopicOf(key: String): TopInfoTopic {
     val k = key.lowercase()
     return when {
@@ -91,4 +110,49 @@ internal fun buildTopInfoRows(
     TopInfoKeys.java.forEach { key -> javaMap[key]?.let { rows += InfoRow(key, it) } }
     TopInfoKeys.linux.forEach { key -> linuxMap[key]?.let { rows += InfoRow(key, it) } }
     return sortTopInfoRows(cleanRows(rows))
+}
+
+internal fun buildTopInfoRowsSnapshot(
+    sectionStates: Map<SectionKind, SectionState>
+): TopInfoRowsSnapshot {
+    val systemRows = sectionStates[SectionKind.SYSTEM]?.rows ?: emptyList()
+    val secureRows = sectionStates[SectionKind.SECURE]?.rows ?: emptyList()
+    val globalRows = sectionStates[SectionKind.GLOBAL]?.rows ?: emptyList()
+    val androidRows = sectionStates[SectionKind.ANDROID]?.rows ?: emptyList()
+    val javaRows = sectionStates[SectionKind.JAVA]?.rows ?: emptyList()
+    val linuxRows = sectionStates[SectionKind.LINUX]?.rows ?: emptyList()
+    val rows = buildTopInfoRows(
+        systemRows = systemRows,
+        secureRows = secureRows,
+        globalRows = globalRows,
+        androidRows = androidRows,
+        javaRows = javaRows,
+        linuxRows = linuxRows
+    )
+    val states = SectionKind.entries.map { kind -> sectionStates[kind] ?: SectionState() }
+    if (states.any { it.loading }) {
+        return TopInfoRowsSnapshot(rows = rows, status = TopInfoRowsStatus.Refreshing)
+    }
+    if (rows.isEmpty()) {
+        val loadedFresh = states.any { it.loadedFresh }
+        return TopInfoRowsSnapshot(
+            rows = rows,
+            status = if (loadedFresh) TopInfoRowsStatus.EmptyFresh else TopInfoRowsStatus.NotLoaded
+        )
+    }
+
+    val contributingFresh = listOf(
+        SectionKind.SYSTEM to systemRows.any { it.key in TopInfoKeys.system },
+        SectionKind.SECURE to secureRows.any { it.key in TopInfoKeys.secure },
+        SectionKind.GLOBAL to globalRows.any { it.key in TopInfoKeys.global },
+        SectionKind.ANDROID to androidRows.any { it.key in TopInfoKeys.android },
+        SectionKind.JAVA to javaRows.any { it.key in TopInfoKeys.java },
+        SectionKind.LINUX to linuxRows.any { it.key in TopInfoKeys.linux }
+    )
+        .filter { (_, contributes) -> contributes }
+        .all { (kind, _) -> sectionStates[kind]?.loadedFresh == true }
+    return TopInfoRowsSnapshot(
+        rows = rows,
+        status = if (contributingFresh) TopInfoRowsStatus.Fresh else TopInfoRowsStatus.Cached
+    )
 }

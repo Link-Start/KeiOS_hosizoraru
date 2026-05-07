@@ -2,7 +2,9 @@ package os.kei.ui.page.main.ba
 
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -107,7 +109,105 @@ class BaReminderCoordinatorTest {
         assertEquals("2|calendar_start|7|0|0", key)
     }
 
+    @Test
+    fun `calendar reminder groups upcoming entries by time and skips notified keys`() {
+        val first = calendarEntry(id = 1, beginAtMs = NOW_MS + 30_000L)
+        val second = calendarEntry(id = 2, beginAtMs = NOW_MS + 30_000L)
+        val later = calendarEntry(id = 3, beginAtMs = NOW_MS + 2 * HOUR_MS)
+        val notifiedKey = BaReminderKey(
+            serverIndex = 2,
+            type = "calendar_start",
+            id = second.id,
+            atMs = second.beginAtMs,
+            leadHours = 1
+        ).encode()
+
+        val groups = BaReminderCoordinator.calendarUpcomingGroups(
+            entries = listOf(first, second, later),
+            nowMs = NOW_MS,
+            serverIndex = 2,
+            leadHours = 1,
+            notifiedKeys = setOf(notifiedKey)
+        )
+
+        assertEquals(1, groups.size)
+        assertEquals(listOf(first), groups.single().entries)
+        assertEquals(
+            "2|calendar_start|1|${first.beginAtMs}|1",
+            groups.single().keys.single()
+        )
+    }
+
+    @Test
+    fun `pool ending reminder requires running entry inside lead window`() {
+        val running = poolEntry(id = 7, endAtMs = NOW_MS + 10_000L, isRunning = true)
+        val future = poolEntry(id = 8, endAtMs = NOW_MS + 10_000L, isRunning = false)
+
+        val groups = BaReminderCoordinator.poolEndingGroups(
+            entries = listOf(running, future),
+            nowMs = NOW_MS,
+            serverIndex = 1,
+            leadHours = 1,
+            notifiedKeys = emptySet()
+        )
+
+        assertEquals(1, groups.size)
+        assertEquals(listOf(running), groups.single().entries)
+        assertEquals("1|pool_end|7|${running.endAtMs}|1", groups.single().keys.single())
+    }
+
+    @Test
+    fun `change reminder key uses shared key normalization`() {
+        val key = BaReminderCoordinator.changeKey(
+            serverIndex = 6,
+            type = "pool_change",
+            changedCount = 3,
+            fingerprint = -1L
+        )
+
+        assertEquals("2|pool_change|3|0|0", key)
+    }
+
+    private fun calendarEntry(
+        id: Int,
+        beginAtMs: Long,
+        endAtMs: Long = beginAtMs + HOUR_MS,
+        isRunning: Boolean = false
+    ): BaCalendarEntry {
+        return BaCalendarEntry(
+            id = id,
+            title = "Event $id",
+            kindId = 31,
+            kindName = "Event",
+            beginAtMs = beginAtMs,
+            endAtMs = endAtMs,
+            linkUrl = "https://www.gamekee.com/ba/huodong/$id",
+            imageUrl = "",
+            isRunning = isRunning
+        )
+    }
+
+    private fun poolEntry(
+        id: Int,
+        startAtMs: Long = NOW_MS - HOUR_MS,
+        endAtMs: Long,
+        isRunning: Boolean
+    ): BaPoolEntry {
+        return BaPoolEntry(
+            id = id,
+            name = "Pool $id",
+            tagId = 6,
+            tagName = "Pickup",
+            startAtMs = startAtMs,
+            endAtMs = endAtMs,
+            linkUrl = "https://www.gamekee.com/ba/kachi/$id",
+            imageUrl = "",
+            isRunning = isRunning
+        )
+    }
+
     private companion object {
         private const val NOW_MS = 1_777_392_000_000L
+        private const val HOUR_MS = 60L * 60L * 1000L
     }
 }

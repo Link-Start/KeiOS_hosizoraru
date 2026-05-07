@@ -59,27 +59,25 @@ internal fun GitHubShareImportWindowFlowHost(
     var attachSubmittingAndOpen by remember { mutableStateOf(false) }
     var restoringActiveFlow by remember { mutableStateOf(true) }
     fun applyCoordinatorResult(result: ShareImportCoordinatorResult) {
+        phase = result.toShareImportPhase()
         when (result) {
             ShareImportCoordinatorResult.None -> Unit
             is ShareImportCoordinatorResult.AssetReady -> {
                 pendingPreview = result.preview
                 pendingTrack = null
                 attachCandidate = null
-                phase = GitHubShareImportPhase.AssetReady
             }
 
             is ShareImportCoordinatorResult.Pending -> {
                 pendingTrack = result.pending
                 pendingPreview = null
                 attachCandidate = null
-                phase = GitHubShareImportPhase.WaitingInstall
             }
 
             is ShareImportCoordinatorResult.Detected -> {
                 pendingTrack = null
                 pendingPreview = null
                 attachCandidate = result.candidate
-                phase = GitHubShareImportPhase.InstallDetected
             }
 
             is ShareImportCoordinatorResult.Added,
@@ -87,19 +85,15 @@ internal fun GitHubShareImportWindowFlowHost(
                 pendingTrack = null
                 pendingPreview = null
                 attachCandidate = null
-                phase = GitHubShareImportPhase.Added
-            }
-
-            is ShareImportCoordinatorResult.Failed -> {
-                phase = GitHubShareImportPhase.Failed
             }
 
             is ShareImportCoordinatorResult.Cancelled -> {
                 pendingTrack = null
                 pendingPreview = null
                 attachCandidate = null
-                phase = GitHubShareImportPhase.Idle
             }
+
+            is ShareImportCoordinatorResult.Failed -> Unit
         }
     }
 

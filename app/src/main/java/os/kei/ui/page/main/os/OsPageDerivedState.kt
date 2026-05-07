@@ -66,8 +66,8 @@ internal fun rememberOsPageDerivedState(
     val javaRows = sectionStates[SectionKind.JAVA]?.rows ?: emptyList()
     val linuxRows = sectionStates[SectionKind.LINUX]?.rows ?: emptyList()
 
-    val topInfoRows = remember(systemRows, secureRows, globalRows, androidRows, javaRows, linuxRows) {
-        buildTopInfoRows(systemRows, secureRows, globalRows, androidRows, javaRows, linuxRows)
+    val topInfoRows = remember(sectionStates) {
+        buildTopInfoRowsSnapshot(sectionStates).rows
     }
     val prunedSystemRows = remember(systemRows) { removeTopInfoRows(SectionKind.SYSTEM, systemRows) }
     val prunedSecureRows = remember(secureRows) { removeTopInfoRows(SectionKind.SECURE, secureRows) }

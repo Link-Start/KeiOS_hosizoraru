@@ -113,7 +113,8 @@ Official references checked on 2026-04-29:
 ### P1-E Notifications, Advanced Protection, And Hidden APIs
 
 - [x] Validate MCP notification surfaces against Android 17 promoted-notification and Live Update behavior.
-- [ ] Validate GitHub, BA AP/cafe/arena, and Super Island notification surfaces against Android 17 promoted-notification and Live Update behavior.
+- [x] Validate GitHub, BA AP/cafe/arena, and Super Island notification surfaces against Android 17
+  promoted-notification and Live Update behavior.
 - [x] Add an Advanced Protection Mode status detector and expose it in About build details.
 - [ ] Add behavior downgrade plans for Shizuku, package enumeration, battery-optimization, and local MCP LAN flows when Advanced Protection Mode is enabled.
 - [ ] Audit Android 17 hidden-API and reflection risk around Shizuku/system-settings helpers; replace blocked reflection paths with documented fallbacks when available.

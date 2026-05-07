@@ -23,7 +23,7 @@
 
 KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务、GitHub Releases / Actions、GitHub Star
 导入、Blue Archive 辅助与学生图鉴功能。应用使用 Compose + Miuix 构建，并提供 v2 液态玻璃界面、高密度状态卡、导入导出、本地化
-MCP Skill、通知提醒、仓库发现和缓存诊断。
+MCP Skill、支持语义化图标的通知提醒、仓库发现和缓存诊断。
 
 ## 项目信息
 
@@ -36,7 +36,7 @@ MCP Skill、通知提醒、仓库发现和缓存诊断。
 | UI 技术栈     | Jetpack Compose、Miuix、液态玻璃风格 chrome            |
 | 运行技术栈      | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
 | 语言资源       | 简体中文、English、日本語                               |
-| 当前标签基线     | `v1.3.14`                                      |
+| 当前标签基线     | `v1.4.0`                                       |
 
 ## 常用入口
 
@@ -71,7 +71,7 @@ MCP Skill、通知提醒、仓库发现和缓存诊断。
 ## 当前分发方式
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
-- 当前稳定标签：[v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14)。
+- 当前稳定标签：[v1.4.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.4.0)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Kotlin `2.3.21`、Compose `1.11.1`、Android Gradle Plugin
   `9.2.1`。

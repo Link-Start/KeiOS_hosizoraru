@@ -53,6 +53,14 @@
 - `AnimText`：动画文本 + 可选计时器。
 - `TextButtons`：展开态文字按钮，项目约定最多 2 个。
 
+## 语义化图标 (Semantic Icon)
+
+通知构建器支持 `semanticIconBitmap`：
+
+- 如果 `NotificationPayload` 中携带了 `semanticIconBitmap`，构建器将优先使用该位图作为 `LargeIcon`。
+- 允许根据通知内容动态生成图标（如 GitHub 项目 Logo、学生头像等）。
+- 在超级岛展开态中，该图标将作为主视觉元素展示。
+
 ## 最小示例
 
 ```kotlin

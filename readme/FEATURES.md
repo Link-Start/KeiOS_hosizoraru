@@ -34,7 +34,8 @@ The MCP page manages a local KeiOS MCP server:
 - Claw Skill quick setup prompt, localized SKILL.md generation, and tool-level help resources.
 - 42 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
   Star List import, package scans, reverse repository scans, and Blue Archive cache inspection.
-- Foreground keep-alive service and test notifications.
+- Foreground keep-alive service, test notifications, and semantic icon bitmap support for
+  notification builders.
 - HyperOS Super Island template support and AOSP Live Update fallback settings through the notification compatibility controls.
 
 ## GitHub
@@ -49,7 +50,7 @@ The GitHub page tracks APK releases from GitHub projects:
 - Artifact ranking that highlights Android packages, build types, universal packages, recency, and previous download history.
 - Tracked-item editing with app package linkage, installed-app matching, package-name scanning from
   latest stable release APKs, and reverse repository scanning from package name plus app label.
-- Share-import flow for repository, release, tag, and direct APK links.
+- Share-import flow for repository, release, tag, and direct APK links with window dimming support.
 - Star List import from authenticated stars, public user stars, and public Star List URLs, with list
   discovery, search, multi-select filters, Android/APK quality classification, release APK
   verification, and import confirmation.
@@ -63,7 +64,8 @@ The GitHub page tracks APK releases from GitHub projects:
 The BA page acts as a Blue Archive office dashboard:
 
 - AP and cafe AP tracking with server-aware timing.
-- AP threshold notifications, cafe visit reminders, arena refresh reminders, and BA-specific Super Island presentation.
+- AP threshold notifications, cafe visit reminders, arena refresh reminders, and BA-specific Super
+  Island presentation using progress and countdown templates.
 - Server-specific nickname and friend-code ID cards, plus friend code copy and office overview
   cards.
 - Server, cafe level, AP threshold, media rotation, and custom media save-location settings.

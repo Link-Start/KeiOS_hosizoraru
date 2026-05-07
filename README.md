@@ -24,7 +24,8 @@
 KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
 Releases / Actions workflows, GitHub Star import, and Blue Archive helper tools. It combines a
 Compose + Miuix interface with v2 liquid-glass chrome, dense status cards, import/export tools,
-localized MCP skills, notification helpers, repository discovery, and cache diagnostics.
+localized MCP skills, notification helpers, repository discovery,
+and cache diagnostics.
 
 ## Project Signals
 
@@ -37,7 +38,7 @@ localized MCP skills, notification helpers, repository discovery, and cache diag
 | UI stack             | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack        | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages            | Simplified Chinese, English, Japanese                |
-| Current tag baseline | `v1.3.14`                                            |
+| Current tag baseline | `v1.4.0`                                             |
 
 ## Quick Links
 
@@ -78,7 +79,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14).
+- Current stable tag: [v1.4.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.4.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Kotlin `2.3.21`, Compose `1.11.1`, Android
   Gradle Plugin `9.2.1`.

@@ -32,7 +32,7 @@ MCP 页面用于管理本地 KeiOS MCP Server：
 - 提供 Claw Skill 快速接入提示词、本地化 SKILL.md 和单工具帮助资源。
 - 42 个 MCP 工具覆盖 Home 总览、OS 卡片、系统 TopInfo、GitHub 跟踪 / 分享导入 / 仓库发现、Star List
   导入、包名扫描、仓库反扫和 Blue Archive 缓存巡检。
-- 支持前台保活服务和测试通知。
+- 支持前台保活服务、测试通知与通知构建器的语义化图标（Semantic Icon）。
 - 通过通知兼容设置支持 HyperOS 超级岛模板与 AOSP Live Update 实时通知。
 
 ## GitHub
@@ -46,7 +46,7 @@ GitHub 页面用于追踪 GitHub 项目的 APK 发布：
 - 分支推荐会综合默认分支、近期活跃度、成功 run 与 artifact 可用性。
 - Artifact 排序会突出 Android 包、构建类型、universal 包、更新时间和历史下载记录。
 - 跟踪项可关联包名，并与本机已安装应用匹配；支持从最新稳定 release APK 扫描包名，也支持按包名和应用名反扫仓库。
-- 支持从仓库、Release、Tag、直链 APK 分享导入。
+- 支持从仓库、Release、Tag、直链 APK 分享导入，提供窗口背景变暗以增强聚焦。
 - 支持从自己的 stars、他人的公开 stars、公开 Star List 链接导入项目，导入页提供分类发现、搜索、多选筛选、Android/APK
   质量分类、release APK 验证和确认弹窗。
 - 抓取方案诊断可对比 Atom 与 API 在 release 检查、包名扫描、仓库反扫上的表现。
@@ -57,7 +57,7 @@ GitHub 页面用于追踪 GitHub 项目的 APK 发布：
 BA 页面是 Blue Archive 办公室仪表盘：
 
 - 追踪 AP 与咖啡厅 AP，并按不同服务器时区计算。
-- 支持 AP 阈值提醒、咖啡厅学生来访提醒、竞技场刷新提醒和 BA 专用超级岛显示。
+- 支持进度与倒计时模板的 BA 专用超级岛显示。
 - 支持按服务器独立的昵称 / 好友码 ID 卡、好友码复制和办公室总览卡。
 - 支持服务器、咖啡厅等级、AP 阈值、媒体旋转、自定义媒体保存位置等配置。
 - 活动日历与卡池卡片带服务器上下文和紧凑时间布局，可配置通知并跳转到对应学生图鉴。

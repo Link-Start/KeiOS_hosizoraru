@@ -10,11 +10,14 @@ import androidx.annotation.StringRes
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
+import os.kei.core.prefs.UiPrefs
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.builder.EnvironmentContext
 import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
+import os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder
 import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
 import os.kei.mcp.framework.notification.builder.NotificationPayload
+import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
 import os.kei.mcp.framework.notification.builder.UserSettings
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
@@ -196,12 +199,12 @@ object GitHubShareImportNotificationHelper {
     ): Boolean {
         if (!notificationsGranted(context)) return false
         McpNotificationHelper.ensureChannel(context)
-        val notification = buildFrameworkLiveUpdateNotification(context, state)
+        val buildResult = buildFrameworkNotificationResult(context, state)
         McpNotificationHelper.dispatchNotification(
             context = context,
             notificationId = NOTIFICATION_ID,
-            notification = notification,
-            useXiaomiMagic = false
+            notification = buildResult.notification,
+            useXiaomiMagic = buildResult.useXiaomiMagic
         )
         return true
     }
@@ -227,6 +230,43 @@ object GitHubShareImportNotificationHelper {
         }
     }
 
+    internal fun buildFrameworkMiIslandNotification(
+        context: Context,
+        state: GitHubShareImportNotificationState
+    ): Notification {
+        val helper = NotificationHelper(context)
+        val payload = NotificationPayload(
+            state = buildPayload(context, state),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = helper.resolveChannel(NotificationRenderStyle.MI_ISLAND),
+                isHyperOS = helper.isHyperOS,
+                preferOemLiveIconLayout = helper.preferOemLiveIconLayout
+            )
+        )
+        return MiIslandNotificationBuilder(context).build(payload)
+    }
+
+    private fun buildFrameworkNotificationResult(
+        context: Context,
+        state: GitHubShareImportNotificationState
+    ): ShareImportNotificationBuildResult {
+        val helper = NotificationHelper(context)
+        val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
+        val useMiIsland = preferSuperIsland && helper.isSupportMiIsland
+        return if (useMiIsland) {
+            ShareImportNotificationBuildResult(
+                notification = buildFrameworkMiIslandNotification(context, state),
+                useXiaomiMagic = UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+            )
+        } else {
+            ShareImportNotificationBuildResult(
+                notification = buildFrameworkLiveUpdateNotification(context, state),
+                useXiaomiMagic = false
+            )
+        }
+    }
+
     private fun buildPayload(
         context: Context,
         state: GitHubShareImportNotificationState
@@ -249,12 +289,13 @@ object GitHubShareImportNotificationHelper {
         }
         val shortText = context.getString(state.phase.shortTextRes)
         val content = resolveContent(context, state)
+        val islandMetaText = state.compactMetaLabel
         return McpNotificationPayload(
             serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = liveUpdateActive,
             port = state.phase.progressPercent,
             path = content,
-            clients = 1,
+            clients = if (state.phase.ongoing) 1 else 0,
             ongoing = liveUpdateActive,
             onlyAlertOnce = true,
             openPendingIntent = openPendingIntent,
@@ -273,7 +314,7 @@ object GitHubShareImportNotificationHelper {
             showSecondaryActionWhenStopped = true,
             overrideTitle = context.getString(state.phase.titleRes),
             overrideContent = content,
-            overrideOnlineText = shortText,
+            overrideOnlineText = islandMetaText.ifBlank { shortText },
             overrideShortText = shortText,
             overrideProgressPercent = state.phase.progressPercent
         )
@@ -412,6 +453,11 @@ object GitHubShareImportNotificationHelper {
     }
 }
 
+private data class ShareImportNotificationBuildResult(
+    val notification: Notification,
+    val useXiaomiMagic: Boolean
+)
+
 internal data class GitHubShareImportNotificationState(
     val phase: GitHubShareImportNotificationPhase,
     val owner: String = "",
@@ -440,6 +486,18 @@ internal data class GitHubShareImportNotificationState(
 
     val appDisplayLabel: String
         get() = appLabel.ifBlank { packageName }.ifBlank { projectLabel }
+
+    val compactMetaLabel: String
+        get() = appLabel
+            .ifBlank { packageName }
+            .ifBlank {
+                when {
+                    owner.isNotBlank() || repo.isNotBlank() -> projectLabel
+                    assetName.isNotBlank() -> assetName
+                    releaseTag.isNotBlank() -> releaseTag
+                    else -> primaryLabel
+                }
+            }
 }
 
 internal enum class GitHubShareImportNotificationPhase(

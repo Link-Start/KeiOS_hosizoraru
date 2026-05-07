@@ -167,6 +167,62 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("mcp_action_stop"))
     }
 
+    @Test
+    fun `github share import island uses progress and notification action labels`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 801,
+            action = "os.kei.test.OPEN_GITHUB_SHARE_IMPORT"
+        )
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            802,
+            Intent("os.kei.test.CANCEL_GITHUB_SHARE_IMPORT").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
+                running = true,
+                port = 72,
+                path = "owner/repo · demo.app · exact match · 12 min left",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = cancelPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                primaryActionLabel = "View status",
+                secondaryActionLabel = "Cancel linkage",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "Waiting for install",
+                overrideContent = "owner/repo · demo.app · exact match · 12 min left",
+                overrideOnlineText = "demo.app",
+                overrideShortText = "Waiting",
+                overrideProgressPercent = 72
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(notificationOpenPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
+        assertEquals("View status", focusOpenAction.title.toString())
+        assertEquals("Cancel linkage", focusStopAction.title.toString())
+        assertTrue(focusParam.contains("\"title\":\"Waiting\""))
+        assertTrue(focusParam.contains("demo.app"))
+        assertTrue(focusParam.contains("\"progress\":72"))
+    }
+
     private fun buildOpenPendingIntent(
         context: Application,
         requestCode: Int,

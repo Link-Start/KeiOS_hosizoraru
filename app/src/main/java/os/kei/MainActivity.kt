@@ -26,6 +26,7 @@ import androidx.core.view.WindowCompat
 import androidx.metrics.performance.JankStats
 import os.kei.core.perf.AppJankMonitor
 import os.kei.core.platform.LocalNetworkPermissionCompat
+import os.kei.core.platform.TransientExternalLaunchGuard
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private var requestedBottomPageToken by mutableStateOf(0)
     private var requestedGitHubRefreshToken by mutableStateOf(0)
     private var requestedBaBgmPlaybackToken by mutableStateOf(0)
+    private var transientExternalLaunchActive by mutableStateOf(false)
     private var pendingMcpServerAction: String? = null
     private var pendingShortcutAction: String? = null
     private var startMcpAfterLocalNetworkPermission = false
@@ -68,12 +70,17 @@ class MainActivity : ComponentActivity() {
     private lateinit var localMcpService: LocalMcpService
     private lateinit var mcpServerManager: McpServerManager
     private var jankStats: JankStats? = null
+    private val transientExternalLaunchGuard = TransientExternalLaunchGuard()
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             notificationPermissionGranted = granted
+            transientExternalLaunchGuard.clear()
+            transientExternalLaunchActive = false
         }
     private val requestLocalNetworkPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            transientExternalLaunchGuard.clear()
+            transientExternalLaunchActive = false
             val permissionGranted = granted || hasLocalNetworkPermission()
             Toast.makeText(
                 this,
@@ -100,6 +107,9 @@ class MainActivity : ComponentActivity() {
         window.isNavigationBarContrastEnforced = false
         notificationPermissionGranted = hasNotificationPermission()
         if (!notificationPermissionGranted) {
+            transientExternalLaunchGuard.markLaunching(
+                TransientExternalLaunchGuard.Reason.NotificationPermission
+            )
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         consumeIntentNavigation(intent)
@@ -161,6 +171,7 @@ class MainActivity : ComponentActivity() {
                         requestedBottomPageToken = requestedBottomPageToken,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                         requestedBaBgmPlaybackToken = requestedBaBgmPlaybackToken,
+                        transientExternalLaunchActive = transientExternalLaunchActive,
                         onRequestedBottomPageConsumed = {
                             requestedBottomPage = null
                         }
@@ -176,9 +187,23 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        transientExternalLaunchGuard.markLaunching(
+            TransientExternalLaunchGuard.Reason.NotificationRoute
+        )
         setIntent(intent)
         consumeIntentNavigation(intent)
         applyPendingShortcutActions()
+    }
+
+    override fun onStop() {
+        transientExternalLaunchActive = transientExternalLaunchGuard.shouldDeferStopWork()
+        super.onStop()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        transientExternalLaunchGuard.onResume()
+        transientExternalLaunchActive = false
     }
 
     override fun onDestroy() {
@@ -192,6 +217,9 @@ class MainActivity : ComponentActivity() {
     private fun requestNotificationPermissionIfNeeded() {
         notificationPermissionGranted = hasNotificationPermission()
         if (!notificationPermissionGranted) {
+            transientExternalLaunchGuard.markLaunching(
+                TransientExternalLaunchGuard.Reason.NotificationPermission
+            )
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
@@ -206,6 +234,9 @@ class MainActivity : ComponentActivity() {
         if (hasLocalNetworkPermission()) return true
         val permission = LocalNetworkPermissionCompat.requiredPermissionOrNull() ?: return true
         startMcpAfterLocalNetworkPermission = startMcpAfterGrant
+        transientExternalLaunchGuard.markLaunching(
+            TransientExternalLaunchGuard.Reason.LocalNetworkPermission
+        )
         requestLocalNetworkPermissionLauncher.launch(permission)
         Toast.makeText(
             this,

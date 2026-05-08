@@ -25,6 +25,11 @@ import os.kei.core.system.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
+import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
+import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
+import os.kei.ui.page.main.back.MainBackNavigationAction
+import os.kei.ui.page.main.back.resolveMainBackNavigationAction
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
@@ -35,6 +40,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun MainPagerLayout(
+    rootBackHandlersEnabled: Boolean,
     navigator: Navigator,
     settingsReturnToken: Int,
     liquidBottomBarEnabled: Boolean,
@@ -56,9 +62,11 @@ internal fun MainPagerLayout(
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
+    transientExternalLaunchActive: Boolean,
     onRequestedBottomPageConsumed: () -> Unit
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
+    val backNavigationRuntime = LocalBackNavigationRuntimeState.current
     val context = LocalContext.current
     val insets = rememberMainPagerInsets()
     val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
@@ -129,6 +137,24 @@ internal fun MainPagerLayout(
             }
         }
     }
+    val homePageIndex = coordinator.tabs
+        .indexOf(BottomPage.Home)
+        .takeIf { it >= 0 }
+        ?: 0
+    val mainBackAction = resolveMainBackNavigationAction(
+        backStackSize = 1,
+        targetPageIndex = coordinator.pagerState.targetPage.coerceIn(
+            0,
+            (coordinator.tabs.size - 1).coerceAtLeast(0)
+        ),
+        homePageIndex = homePageIndex
+    )
+    KeiOSBackNavigationHandler(
+        enabled = rootBackHandlersEnabled && mainBackAction == MainBackNavigationAction.NavigateHome,
+        source = BackNavigationSource.MainPager
+    ) {
+        coordinator.onPageSelected(homePageIndex)
+    }
 
     AppScaffold(
         modifier = Modifier
@@ -190,7 +216,9 @@ internal fun MainPagerLayout(
                         BottomPage.GitHub -> coordinator.githubScrollToTopSignal
                     },
                     hasActivated = activationState.hasActivated(pageType),
-                    contentReady = activationState.contentReady(pageType)
+                    contentReady = activationState.contentReady(pageType),
+                    contentWorkAllowed = backNavigationRuntime.contentWorkAllowed &&
+                            !transientExternalLaunchActive
                 )
                 key(pageType.name) {
                     MainPagerPageHost(

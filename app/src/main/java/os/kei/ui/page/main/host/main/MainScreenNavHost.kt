@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.host.main
 
 import android.content.pm.PackageInfo
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
@@ -9,6 +8,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -24,6 +25,11 @@ import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.about.page.AboutPage
+import os.kei.ui.page.main.back.BackNavigationRuntimeController
+import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
+import os.kei.ui.page.main.back.LocalBackNavigationRuntimeController
+import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
 import os.kei.ui.page.main.host.pager.MainPagerLayout
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.settings.page.SettingsPage
@@ -47,11 +53,13 @@ internal fun MainScreenNavHost(
     onRequestNotificationPermission: () -> Unit,
     mcpServerManager: McpServerManager,
     appThemeMode: AppThemeMode,
+    transientExternalLaunchActive: Boolean,
     onAppThemeModeChanged: (AppThemeMode) -> Unit
 ) {
     val entryProvider = entryProvider<NavKey> {
         entry<KeiosRoute.Main> {
             MainPagerLayout(
+                rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
                 navigator = navigator,
                 settingsReturnToken = pagerCoordinator.settingsReturnToken,
                 liquidBottomBarEnabled = pagerCoordinator.liquidBottomBarEnabled,
@@ -73,6 +81,7 @@ internal fun MainScreenNavHost(
                 requestedBottomPage = pagerCoordinator.requestedBottomPage,
                 requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
                 requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
+                transientExternalLaunchActive = transientExternalLaunchActive,
                 onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed
             )
         }
@@ -180,12 +189,18 @@ internal fun MainScreenNavHost(
     } else {
         NavDisplayTransitionEffects.Default
     }
+    val backRuntimeController = remember { BackNavigationRuntimeController() }
+    SideEffect {
+        backRuntimeController.updatePolicy(predictiveBackPolicy)
+    }
     val entries = rememberDecoratedNavEntries(
         backStack = backStack,
         entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
         entryProvider = entryProvider,
     )
     CompositionLocalProvider(
+        LocalBackNavigationRuntimeController provides backRuntimeController,
+        LocalBackNavigationRuntimeState provides backRuntimeController.state,
         LocalTransitionAnimationsEnabled provides prefsState.transitionAnimationsEnabled,
         LocalPredictiveBackAnimationsEnabled provides predictiveBackPreviewEnabled,
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
@@ -198,7 +213,10 @@ internal fun MainScreenNavHost(
             transitionEffects = transitionEffects,
             modifier = Modifier.fillMaxSize()
         )
-        BackHandler(enabled = !predictiveBackPreviewEnabled && backStack.size > 1) {
+        KeiOSBackNavigationHandler(
+            enabled = !predictiveBackPreviewEnabled && backStack.size > 1,
+            source = BackNavigationSource.MainRoute
+        ) {
             handleMainScreenBack(backStack, navigator, pagerCoordinator)
         }
     }

@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -21,10 +22,14 @@ import kotlinx.coroutines.launch
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
+import os.kei.ui.page.main.back.KeiOSActivityBackHandler
+import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -46,6 +51,11 @@ class GitHubShareImportActivity : ComponentActivity() {
 
         setContent {
             val appThemeMode = UiPrefs.getAppThemeMode()
+            val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+            val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
+            )
             val colorSchemeMode = when (appThemeMode) {
                 AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
                 AppThemeMode.LIGHT -> ColorSchemeMode.Light
@@ -54,45 +64,51 @@ class GitHubShareImportActivity : ComponentActivity() {
             val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
-                Box(modifier = Modifier.fillMaxSize())
-                if (sendInstallInProgress) {
+                CompositionLocalProvider(
+                    LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
+                    LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled
+                ) {
+                    KeiOSActivityBackHandler(onBack = { finishSafely() })
                     Box(modifier = Modifier.fillMaxSize())
-                } else if (shareImportDisabled) {
-                    GitHubShareImportDisabledSheet(
-                        show = true,
-                        onClose = { finishSafely() },
-                        onOpenGitHub = {
-                            openGitHubPage()
-                            finishSafely()
-                        }
-                    )
-                } else {
-                    GitHubShareImportWindowFlowHost(
-                        incomingGitHubShareText = incomingGitHubShareText,
-                        incomingGitHubShareToken = incomingGitHubShareToken,
-                        resumeRequestToken = shareImportResumeToken,
-                        onIncomingGitHubShareConsumed = {
-                            incomingGitHubShareText = null
-                        },
-                        onNavigateToGitHubPage = {
-                            val launched = openGitHubPage()
-                            if (!launched) {
-                                Toast.makeText(
-                                    this,
-                                    getString(R.string.common_open_link_failed),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                    if (sendInstallInProgress) {
+                        Box(modifier = Modifier.fillMaxSize())
+                    } else if (shareImportDisabled) {
+                        GitHubShareImportDisabledSheet(
+                            show = true,
+                            onClose = { finishSafely() },
+                            onOpenGitHub = {
+                                openGitHubPage()
+                                finishSafely()
                             }
-                            finishSafely()
-                        },
-                        showPendingArmedSheet = true,
-                        onNotificationOnlyResolveChanged = { notificationOnly ->
-                            setShareImportWindowDim(enabled = !notificationOnly)
-                        },
-                        onMinimizeActiveFlow = { finishSafely() },
-                        onClosePendingArmedSheet = { finishSafely() },
-                        onIdleWithNoPendingFlow = { finishSafely() }
-                    )
+                        )
+                    } else {
+                        GitHubShareImportWindowFlowHost(
+                            incomingGitHubShareText = incomingGitHubShareText,
+                            incomingGitHubShareToken = incomingGitHubShareToken,
+                            resumeRequestToken = shareImportResumeToken,
+                            onIncomingGitHubShareConsumed = {
+                                incomingGitHubShareText = null
+                            },
+                            onNavigateToGitHubPage = {
+                                val launched = openGitHubPage()
+                                if (!launched) {
+                                    Toast.makeText(
+                                        this,
+                                        getString(R.string.common_open_link_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                finishSafely()
+                            },
+                            showPendingArmedSheet = true,
+                            onNotificationOnlyResolveChanged = { notificationOnly ->
+                                setShareImportWindowDim(enabled = !notificationOnly)
+                            },
+                            onMinimizeActiveFlow = { finishSafely() },
+                            onClosePendingArmedSheet = { finishSafely() },
+                            onIdleWithNoPendingFlow = { finishSafely() }
+                        )
+                    }
                 }
             }
         }

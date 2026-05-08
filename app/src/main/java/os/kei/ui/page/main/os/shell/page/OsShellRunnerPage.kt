@@ -3,7 +3,6 @@ package os.kei.ui.page.main.os.shell.page
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -44,6 +43,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
@@ -358,6 +359,15 @@ fun OsShellRunnerPage(
         showDangerousCommandConfirm = false
         pendingDangerousCommand = ""
     }
+    OsShellBackHandler(
+        enabled = !showSaveSheet &&
+                !showBehaviorSettingsSheet &&
+                !showOutputSettingsSheet &&
+                !showDangerousCommandConfirm,
+        source = BackNavigationSource.Activity
+    ) {
+        requestClose()
+    }
     val clearAllIcon = osLucideClearAllIcon()
     val behaviorSettingsIcon = appLucideConfigIcon()
     val outputSettingsIcon = appLucideNotesIcon()
@@ -562,9 +572,13 @@ fun OsShellRunnerPage(
 @Composable
 private fun OsShellBackHandler(
     enabled: Boolean,
+    source: BackNavigationSource = BackNavigationSource.Modal,
     onBack: () -> Unit
 ) {
-    BackHandler(enabled = enabled) {
+    KeiOSBackNavigationHandler(
+        enabled = enabled,
+        source = source
+    ) {
         onBack()
     }
 }

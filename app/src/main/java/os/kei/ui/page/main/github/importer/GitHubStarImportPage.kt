@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.importer
 
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,6 +18,8 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -67,7 +68,10 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         }
     }
 
-    BackHandler(enabled = true) {
+    KeiOSBackNavigationHandler(
+        enabled = true,
+        source = BackNavigationSource.Activity
+    ) {
         viewModel.requestClose()
     }
 

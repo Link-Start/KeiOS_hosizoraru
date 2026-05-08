@@ -42,6 +42,7 @@ fun MainScreen(
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
     requestedBaBgmPlaybackToken: Int,
+    transientExternalLaunchActive: Boolean,
     onRequestedBottomPageConsumed: () -> Unit
 ) {
     val backStack = remember { mutableStateListOf<NavKey>().apply { add(KeiosRoute.Main) } }
@@ -143,6 +144,7 @@ fun MainScreen(
         onRequestNotificationPermission = onRequestNotificationPermission,
         mcpServerManager = mcpServerManager,
         appThemeMode = appThemeMode,
+        transientExternalLaunchActive = transientExternalLaunchActive,
         onAppThemeModeChanged = currentOnAppThemeModeChanged,
     )
 }

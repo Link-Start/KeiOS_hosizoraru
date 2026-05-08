@@ -8,7 +8,6 @@ import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -34,8 +36,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import os.kei.R
+import os.kei.core.platform.PredictiveBackOemCompat
+import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.back.rememberFullscreenBackNavigationGestureState
 import os.kei.ui.page.main.student.section.gallery.BindGuideVideoForegroundPlaybackGuard
+import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.Text
 
 class GuideVideoFullscreenActivity : ComponentActivity() {
@@ -50,10 +57,20 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
         )
 
         setContent {
-            GuideVideoFullscreenScreen(
-                mediaUrl = normalizedUrl,
-                onClose = { finish() }
+            val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+            val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
             )
+            CompositionLocalProvider(
+                LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
+                LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled
+            ) {
+                GuideVideoFullscreenScreen(
+                    mediaUrl = normalizedUrl,
+                    onClose = { finish() }
+                )
+            }
         }
     }
 
@@ -110,7 +127,7 @@ private fun GuideVideoFullscreenScreen(
     mediaUrl: String,
     onClose: () -> Unit
 ) {
-    BackHandler(onBack = onClose)
+    val backGestureState = rememberFullscreenBackNavigationGestureState(onBack = onClose)
 
     val context = androidx.compose.ui.platform.LocalContext.current
     var loadError by remember(mediaUrl) { mutableStateOf<String?>(null) }
@@ -148,6 +165,11 @@ private fun GuideVideoFullscreenScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onSizeChanged { size -> backGestureState.onContainerWidthChanged(size.width) }
+            .graphicsLayer {
+                translationX = backGestureState.translationX
+                alpha = backGestureState.contentAlpha
+            }
             .background(Color.Black)
     ) {
         val activePlayer = player

@@ -51,6 +51,9 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
+import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.KeiOSActivityBackHandler
+import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.student.BaStudentGuideStore
@@ -100,6 +103,12 @@ private fun BaPoolRoot(
 ) {
     var guideOpen by remember { mutableStateOf(false) }
     var guideNonce by remember { mutableLongStateOf(0L) }
+    KeiOSBackNavigationHandler(
+        enabled = guideOpen,
+        source = BackNavigationSource.MainRoute
+    ) {
+        guideOpen = false
+    }
 
     if (guideOpen) {
         key(guideNonce) {
@@ -124,6 +133,8 @@ private fun BaPoolPage(
     onClose: () -> Unit,
     onOpenGuide: () -> Unit,
 ) {
+    KeiOSActivityBackHandler(onBack = onClose)
+
     val context = LocalContext.current
     val snapshot = remember { BASettingsStore.loadSnapshot() }
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()

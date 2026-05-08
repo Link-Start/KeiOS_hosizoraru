@@ -54,6 +54,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.markdown.AppMarkdownContent
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -430,10 +431,12 @@ private fun GitHubReleaseNotesDetailContent(
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
         SheetSectionCard(verticalSpacing = 10.dp) {
             if (rawMarkdown.isNotBlank()) {
-                DetailTextLine(
-                    text = rawMarkdown,
-                    maxLines = Int.MAX_VALUE,
-                    accent = true
+                AppMarkdownContent(
+                    markdown = rawMarkdown,
+                    titleColor = MiuixTheme.colorScheme.onBackground,
+                    subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    accentColor = MiuixTheme.colorScheme.primary,
+                    codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)
                 )
             } else if (lines.isEmpty()) {
                 SheetDescriptionText(stringResource(R.string.github_release_notes_detail_empty))

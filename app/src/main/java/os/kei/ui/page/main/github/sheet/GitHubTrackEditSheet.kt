@@ -19,11 +19,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +37,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.feature.github.data.local.GitHubAppPickerPreferences
+import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
@@ -337,16 +343,37 @@ private fun GitHubTrackAppPickerButtonRow(
     }
 }
 
-private enum class GitHubTrackAppPickerSortMode(val labelRes: Int) {
-    Name(R.string.github_track_sheet_app_sort_name),
-    LastUpdated(R.string.github_track_sheet_app_sort_last_updated),
-    RecentlyInstalled(R.string.github_track_sheet_app_sort_recently_installed),
-    Package(R.string.github_track_sheet_app_sort_package)
+private enum class GitHubTrackAppPickerSortMode(
+    val labelRes: Int,
+    val storageId: String
+) {
+    Name(R.string.github_track_sheet_app_sort_name, "name"),
+    LastUpdated(R.string.github_track_sheet_app_sort_last_updated, "last_updated"),
+    RecentlyInstalled(
+        R.string.github_track_sheet_app_sort_recently_installed,
+        "recently_installed"
+    ),
+    Package(R.string.github_track_sheet_app_sort_package, "package");
+
+    companion object {
+        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortMode {
+            return entries.firstOrNull { it.storageId == storageId } ?: Name
+        }
+    }
 }
 
-private enum class GitHubTrackAppPickerSortDirection(val labelRes: Int) {
-    Ascending(R.string.github_track_sheet_app_sort_direction_ascending),
-    Descending(R.string.github_track_sheet_app_sort_direction_descending)
+private enum class GitHubTrackAppPickerSortDirection(
+    val labelRes: Int,
+    val storageId: String
+) {
+    Ascending(R.string.github_track_sheet_app_sort_direction_ascending, "ascending"),
+    Descending(R.string.github_track_sheet_app_sort_direction_descending, "descending");
+
+    companion object {
+        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortDirection {
+            return entries.firstOrNull { it.storageId == storageId } ?: Ascending
+        }
+    }
 }
 
 private fun InstalledAppItem.matchesAppPickerQuery(query: String): Boolean {
@@ -550,10 +577,23 @@ private fun GitHubTrackAppPickerContent(
 ) {
     val configuration = LocalConfiguration.current
     val listMaxHeight = (configuration.screenHeightDp.dp * 0.60f).coerceIn(340.dp, 680.dp)
-    var includeUserApps by remember { mutableStateOf(true) }
-    var includeSystemApps by remember { mutableStateOf(selectedApp?.isSystemApp == true) }
-    var sortMode by remember { mutableStateOf(GitHubTrackAppPickerSortMode.Name) }
-    var sortDirection by remember { mutableStateOf(GitHubTrackAppPickerSortDirection.Ascending) }
+    val savedPreferences = remember { GitHubTrackStore.loadAppPickerPreferences() }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    var includeUserApps by remember {
+        mutableStateOf(savedPreferences.includeUserApps)
+    }
+    var includeSystemApps by remember {
+        mutableStateOf(savedPreferences.includeSystemApps)
+    }
+    var sortMode by remember {
+        mutableStateOf(GitHubTrackAppPickerSortMode.fromStorageId(savedPreferences.sortModeId))
+    }
+    var sortDirection by remember {
+        mutableStateOf(
+            GitHubTrackAppPickerSortDirection.fromStorageId(savedPreferences.sortDirectionId)
+        )
+    }
     val filteredApps =
         remember(appList, appSearch, includeUserApps, includeSystemApps, sortMode, sortDirection) {
         val query = appSearch.trim()
@@ -563,6 +603,26 @@ private fun GitHubTrackAppPickerContent(
             .filter { app -> app.matchesAppPickerQuery(query) }
             .sortedWith(sortMode.comparator(sortDirection))
             .toList()
+    }
+    fun saveAppPickerPreferences() {
+        GitHubTrackStore.saveAppPickerPreferences(
+            GitHubAppPickerPreferences(
+                includeUserApps = includeUserApps,
+                includeSystemApps = includeSystemApps,
+                sortModeId = sortMode.storageId,
+                sortDirectionId = sortDirection.storageId
+            )
+        )
+    }
+
+    fun scrollAppListToTop() {
+        coroutineScope.launch {
+            listState.scrollToItem(0)
+        }
+    }
+
+    LaunchedEffect(appSearch, includeUserApps, includeSystemApps, sortMode, sortDirection) {
+        listState.scrollToItem(0)
     }
 
     SheetContentColumn(
@@ -602,10 +662,26 @@ private fun GitHubTrackAppPickerContent(
                 includeSystemApps = includeSystemApps,
                 sortMode = sortMode,
                 sortDirection = sortDirection,
-                onIncludeUserAppsChange = { includeUserApps = it },
-                onIncludeSystemAppsChange = { includeSystemApps = it },
-                onSortModeChange = { sortMode = it },
-                onSortDirectionChange = { sortDirection = it }
+                onIncludeUserAppsChange = {
+                    includeUserApps = it
+                    saveAppPickerPreferences()
+                    scrollAppListToTop()
+                },
+                onIncludeSystemAppsChange = {
+                    includeSystemApps = it
+                    saveAppPickerPreferences()
+                    scrollAppListToTop()
+                },
+                onSortModeChange = {
+                    sortMode = it
+                    saveAppPickerPreferences()
+                    scrollAppListToTop()
+                },
+                onSortDirectionChange = {
+                    sortDirection = it
+                    saveAppPickerPreferences()
+                    scrollAppListToTop()
+                }
             )
             MiuixInfoItem(
                 stringResource(R.string.github_track_sheet_label_app_list),
@@ -625,6 +701,7 @@ private fun GitHubTrackAppPickerContent(
                 )
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = listMaxHeight),

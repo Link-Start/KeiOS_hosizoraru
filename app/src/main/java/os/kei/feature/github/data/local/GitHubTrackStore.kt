@@ -42,6 +42,13 @@ data class GitHubPendingShareImportTrackRecord(
     val armedAtMillis: Long
 )
 
+data class GitHubAppPickerPreferences(
+    val includeUserApps: Boolean = true,
+    val includeSystemApps: Boolean = false,
+    val sortModeId: String = "name",
+    val sortDirectionId: String = "ascending"
+)
+
 object GitHubTrackStore {
     private const val TRACK_EXPORT_FORMAT = "keios.github.tracked/v1"
     private const val KV_ID = "github_track_store"
@@ -66,6 +73,10 @@ object GitHubTrackStore {
     private const val KEY_PENDING_SHARE_IMPORT_TRACK = "github_pending_share_import_track"
     private const val KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE = "github_tracked_first_install_at_by_package"
     private const val KEY_TRACKED_ADDED_AT_BY_ID = "github_tracked_added_at_by_id"
+    private const val KEY_APP_PICKER_INCLUDE_USER_APPS = "github_app_picker_include_user_apps"
+    private const val KEY_APP_PICKER_INCLUDE_SYSTEM_APPS = "github_app_picker_include_system_apps"
+    private const val KEY_APP_PICKER_SORT_MODE = "github_app_picker_sort_mode"
+    private const val KEY_APP_PICKER_SORT_DIRECTION = "github_app_picker_sort_direction"
 
     @Volatile
     private var didAutoRefreshInSession: Boolean = false
@@ -145,6 +156,27 @@ object GitHubTrackStore {
             .put("targetDisplayName", record.targetDisplayName)
             .put("armedAtMillis", record.armedAtMillis)
         kv().encode(KEY_PENDING_SHARE_IMPORT_TRACK, payload.toString())
+    }
+
+    fun loadAppPickerPreferences(): GitHubAppPickerPreferences {
+        val store = kv()
+        return GitHubAppPickerPreferences(
+            includeUserApps = store.decodeBool(KEY_APP_PICKER_INCLUDE_USER_APPS, true),
+            includeSystemApps = store.decodeBool(KEY_APP_PICKER_INCLUDE_SYSTEM_APPS, false),
+            sortModeId = store.decodeString(KEY_APP_PICKER_SORT_MODE, "name").orEmpty(),
+            sortDirectionId = store.decodeString(
+                KEY_APP_PICKER_SORT_DIRECTION,
+                "ascending"
+            ).orEmpty()
+        )
+    }
+
+    fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) {
+        val store = kv()
+        store.encode(KEY_APP_PICKER_INCLUDE_USER_APPS, preferences.includeUserApps)
+        store.encode(KEY_APP_PICKER_INCLUDE_SYSTEM_APPS, preferences.includeSystemApps)
+        store.encode(KEY_APP_PICKER_SORT_MODE, preferences.sortModeId)
+        store.encode(KEY_APP_PICKER_SORT_DIRECTION, preferences.sortDirectionId)
     }
 
     fun loadTrackedFirstInstallAtByPackage(): Map<String, Long> {

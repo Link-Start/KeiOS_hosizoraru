@@ -2,10 +2,13 @@ package os.kei.ui.page.main.host.pager
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,11 +47,6 @@ internal fun MainPagerBottomBar(
             exit = appFloatingExit(),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            val bottomBarModifier = Modifier.padding(
-                start = 24.dp,
-                end = 24.dp,
-                bottom = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp
-            )
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 tabs.forEachIndexed { index, page ->
                     val selected = selectedPageIndex == index
@@ -95,17 +93,47 @@ internal fun MainPagerBottomBar(
                 }
             }
 
-            LiquidGlassBottomBar(
-                modifier = bottomBarModifier,
-                selectedIndex = selectedPageIndex,
-                selectedPosition = selectedPagePosition,
-                onSelected = onPageSelected,
-                backdrop = backdrop,
-                tabsCount = tabs.size,
-                isLiquidEffectEnabled = liquidBottomBarEnabled,
-                expandToMaxWidth = true,
-                content = bottomBarTabs
-            )
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                val horizontalMargin = when {
+                    maxWidth < 360.dp -> 8.dp
+                    maxWidth < 600.dp -> 12.dp
+                    else -> 24.dp
+                }
+                val availableWidth = maxWidth - horizontalMargin * 2
+                val minBarWidth = when {
+                    tabs.size <= 2 -> 220.dp
+                    tabs.size == 3 -> 280.dp
+                    else -> 320.dp
+                }
+                val preferredWidth = (76.dp * tabs.size + 8.dp).coerceAtLeast(minBarWidth)
+                val maxBarWidth = if (maxWidth < 600.dp) availableWidth else 460.dp
+                val bottomBarWidth = preferredWidth.coerceAtMost(maxBarWidth)
+                val bottomBarModifier = Modifier
+                    .width(bottomBarWidth)
+                    .widthIn(max = availableWidth)
+                    .padding(
+                        bottom = if (navigationBarBottom != 0.dp) {
+                            8.dp + navigationBarBottom
+                        } else {
+                            36.dp
+                        }
+                    )
+
+                LiquidGlassBottomBar(
+                    modifier = bottomBarModifier,
+                    selectedIndex = selectedPageIndex,
+                    selectedPosition = selectedPagePosition,
+                    onSelected = onPageSelected,
+                    backdrop = backdrop,
+                    tabsCount = tabs.size,
+                    isLiquidEffectEnabled = liquidBottomBarEnabled,
+                    expandToMaxWidth = true,
+                    content = bottomBarTabs
+                )
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import kotlin.math.max
 
 internal data class VersionCheckUi(
@@ -42,7 +43,8 @@ internal data class VersionCheckUi(
     val repositoryPushedAtMillis: Long = -1L,
     val upstreamFullName: String = "",
     val upstreamArchived: Boolean = false,
-    val upstreamPushedAtMillis: Long = -1L
+    val upstreamPushedAtMillis: Long = -1L,
+    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
 )
 
 internal data class GitHubStrategyGuide(

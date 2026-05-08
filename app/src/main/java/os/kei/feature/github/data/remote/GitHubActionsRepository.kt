@@ -176,6 +176,21 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
+    fun fetchRecentRepositoryWorkflowRuns(
+        owner: String,
+        repo: String,
+        limit: Int = DEFAULT_RUN_LIMIT
+    ): GitHubStrategyLoadTrace<List<GitHubActionsWorkflowRun>> {
+        val startedAt = System.currentTimeMillis()
+        val result = requireActionsApiToken().mapCatching {
+            fetchJson(
+                url = apiUrls.repositoryWorkflowRuns(owner, repo, limit),
+                cacheTtlMillis = ACTIONS_RUNS_CACHE_TTL_MS
+            ).getOrThrow().let(::parseWorkflowRuns)
+        }
+        return result.toTrace(startedAt)
+    }
+
     fun fetchWorkflowRun(
         owner: String,
         repo: String,
@@ -210,6 +225,21 @@ class GitHubActionsRepository(
                 ).getOrThrow()
                     .let { json -> parseArtifacts(json, fallbackWorkflowRunId = runId) }
             }
+        }
+        return result.toTrace(startedAt)
+    }
+
+    fun fetchRecentRepositoryArtifacts(
+        owner: String,
+        repo: String,
+        limit: Int = DEFAULT_ARTIFACT_LIMIT
+    ): GitHubStrategyLoadTrace<List<GitHubActionsArtifact>> {
+        val startedAt = System.currentTimeMillis()
+        val result = requireActionsApiToken().mapCatching {
+            fetchJson(
+                url = apiUrls.repositoryArtifacts(owner, repo, limit),
+                cacheTtlMillis = ACTIONS_ARTIFACT_CACHE_TTL_MS
+            ).getOrThrow().let { json -> parseArtifacts(json) }
         }
         return result.toTrace(startedAt)
     }

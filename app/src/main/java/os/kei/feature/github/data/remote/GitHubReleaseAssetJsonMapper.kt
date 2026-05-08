@@ -34,6 +34,7 @@ internal object GitHubReleaseAssetJsonMapper {
                                 .put("size", asset.sizeBytes)
                                 .put("download_count", asset.downloadCount)
                                 .put("content_type", asset.contentType)
+                                .put("digest", asset.digest)
                                 .put(
                                     "updated_at",
                                     asset.updatedAtMillis?.let {
@@ -72,7 +73,8 @@ internal object GitHubReleaseAssetJsonMapper {
                         },
                         contentType = asset.optString("content_type").trim(),
                         updatedAtMillis = asset.optString("updated_at").parseIsoInstantOrNull()
-                            ?: asset.optString("created_at").parseIsoInstantOrNull()
+                            ?: asset.optString("created_at").parseIsoInstantOrNull(),
+                        digest = asset.optString("digest").trim()
                     )
                 )
             }

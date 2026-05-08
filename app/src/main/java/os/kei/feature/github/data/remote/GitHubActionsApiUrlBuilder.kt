@@ -46,12 +46,30 @@ internal class GitHubActionsApiUrlBuilder(
         return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/workflows/$encodedWorkflowId/runs?$query"
     }
 
+    fun repositoryWorkflowRuns(owner: String, repo: String, limit: Int): String {
+        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/runs?per_page=${
+            limit.coerceIn(
+                1,
+                100
+            )
+        }"
+    }
+
     fun workflowRun(owner: String, repo: String, runId: Long): String {
         return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/runs/$runId"
     }
 
     fun runArtifacts(owner: String, repo: String, runId: Long, limit: Int): String {
         return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/runs/$runId/artifacts?per_page=${
+            limit.coerceIn(
+                1,
+                100
+            )
+        }"
+    }
+
+    fun repositoryArtifacts(owner: String, repo: String, limit: Int): String {
+        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/actions/artifacts?per_page=${
             limit.coerceIn(
                 1,
                 100

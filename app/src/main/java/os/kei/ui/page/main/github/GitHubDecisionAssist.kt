@@ -2,6 +2,8 @@ package os.kei.ui.page.main.github
 
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.domain.GitHubRepositoryHealthEvaluator
+import os.kei.feature.github.model.GitHubRepositoryHealthInput
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.asset.assetFileExtensionLabel
@@ -9,35 +11,13 @@ import os.kei.ui.page.main.github.asset.assetIsPreferredForDevice
 import os.kei.ui.page.main.github.asset.assetLikelyCompatibleWithDevice
 import os.kei.ui.page.main.widget.markdown.AppMarkdownBlock
 import os.kei.ui.page.main.widget.markdown.parseAppMarkdownBlocks
+import os.kei.feature.github.model.GitHubDecisionLevel as ModelGitHubDecisionLevel
+import os.kei.feature.github.model.GitHubRepositoryHealth as ModelGitHubRepositoryHealth
+import os.kei.feature.github.model.GitHubRepositoryHealthReason as ModelGitHubRepositoryHealthReason
 
-internal enum class GitHubDecisionLevel {
-    Good,
-    Review,
-    Risk
-}
-
-internal enum class GitHubRepositoryHealthReason {
-    RepositoryArchived,
-    RepositoryFork,
-    ForkUpstreamArchived,
-    ForkBehindUpstream,
-    ForkMaintainedIndependently,
-    ForkTracksUpstream,
-    UpdateAvailable,
-    PreReleaseRecommended,
-    CheckFailed,
-    MissingPackageName,
-    MissingStableRelease,
-    LocalMissing,
-    StableDetected,
-    FreshRelease
-}
-
-internal data class GitHubRepositoryHealth(
-    val score: Int,
-    val level: GitHubDecisionLevel,
-    val reasons: List<GitHubRepositoryHealthReason>
-)
+internal typealias GitHubDecisionLevel = ModelGitHubDecisionLevel
+internal typealias GitHubRepositoryHealth = ModelGitHubRepositoryHealth
+internal typealias GitHubRepositoryHealthReason = ModelGitHubRepositoryHealthReason
 
 internal enum class GitHubApkTrustReason {
     PreferredAbi,
@@ -60,65 +40,27 @@ internal fun buildGitHubRepositoryHealth(
     state: VersionCheckUi,
     nowMillis: Long = System.currentTimeMillis()
 ): GitHubRepositoryHealth {
-    var score = 82
-    val reasons = mutableListOf<GitHubRepositoryHealthReason>()
-
-    if (item.repositoryArchived || state.repositoryArchived) {
-        score -= 55
-        reasons += GitHubRepositoryHealthReason.RepositoryArchived
-    }
-    if (item.repositoryFork || state.repositoryFork) {
-        score -= 6
-        reasons += GitHubRepositoryHealthReason.RepositoryFork
-        val forkMaintenance = evaluateForkMaintenance(state, nowMillis)
-        score += forkMaintenance.scoreDelta
-        reasons += forkMaintenance.reasons
-    }
-    if (state.failed || state.message.isNotBlank() && state.hasUpdate == null) {
-        score -= 28
-        reasons += GitHubRepositoryHealthReason.CheckFailed
-    }
-    if (item.packageName.isBlank()) {
-        score -= 12
-        reasons += GitHubRepositoryHealthReason.MissingPackageName
-    }
-    if (!state.hasStableRelease) {
-        score -= 18
-        reasons += GitHubRepositoryHealthReason.MissingStableRelease
-    }
-    if (state.localVersion.isBlank() || state.localVersionCode < 0L) {
-        score -= 10
-        reasons += GitHubRepositoryHealthReason.LocalMissing
-    }
-    if (state.hasUpdate == true) {
-        score += 7
-        reasons += GitHubRepositoryHealthReason.UpdateAvailable
-    }
-    if (state.recommendsPreRelease) {
-        score -= 6
-        reasons += GitHubRepositoryHealthReason.PreReleaseRecommended
-    }
-    if (state.hasStableRelease && state.latestStableRawTag.isNotBlank()) {
-        score += 6
-        reasons += GitHubRepositoryHealthReason.StableDetected
-    }
-    val latestUpdateMillis =
-        maxOf(state.latestStableUpdatedAtMillis, state.latestPreUpdatedAtMillis)
-    if (latestUpdateMillis > 0L && nowMillis - latestUpdateMillis <= FRESH_RELEASE_WINDOW_MS) {
-        score += 5
-        reasons += GitHubRepositoryHealthReason.FreshRelease
-    }
-
-    val normalizedScore = score.coerceIn(0, 100)
-    val level = when {
-        normalizedScore >= 78 -> GitHubDecisionLevel.Good
-        normalizedScore >= 55 -> GitHubDecisionLevel.Review
-        else -> GitHubDecisionLevel.Risk
-    }
-    return GitHubRepositoryHealth(
-        score = normalizedScore,
-        level = level,
-        reasons = reasons.distinct().take(4)
+    return GitHubRepositoryHealthEvaluator.evaluate(
+        input = GitHubRepositoryHealthInput(
+            packageName = item.packageName,
+            localVersion = state.localVersion,
+            localVersionCode = state.localVersionCode,
+            checkFailed = state.failed || state.message.isNotBlank() && state.hasUpdate == null,
+            hasStableRelease = state.hasStableRelease,
+            hasUpdate = state.hasUpdate,
+            recommendsPreRelease = state.recommendsPreRelease,
+            latestStableRawTag = state.latestStableRawTag,
+            latestStableUpdatedAtMillis = state.latestStableUpdatedAtMillis,
+            latestPreUpdatedAtMillis = state.latestPreUpdatedAtMillis,
+            repositoryArchived = item.repositoryArchived || state.repositoryArchived,
+            repositoryFork = item.repositoryFork || state.repositoryFork,
+            repositoryPushedAtMillis = state.repositoryPushedAtMillis,
+            upstreamFullName = state.upstreamFullName,
+            upstreamArchived = state.upstreamArchived,
+            upstreamPushedAtMillis = state.upstreamPushedAtMillis,
+            profile = state.repositoryProfile
+        ),
+        nowMillis = nowMillis
     )
 }
 
@@ -232,72 +174,9 @@ internal fun buildGitHubRepositoryHealthImpactLines(
     health: GitHubRepositoryHealth
 ): List<Pair<GitHubRepositoryHealthReason, Int>> {
     return health.reasons.map { reason ->
-        reason to when (reason) {
-            GitHubRepositoryHealthReason.RepositoryArchived -> -55
-            GitHubRepositoryHealthReason.RepositoryFork -> -6
-            GitHubRepositoryHealthReason.ForkUpstreamArchived -> -4
-            GitHubRepositoryHealthReason.ForkBehindUpstream -> -16
-            GitHubRepositoryHealthReason.ForkMaintainedIndependently -> 8
-            GitHubRepositoryHealthReason.ForkTracksUpstream -> -4
-            GitHubRepositoryHealthReason.UpdateAvailable -> 7
-            GitHubRepositoryHealthReason.PreReleaseRecommended -> -6
-            GitHubRepositoryHealthReason.CheckFailed -> -28
-            GitHubRepositoryHealthReason.MissingPackageName -> -12
-            GitHubRepositoryHealthReason.MissingStableRelease -> -18
-            GitHubRepositoryHealthReason.LocalMissing -> -10
-            GitHubRepositoryHealthReason.StableDetected -> 6
-            GitHubRepositoryHealthReason.FreshRelease -> 5
-        }
+        reason to GitHubRepositoryHealthEvaluator.impactFor(reason)
     }
 }
-
-private data class ForkMaintenanceImpact(
-    val scoreDelta: Int,
-    val reasons: List<GitHubRepositoryHealthReason>
-)
-
-private fun evaluateForkMaintenance(
-    state: VersionCheckUi,
-    nowMillis: Long
-): ForkMaintenanceImpact {
-    if (state.upstreamFullName.isBlank()) return ForkMaintenanceImpact(0, emptyList())
-    val reasons = mutableListOf<GitHubRepositoryHealthReason>()
-    var scoreDelta = 0
-    val forkPushedAt = state.repositoryPushedAtMillis
-    val upstreamPushedAt = state.upstreamPushedAtMillis
-    val forkFresh = forkPushedAt > 0L && nowMillis - forkPushedAt <= FORK_RECENT_ACTIVITY_WINDOW_MS
-    val upstreamFresh =
-        upstreamPushedAt > 0L && nowMillis - upstreamPushedAt <= FORK_RECENT_ACTIVITY_WINDOW_MS
-
-    if (state.upstreamArchived) {
-        scoreDelta -= 4
-        reasons += GitHubRepositoryHealthReason.ForkUpstreamArchived
-        if (forkFresh) {
-            scoreDelta += 8
-            reasons += GitHubRepositoryHealthReason.ForkMaintainedIndependently
-        }
-        return ForkMaintenanceImpact(scoreDelta, reasons)
-    }
-
-    val upstreamMuchNewer = forkPushedAt > 0L &&
-            upstreamPushedAt > 0L &&
-            upstreamPushedAt - forkPushedAt >= FORK_UPSTREAM_DRIFT_WINDOW_MS
-    if (upstreamMuchNewer) {
-        scoreDelta -= 16
-        reasons += GitHubRepositoryHealthReason.ForkBehindUpstream
-    } else if (forkFresh && upstreamFresh) {
-        scoreDelta -= 4
-        reasons += GitHubRepositoryHealthReason.ForkTracksUpstream
-    } else if (forkFresh && !upstreamFresh) {
-        scoreDelta += 8
-        reasons += GitHubRepositoryHealthReason.ForkMaintainedIndependently
-    }
-    return ForkMaintenanceImpact(scoreDelta, reasons)
-}
-
-private const val FRESH_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 14L
-private const val FORK_RECENT_ACTIVITY_WINDOW_MS = 1000L * 60L * 60L * 24L * 90L
-private const val FORK_UPSTREAM_DRIFT_WINDOW_MS = 1000L * 60L * 60L * 24L * 60L
 private const val RELEASE_NOTES_COMPACT_LINE_LIMIT = 2
 private const val RELEASE_NOTES_EXPANDED_LINE_LIMIT = 7
 private const val RELEASE_NOTES_DETAIL_LINE_LIMIT = 30

@@ -151,7 +151,8 @@ data class GitHubRepositoryReleaseSnapshot(
     val repositoryPushedAtMillis: Long = -1L,
     val upstreamFullName: String = "",
     val upstreamArchived: Boolean = false,
-    val upstreamPushedAtMillis: Long = -1L
+    val upstreamPushedAtMillis: Long = -1L,
+    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
 )
 
 data class GitHubTrackedReleaseCheck(
@@ -177,6 +178,7 @@ data class GitHubTrackedReleaseCheck(
     val upstreamFullName: String = "",
     val upstreamArchived: Boolean = false,
     val upstreamPushedAtMillis: Long = -1L,
+    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
     val sourceConfigSignature: String = "",
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
     val message: String = status.defaultMessage

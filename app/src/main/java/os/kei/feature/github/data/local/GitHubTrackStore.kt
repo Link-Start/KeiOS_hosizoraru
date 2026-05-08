@@ -9,13 +9,16 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
+import os.kei.feature.github.model.githubCheckSourceSignature
 
 data class GitHubTrackSnapshot(
     val items: List<GitHubTrackedApp> = emptyList(),
     val checkCache: Map<String, GitHubCheckCacheEntry> = emptyMap(),
+    val profileCache: Map<String, GitHubRepositoryProfileSnapshot> = emptyMap(),
     val lastRefreshMs: Long = 0L,
     val refreshIntervalHours: Int = 3,
     val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
@@ -54,6 +57,7 @@ object GitHubTrackStore {
     private const val KV_ID = "github_track_store"
     private const val KEY_ITEMS = "tracked_items"
     private const val KEY_CHECK_CACHE = "tracked_check_cache"
+    private const val KEY_PROFILE_CACHE = "tracked_profile_cache"
     private const val KEY_LAST_REFRESH_MS = "last_full_refresh_ms"
     private const val KEY_REFRESH_INTERVAL_HOURS = "refresh_interval_hours"
     private const val KEY_LOOKUP_STRATEGY = "lookup_strategy"
@@ -312,6 +316,7 @@ object GitHubTrackStore {
     fun loadCheckCache(): Pair<Map<String, GitHubCheckCacheEntry>, Long> {
         val raw = kv().decodeString(KEY_CHECK_CACHE).orEmpty()
         val ts = kv().decodeLong(KEY_LAST_REFRESH_MS, 0L)
+        val profileCache = loadProfileCache()
         if (raw.isBlank()) return emptyMap<String, GitHubCheckCacheEntry>() to ts
         val map = runCatching {
             val obj = JSONObject(raw)
@@ -361,6 +366,9 @@ object GitHubTrackStore {
                             upstreamFullName = item.optString("upstreamFullName"),
                             upstreamArchived = item.optBoolean("upstreamArchived", false),
                             upstreamPushedAtMillis = item.optLong("upstreamPushedAtMillis", -1L),
+                            repositoryProfile = parseGitHubRepositoryProfileSnapshot(
+                                item.optJSONObject("repositoryProfile")
+                            ) ?: profileCache[id],
                             sourceStrategyId = item.optString("sourceStrategyId"),
                             sourceConfigSignature = item.optString("sourceConfigSignature"),
                             latestStableApkVersion = parseRemoteApkVersionInfo(
@@ -377,12 +385,39 @@ object GitHubTrackStore {
         return map to ts
     }
 
+    fun loadProfileCache(): Map<String, GitHubRepositoryProfileSnapshot> {
+        val raw = kv().decodeString(KEY_PROFILE_CACHE).orEmpty()
+        if (raw.isBlank()) return emptyMap()
+        return runCatching {
+            val obj = JSONObject(raw)
+            buildMap {
+                val keys = obj.keys()
+                while (keys.hasNext()) {
+                    val id = keys.next()
+                    val profile = parseGitHubRepositoryProfileSnapshot(obj.optJSONObject(id))
+                        ?: continue
+                    put(id, profile)
+                }
+            }
+        }.getOrDefault(emptyMap())
+    }
+
     fun loadSnapshot(): GitHubTrackSnapshot {
         val lookupConfig = loadLookupConfig()
         val (checkCache, lastRefreshMs) = loadCheckCache()
+        val activeProfileCache = loadProfileCache().filterValues { profile ->
+            profile.isFreshFor(lookupConfig.githubCheckSourceSignature())
+        }
+        val mergedCheckCache = checkCache.mapValues { (id, entry) ->
+            val freshProfile = entry.repositoryProfile
+                ?.takeIf { it.isFreshFor(lookupConfig.githubCheckSourceSignature()) }
+                ?: activeProfileCache[id]
+            entry.copy(repositoryProfile = freshProfile)
+        }
         return GitHubTrackSnapshot(
             items = load(),
-            checkCache = checkCache,
+            checkCache = mergedCheckCache,
+            profileCache = activeProfileCache,
             lastRefreshMs = lastRefreshMs,
             refreshIntervalHours = loadRefreshIntervalHours(),
             lookupConfig = lookupConfig,
@@ -394,6 +429,7 @@ object GitHubTrackStore {
 
     fun saveCheckCache(states: Map<String, GitHubCheckCacheEntry>, lastRefreshMs: Long) {
         val obj = JSONObject()
+        val profileObj = JSONObject()
         states.forEach { (id, state) ->
             obj.put(
                 id,
@@ -424,6 +460,7 @@ object GitHubTrackStore {
                     .put("upstreamFullName", state.upstreamFullName)
                     .put("upstreamArchived", state.upstreamArchived)
                     .put("upstreamPushedAtMillis", state.upstreamPushedAtMillis)
+                    .put("repositoryProfile", state.repositoryProfile?.toCacheJson())
                     .put("sourceStrategyId", state.sourceStrategyId)
                     .put("sourceConfigSignature", state.sourceConfigSignature)
                     .put(
@@ -435,14 +472,23 @@ object GitHubTrackStore {
                         remoteApkVersionInfoToJson(state.latestPreApkVersion)
                     )
             )
+            state.repositoryProfile?.let { profile ->
+                profileObj.put(id, profile.toCacheJson())
+            }
         }
         kv().encode(KEY_CHECK_CACHE, obj.toString())
+        if (profileObj.length() > 0) {
+            kv().encode(KEY_PROFILE_CACHE, profileObj.toString())
+        } else {
+            kv().removeValueForKey(KEY_PROFILE_CACHE)
+        }
         kv().encode(KEY_LAST_REFRESH_MS, lastRefreshMs)
     }
 
     fun clearCheckCache() {
         val store = kv()
         store.removeValueForKey(KEY_CHECK_CACHE)
+        store.removeValueForKey(KEY_PROFILE_CACHE)
         store.removeValueForKey(KEY_LAST_REFRESH_MS)
         store.trim()
     }
@@ -473,10 +519,15 @@ object GitHubTrackStore {
                 state.latestStableApkVersion?.versionLabel().orEmpty(),
                 state.latestStableApkVersion?.releaseLabel().orEmpty(),
                 state.latestPreApkVersion?.versionLabel().orEmpty(),
-                state.latestPreApkVersion?.releaseLabel().orEmpty()
+                state.latestPreApkVersion?.releaseLabel().orEmpty(),
+                state.repositoryProfile?.identity?.fullName?.value.orEmpty(),
+                state.repositoryProfile?.sourceConfigSignature.orEmpty()
             ).sumOf { it.length.toLong() * 2 } + 64L
         }
-        return cacheJsonBytes + 16L
+        val profileJsonBytes = snapshot.profileCache.values.sumOf { profile ->
+            profile.toCacheJson().toString().length.toLong() * 2
+        }
+        return cacheJsonBytes + profileJsonBytes + 16L
     }
 
     fun configBytesEstimated(): Long {

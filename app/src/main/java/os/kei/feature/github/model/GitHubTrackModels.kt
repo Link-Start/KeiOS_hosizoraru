@@ -77,5 +77,6 @@ data class GitHubCheckCacheEntry(
     val repositoryPushedAtMillis: Long = -1L,
     val upstreamFullName: String = "",
     val upstreamArchived: Boolean = false,
-    val upstreamPushedAtMillis: Long = -1L
+    val upstreamPushedAtMillis: Long = -1L,
+    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
 )

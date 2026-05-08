@@ -23,7 +23,8 @@ data class GitHubReleaseAssetFile(
     val sizeBytes: Long,
     val downloadCount: Int,
     val contentType: String = "",
-    val updatedAtMillis: Long? = null
+    val updatedAtMillis: Long? = null,
+    val digest: String = ""
 )
 
 data class GitHubReleaseAssetBundle(

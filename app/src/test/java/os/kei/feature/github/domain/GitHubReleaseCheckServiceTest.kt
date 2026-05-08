@@ -4,11 +4,17 @@ import org.junit.Test
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
+import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
+import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
+import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubVersionCandidateSource
@@ -330,6 +336,55 @@ class GitHubReleaseCheckServiceTest {
         assertEquals("check-v2|fixture", restored.sourceConfigSignature)
     }
 
+    @Test
+    fun `repository profile survives release check cache round trip`() {
+        val item = trackedApp(preferPreRelease = false)
+        val stable = signal(tag = "v1.0.0", title = "Demo 1.0.0")
+        val profile = GitHubRepositoryProfileSnapshot(
+            owner = "demo",
+            repo = "app",
+            sourceConfigSignature = "check-v2|fixture",
+            fetchedAtMillis = 1_700_000_000_000L,
+            lifecycle = GitHubRepositoryLifecycleProfile(
+                fork = GitHubProfileField(
+                    value = true,
+                    source = GitHubRepositoryProfileSource.GitHubApiRepository,
+                    fetchedAtMillis = 1_700_000_000_000L,
+                    confidence = GitHubRepositoryProfileConfidence.High
+                ),
+                upstream = GitHubRepositoryUpstreamProfile(
+                    fullName = GitHubProfileField(
+                        value = "upstream/app",
+                        source = GitHubRepositoryProfileSource.GitHubApiRepository,
+                        fetchedAtMillis = 1_700_000_000_000L,
+                        confidence = GitHubRepositoryProfileConfidence.High
+                    )
+                )
+            )
+        )
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.0.0",
+            localVersionCode = 10L,
+            snapshot = snapshot(
+                stable = stable,
+                entries = listOf(entry(tag = "v1.0.0", title = "Demo 1.0.0")),
+                repositoryProfile = profile
+            ),
+            sourceConfigSignature = "check-v2|fixture"
+        )
+        val restored = GitHubReleaseCheckService.fromCacheEntry(
+            GitHubReleaseCheckService.run { result.toCacheEntry() }
+        )
+
+        assertEquals(
+            "upstream/app",
+            restored.repositoryProfile?.lifecycle?.upstream?.fullName?.value
+        )
+        assertEquals("check-v2|fixture", restored.repositoryProfile?.sourceConfigSignature)
+    }
+
     private fun trackedApp(preferPreRelease: Boolean): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = "https://github.com/demo/app",
@@ -345,7 +400,8 @@ class GitHubReleaseCheckServiceTest {
         stable: GitHubReleaseVersionSignals,
         preRelease: GitHubReleaseVersionSignals? = null,
         entries: List<GitHubAtomReleaseEntry>,
-        hasStableRelease: Boolean = true
+        hasStableRelease: Boolean = true,
+        repositoryProfile: GitHubRepositoryProfileSnapshot? = null
     ): GitHubRepositoryReleaseSnapshot {
         return GitHubRepositoryReleaseSnapshot(
             strategyId = "github_api_token",
@@ -356,7 +412,8 @@ class GitHubReleaseCheckServiceTest {
             ),
             latestStable = stable,
             hasStableRelease = hasStableRelease,
-            latestPreRelease = preRelease
+            latestPreRelease = preRelease,
+            repositoryProfile = repositoryProfile
         )
     }
 

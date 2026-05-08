@@ -36,7 +36,8 @@ internal fun VersionCheckUi.toCacheEntry(): GitHubCheckCacheEntry = GitHubCheckC
     repositoryPushedAtMillis = repositoryPushedAtMillis,
     upstreamFullName = upstreamFullName,
     upstreamArchived = upstreamArchived,
-    upstreamPushedAtMillis = upstreamPushedAtMillis
+    upstreamPushedAtMillis = upstreamPushedAtMillis,
+    repositoryProfile = repositoryProfile
 )
 
 internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
@@ -71,7 +72,8 @@ internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
     repositoryPushedAtMillis = repositoryPushedAtMillis,
     upstreamFullName = upstreamFullName,
     upstreamArchived = upstreamArchived,
-    upstreamPushedAtMillis = upstreamPushedAtMillis
+    upstreamPushedAtMillis = upstreamPushedAtMillis,
+    repositoryProfile = repositoryProfile
 )
 
 internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
@@ -106,5 +108,6 @@ internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
     repositoryPushedAtMillis = repositoryPushedAtMillis,
     upstreamFullName = upstreamFullName,
     upstreamArchived = upstreamArchived,
-    upstreamPushedAtMillis = upstreamPushedAtMillis
+    upstreamPushedAtMillis = upstreamPushedAtMillis,
+    repositoryProfile = repositoryProfile
 )

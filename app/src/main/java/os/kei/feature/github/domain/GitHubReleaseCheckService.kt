@@ -6,7 +6,8 @@ import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseLookupStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
-import os.kei.feature.github.data.remote.GitHubRepositoryMetadataRepository
+import os.kei.feature.github.data.remote.GitHubRepositoryProfileRepository
+import os.kei.feature.github.data.remote.GitHubRepositoryProfileRequest
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -14,6 +15,7 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
@@ -64,26 +66,26 @@ object GitHubReleaseCheckService {
         }.getOrNull()
         val localVersion = localVersionInfo?.versionName.orEmpty()
         val localVersionCode = localVersionInfo?.versionCode ?: -1L
-        val repositoryMetadata = GitHubRepositoryMetadataRepository(
-            apiToken = lookupConfig.apiToken
-        ).fetch(item.owner, item.repo).getOrNull()
-        val repositoryArchived = repositoryMetadata?.archived ?: item.repositoryArchived
-        val repositoryFork = repositoryMetadata?.fork ?: item.repositoryFork
-        val repositoryPushedAtMillis = repositoryMetadata?.pushedAtMillis ?: -1L
-        val upstreamFullName = repositoryMetadata?.upstreamFullName.orEmpty()
-        val upstreamArchived = repositoryMetadata?.upstreamArchived ?: false
-        val upstreamPushedAtMillis = repositoryMetadata?.upstreamPushedAtMillis ?: -1L
+        val profileRepository = GitHubRepositoryProfileRepository()
         val effectiveStrategy = strategy ?: GitHubReleaseStrategyRegistry.resolveConfiguredStrategy().getOrElse { error ->
+            val profile = loadRepositoryProfile(
+                profileRepository = profileRepository,
+                item = item,
+                lookupConfig = lookupConfig,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode
+            )
             return GitHubTrackedReleaseCheck(
                 strategyId = lookupConfig.selectedStrategy.storageId,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                repositoryArchived = repositoryArchived,
-                repositoryFork = repositoryFork,
-                repositoryPushedAtMillis = repositoryPushedAtMillis,
-                upstreamFullName = upstreamFullName,
-                upstreamArchived = upstreamArchived,
-                upstreamPushedAtMillis = upstreamPushedAtMillis,
+                repositoryArchived = profile.repositoryArchivedOr(item.repositoryArchived),
+                repositoryFork = profile.repositoryForkOr(item.repositoryFork),
+                repositoryPushedAtMillis = profile.repositoryPushedAtOr(-1L),
+                upstreamFullName = profile.upstreamFullNameOr(""),
+                upstreamArchived = profile.upstreamArchivedOr(false),
+                upstreamPushedAtMillis = profile.upstreamPushedAtOr(-1L),
+                repositoryProfile = profile,
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
@@ -97,16 +99,24 @@ object GitHubReleaseCheckService {
             lookupConfig = lookupConfig,
             allowFallback = strategy == null
         ).getOrElse { error ->
+            val profile = loadRepositoryProfile(
+                profileRepository = profileRepository,
+                item = item,
+                lookupConfig = lookupConfig,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode
+            )
             return GitHubTrackedReleaseCheck(
                 strategyId = effectiveStrategy.id,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                repositoryArchived = repositoryArchived,
-                repositoryFork = repositoryFork,
-                repositoryPushedAtMillis = repositoryPushedAtMillis,
-                upstreamFullName = upstreamFullName,
-                upstreamArchived = upstreamArchived,
-                upstreamPushedAtMillis = upstreamPushedAtMillis,
+                repositoryArchived = profile.repositoryArchivedOr(item.repositoryArchived),
+                repositoryFork = profile.repositoryForkOr(item.repositoryFork),
+                repositoryPushedAtMillis = profile.repositoryPushedAtOr(-1L),
+                upstreamFullName = profile.upstreamFullNameOr(""),
+                upstreamArchived = profile.upstreamArchivedOr(false),
+                upstreamPushedAtMillis = profile.upstreamPushedAtOr(-1L),
+                repositoryProfile = profile,
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
@@ -119,23 +129,34 @@ object GitHubReleaseCheckService {
             lookupConfig = lookupConfig,
             resolver = preciseApkVersionResolver
         )
+        val profile = loadRepositoryProfile(
+            profileRepository = profileRepository,
+            item = item,
+            lookupConfig = lookupConfig,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            releaseSnapshot = snapshot,
+            preciseStableApkVersion = preciseVersions.stable,
+            precisePreReleaseApkVersion = preciseVersions.preRelease
+        )
 
         return evaluateSnapshot(
             item = item,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
             snapshot = snapshot.copy(
-                repositoryArchived = repositoryArchived,
-                repositoryFork = repositoryFork,
-                repositoryPushedAtMillis = repositoryPushedAtMillis,
-                upstreamFullName = upstreamFullName,
-                upstreamArchived = upstreamArchived,
-                upstreamPushedAtMillis = upstreamPushedAtMillis
+                repositoryArchived = profile.repositoryArchivedOr(item.repositoryArchived),
+                repositoryFork = profile.repositoryForkOr(item.repositoryFork),
+                repositoryPushedAtMillis = profile.repositoryPushedAtOr(-1L),
+                upstreamFullName = profile.upstreamFullNameOr(""),
+                upstreamArchived = profile.upstreamArchivedOr(false),
+                upstreamPushedAtMillis = profile.upstreamPushedAtOr(-1L)
             ),
             checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
             preciseStableApkVersion = preciseVersions.stable,
             precisePreReleaseApkVersion = preciseVersions.preRelease,
-            sourceConfigSignature = sourceConfigSignature
+            sourceConfigSignature = sourceConfigSignature,
+            repositoryProfile = profile
         )
     }
 
@@ -147,7 +168,8 @@ object GitHubReleaseCheckService {
         checkAllTrackedPreReleases: Boolean = false,
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
-        sourceConfigSignature: String = ""
+        sourceConfigSignature: String = "",
+        repositoryProfile: GitHubRepositoryProfileSnapshot? = snapshot.repositoryProfile
     ): GitHubTrackedReleaseCheck {
         val matchedEntry = snapshot.feed.entries.firstOrNull { entry ->
             GitHubVersionUtils.compareVersionToStructuredCandidates(localVersion, entry.versionCandidates) == 0
@@ -252,6 +274,7 @@ object GitHubReleaseCheckService {
             upstreamFullName = snapshot.upstreamFullName,
             upstreamArchived = snapshot.upstreamArchived,
             upstreamPushedAtMillis = snapshot.upstreamPushedAtMillis,
+            repositoryProfile = repositoryProfile,
             sourceConfigSignature = sourceConfigSignature,
             status = status,
             message = status.defaultMessage
@@ -301,6 +324,33 @@ object GitHubReleaseCheckService {
             stable = results.firstOrNull { it.first == PreciseApkVersionChannel.Stable }?.second,
             preRelease = results.firstOrNull { it.first == PreciseApkVersionChannel.PreRelease }?.second
         )
+    }
+
+    private fun loadRepositoryProfile(
+        profileRepository: GitHubRepositoryProfileRepository,
+        item: GitHubTrackedApp,
+        lookupConfig: GitHubLookupConfig,
+        localVersion: String,
+        localVersionCode: Long,
+        releaseSnapshot: GitHubRepositoryReleaseSnapshot? = null,
+        preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
+        precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null
+    ): GitHubRepositoryProfileSnapshot? {
+        return runCatching {
+            profileRepository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = item.owner,
+                    repo = item.repo,
+                    lookupConfig = lookupConfig,
+                    releaseSnapshot = releaseSnapshot,
+                    localPackageName = item.packageName,
+                    localVersionName = localVersion,
+                    localVersionCode = localVersionCode,
+                    preciseStableApkVersion = preciseStableApkVersion,
+                    precisePreReleaseApkVersion = precisePreReleaseApkVersion
+                )
+            )
+        }.getOrNull()
     }
 
     private fun loadSnapshotWithFallback(
@@ -448,6 +498,7 @@ object GitHubReleaseCheckService {
             upstreamFullName = upstreamFullName,
             upstreamArchived = upstreamArchived,
             upstreamPushedAtMillis = upstreamPushedAtMillis,
+            repositoryProfile = repositoryProfile,
             sourceConfigSignature = sourceConfigSignature,
             sourceStrategyId = strategyId
         )
@@ -501,6 +552,7 @@ object GitHubReleaseCheckService {
             upstreamFullName = entry.upstreamFullName,
             upstreamArchived = entry.upstreamArchived,
             upstreamPushedAtMillis = entry.upstreamPushedAtMillis,
+            repositoryProfile = entry.repositoryProfile,
             sourceConfigSignature = entry.sourceConfigSignature,
             status = GitHubTrackedReleaseStatus.fromMessage(entry.message)
                 ?: GitHubTrackedReleaseStatus.ComparisonUncertain,
@@ -522,4 +574,28 @@ object GitHubReleaseCheckService {
         val channel: PreciseApkVersionChannel,
         val release: GitHubReleaseVersionSignals
     )
+
+    private fun GitHubRepositoryProfileSnapshot?.repositoryArchivedOr(fallback: Boolean): Boolean {
+        return this?.lifecycle?.archived?.value ?: fallback
+    }
+
+    private fun GitHubRepositoryProfileSnapshot?.repositoryForkOr(fallback: Boolean): Boolean {
+        return this?.lifecycle?.fork?.value ?: fallback
+    }
+
+    private fun GitHubRepositoryProfileSnapshot?.repositoryPushedAtOr(fallback: Long): Long {
+        return this?.activity?.pushedAtMillis?.value ?: fallback
+    }
+
+    private fun GitHubRepositoryProfileSnapshot?.upstreamFullNameOr(fallback: String): String {
+        return this?.lifecycle?.upstream?.fullName?.value ?: fallback
+    }
+
+    private fun GitHubRepositoryProfileSnapshot?.upstreamArchivedOr(fallback: Boolean): Boolean {
+        return this?.lifecycle?.upstream?.archived?.value ?: fallback
+    }
+
+    private fun GitHubRepositoryProfileSnapshot?.upstreamPushedAtOr(fallback: Long): Long {
+        return this?.lifecycle?.upstream?.pushedAtMillis?.value ?: fallback
+    }
 }

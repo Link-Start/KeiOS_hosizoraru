@@ -23,6 +23,7 @@ class GitHubReleaseAssetJsonMapperTest {
                   "size": 1024,
                   "download_count": 3,
                   "content_type": "application/vnd.android.package-archive",
+                  "digest": "sha256:abc123",
                   "updated_at": "2026-05-01T10:05:00Z"
                 }
               ]
@@ -37,6 +38,7 @@ class GitHubReleaseAssetJsonMapperTest {
         assertEquals("Added installer flow\nFixed cache refresh", bundle.releaseNotesBody)
         assertEquals(1, bundle.assets.size)
         assertEquals("demo-arm64.apk", bundle.assets.single().name)
+        assertEquals("sha256:abc123", bundle.assets.single().digest)
     }
 
     @Test

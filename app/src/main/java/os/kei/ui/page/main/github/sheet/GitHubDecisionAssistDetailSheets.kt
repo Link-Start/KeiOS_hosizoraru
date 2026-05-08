@@ -586,11 +586,23 @@ private fun GitHubDecisionLevel.labelRes(): Int {
 private fun GitHubRepositoryHealthReason.labelRes(): Int {
     return when (this) {
         GitHubRepositoryHealthReason.RepositoryArchived -> R.string.github_health_reason_repository_archived
+        GitHubRepositoryHealthReason.RepositoryDisabled -> R.string.github_health_reason_repository_disabled
         GitHubRepositoryHealthReason.RepositoryFork -> R.string.github_health_reason_repository_fork
         GitHubRepositoryHealthReason.ForkUpstreamArchived -> R.string.github_health_reason_fork_upstream_archived
         GitHubRepositoryHealthReason.ForkBehindUpstream -> R.string.github_health_reason_fork_behind_upstream
         GitHubRepositoryHealthReason.ForkMaintainedIndependently -> R.string.github_health_reason_fork_independent
         GitHubRepositoryHealthReason.ForkTracksUpstream -> R.string.github_health_reason_fork_tracks_upstream
+        GitHubRepositoryHealthReason.StaleRepositoryActivity -> R.string.github_health_reason_stale_repository_activity
+        GitHubRepositoryHealthReason.StaleRelease -> R.string.github_health_reason_stale_release
+        GitHubRepositoryHealthReason.ActionsHealthy -> R.string.github_health_reason_actions_healthy
+        GitHubRepositoryHealthReason.ActionsFailing -> R.string.github_health_reason_actions_failing
+        GitHubRepositoryHealthReason.AndroidAssetsDetected -> R.string.github_health_reason_android_assets_detected
+        GitHubRepositoryHealthReason.MissingAndroidAssets -> R.string.github_health_reason_missing_android_assets
+        GitHubRepositoryHealthReason.CommunityProfileComplete -> R.string.github_health_reason_community_complete
+        GitHubRepositoryHealthReason.MissingReadme -> R.string.github_health_reason_missing_readme
+        GitHubRepositoryHealthReason.MissingLicense -> R.string.github_health_reason_missing_license
+        GitHubRepositoryHealthReason.LocalPackageMatched -> R.string.github_health_reason_local_package_matched
+        GitHubRepositoryHealthReason.LocalPackageMismatch -> R.string.github_health_reason_local_package_mismatch
         GitHubRepositoryHealthReason.UpdateAvailable -> R.string.github_health_reason_update_available
         GitHubRepositoryHealthReason.PreReleaseRecommended -> R.string.github_health_reason_prerelease
         GitHubRepositoryHealthReason.CheckFailed -> R.string.github_health_reason_check_failed

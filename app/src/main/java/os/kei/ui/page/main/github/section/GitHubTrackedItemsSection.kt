@@ -40,7 +40,6 @@ import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubCompactInfoRow
 import os.kei.ui.page.main.github.GitHubDecisionLevel
-import os.kei.ui.page.main.github.GitHubRepositoryHealthReason
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.VersionValueRow
@@ -363,15 +362,11 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         lookupConfig.repositoryHealthCardEnabled
                     ) {
                         val health = buildGitHubRepositoryHealth(item, state)
-                        AppSupportingBlock(
-                            text = buildGitHubRepositoryHealthText(
-                                context = context,
-                                score = health.score,
-                                reasons = health.reasons
-                            ),
-                            accentColor = health.level.toStatusColor(),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        VersionValueRow(
+                            label = stringResource(R.string.github_item_label_health_score),
+                            value = health.score.toString(),
+                            valueColor = health.level.toStatusColor(),
+                            emphasized = health.level != GitHubDecisionLevel.Review,
                             onClick = {
                                 onOpenDecisionAssistDetail(
                                     GitHubDecisionAssistDetailType.RepositoryHealth,
@@ -436,39 +431,11 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     }
 }
 
-private fun buildGitHubRepositoryHealthText(
-    context: Context,
-    score: Int,
-    reasons: List<GitHubRepositoryHealthReason>
-): String {
-    val reasonText = reasons
-        .take(4)
-        .joinToString(" / ") { reason -> context.getString(reason.labelRes()) }
-    return if (reasonText.isBlank()) {
-        context.getString(R.string.github_health_score_value, score)
-    } else {
-        context.getString(R.string.github_health_score_with_reasons, score, reasonText)
-    }
-}
-
 private fun GitHubDecisionLevel.toStatusColor(): Color {
     return when (this) {
         GitHubDecisionLevel.Good -> GitHubStatusPalette.Update
         GitHubDecisionLevel.Review -> GitHubStatusPalette.Cache
         GitHubDecisionLevel.Risk -> GitHubStatusPalette.Error
-    }
-}
-
-private fun GitHubRepositoryHealthReason.labelRes(): Int {
-    return when (this) {
-        GitHubRepositoryHealthReason.UpdateAvailable -> R.string.github_health_reason_update_available
-        GitHubRepositoryHealthReason.PreReleaseRecommended -> R.string.github_health_reason_prerelease
-        GitHubRepositoryHealthReason.CheckFailed -> R.string.github_health_reason_check_failed
-        GitHubRepositoryHealthReason.MissingPackageName -> R.string.github_health_reason_missing_package
-        GitHubRepositoryHealthReason.MissingStableRelease -> R.string.github_health_reason_missing_stable
-        GitHubRepositoryHealthReason.LocalMissing -> R.string.github_health_reason_local_missing
-        GitHubRepositoryHealthReason.StableDetected -> R.string.github_health_reason_stable_detected
-        GitHubRepositoryHealthReason.FreshRelease -> R.string.github_health_reason_fresh_release
     }
 }
 

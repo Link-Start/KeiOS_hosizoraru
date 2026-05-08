@@ -242,6 +242,7 @@
     <string name="github_release_meta_prefix_stable">稳定</string>
     <string name="github_release_meta_prefix_prerelease">预发</string>
     <string name="github_item_label_updated_at">更新时间</string>
+    <string name="github_item_label_health_score">健康评分</string>
     <string name="github_item_label_hint">提示</string>
     <string name="github_item_label_update_assets">更新</string>
     <string name="github_item_cd_more_actions">更多功能</string>
@@ -690,7 +691,6 @@
     <string name="github_asset_badge_incompatible">可能不兼容</string>
     <string name="github_release_notes_title">Release Notes</string>
     <string name="github_health_score_value">健康评分 %1$d</string>
-    <string name="github_health_score_with_reasons">健康评分 %1$d：%2$s</string>
     <string name="github_health_reason_update_available">有可用更新</string>
     <string name="github_health_reason_prerelease">推荐预发</string>
     <string name="github_health_reason_check_failed">检查失败</string>
@@ -702,15 +702,13 @@
     <string name="github_health_detail_title">健康评分详情</string>
     <string name="github_health_detail_summary">项目状态</string>
     <string name="github_health_detail_current_version">本地版本：%1$s</string>
-    <string name="github_health_detail_reason_title">评分原因</string>
-    <string name="github_health_detail_reason_empty">当前没有明显风险信号</string>
-    <string name="github_health_detail_impact_title">评分影响</string>
-    <string name="github_health_detail_impact_empty">本次刷新没有可量化的评分变动</string>
-    <string name="github_health_detail_impact_line">%1$s · %2$s</string>
+    <string name="github_health_detail_diagnosis_title">评分诊断</string>
+    <string name="github_health_detail_diagnosis_empty">当前没有明显评分变化</string>
     <string name="github_health_detail_rule_title">评分规则</string>
-    <string name="github_health_detail_rule_check">检查失败、缺少本地包名、缺少本地版本会降低评分。</string>
-    <string name="github_health_detail_rule_release">稳定版识别、近期发布、有可用更新会提高关注度。</string>
-    <string name="github_health_detail_rule_package">预发推荐会提示用户再次确认安装目标。</string>
+    <string name="github_health_detail_rule_check">基础分 82；检查失败、缺少包名、缺少稳定版、本地未安装会降低可信度。</string>
+    <string name="github_health_detail_rule_release">稳定版已识别、近期发布、有可用更新会提高关注度，适合进入更新检查队列。</string>
+    <string name="github_health_detail_rule_package">预发推荐会降低稳健评分，并提示用户在安装前确认目标版本和渠道。</string>
+    <string name="github_health_detail_rule_scope">评分用于概览排序和提醒优先级；APK 文件可信度以资源卡片和 APK 详情为准。</string>
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">正在刷新 release assets 和 release notes</string>
     <string name="github_release_notes_detail_repo">仓库</string>

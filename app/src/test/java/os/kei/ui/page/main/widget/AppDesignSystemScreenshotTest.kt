@@ -22,6 +22,7 @@ import org.robolectric.annotation.GraphicsMode
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
+import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.importer.StarImportConflictStrategy
 import os.kei.ui.page.main.github.importer.StarImportListControlCard
 import os.kei.ui.page.main.github.importer.StarImportViewFilter
@@ -358,11 +359,11 @@ class AppDesignSystemScreenshotTest {
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AppSupportingBlock(
-                            text = "健康评分 88：稳定版已识别",
-                            accentColor = Color(0xFF22C55E),
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        VersionValueRow(
+                            label = "健康评分",
+                            value = "88",
+                            valueColor = Color(0xFF22C55E),
+                            emphasized = true,
                             onClick = {}
                         )
                         AppSupportingBlock(

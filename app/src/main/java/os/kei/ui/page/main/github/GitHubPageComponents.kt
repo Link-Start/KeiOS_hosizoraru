@@ -51,7 +51,8 @@ internal fun VersionValueRow(
     label: String,
     value: String,
     valueColor: Color,
-    emphasized: Boolean = false
+    emphasized: Boolean = false,
+    onClick: (() -> Unit)? = null
 ) {
     GitHubCompactInfoRow(
         label = label,
@@ -59,7 +60,8 @@ internal fun VersionValueRow(
         valueColor = valueColor,
         titleColor = MiuixTheme.colorScheme.primary,
         emphasized = emphasized,
-        titleMinWidth = 52.dp
+        titleMinWidth = 52.dp,
+        onClick = onClick
     )
 }
 

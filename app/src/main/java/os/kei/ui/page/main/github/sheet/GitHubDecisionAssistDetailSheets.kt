@@ -6,6 +6,8 @@ import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -24,6 +26,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
+import os.kei.ui.page.main.github.GitHubRepositoryHealth
 import os.kei.ui.page.main.github.GitHubRepositoryHealthReason
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -41,6 +44,7 @@ import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -52,6 +56,7 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -296,39 +301,82 @@ private fun GitHubHealthDetailContent(
                 )
             )
         }
-        SheetSectionTitle(stringResource(R.string.github_health_detail_reason_title))
-        SheetSectionCard {
-            if (health.reasons.isEmpty()) {
-                DetailTextLine(stringResource(R.string.github_health_detail_reason_empty))
-            } else {
-                health.reasons.forEach { reason ->
-                    DetailTextLine(context.getString(reason.labelRes()))
-                }
-            }
-        }
-        SheetSectionTitle(stringResource(R.string.github_health_detail_impact_title))
-        SheetSectionCard {
-            val impactLines = buildGitHubRepositoryHealthImpactLines(health)
-            if (impactLines.isEmpty()) {
-                DetailTextLine(stringResource(R.string.github_health_detail_impact_empty))
-            } else {
-                impactLines.forEach { (reason, impact) ->
-                    DetailTextLine(
-                        stringResource(
-                            R.string.github_health_detail_impact_line,
-                            if (impact > 0) "+$impact" else impact.toString(),
-                            context.getString(reason.labelRes())
-                        )
-                    )
-                }
-            }
-        }
+        SheetSectionTitle(stringResource(R.string.github_health_detail_diagnosis_title))
+        GitHubHealthDiagnosisCard(health = health, context = context)
         SheetSectionTitle(stringResource(R.string.github_health_detail_rule_title))
-        SheetSectionCard {
-            SheetDescriptionText(stringResource(R.string.github_health_detail_rule_check))
-            SheetDescriptionText(stringResource(R.string.github_health_detail_rule_release))
-            SheetDescriptionText(stringResource(R.string.github_health_detail_rule_package))
+        SheetSectionCard(
+            verticalSpacing = 4.dp,
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            DetailTextLine(
+                text = stringResource(R.string.github_health_detail_rule_check),
+                maxLines = Int.MAX_VALUE
+            )
+            DetailTextLine(
+                text = stringResource(R.string.github_health_detail_rule_release),
+                maxLines = Int.MAX_VALUE
+            )
+            DetailTextLine(
+                text = stringResource(R.string.github_health_detail_rule_package),
+                maxLines = Int.MAX_VALUE
+            )
+            DetailTextLine(
+                text = stringResource(R.string.github_health_detail_rule_scope),
+                maxLines = Int.MAX_VALUE
+            )
         }
+    }
+}
+
+@Composable
+private fun GitHubHealthDiagnosisCard(
+    health: GitHubRepositoryHealth,
+    context: Context
+) {
+    val impactLines = buildGitHubRepositoryHealthImpactLines(health)
+    SheetSectionCard(
+        verticalSpacing = 6.dp,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        if (impactLines.isEmpty()) {
+            DetailTextLine(stringResource(R.string.github_health_detail_diagnosis_empty))
+        } else {
+            impactLines.forEach { (reason, impact) ->
+                GitHubHealthDiagnosisLine(
+                    impact = impact,
+                    reason = context.getString(reason.labelRes())
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubHealthDiagnosisLine(
+    impact: Int,
+    reason: String
+) {
+    val impactColor = when {
+        impact > 0 -> GitHubStatusPalette.Update
+        impact < 0 -> GitHubStatusPalette.Error
+        else -> MiuixTheme.colorScheme.onBackgroundVariant
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        StatusPill(
+            label = if (impact > 0) "+$impact" else impact.toString(),
+            color = impactColor,
+            size = AppStatusPillSize.Compact,
+            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp)
+        )
+        DetailTextLine(
+            text = reason,
+            maxLines = 2,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 

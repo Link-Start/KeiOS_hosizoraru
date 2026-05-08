@@ -713,7 +713,6 @@
     <string name="github_health_detail_rule_package">Pre-release recommendations ask the user to confirm the install target.</string>
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">Refreshing release assets and release notes</string>
-    <string name="github_release_notes_detail_refresh_hint">Use the top-right button to refresh release assets and release notes only.</string>
     <string name="github_release_notes_detail_repo">Repo</string>
     <string name="github_release_notes_detail_source">Source</string>
     <string name="github_release_notes_source_api">API: structured release data</string>
@@ -721,12 +720,6 @@
     <string name="github_release_notes_detail_target_latest">Current release</string>
     <string name="github_release_notes_detail_body_title">Release notes</string>
     <string name="github_release_notes_detail_empty">This release has no displayable release notes.</string>
-    <string name="github_release_notes_field_guide_title">Field guide</string>
-    <string name="github_release_notes_field_guide_summary">Expand to read what API, Atom, Markdown, and Assets mean here.</string>
-    <string name="github_release_notes_field_guide_api">API: structured GitHub release body and assets</string>
-    <string name="github_release_notes_field_guide_atom">Atom: public release page parsing without a token</string>
-    <string name="github_release_notes_field_guide_markdown">Markdown: publisher’s original formatting</string>
-    <string name="github_release_notes_field_guide_assets">Assets: shared with download buttons and APK parsing</string>
     <string name="github_apk_trust_good">Trusted</string>
     <string name="github_apk_trust_review">Review</string>
     <string name="github_apk_trust_risk">High risk</string>

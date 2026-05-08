@@ -705,7 +705,6 @@
     <string name="github_health_detail_rule_package">预发推荐会提示用户再次确认安装目标。</string>
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">正在刷新 release assets 和 release notes</string>
-    <string name="github_release_notes_detail_refresh_hint">右上角可单独刷新 release assets 和 release notes</string>
     <string name="github_release_notes_detail_repo">仓库</string>
     <string name="github_release_notes_detail_source">来源</string>
     <string name="github_release_notes_source_api">API：结构化 Release 数据</string>
@@ -713,14 +712,6 @@
     <string name="github_release_notes_detail_target_latest">当前 Release</string>
     <string name="github_release_notes_detail_body_title">发布说明</string>
     <string name="github_release_notes_detail_empty">当前 release 暂无可显示的发布说明</string>
-    <string name="github_release_notes_field_guide_title">含义对照</string>
-    <string name="github_release_notes_field_guide_summary">展开查看 API / Atom / Markdown / Assets 的读取含义。</string>
-    <string name="github_release_notes_field_guide_api">API：读取 GitHub 结构化正文和资产</string>
-    <string name="github_release_notes_field_guide_atom">Atom：适合无 token 的公开页面解析</string>
-    <string name="github_release_notes_field_guide_markdown">Markdown：保留发布方原始格式</string>
-    <string name="github_release_notes_field_guide_assets">Assets：同步用于下载按钮和 APK 解析</string>
-    <string name="github_release_notes_action_open_release">打开 Release</string>
-    <string name="github_release_notes_toast_copied">已复制 Release Notes</string>
     <string name="github_apk_trust_good">可信</string>
     <string name="github_apk_trust_review">需确认</string>
     <string name="github_apk_trust_risk">高风险</string>

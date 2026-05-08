@@ -192,9 +192,6 @@ internal fun GitHubPageSheetHost(
                 itemState = itemState,
                 clearCache = true
             )
-        },
-        onOpenExternalUrl = { url, failureMessage ->
-            actions.openExternalUrl(url = url, failureMessage = failureMessage)
         }
     )
 

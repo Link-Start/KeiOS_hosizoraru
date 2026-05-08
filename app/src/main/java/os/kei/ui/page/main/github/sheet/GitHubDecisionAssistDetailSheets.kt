@@ -6,15 +6,10 @@ import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,12 +36,8 @@ import os.kei.ui.page.main.github.buildGitHubRepositoryHealthImpactLines
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
-import os.kei.ui.page.main.os.appLucideChevronDownIcon
-import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
-import os.kei.ui.page.main.os.appLucideExternalLinkIcon
-import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
@@ -61,6 +52,7 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -74,8 +66,7 @@ internal fun GitHubDecisionAssistDetailSheet(
     assetError: String,
     onDismissRequest: () -> Unit,
     onRefreshHealth: (GitHubTrackedApp) -> Unit,
-    onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onOpenExternalUrl: (String, String) -> Unit
+    onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit
 ) {
     val detail = request ?: return
     val title = when (detail.type) {
@@ -124,8 +115,6 @@ internal fun GitHubDecisionAssistDetailSheet(
                 assetBundle = assetBundle,
                 assetLoading = assetLoading,
                 assetError = assetError,
-                backdrop = backdrop,
-                onOpenExternalUrl = onOpenExternalUrl
             )
         }
     }
@@ -349,21 +338,14 @@ private fun GitHubReleaseNotesDetailContent(
     state: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
     assetLoading: Boolean,
-    assetError: String,
-    backdrop: LayerBackdrop,
-    onOpenExternalUrl: (String, String) -> Unit
+    assetError: String
 ) {
-    val context = LocalContext.current
-    var meaningsExpanded by remember(item.id, assetBundle?.tagName) { mutableStateOf(false) }
     val lines = buildGitHubReleaseNotesDetailLines(
         item = item,
         state = state,
         assetBundle = assetBundle
     )
     val rawMarkdown = assetBundle?.releaseNotesBody.orEmpty()
-    val releaseUrl = assetBundle?.htmlUrl?.takeIf { it.isNotBlank() }
-        ?: buildFallbackReleaseUrl(item, state)
-    val copyText = rawMarkdown.ifBlank { lines.joinToString("\n") }
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSummaryCard(
             title = assetBundle?.releaseName?.takeIf { it.isNotBlank() }
@@ -380,146 +362,39 @@ private fun GitHubReleaseNotesDetailContent(
                 label = stringResource(R.string.github_release_notes_detail_source),
                 value = releaseNotesSourceLabel(assetBundle?.fetchSource.orEmpty())
             )
-            DetailTextLine(
-                if (assetError.isNotBlank()) {
-                    assetError
-                } else if (assetLoading) {
+            when {
+                assetError.isNotBlank() -> DetailTextLine(assetError)
+                assetLoading -> DetailTextLine(
                     stringResource(R.string.github_release_notes_detail_refreshing)
-                } else {
-                    stringResource(R.string.github_release_notes_detail_refresh_hint)
-                }
-            )
-        }
-        ReleaseNotesMeaningSection(
-            expanded = meaningsExpanded,
-            onToggle = { meaningsExpanded = !meaningsExpanded }
-        )
-        SheetSectionCard {
-            ActionButtonRow {
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.common_copy),
-                    leadingIcon = osLucideCopyIcon(),
-                    enabled = copyText.isNotBlank(),
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        copyTextToClipboard(context, "github_release_notes", copyText)
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.github_release_notes_toast_copied),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                )
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.github_release_notes_action_open_release),
-                    leadingIcon = appLucideExternalLinkIcon(),
-                    enabled = releaseUrl.isNotBlank(),
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        onOpenExternalUrl(
-                            releaseUrl,
-                            context.getString(R.string.github_error_open_link)
-                        )
-                    }
                 )
             }
         }
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
         SheetSectionCard(verticalSpacing = 10.dp) {
             if (rawMarkdown.isNotBlank()) {
-                AppMarkdownContent(
-                    markdown = rawMarkdown,
-                    titleColor = MiuixTheme.colorScheme.onBackground,
-                    subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    accentColor = MiuixTheme.colorScheme.primary,
-                    codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)
-                )
+                CompositionLocalProvider(LocalTextCopyExpandedOverride provides true) {
+                    AppMarkdownContent(
+                        markdown = rawMarkdown,
+                        titleColor = MiuixTheme.colorScheme.onBackground,
+                        subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        accentColor = MiuixTheme.colorScheme.primary,
+                        codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)
+                    )
+                }
             } else if (lines.isEmpty()) {
                 SheetDescriptionText(stringResource(R.string.github_release_notes_detail_empty))
             } else {
-                lines.forEachIndexed { index, line ->
-                    DetailTextLine(
-                        text = if (index == 0) line else "• $line",
-                        maxLines = Int.MAX_VALUE,
-                        accent = index == 0
-                    )
+                CompositionLocalProvider(LocalTextCopyExpandedOverride provides true) {
+                    lines.forEachIndexed { index, line ->
+                        DetailTextLine(
+                            text = if (index == 0) line else "• $line",
+                            maxLines = Int.MAX_VALUE,
+                            accent = index == 0
+                        )
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-@OptIn(ExperimentalLayoutApi::class)
-private fun ReleaseNotesMeaningSection(
-    expanded: Boolean,
-    onToggle: () -> Unit
-) {
-    SheetSectionTitle(stringResource(R.string.github_release_notes_field_guide_title))
-    SheetSectionCard(verticalSpacing = 8.dp) {
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AppLiquidIconButton(
-                backdrop = null,
-                icon = appLucideInfoIcon(),
-                contentDescription = stringResource(R.string.github_release_notes_field_guide_title),
-                onClick = onToggle,
-                width = 32.dp,
-                height = 32.dp,
-                variant = GlassVariant.Content
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_release_notes_field_guide_summary),
-                modifier = Modifier.weight(1f)
-            )
-            AppLiquidIconButton(
-                backdrop = null,
-                icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                contentDescription = stringResource(R.string.github_release_notes_field_guide_title),
-                onClick = onToggle,
-                width = 32.dp,
-                height = 32.dp,
-                variant = GlassVariant.Content
-            )
-        }
-        if (expanded) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                listOf(
-                    stringResource(R.string.github_release_notes_field_guide_api),
-                    stringResource(R.string.github_release_notes_field_guide_atom),
-                    stringResource(R.string.github_release_notes_field_guide_markdown),
-                    stringResource(R.string.github_release_notes_field_guide_assets)
-                ).forEach { entry ->
-                    os.kei.ui.page.main.widget.status.StatusPill(
-                        label = entry,
-                        color = GitHubStatusPalette.Active
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun buildFallbackReleaseUrl(
-    item: GitHubTrackedApp,
-    state: VersionCheckUi
-): String {
-    val tag = state.latestStableRawTag.ifBlank { state.latestPreRawTag }
-    return if (tag.isBlank()) {
-        "https://github.com/${item.owner}/${item.repo}/releases"
-    } else {
-        "https://github.com/${item.owner}/${item.repo}/releases/tag/$tag"
     }
 }
 

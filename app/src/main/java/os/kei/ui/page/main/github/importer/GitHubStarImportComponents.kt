@@ -138,6 +138,12 @@ internal fun StarImportSourceCard(
             value = stringResource(source.sampleRes),
             color = MiuixTheme.colorScheme.onBackground
         )
+        StarImportInfoLine(
+            label = stringResource(R.string.github_star_import_input_hint_label),
+            value = stringResource(source.inputHintRes),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            maxLines = 3
+        )
         AppLiquidTextButton(
             backdrop = null,
             text = if (loading) {
@@ -752,7 +758,8 @@ internal fun starImportQualityColor(quality: GitHubStarImportQuality): Color {
 private fun StarImportInfoLine(
     label: String,
     value: String,
-    color: Color
+    color: Color,
+    maxLines: Int = 2
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
@@ -763,7 +770,7 @@ private fun StarImportInfoLine(
         Text(
             text = value,
             color = color,
-            maxLines = 2,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis
         )
     }

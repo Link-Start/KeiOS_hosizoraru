@@ -9,14 +9,19 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -45,6 +50,7 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import java.util.Locale
 
 @Composable
 internal fun GitHubTrackEditSheet(
@@ -154,6 +160,107 @@ internal fun GitHubTrackEditSheet(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun GitHubTrackAppPickerControls(
+    backdrop: LayerBackdrop,
+    filterScope: GitHubTrackAppPickerFilterScope,
+    sortMode: GitHubTrackAppPickerSortMode,
+    onFilterScopeChange: (GitHubTrackAppPickerFilterScope) -> Unit,
+    onSortModeChange: (GitHubTrackAppPickerSortMode) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        GitHubTrackAppPickerButtonRow(
+            label = stringResource(R.string.github_track_sheet_app_filter_scope_label)
+        ) {
+            GitHubTrackAppPickerFilterScope.entries.forEach { scope ->
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    text = stringResource(scope.labelRes),
+                    onClick = { onFilterScopeChange(scope) },
+                    modifier = Modifier.weight(1f),
+                    variant = if (scope == filterScope) GlassVariant.SheetAction else GlassVariant.Content,
+                    textMaxLines = 1
+                )
+            }
+        }
+        GitHubTrackAppPickerButtonRow(
+            label = stringResource(R.string.github_track_sheet_app_sort_label)
+        ) {
+            GitHubTrackAppPickerSortMode.entries.forEach { mode ->
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    text = stringResource(mode.labelRes),
+                    onClick = { onSortModeChange(mode) },
+                    modifier = Modifier.weight(1f),
+                    variant = if (mode == sortMode) GlassVariant.SheetAction else GlassVariant.Content,
+                    textMaxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubTrackAppPickerButtonRow(
+    label: String,
+    content: @Composable RowScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SheetInputTitle(label)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            content = content
+        )
+    }
+}
+
+private enum class GitHubTrackAppPickerFilterScope(val labelRes: Int) {
+    All(R.string.github_track_sheet_app_filter_scope_all),
+    Name(R.string.github_track_sheet_app_filter_scope_name),
+    Package(R.string.github_track_sheet_app_filter_scope_package)
+}
+
+private enum class GitHubTrackAppPickerSortMode(val labelRes: Int) {
+    Name(R.string.github_track_sheet_app_sort_name),
+    Recent(R.string.github_track_sheet_app_sort_recent),
+    Package(R.string.github_track_sheet_app_sort_package)
+}
+
+private fun InstalledAppItem.matchesAppPickerQuery(
+    query: String,
+    scope: GitHubTrackAppPickerFilterScope
+): Boolean {
+    if (query.isBlank()) return true
+    return when (scope) {
+        GitHubTrackAppPickerFilterScope.All ->
+            label.contains(query, ignoreCase = true) ||
+                    packageName.contains(query, ignoreCase = true)
+
+        GitHubTrackAppPickerFilterScope.Name ->
+            label.contains(query, ignoreCase = true)
+
+        GitHubTrackAppPickerFilterScope.Package ->
+            packageName.contains(query, ignoreCase = true)
+    }
+}
+
+private fun GitHubTrackAppPickerSortMode.comparator(): Comparator<InstalledAppItem> {
+    return when (this) {
+        GitHubTrackAppPickerSortMode.Name ->
+            compareBy<InstalledAppItem> { it.label.lowercase(Locale.ROOT) }
+                .thenBy { it.packageName.lowercase(Locale.ROOT) }
+
+        GitHubTrackAppPickerSortMode.Recent ->
+            compareByDescending<InstalledAppItem> { it.lastUpdateTimeMs }
+                .thenBy { it.label.lowercase(Locale.ROOT) }
+
+        GitHubTrackAppPickerSortMode.Package ->
+            compareBy<InstalledAppItem> { it.packageName.lowercase(Locale.ROOT) }
+                .thenBy { it.label.lowercase(Locale.ROOT) }
     }
 }
 
@@ -311,12 +418,15 @@ private fun GitHubTrackAppPickerContent(
 ) {
     val configuration = LocalConfiguration.current
     val listMaxHeight = (configuration.screenHeightDp.dp * 0.60f).coerceIn(340.dp, 680.dp)
-    val filteredApps = remember(appList, appSearch) {
-        appList.filter { app ->
-            appSearch.isBlank() ||
-                    app.label.contains(appSearch, ignoreCase = true) ||
-                    app.packageName.contains(appSearch, ignoreCase = true)
-        }
+    var filterScope by remember { mutableStateOf(GitHubTrackAppPickerFilterScope.All) }
+    var sortMode by remember { mutableStateOf(GitHubTrackAppPickerSortMode.Name) }
+    val filteredApps = remember(appList, appSearch, filterScope, sortMode) {
+        val query = appSearch.trim()
+        appList
+            .asSequence()
+            .filter { app -> app.matchesAppPickerQuery(query, filterScope) }
+            .sortedWith(sortMode.comparator())
+            .toList()
     }
 
     SheetContentColumn(
@@ -349,6 +459,21 @@ private fun GitHubTrackAppPickerContent(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetInput,
                 singleLine = true
+            )
+            GitHubTrackAppPickerControls(
+                backdrop = backdrop,
+                filterScope = filterScope,
+                sortMode = sortMode,
+                onFilterScopeChange = { filterScope = it },
+                onSortModeChange = { sortMode = it }
+            )
+            MiuixInfoItem(
+                stringResource(R.string.github_track_sheet_label_app_list),
+                stringResource(
+                    R.string.github_track_sheet_app_result_count_format,
+                    filteredApps.size,
+                    appList.size
+                )
             )
             selectedApp?.let { app ->
                 GitHubSelectedAppCard(selectedApp = app)

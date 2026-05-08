@@ -479,7 +479,11 @@
     <string name="github_star_import_sample_label">Example</string>
     <string name="github_star_import_sample_token">Example: ghp_xxx...; configure the token in the GitHub fetch strategy sheet.</string>
     <string name="github_star_import_sample_username">Example: hosizoraru or https://github.com/hosizoraru?tab=stars</string>
-    <string name="github_star_import_sample_list_url">Example: https://github.com/octocat?tab=stars</string>
+    <string name="github_star_import_sample_list_url">Example: https://github.com/stars/octocat/lists/android-apps</string>
+    <string name="github_star_import_input_hint_label">Input guide</string>
+    <string name="github_star_import_input_hint_token">Reads /user/starred for the account behind the current token. Configure the token in GitHub fetch strategy.</string>
+    <string name="github_star_import_input_hint_username">Enter a GitHub username or profile URL here. For a Star List category, switch to List and paste the full URL.</string>
+    <string name="github_star_import_input_hint_list_url">Paste the full Star List or Stars URL from the browser address bar. A numeric ID alone cannot locate the public list.</string>
     <string name="github_star_import_loading_source">Checking import source</string>
     <string name="github_star_import_loading_lists">Finding public Star List categories</string>
     <string name="github_star_import_loading_repositories">Reading starred repositories</string>
@@ -583,6 +587,15 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_section_app_candidates">App candidates</string>
     <string name="github_track_sheet_label_app_list">App list</string>
+    <string name="github_track_sheet_app_result_count_format">Showing %1$d / %2$d</string>
+    <string name="github_track_sheet_app_filter_scope_label">Filter by</string>
+    <string name="github_track_sheet_app_filter_scope_all">All</string>
+    <string name="github_track_sheet_app_filter_scope_name">Name</string>
+    <string name="github_track_sheet_app_filter_scope_package">Package</string>
+    <string name="github_track_sheet_app_sort_label">Sort</string>
+    <string name="github_track_sheet_app_sort_name">Name</string>
+    <string name="github_track_sheet_app_sort_recent">Recent</string>
+    <string name="github_track_sheet_app_sort_package">Package</string>
     <string name="github_track_sheet_msg_app_no_match">No matching results</string>
     <string name="github_track_sheet_danger_title">Danger zone</string>
     <string name="github_track_sheet_btn_delete">Delete tracking</string>

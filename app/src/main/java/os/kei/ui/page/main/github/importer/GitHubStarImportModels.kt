@@ -26,22 +26,26 @@ internal enum class StarImportConflictStrategy(@param:StringRes val labelRes: In
 internal enum class StarImportUiSource(
     @param:StringRes val labelRes: Int,
     @param:StringRes val requirementMessageRes: Int,
-    @param:StringRes val sampleRes: Int
+    @param:StringRes val sampleRes: Int,
+    @param:StringRes val inputHintRes: Int
 ) {
     MyStars(
         labelRes = R.string.github_star_import_source_my_stars,
         requirementMessageRes = R.string.github_star_import_requirement_token,
-        sampleRes = R.string.github_star_import_sample_token
+        sampleRes = R.string.github_star_import_sample_token,
+        inputHintRes = R.string.github_star_import_input_hint_token
     ),
     PublicUser(
         labelRes = R.string.github_star_import_source_user,
         requirementMessageRes = R.string.github_star_import_requirement_username,
-        sampleRes = R.string.github_star_import_sample_username
+        sampleRes = R.string.github_star_import_sample_username,
+        inputHintRes = R.string.github_star_import_input_hint_username
     ),
     ListUrl(
         labelRes = R.string.github_star_import_source_list_url,
         requirementMessageRes = R.string.github_star_import_requirement_list_url,
-        sampleRes = R.string.github_star_import_sample_list_url
+        sampleRes = R.string.github_star_import_sample_list_url,
+        inputHintRes = R.string.github_star_import_input_hint_list_url
     );
 
     fun isReady(

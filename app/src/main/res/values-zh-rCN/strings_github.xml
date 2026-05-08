@@ -471,7 +471,11 @@
     <string name="github_star_import_sample_label">填写示例</string>
     <string name="github_star_import_sample_token">示例：ghp_xxx...；在抓取方案配置。</string>
     <string name="github_star_import_sample_username">示例：hosizoraru 或 https://github.com/hosizoraru?tab=stars</string>
-    <string name="github_star_import_sample_list_url">示例：https://github.com/octocat?tab=stars</string>
+    <string name="github_star_import_sample_list_url">示例：https://github.com/stars/octocat/lists/android-apps</string>
+    <string name="github_star_import_input_hint_label">填写说明</string>
+    <string name="github_star_import_input_hint_token">读取当前 Token 所属账号的 /user/starred；Token 在 GitHub 抓取方案里配置。</string>
+    <string name="github_star_import_input_hint_username">这里填写 GitHub 用户名或个人主页链接；Star List 分类请切到“列表”并粘贴完整 URL。</string>
+    <string name="github_star_import_input_hint_list_url">这里粘贴浏览器地址栏里的完整 Star List/Stars URL；只填数字 ID 会无法定位公开列表。</string>
     <string name="github_star_import_loading_source">正在检查导入来源</string>
     <string name="github_star_import_loading_lists">正在查找公开 Star List 分类</string>
     <string name="github_star_import_loading_repositories">正在读取 starred repositories</string>
@@ -575,6 +579,15 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
     <string name="github_track_sheet_section_app_candidates">App 候选</string>
     <string name="github_track_sheet_label_app_list">App 列表</string>
+    <string name="github_track_sheet_app_result_count_format">显示 %1$d / %2$d 个</string>
+    <string name="github_track_sheet_app_filter_scope_label">筛选范围</string>
+    <string name="github_track_sheet_app_filter_scope_all">全部</string>
+    <string name="github_track_sheet_app_filter_scope_name">名称</string>
+    <string name="github_track_sheet_app_filter_scope_package">包名</string>
+    <string name="github_track_sheet_app_sort_label">排序</string>
+    <string name="github_track_sheet_app_sort_name">名称</string>
+    <string name="github_track_sheet_app_sort_recent">最近</string>
+    <string name="github_track_sheet_app_sort_package">包名</string>
     <string name="github_track_sheet_msg_app_no_match">没有匹配结果</string>
     <string name="github_track_sheet_danger_title">危险操作</string>
     <string name="github_track_sheet_btn_delete">删除跟踪</string>

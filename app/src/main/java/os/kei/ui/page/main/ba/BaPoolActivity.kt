@@ -364,7 +364,7 @@ private fun BaPoolListContent(
                 item {
                     BaPoolStatePanel(
                         backdrop = backdrop,
-                        text = error.orEmpty(),
+                        text = error,
                         accentColor = baCalendarPoolSyncNoticeColor(
                             hasVisibleEntries = visibleEntries.isNotEmpty()
                         ),

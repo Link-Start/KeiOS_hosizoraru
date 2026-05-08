@@ -310,7 +310,7 @@ private fun BaActivityCalendarListContent(
                 item {
                     BaCalendarStatePanel(
                         backdrop = backdrop,
-                        text = error.orEmpty(),
+                        text = error,
                         accentColor = baCalendarPoolSyncNoticeColor(
                             hasVisibleEntries = visibleEntries.isNotEmpty()
                         ),

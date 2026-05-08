@@ -259,7 +259,7 @@ object UiPrefs {
 
     fun getAppThemeMode(defaultValue: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): AppThemeMode {
         val raw = kv().decodeString(KEY_THEME_MODE, null) ?: return defaultValue
-        return AppThemeMode.values().firstOrNull { it.name == raw } ?: defaultValue
+        return AppThemeMode.entries.firstOrNull { it.name == raw } ?: defaultValue
     }
 
     fun setAppThemeMode(mode: AppThemeMode) {

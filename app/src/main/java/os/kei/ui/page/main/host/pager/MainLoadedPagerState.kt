@@ -18,26 +18,26 @@ import kotlin.math.roundToInt
 internal class MainLoadedPagerState internal constructor(
     initialPage: Int,
     initialPageCount: Int
-) {
-    var pageCount by mutableIntStateOf(initialPageCount.coerceAtLeast(0))
+) : MainPagerStateContract {
+    override var pageCount by mutableIntStateOf(initialPageCount.coerceAtLeast(0))
         private set
 
-    var currentPage by mutableIntStateOf(initialPage)
+    override var currentPage by mutableIntStateOf(initialPage)
         private set
 
-    var targetPage by mutableIntStateOf(initialPage)
+    override var targetPage by mutableIntStateOf(initialPage)
         private set
 
-    var settledPage by mutableIntStateOf(initialPage)
+    override var settledPage by mutableIntStateOf(initialPage)
         private set
 
-    var currentPageOffsetFraction by mutableFloatStateOf(0f)
+    override var currentPageOffsetFraction by mutableFloatStateOf(0f)
         private set
 
-    var pagePosition by mutableFloatStateOf(initialPage.toFloat())
+    override var pagePosition by mutableFloatStateOf(initialPage.toFloat())
         private set
 
-    var isScrollInProgress by mutableStateOf(false)
+    override var isScrollInProgress by mutableStateOf(false)
         private set
 
     private var navigationEpoch by mutableIntStateOf(0)
@@ -62,7 +62,7 @@ internal class MainLoadedPagerState internal constructor(
         }
     }
 
-    fun scrollToPage(page: Int) {
+    override fun scrollToPage(page: Int) {
         val epoch = nextNavigationEpoch()
         val target = coercePage(page)
         snapToPage(target, epoch)
@@ -110,7 +110,7 @@ internal class MainLoadedPagerState internal constructor(
             velocityPagesPerSecond < -MainLoadedPagerVelocityThreshold -> floor(pagePosition).toInt()
             else -> pagePosition.roundToInt()
         }
-        animateToPage(
+        animateToPageInternal(
             target = velocityTarget.coerceIn(minTarget, maxTarget),
             animationsEnabled = animationsEnabled,
             durationMillis = MainLoadedPagerSettleDurationMillis,
@@ -118,7 +118,20 @@ internal class MainLoadedPagerState internal constructor(
         )
     }
 
-    internal suspend fun animateToPage(
+    override suspend fun animateToPage(
+        target: Int,
+        animationsEnabled: Boolean,
+        durationMillis: Int
+    ) {
+        animateToPageInternal(
+            target = target,
+            animationsEnabled = animationsEnabled,
+            durationMillis = durationMillis,
+            epoch = nextNavigationEpoch()
+        )
+    }
+
+    private suspend fun animateToPageInternal(
         target: Int,
         animationsEnabled: Boolean,
         durationMillis: Int,

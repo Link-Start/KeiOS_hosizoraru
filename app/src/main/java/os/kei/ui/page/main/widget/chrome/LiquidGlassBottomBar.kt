@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.chrome
 
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -52,11 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
-import os.kei.ui.animation.DampedDragAnimation
-import os.kei.ui.animation.InteractiveHighlight
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
@@ -72,6 +67,11 @@ import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.max
@@ -169,6 +169,7 @@ fun LiquidGlassBottomBar(
     backdrop: Backdrop,
     tabsCount: Int,
     isLiquidEffectEnabled: Boolean = true,
+    expandToMaxWidth: Boolean = false,
     content: @Composable RowScope.() -> Unit
 ) {
     val density = LocalDensity.current
@@ -268,7 +269,14 @@ fun LiquidGlassBottomBar(
         0f,
         (safeTabsCount - 1).toFloat()
     )
-    val displaySelectionValue = externalSelectionPosition ?: dampedDragAnimation.value
+    val displaySelectionValue = if (
+        externalSelectionPosition != null &&
+        dampedDragAnimation.pressProgress <= 0.001f
+    ) {
+        externalSelectionPosition
+    } else {
+        dampedDragAnimation.value
+    }
     val currentDisplaySelectionValue by rememberUpdatedState(displaySelectionValue)
     val currentPanelOffset by rememberUpdatedState(panelOffset)
 
@@ -357,7 +365,9 @@ fun LiquidGlassBottomBar(
         }
     ) {
         Box(
-            modifier = modifier.width(IntrinsicSize.Min),
+            modifier = modifier.then(
+                if (expandToMaxWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min)
+            ),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(
@@ -424,7 +434,11 @@ fun LiquidGlassBottomBar(
                     Modifier
                         .clearAndSetSemantics {}
                         .alpha(0f)
-                        .then(if (useLightweightBackdrop) Modifier else Modifier.layerBackdrop(tabsBackdrop))
+                        .then(
+                            if (useLightweightBackdrop) Modifier else Modifier.layerBackdrop(
+                                tabsBackdrop
+                            )
+                        )
                         .graphicsLayer {
                             translationX = panelOffset
                             translationY = -tactileLiftPx
@@ -528,14 +542,23 @@ fun LiquidGlassBottomBar(
                                             scaleX = dampedDragAnimation.scaleX * clickScale
                                             scaleY = dampedDragAnimation.scaleY * clickScale
                                             val velocity = dampedDragAnimation.velocity / 10f
-                                            scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
-                                            scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
+                                            scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(
+                                                -0.2f,
+                                                0.2f
+                                            )
+                                            scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(
+                                                -0.2f,
+                                                0.2f
+                                            )
                                         }
                                     },
                                     onDrawSurface = {
-                                        val progress = if (isLiquidEffectEnabled) combinedPressProgress else 0f
+                                        val progress =
+                                            if (isLiquidEffectEnabled) combinedPressProgress else 0f
                                         drawRect(
-                                            color = if (isInLightTheme) Color.Black.copy(0.10f) else Color.White.copy(0.10f),
+                                            color = if (isInLightTheme) Color.Black.copy(0.10f) else Color.White.copy(
+                                                0.10f
+                                            ),
                                             alpha = 1f - progress
                                         )
                                         drawRect(Color.Black.copy(alpha = 0.03f * progress))

@@ -38,6 +38,7 @@ internal fun MainPagerLayout(
     navigator: Navigator,
     settingsReturnToken: Int,
     liquidBottomBarEnabled: Boolean,
+    mainPagerMiuixModeEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
@@ -88,6 +89,7 @@ internal fun MainPagerLayout(
         visibleBottomPageNames = visibleBottomPageNames,
         onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
         mcpServerManager = mcpServerManager,
+        mainPagerMiuixModeEnabled = mainPagerMiuixModeEnabled,
         requestedBottomPage = requestedBottomPage,
         requestedBottomPageToken = requestedBottomPageToken,
         onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
@@ -144,12 +146,13 @@ internal fun MainPagerLayout(
                 0,
                 (coordinator.tabs.size - 1).coerceAtLeast(0)
             )
+            val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
             val pagerSelectionPosition = when {
-                coordinator.pagerState.isScrollInProgress && !coordinator.navigationActive ->
+                mainPagerMiuixModeEnabled || coordinator.pagerState.isScrollInProgress ->
                     coordinator.pagerState.pagePosition.coerceIn(
-                    0f,
-                    (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
-                )
+                        0f,
+                        lastPagePosition
+                    )
                 else -> null
             }
             MainPagerBottomBar(
@@ -160,20 +163,17 @@ internal fun MainPagerLayout(
                 selectedPagePosition = pagerSelectionPosition,
                 backdrop = coordinator.backdrop,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
+                miuixModeEnabled = mainPagerMiuixModeEnabled,
                 onPageSelected = coordinator.onPageSelected
             )
         }
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
-            MainLoadedPager(
-                state = coordinator.pagerState,
-                userScrollEnabled = coordinator.pagerScrollEnabled,
-                animationsEnabled = transitionAnimationsEnabled,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { alpha = coordinator.farJumpAlpha }
-                    .layerBackdrop(coordinator.backdrop)
-            ) { pageIndex ->
+            val pagerModifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = coordinator.farJumpAlpha }
+                .layerBackdrop(coordinator.backdrop)
+            val pageContent: @Composable (Int) -> Unit = { pageIndex ->
                 val pageType = coordinator.tabs[pageIndex]
                 val pageRuntime = coordinator.pagerRuntime.pageRuntime(
                     pageIndex = pageIndex,
@@ -223,6 +223,28 @@ internal fun MainPagerLayout(
                         onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged
                     )
                 }
+            }
+            when (val pagerState = coordinator.pagerState) {
+                is MainFoundationPagerState -> {
+                    MainFoundationPager(
+                        state = pagerState,
+                        userScrollEnabled = coordinator.pagerScrollEnabled,
+                        modifier = pagerModifier,
+                        pageContent = pageContent
+                    )
+                }
+
+                is MainLoadedPagerState -> {
+                    MainLoadedPager(
+                        state = pagerState,
+                        userScrollEnabled = coordinator.pagerScrollEnabled,
+                        animationsEnabled = transitionAnimationsEnabled,
+                        modifier = pagerModifier,
+                        pageContent = pageContent
+                    )
+                }
+
+                else -> Unit
             }
 
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {

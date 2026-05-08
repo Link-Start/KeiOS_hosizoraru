@@ -47,8 +47,8 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.rememberSettingsBackgroundController
-import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
 import os.kei.ui.page.main.settings.state.rememberSettingsPageRouteState
+import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
 import os.kei.ui.page.main.settings.support.rememberSettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
@@ -72,6 +72,8 @@ fun SettingsPage(
     onRequestNotificationPermission: () -> Unit,
     liquidBottomBarEnabled: Boolean,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
+    mainPagerMiuixModeEnabled: Boolean,
+    onMainPagerMiuixModeChanged: (Boolean) -> Unit,
     liquidActionBarLayeredStyleEnabled: Boolean,
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     liquidSwitchEnabled: Boolean,
@@ -183,6 +185,8 @@ fun SettingsPage(
         onLiquidSwitchChanged = onLiquidSwitchChanged,
         liquidBottomBarEnabled = liquidBottomBarEnabled,
         onLiquidBottomBarChanged = onLiquidBottomBarChanged,
+        mainPagerMiuixModeEnabled = mainPagerMiuixModeEnabled,
+        onMainPagerMiuixModeChanged = onMainPagerMiuixModeChanged,
         gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
         onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
         superIslandNotificationEnabled = superIslandNotificationEnabled,

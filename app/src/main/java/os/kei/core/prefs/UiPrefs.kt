@@ -14,6 +14,7 @@ enum class AppThemeMode {
 
 data class UiPrefsSnapshot(
     val liquidBottomBarEnabled: Boolean,
+    val mainPagerMiuixModeEnabled: Boolean,
     val liquidActionBarLayeredStyleEnabled: Boolean,
     val liquidSwitchEnabled: Boolean,
     val transitionAnimationsEnabled: Boolean,
@@ -39,6 +40,7 @@ data class UiPrefsSnapshot(
 object UiPrefs {
     private const val KV_ID = "ui_prefs"
     private const val KEY_LIQUID_BOTTOM_BAR = "liquid_bottom_bar"
+    private const val KEY_MAIN_PAGER_MIUIX_MODE = "foundation_pager_migration"
     private const val KEY_LIQUID_ACTION_BAR_LAYERED_STYLE = "liquid_action_bar_layered_style"
     private const val KEY_LIQUID_SWITCH = "liquid_switch"
     private const val KEY_TRANSITION_ANIMATIONS = "transition_animations"
@@ -83,6 +85,14 @@ object UiPrefs {
 
     fun setLiquidBottomBarEnabled(value: Boolean) {
         kv().encode(KEY_LIQUID_BOTTOM_BAR, value)
+    }
+
+    fun isMainPagerMiuixModeEnabled(defaultValue: Boolean = true): Boolean {
+        return kv().decodeBool(KEY_MAIN_PAGER_MIUIX_MODE, defaultValue)
+    }
+
+    fun setMainPagerMiuixModeEnabled(value: Boolean) {
+        kv().encode(KEY_MAIN_PAGER_MIUIX_MODE, value)
     }
 
     fun isLiquidActionBarLayeredStyleEnabled(defaultValue: Boolean = true): Boolean {
@@ -288,6 +298,7 @@ object UiPrefs {
     fun defaultSnapshot(appThemeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): UiPrefsSnapshot {
         return UiPrefsSnapshot(
             liquidBottomBarEnabled = true,
+            mainPagerMiuixModeEnabled = true,
             liquidActionBarLayeredStyleEnabled = true,
             liquidSwitchEnabled = true,
             transitionAnimationsEnabled = true,
@@ -315,6 +326,7 @@ object UiPrefs {
         val store = kv()
         return UiPrefsSnapshot(
             liquidBottomBarEnabled = store.decodeBool(KEY_LIQUID_BOTTOM_BAR, true),
+            mainPagerMiuixModeEnabled = store.decodeBool(KEY_MAIN_PAGER_MIUIX_MODE, true),
             liquidActionBarLayeredStyleEnabled = store.decodeBool(KEY_LIQUID_ACTION_BAR_LAYERED_STYLE, true),
             liquidSwitchEnabled = store.decodeBool(KEY_LIQUID_SWITCH, true),
             transitionAnimationsEnabled = store.decodeBool(KEY_TRANSITION_ANIMATIONS, true),

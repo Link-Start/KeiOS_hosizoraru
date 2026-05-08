@@ -480,6 +480,7 @@ internal fun SettingsComponentEffectsSection(
     val componentEffectsGroupActive = state.liquidActionBarLayeredStyleEnabled ||
         state.liquidSwitchEnabled ||
         state.liquidBottomBarEnabled ||
+            state.mainPagerMiuixModeEnabled ||
             state.searchAutoFocusEnabled ||
         state.gripAwareFloatingDockEnabled
     SettingsGroupCard(
@@ -517,6 +518,18 @@ internal fun SettingsComponentEffectsSection(
             summary = stringResource(R.string.settings_bottom_bar_summary),
             checked = state.liquidBottomBarEnabled,
             onCheckedChange = actions.onLiquidBottomBarChanged
+        )
+        SettingsToggleItem(
+            title = stringResource(R.string.settings_main_pager_miuix_mode_title),
+            summary = if (state.mainPagerMiuixModeEnabled) {
+                stringResource(R.string.settings_main_pager_miuix_mode_summary_enabled)
+            } else {
+                stringResource(R.string.settings_main_pager_miuix_mode_summary_disabled)
+            },
+            checked = state.mainPagerMiuixModeEnabled,
+            onCheckedChange = actions.onMainPagerMiuixModeChanged,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_main_pager_miuix_mode_scope)
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_search_auto_focus_title),

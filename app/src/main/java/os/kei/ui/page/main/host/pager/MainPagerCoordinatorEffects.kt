@@ -6,7 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 @Composable
 internal fun BindMainPagerCoordinatorEffects(
     tabsSize: Int,
-    pagerState: MainLoadedPagerState
+    pagerState: MainPagerStateContract
 ) {
     LaunchedEffect(tabsSize) {
         val lastIndex = tabsSize - 1

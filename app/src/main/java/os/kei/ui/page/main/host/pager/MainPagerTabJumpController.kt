@@ -35,7 +35,7 @@ internal data class MainPagerTabJumpControllerState(
 @Composable
 internal fun rememberMainPagerTabJumpController(
     tabs: List<BottomPage>,
-    pagerState: MainLoadedPagerState,
+    pagerState: MainPagerStateContract,
     pagerRuntime: MainPagerRuntimeSnapshot,
     transitionAnimationsEnabled: Boolean,
     requestedBottomPage: String?,
@@ -48,7 +48,7 @@ internal fun rememberMainPagerTabJumpController(
     var showBottomBar by remember { mutableStateOf(true) }
     var navigationActive by remember { mutableStateOf(false) }
     var selectedPageIndex by rememberSaveable(tabs.map { it.name }) {
-        mutableIntStateOf(pagerState.currentPage.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)))
+        mutableIntStateOf(pagerState.selectedPage.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)))
     }
     val density = LocalDensity.current
     val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
@@ -97,7 +97,7 @@ internal fun rememberMainPagerTabJumpController(
             } finally {
                 if (tabJumpJob == runningJob) {
                     navigationActive = false
-                    selectedPageIndex = pagerState.currentPage.coerceIn(
+                    selectedPageIndex = pagerState.selectedPage.coerceIn(
                         0,
                         tabs.lastIndex.coerceAtLeast(0)
                     )
@@ -115,9 +115,9 @@ internal fun rememberMainPagerTabJumpController(
             showBottomBar = true
         }
     }
-    LaunchedEffect(pagerState.settledPage, pagerState.isScrollInProgress, tabs.size) {
+    LaunchedEffect(pagerState.selectedPage, pagerState.isScrollInProgress, tabs.size) {
         if (!pagerState.isScrollInProgress && !navigationActive) {
-            selectedPageIndex = pagerState.settledPage.coerceIn(
+            selectedPageIndex = pagerState.selectedPage.coerceIn(
                 0,
                 tabs.lastIndex.coerceAtLeast(0)
             )

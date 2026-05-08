@@ -60,6 +60,7 @@
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
             android:icon="@mipmap/ic_launcher_adaptive_v2"
             android:launchMode="singleTop"
             android:roundIcon="@mipmap/ic_launcher_round_adaptive_v2"
@@ -91,23 +92,27 @@
         <activity
             android:name=".ui.page.main.github.importer.GitHubStarImportActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/github_star_import_title" />
 
         <activity
             android:name=".ui.page.main.os.shell.OsShellRunnerActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
             android:exported="false" />
 
         <activity
             android:name=".ui.page.main.ba.BaActivityCalendarActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/ba_calendar_activity_title" />
 
         <activity
             android:name=".ui.page.main.ba.BaPoolActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
             android:exported="false"
             android:label="@string/ba_pool_activity_title" />
 
@@ -126,6 +131,7 @@
         <activity
             android:name=".ui.page.main.student.GuideVideoFullscreenActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
             android:excludeFromRecents="true"
             android:exported="false" />
 

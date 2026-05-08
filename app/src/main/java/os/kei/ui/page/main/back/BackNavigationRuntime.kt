@@ -232,40 +232,44 @@ internal fun rememberFullscreenBackNavigationGestureState(
     var predictiveBackSwipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_NONE) }
     var containerWidthPx by remember { mutableIntStateOf(0) }
 
-    BackHandler(enabled = enabled && !predictiveEnabled && !frameworkFinishEnabled) {
-        commitGate.reset()
-        runtimeController.beginCommit(BackNavigationSource.Fullscreen)
-        try {
-            commitGate.tryCommit(latestOnBack)
-        } finally {
-            runtimeController.reset()
+    if (enabled && !predictiveEnabled && !frameworkFinishEnabled) {
+        BackHandler {
+            commitGate.reset()
+            runtimeController.beginCommit(BackNavigationSource.Fullscreen)
+            try {
+                commitGate.tryCommit(latestOnBack)
+            } finally {
+                runtimeController.reset()
+            }
         }
     }
 
-    PredictiveBackHandler(enabled = predictiveEnabled) { backEvents ->
-        commitGate.reset()
-        runtimeController.beginGesture(BackNavigationSource.Fullscreen)
-        var completedByProgress = false
-        try {
-            backEvents.collect { event ->
-                predictiveBackProgress = event.progress.coerceIn(0f, 1f)
-                predictiveBackSwipeEdge = event.swipeEdge
-                runtimeController.updateGesture(event, BackNavigationSource.Fullscreen)
-                if (event.progress >= 0.995f) {
-                    completedByProgress = true
+    if (predictiveEnabled) {
+        PredictiveBackHandler { backEvents ->
+            commitGate.reset()
+            runtimeController.beginGesture(BackNavigationSource.Fullscreen)
+            var completedByProgress = false
+            try {
+                backEvents.collect { event ->
+                    predictiveBackProgress = event.progress.coerceIn(0f, 1f)
+                    predictiveBackSwipeEdge = event.swipeEdge
+                    runtimeController.updateGesture(event, BackNavigationSource.Fullscreen)
+                    if (event.progress >= 0.995f) {
+                        completedByProgress = true
+                        runtimeController.beginCommit(BackNavigationSource.Fullscreen)
+                        commitGate.tryCommit(latestOnBack)
+                    }
+                }
+                if (!completedByProgress) {
                     runtimeController.beginCommit(BackNavigationSource.Fullscreen)
                     commitGate.tryCommit(latestOnBack)
                 }
+            } catch (_: CancellationException) {
+            } finally {
+                predictiveBackProgress = 0f
+                predictiveBackSwipeEdge = BackEventCompat.EDGE_NONE
+                runtimeController.reset()
             }
-            if (!completedByProgress) {
-                runtimeController.beginCommit(BackNavigationSource.Fullscreen)
-                commitGate.tryCommit(latestOnBack)
-            }
-        } catch (_: CancellationException) {
-        } finally {
-            predictiveBackProgress = 0f
-            predictiveBackSwipeEdge = BackEventCompat.EDGE_NONE
-            runtimeController.reset()
         }
     }
 
@@ -317,6 +321,7 @@ internal fun KeiOSBackNavigationHandler(
     source: BackNavigationSource,
     onBack: () -> Unit
 ) {
+    if (!enabled) return
     val latestOnBack by rememberUpdatedState(onBack)
     val runtimeController = LocalBackNavigationRuntimeController.current
     val runtimeState = LocalBackNavigationRuntimeState.current
@@ -329,28 +334,32 @@ internal fun KeiOSBackNavigationHandler(
     ) == BackNavigationHandlerMode.ComposePredictive
     val commitGate = remember { BackNavigationCommitGate() }
 
-    BackHandler(enabled = enabled && !predictiveEnabled) {
-        commitGate.reset()
-        runtimeController.beginCommit(source)
-        try {
-            commitGate.tryCommit(latestOnBack)
-        } finally {
-            runtimeController.reset()
+    if (!predictiveEnabled) {
+        BackHandler {
+            commitGate.reset()
+            runtimeController.beginCommit(source)
+            try {
+                commitGate.tryCommit(latestOnBack)
+            } finally {
+                runtimeController.reset()
+            }
         }
     }
 
-    PredictiveBackHandler(enabled = predictiveEnabled) { backEvents ->
-        commitGate.reset()
-        runtimeController.beginGesture(source)
-        try {
-            backEvents.collect { event ->
-                runtimeController.updateGesture(event, source)
+    if (predictiveEnabled) {
+        PredictiveBackHandler { backEvents ->
+            commitGate.reset()
+            runtimeController.beginGesture(source)
+            try {
+                backEvents.collect { event ->
+                    runtimeController.updateGesture(event, source)
+                }
+                runtimeController.beginCommit(source)
+                commitGate.tryCommit(latestOnBack)
+            } catch (_: CancellationException) {
+            } finally {
+                runtimeController.reset()
             }
-            runtimeController.beginCommit(source)
-            commitGate.tryCommit(latestOnBack)
-        } catch (_: CancellationException) {
-        } finally {
-            runtimeController.reset()
         }
     }
 }
@@ -372,9 +381,10 @@ internal fun KeiOSActivityRootBackHandler(
         predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
         needsInterception = needsInterception
     )
+    if (!shouldInstallCallback) return
     val commitGate = remember { BackNavigationCommitGate() }
 
-    BackHandler(enabled = shouldInstallCallback) {
+    BackHandler {
         commitGate.reset()
         runtimeController.beginCommit(BackNavigationSource.Activity)
         try {

@@ -79,6 +79,7 @@ internal fun GitHubTrackedItemAssetPanel(
                 targetLabel = target?.label
                     ?: stringResource(R.string.github_item_label_update_assets),
                 targetRawTag = target?.rawTag.orEmpty(),
+                preciseApkVersionEnabled = lookupConfig.preciseApkVersionEnabled,
                 fallbackReleaseUrl = target?.releaseUrl.orEmpty(),
                 targetAccent = targetAccent,
                 summaryContainerColor = summaryContainerColor,

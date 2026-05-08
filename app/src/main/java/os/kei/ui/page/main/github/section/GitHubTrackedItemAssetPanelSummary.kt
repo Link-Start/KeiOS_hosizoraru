@@ -41,6 +41,7 @@ internal fun GitHubTrackedItemAssetSummaryCard(
     assetError: String,
     targetLabel: String,
     targetRawTag: String,
+    preciseApkVersionEnabled: Boolean,
     fallbackReleaseUrl: String,
     targetAccent: Color,
     summaryContainerColor: Color,
@@ -74,40 +75,27 @@ internal fun GitHubTrackedItemAssetSummaryCard(
         ) {
             val commitLabel = bundleCommitLabel(assetBundle)
             val transportLabel = bundleTransportLabel(assetBundle, context)
-            val fallbackReleaseName = when {
-                state.latestStableName.isNotBlank() -> state.latestStableName
-                state.latestPreName.isNotBlank() -> state.latestPreName
-                else -> ""
-            }
-            val loadedReleaseName = assetBundle?.releaseName?.trim().orEmpty()
-                .ifBlank { fallbackReleaseName.ifBlank { targetRawTag } }
-            val loadedReleaseTag = assetBundle?.tagName?.trim().orEmpty()
-                .ifBlank { targetRawTag }
+            val releaseDisplay = buildGitHubAssetSummaryReleaseDisplay(
+                state = state,
+                assetBundle = assetBundle,
+                targetRawTag = targetRawTag,
+                preciseApkVersionEnabled = preciseApkVersionEnabled
+            )
             val loadedReleaseUpdatedAtMillis = bundleReleaseUpdatedAtMillis(assetBundle)
                 ?: when {
-                    loadedReleaseTag.isBlank() -> null
-                    loadedReleaseTag.equals(state.latestStableRawTag, ignoreCase = true) ->
+                    releaseDisplay.releaseTag.isBlank() -> null
+                    releaseDisplay.releaseTag.equals(state.latestStableRawTag, ignoreCase = true) ->
                         state.latestStableUpdatedAtMillis.takeIf { it > 0L }
-                    loadedReleaseTag.equals(state.latestTag, ignoreCase = true) ->
+
+                    releaseDisplay.releaseTag.equals(state.latestTag, ignoreCase = true) ->
                         state.latestStableUpdatedAtMillis.takeIf { it > 0L }
-                    loadedReleaseTag.equals(state.latestPreRawTag, ignoreCase = true) ->
+
+                    releaseDisplay.releaseTag.equals(state.latestPreRawTag, ignoreCase = true) ->
                         state.latestPreUpdatedAtMillis.takeIf { it > 0L }
                     else -> null
                 }
             val loadedReleaseUpdatedAt =
                 formatReleaseUpdatedAtNoYear(loadedReleaseUpdatedAtMillis)
-            val loadedApkVersionLabel = when {
-                loadedReleaseTag.equals(state.latestStableRawTag, ignoreCase = true) ||
-                        loadedReleaseTag.equals(state.latestTag, ignoreCase = true) ->
-                    state.latestStableApkVersion?.versionLabel()
-
-                loadedReleaseTag.equals(state.latestPreRawTag, ignoreCase = true) ->
-                    state.latestPreApkVersion?.versionLabel()
-
-                else -> null
-            }?.takeIf { it.isNotBlank() }
-            val showLoadedReleaseMeta =
-                loadedReleaseName.isNotBlank() || loadedReleaseTag.isNotBlank()
             val summaryMetaPillModifier = Modifier
             val summaryMetaPillPadding = PaddingValues(horizontal = 5.dp, vertical = 3.dp)
             Column(
@@ -129,7 +117,26 @@ internal fun GitHubTrackedItemAssetSummaryCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (!assetLoading && assetError.isBlank()) {
+                    GitHubAssetCountBubble(
+                        modifier = summaryMetaPillModifier,
+                        label = when {
+                            assetBundle != null -> assetBundle.assets.size.toString()
+                            assetError.isNotBlank() -> stringResource(R.string.github_asset_count_error)
+                            else -> stringResource(R.string.github_asset_count_pending)
+                        },
+                        color = when {
+                            assetError.isNotBlank() -> GitHubStatusPalette.Error
+                            else -> targetAccent
+                        },
+                        loading = assetLoading
+                    )
+                }
+                if (!assetLoading && assetError.isBlank()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         commitLabel?.let { label ->
                             StatusPill(
                                 label = label,
@@ -157,7 +164,7 @@ internal fun GitHubTrackedItemAssetSummaryCard(
                                 contentPadding = summaryMetaPillPadding
                             )
                         }
-                        loadedApkVersionLabel?.let { label ->
+                        releaseDisplay.apkVersionLabel?.let { label ->
                             StatusPill(
                                 label = label,
                                 color = GitHubStatusPalette.Update,
@@ -167,25 +174,12 @@ internal fun GitHubTrackedItemAssetSummaryCard(
                             )
                         }
                     }
-                    GitHubAssetCountBubble(
-                        modifier = summaryMetaPillModifier,
-                        label = when {
-                            assetBundle != null -> assetBundle.assets.size.toString()
-                            assetError.isNotBlank() -> stringResource(R.string.github_asset_count_error)
-                            else -> stringResource(R.string.github_asset_count_pending)
-                        },
-                        color = when {
-                            assetError.isNotBlank() -> GitHubStatusPalette.Error
-                            else -> targetAccent
-                        },
-                        loading = assetLoading
-                    )
                 }
-                if (showLoadedReleaseMeta) {
-                    val releaseNameLabel = loadedReleaseName.ifBlank {
+                if (releaseDisplay.showReleaseMeta) {
+                    val releaseNameLabel = releaseDisplay.releaseName.ifBlank {
                         stringResource(R.string.common_unknown)
                     }
-                    val releaseTagLabel = loadedReleaseTag.ifBlank {
+                    val releaseTagLabel = releaseDisplay.releaseTag.ifBlank {
                         stringResource(R.string.common_unknown)
                     }
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {

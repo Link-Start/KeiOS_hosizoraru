@@ -16,10 +16,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,10 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -81,8 +78,11 @@ internal fun BaGuideStudentBgmTabContent(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
-    val favorites by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
-    val lookupStates = remember { mutableStateMapOf<Long, BaGuideStudentBgmLookupState>() }
+    val favorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
+    val lookupCoordinator = remember(pageScope) {
+        BaGuideStudentBgmLookupCoordinator(scope = pageScope)
+    }
+    val lookupStates by lookupCoordinator.states.collectAsStateWithLifecycle()
     var nowPlayingVisible by rememberSaveable { mutableStateOf(false) }
     var nowPlayingExpanded by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
@@ -187,43 +187,16 @@ internal fun BaGuideStudentBgmTabContent(
         )
     }
 
-    fun updateResolved(entry: BaGuideCatalogEntry, item: BaGuideStudentBgmResolvedItem?) {
-        lookupStates[entry.contentId] = if (item == null) {
-            BaGuideStudentBgmLookupState.Missing
-        } else {
-            BaGuideStudentBgmLookupState.Ready(item)
-        }
-    }
-
     fun resolveEntry(
         entry: BaGuideCatalogEntry,
         allowNetwork: Boolean,
         onResolved: (BaGuideStudentBgmResolvedItem?) -> Unit
     ) {
-        val current = lookupStates[entry.contentId]
-        if (current is BaGuideStudentBgmLookupState.Ready) {
-            onResolved(current.item)
-            return
-        }
-        if (current == BaGuideStudentBgmLookupState.Loading) return
-        lookupStates[entry.contentId] = BaGuideStudentBgmLookupState.Loading
-        pageScope.launch {
-            val resolved = withContext(Dispatchers.IO) {
-                runCatching {
-                    if (allowNetwork) {
-                        fetchStudentBgmFavorite(entry)
-                    } else {
-                        loadCachedStudentBgmFavorite(entry)
-                    }
-                }.getOrNull()
-            }
-            if (allowNetwork || resolved != null) {
-                updateResolved(entry, resolved)
-            } else {
-                lookupStates.remove(entry.contentId)
-            }
-            onResolved(resolved)
-        }
+        lookupCoordinator.resolveEntry(
+            entry = entry,
+            allowNetwork = allowNetwork,
+            onResolved = onResolved
+        )
     }
 
     fun startPlayback(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
@@ -240,8 +213,9 @@ internal fun BaGuideStudentBgmTabContent(
         val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
         stateWithFavoriteFallback(entry, lookupState).readyFavoriteOrNull()?.let { favorite ->
             if (lookupState !is BaGuideStudentBgmLookupState.Ready) {
-                lookupStates[entry.contentId] = BaGuideStudentBgmLookupState.Ready(
-                    BaGuideStudentBgmResolvedItem(
+                lookupCoordinator.markReadyFromFavorite(
+                    entry = entry,
+                    item = BaGuideStudentBgmResolvedItem(
                         favorite = favorite,
                         fromCache = false,
                         fromFavorite = true
@@ -305,7 +279,7 @@ internal fun BaGuideStudentBgmTabContent(
         return favoriteForEntry(entry) != null
     }
 
-    val displayedPlayableFavorites = remember(displayedEntries, favorites, lookupStates.toMap()) {
+    val displayedPlayableFavorites = remember(displayedEntries, favorites, lookupStates) {
         displayedEntries.mapNotNull { entry ->
             val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
             stateWithFavoriteFallback(entry, lookupState).readyFavoriteOrNull()
@@ -349,21 +323,10 @@ internal fun BaGuideStudentBgmTabContent(
     }
 
     LaunchedEffect(catalog.syncedAtMs) {
-        lookupStates.clear()
+        lookupCoordinator.clear()
     }
     LaunchedEffect(displayedEntries.map { it.contentId }) {
-        val pendingEntries = displayedEntries.filter { entry ->
-            lookupStates[entry.contentId] == null
-        }
-        if (pendingEntries.isEmpty()) return@LaunchedEffect
-        val cached = withContext(Dispatchers.IO) {
-            pendingEntries.mapNotNull { entry ->
-                loadCachedStudentBgmFavorite(entry)?.let { entry.contentId to it }
-            }
-        }
-        cached.forEach { (contentId, item) ->
-            lookupStates[contentId] = BaGuideStudentBgmLookupState.Ready(item)
-        }
+        lookupCoordinator.prewarmCached(displayedEntries)
     }
     LaunchedEffect(selectedFavorite?.audioUrl) {
         seekPreviewProgress = null

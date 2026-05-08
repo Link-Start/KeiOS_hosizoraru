@@ -7,32 +7,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.domain.GitHubStarImportClassifier
-import os.kei.feature.github.model.GitHubRepositoryImportCandidate
-import os.kei.feature.github.model.GitHubStarImportQuality
-import os.kei.feature.github.model.GitHubStarListSummary
-import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -45,255 +31,44 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 @Composable
 internal fun GitHubStarImportPage(onClose: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
-    val repository = remember { GitHubStarImportPageRepository() }
-    var trackSnapshot by remember { mutableStateOf(GitHubTrackStore.loadSnapshot()) }
-    val lookupConfig = trackSnapshot.lookupConfig
-    val savedDraft = remember { GitHubStarImportDraftStore.load() }
-    var source by remember { mutableStateOf(savedDraft.source) }
-    var usernameInput by remember { mutableStateOf(savedDraft.usernameInput) }
-    var listUrlInput by remember { mutableStateOf(savedDraft.listUrlInput) }
-    var filterInput by remember { mutableStateOf(savedDraft.filterInput) }
-    var viewFilter by remember { mutableStateOf(savedDraft.viewFilter) }
-    var qualityFilters by remember { mutableStateOf(savedDraft.qualityFilters) }
-    var conflictStrategy by remember { mutableStateOf(savedDraft.conflictStrategy) }
-    var preview by remember { mutableStateOf<GitHubStarredRepositoryImportPreview?>(null) }
-    var selectedIds by remember { mutableStateOf(savedDraft.selectedIds) }
-    val apkVerificationStates =
-        remember { mutableStateMapOf<String, StarImportApkVerificationUiState>() }
-    var pendingImportCandidates by remember {
-        mutableStateOf<List<GitHubRepositoryImportCandidate>>(
-            emptyList()
+    val viewModel: GitHubStarImportViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listUiState = uiState.listUiState
+    val sourceRequirementMessage = stringResource(uiState.source.requirementMessageRes)
+    val listUrlRequirementMessage = stringResource(StarImportUiSource.ListUrl.requirementMessageRes)
+    val loadingPhaseRes = uiState.loadingPhaseRes
+    val loadingPhase = when {
+        uiState.readyStarListCount > 0 -> stringResource(
+            R.string.github_star_import_status_lists_ready_format,
+            uiState.readyStarListCount
         )
-    }
-    var showExitConfirm by remember { mutableStateOf(false) }
-    var starLists by remember { mutableStateOf<List<GitHubStarListSummary>>(emptyList()) }
-    var loading by remember { mutableStateOf(false) }
-    var loadingProgress by remember { mutableStateOf(0f) }
-    var loadingPhase by remember { mutableStateOf("") }
-    var importing by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
-        GitHubTrackStoreSignals.version.collect {
-            trackSnapshot = GitHubTrackStore.loadSnapshot()
-        }
+        loadingPhaseRes != null -> stringResource(loadingPhaseRes)
+        else -> ""
     }
 
-    val sourceReady = source.isReady(
-        token = lookupConfig.apiToken,
-        username = usernameInput,
-        listUrl = listUrlInput
-    )
-    val candidates = remember(preview) { preview?.candidates.orEmpty() }
-    val listUiState by remember(
-        candidates,
-        filterInput,
-        viewFilter,
-        qualityFilters,
-        conflictStrategy,
-        selectedIds
-    ) {
-        derivedStateOf {
-            buildStarImportCandidateListUiState(
-                candidates = candidates,
-                filterInput = filterInput,
-                viewFilter = viewFilter,
-                qualityFilters = qualityFilters,
-                conflictStrategy = conflictStrategy,
-                selectedIds = selectedIds,
-                verificationStates = apkVerificationStates
-            )
-        }
-    }
-    val selectedImportableCount = listUiState.selectedImportableCount
-    val importEnabled = selectedImportableCount > 0 && !loading && !importing
-    val hasPendingImportWork = selectedImportableCount > 0 || pendingImportCandidates.isNotEmpty()
-
-    LaunchedEffect(
-        source,
-        usernameInput,
-        listUrlInput,
-        filterInput,
-        viewFilter,
-        qualityFilters,
-        conflictStrategy,
-        selectedIds
-    ) {
-        GitHubStarImportDraftStore.save(
-            GitHubStarImportDraft(
-                source = source,
-                usernameInput = usernameInput,
-                listUrlInput = listUrlInput,
-                filterInput = filterInput,
-                viewFilter = viewFilter,
-                qualityFilters = qualityFilters,
-                conflictStrategy = conflictStrategy,
-                selectedIds = selectedIds
-            )
-        )
-    }
-
-    fun requestClose() {
-        if (importing) return
-        if (hasPendingImportWork) {
-            showExitConfirm = true
-        } else {
-            onClose()
-        }
-    }
-
-    fun loadPreview(forcedStarListUrl: String? = null) {
-        if (loading || importing) return
-        val targetSource = if (forcedStarListUrl != null) StarImportUiSource.ListUrl else source
-        val targetListUrl = forcedStarListUrl ?: listUrlInput.trim()
-        val targetReady = targetSource.isReady(
-            token = lookupConfig.apiToken,
-            username = usernameInput,
-            listUrl = targetListUrl
-        )
-        if (!targetReady) {
-            error = context.getString(targetSource.requirementMessageRes)
-            return
-        }
-        loading = true
-        loadingProgress = 0.08f
-        loadingPhase = context.getString(R.string.github_star_import_loading_source)
-        error = null
-        if (forcedStarListUrl == null) {
-            starLists = emptyList()
-        }
-        val targetUsername = usernameInput.toGitHubUsernameInput()
-        scope.launch {
-            val result = runCatching {
-                repository.loadPreview(
-                    request = StarImportLoadRequest(
-                        source = source,
-                        usernameInput = targetUsername,
-                        listUrlInput = targetListUrl,
-                        forcedStarListUrl = forcedStarListUrl
-                    ),
-                    onProgress = { progress ->
-                        withContext(Dispatchers.Main.immediate) {
-                            loadingProgress = progress.progress
-                            loadingPhase = context.getString(progress.phaseRes)
-                        }
-                    }
-                )
-            }
-            loading = false
-            loadingProgress = 1f
-            result.onSuccess { loadResult ->
-                when (loadResult) {
-                    is StarImportLoadResult.Lists -> {
-                        preview = null
-                        selectedIds = emptySet()
-                        starLists = loadResult.items
-                        loadingPhase = context.getString(
-                            R.string.github_star_import_status_lists_ready_format,
-                            loadResult.items.size
-                        )
-                    }
-
-                    is StarImportLoadResult.Preview -> {
-                        val nextPreview = loadResult.preview
-                        preview = nextPreview
-                        starLists = emptyList()
-                        apkVerificationStates.clear()
-                        val importableIds = nextPreview.candidates
-                            .map { it.trackedApp.id }
-                            .toSet()
-                        val restoredSelection = selectedIds.intersect(importableIds)
-                        selectedIds = restoredSelection.ifEmpty {
-                            nextPreview.candidates
-                            .filter { GitHubStarImportClassifier.isDefaultSelected(it) }
-                            .map { it.trackedApp.id }
-                            .toSet()
-                        }
-                    }
+    LaunchedEffect(viewModel, context, onClose) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is GitHubStarImportEvent.Imported -> {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.github_star_import_toast_imported, event.count),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-            }.onFailure { throwable ->
-                error = throwable.message.orEmpty().ifBlank { throwable.javaClass.simpleName }
-                loadingPhase = ""
+
+                GitHubStarImportEvent.Close -> onClose()
             }
         }
-    }
-
-    fun verifyApkAssets(targets: List<GitHubRepositoryImportCandidate>) {
-        if (loading || importing || targets.isEmpty()) return
-        val uniqueTargets = targets
-            .distinctBy { it.trackedApp.id }
-            .take(MAX_APK_VERIFICATION_BATCH)
-        uniqueTargets.forEach { candidate ->
-            apkVerificationStates[candidate.trackedApp.id] = StarImportApkVerificationUiState(
-                checking = true,
-                verification = apkVerificationStates[candidate.trackedApp.id]?.verification
-            )
-        }
-        scope.launch {
-            val results = repository.verifyApkAssets(uniqueTargets)
-            results.forEach { (id, verification) ->
-                apkVerificationStates[id] = StarImportApkVerificationUiState(
-                    checking = false,
-                    verification = verification
-                )
-            }
-        }
-    }
-
-    fun requestImport() {
-        if (listUiState.selectedCandidates.isEmpty() || importing) return
-        pendingImportCandidates = listUiState.selectedCandidates
-    }
-
-    fun applyImport(selected: List<GitHubRepositoryImportCandidate>) {
-        if (selected.isEmpty() || importing) return
-        importing = true
-        pendingImportCandidates = emptyList()
-        scope.launch {
-            val result = runCatching {
-                repository.importCandidates(
-                    context = context,
-                    candidates = selected,
-                    verificationStates = apkVerificationStates.toMap()
-                )
-            }
-            importing = false
-            result.onSuccess { count ->
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.github_star_import_toast_imported, count),
-                    Toast.LENGTH_SHORT
-                ).show()
-                GitHubStarImportDraftStore.clearSelection()
-                onClose()
-            }.onFailure { throwable ->
-                error = throwable.message.orEmpty().ifBlank { throwable.javaClass.simpleName }
-            }
-        }
-    }
-
-    LaunchedEffect(source) {
-        error = null
-        preview = null
-        selectedIds = emptySet()
-        pendingImportCandidates = emptyList()
-        showExitConfirm = false
-        apkVerificationStates.clear()
-        starLists = emptyList()
-        filterInput = ""
-        viewFilter = StarImportViewFilter.All
-        qualityFilters = defaultVisibleStarImportQualities()
-        loadingProgress = 0f
-        loadingPhase = ""
     }
 
     BackHandler(enabled = true) {
-        requestClose()
+        viewModel.requestClose()
     }
 
     AppPageScaffold(
@@ -307,7 +82,7 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = { requestClose() },
+                onClick = viewModel::requestClose,
                 backdrop = pageBackdrop
             )
         },
@@ -316,8 +91,8 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                 backdrop = pageBackdrop,
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.github_star_import_cd_load),
-                onClick = { loadPreview() },
-                enabled = sourceReady && !loading && !importing,
+                onClick = { viewModel.loadPreview(sourceRequirementMessage) },
+                enabled = uiState.lookupConfigReady && !uiState.loading && !uiState.importing,
                 width = 52.dp,
                 height = 52.dp,
                 variant = GlassVariant.Bar
@@ -335,101 +110,84 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         ) {
             item {
                 StarImportSourceCard(
-                    source = source,
-                    tokenAvailable = lookupConfig.apiToken.isNotBlank(),
-                    usernameInput = usernameInput,
-                    listUrlInput = listUrlInput,
-                    loading = loading,
-                    importing = importing,
-                    sourceReady = sourceReady,
-                    onSourceChange = { source = it },
-                    onUsernameInputChange = { usernameInput = it },
-                    onListUrlInputChange = { listUrlInput = it },
-                    onLoadPreview = { loadPreview() }
+                    source = uiState.source,
+                    tokenAvailable = uiState.apiTokenAvailable,
+                    usernameInput = uiState.usernameInput,
+                    listUrlInput = uiState.listUrlInput,
+                    loading = uiState.loading,
+                    importing = uiState.importing,
+                    sourceReady = uiState.lookupConfigReady,
+                    onSourceChange = viewModel::updateSource,
+                    onUsernameInputChange = viewModel::updateUsernameInput,
+                    onListUrlInputChange = viewModel::updateListUrlInput,
+                    onLoadPreview = { viewModel.loadPreview(sourceRequirementMessage) }
                 )
             }
-            if (starLists.isNotEmpty()) {
+            if (uiState.starLists.isNotEmpty()) {
                 item {
                     StarImportStarListPickerCard(
-                        lists = starLists,
-                        loading = loading,
+                        lists = uiState.starLists,
+                        loading = uiState.loading,
                         onSelect = { list ->
-                            listUrlInput = list.url
-                            loadPreview(forcedStarListUrl = list.url)
+                            viewModel.updateListUrlInput(list.url)
+                            viewModel.loadPreview(
+                                requirementMessage = listUrlRequirementMessage,
+                                forcedStarListUrl = list.url
+                            )
                         }
                     )
                 }
             }
             item {
                 StarImportStatusCard(
-                    preview = preview,
-                    loading = loading,
-                    loadingProgress = loadingProgress,
+                    preview = uiState.preview,
+                    loading = uiState.loading,
+                    loadingProgress = uiState.loadingProgress,
                     loadingPhase = loadingPhase,
-                    importing = importing,
-                    error = error,
-                    selectedCount = selectedImportableCount,
-                    discoveredListCount = starLists.size
+                    importing = uiState.importing,
+                    error = uiState.error,
+                    selectedCount = uiState.selectedImportableCount,
+                    discoveredListCount = uiState.starLists.size
                 )
             }
-            if (preview != null) {
+            if (uiState.preview != null) {
                 item {
                     StarImportListControlCard(
-                        filterInput = filterInput,
-                        viewFilter = viewFilter,
-                        qualityFilters = qualityFilters,
-                        conflictStrategy = conflictStrategy,
+                        filterInput = uiState.filterInput,
+                        viewFilter = uiState.viewFilter,
+                        qualityFilters = uiState.qualityFilters,
+                        conflictStrategy = uiState.conflictStrategy,
                         qualityFilterCounts = listUiState.qualityFilterCounts,
                         filteredCount = listUiState.filteredCandidates.size,
                         visibleImportableCount = listUiState.visibleImportableIds.size,
                         visibleRecommendedCount = listUiState.visibleRecommendedIds.size,
                         visibleVerifiedApkCount = listUiState.visibleVerifiedApkIds.size,
-                        selectedCount = selectedImportableCount,
+                        selectedCount = uiState.selectedImportableCount,
                         verifiedApkCount = listUiState.verifiedApkCount,
                         checkingCount = listUiState.checkingCount,
                         verifySelectedEnabled = listUiState.selectedVerificationTargets.isNotEmpty() &&
-                                !loading &&
-                                !importing,
+                                !uiState.loading &&
+                                !uiState.importing,
                         verifyVisibleEnabled = listUiState.visibleVerificationTargets.isNotEmpty() &&
-                                !loading &&
-                                !importing,
-                        importEnabled = importEnabled,
-                        importing = importing,
-                        onFilterInputChange = { filterInput = it },
-                        onViewFilterChange = { viewFilter = it },
-                        onQualityFilterToggle = { filter ->
-                            val nextFilters = if (filter in qualityFilters) {
-                                qualityFilters - filter
-                            } else {
-                                qualityFilters + filter
-                            }
-                            qualityFilters = nextFilters.ifEmpty {
-                                GitHubStarImportQuality.entries.toSet()
-                            }
+                                !uiState.loading &&
+                                !uiState.importing,
+                        importEnabled = uiState.importEnabled,
+                        importing = uiState.importing,
+                        onFilterInputChange = viewModel::updateFilterInput,
+                        onViewFilterChange = viewModel::updateViewFilter,
+                        onQualityFilterToggle = viewModel::toggleQualityFilter,
+                        onConflictStrategyChange = viewModel::updateConflictStrategy,
+                        onVerifySelected = {
+                            viewModel.verifyApkAssets(listUiState.selectedVerificationTargets)
                         },
-                        onConflictStrategyChange = { strategy ->
-                            conflictStrategy = strategy
-                            if (strategy == StarImportConflictStrategy.NewOnly) {
-                                selectedIds = selectedIds - candidates
-                                    .asSequence()
-                                    .filter { it.alreadyTracked }
-                                    .map { it.trackedApp.id }
-                                    .toSet()
-                            }
+                        onVerifyVisible = {
+                            viewModel.verifyApkAssets(listUiState.visibleVerificationTargets)
                         },
-                        onVerifySelected = { verifyApkAssets(listUiState.selectedVerificationTargets) },
-                        onVerifyVisible = { verifyApkAssets(listUiState.visibleVerificationTargets) },
-                        onSelectRecommendedVisible = {
-                            selectedIds = selectedIds + listUiState.visibleRecommendedIds
-                        },
-                        onSelectVerifiedVisible = {
-                            selectedIds = selectedIds + listUiState.visibleVerifiedApkIds
-                        },
-                        onSelectVisible = {
-                            selectedIds = selectedIds + listUiState.visibleImportableIds
-                        },
-                        onClearSelection = { selectedIds = emptySet() },
-                        onImport = { requestImport() }
+                        onSelectRecommendedVisible = viewModel::selectRecommendedVisible,
+                        onSelectVerifiedVisible = viewModel::selectVerifiedVisible,
+                        onSelectVisible = viewModel::selectVisible,
+                        onClearSelection = viewModel::clearSelection,
+                        onImport = viewModel::requestImport
                     )
                 }
                 items(
@@ -438,20 +196,10 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                 ) { candidate ->
                     StarImportCandidateCard(
                         candidate = candidate,
-                        selected = candidate.trackedApp.id in selectedIds,
-                        trackedSelectable = conflictStrategy == StarImportConflictStrategy.IncludeTracked,
-                        apkVerificationState = apkVerificationStates[candidate.trackedApp.id],
-                        onToggle = {
-                            if (
-                                candidate.alreadyTracked &&
-                                conflictStrategy != StarImportConflictStrategy.IncludeTracked
-                            ) return@StarImportCandidateCard
-                            selectedIds = if (candidate.trackedApp.id in selectedIds) {
-                                selectedIds - candidate.trackedApp.id
-                            } else {
-                                selectedIds + candidate.trackedApp.id
-                            }
-                        }
+                        selected = candidate.trackedApp.id in uiState.selectedIds,
+                        trackedSelectable = uiState.conflictStrategy == StarImportConflictStrategy.IncludeTracked,
+                        apkVerificationState = uiState.apkVerificationStates[candidate.trackedApp.id],
+                        onToggle = { viewModel.toggleCandidate(candidate) }
                     )
                 }
                 if (listUiState.filteredCandidates.isEmpty()) {
@@ -463,21 +211,21 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         }
     }
     GitHubStarImportConfirmDialog(
-        candidates = pendingImportCandidates,
-        verificationStates = apkVerificationStates,
-        importing = importing,
-        onDismissRequest = { pendingImportCandidates = emptyList() },
-        onConfirmImport = { applyImport(pendingImportCandidates) }
-    )
-    GitHubStarImportExitConfirmDialog(
-        show = showExitConfirm,
-        selectedCount = selectedImportableCount,
-        onDismissRequest = { showExitConfirm = false },
-        onConfirmExit = {
-            showExitConfirm = false
-            onClose()
+        candidates = uiState.pendingImportCandidates,
+        verificationStates = uiState.apkVerificationStates,
+        importing = uiState.importing,
+        onDismissRequest = viewModel::dismissPendingImport,
+        onConfirmImport = {
+            viewModel.applyImport(
+                context = context,
+                selected = uiState.pendingImportCandidates
+            )
         }
     )
+    GitHubStarImportExitConfirmDialog(
+        show = uiState.showExitConfirm,
+        selectedCount = uiState.selectedImportableCount,
+        onDismissRequest = viewModel::dismissExitConfirm,
+        onConfirmExit = viewModel::confirmExit
+    )
 }
-
-private const val MAX_APK_VERIFICATION_BATCH = 30

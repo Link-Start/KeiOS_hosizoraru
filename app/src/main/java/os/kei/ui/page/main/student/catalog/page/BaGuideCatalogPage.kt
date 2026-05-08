@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -148,7 +148,7 @@ fun BaGuideCatalogPage(
     val allExportSuccessText = stringResource(R.string.ba_catalog_transfer_all_export_success)
     val bgmExportSuccessText = stringResource(R.string.ba_catalog_bgm_export_success)
     val catalogViewModel: BaGuideCatalogViewModel = viewModel()
-    val catalogDataState by catalogViewModel.dataState.collectAsState()
+    val catalogDataState by catalogViewModel.dataState.collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
         transitionAnimationsEnabled,
@@ -176,7 +176,7 @@ fun BaGuideCatalogPage(
     var importPreviewState by remember { mutableStateOf<BaGuideCatalogImportPreviewState?>(null) }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
-    val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
+    val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     var nativeBgmMediaNotificationEnabled by rememberSaveable {
         mutableStateOf(BASettingsStore.loadNativeBgmMediaNotificationEnabled())
     }

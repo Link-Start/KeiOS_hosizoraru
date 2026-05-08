@@ -369,6 +369,7 @@ dependencies {
     implementation("com.github.yalantis:ucrop:$uCropVersion")
     implementation("androidx.metrics:metrics-performance:$metricsPerformanceVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleViewModelComposeVersion")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleViewModelComposeVersion")
     implementation("androidx.documentfile:documentfile:$documentFileVersion")
     implementation("com.xzakota.hyper.notification:focus-api:$focusApiVersion")
 

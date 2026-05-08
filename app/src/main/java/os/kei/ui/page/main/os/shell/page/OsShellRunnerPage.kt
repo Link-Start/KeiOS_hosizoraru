@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -99,8 +99,8 @@ fun OsShellRunnerPage(
     LaunchedEffect(shellRunnerViewModel) {
         shellRunnerViewModel.refreshChromePrefs()
     }
-    val persistentState by shellRunnerViewModel.persistentState.collectAsState()
-    val chromePrefs by shellRunnerViewModel.chromePrefs.collectAsState()
+    val persistentState by shellRunnerViewModel.persistentState.collectAsStateWithLifecycle()
+    val chromePrefs by shellRunnerViewModel.chromePrefs.collectAsStateWithLifecycle()
     val isDark = isSystemInDarkTheme()
     val shellCommandAccentColor = if (isDark) Color(0xFF7AB8FF) else Color(0xFF2563EB)
     val shellSuccessAccentColor = if (isDark) Color(0xFF7EE7A8) else Color(0xFF15803D)

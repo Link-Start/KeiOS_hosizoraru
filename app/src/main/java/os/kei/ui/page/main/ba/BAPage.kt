@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -89,8 +89,8 @@ fun BAPage(
     val office = officeViewModel.office
     val ui = rememberBaPageUiController(initialSnapshot)
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
-    val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsState()
-    val poolUiState by calendarPoolViewModel.poolUiState.collectAsState()
+    val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
+    val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
     val baRouteState = ui.routeState(
         calendarUiState = calendarUiState,
         poolUiState = poolUiState,
@@ -118,7 +118,8 @@ fun BAPage(
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
     )
-    val syncPageActive = if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
+    val syncPageActive = runtime.hasActivated &&
+            if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
     val baGlassRuntime = LocalGlassEffectRuntime.current
 
     fun openSettingsSheet() {
@@ -213,7 +214,7 @@ fun BAPage(
         listState = listState,
         scrollBehavior = scrollBehavior,
         scrollToTopSignal = runtime.scrollToTopSignal,
-        isPageActive = runtime.isDataActive,
+        isPageActive = runtime.contentReady && runtime.isDataActive,
         consumedScrollToTopSignal = ui.consumedScrollToTopSignal,
         onConsumedScrollToTopSignalChange = { ui.consumedScrollToTopSignal = it },
         onDisposeActionBarInteraction = { onActionBarInteractingChanged(false) },

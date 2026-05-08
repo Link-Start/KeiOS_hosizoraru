@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -51,7 +51,7 @@ fun McpSkillPage(
             request = contentRequest
         )
     }
-    val contentState by viewModel.contentState.collectAsState()
+    val contentState by viewModel.contentState.collectAsStateWithLifecycle()
 
     AppPageScaffold(
         title = textBundle.pageTitle,

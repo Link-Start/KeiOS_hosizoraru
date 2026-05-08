@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -64,16 +64,21 @@ fun OsPage(
     val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
     val lifecycleOwner = LocalLifecycleOwner.current
     val osPageViewModel: OsPageViewModel = viewModel()
-    LaunchedEffect(textBundle.googleSystemServiceDefaults, textBundle.googleSettingsBuiltInSampleDefaults) {
+    LaunchedEffect(
+        runtime.hasActivated,
+        textBundle.googleSystemServiceDefaults,
+        textBundle.googleSettingsBuiltInSampleDefaults
+    ) {
+        if (!runtime.hasActivated) return@LaunchedEffect
         osPageViewModel.loadPersistentState(
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             googleSettingsBuiltInSampleDefaults = textBundle.googleSettingsBuiltInSampleDefaults
         )
     }
-    val persistentState by osPageViewModel.persistentState.collectAsState()
-    val runtimeState by osPageViewModel.runtimeState.collectAsState()
-    val queryInput by osPageViewModel.queryInput.collectAsState()
-    val queryApplied by osPageViewModel.queryApplied.collectAsState()
+    val persistentState by osPageViewModel.persistentState.collectAsStateWithLifecycle()
+    val runtimeState by osPageViewModel.runtimeState.collectAsStateWithLifecycle()
+    val queryInput by osPageViewModel.queryInput.collectAsStateWithLifecycle()
+    val queryApplied by osPageViewModel.queryApplied.collectAsStateWithLifecycle()
     val uiSnapshot = persistentState.uiSnapshot
     val topInfoExpanded = uiSnapshot.topInfoExpanded
     val shellRunnerExpanded = uiSnapshot.shellRunnerExpanded
@@ -186,7 +191,7 @@ fun OsPage(
 
     BindOsInitialCacheLoad(
         ready = persistentState.loaded,
-        isPageActive = runtime.isDataActive,
+        isPageActive = runtime.contentReady && runtime.isDataActive,
         hydrateInitialCache = { isPageActive ->
             osPageViewModel.hydrateInitialCache(
                 isPageActive = isPageActive,
@@ -210,7 +215,7 @@ fun OsPage(
 
     BindOsVisibleSectionLoadEffects(
         cacheLoaded = runtimeState.cacheLoaded,
-        isDataActive = runtime.isDataActive,
+        isDataActive = runtime.contentReady && runtime.isDataActive,
         visibleCards = visibleCards,
         systemTableExpanded = systemTableExpanded,
         secureTableExpanded = secureTableExpanded,

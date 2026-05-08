@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -71,16 +71,17 @@ fun GitHubPage(
 
     val state = rememberGitHubPageState(githubPageViewModel)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
-    val transferState by githubPageViewModel.transferState.collectAsState()
-    val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsState()
-    val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsState()
-    val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsState()
+    val transferState by githubPageViewModel.transferState.collectAsStateWithLifecycle()
+    val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsStateWithLifecycle()
+    val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsStateWithLifecycle()
+    val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsStateWithLifecycle()
     LaunchedEffect(isListScrolling) {
         if (!isListScrolling) {
             state.settleScrollChromeVisibility()
         }
     }
-    LaunchedEffect(context, state) {
+    LaunchedEffect(context, state, runtime.hasActivated) {
+        if (!runtime.hasActivated) return@LaunchedEffect
         githubPageViewModel.bindContextObservers(
             context = context,
             state = state
@@ -116,7 +117,8 @@ fun GitHubPage(
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
     }
-    LaunchedEffect(actions) {
+    LaunchedEffect(actions, runtime.contentReady) {
+        if (!runtime.contentReady) return@LaunchedEffect
         actions.syncActiveShareImportFlowFromStore()
     }
     val appListPermissionLauncher =
@@ -193,8 +195,8 @@ fun GitHubPage(
         context = context,
         listState = listState,
         scrollToTopSignal = runtime.scrollToTopSignal,
-        isPageWarmActive = runtime.isWarmDataActive,
-        isPageDataActive = runtime.isDataActive,
+        isPageWarmActive = runtime.hasActivated && runtime.isWarmDataActive,
+        isPageDataActive = runtime.contentReady && runtime.isDataActive,
         state = state,
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,

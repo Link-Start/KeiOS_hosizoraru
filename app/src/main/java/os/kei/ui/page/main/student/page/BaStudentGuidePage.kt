@@ -11,7 +11,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -30,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.exoplayer.ExoPlayer
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -119,8 +119,8 @@ fun BaStudentGuidePage(
     val scrollBehavior = MiuixScrollBehavior()
 
     val guideViewModel: BaStudentGuideViewModel = viewModel()
-    val guideDataState by guideViewModel.dataState.collectAsState()
-    val guidePrefetchState by guideViewModel.prefetchState.collectAsState()
+    val guideDataState by guideViewModel.dataState.collectAsStateWithLifecycle()
+    val guidePrefetchState by guideViewModel.prefetchState.collectAsStateWithLifecycle()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,

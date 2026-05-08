@@ -3,12 +3,12 @@ package os.kei.ui.page.main.host.pager
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -97,7 +97,7 @@ internal fun rememberMainPagerHomeOverviewState(
             )
         }
     )
-    val uiState by homeOverviewViewModel.uiState.collectAsState()
+    val uiState by homeOverviewViewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(settingsReturnToken) {
         if (settingsReturnToken <= 0) return@LaunchedEffect
         homeOverviewViewModel.refresh("settings_return_$settingsReturnToken")

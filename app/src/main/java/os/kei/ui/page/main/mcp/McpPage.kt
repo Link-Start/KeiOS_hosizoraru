@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +27,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -87,8 +87,8 @@ fun McpPage(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val mcpPageViewModel: McpPageViewModel = viewModel()
-    val uiState by mcpServerManager.uiState.collectAsState()
-    val pageUiState by mcpPageViewModel.uiState.collectAsState()
+    val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
+    val pageUiState by mcpPageViewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(
         mcpServerManager,
         uiState.port,

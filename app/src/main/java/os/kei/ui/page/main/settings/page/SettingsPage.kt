@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -123,8 +123,8 @@ fun SettingsPage(
     val scope = rememberCoroutineScope()
     var shizukuRefreshToken by remember { mutableIntStateOf(0) }
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
-    val cacheState by settingsPageViewModel.cacheState.collectAsState()
-    val logState by settingsPageViewModel.logState.collectAsState()
+    val cacheState by settingsPageViewModel.cacheState.collectAsStateWithLifecycle()
+    val logState by settingsPageViewModel.logState.collectAsStateWithLifecycle()
     val routeState = rememberSettingsPageRouteState(
         cacheState = cacheState,
         logState = logState

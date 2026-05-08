@@ -59,75 +59,42 @@ internal fun rememberOsPageDerivedState(
     visibleCards: Set<OsSectionCard>,
     activityShortcutCards: List<OsActivityShortcutCard>,
 ): OsPageDerivedState {
-    val systemRows = sectionStates[SectionKind.SYSTEM]?.rows ?: emptyList()
-    val secureRows = sectionStates[SectionKind.SECURE]?.rows ?: emptyList()
-    val globalRows = sectionStates[SectionKind.GLOBAL]?.rows ?: emptyList()
-    val androidRows = sectionStates[SectionKind.ANDROID]?.rows ?: emptyList()
-    val javaRows = sectionStates[SectionKind.JAVA]?.rows ?: emptyList()
-    val linuxRows = sectionStates[SectionKind.LINUX]?.rows ?: emptyList()
-
-    val topInfoRows = remember(sectionStates) {
-        buildTopInfoRowsSnapshot(sectionStates).rows
+    val rowsState = remember(
+        queryApplied,
+        sectionStates,
+        topInfoExpanded,
+        systemTableExpanded,
+        secureTableExpanded,
+        globalTableExpanded,
+        androidPropsExpanded,
+        javaPropsExpanded,
+        linuxEnvExpanded
+    ) {
+        deriveOsPageRowsState(
+            queryApplied = queryApplied,
+            sectionStates = sectionStates,
+            expansionFlags = OsPageExpansionFlags(
+                topInfoExpanded = topInfoExpanded,
+                systemTableExpanded = systemTableExpanded,
+                secureTableExpanded = secureTableExpanded,
+                globalTableExpanded = globalTableExpanded,
+                androidPropsExpanded = androidPropsExpanded,
+                javaPropsExpanded = javaPropsExpanded,
+                linuxEnvExpanded = linuxEnvExpanded
+            )
+        )
     }
-    val prunedSystemRows = remember(systemRows) { removeTopInfoRows(SectionKind.SYSTEM, systemRows) }
-    val prunedSecureRows = remember(secureRows) { removeTopInfoRows(SectionKind.SECURE, secureRows) }
-    val prunedGlobalRows = remember(globalRows) { removeTopInfoRows(SectionKind.GLOBAL, globalRows) }
-    val prunedAndroidRows = remember(androidRows) { removeTopInfoRows(SectionKind.ANDROID, androidRows) }
-    val prunedJavaRows = remember(javaRows) { removeTopInfoRows(SectionKind.JAVA, javaRows) }
-    val prunedLinuxRows = remember(linuxRows) { removeTopInfoRows(SectionKind.LINUX, linuxRows) }
-
-    val query = queryApplied.trim()
-    val displayedTopInfoRows = remember(query, topInfoRows, topInfoExpanded) {
-        if (query.isBlank() && !topInfoExpanded) {
-            topInfoRows
+    val groupedTopInfoRows = remember(
+        context,
+        rowsState.displayedTopInfoRows,
+        topInfoExpanded,
+        rowsState.query
+    ) {
+        if (rowsState.query.isBlank() && !topInfoExpanded) {
+            emptyList()
         } else {
-            sortRowsByType(filterRows(topInfoRows, query))
+            groupTopInfoRows(context, rowsState.displayedTopInfoRows)
         }
-    }
-    val displayedSystemRows = remember(query, prunedSystemRows, systemTableExpanded) {
-        if (query.isBlank() && !systemTableExpanded) {
-            prunedSystemRows
-        } else {
-            sortRowsByType(filterRows(prunedSystemRows, query))
-        }
-    }
-    val displayedSecureRows = remember(query, prunedSecureRows, secureTableExpanded) {
-        if (query.isBlank() && !secureTableExpanded) {
-            prunedSecureRows
-        } else {
-            sortRowsByType(filterRows(prunedSecureRows, query))
-        }
-    }
-    val displayedGlobalRows = remember(query, prunedGlobalRows, globalTableExpanded) {
-        if (query.isBlank() && !globalTableExpanded) {
-            prunedGlobalRows
-        } else {
-            sortRowsByType(filterRows(prunedGlobalRows, query))
-        }
-    }
-    val displayedAndroidRows = remember(query, prunedAndroidRows, androidPropsExpanded) {
-        if (query.isBlank() && !androidPropsExpanded) {
-            prunedAndroidRows
-        } else {
-            sortRowsByType(filterRows(prunedAndroidRows, query))
-        }
-    }
-    val displayedJavaRows = remember(query, prunedJavaRows, javaPropsExpanded) {
-        if (query.isBlank() && !javaPropsExpanded) {
-            prunedJavaRows
-        } else {
-            sortRowsByType(filterRows(prunedJavaRows, query))
-        }
-    }
-    val displayedLinuxRows = remember(query, prunedLinuxRows, linuxEnvExpanded) {
-        if (query.isBlank() && !linuxEnvExpanded) {
-            prunedLinuxRows
-        } else {
-            sortRowsByType(filterRows(prunedLinuxRows, query))
-        }
-    }
-    val groupedTopInfoRows = remember(context, displayedTopInfoRows, topInfoExpanded, query) {
-        if (query.isBlank() && !topInfoExpanded) emptyList() else groupTopInfoRows(context, displayedTopInfoRows)
     }
     val shellRunnerRows = remember(
         shizukuStatus,
@@ -146,23 +113,6 @@ internal fun rememberOsPageDerivedState(
             )
         )
     }
-    val visibleRowsCount = remember(
-        displayedTopInfoRows.size,
-        displayedSystemRows.size,
-        displayedSecureRows.size,
-        displayedGlobalRows.size,
-        displayedAndroidRows.size,
-        displayedJavaRows.size,
-        displayedLinuxRows.size
-    ) {
-        displayedTopInfoRows.size +
-            displayedSystemRows.size +
-            displayedSecureRows.size +
-            displayedGlobalRows.size +
-            displayedAndroidRows.size +
-            displayedJavaRows.size +
-            displayedLinuxRows.size
-    }
     val overviewUiState = remember(
         isDark,
         inactiveColor,
@@ -174,8 +124,8 @@ internal fun rememberOsPageDerivedState(
         cachePersisted,
         visibleCards,
         sectionStates,
-        topInfoRows.size,
-        visibleRowsCount,
+        rowsState.topInfoRows.size,
+        rowsState.visibleRowsCount,
         activityShortcutCards,
         shellCommandCards,
         surfaceColor
@@ -193,8 +143,8 @@ internal fun rememberOsPageDerivedState(
             cachePersisted = cachePersisted,
             visibleCards = visibleCards,
             sectionStates = sectionStates,
-            topInfoCount = topInfoRows.size,
-            visibleRowsCount = visibleRowsCount,
+            topInfoCount = rowsState.topInfoRows.size,
+            visibleRowsCount = rowsState.visibleRowsCount,
             activityCards = activityShortcutCards,
             shellCommandCards = shellCommandCards
         )
@@ -214,22 +164,22 @@ internal fun rememberOsPageDerivedState(
     }
 
     return OsPageDerivedState(
-        query = query,
-        displayedTopInfoRows = displayedTopInfoRows,
+        query = rowsState.query,
+        displayedTopInfoRows = rowsState.displayedTopInfoRows,
         groupedTopInfoRows = groupedTopInfoRows,
         shellRunnerRows = shellRunnerRows,
-        displayedSystemRows = displayedSystemRows,
-        displayedSecureRows = displayedSecureRows,
-        displayedGlobalRows = displayedGlobalRows,
-        displayedAndroidRows = displayedAndroidRows,
-        displayedJavaRows = displayedJavaRows,
-        displayedLinuxRows = displayedLinuxRows,
-        prunedSystemRows = prunedSystemRows,
-        prunedSecureRows = prunedSecureRows,
-        prunedGlobalRows = prunedGlobalRows,
-        prunedAndroidRows = prunedAndroidRows,
-        prunedJavaRows = prunedJavaRows,
-        prunedLinuxRows = prunedLinuxRows,
+        displayedSystemRows = rowsState.displayedSystemRows,
+        displayedSecureRows = rowsState.displayedSecureRows,
+        displayedGlobalRows = rowsState.displayedGlobalRows,
+        displayedAndroidRows = rowsState.displayedAndroidRows,
+        displayedJavaRows = rowsState.displayedJavaRows,
+        displayedLinuxRows = rowsState.displayedLinuxRows,
+        prunedSystemRows = rowsState.prunedSystemRows,
+        prunedSecureRows = rowsState.prunedSecureRows,
+        prunedGlobalRows = rowsState.prunedGlobalRows,
+        prunedAndroidRows = rowsState.prunedAndroidRows,
+        prunedJavaRows = rowsState.prunedJavaRows,
+        prunedLinuxRows = rowsState.prunedLinuxRows,
         overviewUiState = overviewUiState,
         overviewMetricRows = overviewMetricRows,
         visibleActivityShortcutCards = visibleActivityShortcutCards,

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -127,7 +127,7 @@ private fun BaPoolPage(
     val context = LocalContext.current
     val snapshot = remember { BASettingsStore.loadSnapshot() }
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
-    val poolUiState by calendarPoolViewModel.poolUiState.collectAsState()
+    val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
     val serverOptions = listOf(
         stringResource(R.string.ba_server_cn),
         stringResource(R.string.ba_server_global),

@@ -5,9 +5,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -24,9 +26,9 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.extractGuideWebLinks
 import os.kei.ui.page.main.student.guideLocalizedLabel
+import os.kei.ui.page.main.student.isGuideBgmFavoriteCandidateTitle
 import os.kei.ui.page.main.student.isInteractiveFurnitureAnimatedGalleryItem
 import os.kei.ui.page.main.student.isInteractiveFurnitureGalleryItem
-import os.kei.ui.page.main.student.isGuideBgmFavoriteCandidateTitle
 import os.kei.ui.page.main.student.normalizeGalleryDisplayTitle
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.gallery.BindGuideGalleryAudioPlayerEffects
@@ -35,8 +37,6 @@ import os.kei.ui.page.main.student.section.gallery.GuideImageFullscreenDialog
 import os.kei.ui.page.main.student.section.gallery.rememberGuideGalleryAudioPlayerState
 import os.kei.ui.page.main.student.section.gallery.rememberGuideGalleryGestureState
 import os.kei.ui.page.main.student.stripGuideWebLinks
-import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun GuideGalleryCardItem(
@@ -153,7 +153,7 @@ fun GuideGalleryCardItem(
         normalizedMediaType == "audio" &&
         favoriteAudioUrl.isNotBlank() &&
         isGuideBgmFavoriteCandidateTitle(item.title, displayTitle)
-    val bgmFavorites by GuideBgmFavoriteStore.favoritesFlow().collectAsState()
+    val bgmFavorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     val isBgmFavorite = canFavoriteBgm && bgmFavorites.any { it.audioUrl == favoriteAudioUrl }
     val favoriteContentDescription = stringResource(
         if (isBgmFavorite) {
@@ -209,7 +209,7 @@ fun GuideGalleryCardItem(
     val imageProgressState = remember(displayImageUrl) {
         MutableStateFlow(if (displayImageUrl.isBlank()) 1f else 0f)
     }
-    val imageProgress by imageProgressState.collectAsState()
+    val imageProgress by imageProgressState.collectAsStateWithLifecycle()
     var imageLoading by remember(displayImageUrl) { mutableStateOf(displayImageUrl.isNotBlank()) }
 
     val content: @Composable (Modifier) -> Unit = { contentModifier ->

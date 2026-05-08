@@ -166,6 +166,10 @@ internal fun MainPagerLayout(
                 .fillMaxSize()
                 .graphicsLayer { alpha = coordinator.farJumpAlpha }
                 .layerBackdrop(coordinator.backdrop)
+            val activationState = rememberMainPageActivationState(
+                tabs = coordinator.tabs,
+                settledPageIndex = coordinator.pagerState.settledPage
+            )
             val pageContent: @Composable (Int) -> Unit = { pageIndex ->
                 val pageType = coordinator.tabs[pageIndex]
                 val pageRuntime = coordinator.pagerRuntime.pageRuntime(
@@ -184,7 +188,9 @@ internal fun MainPagerLayout(
                         BottomPage.Ba -> coordinator.baScrollToTopSignal
                         BottomPage.Mcp -> coordinator.mcpScrollToTopSignal
                         BottomPage.GitHub -> coordinator.githubScrollToTopSignal
-                    }
+                    },
+                    hasActivated = activationState.hasActivated(pageType),
+                    contentReady = activationState.contentReady(pageType)
                 )
                 key(pageType.name) {
                     MainPagerPageHost(

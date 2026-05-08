@@ -3,7 +3,6 @@ package os.kei.ui.page.main.host.main
 import android.content.pm.PackageInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -15,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import os.kei.R
@@ -72,7 +72,7 @@ fun MainScreen(
     LaunchedEffect(prefsViewModel) {
         prefsViewModel.loadInitialSnapshot()
     }
-    val uiPrefsSnapshot by prefsViewModel.snapshot.collectAsState()
+    val uiPrefsSnapshot by prefsViewModel.snapshot.collectAsStateWithLifecycle()
     val mainReturnState = rememberMainScreenSettingsReturnState(backStack)
     BindMainScreenBottomPageReturnEffect(
         requestedBottomPageToken = effectiveRequestedBottomPageToken,

@@ -456,12 +456,14 @@
     <string name="github_star_import_source_my_stars">我的</string>
     <string name="github_star_import_source_user">用户</string>
     <string name="github_star_import_source_list_url">列表</string>
+    <string name="github_star_import_source_guide_title">来源说明</string>
     <string name="github_star_import_token_label">Token</string>
     <string name="github_star_import_token_ready">将使用当前 GitHub API Token 读取 /user/starred</string>
     <string name="github_star_import_token_missing">导入自己的 stars 需要先在抓取方案里填写 GitHub API Token</string>
     <string name="github_star_import_username_label">GitHub 用户 / 链接</string>
     <string name="github_star_import_list_url_label">GitHub Star List 链接</string>
     <string name="github_star_import_action_load">读取并预览</string>
+    <string name="github_star_import_action_load_short">读取</string>
     <string name="github_star_import_action_loading">读取中</string>
     <string name="github_star_import_status_waiting">等待读取</string>
     <string name="github_star_import_status_waiting_summary">选择来源后读取列表，预览阶段可以筛选和取消勾选。</string>

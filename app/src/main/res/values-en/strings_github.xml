@@ -456,12 +456,14 @@
     <string name="github_star_import_source_my_stars">Mine</string>
     <string name="github_star_import_source_user">User</string>
     <string name="github_star_import_source_list_url">List</string>
+    <string name="github_star_import_source_guide_title">Source guide</string>
     <string name="github_star_import_token_label">Token</string>
     <string name="github_star_import_token_ready">The current GitHub API token will read /user/starred</string>
     <string name="github_star_import_token_missing">Importing your stars requires a GitHub API token in the fetch strategy sheet</string>
     <string name="github_star_import_username_label">GitHub user or URL</string>
     <string name="github_star_import_list_url_label">GitHub Star List URL</string>
     <string name="github_star_import_action_load">Load preview</string>
+    <string name="github_star_import_action_load_short">Load</string>
     <string name="github_star_import_action_loading">Loading</string>
     <string name="github_star_import_status_waiting">Waiting</string>
     <string name="github_star_import_status_waiting_summary">Choose a source and load the list. The preview lets you filter and deselect items.</string>

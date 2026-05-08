@@ -127,6 +127,12 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
                     onLoadPreview = { viewModel.loadPreview(sourceRequirementMessage) }
                 )
             }
+            item {
+                StarImportSourceGuideCard(
+                    source = uiState.source,
+                    sourceReady = uiState.lookupConfigReady
+                )
+            }
             if (uiState.starLists.isNotEmpty()) {
                 item {
                     StarImportStarListPickerCard(

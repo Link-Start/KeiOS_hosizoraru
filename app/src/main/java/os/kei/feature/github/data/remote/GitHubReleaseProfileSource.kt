@@ -76,7 +76,15 @@ internal fun GitHubRepositoryReleaseSnapshot.releaseProfileSource(): GitHubRepos
     }
 }
 
-private fun GitHubReleaseVersionSignals?.releaseProfileSource(
+internal fun GitHubRepositoryReleaseSnapshot.releaseProfileSources(): Set<GitHubRepositoryProfileSource> {
+    return buildSet {
+        add(releaseProfileSource())
+        latestStable.releaseProfileSource(this@releaseProfileSources).let(::add)
+        latestPreRelease.releaseProfileSource(this@releaseProfileSources).let(::add)
+    }
+}
+
+internal fun GitHubReleaseVersionSignals?.releaseProfileSource(
     snapshot: GitHubRepositoryReleaseSnapshot
 ): GitHubRepositoryProfileSource {
     return when (this?.source) {

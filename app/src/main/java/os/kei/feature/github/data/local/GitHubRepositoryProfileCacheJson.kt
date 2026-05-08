@@ -12,7 +12,9 @@ import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryLocalFitProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
+import os.kei.feature.github.model.GitHubRepositoryProfileCapability
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryProfileSourceState
@@ -27,6 +29,15 @@ internal fun GitHubRepositoryProfileSnapshot.toCacheJson(): JSONObject {
         .put("repo", repo)
         .put("sourceConfigSignature", sourceConfigSignature)
         .put("fetchedAtMillis", fetchedAtMillis)
+        .put("purpose", purpose.name)
+        .put(
+            "capabilities",
+            JSONArray().apply {
+                capabilities.sortedBy { it.name }.forEach { capability ->
+                    put(capability.name)
+                }
+            }
+        )
         .put("identity", identity.toCacheJson())
         .put("lifecycle", lifecycle.toCacheJson())
         .put("activity", activity.toCacheJson())
@@ -48,6 +59,9 @@ internal fun GitHubRepositoryProfileSnapshot.toCacheJson(): JSONObject {
                             .put("status", state.status.name)
                             .put("fetchedAtMillis", state.fetchedAtMillis)
                             .put("message", state.message)
+                            .put("elapsedMs", state.elapsedMs)
+                            .put("fromCache", state.fromCache)
+                            .put("required", state.required)
                     )
                 }
             }
@@ -65,11 +79,15 @@ internal fun parseGitHubRepositoryProfileSnapshot(
     if (owner.isBlank() || repo.isBlank() || signature.isBlank() || fetchedAtMillis <= 0L) {
         return null
     }
-    return GitHubRepositoryProfileSnapshot(
+    val explicitCapabilities = parseCapabilities(obj.optJSONArray("capabilities"))
+    val snapshot = GitHubRepositoryProfileSnapshot(
         owner = owner,
         repo = repo,
         sourceConfigSignature = signature,
         fetchedAtMillis = fetchedAtMillis,
+        purpose = enumValueOrNull<GitHubRepositoryProfilePurpose>(obj.optString("purpose"))
+            ?: GitHubRepositoryProfilePurpose.VersionCheckFast,
+        capabilities = explicitCapabilities,
         identity = parseIdentity(obj.optJSONObject("identity")),
         lifecycle = parseLifecycle(obj.optJSONObject("lifecycle")),
         activity = parseActivity(obj.optJSONObject("activity")),
@@ -83,6 +101,11 @@ internal fun parseGitHubRepositoryProfileSnapshot(
         localFit = parseLocalFit(obj.optJSONObject("localFit")),
         sourceAvailability = parseSourceAvailability(obj.optJSONArray("sourceAvailability"))
     )
+    return if (explicitCapabilities.isEmpty()) {
+        snapshot.copy(capabilities = inferCapabilities(snapshot))
+    } else {
+        snapshot
+    }
 }
 
 private fun GitHubRepositoryIdentityProfile.toCacheJson(): JSONObject =
@@ -396,9 +419,105 @@ private fun parseSourceAvailability(array: JSONArray?): List<GitHubRepositoryPro
                         obj.optString("status")
                     ) ?: GitHubRepositoryProfileAvailabilityStatus.Failed,
                     fetchedAtMillis = obj.optLong("fetchedAtMillis", -1L),
-                    message = obj.optString("message").trim()
+                    message = obj.optString("message").trim(),
+                    elapsedMs = obj.optLong("elapsedMs", 0L),
+                    fromCache = true,
+                    required = obj.optBoolean("required", false)
                 )
             )
+        }
+    }
+}
+
+private fun parseCapabilities(
+    array: JSONArray?
+): Set<GitHubRepositoryProfileCapability> {
+    array ?: return emptySet()
+    return buildSet {
+        for (index in 0 until array.length()) {
+            enumValueOrNull<GitHubRepositoryProfileCapability>(array.optString(index))
+                ?.let(::add)
+        }
+    }
+}
+
+private fun inferCapabilities(
+    snapshot: GitHubRepositoryProfileSnapshot
+): Set<GitHubRepositoryProfileCapability> {
+    return buildSet {
+        add(GitHubRepositoryProfileCapability.RepositoryCore)
+        if (
+            snapshot.releases.releaseCount != null ||
+            snapshot.releases.latestStableTag != null ||
+            snapshot.releases.latestPreReleaseTag != null
+        ) {
+            add(GitHubRepositoryProfileCapability.ReleaseSignals)
+        }
+        if (
+            snapshot.distribution.latestAssetCount != null ||
+            snapshot.distribution.apkLikeAssetCount != null ||
+            snapshot.distribution.latestStableApkPackageName != null
+        ) {
+            add(GitHubRepositoryProfileCapability.Distribution)
+        }
+        if (
+            snapshot.actions.workflowRunCount != null ||
+            snapshot.actions.latestRunStatus != null ||
+            snapshot.actions.artifactCount != null
+        ) {
+            add(GitHubRepositoryProfileCapability.Actions)
+        }
+        if (
+            snapshot.community.healthPercentage != null ||
+            snapshot.community.hasReadme != null ||
+            snapshot.community.hasLicense != null
+        ) {
+            add(GitHubRepositoryProfileCapability.Community)
+        }
+        if (
+            snapshot.identity.topics?.source == GitHubRepositoryProfileSource.HtmlRepositoryPage ||
+            snapshot.lifecycle.archived?.source == GitHubRepositoryProfileSource.HtmlRepositoryPage ||
+            snapshot.sourceAvailability.any {
+                it.source == GitHubRepositoryProfileSource.HtmlRepositoryPage
+            }
+        ) {
+            add(GitHubRepositoryProfileCapability.HtmlRepository)
+        }
+        if (
+            snapshot.traffic.viewCount != null ||
+            snapshot.traffic.cloneCount != null ||
+            snapshot.sourceAvailability.any {
+                it.source == GitHubRepositoryProfileSource.TrafficViewsApi ||
+                        it.source == GitHubRepositoryProfileSource.TrafficClonesApi
+            }
+        ) {
+            add(GitHubRepositoryProfileCapability.Traffic)
+        }
+        if (
+            snapshot.forkSync.behindBy != null ||
+            snapshot.forkSync.aheadBy != null ||
+            snapshot.sourceAvailability.any {
+                it.source == GitHubRepositoryProfileSource.ForkCompareApi
+            }
+        ) {
+            add(GitHubRepositoryProfileCapability.ForkSync)
+        }
+        if (
+            snapshot.security.dependabotAlertsAvailable != null ||
+            snapshot.security.codeScanningAvailable != null ||
+            snapshot.sourceAvailability.any {
+                it.source == GitHubRepositoryProfileSource.DependabotAlertsApi ||
+                        it.source == GitHubRepositoryProfileSource.CodeScanningAlertsApi
+            }
+        ) {
+            add(GitHubRepositoryProfileCapability.Security)
+        }
+        if (
+            snapshot.localFit.localPackageName != null ||
+            snapshot.localFit.remotePackageName != null ||
+            snapshot.distribution.latestStableApkPackageName != null
+        ) {
+            add(GitHubRepositoryProfileCapability.LocalFit)
         }
     }
 }

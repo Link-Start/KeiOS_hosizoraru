@@ -78,38 +78,56 @@ internal fun listField(
 
 internal fun loaded(
     source: GitHubRepositoryProfileSource,
-    fetchedAtMillis: Long
+    fetchedAtMillis: Long,
+    elapsedMs: Long = 0L,
+    required: Boolean = false,
+    fromCache: Boolean = false
 ): GitHubRepositoryProfileSourceState {
     return GitHubRepositoryProfileSourceState(
         source = source,
         status = GitHubRepositoryProfileAvailabilityStatus.Loaded,
-        fetchedAtMillis = fetchedAtMillis
+        fetchedAtMillis = fetchedAtMillis,
+        elapsedMs = elapsedMs,
+        fromCache = fromCache,
+        required = required
     )
 }
 
 internal fun skipped(
     source: GitHubRepositoryProfileSource,
     fetchedAtMillis: Long,
-    message: String = ""
+    message: String = "",
+    elapsedMs: Long = 0L,
+    required: Boolean = false,
+    fromCache: Boolean = false
 ): GitHubRepositoryProfileSourceState {
     return GitHubRepositoryProfileSourceState(
         source = source,
         status = GitHubRepositoryProfileAvailabilityStatus.Skipped,
         fetchedAtMillis = fetchedAtMillis,
-        message = message
+        message = message,
+        elapsedMs = elapsedMs,
+        fromCache = fromCache,
+        required = required
     )
 }
 
 internal fun failed(
     source: GitHubRepositoryProfileSource,
     fetchedAtMillis: Long,
-    error: Throwable
+    error: Throwable,
+    elapsedMs: Long = 0L,
+    required: Boolean = false,
+    fromCache: Boolean = false
 ): GitHubRepositoryProfileSourceState {
     return GitHubRepositoryProfileSourceState(
         source = source,
         status = GitHubRepositoryProfileAvailabilityStatus.Failed,
         fetchedAtMillis = fetchedAtMillis,
-        message = error.message.orEmpty().take(180)
+        message = error.message.orEmpty().take(180),
+        elapsedMs = elapsedMs,
+        fromCache = fromCache,
+        required = required
     )
 }
 

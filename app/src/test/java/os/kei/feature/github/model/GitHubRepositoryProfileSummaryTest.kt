@@ -34,7 +34,10 @@ class GitHubRepositoryProfileSummaryTest {
                     source = GitHubRepositoryProfileSource.CodeScanningAlertsApi,
                     status = GitHubRepositoryProfileAvailabilityStatus.Failed,
                     fetchedAtMillis = FETCHED_AT,
-                    message = "forbidden"
+                    message = "forbidden",
+                    elapsedMs = 27L,
+                    fromCache = true,
+                    required = true
                 )
             )
         )
@@ -47,6 +50,9 @@ class GitHubRepositoryProfileSummaryTest {
         assertTrue(summary.rows.any { it.key == GitHubRepositoryProfileSummaryKey.SecurityAlerts })
         assertFalse(summary.rows.any { it.key == GitHubRepositoryProfileSummaryKey.TrafficClones })
         assertEquals(2, summary.sourceRows.size)
+        assertEquals(27L, summary.sourceRows.last().elapsedMs)
+        assertTrue(summary.sourceRows.last().fromCache)
+        assertTrue(summary.sourceRows.last().required)
         assertTrue(summary.rows.any { it.key == GitHubRepositoryProfileSummaryKey.SourceFailed })
     }
 

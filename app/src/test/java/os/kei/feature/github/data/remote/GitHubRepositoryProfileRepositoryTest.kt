@@ -11,7 +11,9 @@ import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
+import os.kei.feature.github.model.GitHubRepositoryProfileCapability
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import kotlin.test.assertContains
@@ -78,6 +80,11 @@ class GitHubRepositoryProfileRepositoryTest {
             <html>
               <body>
                 <div class="flash-warn">This repository has been archived by the owner on Jan 1, 2025. It is now read-only.</div>
+                <a href="/topics/android">Android</a>
+                <a href="/venera-app/venera/tree/main">main</a>
+                <a href="/venera-app/venera/stargazers">1.2k stars</a>
+                <relative-time datetime="2025-01-02T00:00:00Z"></relative-time>
+                <div id="readme">README.md</div>
               </body>
             </html>
         """.trimIndent()
@@ -94,6 +101,10 @@ class GitHubRepositoryProfileRepositoryTest {
         assertTrue(archivedField.value)
         assertEquals(GitHubRepositoryProfileSource.HtmlRepositoryPage, archivedField.source)
         assertEquals(GitHubRepositoryProfileConfidence.Low, archivedField.confidence)
+        assertEquals(listOf("android"), profile.identity.topics?.value)
+        assertEquals("main", profile.identity.defaultBranch?.value)
+        assertEquals(1200, profile.activity.stargazersCount?.value)
+        assertTrue(profile.community.hasReadme?.value == true)
     }
 
     @Test
@@ -123,6 +134,17 @@ class GitHubRepositoryProfileRepositoryTest {
         assertEquals(
             GitHubRepositoryProfileSource.GitHubApiReleases,
             apiProfile.latestStableTag?.source
+        )
+        val redirectProfile = GitHubReleaseProfileSource.build(
+            snapshot = releaseSnapshot(
+                strategyId = "atom_feed",
+                source = GitHubReleaseSignalSource.LatestRedirect
+            ),
+            fetchedAtMillis = FETCHED_AT
+        )
+        assertEquals(
+            GitHubRepositoryProfileSource.HtmlLatestReleaseRedirect,
+            redirectProfile.latestStableTag?.source
         )
     }
 
@@ -207,7 +229,7 @@ class GitHubRepositoryProfileRepositoryTest {
     }
 
     @Test
-    fun `basic profile skips deep endpoints`() {
+    fun `version check fast requests only core repository sources`() {
         MockWebServer().use { server ->
             server.dispatcher = profileDispatcher()
             val repository = GitHubRepositoryProfileRepository(
@@ -219,43 +241,149 @@ class GitHubRepositoryProfileRepositoryTest {
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
-                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic)
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic),
+                    releaseSnapshot = releaseSnapshot(
+                        strategyId = "atom_feed",
+                        source = GitHubReleaseSignalSource.LatestRedirect
+                    )
                 )
             )
 
             val paths = server.takeRequestPaths()
+            assertContains(paths, "/repos/demo/app")
+            assertFalse(paths.any { it.contains("/actions/") })
+            assertFalse(paths.any { it.contains("/community/profile") })
             assertFalse(paths.any { it.contains("/traffic/") })
             assertFalse(paths.any { it.contains("/dependabot/") })
             assertFalse(paths.any { it.contains("/code-scanning/") })
-            assertEquals(
-                GitHubRepositoryProfileAvailabilityStatus.Skipped,
-                profile.sourceAvailability.first {
-                    it.source == GitHubRepositoryProfileSource.TrafficViewsApi
-                }.status
+            assertEquals(GitHubRepositoryProfilePurpose.VersionCheckFast, profile.purpose)
+            assertTrue(
+                profile.capabilities.containsAll(
+                    setOf(
+                        GitHubRepositoryProfileCapability.RepositoryCore,
+                        GitHubRepositoryProfileCapability.ReleaseSignals,
+                        GitHubRepositoryProfileCapability.LocalFit
+                    )
+                )
+            )
+            assertFalse(GitHubRepositoryProfileCapability.Actions in profile.capabilities)
+            assertTrue(
+                profile.sourceAvailability.any {
+                    it.source == GitHubRepositoryProfileSource.HtmlLatestReleaseRedirect
+                }
             )
         }
     }
 
     @Test
-    fun `deep profile collects enhanced endpoints and keeps partial failures`() {
+    fun `health card requests actions and community while skipping deep endpoints`() {
         MockWebServer().use { server ->
-            server.dispatcher = profileDispatcher(codeScanningCode = 403)
+            server.dispatcher = profileDispatcher()
             val repository = GitHubRepositoryProfileRepository(
                 apiBaseUrl = server.url("/").toString().trimEnd('/'),
-                htmlBaseUrl = "https://github.test"
+                htmlBaseUrl = server.url("/").toString().trimEnd('/')
             )
 
             val profile = repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
-                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
+                    purpose = GitHubRepositoryProfilePurpose.HealthCard
                 )
             )
 
             val paths = server.takeRequestPaths()
+            assertContains(paths, "/repos/demo/app/actions/runs?per_page=12")
+            assertContains(paths, "/repos/demo/app/actions/artifacts?per_page=30")
+            assertContains(paths, "/repos/demo/app/community/profile")
+            assertFalse(paths.any { it.contains("/traffic/") })
+            assertFalse(paths.any { it.contains("/dependabot/") })
+            assertTrue(GitHubRepositoryProfileCapability.Actions in profile.capabilities)
+            assertTrue(GitHubRepositoryProfileCapability.Community in profile.capabilities)
+            assertFalse(GitHubRepositoryProfileCapability.Security in profile.capabilities)
+        }
+    }
+
+    @Test
+    fun `api failure falls back to html repository page with low confidence fields`() {
+        MockWebServer().use { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    return when (request.path) {
+                        "/repos/demo/app" -> MockResponse()
+                            .setResponseCode(500)
+                            .setBody("""{"message":"temporary"}""")
+
+                        "/demo/app" -> htmlResponse(
+                            """
+                                <html>
+                                  <body>
+                                    <div>This repository has been archived by the owner.</div>
+                                    <a href="/topics/android">Android</a>
+                                    <div id="readme">README.md</div>
+                                  </body>
+                                </html>
+                            """.trimIndent()
+                        )
+
+                        else -> MockResponse().setResponseCode(404)
+                    }
+                }
+            }
+            val repository = GitHubRepositoryProfileRepository(
+                apiBaseUrl = server.url("/").toString().trimEnd('/'),
+                htmlBaseUrl = server.url("/").toString().trimEnd('/')
+            )
+
+            val profile = repository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = "demo",
+                    repo = "app",
+                    lookupConfig = GitHubLookupConfig()
+                )
+            )
+
+            val archived = profile.lifecycle.archived ?: error("archived field should exist")
+            assertTrue(archived.value)
+            assertEquals(
+                GitHubRepositoryProfileConfidence.Low,
+                archived.confidence
+            )
+            assertEquals(listOf("android"), profile.identity.topics?.value)
+            assertTrue(
+                profile.sourceAvailability.any {
+                    it.source == GitHubRepositoryProfileSource.GitHubApiRepository &&
+                            it.status == GitHubRepositoryProfileAvailabilityStatus.Failed &&
+                            it.required
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `detail full deep profile collects enhanced endpoints and keeps partial failures`() {
+        MockWebServer().use { server ->
+            server.dispatcher = profileDispatcher(fork = true, codeScanningCode = 403)
+            val repository = GitHubRepositoryProfileRepository(
+                apiBaseUrl = server.url("/").toString().trimEnd('/'),
+                htmlBaseUrl = server.url("/").toString().trimEnd('/')
+            )
+
+            val profile = repository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = "demo",
+                    repo = "app",
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
+                    purpose = GitHubRepositoryProfilePurpose.DetailFull
+                )
+            )
+
+            val paths = server.takeRequestPaths()
+            assertContains(paths, "/demo/app")
             assertContains(paths, "/repos/demo/app/traffic/views")
             assertContains(paths, "/repos/demo/app/traffic/clones")
+            assertContains(paths, "/repos/upstream/app/compare/main...demo:main")
             assertContains(paths, "/repos/demo/app/dependabot/alerts?state=open&per_page=100")
             assertContains(paths, "/repos/demo/app/code-scanning/alerts?state=open&per_page=100")
             assertEquals(11, profile.traffic.viewCount?.value)
@@ -267,6 +395,7 @@ class GitHubRepositoryProfileRepositoryTest {
                             it.status == GitHubRepositoryProfileAvailabilityStatus.Failed
                 }
             )
+            assertTrue(GitHubRepositoryProfileCapability.Security in profile.capabilities)
         }
     }
 
@@ -347,6 +476,7 @@ class GitHubRepositoryProfileRepositoryTest {
     }
 
     private fun profileDispatcher(
+        fork: Boolean = false,
         codeScanningCode: Int = 200
     ): Dispatcher {
         return object : Dispatcher() {
@@ -355,8 +485,20 @@ class GitHubRepositoryProfileRepositoryTest {
                     "/repos/demo/app" -> jsonResponse(
                         apiRepositoryJson(
                             archived = false,
-                            fork = false
+                            fork = fork
                         )
+                    )
+
+                    "/demo/app" -> htmlResponse(
+                        """
+                            <html>
+                              <body>
+                                <a href="/topics/android">Android</a>
+                                <a href="/demo/app/tree/main">main</a>
+                                <div id="readme">README.md</div>
+                              </body>
+                            </html>
+                        """.trimIndent()
                     )
 
                     "/repos/demo/app/actions/runs?per_page=12" -> jsonResponse("""{"workflow_runs": []}""")
@@ -367,6 +509,9 @@ class GitHubRepositoryProfileRepositoryTest {
 
                     "/repos/demo/app/traffic/views" -> jsonResponse("""{"count": 11, "uniques": 5, "views": []}""")
                     "/repos/demo/app/traffic/clones" -> jsonResponse("""{"count": 3, "uniques": 2, "clones": []}""")
+                    "/repos/upstream/app/compare/main...demo:main" -> jsonResponse(
+                        """{"ahead_by": 1, "behind_by": 2, "status": "behind", "total_commits": 3}"""
+                    )
                     "/repos/demo/app/dependabot/alerts?state=open&per_page=100" -> jsonResponse("""[{"number": 1}]""")
                     "/repos/demo/app/code-scanning/alerts?state=open&per_page=100" -> if (codeScanningCode == 200) {
                         jsonResponse("[]")
@@ -385,6 +530,13 @@ class GitHubRepositoryProfileRepositoryTest {
         return MockResponse()
             .setResponseCode(200)
             .setHeader("Content-Type", "application/json")
+            .setBody(body)
+    }
+
+    private fun htmlResponse(body: String): MockResponse {
+        return MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "text/html")
             .setBody(body)
     }
 

@@ -117,6 +117,35 @@ fun GitHubLookupConfig.githubCheckSourceSignature(): String {
     ).joinToString("|")
 }
 
+fun GitHubLookupConfig.defaultRepositoryProfilePurpose(): GitHubRepositoryProfilePurpose {
+    return if (decisionAssistEnabled && repositoryHealthCardEnabled) {
+        GitHubRepositoryProfilePurpose.HealthCard
+    } else {
+        GitHubRepositoryProfilePurpose.VersionCheckFast
+    }
+}
+
+fun GitHubLookupConfig.githubProfileSourceSignature(
+    purpose: GitHubRepositoryProfilePurpose = defaultRepositoryProfilePurpose()
+): String {
+    return githubProfileSourceSignature(purpose.requiredCapabilities(profileDepth))
+}
+
+fun GitHubLookupConfig.githubProfileSourceSignature(
+    capabilities: Set<GitHubRepositoryProfileCapability>
+): String {
+    return listOf(
+        "profile-v1",
+        selectedStrategy.storageId,
+        apiToken.trim().isNotBlank().toString(),
+        checkAllTrackedPreReleases.toString(),
+        aggressiveApkFiltering.toString(),
+        preciseApkVersionEnabled.toString(),
+        profileDepth.storageId,
+        capabilities.sortedBy { it.name }.joinToString(",") { it.name }
+    ).joinToString("|")
+}
+
 fun GitHubLookupConfig.githubAssetSourceSignature(): String {
     return listOf(
         "asset-v3",

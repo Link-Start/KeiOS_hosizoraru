@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.feature.github.GitHubBoundedRunner
 import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
@@ -27,96 +28,30 @@ internal class GitHubDeepRepositoryProfileSource(
         lifecycle: GitHubRepositoryLifecycleProfile,
         fetchedAtMillis: Long
     ): GitHubDeepRepositoryProfileResult {
-        val availability = mutableListOf<GitHubRepositoryProfileSourceState>()
+        val tasks = listOf<() -> GitHubDeepProfileChunk>(
+            { fetchTrafficViews(request, fetchedAtMillis) },
+            { fetchTrafficClones(request, fetchedAtMillis) },
+            { fetchForkCompareChunk(request, identity, lifecycle, fetchedAtMillis) },
+            { fetchDependabotAlerts(request, fetchedAtMillis) },
+            { fetchCodeScanningAlerts(request, fetchedAtMillis) }
+        )
+        val chunks = GitHubBoundedRunner.mapOrdered(
+            items = tasks,
+            maxConcurrency = DEEP_SOURCE_CONCURRENCY,
+            threadName = "github-profile-deep"
+        ) { task ->
+            task()
+        }
         var traffic = GitHubRepositoryTrafficProfile()
+        var forkSync = GitHubRepositoryForkSyncProfile()
         var security = GitHubRepositorySecurityProfile()
-
-        http.fetchJson(
-            http.trafficViewsUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
-        )
-            .onSuccess { body ->
-                availability += loaded(
-                    GitHubRepositoryProfileSource.TrafficViewsApi,
-                    fetchedAtMillis
-                )
-                traffic = traffic.merge(parseTrafficViews(body, fetchedAtMillis))
-            }
-            .onFailure { error ->
-                availability += failed(
-                    GitHubRepositoryProfileSource.TrafficViewsApi,
-                    fetchedAtMillis,
-                    error
-                )
-            }
-
-        http.fetchJson(
-            http.trafficClonesUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
-        )
-            .onSuccess { body ->
-                availability += loaded(
-                    GitHubRepositoryProfileSource.TrafficClonesApi,
-                    fetchedAtMillis
-                )
-                traffic = traffic.merge(parseTrafficClones(body, fetchedAtMillis))
-            }
-            .onFailure { error ->
-                availability += failed(
-                    GitHubRepositoryProfileSource.TrafficClonesApi,
-                    fetchedAtMillis,
-                    error
-                )
-            }
-
-        val forkSync = fetchForkCompare(
-            request = request,
-            identity = identity,
-            lifecycle = lifecycle,
-            fetchedAtMillis = fetchedAtMillis,
-            availability = availability
-        )
-
-        http.fetchJson(
-            http.dependabotAlertsUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
-        )
-            .onSuccess { body ->
-                availability += loaded(
-                    GitHubRepositoryProfileSource.DependabotAlertsApi,
-                    fetchedAtMillis
-                )
-                security = security.merge(parseDependabotAlerts(body, fetchedAtMillis))
-            }
-            .onFailure { error ->
-                availability += failed(
-                    GitHubRepositoryProfileSource.DependabotAlertsApi,
-                    fetchedAtMillis,
-                    error
-                )
-                security = security.merge(unavailableDependabotAlerts(fetchedAtMillis))
-            }
-
-        http.fetchJson(
-            http.codeScanningAlertsUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
-        )
-            .onSuccess { body ->
-                availability += loaded(
-                    GitHubRepositoryProfileSource.CodeScanningAlertsApi,
-                    fetchedAtMillis
-                )
-                security = security.merge(parseCodeScanningAlerts(body, fetchedAtMillis))
-            }
-            .onFailure { error ->
-                availability += failed(
-                    GitHubRepositoryProfileSource.CodeScanningAlertsApi,
-                    fetchedAtMillis,
-                    error
-                )
-                security = security.merge(unavailableCodeScanningAlerts(fetchedAtMillis))
-            }
-
+        val availability = mutableListOf<GitHubRepositoryProfileSourceState>()
+        chunks.forEach { chunk ->
+            traffic = traffic.merge(chunk.traffic)
+            forkSync = forkSync.merge(chunk.forkSync)
+            security = security.merge(chunk.security)
+            availability += chunk.availability
+        }
         return GitHubDeepRepositoryProfileResult(
             traffic = traffic,
             forkSync = forkSync,
@@ -278,6 +213,188 @@ internal class GitHubDeepRepositoryProfileSource(
         )
     }
 
+    private fun fetchTrafficViews(
+        request: GitHubRepositoryProfileRequest,
+        fetchedAtMillis: Long
+    ): GitHubDeepProfileChunk {
+        val source = GitHubRepositoryProfileSource.TrafficViewsApi
+        val startNs = System.nanoTime()
+        return http.fetchJson(
+            http.trafficViewsUrl(request.owner, request.repo),
+            request.lookupConfig.apiToken
+        ).fold(
+            onSuccess = { body ->
+                GitHubDeepProfileChunk(
+                    traffic = parseTrafficViews(body, fetchedAtMillis),
+                    availability = listOf(
+                        loaded(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            },
+            onFailure = { error ->
+                GitHubDeepProfileChunk(
+                    availability = listOf(
+                        failed(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            error = error,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+    private fun fetchTrafficClones(
+        request: GitHubRepositoryProfileRequest,
+        fetchedAtMillis: Long
+    ): GitHubDeepProfileChunk {
+        val source = GitHubRepositoryProfileSource.TrafficClonesApi
+        val startNs = System.nanoTime()
+        return http.fetchJson(
+            http.trafficClonesUrl(request.owner, request.repo),
+            request.lookupConfig.apiToken
+        ).fold(
+            onSuccess = { body ->
+                GitHubDeepProfileChunk(
+                    traffic = parseTrafficClones(body, fetchedAtMillis),
+                    availability = listOf(
+                        loaded(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            },
+            onFailure = { error ->
+                GitHubDeepProfileChunk(
+                    availability = listOf(
+                        failed(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            error = error,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+    private fun fetchForkCompareChunk(
+        request: GitHubRepositoryProfileRequest,
+        identity: GitHubRepositoryIdentityProfile,
+        lifecycle: GitHubRepositoryLifecycleProfile,
+        fetchedAtMillis: Long
+    ): GitHubDeepProfileChunk {
+        val startNs = System.nanoTime()
+        val localAvailability = mutableListOf<GitHubRepositoryProfileSourceState>()
+        val forkSync = fetchForkCompare(
+            request = request,
+            identity = identity,
+            lifecycle = lifecycle,
+            fetchedAtMillis = fetchedAtMillis,
+            availability = localAvailability
+        )
+        return GitHubDeepProfileChunk(
+            forkSync = forkSync,
+            availability = localAvailability.withMetadata(
+                elapsedMs = elapsedMsSince(startNs),
+                required = true
+            )
+        )
+    }
+
+    private fun fetchDependabotAlerts(
+        request: GitHubRepositoryProfileRequest,
+        fetchedAtMillis: Long
+    ): GitHubDeepProfileChunk {
+        val source = GitHubRepositoryProfileSource.DependabotAlertsApi
+        val startNs = System.nanoTime()
+        return http.fetchJson(
+            http.dependabotAlertsUrl(request.owner, request.repo),
+            request.lookupConfig.apiToken
+        ).fold(
+            onSuccess = { body ->
+                GitHubDeepProfileChunk(
+                    security = parseDependabotAlerts(body, fetchedAtMillis),
+                    availability = listOf(
+                        loaded(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            },
+            onFailure = { error ->
+                GitHubDeepProfileChunk(
+                    security = unavailableDependabotAlerts(fetchedAtMillis),
+                    availability = listOf(
+                        failed(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            error = error,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            }
+        )
+    }
+
+    private fun fetchCodeScanningAlerts(
+        request: GitHubRepositoryProfileRequest,
+        fetchedAtMillis: Long
+    ): GitHubDeepProfileChunk {
+        val source = GitHubRepositoryProfileSource.CodeScanningAlertsApi
+        val startNs = System.nanoTime()
+        return http.fetchJson(
+            http.codeScanningAlertsUrl(request.owner, request.repo),
+            request.lookupConfig.apiToken
+        ).fold(
+            onSuccess = { body ->
+                GitHubDeepProfileChunk(
+                    security = parseCodeScanningAlerts(body, fetchedAtMillis),
+                    availability = listOf(
+                        loaded(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            },
+            onFailure = { error ->
+                GitHubDeepProfileChunk(
+                    security = unavailableCodeScanningAlerts(fetchedAtMillis),
+                    availability = listOf(
+                        failed(
+                            source = source,
+                            fetchedAtMillis = fetchedAtMillis,
+                            error = error,
+                            elapsedMs = elapsedMsSince(startNs),
+                            required = true
+                        )
+                    )
+                )
+            }
+        )
+    }
+
     private fun fetchForkCompare(
         request: GitHubRepositoryProfileRequest,
         identity: GitHubRepositoryIdentityProfile,
@@ -390,6 +507,20 @@ internal class GitHubDeepRepositoryProfileSource(
         )
     }
 
+    private fun GitHubRepositoryForkSyncProfile.merge(
+        other: GitHubRepositoryForkSyncProfile
+    ): GitHubRepositoryForkSyncProfile {
+        return GitHubRepositoryForkSyncProfile(
+            baseFullName = other.baseFullName ?: baseFullName,
+            headFullName = other.headFullName ?: headFullName,
+            aheadBy = other.aheadBy ?: aheadBy,
+            behindBy = other.behindBy ?: behindBy,
+            status = other.status ?: status,
+            totalCommits = other.totalCommits ?: totalCommits,
+            comparedAtMillis = other.comparedAtMillis ?: comparedAtMillis
+        )
+    }
+
     private fun GitHubRepositorySecurityProfile.merge(
         other: GitHubRepositorySecurityProfile
     ): GitHubRepositorySecurityProfile {
@@ -405,8 +536,34 @@ internal class GitHubDeepRepositoryProfileSource(
         )
     }
 
+    private fun List<GitHubRepositoryProfileSourceState>.withMetadata(
+        elapsedMs: Long,
+        required: Boolean
+    ): List<GitHubRepositoryProfileSourceState> {
+        return map { state ->
+            state.copy(
+                elapsedMs = state.elapsedMs.takeIf { it > 0L } ?: elapsedMs,
+                required = required
+            )
+        }
+    }
+
+    private fun elapsedMsSince(startNs: Long): Long {
+        return ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
+    }
+
+    private data class GitHubDeepProfileChunk(
+        val traffic: GitHubRepositoryTrafficProfile = GitHubRepositoryTrafficProfile(),
+        val forkSync: GitHubRepositoryForkSyncProfile = GitHubRepositoryForkSyncProfile(),
+        val security: GitHubRepositorySecurityProfile = GitHubRepositorySecurityProfile(),
+        val availability: List<GitHubRepositoryProfileSourceState> = emptyList()
+    )
+
     companion object {
-        fun skippedAvailability(fetchedAtMillis: Long): List<GitHubRepositoryProfileSourceState> {
+        fun skippedAvailability(
+            fetchedAtMillis: Long,
+            message: String = "deep profile disabled"
+        ): List<GitHubRepositoryProfileSourceState> {
             return listOf(
                 GitHubRepositoryProfileSource.TrafficViewsApi,
                 GitHubRepositoryProfileSource.TrafficClonesApi,
@@ -417,11 +574,12 @@ internal class GitHubDeepRepositoryProfileSource(
                 skipped(
                     source = source,
                     fetchedAtMillis = fetchedAtMillis,
-                    message = "deep profile disabled"
+                    message = message
                 )
             }
         }
 
         private const val DEFAULT_COMPARE_BRANCH = "main"
+        private const val DEEP_SOURCE_CONCURRENCY = 3
     }
 }

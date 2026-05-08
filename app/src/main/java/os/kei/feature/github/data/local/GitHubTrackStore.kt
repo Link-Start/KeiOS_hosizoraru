@@ -14,7 +14,9 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
-import os.kei.feature.github.model.githubCheckSourceSignature
+import os.kei.feature.github.model.defaultRepositoryProfilePurpose
+import os.kei.feature.github.model.githubProfileSourceSignature
+import os.kei.feature.github.model.requiredCapabilities
 
 data class GitHubTrackSnapshot(
     val items: List<GitHubTrackedApp> = emptyList(),
@@ -407,12 +409,27 @@ object GitHubTrackStore {
     fun loadSnapshot(): GitHubTrackSnapshot {
         val lookupConfig = loadLookupConfig()
         val (checkCache, lastRefreshMs) = loadCheckCache()
+        val profilePurpose = lookupConfig.defaultRepositoryProfilePurpose()
+        val requiredProfileCapabilities = profilePurpose.requiredCapabilities(
+            lookupConfig.profileDepth
+        )
+        val activeProfileSignature = lookupConfig.githubProfileSourceSignature(
+            requiredProfileCapabilities
+        )
         val activeProfileCache = loadProfileCache().filterValues { profile ->
-            profile.isFreshFor(lookupConfig.githubCheckSourceSignature())
+            profile.isFreshFor(
+                activeSourceConfigSignature = activeProfileSignature,
+                requiredCapabilities = requiredProfileCapabilities
+            )
         }
         val mergedCheckCache = checkCache.mapValues { (id, entry) ->
             val freshProfile = entry.repositoryProfile
-                ?.takeIf { it.isFreshFor(lookupConfig.githubCheckSourceSignature()) }
+                ?.takeIf {
+                    it.isFreshFor(
+                        activeSourceConfigSignature = activeProfileSignature,
+                        requiredCapabilities = requiredProfileCapabilities
+                    )
+                }
                 ?: activeProfileCache[id]
             entry.copy(repositoryProfile = freshProfile)
         }

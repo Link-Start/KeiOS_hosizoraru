@@ -1,6 +1,7 @@
 package os.kei.feature.github.model
 
 import org.junit.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 class GitHubLookupModelsTest {
@@ -37,5 +38,37 @@ class GitHubLookupModelsTest {
         val deep = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
 
         assertEquals(false, basic.githubCheckSourceSignature() == deep.githubCheckSourceSignature())
+    }
+
+    @Test
+    fun `profile source signature follows purpose capability set`() {
+        val config = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
+        val fast =
+            config.githubProfileSourceSignature(GitHubRepositoryProfilePurpose.VersionCheckFast)
+        val health = config.githubProfileSourceSignature(GitHubRepositoryProfilePurpose.HealthCard)
+        val detail = config.githubProfileSourceSignature(GitHubRepositoryProfilePurpose.DetailFull)
+
+        assertEquals(false, fast == health)
+        assertEquals(false, health == detail)
+        assertContains(detail, GitHubRepositoryProfileCapability.Security.name)
+        assertContains(health, GitHubRepositoryProfileCapability.Actions.name)
+    }
+
+    @Test
+    fun `default profile purpose only promotes enabled health card`() {
+        assertEquals(
+            GitHubRepositoryProfilePurpose.VersionCheckFast,
+            GitHubLookupConfig(
+                decisionAssistEnabled = true,
+                repositoryHealthCardEnabled = false
+            ).defaultRepositoryProfilePurpose()
+        )
+        assertEquals(
+            GitHubRepositoryProfilePurpose.HealthCard,
+            GitHubLookupConfig(
+                decisionAssistEnabled = true,
+                repositoryHealthCardEnabled = true
+            ).defaultRepositoryProfilePurpose()
+        )
     }
 }

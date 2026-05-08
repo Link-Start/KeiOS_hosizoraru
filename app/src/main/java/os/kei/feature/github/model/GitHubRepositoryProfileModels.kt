@@ -23,6 +23,26 @@ enum class GitHubRepositoryProfileSource {
     Cache
 }
 
+enum class GitHubRepositoryProfilePurpose {
+    VersionCheckFast,
+    HealthCard,
+    DetailFull,
+    ManualDeepRefresh
+}
+
+enum class GitHubRepositoryProfileCapability {
+    RepositoryCore,
+    ReleaseSignals,
+    Distribution,
+    Actions,
+    Community,
+    HtmlRepository,
+    Traffic,
+    ForkSync,
+    Security,
+    LocalFit
+}
+
 enum class GitHubRepositoryProfileConfidence {
     High,
     Medium,
@@ -46,7 +66,10 @@ data class GitHubRepositoryProfileSourceState(
     val source: GitHubRepositoryProfileSource,
     val status: GitHubRepositoryProfileAvailabilityStatus,
     val fetchedAtMillis: Long,
-    val message: String = ""
+    val message: String = "",
+    val elapsedMs: Long = 0L,
+    val fromCache: Boolean = false,
+    val required: Boolean = false
 )
 
 data class GitHubRepositoryUpstreamProfile(
@@ -181,6 +204,8 @@ data class GitHubRepositoryProfileSnapshot(
     val repo: String,
     val sourceConfigSignature: String,
     val fetchedAtMillis: Long,
+    val purpose: GitHubRepositoryProfilePurpose = GitHubRepositoryProfilePurpose.VersionCheckFast,
+    val capabilities: Set<GitHubRepositoryProfileCapability> = emptySet(),
     val identity: GitHubRepositoryIdentityProfile = GitHubRepositoryIdentityProfile(),
     val lifecycle: GitHubRepositoryLifecycleProfile = GitHubRepositoryLifecycleProfile(),
     val activity: GitHubRepositoryActivityProfile = GitHubRepositoryActivityProfile(),
@@ -197,10 +222,65 @@ data class GitHubRepositoryProfileSnapshot(
     fun isFreshFor(
         activeSourceConfigSignature: String,
         nowMillis: Long = System.currentTimeMillis(),
-        ttlMillis: Long = DEFAULT_PROFILE_CACHE_TTL_MS
+        ttlMillis: Long = DEFAULT_PROFILE_CACHE_TTL_MS,
+        requiredCapabilities: Set<GitHubRepositoryProfileCapability> = emptySet()
     ): Boolean {
-        return sourceConfigSignature == activeSourceConfigSignature &&
-                nowMillis - fetchedAtMillis in 0 until ttlMillis
+        return sourceConfigSignature.profileSignatureBase() ==
+                activeSourceConfigSignature.profileSignatureBase() &&
+                nowMillis - fetchedAtMillis in 0 until ttlMillis &&
+                satisfiesCapabilities(requiredCapabilities)
+    }
+
+    fun satisfiesPurpose(
+        purpose: GitHubRepositoryProfilePurpose,
+        profileDepth: GitHubProfileDepth
+    ): Boolean {
+        return satisfiesCapabilities(purpose.requiredCapabilities(profileDepth))
+    }
+
+    fun satisfiesCapabilities(
+        requiredCapabilities: Set<GitHubRepositoryProfileCapability>
+    ): Boolean {
+        return requiredCapabilities.isEmpty() || capabilities.containsAll(requiredCapabilities)
+    }
+}
+
+private fun String.profileSignatureBase(): String {
+    return if (startsWith("profile-v1|")) {
+        substringBeforeLast('|')
+    } else {
+        this
+    }
+}
+
+fun GitHubRepositoryProfilePurpose.requiredCapabilities(
+    profileDepth: GitHubProfileDepth
+): Set<GitHubRepositoryProfileCapability> {
+    val fast = setOf(
+        GitHubRepositoryProfileCapability.RepositoryCore,
+        GitHubRepositoryProfileCapability.ReleaseSignals,
+        GitHubRepositoryProfileCapability.LocalFit
+    )
+    val health = fast + setOf(
+        GitHubRepositoryProfileCapability.Distribution,
+        GitHubRepositoryProfileCapability.Actions,
+        GitHubRepositoryProfileCapability.Community
+    )
+    val detail = health + GitHubRepositoryProfileCapability.HtmlRepository
+    val withDeep = if (profileDepth == GitHubProfileDepth.Deep) {
+        detail + setOf(
+            GitHubRepositoryProfileCapability.Traffic,
+            GitHubRepositoryProfileCapability.ForkSync,
+            GitHubRepositoryProfileCapability.Security
+        )
+    } else {
+        detail
+    }
+    return when (this) {
+        GitHubRepositoryProfilePurpose.VersionCheckFast -> fast
+        GitHubRepositoryProfilePurpose.HealthCard -> health
+        GitHubRepositoryProfilePurpose.DetailFull -> withDeep
+        GitHubRepositoryProfilePurpose.ManualDeepRefresh -> withDeep
     }
 }
 

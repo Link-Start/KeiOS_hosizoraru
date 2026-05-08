@@ -46,7 +46,10 @@ data class GitHubRepositoryProfileSourceSummaryRow(
     val source: GitHubRepositoryProfileSource,
     val status: GitHubRepositoryProfileAvailabilityStatus,
     val fetchedAtMillis: Long,
-    val message: String = ""
+    val message: String = "",
+    val elapsedMs: Long = 0L,
+    val fromCache: Boolean = false,
+    val required: Boolean = false
 )
 
 data class GitHubRepositoryProfileSummary(
@@ -71,7 +74,10 @@ object GitHubRepositoryProfileSummaryBuilder {
                     source = state.source,
                     status = state.status,
                     fetchedAtMillis = state.fetchedAtMillis,
-                    message = state.message
+                    message = state.message,
+                    elapsedMs = state.elapsedMs,
+                    fromCache = state.fromCache,
+                    required = state.required
                 )
             }
         )

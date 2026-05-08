@@ -15,11 +15,13 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubCheckSourceSignature
 import java.io.IOException
 
@@ -73,7 +75,8 @@ object GitHubReleaseCheckService {
                 item = item,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
-                localVersionCode = localVersionCode
+                localVersionCode = localVersionCode,
+                purpose = GitHubRepositoryProfilePurpose.VersionCheckFast
             )
             return GitHubTrackedReleaseCheck(
                 strategyId = lookupConfig.selectedStrategy.storageId,
@@ -104,7 +107,8 @@ object GitHubReleaseCheckService {
                 item = item,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
-                localVersionCode = localVersionCode
+                localVersionCode = localVersionCode,
+                purpose = GitHubRepositoryProfilePurpose.VersionCheckFast
             )
             return GitHubTrackedReleaseCheck(
                 strategyId = effectiveStrategy.id,
@@ -135,6 +139,7 @@ object GitHubReleaseCheckService {
             lookupConfig = lookupConfig,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
+            purpose = lookupConfig.defaultRepositoryProfilePurpose(),
             releaseSnapshot = snapshot,
             preciseStableApkVersion = preciseVersions.stable,
             precisePreReleaseApkVersion = preciseVersions.preRelease
@@ -332,6 +337,7 @@ object GitHubReleaseCheckService {
         lookupConfig: GitHubLookupConfig,
         localVersion: String,
         localVersionCode: Long,
+        purpose: GitHubRepositoryProfilePurpose = GitHubRepositoryProfilePurpose.VersionCheckFast,
         releaseSnapshot: GitHubRepositoryReleaseSnapshot? = null,
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null
@@ -342,6 +348,7 @@ object GitHubReleaseCheckService {
                     owner = item.owner,
                     repo = item.repo,
                     lookupConfig = lookupConfig,
+                    purpose = purpose,
                     releaseSnapshot = releaseSnapshot,
                     localPackageName = item.packageName,
                     localVersionName = localVersion,

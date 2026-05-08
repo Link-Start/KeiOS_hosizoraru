@@ -6,6 +6,7 @@ import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
@@ -209,6 +210,8 @@ internal class GitHubConfigActions(
             val preciseVersionChanged =
                 previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled
             val profileDepthChanged = previousConfig.profileDepth != newConfig.profileDepth
+            val profilePurposeChanged = previousConfig.defaultRepositoryProfilePurpose() !=
+                    newConfig.defaultRepositoryProfilePurpose()
             val shareImportChanged =
                 previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled ||
                         previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode
@@ -230,7 +233,11 @@ internal class GitHubConfigActions(
                 intervalChanged
             ).count { it }
             when {
-                checkScopeChanged || filteringChanged || preciseVersionChanged || profileDepthChanged -> {
+                checkScopeChanged ||
+                        filteringChanged ||
+                        preciseVersionChanged ||
+                        profileDepthChanged ||
+                        profilePurposeChanged -> {
                     repository.clearCheckCache()
                     state.checkStates.clear()
                     state.clearAllAssetUiState()

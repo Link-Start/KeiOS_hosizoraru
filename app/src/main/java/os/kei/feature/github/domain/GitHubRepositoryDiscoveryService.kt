@@ -264,16 +264,33 @@ internal class GitHubRepositoryDiscoveryService(
         val searchable = listOf(fullName, repo, description)
             .joinToString(" ")
             .lowercase(Locale.ROOT)
+        val searchableTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(searchable).toSet()
+        val compactRepo = GitHubRepositoryDiscoveryQueries.compactIdentifier(repo)
+        val compactSearchable = GitHubRepositoryDiscoveryQueries.compactIdentifier(searchable)
         val hasPackageName = searchContext.normalizedPackageName.isNotBlank() &&
                 searchable.contains(searchContext.normalizedPackageName)
         val hasFullLabel = searchContext.normalizedAppLabel.isNotBlank() &&
                 searchable.contains(searchContext.normalizedAppLabel)
         val tokenHits = searchContext.labelTokens.count { token -> searchable.contains(token) }
+        val packageTailTokenHits = searchContext.packageTailTokens.count { token ->
+            token in searchableTokens
+        }
+        val hasPackageTailInRepo =
+            searchContext.packageTail.length >= 3 &&
+                    repo.lowercase(Locale.ROOT).contains(searchContext.packageTail)
+        val hasCompactPackageTail =
+            searchContext.compactPackageTail.length >= 3 &&
+                    (
+                            compactRepo.contains(searchContext.compactPackageTail) ||
+                                    compactSearchable.contains(searchContext.compactPackageTail)
+                            )
+        val hasPackageTailTokens =
+            searchContext.packageTailTokens.size >= 2 &&
+                    packageTailTokenHits >= min(2, searchContext.packageTailTokens.size)
         val matchReason = when {
             hasPackageName -> GitHubRepositoryCandidateMatchReason.PackageName
             hasFullLabel || tokenHits >= 2 -> GitHubRepositoryCandidateMatchReason.AppLabel
-            searchContext.packageTail.length >= 3 &&
-                    repo.lowercase(Locale.ROOT).contains(searchContext.packageTail) ->
+            hasPackageTailInRepo || hasCompactPackageTail || hasPackageTailTokens ->
                 GitHubRepositoryCandidateMatchReason.RepositoryName
 
             else -> matchReason
@@ -285,6 +302,7 @@ internal class GitHubRepositoryDiscoveryService(
             GitHubRepositoryCandidateMatchReason.Starred -> 45
         } +
                 tokenHits * 8 +
+                packageTailTokenHits * 6 +
                 min(24, sqrt(starCount.toDouble()).toInt()) +
                 if (archived) -30 else 0 +
                         if (fork) -10 else 0
@@ -338,6 +356,7 @@ internal object GitHubRepositoryDiscoveryQueries {
         labelTokens: List<String>
     ): List<String> {
         val packageTail = packageName.substringAfterLast('.').trim()
+        val packageTailTokens = normalizedTokens(packageTail)
         return buildList {
             if (appLabel.isNotBlank()) {
                 add("$appLabel android in:name,description,readme")
@@ -347,6 +366,14 @@ internal object GitHubRepositoryDiscoveryQueries {
             }
             if (labelTokens.isNotEmpty()) {
                 add("${labelTokens.take(3).joinToString(" ")} android")
+            }
+            if (packageTailTokens.size >= 2) {
+                add("${packageTailTokens.take(4).joinToString(" ")} in:name,description,readme")
+                add(
+                    "${
+                        packageTailTokens.take(4).joinToString(" ")
+                    } android in:name,description,readme"
+                )
             }
             if (packageTail.length >= 3) {
                 add("$packageTail android in:name,description,readme")
@@ -372,6 +399,12 @@ internal object GitHubRepositoryDiscoveryQueries {
             .distinct()
     }
 
+    fun compactIdentifier(value: String): String {
+        return value
+            .lowercase(Locale.ROOT)
+            .replace(nonTokenRegex, "")
+    }
+
     private val ignoredTokens = setOf(
         "app",
         "android",
@@ -390,6 +423,8 @@ private data class AppRepositorySearchContext(
     val normalizedPackageName: String,
     val normalizedAppLabel: String,
     val packageTail: String,
+    val packageTailTokens: List<String>,
+    val compactPackageTail: String,
     val labelTokens: List<String>,
     val packageQuery: String,
     val queries: List<String>
@@ -406,6 +441,12 @@ private data class AppRepositorySearchContext(
                 normalizedPackageName = normalizedPackageName,
                 normalizedAppLabel = appLabel.lowercase(Locale.ROOT),
                 packageTail = normalizedPackageName.substringAfterLast('.'),
+                packageTailTokens = GitHubRepositoryDiscoveryQueries.normalizedTokens(
+                    normalizedPackageName.substringAfterLast('.')
+                ),
+                compactPackageTail = GitHubRepositoryDiscoveryQueries.compactIdentifier(
+                    normalizedPackageName.substringAfterLast('.')
+                ),
                 labelTokens = labelTokens,
                 packageQuery = GitHubRepositoryDiscoveryQueries.exactPackageQuery(packageName),
                 queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(

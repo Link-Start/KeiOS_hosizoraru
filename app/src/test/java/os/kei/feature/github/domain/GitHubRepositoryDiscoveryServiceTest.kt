@@ -289,6 +289,45 @@ class GitHubRepositoryDiscoveryServiceTest {
         )
     }
 
+    @Test
+    fun `installed app search matches package tail with different separators`() {
+        val app = InstalledAppItem(
+            label = "Hidden Apps",
+            packageName = "org.frknkrc44.hma_oss"
+        )
+        val target = candidate(
+            owner = "frknkrc44",
+            repo = "HMA-OSS",
+            description = "A ROOT REQUIRED LSPosed/Zygisk module.",
+            stars = 1_821,
+            matchReason = GitHubRepositoryCandidateMatchReason.RepositoryName,
+            sourceType = GitHubRepositoryDiscoverySourceType.RepositorySearch
+        )
+        val source = FakeDiscoverySource(
+            searchResults = mapOf(
+                "Hidden Apps android in:name,description,readme" to emptyList(),
+                "org.frknkrc44.hma_oss in:description,readme" to emptyList(),
+                "hidden apps android" to emptyList(),
+                "hma oss in:name,description,readme" to listOf(target),
+                "hma oss android in:name,description,readme" to listOf(target),
+                "hma_oss android in:name,description,readme" to emptyList()
+            )
+        )
+        val service = GitHubRepositoryDiscoveryService(source)
+
+        val result = service.searchRepositoriesForApp(
+            request = GitHubAppRepositorySearchRequest(app = app, limit = 10),
+            existingItems = emptyList()
+        ).getOrThrow()
+
+        assertEquals("frknkrc44/HMA-OSS", result.candidates.single().repository.fullName)
+        assertEquals(
+            GitHubRepositoryCandidateMatchReason.RepositoryName,
+            result.candidates.single().repository.matchReason
+        )
+        assertTrue(source.searchQueries.contains("hma oss in:name,description,readme"))
+    }
+
     private class FakeDiscoverySource(
         private val authenticatedStars: List<GitHubRepositoryCandidate> = emptyList(),
         private val publicStars: List<GitHubRepositoryCandidate> = emptyList(),

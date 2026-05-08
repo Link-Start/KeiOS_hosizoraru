@@ -264,6 +264,46 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
+    fun `resolver matches package tail when repository uses hyphen instead of underscore`() {
+        val target = candidate(
+            owner = "frknkrc44",
+            repo = "HMA-OSS",
+            description = "A ROOT REQUIRED LSPosed/Zygisk module to hide your app list.",
+            stars = 1_821
+        )
+        val discovery = QueryAwareDiscoverySource { query ->
+            when (query) {
+                "hma oss in:name,description,readme" -> listOf(target)
+                else -> emptyList()
+            }
+        }
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = mapOf("frknkrc44/hma-oss" to "org.frknkrc44.hma_oss")
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "org.frknkrc44.hma_oss",
+                appLabel = "HMA",
+                lookupConfig = GitHubLookupConfig(),
+                candidateLimit = 10,
+                verificationLimit = 3
+            )
+        ).getOrThrow()
+
+        assertEquals("frknkrc44", result.matchedCandidates.single().repository.owner)
+        assertEquals("HMA-OSS", result.matchedCandidates.single().repository.repo)
+        assertEquals(
+            "org.frknkrc44.hma_oss",
+            result.matchedCandidates.single().trackedApp.packageName
+        )
+    }
+
+    @Test
     fun `resolver keeps scanning when one repository search query fails`() {
         val target = candidate(
             owner = "example",
@@ -355,6 +395,21 @@ class GitHubPackageRepositoryResolverTest {
 
         assertTrue(queries.any { it.contains("Updater kmp android") })
         assertTrue(queries.any { it.contains("yukonga updater kmp android") })
+        assertEquals(queries.distinct(), queries)
+    }
+
+    @Test
+    fun `package repository queries include separator neutral package tail tokens`() {
+        val queries = GitHubPackageRepositoryQueries.forPackage(
+            packageName = "org.frknkrc44.hma_oss",
+            appLabel = "HMA"
+        )
+
+        assertTrue(queries.any { it.contains("HMA hma oss android") })
+        assertTrue(queries.any { it == "hma oss in:name,description,readme" })
+        assertTrue(queries.any { it.contains("frknkrc44 hma oss android") })
+        assertTrue(queries.any { it.contains("hma oss android") })
+        assertTrue(queries.any { it.contains("hma_oss android") })
         assertEquals(queries.distinct(), queries)
     }
 

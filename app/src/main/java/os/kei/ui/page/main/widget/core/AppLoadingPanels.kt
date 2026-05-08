@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,8 +28,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun AppAronaLoadingPanel(
     accent: Color,
     modifier: Modifier = Modifier,
-    height: Dp = 388.dp,
-    imageSize: Dp = 300.dp,
+    height: Dp = 316.dp,
+    imageSize: Dp = 152.dp,
+    contentOffsetY: Dp = (-6).dp,
     progressSize: Dp = 22.dp,
     textSize: TextUnit = 16.sp,
     showProgress: Boolean = true,
@@ -40,8 +42,9 @@ fun AppAronaLoadingPanel(
         contentAlignment = Alignment.Center,
     ) {
         Column(
+            modifier = Modifier.offset(y = contentOffsetY),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             AsyncImage(
                 model = R.drawable.ba_arona_await,

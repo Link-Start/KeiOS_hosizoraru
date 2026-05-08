@@ -7,6 +7,7 @@ import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
@@ -66,6 +67,7 @@ object GitHubTrackStore {
     private const val KEY_CHECK_ALL_TRACKED_PRE_RELEASES = "check_all_tracked_pre_releases"
     private const val KEY_AGGRESSIVE_APK_FILTERING = "github_aggressive_apk_filtering"
     private const val KEY_PRECISE_APK_VERSION_ENABLED = "github_precise_apk_version_enabled"
+    private const val KEY_PROFILE_DEPTH = "github_profile_depth"
     private const val KEY_SHARE_IMPORT_LINKAGE_ENABLED = "github_share_import_linkage_enabled"
     private const val KEY_SHARE_IMPORT_FLOW_MODE = "github_share_import_flow_mode"
     private const val KEY_ONLINE_SHARE_TARGET_PACKAGE = "github_online_share_target_package"
@@ -569,6 +571,9 @@ object GitHubTrackStore {
             checkAllTrackedPreReleases = kv().decodeBool(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, false),
             aggressiveApkFiltering = kv().decodeBool(KEY_AGGRESSIVE_APK_FILTERING, false),
             preciseApkVersionEnabled = kv().decodeBool(KEY_PRECISE_APK_VERSION_ENABLED, false),
+            profileDepth = GitHubProfileDepth.fromStorageId(
+                kv().decodeString(KEY_PROFILE_DEPTH).orEmpty()
+            ),
             shareImportLinkageEnabled = kv().decodeBool(KEY_SHARE_IMPORT_LINKAGE_ENABLED, false),
             shareImportFlowMode = GitHubShareImportFlowMode.fromStorageId(
                 kv().decodeString(KEY_SHARE_IMPORT_FLOW_MODE).orEmpty()
@@ -595,6 +600,7 @@ object GitHubTrackStore {
         kv().encode(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, config.checkAllTrackedPreReleases)
         kv().encode(KEY_AGGRESSIVE_APK_FILTERING, config.aggressiveApkFiltering)
         kv().encode(KEY_PRECISE_APK_VERSION_ENABLED, config.preciseApkVersionEnabled)
+        kv().encode(KEY_PROFILE_DEPTH, config.profileDepth.storageId)
         kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
         kv().encode(KEY_SHARE_IMPORT_FLOW_MODE, config.shareImportFlowMode.storageId)
         kv().encode(KEY_ONLINE_SHARE_TARGET_PACKAGE, config.onlineShareTargetPackage.trim())

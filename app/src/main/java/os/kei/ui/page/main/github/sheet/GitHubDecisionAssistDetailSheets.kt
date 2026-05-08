@@ -590,10 +590,13 @@ private fun GitHubRepositoryHealthReason.labelRes(): Int {
         GitHubRepositoryHealthReason.RepositoryFork -> R.string.github_health_reason_repository_fork
         GitHubRepositoryHealthReason.ForkUpstreamArchived -> R.string.github_health_reason_fork_upstream_archived
         GitHubRepositoryHealthReason.ForkBehindUpstream -> R.string.github_health_reason_fork_behind_upstream
+        GitHubRepositoryHealthReason.ForkCompareCurrent -> R.string.github_health_reason_fork_compare_current
+        GitHubRepositoryHealthReason.ForkCompareBehind -> R.string.github_health_reason_fork_compare_behind
         GitHubRepositoryHealthReason.ForkMaintainedIndependently -> R.string.github_health_reason_fork_independent
         GitHubRepositoryHealthReason.ForkTracksUpstream -> R.string.github_health_reason_fork_tracks_upstream
         GitHubRepositoryHealthReason.StaleRepositoryActivity -> R.string.github_health_reason_stale_repository_activity
         GitHubRepositoryHealthReason.StaleRelease -> R.string.github_health_reason_stale_release
+        GitHubRepositoryHealthReason.TrafficRecentlyActive -> R.string.github_health_reason_traffic_recent
         GitHubRepositoryHealthReason.ActionsHealthy -> R.string.github_health_reason_actions_healthy
         GitHubRepositoryHealthReason.ActionsFailing -> R.string.github_health_reason_actions_failing
         GitHubRepositoryHealthReason.AndroidAssetsDetected -> R.string.github_health_reason_android_assets_detected
@@ -601,6 +604,8 @@ private fun GitHubRepositoryHealthReason.labelRes(): Int {
         GitHubRepositoryHealthReason.CommunityProfileComplete -> R.string.github_health_reason_community_complete
         GitHubRepositoryHealthReason.MissingReadme -> R.string.github_health_reason_missing_readme
         GitHubRepositoryHealthReason.MissingLicense -> R.string.github_health_reason_missing_license
+        GitHubRepositoryHealthReason.SecuritySignalsAvailable -> R.string.github_health_reason_security_available
+        GitHubRepositoryHealthReason.OpenSecurityAlerts -> R.string.github_health_reason_security_alerts
         GitHubRepositoryHealthReason.LocalPackageMatched -> R.string.github_health_reason_local_package_matched
         GitHubRepositoryHealthReason.LocalPackageMismatch -> R.string.github_health_reason_local_package_mismatch
         GitHubRepositoryHealthReason.UpdateAvailable -> R.string.github_health_reason_update_available

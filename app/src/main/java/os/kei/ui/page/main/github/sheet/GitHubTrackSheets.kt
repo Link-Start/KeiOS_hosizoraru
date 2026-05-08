@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.ui.page.main.github.GitHubOverviewMetricItem
@@ -56,6 +57,7 @@ internal fun GitHubCheckLogicSheet(
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
+    profileDepthInput: GitHubProfileDepth,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
     onlineShareTargetPackageInput: String,
@@ -89,6 +91,7 @@ internal fun GitHubCheckLogicSheet(
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
+    onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
@@ -149,6 +152,7 @@ internal fun GitHubCheckLogicSheet(
             checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
                 preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
+                profileDepthInput != lookupConfig.profileDepth ||
             shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
                 shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
             onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
@@ -176,10 +180,12 @@ internal fun GitHubCheckLogicSheet(
                 checkAllTrackedPreReleasesInput = checkAllTrackedPreReleasesInput,
                 aggressiveApkFilteringInput = aggressiveApkFilteringInput,
                 preciseApkVersionEnabledInput = preciseApkVersionEnabledInput,
+                profileDepthInput = profileDepthInput,
                 onRefreshIntervalHoursInputChange = onRefreshIntervalHoursInputChange,
                 onCheckAllTrackedPreReleasesInputChange = onCheckAllTrackedPreReleasesInputChange,
                 onAggressiveApkFilteringInputChange = onAggressiveApkFilteringInputChange,
                 onPreciseApkVersionEnabledInputChange = onPreciseApkVersionEnabledInputChange,
+                onProfileDepthInputChange = onProfileDepthInputChange,
                 onShowCheckLogicIntervalPopupChange = onShowCheckLogicIntervalPopupChange,
                 onCheckLogicIntervalPopupAnchorBoundsChange = onCheckLogicIntervalPopupAnchorBoundsChange
             )
@@ -371,10 +377,12 @@ private fun GitHubCheckStrategySection(
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
+    profileDepthInput: GitHubProfileDepth,
     onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
+    onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShowCheckLogicIntervalPopupChange: (Boolean) -> Unit,
     onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
@@ -427,6 +435,19 @@ private fun GitHubCheckStrategySection(
             AppSwitch(
                 checked = preciseApkVersionEnabledInput,
                 onCheckedChange = onPreciseApkVersionEnabledInputChange
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_deep_profile),
+            summary = stringResource(R.string.github_check_sheet_summary_deep_profile)
+        ) {
+            AppSwitch(
+                checked = profileDepthInput == GitHubProfileDepth.Deep,
+                onCheckedChange = { enabled ->
+                    onProfileDepthInputChange(
+                        if (enabled) GitHubProfileDepth.Deep else GitHubProfileDepth.Basic
+                    )
+                }
             )
         }
     }

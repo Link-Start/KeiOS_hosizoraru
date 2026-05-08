@@ -31,6 +31,7 @@ import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
@@ -131,6 +132,7 @@ internal class GitHubPageState(
     var checkAllTrackedPreReleasesInput by mutableStateOf(false)
     var aggressiveApkFilteringInput by mutableStateOf(false)
     var preciseApkVersionEnabledInput by mutableStateOf(false)
+    var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
     var onlineShareTargetPackageInput by mutableStateOf("")

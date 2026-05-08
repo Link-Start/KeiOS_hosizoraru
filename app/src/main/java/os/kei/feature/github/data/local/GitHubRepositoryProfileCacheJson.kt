@@ -7,6 +7,7 @@ import os.kei.feature.github.model.GitHubRepositoryActionsProfile
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
 import os.kei.feature.github.model.GitHubRepositoryCommunityProfile
 import os.kei.feature.github.model.GitHubRepositoryDistributionProfile
+import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryLocalFitProfile
@@ -17,6 +18,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryProfileSourceState
 import os.kei.feature.github.model.GitHubRepositoryReleasesProfile
 import os.kei.feature.github.model.GitHubRepositorySecurityProfile
+import os.kei.feature.github.model.GitHubRepositoryTrafficProfile
 import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 
 internal fun GitHubRepositoryProfileSnapshot.toCacheJson(): JSONObject {
@@ -32,6 +34,8 @@ internal fun GitHubRepositoryProfileSnapshot.toCacheJson(): JSONObject {
         .put("distribution", distribution.toCacheJson())
         .put("actions", actions.toCacheJson())
         .put("community", community.toCacheJson())
+        .put("traffic", traffic.toCacheJson())
+        .put("forkSync", forkSync.toCacheJson())
         .put("security", security.toCacheJson())
         .put("localFit", localFit.toCacheJson())
         .put(
@@ -73,6 +77,8 @@ internal fun parseGitHubRepositoryProfileSnapshot(
         distribution = parseDistribution(obj.optJSONObject("distribution")),
         actions = parseActions(obj.optJSONObject("actions")),
         community = parseCommunity(obj.optJSONObject("community")),
+        traffic = parseTraffic(obj.optJSONObject("traffic")),
+        forkSync = parseForkSync(obj.optJSONObject("forkSync")),
         security = parseSecurity(obj.optJSONObject("security")),
         localFit = parseLocalFit(obj.optJSONObject("localFit")),
         sourceAvailability = parseSourceAvailability(obj.optJSONArray("sourceAvailability"))
@@ -169,10 +175,31 @@ private fun GitHubRepositoryCommunityProfile.toCacheJson(): JSONObject =
         .putField("hasIssueTemplate", hasIssueTemplate)
         .putField("hasPullRequestTemplate", hasPullRequestTemplate)
 
+private fun GitHubRepositoryTrafficProfile.toCacheJson(): JSONObject =
+    JSONObject()
+        .putField("viewCount", viewCount)
+        .putField("viewUniques", viewUniques)
+        .putField("cloneCount", cloneCount)
+        .putField("cloneUniques", cloneUniques)
+        .putField("latestViewBucketAtMillis", latestViewBucketAtMillis)
+        .putField("latestCloneBucketAtMillis", latestCloneBucketAtMillis)
+
+private fun GitHubRepositoryForkSyncProfile.toCacheJson(): JSONObject =
+    JSONObject()
+        .putField("baseFullName", baseFullName)
+        .putField("headFullName", headFullName)
+        .putField("aheadBy", aheadBy)
+        .putField("behindBy", behindBy)
+        .putField("status", status)
+        .putField("totalCommits", totalCommits)
+        .putField("comparedAtMillis", comparedAtMillis)
+
 private fun GitHubRepositorySecurityProfile.toCacheJson(): JSONObject =
     JSONObject()
         .putField("dependabotAlertsAvailable", dependabotAlertsAvailable)
+        .putField("openDependabotAlertsCount", openDependabotAlertsCount)
         .putField("codeScanningAvailable", codeScanningAvailable)
+        .putField("openCodeScanningAlertsCount", openCodeScanningAlertsCount)
         .putField("secretScanningAvailable", secretScanningAvailable)
 
 private fun GitHubRepositoryLocalFitProfile.toCacheJson(): JSONObject =
@@ -306,11 +333,38 @@ private fun parseCommunity(obj: JSONObject?): GitHubRepositoryCommunityProfile {
     )
 }
 
+private fun parseTraffic(obj: JSONObject?): GitHubRepositoryTrafficProfile {
+    obj ?: return GitHubRepositoryTrafficProfile()
+    return GitHubRepositoryTrafficProfile(
+        viewCount = obj.intField("viewCount"),
+        viewUniques = obj.intField("viewUniques"),
+        cloneCount = obj.intField("cloneCount"),
+        cloneUniques = obj.intField("cloneUniques"),
+        latestViewBucketAtMillis = obj.longField("latestViewBucketAtMillis"),
+        latestCloneBucketAtMillis = obj.longField("latestCloneBucketAtMillis")
+    )
+}
+
+private fun parseForkSync(obj: JSONObject?): GitHubRepositoryForkSyncProfile {
+    obj ?: return GitHubRepositoryForkSyncProfile()
+    return GitHubRepositoryForkSyncProfile(
+        baseFullName = obj.stringField("baseFullName"),
+        headFullName = obj.stringField("headFullName"),
+        aheadBy = obj.intField("aheadBy"),
+        behindBy = obj.intField("behindBy"),
+        status = obj.stringField("status"),
+        totalCommits = obj.intField("totalCommits"),
+        comparedAtMillis = obj.longField("comparedAtMillis")
+    )
+}
+
 private fun parseSecurity(obj: JSONObject?): GitHubRepositorySecurityProfile {
     obj ?: return GitHubRepositorySecurityProfile()
     return GitHubRepositorySecurityProfile(
         dependabotAlertsAvailable = obj.booleanField("dependabotAlertsAvailable"),
+        openDependabotAlertsCount = obj.intField("openDependabotAlertsCount"),
         codeScanningAvailable = obj.booleanField("codeScanningAvailable"),
+        openCodeScanningAlertsCount = obj.intField("openCodeScanningAlertsCount"),
         secretScanningAvailable = obj.booleanField("secretScanningAvailable")
     )
 }

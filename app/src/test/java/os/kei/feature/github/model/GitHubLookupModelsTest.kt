@@ -23,4 +23,19 @@ class GitHubLookupModelsTest {
             GitHubShareImportFlowMode.fromStorageId("missing")
         )
     }
+
+    @Test
+    fun `profile depth resolves storage ids`() {
+        assertEquals(GitHubProfileDepth.Basic, GitHubProfileDepth.fromStorageId("basic"))
+        assertEquals(GitHubProfileDepth.Deep, GitHubProfileDepth.fromStorageId("deep"))
+        assertEquals(GitHubProfileDepth.Basic, GitHubProfileDepth.fromStorageId("missing"))
+    }
+
+    @Test
+    fun `profile depth participates in check source signature`() {
+        val basic = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic)
+        val deep = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
+
+        assertEquals(false, basic.githubCheckSourceSignature() == deep.githubCheckSourceSignature())
+    }
 }

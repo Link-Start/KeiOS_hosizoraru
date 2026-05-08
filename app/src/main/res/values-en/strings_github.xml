@@ -24,6 +24,7 @@
     <string name="github_toast_actions_api_credential_saved">Actions API credential settings saved</string>
     <string name="github_toast_strategy_unchanged">Fetch strategy unchanged</string>
     <string name="github_toast_check_logic_updated_recheck">Check logic updated. Rechecking.</string>
+    <string name="github_toast_profile_depth_updated_recheck">Profile depth changed. Rechecking.</string>
     <string name="github_toast_check_logic_saved">Check logic saved</string>
     <string name="github_toast_preferences_saved">GitHub preferences saved</string>
     <string name="github_toast_share_import_setting_saved">Share import settings saved</string>
@@ -402,6 +403,8 @@
     <string name="github_check_sheet_summary_aggressive_filter">Ignore `armeabi-v7a`, `armeabi`, `x86_64`, and `x86`; when arm64-v8a exists, ignore universal as well.</string>
     <string name="github_check_sheet_label_precise_apk_version">More precise version logic</string>
     <string name="github_check_sheet_summary_precise_apk_version">Reads real versionName and versionCode from remote APK Manifest data; large tracking lists may spend a little more time parsing.</string>
+    <string name="github_check_sheet_label_deep_profile">Deep repository profile</string>
+    <string name="github_check_sheet_summary_deep_profile">Also reads traffic, fork sync, and security scanning endpoints. It uses more requests and works best with a token.</string>
     <string name="github_check_sheet_label_downloader">Downloader</string>
     <string name="github_check_sheet_summary_downloader">Used for opening direct download links; follows system default by default.</string>
     <string name="github_check_sheet_label_share_import_linkage">Share import linkage</string>
@@ -715,10 +718,13 @@
     <string name="github_health_reason_repository_fork">Repository fork</string>
     <string name="github_health_reason_fork_upstream_archived">Upstream archived</string>
     <string name="github_health_reason_fork_behind_upstream">Fork behind upstream</string>
+    <string name="github_health_reason_fork_compare_current">Fork synced with upstream</string>
+    <string name="github_health_reason_fork_compare_behind">Fork compare is behind</string>
     <string name="github_health_reason_fork_independent">Fork maintained independently</string>
     <string name="github_health_reason_fork_tracks_upstream">Fork follows active upstream</string>
     <string name="github_health_reason_stale_repository_activity">Repository activity is stale</string>
     <string name="github_health_reason_stale_release">Release cadence is stale</string>
+    <string name="github_health_reason_traffic_recent">Recent views or clones</string>
     <string name="github_health_reason_actions_healthy">Recent Actions success</string>
     <string name="github_health_reason_actions_failing">Recent Actions failure</string>
     <string name="github_health_reason_android_assets_detected">Android assets detected</string>
@@ -726,6 +732,8 @@
     <string name="github_health_reason_community_complete">Community profile complete</string>
     <string name="github_health_reason_missing_readme">Missing README</string>
     <string name="github_health_reason_missing_license">Missing license</string>
+    <string name="github_health_reason_security_available">Security signals available</string>
+    <string name="github_health_reason_security_alerts">Open security alerts</string>
     <string name="github_health_reason_local_package_matched">Package name matched</string>
     <string name="github_health_reason_local_package_mismatch">Package name mismatch</string>
     <string name="github_health_reason_update_available">Update available</string>

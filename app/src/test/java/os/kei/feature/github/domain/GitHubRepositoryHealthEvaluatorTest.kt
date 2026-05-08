@@ -4,12 +4,15 @@ import org.junit.Test
 import os.kei.feature.github.model.GitHubDecisionLevel
 import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
+import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryHealthInput
 import os.kei.feature.github.model.GitHubRepositoryHealthReason
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
+import os.kei.feature.github.model.GitHubRepositorySecurityProfile
+import os.kei.feature.github.model.GitHubRepositoryTrafficProfile
 import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -68,6 +71,28 @@ class GitHubRepositoryHealthEvaluatorTest {
         assertTrue(GitHubRepositoryHealthReason.ForkBehindUpstream in health.reasons)
     }
 
+    @Test
+    fun `deep fork compare and security signals adjust score weakly`() {
+        val health = GitHubRepositoryHealthEvaluator.evaluate(
+            input = baseInput(
+                profile = profile(
+                    fork = false,
+                    pushedAtMillis = NOW - 15L * DAY_MS,
+                    upstreamArchived = false,
+                    upstreamPushedAtMillis = NOW - 10L * DAY_MS,
+                    forkSyncBehindBy = 4,
+                    openSecurityAlerts = 2,
+                    trafficLatestAtMillis = NOW - DAY_MS
+                )
+            ),
+            nowMillis = NOW
+        )
+
+        assertTrue(GitHubRepositoryHealthReason.ForkCompareBehind in health.reasons)
+        assertTrue(GitHubRepositoryHealthReason.OpenSecurityAlerts in health.reasons)
+        assertTrue(health.score >= 55)
+    }
+
     private fun baseInput(
         profile: GitHubRepositoryProfileSnapshot
     ): GitHubRepositoryHealthInput {
@@ -88,7 +113,10 @@ class GitHubRepositoryHealthEvaluatorTest {
         fork: Boolean = false,
         pushedAtMillis: Long,
         upstreamArchived: Boolean = false,
-        upstreamPushedAtMillis: Long = -1L
+        upstreamPushedAtMillis: Long = -1L,
+        forkSyncBehindBy: Int = 0,
+        openSecurityAlerts: Int = 0,
+        trafficLatestAtMillis: Long = -1L
     ): GitHubRepositoryProfileSnapshot {
         return GitHubRepositoryProfileSnapshot(
             owner = "demo",
@@ -110,6 +138,18 @@ class GitHubRepositoryHealthEvaluatorTest {
             ),
             activity = GitHubRepositoryActivityProfile(
                 pushedAtMillis = field(pushedAtMillis)
+            ),
+            traffic = GitHubRepositoryTrafficProfile(
+                viewCount = field(if (trafficLatestAtMillis > 0L) 10 else 0),
+                latestViewBucketAtMillis = field(trafficLatestAtMillis)
+            ),
+            forkSync = GitHubRepositoryForkSyncProfile(
+                behindBy = field(forkSyncBehindBy),
+                comparedAtMillis = field(if (fork) NOW else -1L)
+            ),
+            security = GitHubRepositorySecurityProfile(
+                dependabotAlertsAvailable = field(true),
+                openDependabotAlertsCount = field(openSecurityAlerts)
             )
         )
     }

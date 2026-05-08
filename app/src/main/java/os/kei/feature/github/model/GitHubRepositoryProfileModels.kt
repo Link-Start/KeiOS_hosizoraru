@@ -13,6 +13,11 @@ enum class GitHubRepositoryProfileSource {
     ActionsRunsApi,
     ActionsArtifactsApi,
     CommunityProfileApi,
+    TrafficViewsApi,
+    TrafficClonesApi,
+    ForkCompareApi,
+    DependabotAlertsApi,
+    CodeScanningAlertsApi,
     LocalInstall,
     OptionalEnhancedEndpoint,
     Cache
@@ -134,9 +139,30 @@ data class GitHubRepositoryCommunityProfile(
     val hasPullRequestTemplate: GitHubProfileField<Boolean>? = null
 )
 
+data class GitHubRepositoryTrafficProfile(
+    val viewCount: GitHubProfileField<Int>? = null,
+    val viewUniques: GitHubProfileField<Int>? = null,
+    val cloneCount: GitHubProfileField<Int>? = null,
+    val cloneUniques: GitHubProfileField<Int>? = null,
+    val latestViewBucketAtMillis: GitHubProfileField<Long>? = null,
+    val latestCloneBucketAtMillis: GitHubProfileField<Long>? = null
+)
+
+data class GitHubRepositoryForkSyncProfile(
+    val baseFullName: GitHubProfileField<String>? = null,
+    val headFullName: GitHubProfileField<String>? = null,
+    val aheadBy: GitHubProfileField<Int>? = null,
+    val behindBy: GitHubProfileField<Int>? = null,
+    val status: GitHubProfileField<String>? = null,
+    val totalCommits: GitHubProfileField<Int>? = null,
+    val comparedAtMillis: GitHubProfileField<Long>? = null
+)
+
 data class GitHubRepositorySecurityProfile(
     val dependabotAlertsAvailable: GitHubProfileField<Boolean>? = null,
+    val openDependabotAlertsCount: GitHubProfileField<Int>? = null,
     val codeScanningAvailable: GitHubProfileField<Boolean>? = null,
+    val openCodeScanningAlertsCount: GitHubProfileField<Int>? = null,
     val secretScanningAvailable: GitHubProfileField<Boolean>? = null
 )
 
@@ -162,6 +188,8 @@ data class GitHubRepositoryProfileSnapshot(
     val distribution: GitHubRepositoryDistributionProfile = GitHubRepositoryDistributionProfile(),
     val actions: GitHubRepositoryActionsProfile = GitHubRepositoryActionsProfile(),
     val community: GitHubRepositoryCommunityProfile = GitHubRepositoryCommunityProfile(),
+    val traffic: GitHubRepositoryTrafficProfile = GitHubRepositoryTrafficProfile(),
+    val forkSync: GitHubRepositoryForkSyncProfile = GitHubRepositoryForkSyncProfile(),
     val security: GitHubRepositorySecurityProfile = GitHubRepositorySecurityProfile(),
     val localFit: GitHubRepositoryLocalFitProfile = GitHubRepositoryLocalFitProfile(),
     val sourceAvailability: List<GitHubRepositoryProfileSourceState> = emptyList()
@@ -194,10 +222,13 @@ enum class GitHubRepositoryHealthReason {
     RepositoryFork,
     ForkUpstreamArchived,
     ForkBehindUpstream,
+    ForkCompareCurrent,
+    ForkCompareBehind,
     ForkMaintainedIndependently,
     ForkTracksUpstream,
     StaleRepositoryActivity,
     StaleRelease,
+    TrafficRecentlyActive,
     ActionsHealthy,
     ActionsFailing,
     AndroidAssetsDetected,
@@ -205,6 +236,8 @@ enum class GitHubRepositoryHealthReason {
     CommunityProfileComplete,
     MissingReadme,
     MissingLicense,
+    SecuritySignalsAvailable,
+    OpenSecurityAlerts,
     LocalPackageMatched,
     LocalPackageMismatch,
     UpdateAvailable,

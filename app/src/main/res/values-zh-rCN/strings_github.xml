@@ -24,6 +24,7 @@
     <string name="github_toast_actions_api_credential_saved">已保存 Actions API 凭证设置</string>
     <string name="github_toast_strategy_unchanged">抓取方案未变化</string>
     <string name="github_toast_check_logic_updated_recheck">已更新检查逻辑，正在重新检查</string>
+    <string name="github_toast_profile_depth_updated_recheck">已切换画像深度，正在重新检查</string>
     <string name="github_toast_check_logic_saved">已保存检查逻辑</string>
     <string name="github_toast_preferences_saved">已保存 GitHub 偏好设置</string>
     <string name="github_toast_share_import_setting_saved">已保存分享导入设置</string>
@@ -394,6 +395,8 @@
     <string name="github_check_sheet_summary_aggressive_filter">忽略 `armeabi-v7a`、`armeabi`、`x86_64`、`x86`；若有 arm64-v8a 也忽略 universal</string>
     <string name="github_check_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
     <string name="github_check_sheet_summary_precise_apk_version">从远端 APK Manifest 读取真实 versionName 与 versionCode；追踪项目较多时会增加少量解析耗时</string>
+    <string name="github_check_sheet_label_deep_profile">深度仓库画像</string>
+    <string name="github_check_sheet_summary_deep_profile">额外读取流量、fork 同步与安全扫描端点；需要更多请求，Token 下信息更完整</string>
     <string name="github_check_sheet_label_downloader">下载器</string>
     <string name="github_check_sheet_summary_downloader">用于直链下载跳转；默认跟随系统</string>
     <string name="github_check_sheet_label_share_import_linkage">分享导入联动</string>
@@ -707,10 +710,13 @@
     <string name="github_health_reason_repository_fork">仓库为 Fork</string>
     <string name="github_health_reason_fork_upstream_archived">上游已归档</string>
     <string name="github_health_reason_fork_behind_upstream">Fork 落后上游</string>
+    <string name="github_health_reason_fork_compare_current">Fork 与上游同步</string>
+    <string name="github_health_reason_fork_compare_behind">Fork 同步落后</string>
     <string name="github_health_reason_fork_independent">Fork 持续独立维护</string>
     <string name="github_health_reason_fork_tracks_upstream">Fork 跟随活跃上游</string>
     <string name="github_health_reason_stale_repository_activity">仓库活跃度偏低</string>
     <string name="github_health_reason_stale_release">发布节奏偏慢</string>
+    <string name="github_health_reason_traffic_recent">近期有访问或克隆</string>
     <string name="github_health_reason_actions_healthy">Actions 近期成功</string>
     <string name="github_health_reason_actions_failing">Actions 近期失败</string>
     <string name="github_health_reason_android_assets_detected">发现 Android 产物</string>
@@ -718,6 +724,8 @@
     <string name="github_health_reason_community_complete">社区资料完整</string>
     <string name="github_health_reason_missing_readme">缺少 README</string>
     <string name="github_health_reason_missing_license">缺少许可证</string>
+    <string name="github_health_reason_security_available">安全信号可用</string>
+    <string name="github_health_reason_security_alerts">存在安全告警</string>
     <string name="github_health_reason_local_package_matched">包名匹配</string>
     <string name="github_health_reason_local_package_mismatch">包名不匹配</string>
     <string name="github_health_reason_update_available">有可用更新</string>

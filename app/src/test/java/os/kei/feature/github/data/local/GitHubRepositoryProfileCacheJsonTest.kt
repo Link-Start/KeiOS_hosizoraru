@@ -3,12 +3,15 @@ package os.kei.feature.github.data.local
 import org.junit.Test
 import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
+import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryProfileSourceState
+import os.kei.feature.github.model.GitHubRepositorySecurityProfile
+import os.kei.feature.github.model.GitHubRepositoryTrafficProfile
 import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -34,6 +37,21 @@ class GitHubRepositoryProfileCacheJsonTest {
             activity = GitHubRepositoryActivityProfile(
                 pushedAtMillis = field(1_700_000_000_000L)
             ),
+            traffic = GitHubRepositoryTrafficProfile(
+                viewCount = field(42),
+                cloneCount = field(7)
+            ),
+            forkSync = GitHubRepositoryForkSyncProfile(
+                aheadBy = field(2),
+                behindBy = field(3),
+                status = field("behind")
+            ),
+            security = GitHubRepositorySecurityProfile(
+                dependabotAlertsAvailable = field(true),
+                openDependabotAlertsCount = field(1),
+                codeScanningAvailable = field(true),
+                openCodeScanningAlertsCount = field(0)
+            ),
             sourceAvailability = listOf(
                 GitHubRepositoryProfileSourceState(
                     source = GitHubRepositoryProfileSource.GitHubApiRepository,
@@ -51,6 +69,9 @@ class GitHubRepositoryProfileCacheJsonTest {
         assertTrue(restored.lifecycle.archived?.value == true)
         assertEquals("upstream/app", restored.lifecycle.upstream?.fullName?.value)
         assertFalse(restored.lifecycle.upstream?.archived?.value == true)
+        assertEquals(42, restored.traffic.viewCount?.value)
+        assertEquals(3, restored.forkSync.behindBy?.value)
+        assertEquals(1, restored.security.openDependabotAlertsCount?.value)
         assertEquals(
             GitHubRepositoryProfileSource.GitHubApiRepository,
             restored.sourceAvailability.single().source

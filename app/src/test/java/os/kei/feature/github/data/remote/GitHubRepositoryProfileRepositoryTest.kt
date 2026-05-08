@@ -1,22 +1,37 @@
 package os.kei.feature.github.data.remote
 
+import okhttp3.mockwebserver.Dispatcher
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Test
 import os.kei.feature.github.model.GitHubAtomFeed
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GitHubRepositoryProfileRepositoryTest {
-    private val repository = GitHubRepositoryProfileRepository()
+    private val http = GitHubRepositoryProfileHttpClient(
+        apiBaseUrl = "https://api.github.test",
+        htmlBaseUrl = "https://github.test"
+    )
+    private val apiSource = GitHubApiRepositoryProfileSource(http)
+    private val htmlSource = GitHubHtmlRepositoryProfileSource(http)
+    private val communitySource = GitHubCommunityProfileSource(http)
+    private val deepSource = GitHubDeepRepositoryProfileSource(http)
 
     @Test
     fun `api repository profile parses lifecycle fork upstream and community basics`() {
-        val profile = repository.parseApiRepositoryProfile(
+        val profile = apiSource.parse(
             json = apiRepositoryJson(archived = true, fork = true),
             fallbackOwner = "demo",
             fallbackRepo = "app",
@@ -37,7 +52,7 @@ class GitHubRepositoryProfileRepositoryTest {
 
     @Test
     fun `api repository profile handles disabled repo without license or topics`() {
-        val profile = repository.parseApiRepositoryProfile(
+        val profile = apiSource.parse(
             json = apiRepositoryJson(
                 archived = false,
                 fork = false,
@@ -67,7 +82,7 @@ class GitHubRepositoryProfileRepositoryTest {
             </html>
         """.trimIndent()
 
-        val profile = repository.parseHtmlRepositoryProfile(
+        val profile = htmlSource.parse(
             html = html,
             owner = "venera-app",
             repo = "venera",
@@ -83,14 +98,14 @@ class GitHubRepositoryProfileRepositoryTest {
 
     @Test
     fun `release profile keeps atom and api signals in the same shape`() {
-        val atomProfile = repository.buildReleasesProfileFromSnapshot(
+        val atomProfile = GitHubReleaseProfileSource.build(
             snapshot = releaseSnapshot(
                 strategyId = "atom_feed",
                 source = GitHubReleaseSignalSource.AtomEntry
             ),
             fetchedAtMillis = FETCHED_AT
         )
-        val apiProfile = repository.buildReleasesProfileFromSnapshot(
+        val apiProfile = GitHubReleaseProfileSource.build(
             snapshot = releaseSnapshot(
                 strategyId = "github_api_token",
                 source = GitHubReleaseSignalSource.GitHubApi
@@ -113,7 +128,7 @@ class GitHubRepositoryProfileRepositoryTest {
 
     @Test
     fun `community profile parses required files`() {
-        val profile = repository.parseCommunityProfile(
+        val profile = communitySource.parse(
             json = """
                 {
                   "health_percentage": 87,
@@ -138,6 +153,121 @@ class GitHubRepositoryProfileRepositoryTest {
         assertTrue(profile.community.hasLicense?.value == true)
         assertEquals("MIT", profile.community.licenseSpdxId?.value)
         assertTrue(profile.community.hasPullRequestTemplate?.value == true)
+    }
+
+    @Test
+    fun `deep profile source parses traffic compare and security signals`() {
+        val views = deepSource.parseTrafficViews(
+            json = """
+                {
+                  "count": 18,
+                  "uniques": 9,
+                  "views": [
+                    {"timestamp": "2024-01-01T00:00:00Z", "count": 8, "uniques": 4},
+                    {"timestamp": "2024-01-02T00:00:00Z", "count": 10, "uniques": 5}
+                  ]
+                }
+            """.trimIndent(),
+            fetchedAtMillis = FETCHED_AT
+        )
+        val clones = deepSource.parseTrafficClones(
+            json = """
+                {
+                  "count": 4,
+                  "uniques": 2,
+                  "clones": [{"timestamp": "2024-01-03T00:00:00Z", "count": 4, "uniques": 2}]
+                }
+            """.trimIndent(),
+            fetchedAtMillis = FETCHED_AT
+        )
+        val compare = deepSource.parseForkCompare(
+            json = """{"ahead_by": 2, "behind_by": 7, "status": "behind", "total_commits": 9}""",
+            owner = "demo",
+            repo = "app",
+            upstreamFullName = "upstream/app",
+            fetchedAtMillis = FETCHED_AT
+        )
+        val dependabot = deepSource.parseDependabotAlerts(
+            json = """[{"number": 1}, {"number": 2}]""",
+            fetchedAtMillis = FETCHED_AT
+        )
+        val codeScanning = deepSource.parseCodeScanningAlerts(
+            json = """[{"number": 3}]""",
+            fetchedAtMillis = FETCHED_AT
+        )
+
+        assertEquals(18, views.viewCount?.value)
+        assertEquals(1_704_153_600_000L, views.latestViewBucketAtMillis?.value)
+        assertEquals(4, clones.cloneCount?.value)
+        assertEquals(7, compare.behindBy?.value)
+        assertEquals("upstream/app", compare.baseFullName?.value)
+        assertEquals(2, dependabot.openDependabotAlertsCount?.value)
+        assertEquals(1, codeScanning.openCodeScanningAlertsCount?.value)
+        assertEquals(GitHubRepositoryProfileConfidence.Medium, compare.behindBy?.confidence)
+    }
+
+    @Test
+    fun `basic profile skips deep endpoints`() {
+        MockWebServer().use { server ->
+            server.dispatcher = profileDispatcher()
+            val repository = GitHubRepositoryProfileRepository(
+                apiBaseUrl = server.url("/").toString().trimEnd('/'),
+                htmlBaseUrl = "https://github.test"
+            )
+
+            val profile = repository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = "demo",
+                    repo = "app",
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic)
+                )
+            )
+
+            val paths = server.takeRequestPaths()
+            assertFalse(paths.any { it.contains("/traffic/") })
+            assertFalse(paths.any { it.contains("/dependabot/") })
+            assertFalse(paths.any { it.contains("/code-scanning/") })
+            assertEquals(
+                GitHubRepositoryProfileAvailabilityStatus.Skipped,
+                profile.sourceAvailability.first {
+                    it.source == GitHubRepositoryProfileSource.TrafficViewsApi
+                }.status
+            )
+        }
+    }
+
+    @Test
+    fun `deep profile collects enhanced endpoints and keeps partial failures`() {
+        MockWebServer().use { server ->
+            server.dispatcher = profileDispatcher(codeScanningCode = 403)
+            val repository = GitHubRepositoryProfileRepository(
+                apiBaseUrl = server.url("/").toString().trimEnd('/'),
+                htmlBaseUrl = "https://github.test"
+            )
+
+            val profile = repository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = "demo",
+                    repo = "app",
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
+                )
+            )
+
+            val paths = server.takeRequestPaths()
+            assertContains(paths, "/repos/demo/app/traffic/views")
+            assertContains(paths, "/repos/demo/app/traffic/clones")
+            assertContains(paths, "/repos/demo/app/dependabot/alerts?state=open&per_page=100")
+            assertContains(paths, "/repos/demo/app/code-scanning/alerts?state=open&per_page=100")
+            assertEquals(11, profile.traffic.viewCount?.value)
+            assertEquals(1, profile.security.openDependabotAlertsCount?.value)
+            assertFalse(profile.security.codeScanningAvailable?.value == true)
+            assertTrue(
+                profile.sourceAvailability.any {
+                    it.source == GitHubRepositoryProfileSource.CodeScanningAlertsApi &&
+                            it.status == GitHubRepositoryProfileAvailabilityStatus.Failed
+                }
+            )
+        }
     }
 
     private fun releaseSnapshot(
@@ -214,6 +344,56 @@ class GitHubRepositoryProfileRepositoryTest {
               }
             }
         """.trimIndent()
+    }
+
+    private fun profileDispatcher(
+        codeScanningCode: Int = 200
+    ): Dispatcher {
+        return object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                return when (request.path) {
+                    "/repos/demo/app" -> jsonResponse(
+                        apiRepositoryJson(
+                            archived = false,
+                            fork = false
+                        )
+                    )
+
+                    "/repos/demo/app/actions/runs?per_page=12" -> jsonResponse("""{"workflow_runs": []}""")
+                    "/repos/demo/app/actions/artifacts?per_page=30" -> jsonResponse("""{"artifacts": []}""")
+                    "/repos/demo/app/community/profile" -> jsonResponse(
+                        """{"health_percentage": 80, "files": {"readme": {"name": "README.md"}}}"""
+                    )
+
+                    "/repos/demo/app/traffic/views" -> jsonResponse("""{"count": 11, "uniques": 5, "views": []}""")
+                    "/repos/demo/app/traffic/clones" -> jsonResponse("""{"count": 3, "uniques": 2, "clones": []}""")
+                    "/repos/demo/app/dependabot/alerts?state=open&per_page=100" -> jsonResponse("""[{"number": 1}]""")
+                    "/repos/demo/app/code-scanning/alerts?state=open&per_page=100" -> if (codeScanningCode == 200) {
+                        jsonResponse("[]")
+                    } else {
+                        MockResponse().setResponseCode(codeScanningCode)
+                            .setBody("""{"message":"forbidden"}""")
+                    }
+
+                    else -> MockResponse().setResponseCode(404).setBody("""{"message":"missing"}""")
+                }
+            }
+        }
+    }
+
+    private fun jsonResponse(body: String): MockResponse {
+        return MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Type", "application/json")
+            .setBody(body)
+    }
+
+    private fun MockWebServer.takeRequestPaths(): List<String> {
+        return buildList {
+            repeat(requestCount) {
+                add(takeRequest().path.orEmpty())
+            }
+        }
     }
 
     private companion object {

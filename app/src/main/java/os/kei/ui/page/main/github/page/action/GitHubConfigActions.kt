@@ -54,6 +54,7 @@ internal class GitHubConfigActions(
             state.checkAllTrackedPreReleasesInput = config.checkAllTrackedPreReleases
             state.aggressiveApkFilteringInput = config.aggressiveApkFiltering
             state.preciseApkVersionEnabledInput = config.preciseApkVersionEnabled
+            state.profileDepthInput = config.profileDepth
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
@@ -98,6 +99,7 @@ internal class GitHubConfigActions(
                 checkAllTrackedPreReleases = previousConfig.checkAllTrackedPreReleases,
                 aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
                 preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
+                profileDepth = previousConfig.profileDepth,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
                 shareImportFlowMode = previousConfig.shareImportFlowMode,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
@@ -182,6 +184,7 @@ internal class GitHubConfigActions(
                 checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
                 aggressiveApkFiltering = state.aggressiveApkFilteringInput,
                 preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
+                profileDepth = state.profileDepthInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
                 shareImportFlowMode = state.shareImportFlowModeInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
@@ -205,6 +208,7 @@ internal class GitHubConfigActions(
             val filteringChanged = previousConfig.aggressiveApkFiltering != newConfig.aggressiveApkFiltering
             val preciseVersionChanged =
                 previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled
+            val profileDepthChanged = previousConfig.profileDepth != newConfig.profileDepth
             val shareImportChanged =
                 previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled ||
                         previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode
@@ -226,7 +230,7 @@ internal class GitHubConfigActions(
                 intervalChanged
             ).count { it }
             when {
-                checkScopeChanged || filteringChanged || preciseVersionChanged -> {
+                checkScopeChanged || filteringChanged || preciseVersionChanged || profileDepthChanged -> {
                     repository.clearCheckCache()
                     state.checkStates.clear()
                     state.clearAllAssetUiState()
@@ -235,7 +239,13 @@ internal class GitHubConfigActions(
                     state.refreshProgress = 0f
                     state.overviewRefreshState = OverviewRefreshState.Idle
                     if (state.trackedItems.isNotEmpty()) {
-                        env.toast(R.string.github_toast_check_logic_updated_recheck)
+                        env.toast(
+                            if (profileDepthChanged) {
+                                R.string.github_toast_profile_depth_updated_recheck
+                            } else {
+                                R.string.github_toast_check_logic_updated_recheck
+                            }
+                        )
                         refreshActions.refreshAllTracked(showToast = true)
                     } else {
                         env.toast(R.string.github_toast_check_logic_saved)

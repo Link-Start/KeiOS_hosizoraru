@@ -70,6 +70,7 @@ object GitHubRepositoryHealthEvaluator {
         score += evaluateActions(profile, nowMillis, reasons)
         score += evaluateCommunity(profile, reasons)
         score += evaluateLocalFit(profile, reasons)
+        score += evaluateDeepSignals(profile, nowMillis, reasons)
 
         val normalizedScore = score.coerceIn(0, 100)
         val level = when {
@@ -91,10 +92,13 @@ object GitHubRepositoryHealthEvaluator {
             GitHubRepositoryHealthReason.RepositoryFork -> -6
             GitHubRepositoryHealthReason.ForkUpstreamArchived -> -4
             GitHubRepositoryHealthReason.ForkBehindUpstream -> -16
+            GitHubRepositoryHealthReason.ForkCompareCurrent -> 2
+            GitHubRepositoryHealthReason.ForkCompareBehind -> -6
             GitHubRepositoryHealthReason.ForkMaintainedIndependently -> 8
             GitHubRepositoryHealthReason.ForkTracksUpstream -> -4
             GitHubRepositoryHealthReason.StaleRepositoryActivity -> -14
             GitHubRepositoryHealthReason.StaleRelease -> -10
+            GitHubRepositoryHealthReason.TrafficRecentlyActive -> 2
             GitHubRepositoryHealthReason.ActionsHealthy -> 4
             GitHubRepositoryHealthReason.ActionsFailing -> -8
             GitHubRepositoryHealthReason.AndroidAssetsDetected -> 4
@@ -102,6 +106,8 @@ object GitHubRepositoryHealthEvaluator {
             GitHubRepositoryHealthReason.CommunityProfileComplete -> 4
             GitHubRepositoryHealthReason.MissingReadme -> -5
             GitHubRepositoryHealthReason.MissingLicense -> -4
+            GitHubRepositoryHealthReason.SecuritySignalsAvailable -> 2
+            GitHubRepositoryHealthReason.OpenSecurityAlerts -> -4
             GitHubRepositoryHealthReason.LocalPackageMatched -> 6
             GitHubRepositoryHealthReason.LocalPackageMismatch -> -14
             GitHubRepositoryHealthReason.UpdateAvailable -> 7
@@ -224,6 +230,49 @@ object GitHubRepositoryHealthEvaluator {
         }
     }
 
+    private fun evaluateDeepSignals(
+        profile: GitHubRepositoryProfileSnapshot?,
+        nowMillis: Long,
+        reasons: MutableList<GitHubRepositoryHealthReason>
+    ): Int {
+        profile ?: return 0
+        var scoreDelta = 0
+        val behindBy = profile.forkSync.behindBy.valueOr(0)
+        val compared = profile.forkSync.comparedAtMillis.valueOr(-1L) > 0L
+        if (behindBy > 0) {
+            scoreDelta -= 6
+            reasons += GitHubRepositoryHealthReason.ForkCompareBehind
+        } else if (compared && profile.lifecycle.fork.valueOr(false)) {
+            scoreDelta += 2
+            reasons += GitHubRepositoryHealthReason.ForkCompareCurrent
+        }
+
+        val latestTrafficMillis = maxOf(
+            profile.traffic.latestViewBucketAtMillis.valueOr(-1L),
+            profile.traffic.latestCloneBucketAtMillis.valueOr(-1L)
+        )
+        val trafficCount =
+            profile.traffic.viewCount.valueOr(0) + profile.traffic.cloneCount.valueOr(0)
+        if (trafficCount > 0 && latestTrafficMillis > 0L && nowMillis - latestTrafficMillis <= RECENT_TRAFFIC_WINDOW_MS) {
+            scoreDelta += 2
+            reasons += GitHubRepositoryHealthReason.TrafficRecentlyActive
+        }
+
+        val openSecurityAlerts = profile.security.openDependabotAlertsCount.valueOr(0) +
+                profile.security.openCodeScanningAlertsCount.valueOr(0)
+        if (openSecurityAlerts > 0) {
+            scoreDelta -= 4
+            reasons += GitHubRepositoryHealthReason.OpenSecurityAlerts
+        } else if (
+            profile.security.dependabotAlertsAvailable.valueOr(false) ||
+            profile.security.codeScanningAvailable.valueOr(false)
+        ) {
+            scoreDelta += 2
+            reasons += GitHubRepositoryHealthReason.SecuritySignalsAvailable
+        }
+        return scoreDelta
+    }
+
     private fun evaluateForkMaintenance(
         input: GitHubRepositoryHealthInput,
         profile: GitHubRepositoryProfileSnapshot?,
@@ -294,4 +343,5 @@ object GitHubRepositoryHealthEvaluator {
     private const val STALE_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 365L
     private const val RECENT_ACTIONS_WINDOW_MS = 1000L * 60L * 60L * 24L * 30L
     private const val ACTIONS_FAILURE_SIGNAL_WINDOW_MS = 1000L * 60L * 60L * 24L * 90L
+    private const val RECENT_TRAFFIC_WINDOW_MS = 1000L * 60L * 60L * 24L * 30L
 }

@@ -27,12 +27,6 @@ class UiPrefsRepository(
         }
     }
 
-    suspend fun setMainPagerMiuixModeEnabled(value: Boolean) {
-        updateAndPersist({ copy(mainPagerMiuixModeEnabled = value) }) {
-            UiPrefs.setMainPagerMiuixModeEnabled(value)
-        }
-    }
-
     suspend fun setLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         updateAndPersist({ copy(liquidActionBarLayeredStyleEnabled = value) }) {
             UiPrefs.setLiquidActionBarLayeredStyleEnabled(value)

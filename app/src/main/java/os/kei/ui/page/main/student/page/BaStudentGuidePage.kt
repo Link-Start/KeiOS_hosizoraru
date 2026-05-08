@@ -330,6 +330,8 @@ fun BaStudentGuidePage(
                     navigationBarBottom = navigationBarBottom,
                     bottomTabs = bottomTabsList,
                     selectedPage = pagerState.targetPage,
+                    selectedPagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                        .coerceIn(0f, bottomTabsList.lastIndex.coerceAtLeast(0).toFloat()),
                     selectedPageProvider = { pagerState.targetPage },
                     backdrop = navBackdrop,
                     isLiquidEffectEnabled = liquidBottomBarEnabled,

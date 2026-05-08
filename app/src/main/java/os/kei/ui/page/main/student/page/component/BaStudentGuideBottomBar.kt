@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,13 +18,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 
@@ -35,6 +34,7 @@ internal fun BaStudentGuideBottomBar(
     navigationBarBottom: Dp,
     bottomTabs: List<GuideBottomTab>,
     selectedPage: Int,
+    selectedPagePosition: Float,
     selectedPageProvider: () -> Int,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
@@ -49,8 +49,9 @@ internal fun BaStudentGuideBottomBar(
         ) {
             val bottomBarModifier = Modifier
                 .padding(
-                    horizontal = 12.dp,
-                    vertical = 12.dp + navigationBarBottom
+                    start = 24.dp,
+                    end = 24.dp,
+                    bottom = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp
                 )
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 bottomTabs.forEachIndexed { index, tab ->
@@ -97,7 +98,7 @@ internal fun BaStudentGuideBottomBar(
                         selected = selected,
                         tabIndex = index,
                         onClick = { onSelectTab(index) },
-                        modifier = Modifier.defaultMinSize(minWidth = 76.dp),
+                        modifier = Modifier,
                         content = tabContent
                     )
                 }
@@ -106,6 +107,7 @@ internal fun BaStudentGuideBottomBar(
             LiquidGlassBottomBar(
                 modifier = bottomBarModifier,
                 selectedIndex = selectedPage,
+                selectedPosition = selectedPagePosition,
                 onSelected = { index ->
                     if (index != selectedPageProvider()) {
                         onSelectTab(index)
@@ -114,6 +116,7 @@ internal fun BaStudentGuideBottomBar(
                 backdrop = backdrop,
                 tabsCount = bottomTabs.size,
                 isLiquidEffectEnabled = isLiquidEffectEnabled,
+                expandToMaxWidth = true,
                 content = bottomBarTabs
             )
         }

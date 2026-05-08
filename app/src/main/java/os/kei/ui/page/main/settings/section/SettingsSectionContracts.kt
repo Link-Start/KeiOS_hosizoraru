@@ -69,7 +69,6 @@ internal data class SettingsComponentEffectsSectionState(
     val liquidActionBarLayeredStyleEnabled: Boolean,
     val liquidSwitchEnabled: Boolean,
     val liquidBottomBarEnabled: Boolean,
-    val mainPagerMiuixModeEnabled: Boolean,
     val searchAutoFocusEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean
 )
@@ -78,7 +77,6 @@ internal data class SettingsComponentEffectsSectionActions(
     val onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     val onLiquidSwitchChanged: (Boolean) -> Unit,
     val onLiquidBottomBarChanged: (Boolean) -> Unit,
-    val onMainPagerMiuixModeChanged: (Boolean) -> Unit,
     val onSearchAutoFocusChanged: (Boolean) -> Unit,
     val onGripAwareFloatingDockChanged: (Boolean) -> Unit
 )

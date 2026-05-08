@@ -31,7 +31,7 @@ internal data class MainPagerInsets(
 internal data class MainPagerCoordinatorState(
     val tabs: List<BottomPage>,
     val visibleTabsSnapshot: Set<BottomPage>,
-    val pagerState: MainPagerStateContract,
+    val pagerState: MainFoundationPagerState,
     val pagerRuntime: MainPagerRuntimeSnapshot,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
@@ -83,7 +83,6 @@ internal fun rememberMainPagerCoordinator(
     visibleBottomPageNames: Set<String>,
     onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
     mcpServerManager: McpServerManager,
-    mainPagerMiuixModeEnabled: Boolean,
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     onRequestedBottomPageConsumed: () -> Unit
@@ -103,19 +102,11 @@ internal fun rememberMainPagerCoordinator(
     val tabs = tabsState.tabs
     val visibleTabsSnapshot = tabsState.visibleTabsSnapshot
     val pageKeys = remember(tabs) { tabs.map { page -> page.name } }
-    val pagerState: MainPagerStateContract = if (mainPagerMiuixModeEnabled) {
-        rememberMainFoundationPagerState(
-            initialPage = tabsState.initialPageIndex,
-            pageCount = tabs.size,
-            pageKeys = pageKeys
-        )
-    } else {
-        rememberMainLoadedPagerState(
-            initialPage = tabsState.initialPageIndex,
-            pageCount = tabs.size,
-            pageKeys = pageKeys
-        )
-    }
+    val pagerState = rememberMainFoundationPagerState(
+        initialPage = tabsState.initialPageIndex,
+        pageCount = tabs.size,
+        pageKeys = pageKeys
+    )
     val homeOverviewState = rememberMainPagerHomeOverviewState(
         mcpServerManager = mcpServerManager,
         settingsReturnToken = settingsReturnToken

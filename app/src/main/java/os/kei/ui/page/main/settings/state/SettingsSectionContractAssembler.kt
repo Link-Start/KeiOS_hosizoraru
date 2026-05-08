@@ -48,7 +48,6 @@ internal fun rememberSettingsSectionContractBundle(
     liquidActionBarLayeredStyleEnabled: Boolean,
     liquidSwitchEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
-    mainPagerMiuixModeEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
@@ -78,7 +77,6 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     onLiquidSwitchChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
-    onMainPagerMiuixModeChanged: (Boolean) -> Unit,
     onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
@@ -196,7 +194,6 @@ internal fun rememberSettingsSectionContractBundle(
         liquidActionBarLayeredStyleEnabled,
         liquidSwitchEnabled,
         liquidBottomBarEnabled,
-        mainPagerMiuixModeEnabled,
         searchAutoFocusEnabled,
         gripAwareFloatingDockEnabled
     ) {
@@ -204,7 +201,6 @@ internal fun rememberSettingsSectionContractBundle(
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             liquidSwitchEnabled = liquidSwitchEnabled,
             liquidBottomBarEnabled = liquidBottomBarEnabled,
-            mainPagerMiuixModeEnabled = mainPagerMiuixModeEnabled,
             searchAutoFocusEnabled = searchAutoFocusEnabled,
             gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
         )
@@ -213,7 +209,6 @@ internal fun rememberSettingsSectionContractBundle(
         onLiquidActionBarLayeredStyleChanged,
         onLiquidSwitchChanged,
         onLiquidBottomBarChanged,
-        onMainPagerMiuixModeChanged,
         onSearchAutoFocusChanged,
         onGripAwareFloatingDockChanged
     ) {
@@ -221,7 +216,6 @@ internal fun rememberSettingsSectionContractBundle(
             onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
             onLiquidSwitchChanged = onLiquidSwitchChanged,
             onLiquidBottomBarChanged = onLiquidBottomBarChanged,
-            onMainPagerMiuixModeChanged = onMainPagerMiuixModeChanged,
             onSearchAutoFocusChanged = onSearchAutoFocusChanged,
             onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
         )

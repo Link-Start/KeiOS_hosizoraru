@@ -38,7 +38,6 @@ internal fun MainPagerLayout(
     navigator: Navigator,
     settingsReturnToken: Int,
     liquidBottomBarEnabled: Boolean,
-    mainPagerMiuixModeEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
@@ -89,7 +88,6 @@ internal fun MainPagerLayout(
         visibleBottomPageNames = visibleBottomPageNames,
         onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
         mcpServerManager = mcpServerManager,
-        mainPagerMiuixModeEnabled = mainPagerMiuixModeEnabled,
         requestedBottomPage = requestedBottomPage,
         requestedBottomPageToken = requestedBottomPageToken,
         onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
@@ -147,14 +145,10 @@ internal fun MainPagerLayout(
                 (coordinator.tabs.size - 1).coerceAtLeast(0)
             )
             val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
-            val pagerSelectionPosition = when {
-                mainPagerMiuixModeEnabled || coordinator.pagerState.isScrollInProgress ->
-                    coordinator.pagerState.pagePosition.coerceIn(
-                        0f,
-                        lastPagePosition
-                    )
-                else -> null
-            }
+            val pagerSelectionPosition = coordinator.pagerState.pagePosition.coerceIn(
+                0f,
+                lastPagePosition
+            )
             MainPagerBottomBar(
                 visible = coordinator.showBottomBar,
                 navigationBarBottom = insets.navigationBarBottom,
@@ -163,7 +157,6 @@ internal fun MainPagerLayout(
                 selectedPagePosition = pagerSelectionPosition,
                 backdrop = coordinator.backdrop,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
-                miuixModeEnabled = mainPagerMiuixModeEnabled,
                 onPageSelected = coordinator.onPageSelected
             )
         }
@@ -224,28 +217,12 @@ internal fun MainPagerLayout(
                     )
                 }
             }
-            when (val pagerState = coordinator.pagerState) {
-                is MainFoundationPagerState -> {
-                    MainFoundationPager(
-                        state = pagerState,
-                        userScrollEnabled = coordinator.pagerScrollEnabled,
-                        modifier = pagerModifier,
-                        pageContent = pageContent
-                    )
-                }
-
-                is MainLoadedPagerState -> {
-                    MainLoadedPager(
-                        state = pagerState,
-                        userScrollEnabled = coordinator.pagerScrollEnabled,
-                        animationsEnabled = transitionAnimationsEnabled,
-                        modifier = pagerModifier,
-                        pageContent = pageContent
-                    )
-                }
-
-                else -> Unit
-            }
+            MainFoundationPager(
+                state = coordinator.pagerState,
+                userScrollEnabled = coordinator.pagerScrollEnabled,
+                modifier = pagerModifier,
+                pageContent = pageContent
+            )
 
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
                 NonHomePageBackground(

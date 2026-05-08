@@ -3,7 +3,6 @@ package os.kei.ui.page.main.host.pager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,7 +35,6 @@ internal fun MainPagerBottomBar(
     selectedPagePosition: Float?,
     backdrop: LayerBackdrop,
     liquidBottomBarEnabled: Boolean,
-    miuixModeEnabled: Boolean,
     onPageSelected: (Int) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -46,18 +44,11 @@ internal fun MainPagerBottomBar(
             exit = appFloatingExit(),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            val bottomBarModifier = if (miuixModeEnabled) {
-                Modifier.padding(
-                    start = 24.dp,
-                    end = 24.dp,
-                    bottom = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp
-                )
-            } else {
-                Modifier.padding(
-                    horizontal = 12.dp,
-                    vertical = 12.dp + navigationBarBottom
-                )
-            }
+            val bottomBarModifier = Modifier.padding(
+                start = 24.dp,
+                end = 24.dp,
+                bottom = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp
+            )
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 tabs.forEachIndexed { index, page ->
                     val selected = selectedPageIndex == index
@@ -66,9 +57,7 @@ internal fun MainPagerBottomBar(
                         selected = selected,
                         tabIndex = index,
                         onClick = { onPageSelected(index) },
-                        modifier = if (miuixModeEnabled) Modifier else Modifier.defaultMinSize(
-                            minWidth = 76.dp
-                        )
+                        modifier = Modifier
                     ) {
                         val tabIconModifier = Modifier
                             .size(20.dp)
@@ -100,7 +89,7 @@ internal fun MainPagerBottomBar(
                             color = tabColor,
                             maxLines = 1,
                             softWrap = false,
-                            overflow = if (miuixModeEnabled) TextOverflow.Ellipsis else TextOverflow.Visible
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -114,7 +103,7 @@ internal fun MainPagerBottomBar(
                 backdrop = backdrop,
                 tabsCount = tabs.size,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
-                expandToMaxWidth = miuixModeEnabled,
+                expandToMaxWidth = true,
                 content = bottomBarTabs
             )
         }

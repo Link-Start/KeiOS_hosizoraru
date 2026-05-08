@@ -1,0 +1,208 @@
+package os.kei.ui.page.main.widget.glass
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
+import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import androidx.compose.ui.graphics.lerp as lerpColor
+
+@Composable
+fun AppLiquidCheckbox(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier,
+    backdrop: Backdrop? = null,
+    enabled: Boolean = true,
+    contentDescription: String? = null
+) {
+    val isDark = isSystemInDarkTheme()
+    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
+    val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
+    val accent = if (isDark) Color(0xFF7AB8FF) else Color(0xFF3B82F6)
+    val uncheckedSurface = if (isDark) {
+        Color(0xFF15181E).copy(alpha = 0.48f)
+    } else {
+        Color.White.copy(alpha = 0.78f)
+    }
+    val checkedSurface = if (isDark) {
+        accent.copy(alpha = 0.46f)
+    } else {
+        accent.copy(alpha = 0.34f)
+    }
+    val borderColor = if (checked) {
+        accent.copy(alpha = if (isDark) 0.72f else 0.58f)
+    } else if (isDark) {
+        Color.White.copy(alpha = 0.20f)
+    } else {
+        Color(0xFFC9DCF7).copy(alpha = 0.90f)
+    }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val checkProgress by appMotionFloatState(
+        targetValue = if (checked) 1f else 0f,
+        durationMillis = 140,
+        label = "app_liquid_checkbox_check"
+    )
+    val pressProgress by appMotionFloatState(
+        targetValue = if (isPressed) 1f else 0f,
+        durationMillis = 110,
+        label = "app_liquid_checkbox_press"
+    )
+
+    Box(
+        modifier = modifier
+            .requiredSize(34.dp)
+            .graphicsLayer {
+                val scale = 1f - pressProgress * 0.035f
+                scaleX = scale
+                scaleY = scale
+                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+            }
+            .then(
+                if (onCheckedChange != null) {
+                    Modifier.toggleable(
+                        value = checked,
+                        enabled = enabled,
+                        role = Role.Checkbox,
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onValueChange = onCheckedChange
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .semantics {
+                role = Role.Checkbox
+                contentDescription?.let { this.contentDescription = it }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        val surfaceColor = lerpColor(uncheckedSurface, checkedSurface, checkProgress)
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .then(
+                    if (activeBackdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = activeBackdrop,
+                            shape = { ContinuousCapsule },
+                            effects = {
+                                vibrancy()
+                                blur(2.dp.toPx())
+                                lens(
+                                    10.dp.toPx(),
+                                    20.dp.toPx(),
+                                    chromaticAberration = true,
+                                    depthEffect = true
+                                )
+                            },
+                            highlight = {
+                                Highlight.Default.copy(alpha = if (isDark) 0.42f else 0.74f)
+                            },
+                            shadow = {
+                                Shadow.Default.copy(color = Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
+                            },
+                            innerShadow = {
+                                InnerShadow(radius = 4.dp * pressProgress, alpha = pressProgress)
+                            },
+                            onDrawSurface = {
+                                drawRect(surfaceColor)
+                                if (pressProgress > 0f) {
+                                    drawRect(
+                                        appControlPressedOverlayColor(
+                                            isDark = isDark,
+                                            variant = GlassVariant.Content,
+                                            accentColor = accent
+                                        ).copy(
+                                            alpha = appControlPressedOverlayAlpha(
+                                                true,
+                                                isDark
+                                            ) * pressProgress
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    } else {
+                        Modifier
+                            .clip(ContinuousCapsule)
+                            .background(surfaceColor)
+                    }
+                )
+                .border(
+                    width = 1.dp,
+                    color = borderColor,
+                    shape = ContinuousCapsule
+                )
+        )
+        Canvas(modifier = Modifier.size(18.dp)) {
+            if (checkProgress <= 0.01f) return@Canvas
+            val stroke = Stroke(
+                width = 2.35.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            val firstEndProgress = (checkProgress / 0.52f).coerceIn(0f, 1f)
+            val secondEndProgress = ((checkProgress - 0.34f) / 0.66f).coerceIn(0f, 1f)
+            val start = Offset(size.width * 0.22f, size.height * 0.52f)
+            val corner = Offset(size.width * 0.43f, size.height * 0.70f)
+            val end = Offset(size.width * 0.80f, size.height * 0.30f)
+            val firstEnd = Offset(
+                x = start.x + (corner.x - start.x) * firstEndProgress,
+                y = start.y + (corner.y - start.y) * firstEndProgress
+            )
+            val secondEnd = Offset(
+                x = corner.x + (end.x - corner.x) * secondEndProgress,
+                y = corner.y + (end.y - corner.y) * secondEndProgress
+            )
+            drawLine(
+                color = Color.White.copy(alpha = checkProgress),
+                start = start,
+                end = firstEnd,
+                strokeWidth = stroke.width,
+                cap = stroke.cap
+            )
+            if (checkProgress > 0.34f) {
+                drawLine(
+                    color = Color.White.copy(alpha = checkProgress),
+                    start = corner,
+                    end = secondEnd,
+                    strokeWidth = stroke.width,
+                    cap = stroke.cap
+                )
+            }
+        }
+    }
+}

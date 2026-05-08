@@ -8,7 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,7 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
+import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -56,7 +58,6 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
@@ -200,19 +201,21 @@ private fun GitHubTrackAppPickerControls(
             label = stringResource(R.string.github_track_sheet_app_filter_scope_label)
         ) {
             GitHubTrackAppTypeCheckbox(
+                backdrop = backdrop,
                 text = stringResource(R.string.github_track_sheet_app_filter_user_apps),
                 checked = includeUserApps,
                 onCheckedChange = onIncludeUserAppsChange,
                 modifier = Modifier.weight(1f)
             )
             GitHubTrackAppTypeCheckbox(
+                backdrop = backdrop,
                 text = stringResource(R.string.github_track_sheet_app_filter_system_apps),
                 checked = includeSystemApps,
                 onCheckedChange = onIncludeSystemAppsChange,
                 modifier = Modifier.weight(1f)
             )
         }
-        GitHubTrackAppPickerButtonRow(
+        GitHubTrackAppPickerSortRow(
             label = stringResource(R.string.github_track_sheet_app_sort_label)
         ) {
             AppDropdownSelector(
@@ -262,23 +265,47 @@ private fun GitHubTrackAppPickerControls(
 }
 
 @Composable
+private fun GitHubTrackAppPickerSortRow(
+    label: String,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SheetInputTitle(label)
+        content()
+    }
+}
+
+@Composable
 private fun GitHubTrackAppTypeCheckbox(
+    backdrop: LayerBackdrop,
     text: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
             .heightIn(min = 34.dp)
-            .clickable { onCheckedChange(!checked) }
+            .toggleable(
+                value = checked,
+                role = Role.Checkbox,
+                interactionSource = interactionSource,
+                indication = null,
+                onValueChange = onCheckedChange
+            )
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Checkbox(
-            state = if (checked) ToggleableState.On else ToggleableState.Off,
-            onClick = null
+        AppLiquidCheckbox(
+            checked = checked,
+            onCheckedChange = null,
+            backdrop = backdrop
         )
         Text(
             text = text,

@@ -227,7 +227,9 @@ internal class GitHubRepositoryDiscoveryService(
             owner = owner,
             repo = repo,
             packageName = normalizedPackageName,
-            appLabel = normalizedAppLabel
+            appLabel = normalizedAppLabel,
+            repositoryArchived = archived,
+            repositoryFork = fork
         )
         return GitHubRepositoryImportCandidate(
             repository = this,

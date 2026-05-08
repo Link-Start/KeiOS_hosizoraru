@@ -6,6 +6,7 @@ import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseLookupStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
+import os.kei.feature.github.data.remote.GitHubRepositoryMetadataRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -63,11 +64,26 @@ object GitHubReleaseCheckService {
         }.getOrNull()
         val localVersion = localVersionInfo?.versionName.orEmpty()
         val localVersionCode = localVersionInfo?.versionCode ?: -1L
+        val repositoryMetadata = GitHubRepositoryMetadataRepository(
+            apiToken = lookupConfig.apiToken
+        ).fetch(item.owner, item.repo).getOrNull()
+        val repositoryArchived = repositoryMetadata?.archived ?: item.repositoryArchived
+        val repositoryFork = repositoryMetadata?.fork ?: item.repositoryFork
+        val repositoryPushedAtMillis = repositoryMetadata?.pushedAtMillis ?: -1L
+        val upstreamFullName = repositoryMetadata?.upstreamFullName.orEmpty()
+        val upstreamArchived = repositoryMetadata?.upstreamArchived ?: false
+        val upstreamPushedAtMillis = repositoryMetadata?.upstreamPushedAtMillis ?: -1L
         val effectiveStrategy = strategy ?: GitHubReleaseStrategyRegistry.resolveConfiguredStrategy().getOrElse { error ->
             return GitHubTrackedReleaseCheck(
                 strategyId = lookupConfig.selectedStrategy.storageId,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
+                repositoryArchived = repositoryArchived,
+                repositoryFork = repositoryFork,
+                repositoryPushedAtMillis = repositoryPushedAtMillis,
+                upstreamFullName = upstreamFullName,
+                upstreamArchived = upstreamArchived,
+                upstreamPushedAtMillis = upstreamPushedAtMillis,
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
@@ -85,6 +101,12 @@ object GitHubReleaseCheckService {
                 strategyId = effectiveStrategy.id,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
+                repositoryArchived = repositoryArchived,
+                repositoryFork = repositoryFork,
+                repositoryPushedAtMillis = repositoryPushedAtMillis,
+                upstreamFullName = upstreamFullName,
+                upstreamArchived = upstreamArchived,
+                upstreamPushedAtMillis = upstreamPushedAtMillis,
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
@@ -102,7 +124,14 @@ object GitHubReleaseCheckService {
             item = item,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
-            snapshot = snapshot,
+            snapshot = snapshot.copy(
+                repositoryArchived = repositoryArchived,
+                repositoryFork = repositoryFork,
+                repositoryPushedAtMillis = repositoryPushedAtMillis,
+                upstreamFullName = upstreamFullName,
+                upstreamArchived = upstreamArchived,
+                upstreamPushedAtMillis = upstreamPushedAtMillis
+            ),
             checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
             preciseStableApkVersion = preciseVersions.stable,
             precisePreReleaseApkVersion = preciseVersions.preRelease,
@@ -217,6 +246,12 @@ object GitHubReleaseCheckService {
             releaseHint = releaseHint,
             preciseStableApkVersion = preciseStableApkVersion,
             precisePreApkVersion = precisePreReleaseApkVersion,
+            repositoryArchived = snapshot.repositoryArchived,
+            repositoryFork = snapshot.repositoryFork,
+            repositoryPushedAtMillis = snapshot.repositoryPushedAtMillis,
+            upstreamFullName = snapshot.upstreamFullName,
+            upstreamArchived = snapshot.upstreamArchived,
+            upstreamPushedAtMillis = snapshot.upstreamPushedAtMillis,
             sourceConfigSignature = sourceConfigSignature,
             status = status,
             message = status.defaultMessage
@@ -407,6 +442,12 @@ object GitHubReleaseCheckService {
             releaseHint = releaseHint,
             latestStableApkVersion = preciseStableApkVersion,
             latestPreApkVersion = precisePreApkVersion,
+            repositoryArchived = repositoryArchived,
+            repositoryFork = repositoryFork,
+            repositoryPushedAtMillis = repositoryPushedAtMillis,
+            upstreamFullName = upstreamFullName,
+            upstreamArchived = upstreamArchived,
+            upstreamPushedAtMillis = upstreamPushedAtMillis,
             sourceConfigSignature = sourceConfigSignature,
             sourceStrategyId = strategyId
         )
@@ -454,6 +495,12 @@ object GitHubReleaseCheckService {
             releaseHint = entry.releaseHint,
             preciseStableApkVersion = entry.latestStableApkVersion,
             precisePreApkVersion = entry.latestPreApkVersion,
+            repositoryArchived = entry.repositoryArchived,
+            repositoryFork = entry.repositoryFork,
+            repositoryPushedAtMillis = entry.repositoryPushedAtMillis,
+            upstreamFullName = entry.upstreamFullName,
+            upstreamArchived = entry.upstreamArchived,
+            upstreamPushedAtMillis = entry.upstreamPushedAtMillis,
             sourceConfigSignature = entry.sourceConfigSignature,
             status = GitHubTrackedReleaseStatus.fromMessage(entry.message)
                 ?: GitHubTrackedReleaseStatus.ComparisonUncertain,

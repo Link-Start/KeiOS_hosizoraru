@@ -145,7 +145,13 @@ data class GitHubRepositoryReleaseSnapshot(
     val latestStable: GitHubReleaseVersionSignals,
     val hasStableRelease: Boolean = true,
     val latestPreRelease: GitHubReleaseVersionSignals? = null,
-    val fetchedAtMillis: Long = System.currentTimeMillis()
+    val fetchedAtMillis: Long = System.currentTimeMillis(),
+    val repositoryArchived: Boolean = false,
+    val repositoryFork: Boolean = false,
+    val repositoryPushedAtMillis: Long = -1L,
+    val upstreamFullName: String = "",
+    val upstreamArchived: Boolean = false,
+    val upstreamPushedAtMillis: Long = -1L
 )
 
 data class GitHubTrackedReleaseCheck(
@@ -165,6 +171,12 @@ data class GitHubTrackedReleaseCheck(
     val releaseHint: String = "",
     val preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
     val precisePreApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val repositoryArchived: Boolean = false,
+    val repositoryFork: Boolean = false,
+    val repositoryPushedAtMillis: Long = -1L,
+    val upstreamFullName: String = "",
+    val upstreamArchived: Boolean = false,
+    val upstreamPushedAtMillis: Long = -1L,
     val sourceConfigSignature: String = "",
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
     val message: String = status.defaultMessage

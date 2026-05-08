@@ -36,7 +36,13 @@ internal data class VersionCheckUi(
     val sourceStrategyId: String = "",
     val sourceConfigSignature: String = "",
     val latestStableApkVersion: GitHubRemoteApkVersionInfo? = null,
-    val latestPreApkVersion: GitHubRemoteApkVersionInfo? = null
+    val latestPreApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val repositoryArchived: Boolean = false,
+    val repositoryFork: Boolean = false,
+    val repositoryPushedAtMillis: Long = -1L,
+    val upstreamFullName: String = "",
+    val upstreamArchived: Boolean = false,
+    val upstreamPushedAtMillis: Long = -1L
 )
 
 internal data class GitHubStrategyGuide(

@@ -336,7 +336,9 @@ internal class GitHubPackageRepositoryResolver(
                                 owner = candidate.owner,
                                 repo = candidate.repo,
                                 packageName = packageName,
-                                appLabel = appLabel.ifBlank { candidate.fullName }
+                                appLabel = appLabel.ifBlank { candidate.fullName },
+                                repositoryArchived = candidate.archived,
+                                repositoryFork = candidate.fork
                             ),
                             score = score + CONFIRMED_PACKAGE_SCORE,
                             releaseTag = scanned.releaseTag,

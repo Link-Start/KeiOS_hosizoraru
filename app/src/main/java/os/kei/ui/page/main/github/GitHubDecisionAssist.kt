@@ -17,6 +17,12 @@ internal enum class GitHubDecisionLevel {
 }
 
 internal enum class GitHubRepositoryHealthReason {
+    RepositoryArchived,
+    RepositoryFork,
+    ForkUpstreamArchived,
+    ForkBehindUpstream,
+    ForkMaintainedIndependently,
+    ForkTracksUpstream,
     UpdateAvailable,
     PreReleaseRecommended,
     CheckFailed,
@@ -57,6 +63,17 @@ internal fun buildGitHubRepositoryHealth(
     var score = 82
     val reasons = mutableListOf<GitHubRepositoryHealthReason>()
 
+    if (item.repositoryArchived || state.repositoryArchived) {
+        score -= 55
+        reasons += GitHubRepositoryHealthReason.RepositoryArchived
+    }
+    if (item.repositoryFork || state.repositoryFork) {
+        score -= 6
+        reasons += GitHubRepositoryHealthReason.RepositoryFork
+        val forkMaintenance = evaluateForkMaintenance(state, nowMillis)
+        score += forkMaintenance.scoreDelta
+        reasons += forkMaintenance.reasons
+    }
     if (state.failed || state.message.isNotBlank() && state.hasUpdate == null) {
         score -= 28
         reasons += GitHubRepositoryHealthReason.CheckFailed
@@ -216,6 +233,12 @@ internal fun buildGitHubRepositoryHealthImpactLines(
 ): List<Pair<GitHubRepositoryHealthReason, Int>> {
     return health.reasons.map { reason ->
         reason to when (reason) {
+            GitHubRepositoryHealthReason.RepositoryArchived -> -55
+            GitHubRepositoryHealthReason.RepositoryFork -> -6
+            GitHubRepositoryHealthReason.ForkUpstreamArchived -> -4
+            GitHubRepositoryHealthReason.ForkBehindUpstream -> -16
+            GitHubRepositoryHealthReason.ForkMaintainedIndependently -> 8
+            GitHubRepositoryHealthReason.ForkTracksUpstream -> -4
             GitHubRepositoryHealthReason.UpdateAvailable -> 7
             GitHubRepositoryHealthReason.PreReleaseRecommended -> -6
             GitHubRepositoryHealthReason.CheckFailed -> -28
@@ -228,7 +251,53 @@ internal fun buildGitHubRepositoryHealthImpactLines(
     }
 }
 
+private data class ForkMaintenanceImpact(
+    val scoreDelta: Int,
+    val reasons: List<GitHubRepositoryHealthReason>
+)
+
+private fun evaluateForkMaintenance(
+    state: VersionCheckUi,
+    nowMillis: Long
+): ForkMaintenanceImpact {
+    if (state.upstreamFullName.isBlank()) return ForkMaintenanceImpact(0, emptyList())
+    val reasons = mutableListOf<GitHubRepositoryHealthReason>()
+    var scoreDelta = 0
+    val forkPushedAt = state.repositoryPushedAtMillis
+    val upstreamPushedAt = state.upstreamPushedAtMillis
+    val forkFresh = forkPushedAt > 0L && nowMillis - forkPushedAt <= FORK_RECENT_ACTIVITY_WINDOW_MS
+    val upstreamFresh =
+        upstreamPushedAt > 0L && nowMillis - upstreamPushedAt <= FORK_RECENT_ACTIVITY_WINDOW_MS
+
+    if (state.upstreamArchived) {
+        scoreDelta -= 4
+        reasons += GitHubRepositoryHealthReason.ForkUpstreamArchived
+        if (forkFresh) {
+            scoreDelta += 8
+            reasons += GitHubRepositoryHealthReason.ForkMaintainedIndependently
+        }
+        return ForkMaintenanceImpact(scoreDelta, reasons)
+    }
+
+    val upstreamMuchNewer = forkPushedAt > 0L &&
+            upstreamPushedAt > 0L &&
+            upstreamPushedAt - forkPushedAt >= FORK_UPSTREAM_DRIFT_WINDOW_MS
+    if (upstreamMuchNewer) {
+        scoreDelta -= 16
+        reasons += GitHubRepositoryHealthReason.ForkBehindUpstream
+    } else if (forkFresh && upstreamFresh) {
+        scoreDelta -= 4
+        reasons += GitHubRepositoryHealthReason.ForkTracksUpstream
+    } else if (forkFresh && !upstreamFresh) {
+        scoreDelta += 8
+        reasons += GitHubRepositoryHealthReason.ForkMaintainedIndependently
+    }
+    return ForkMaintenanceImpact(scoreDelta, reasons)
+}
+
 private const val FRESH_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 14L
+private const val FORK_RECENT_ACTIVITY_WINDOW_MS = 1000L * 60L * 60L * 24L * 90L
+private const val FORK_UPSTREAM_DRIFT_WINDOW_MS = 1000L * 60L * 60L * 24L * 60L
 private const val RELEASE_NOTES_COMPACT_LINE_LIMIT = 2
 private const val RELEASE_NOTES_EXPANDED_LINE_LIMIT = 7
 private const val RELEASE_NOTES_DETAIL_LINE_LIMIT = 30

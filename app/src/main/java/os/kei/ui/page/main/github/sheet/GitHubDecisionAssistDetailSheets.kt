@@ -585,6 +585,12 @@ private fun GitHubDecisionLevel.labelRes(): Int {
 
 private fun GitHubRepositoryHealthReason.labelRes(): Int {
     return when (this) {
+        GitHubRepositoryHealthReason.RepositoryArchived -> R.string.github_health_reason_repository_archived
+        GitHubRepositoryHealthReason.RepositoryFork -> R.string.github_health_reason_repository_fork
+        GitHubRepositoryHealthReason.ForkUpstreamArchived -> R.string.github_health_reason_fork_upstream_archived
+        GitHubRepositoryHealthReason.ForkBehindUpstream -> R.string.github_health_reason_fork_behind_upstream
+        GitHubRepositoryHealthReason.ForkMaintainedIndependently -> R.string.github_health_reason_fork_independent
+        GitHubRepositoryHealthReason.ForkTracksUpstream -> R.string.github_health_reason_fork_tracks_upstream
         GitHubRepositoryHealthReason.UpdateAvailable -> R.string.github_health_reason_update_available
         GitHubRepositoryHealthReason.PreReleaseRecommended -> R.string.github_health_reason_prerelease
         GitHubRepositoryHealthReason.CheckFailed -> R.string.github_health_reason_check_failed

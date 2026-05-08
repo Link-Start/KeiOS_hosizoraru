@@ -14,7 +14,9 @@ data class GitHubTrackedApp(
     val packageName: String,
     val appLabel: String,
     val preferPreRelease: Boolean = false,
-    val alwaysShowLatestReleaseDownloadButton: Boolean = false
+    val alwaysShowLatestReleaseDownloadButton: Boolean = false,
+    val repositoryArchived: Boolean = false,
+    val repositoryFork: Boolean = false
 ) {
     val id: String
         get() = "$owner/$repo|$packageName"
@@ -69,5 +71,11 @@ data class GitHubCheckCacheEntry(
     val sourceStrategyId: String = "",
     val sourceConfigSignature: String = "",
     val latestStableApkVersion: GitHubRemoteApkVersionInfo? = null,
-    val latestPreApkVersion: GitHubRemoteApkVersionInfo? = null
+    val latestPreApkVersion: GitHubRemoteApkVersionInfo? = null,
+    val repositoryArchived: Boolean = false,
+    val repositoryFork: Boolean = false,
+    val repositoryPushedAtMillis: Long = -1L,
+    val upstreamFullName: String = "",
+    val upstreamArchived: Boolean = false,
+    val upstreamPushedAtMillis: Long = -1L
 )

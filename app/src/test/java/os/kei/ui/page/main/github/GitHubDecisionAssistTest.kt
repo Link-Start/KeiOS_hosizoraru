@@ -57,6 +57,71 @@ class GitHubDecisionAssistTest {
     }
 
     @Test
+    fun repositoryHealthMarksArchivedRepositoryAsRisk() {
+        val now = 1_700_000_000_000L
+        val health = buildGitHubRepositoryHealth(
+            item = trackedItem(),
+            state = VersionCheckUi(
+                localVersion = "1.0",
+                localVersionCode = 10L,
+                latestStableRawTag = "v1.0",
+                latestStableUpdatedAtMillis = now - 24L * 60L * 60L * 1000L,
+                repositoryArchived = true
+            ),
+            nowMillis = now
+        )
+
+        assertEquals(GitHubDecisionLevel.Risk, health.level)
+        assertTrue(health.score < 55)
+        assertTrue(GitHubRepositoryHealthReason.RepositoryArchived in health.reasons)
+    }
+
+    @Test
+    fun repositoryHealthPenalizesForkBehindActiveUpstream() {
+        val now = 1_700_000_000_000L
+        val health = buildGitHubRepositoryHealth(
+            item = trackedItem(),
+            state = VersionCheckUi(
+                localVersion = "1.0",
+                localVersionCode = 10L,
+                latestStableRawTag = "v1.0",
+                repositoryFork = true,
+                repositoryPushedAtMillis = now - 120L * 24L * 60L * 60L * 1000L,
+                upstreamFullName = "upstream/app",
+                upstreamPushedAtMillis = now - 5L * 24L * 60L * 60L * 1000L
+            ),
+            nowMillis = now
+        )
+
+        assertEquals(GitHubDecisionLevel.Review, health.level)
+        assertTrue(GitHubRepositoryHealthReason.RepositoryFork in health.reasons)
+        assertTrue(GitHubRepositoryHealthReason.ForkBehindUpstream in health.reasons)
+    }
+
+    @Test
+    fun repositoryHealthSoftensForkPenaltyWhenMaintainedIndependently() {
+        val now = 1_700_000_000_000L
+        val health = buildGitHubRepositoryHealth(
+            item = trackedItem(),
+            state = VersionCheckUi(
+                localVersion = "1.0",
+                localVersionCode = 10L,
+                latestStableRawTag = "v1.0",
+                repositoryFork = true,
+                repositoryPushedAtMillis = now - 5L * 24L * 60L * 60L * 1000L,
+                upstreamFullName = "upstream/app",
+                upstreamArchived = true,
+                upstreamPushedAtMillis = now - 240L * 24L * 60L * 60L * 1000L
+            ),
+            nowMillis = now
+        )
+
+        assertEquals(GitHubDecisionLevel.Good, health.level)
+        assertTrue(GitHubRepositoryHealthReason.ForkUpstreamArchived in health.reasons)
+        assertTrue(GitHubRepositoryHealthReason.ForkMaintainedIndependently in health.reasons)
+    }
+
+    @Test
     fun apkTrustMarksUnsignedDebugAsRisk() {
         val signal = buildGitHubApkTrustSignal(
             asset = asset("demo-arm64-v8a-debug-unsigned.apk"),

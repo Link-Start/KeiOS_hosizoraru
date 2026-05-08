@@ -30,7 +30,13 @@ internal fun VersionCheckUi.toCacheEntry(): GitHubCheckCacheEntry = GitHubCheckC
     sourceStrategyId = sourceStrategyId,
     sourceConfigSignature = sourceConfigSignature,
     latestStableApkVersion = latestStableApkVersion,
-    latestPreApkVersion = latestPreApkVersion
+    latestPreApkVersion = latestPreApkVersion,
+    repositoryArchived = repositoryArchived,
+    repositoryFork = repositoryFork,
+    repositoryPushedAtMillis = repositoryPushedAtMillis,
+    upstreamFullName = upstreamFullName,
+    upstreamArchived = upstreamArchived,
+    upstreamPushedAtMillis = upstreamPushedAtMillis
 )
 
 internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
@@ -59,7 +65,13 @@ internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
     sourceStrategyId = sourceStrategyId,
     sourceConfigSignature = sourceConfigSignature,
     latestStableApkVersion = latestStableApkVersion,
-    latestPreApkVersion = latestPreApkVersion
+    latestPreApkVersion = latestPreApkVersion,
+    repositoryArchived = repositoryArchived,
+    repositoryFork = repositoryFork,
+    repositoryPushedAtMillis = repositoryPushedAtMillis,
+    upstreamFullName = upstreamFullName,
+    upstreamArchived = upstreamArchived,
+    upstreamPushedAtMillis = upstreamPushedAtMillis
 )
 
 internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
@@ -88,5 +100,11 @@ internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
     sourceStrategyId = strategyId,
     sourceConfigSignature = sourceConfigSignature,
     latestStableApkVersion = preciseStableApkVersion,
-    latestPreApkVersion = precisePreApkVersion
+    latestPreApkVersion = precisePreApkVersion,
+    repositoryArchived = repositoryArchived,
+    repositoryFork = repositoryFork,
+    repositoryPushedAtMillis = repositoryPushedAtMillis,
+    upstreamFullName = upstreamFullName,
+    upstreamArchived = upstreamArchived,
+    upstreamPushedAtMillis = upstreamPushedAtMillis
 )

@@ -352,6 +352,15 @@ object GitHubTrackStore {
                             hasPreReleaseUpdate = item.optBoolean("hasPreReleaseUpdate", false),
                             recommendsPreRelease = item.optBoolean("recommendsPreRelease", false),
                             releaseHint = item.optString("releaseHint"),
+                            repositoryArchived = item.optBoolean("repositoryArchived", false),
+                            repositoryFork = item.optBoolean("repositoryFork", false),
+                            repositoryPushedAtMillis = item.optLong(
+                                "repositoryPushedAtMillis",
+                                -1L
+                            ),
+                            upstreamFullName = item.optString("upstreamFullName"),
+                            upstreamArchived = item.optBoolean("upstreamArchived", false),
+                            upstreamPushedAtMillis = item.optLong("upstreamPushedAtMillis", -1L),
                             sourceStrategyId = item.optString("sourceStrategyId"),
                             sourceConfigSignature = item.optString("sourceConfigSignature"),
                             latestStableApkVersion = parseRemoteApkVersionInfo(
@@ -409,6 +418,12 @@ object GitHubTrackStore {
                     .put("hasPreReleaseUpdate", state.hasPreReleaseUpdate)
                     .put("recommendsPreRelease", state.recommendsPreRelease)
                     .put("releaseHint", state.releaseHint)
+                    .put("repositoryArchived", state.repositoryArchived)
+                    .put("repositoryFork", state.repositoryFork)
+                    .put("repositoryPushedAtMillis", state.repositoryPushedAtMillis)
+                    .put("upstreamFullName", state.upstreamFullName)
+                    .put("upstreamArchived", state.upstreamArchived)
+                    .put("upstreamPushedAtMillis", state.upstreamPushedAtMillis)
                     .put("sourceStrategyId", state.sourceStrategyId)
                     .put("sourceConfigSignature", state.sourceConfigSignature)
                     .put(
@@ -566,7 +581,9 @@ object GitHubTrackStore {
                 obj.has("alwaysShowLatestReleaseDownload") ->
                     obj.optBoolean("alwaysShowLatestReleaseDownload", false)
                 else -> false
-            }
+            },
+            repositoryArchived = obj.optBoolean("repositoryArchived", false),
+            repositoryFork = obj.optBoolean("repositoryFork", false)
         )
     }
 
@@ -581,6 +598,8 @@ object GitHubTrackStore {
             .put("checkPreRelease", item.preferPreRelease)
             .put("alwaysShowLatestReleaseDownloadButton", item.alwaysShowLatestReleaseDownloadButton)
             .put("alwaysShowLatestReleaseDownload", item.alwaysShowLatestReleaseDownloadButton)
+            .put("repositoryArchived", item.repositoryArchived)
+            .put("repositoryFork", item.repositoryFork)
     }
 
     private fun parseRemoteApkVersionInfo(obj: JSONObject?): GitHubRemoteApkVersionInfo? {

@@ -383,6 +383,14 @@
     <string name="github_check_sheet_section_tracks">跟踪项目</string>
     <string name="github_check_sheet_section_tracks_summary">本项目、导入导出和 Star 批量导入</string>
     <string name="github_check_sheet_metric_share_import">分享联动</string>
+    <string name="github_check_sheet_metric_refresh_interval_compact">间隔</string>
+    <string name="github_check_sheet_metric_track_count_compact">追踪</string>
+    <string name="github_check_sheet_metric_downloader_compact">下载</string>
+    <string name="github_check_sheet_metric_share_import_compact">联动</string>
+    <string name="github_check_sheet_value_refresh_interval_compact">%1$d小时</string>
+    <string name="github_check_sheet_value_track_count_compact">%1$d项</string>
+    <string name="github_check_sheet_value_downloader_default_compact">默认</string>
+    <string name="github_check_sheet_value_downloader_builtin_compact">内置</string>
     <string name="github_check_sheet_value_enabled">开启</string>
     <string name="github_check_sheet_value_disabled">关闭</string>
     <string name="github_check_sheet_label_refresh_interval">更新间隔</string>

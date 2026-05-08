@@ -383,6 +383,14 @@
     <string name="github_check_sheet_section_tracks">Tracked projects</string>
     <string name="github_check_sheet_section_tracks_summary">Current project, import/export, and starred repository batch import</string>
     <string name="github_check_sheet_metric_share_import">Share linkage</string>
+    <string name="github_check_sheet_metric_refresh_interval_compact">Every</string>
+    <string name="github_check_sheet_metric_track_count_compact">Tracks</string>
+    <string name="github_check_sheet_metric_downloader_compact">DL</string>
+    <string name="github_check_sheet_metric_share_import_compact">Link</string>
+    <string name="github_check_sheet_value_refresh_interval_compact">%1$dh</string>
+    <string name="github_check_sheet_value_track_count_compact">%1$d</string>
+    <string name="github_check_sheet_value_downloader_default_compact">System</string>
+    <string name="github_check_sheet_value_downloader_builtin_compact">Built-in</string>
     <string name="github_check_sheet_value_enabled">On</string>
     <string name="github_check_sheet_value_disabled">Off</string>
     <string name="github_check_sheet_label_refresh_interval">Refresh interval</string>

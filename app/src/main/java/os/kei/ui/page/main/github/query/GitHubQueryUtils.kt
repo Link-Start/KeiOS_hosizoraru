@@ -10,6 +10,7 @@ import os.kei.feature.github.model.InstalledAppItem
 
 internal const val installerXRevivedPackageName = "com.rosan.installer.x.revived"
 internal const val packageInstallerOnlinePackageName = "io.github.vvb2060.packageinstaller"
+internal const val systemDownloadManagerPackageName = "__system_download_manager__"
 
 internal data class DownloaderOption(
     val packageName: String,
@@ -28,7 +29,7 @@ internal fun systemDefaultDownloaderOption(context: Context): DownloaderOption =
 )
 
 internal fun systemDownloadManagerOption(context: Context): DownloaderOption = DownloaderOption(
-    packageName = "__system_download_manager__",
+    packageName = systemDownloadManagerPackageName,
     label = context.getString(R.string.github_downloader_system_builtin)
 )
 

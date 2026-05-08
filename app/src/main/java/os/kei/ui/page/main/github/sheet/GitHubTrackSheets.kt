@@ -27,6 +27,7 @@ import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.query.noOnlineShareTargetOption
 import os.kei.ui.page.main.github.query.systemDefaultDownloaderOption
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
+import os.kei.ui.page.main.github.query.systemDownloadManagerPackageName
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
@@ -163,6 +164,7 @@ internal fun GitHubCheckLogicSheet(
                 logicChanged = logicChanged,
                 trackedCount = trackedCount,
                 selectedRefreshOption = selectedRefreshOption,
+                selectedDownloaderPackage = preferredDownloaderPackageInput,
                 selectedDownloaderLabel = selectedDownloaderLabel,
                 shareImportLinkageEnabled = shareImportLinkageEnabledInput
             )
@@ -245,6 +247,7 @@ private fun GitHubCheckOverviewSection(
     logicChanged: Boolean,
     trackedCount: Int,
     selectedRefreshOption: RefreshIntervalOption,
+    selectedDownloaderPackage: String,
     selectedDownloaderLabel: String,
     shareImportLinkageEnabled: Boolean
 ) {
@@ -265,18 +268,24 @@ private fun GitHubCheckOverviewSection(
     ) {
         GitHubCheckMetricRow {
             GitHubOverviewMetricItem(
-                label = stringResource(R.string.github_check_sheet_label_refresh_interval),
-                value = stringResource(selectedRefreshOption.labelRes),
+                label = stringResource(R.string.github_check_sheet_metric_refresh_interval_compact),
+                value = stringResource(
+                    R.string.github_check_sheet_value_refresh_interval_compact,
+                    selectedRefreshOption.hours
+                ),
                 modifier = Modifier.weight(1f),
                 backdrop = backdrop,
                 labelMaxLines = 1,
                 valueMaxLines = 1,
-                labelWeight = 0.46f,
-                valueWeight = 0.54f
+                labelWeight = 0.38f,
+                valueWeight = 0.62f
             )
             GitHubOverviewMetricItem(
-                label = stringResource(R.string.github_check_sheet_label_track_count),
-                value = stringResource(R.string.github_check_sheet_value_track_count, trackedCount),
+                label = stringResource(R.string.github_check_sheet_metric_track_count_compact),
+                value = stringResource(
+                    R.string.github_check_sheet_value_track_count_compact,
+                    trackedCount
+                ),
                 modifier = Modifier.weight(1f),
                 valueColor = if (trackedCount > 0) {
                     GitHubStatusPalette.Active
@@ -286,23 +295,26 @@ private fun GitHubCheckOverviewSection(
                 backdrop = backdrop,
                 labelMaxLines = 1,
                 valueMaxLines = 1,
-                labelWeight = 0.46f,
-                valueWeight = 0.54f
+                labelWeight = 0.38f,
+                valueWeight = 0.62f
             )
         }
         GitHubCheckMetricRow {
             GitHubOverviewMetricItem(
-                label = stringResource(R.string.github_check_sheet_label_downloader),
-                value = selectedDownloaderLabel,
+                label = stringResource(R.string.github_check_sheet_metric_downloader_compact),
+                value = compactDownloaderLabel(
+                    packageName = selectedDownloaderPackage,
+                    fallbackLabel = selectedDownloaderLabel
+                ),
                 modifier = Modifier.weight(1f),
                 backdrop = backdrop,
                 labelMaxLines = 1,
                 valueMaxLines = 1,
-                labelWeight = 0.42f,
-                valueWeight = 0.58f
+                labelWeight = 0.38f,
+                valueWeight = 0.62f
             )
             GitHubOverviewMetricItem(
-                label = stringResource(R.string.github_check_sheet_metric_share_import),
+                label = stringResource(R.string.github_check_sheet_metric_share_import_compact),
                 value = stringResource(
                     if (shareImportLinkageEnabled) {
                         R.string.github_check_sheet_value_enabled
@@ -319,10 +331,22 @@ private fun GitHubCheckOverviewSection(
                 backdrop = backdrop,
                 labelMaxLines = 1,
                 valueMaxLines = 1,
-                labelWeight = 0.46f,
-                valueWeight = 0.54f
+                labelWeight = 0.38f,
+                valueWeight = 0.62f
             )
         }
+    }
+}
+
+@Composable
+private fun compactDownloaderLabel(
+    packageName: String,
+    fallbackLabel: String
+): String {
+    return when (packageName) {
+        "" -> stringResource(R.string.github_check_sheet_value_downloader_default_compact)
+        systemDownloadManagerPackageName -> stringResource(R.string.github_check_sheet_value_downloader_builtin_compact)
+        else -> fallbackLabel
     }
 }
 

@@ -595,7 +595,8 @@
     <string name="github_track_sheet_app_sort_dropdown_format">By %1$s</string>
     <string name="github_track_sheet_app_sort_direction_dropdown_format">%1$s</string>
     <string name="github_track_sheet_app_sort_name">Name</string>
-    <string name="github_track_sheet_app_sort_recent">Recent</string>
+    <string name="github_track_sheet_app_sort_last_updated">Last updated</string>
+    <string name="github_track_sheet_app_sort_recently_installed">Recently installed</string>
     <string name="github_track_sheet_app_sort_package">Package</string>
     <string name="github_track_sheet_app_sort_direction_ascending">Ascending</string>
     <string name="github_track_sheet_app_sort_direction_descending">Descending</string>

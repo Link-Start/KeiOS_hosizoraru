@@ -587,7 +587,8 @@
     <string name="github_track_sheet_app_sort_dropdown_format">按 %1$s</string>
     <string name="github_track_sheet_app_sort_direction_dropdown_format">%1$s</string>
     <string name="github_track_sheet_app_sort_name">名称</string>
-    <string name="github_track_sheet_app_sort_recent">最近</string>
+    <string name="github_track_sheet_app_sort_last_updated">最新更新</string>
+    <string name="github_track_sheet_app_sort_recently_installed">最近安装</string>
     <string name="github_track_sheet_app_sort_package">包名</string>
     <string name="github_track_sheet_app_sort_direction_ascending">正序</string>
     <string name="github_track_sheet_app_sort_direction_descending">反序</string>

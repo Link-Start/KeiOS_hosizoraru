@@ -229,7 +229,12 @@ private fun GitHubTrackAppPickerControls(
                 anchorBounds = sortModeAnchorBounds,
                 onExpandedChange = { sortModeExpanded = it },
                 onSelectedIndexChange = { index ->
-                    sortModes.getOrNull(index)?.let(onSortModeChange)
+                    sortModes.getOrNull(index)?.let { mode ->
+                        onSortModeChange(mode)
+                        if (mode.isTimeSort()) {
+                            onSortDirectionChange(GitHubTrackAppPickerSortDirection.Descending)
+                        }
+                    }
                 },
                 onAnchorBoundsChange = { sortModeAnchorBounds = it },
                 modifier = Modifier.weight(1f),
@@ -334,7 +339,8 @@ private fun GitHubTrackAppPickerButtonRow(
 
 private enum class GitHubTrackAppPickerSortMode(val labelRes: Int) {
     Name(R.string.github_track_sheet_app_sort_name),
-    Recent(R.string.github_track_sheet_app_sort_recent),
+    LastUpdated(R.string.github_track_sheet_app_sort_last_updated),
+    RecentlyInstalled(R.string.github_track_sheet_app_sort_recently_installed),
     Package(R.string.github_track_sheet_app_sort_package)
 }
 
@@ -367,8 +373,12 @@ private fun GitHubTrackAppPickerSortMode.comparator(
             compareBy<InstalledAppItem> { it.label.lowercase(Locale.ROOT) }
                 .thenBy { it.packageName.lowercase(Locale.ROOT) }
 
-        GitHubTrackAppPickerSortMode.Recent ->
+        GitHubTrackAppPickerSortMode.LastUpdated ->
             compareBy<InstalledAppItem> { it.lastUpdateTimeMs }
+                .thenBy { it.label.lowercase(Locale.ROOT) }
+
+        GitHubTrackAppPickerSortMode.RecentlyInstalled ->
+            compareBy<InstalledAppItem> { it.firstInstallTimeMs }
                 .thenBy { it.label.lowercase(Locale.ROOT) }
 
         GitHubTrackAppPickerSortMode.Package ->
@@ -379,6 +389,11 @@ private fun GitHubTrackAppPickerSortMode.comparator(
         GitHubTrackAppPickerSortDirection.Ascending -> baseComparator
         GitHubTrackAppPickerSortDirection.Descending -> baseComparator.reversed()
     }
+}
+
+private fun GitHubTrackAppPickerSortMode.isTimeSort(): Boolean {
+    return this == GitHubTrackAppPickerSortMode.LastUpdated ||
+            this == GitHubTrackAppPickerSortMode.RecentlyInstalled
 }
 
 @Composable

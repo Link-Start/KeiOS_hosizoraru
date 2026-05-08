@@ -104,6 +104,7 @@ object GitHubVersionUtils {
                 InstalledAppItem(
                     label = label,
                     packageName = packageName,
+                    firstInstallTimeMs = pkgInfo.firstInstallTime,
                     lastUpdateTimeMs = pkgInfo.lastUpdateTime,
                     isSystemApp = appInfo.isSystemAppForGitHubPicker()
                 )

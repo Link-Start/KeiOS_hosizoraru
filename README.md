@@ -38,7 +38,7 @@ and cache diagnostics.
 | UI stack             | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack        | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages            | Simplified Chinese, English, Japanese                |
-| Current tag baseline | `v1.4.0`                                             |
+| Current tag baseline | `v1.4.1`                                             |
 
 ## Quick Links
 
@@ -79,7 +79,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.4.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.4.0).
+- Current stable tag: [v1.4.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.4.1).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Kotlin `2.3.21`, Compose `1.11.1`, Android
   Gradle Plugin `9.2.1`.

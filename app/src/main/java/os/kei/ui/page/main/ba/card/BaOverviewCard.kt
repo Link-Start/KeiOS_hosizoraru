@@ -36,7 +36,7 @@ import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.ba.support.calculateApFullAtMs
 import os.kei.ui.page.main.ba.support.calculateApNextPointAtMs
 import os.kei.ui.page.main.ba.support.displayAp
-import os.kei.ui.page.main.ba.support.formatBaDateTime
+import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
@@ -97,9 +97,10 @@ internal fun BaOverviewCard(
     )
     val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs)
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val apSyncTimeText = if (apSyncMs > 0L) formatBaDateTime(apSyncMs, notSyncedText) else notSyncedText
+    val apSyncTimeText =
+        if (apSyncMs > 0L) formatBaDateTimeNoSeconds(apSyncMs, notSyncedText) else notSyncedText
     val apFullText = formatBaRemainingTime(apFullAt, uiNowMs)
-    val apFullTimeText = formatBaDateTime(apFullAt, notSyncedText)
+    val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
     val accentBlue = AppStatusColors.Cached
     val accentGreen = AppStatusColors.Fresh
     val stateAccent =
@@ -384,6 +385,7 @@ internal fun BaOverviewCard(
                 value = apSyncTimeText,
                 accentColor = accentBlue,
                 valueColor = accentBlue,
+                valueMaxLines = 2,
                 modifier = Modifier.weight(1f),
             )
             BaLiquidMetricPanel(
@@ -392,6 +394,7 @@ internal fun BaOverviewCard(
                 value = apFullTimeText,
                 accentColor = Color(0xFF60A5FA),
                 valueColor = Color(0xFF60A5FA),
+                valueMaxLines = 2,
                 modifier = Modifier.weight(1f),
             )
         }

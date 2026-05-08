@@ -248,6 +248,7 @@ internal fun BaLiquidMetricPanel(
     modifier: Modifier = Modifier,
     secondary: String? = null,
     valueColor: Color = accentColor,
+    valueMaxLines: Int = 1,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     BaLiquidPanel(
@@ -273,7 +274,7 @@ internal fun BaLiquidMetricPanel(
                         text = value,
                         color = valueColor,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1,
+                        maxLines = valueMaxLines.coerceAtLeast(1),
                     )
                     secondary?.takeIf { it.isNotBlank() }?.let { text ->
                         Text(

@@ -399,6 +399,55 @@ class GitHubRepositoryProfileRepositoryTest {
         }
     }
 
+    @Test
+    fun `manual deep refresh follows basic or deep profile depth`() {
+        MockWebServer().use { server ->
+            server.dispatcher = profileDispatcher(fork = true)
+            val repository = GitHubRepositoryProfileRepository(
+                apiBaseUrl = server.url("/").toString().trimEnd('/'),
+                htmlBaseUrl = server.url("/").toString().trimEnd('/')
+            )
+
+            val profile = repository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = "demo",
+                    repo = "app",
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic),
+                    purpose = GitHubRepositoryProfilePurpose.ManualDeepRefresh
+                )
+            )
+
+            val paths = server.takeRequestPaths()
+            assertContains(paths, "/demo/app")
+            assertFalse(paths.any { it.contains("/traffic/") })
+            assertFalse(paths.any { it.contains("/dependabot/") })
+            assertEquals(GitHubRepositoryProfilePurpose.ManualDeepRefresh, profile.purpose)
+            assertFalse(GitHubRepositoryProfileCapability.Security in profile.capabilities)
+        }
+
+        MockWebServer().use { server ->
+            server.dispatcher = profileDispatcher(fork = true)
+            val repository = GitHubRepositoryProfileRepository(
+                apiBaseUrl = server.url("/").toString().trimEnd('/'),
+                htmlBaseUrl = server.url("/").toString().trimEnd('/')
+            )
+
+            val profile = repository.fetchProfile(
+                GitHubRepositoryProfileRequest(
+                    owner = "demo",
+                    repo = "app",
+                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
+                    purpose = GitHubRepositoryProfilePurpose.ManualDeepRefresh
+                )
+            )
+
+            val paths = server.takeRequestPaths()
+            assertContains(paths, "/repos/demo/app/traffic/views")
+            assertContains(paths, "/repos/demo/app/dependabot/alerts?state=open&per_page=100")
+            assertTrue(GitHubRepositoryProfileCapability.Security in profile.capabilities)
+        }
+    }
+
     private fun releaseSnapshot(
         strategyId: String,
         source: GitHubReleaseSignalSource

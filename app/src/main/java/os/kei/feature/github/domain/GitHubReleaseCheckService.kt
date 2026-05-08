@@ -31,13 +31,15 @@ object GitHubReleaseCheckService {
     fun evaluateTrackedApp(
         context: Context,
         item: GitHubTrackedApp,
-        strategy: GitHubReleaseLookupStrategy? = null
+        strategy: GitHubReleaseLookupStrategy? = null,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
             context = context,
             item = item,
             strategy = strategy,
-            preciseApkVersionResolver = GitHubPreciseApkVersionResolver()
+            preciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
+            profilePurposeOverride = profilePurposeOverride
         )
     }
 
@@ -45,13 +47,15 @@ object GitHubReleaseCheckService {
         context: Context,
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
-        preciseApkVersionResolver: GitHubPreciseApkVersionResolver = GitHubPreciseApkVersionResolver()
+        preciseApkVersionResolver: GitHubPreciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
             context = context,
             item = item,
             strategy = strategy,
-            preciseApkVersionResolver = preciseApkVersionResolver
+            preciseApkVersionResolver = preciseApkVersionResolver,
+            profilePurposeOverride = profilePurposeOverride
         )
     }
 
@@ -59,7 +63,8 @@ object GitHubReleaseCheckService {
         context: Context,
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy?,
-        preciseApkVersionResolver: GitHubPreciseApkVersionResolver
+        preciseApkVersionResolver: GitHubPreciseApkVersionResolver,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose?
     ): GitHubTrackedReleaseCheck {
         val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig()
         val sourceConfigSignature = lookupConfig.githubCheckSourceSignature()
@@ -76,7 +81,7 @@ object GitHubReleaseCheckService {
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                purpose = GitHubRepositoryProfilePurpose.VersionCheckFast
+                purpose = profilePurposeOverride ?: GitHubRepositoryProfilePurpose.VersionCheckFast
             )
             return GitHubTrackedReleaseCheck(
                 strategyId = lookupConfig.selectedStrategy.storageId,
@@ -108,7 +113,7 @@ object GitHubReleaseCheckService {
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                purpose = GitHubRepositoryProfilePurpose.VersionCheckFast
+                purpose = profilePurposeOverride ?: GitHubRepositoryProfilePurpose.VersionCheckFast
             )
             return GitHubTrackedReleaseCheck(
                 strategyId = effectiveStrategy.id,
@@ -139,7 +144,7 @@ object GitHubReleaseCheckService {
             lookupConfig = lookupConfig,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
-            purpose = lookupConfig.defaultRepositoryProfilePurpose(),
+            purpose = profilePurposeOverride ?: lookupConfig.defaultRepositoryProfilePurpose(),
             releaseSnapshot = snapshot,
             preciseStableApkVersion = preciseVersions.stable,
             precisePreReleaseApkVersion = preciseVersions.preRelease

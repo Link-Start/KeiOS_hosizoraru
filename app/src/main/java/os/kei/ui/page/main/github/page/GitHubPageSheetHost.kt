@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -187,7 +188,13 @@ internal fun GitHubPageSheetHost(
             ?.let { state.releaseNotesErrors[it] }
             .orEmpty(),
         onDismissRequest = { state.decisionAssistDetailRequest = null },
-        onRefreshHealth = { item -> actions.refreshTrackedItem(item, showToastOnError = true) },
+        onRefreshHealth = { item ->
+            actions.refreshTrackedItem(
+                item = item,
+                showToastOnError = true,
+                profilePurposeOverride = GitHubRepositoryProfilePurpose.ManualDeepRefresh
+            )
+        },
         onRefreshReleaseNotes = { item, itemState ->
             actions.loadReleaseNotes(
                 item = item,

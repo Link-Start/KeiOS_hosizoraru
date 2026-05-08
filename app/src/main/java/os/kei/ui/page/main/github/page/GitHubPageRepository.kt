@@ -37,6 +37,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
 import os.kei.feature.github.model.GitHubRepoTarget
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
@@ -284,10 +285,15 @@ internal class GitHubPageRepository(
 
     suspend fun evaluateTrackedApp(
         context: Context,
-        item: GitHubTrackedApp
+        item: GitHubTrackedApp,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
     ): VersionCheckUi {
         return withContext(ioDispatcher) {
-            GitHubReleaseCheckService.evaluateTrackedApp(context, item).toUi()
+            GitHubReleaseCheckService.evaluateTrackedApp(
+                context = context,
+                item = item,
+                profilePurposeOverride = profilePurposeOverride
+            ).toUi()
         }
     }
 

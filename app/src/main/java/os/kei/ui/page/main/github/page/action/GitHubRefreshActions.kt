@@ -12,6 +12,7 @@ import os.kei.R
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.githubCheckSourceSignature
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -191,6 +192,7 @@ internal class GitHubRefreshActions(
         item: GitHubTrackedApp,
         showToastOnError: Boolean = false,
         keepCurrentVisualWhileRefreshing: Boolean = false,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         onUpdated: ((VersionCheckUi) -> Unit)? = null
     ): Job {
         return scope.launch {
@@ -198,6 +200,7 @@ internal class GitHubRefreshActions(
                 item = item,
                 showToastOnError = showToastOnError,
                 keepCurrentVisualWhileRefreshing = keepCurrentVisualWhileRefreshing,
+                profilePurposeOverride = profilePurposeOverride,
                 onUpdated = onUpdated
             )
         }
@@ -207,6 +210,7 @@ internal class GitHubRefreshActions(
         item: GitHubTrackedApp,
         showToastOnError: Boolean = false,
         keepCurrentVisualWhileRefreshing: Boolean = false,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         onUpdated: ((VersionCheckUi) -> Unit)? = null
     ) {
         val previousState = state.checkStates[item.id] ?: VersionCheckUi()
@@ -219,7 +223,10 @@ internal class GitHubRefreshActions(
                 message = checkingMessage
             )
         }
-        val itemState = resolveItemState(item)
+        val itemState = resolveItemState(
+            item = item,
+            profilePurposeOverride = profilePurposeOverride
+        )
         if (state.trackedItems.none { it.id == item.id }) return
         if (showToastOnError && itemState.failed) {
             env.toast(itemState.message)
@@ -401,8 +408,15 @@ internal class GitHubRefreshActions(
             item.id to itemState.toCacheEntry()
         }
 
-    private suspend fun resolveItemState(item: GitHubTrackedApp): VersionCheckUi {
-        return repository.evaluateTrackedApp(context, item)
+    private suspend fun resolveItemState(
+        item: GitHubTrackedApp,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+    ): VersionCheckUi {
+        return repository.evaluateTrackedApp(
+            context = context,
+            item = item,
+            profilePurposeOverride = profilePurposeOverride
+        )
     }
 
     private fun applyTrackSnapshot(trackSnapshot: GitHubTrackSnapshot) {

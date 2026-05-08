@@ -1,7 +1,7 @@
 {
   "format": "keios.github.tracked\/v1",
   "exportedAtMillis": 1778012078072,
-  "itemCount": 30,
+  "itemCount": 31,
   "items": [
     {
       "repoUrl": "https:\/\/github.com\/jay3-yy\/BiliPai",
@@ -328,6 +328,17 @@
       "repo": "PackageInstaller",
       "packageName": "io.github.vvb2060.packageinstaller",
       "appLabel": "Shizuku 安装器",
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false
+    },
+    {
+      "repoUrl": "https:\/\/github.com\/Miuzarte\/ScrcpyForAndroid",
+      "owner": "Miuzarte",
+      "repo": "ScrcpyForAndroid",
+      "packageName": "io.github.miuzarte.scrcpyforandroid",
+      "appLabel": "ScrcpyForAndroid",
       "preferPreRelease": false,
       "checkPreRelease": false,
       "alwaysShowLatestReleaseDownloadButton": false,

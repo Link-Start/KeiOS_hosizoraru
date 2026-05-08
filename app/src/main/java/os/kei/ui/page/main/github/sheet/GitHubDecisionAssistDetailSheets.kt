@@ -6,7 +6,6 @@ import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,16 +25,12 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
-import os.kei.ui.page.main.github.GitHubRepositoryHealth
-import os.kei.ui.page.main.github.GitHubRepositoryHealthReason
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 import os.kei.ui.page.main.github.buildGitHubApkTrustSignal
 import os.kei.ui.page.main.github.buildGitHubReleaseNotesDetailLines
-import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
-import os.kei.ui.page.main.github.buildGitHubRepositoryHealthImpactLines
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
@@ -44,7 +39,6 @@ import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
-import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -56,7 +50,6 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -281,106 +274,6 @@ internal fun GitHubActionsArtifactDetailSheet(
 }
 
 @Composable
-private fun GitHubHealthDetailContent(
-    item: GitHubTrackedApp,
-    state: VersionCheckUi
-) {
-    val context = LocalContext.current
-    val health = buildGitHubRepositoryHealth(item, state)
-    SheetContentColumn(verticalSpacing = 10.dp) {
-        SheetSummaryCard(
-            title = stringResource(R.string.github_health_detail_summary),
-            badgeLabel = stringResource(R.string.github_health_score_value, health.score),
-            badgeColor = health.level.statusColor()
-        ) {
-            DetailTextLine("${item.owner}/${item.repo}")
-            DetailTextLine(
-                stringResource(
-                    R.string.github_health_detail_current_version,
-                    state.localVersion.ifBlank { stringResource(R.string.common_unknown) }
-                )
-            )
-        }
-        SheetSectionTitle(stringResource(R.string.github_health_detail_diagnosis_title))
-        GitHubHealthDiagnosisCard(health = health, context = context)
-        SheetSectionTitle(stringResource(R.string.github_health_detail_rule_title))
-        SheetSectionCard(
-            verticalSpacing = 4.dp,
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_check),
-                maxLines = Int.MAX_VALUE
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_release),
-                maxLines = Int.MAX_VALUE
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_package),
-                maxLines = Int.MAX_VALUE
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_scope),
-                maxLines = Int.MAX_VALUE
-            )
-        }
-    }
-}
-
-@Composable
-private fun GitHubHealthDiagnosisCard(
-    health: GitHubRepositoryHealth,
-    context: Context
-) {
-    val impactLines = buildGitHubRepositoryHealthImpactLines(health)
-    SheetSectionCard(
-        verticalSpacing = 6.dp,
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-    ) {
-        if (impactLines.isEmpty()) {
-            DetailTextLine(stringResource(R.string.github_health_detail_diagnosis_empty))
-        } else {
-            impactLines.forEach { (reason, impact) ->
-                GitHubHealthDiagnosisLine(
-                    impact = impact,
-                    reason = context.getString(reason.labelRes())
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GitHubHealthDiagnosisLine(
-    impact: Int,
-    reason: String
-) {
-    val impactColor = when {
-        impact > 0 -> GitHubStatusPalette.Update
-        impact < 0 -> GitHubStatusPalette.Error
-        else -> MiuixTheme.colorScheme.onBackgroundVariant
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        StatusPill(
-            label = if (impact > 0) "+$impact" else impact.toString(),
-            color = impactColor,
-            size = AppStatusPillSize.Compact,
-            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp)
-        )
-        DetailTextLine(
-            text = reason,
-            maxLines = 2,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
 private fun GitHubReleaseNotesDetailContent(
     item: GitHubTrackedApp,
     state: VersionCheckUi,
@@ -580,42 +473,6 @@ private fun GitHubDecisionLevel.labelRes(): Int {
         GitHubDecisionLevel.Good -> R.string.github_apk_trust_good
         GitHubDecisionLevel.Review -> R.string.github_apk_trust_review
         GitHubDecisionLevel.Risk -> R.string.github_apk_trust_risk
-    }
-}
-
-private fun GitHubRepositoryHealthReason.labelRes(): Int {
-    return when (this) {
-        GitHubRepositoryHealthReason.RepositoryArchived -> R.string.github_health_reason_repository_archived
-        GitHubRepositoryHealthReason.RepositoryDisabled -> R.string.github_health_reason_repository_disabled
-        GitHubRepositoryHealthReason.RepositoryFork -> R.string.github_health_reason_repository_fork
-        GitHubRepositoryHealthReason.ForkUpstreamArchived -> R.string.github_health_reason_fork_upstream_archived
-        GitHubRepositoryHealthReason.ForkBehindUpstream -> R.string.github_health_reason_fork_behind_upstream
-        GitHubRepositoryHealthReason.ForkCompareCurrent -> R.string.github_health_reason_fork_compare_current
-        GitHubRepositoryHealthReason.ForkCompareBehind -> R.string.github_health_reason_fork_compare_behind
-        GitHubRepositoryHealthReason.ForkMaintainedIndependently -> R.string.github_health_reason_fork_independent
-        GitHubRepositoryHealthReason.ForkTracksUpstream -> R.string.github_health_reason_fork_tracks_upstream
-        GitHubRepositoryHealthReason.StaleRepositoryActivity -> R.string.github_health_reason_stale_repository_activity
-        GitHubRepositoryHealthReason.StaleRelease -> R.string.github_health_reason_stale_release
-        GitHubRepositoryHealthReason.TrafficRecentlyActive -> R.string.github_health_reason_traffic_recent
-        GitHubRepositoryHealthReason.ActionsHealthy -> R.string.github_health_reason_actions_healthy
-        GitHubRepositoryHealthReason.ActionsFailing -> R.string.github_health_reason_actions_failing
-        GitHubRepositoryHealthReason.AndroidAssetsDetected -> R.string.github_health_reason_android_assets_detected
-        GitHubRepositoryHealthReason.MissingAndroidAssets -> R.string.github_health_reason_missing_android_assets
-        GitHubRepositoryHealthReason.CommunityProfileComplete -> R.string.github_health_reason_community_complete
-        GitHubRepositoryHealthReason.MissingReadme -> R.string.github_health_reason_missing_readme
-        GitHubRepositoryHealthReason.MissingLicense -> R.string.github_health_reason_missing_license
-        GitHubRepositoryHealthReason.SecuritySignalsAvailable -> R.string.github_health_reason_security_available
-        GitHubRepositoryHealthReason.OpenSecurityAlerts -> R.string.github_health_reason_security_alerts
-        GitHubRepositoryHealthReason.LocalPackageMatched -> R.string.github_health_reason_local_package_matched
-        GitHubRepositoryHealthReason.LocalPackageMismatch -> R.string.github_health_reason_local_package_mismatch
-        GitHubRepositoryHealthReason.UpdateAvailable -> R.string.github_health_reason_update_available
-        GitHubRepositoryHealthReason.PreReleaseRecommended -> R.string.github_health_reason_prerelease
-        GitHubRepositoryHealthReason.CheckFailed -> R.string.github_health_reason_check_failed
-        GitHubRepositoryHealthReason.MissingPackageName -> R.string.github_health_reason_missing_package
-        GitHubRepositoryHealthReason.MissingStableRelease -> R.string.github_health_reason_missing_stable
-        GitHubRepositoryHealthReason.LocalMissing -> R.string.github_health_reason_local_missing
-        GitHubRepositoryHealthReason.StableDetected -> R.string.github_health_reason_stable_detected
-        GitHubRepositoryHealthReason.FreshRelease -> R.string.github_health_reason_fresh_release
     }
 }
 

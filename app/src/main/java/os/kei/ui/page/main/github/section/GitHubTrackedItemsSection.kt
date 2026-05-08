@@ -45,20 +45,24 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubCompactInfoRow
-import os.kei.ui.page.main.github.GitHubDecisionLevel
+import os.kei.ui.page.main.github.GitHubRepositoryHealth
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
 import os.kei.ui.page.main.github.buildGitHubReleaseNotesLines
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
+import os.kei.ui.page.main.github.buildGitHubRepositoryHealthImpactLines
 import os.kei.ui.page.main.github.formatApkVersionValue
 import os.kei.ui.page.main.github.formatReleaseMetaValue
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.isLocalAppUninstalled
+import os.kei.ui.page.main.github.labelRes
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.preReleaseVersionColor
+import os.kei.ui.page.main.github.repositoryHealthLabelRes
+import os.kei.ui.page.main.github.repositoryHealthStatusColor
 import os.kei.ui.page.main.github.stableVersionColor
 import os.kei.ui.page.main.github.statusActionUrl
 import os.kei.ui.page.main.github.statusColor
@@ -92,6 +96,7 @@ import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.GitHubTrackedItemsSection(
@@ -368,11 +373,9 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         lookupConfig.repositoryHealthCardEnabled
                     ) {
                         val health = buildGitHubRepositoryHealth(item, state)
-                        VersionValueRow(
-                            label = stringResource(R.string.github_item_label_health_score),
-                            value = health.score.toString(),
-                            valueColor = health.level.toStatusColor(),
-                            emphasized = health.level != GitHubDecisionLevel.Review,
+                        GitHubHealthPreviewBlock(
+                            health = health,
+                            context = context,
                             onClick = {
                                 onOpenDecisionAssistDetail(
                                     GitHubDecisionAssistDetailType.RepositoryHealth,
@@ -509,11 +512,95 @@ private fun GitHubReleaseNotesPreviewBlock(
     }
 }
 
-private fun GitHubDecisionLevel.toStatusColor(): Color {
-    return when (this) {
-        GitHubDecisionLevel.Good -> GitHubStatusPalette.Update
-        GitHubDecisionLevel.Review -> GitHubStatusPalette.Cache
-        GitHubDecisionLevel.Risk -> GitHubStatusPalette.Error
+@Composable
+private fun GitHubHealthPreviewBlock(
+    health: GitHubRepositoryHealth,
+    context: Context,
+    onClick: () -> Unit
+) {
+    val backdrop = rememberLayerBackdrop()
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val color = health.level.repositoryHealthStatusColor()
+    val surfaceColor = if (isDark) {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
+    } else {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
+    }
+    val reasonLines = buildGitHubRepositoryHealthImpactLines(health)
+        .sortedByDescending { (_, impact) -> abs(impact) }
+        .take(2)
+    LiquidSurface(
+        backdrop = backdrop,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        tint = color.copy(alpha = if (isDark) 0.16f else 0.10f),
+        surfaceColor = surfaceColor,
+        blurRadius = UiPerformanceBudget.backdropBlur,
+        lensRadius = UiPerformanceBudget.backdropLens,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.github_item_label_health_score),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                StatusPill(
+                    label = stringResource(
+                        R.string.github_health_score_level_value,
+                        health.score,
+                        stringResource(health.level.repositoryHealthLabelRes())
+                    ),
+                    color = color,
+                    size = AppStatusPillSize.Compact,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+            reasonLines.forEach { (reason, impact) ->
+                val impactColor = when {
+                    impact > 0 -> GitHubStatusPalette.Update
+                    impact < 0 -> GitHubStatusPalette.Error
+                    else -> MiuixTheme.colorScheme.onBackgroundVariant
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = if (impact > 0) "+$impact" else impact.toString(),
+                        color = impactColor,
+                        fontSize = AppTypographyTokens.Caption.fontSize,
+                        lineHeight = AppTypographyTokens.Caption.lineHeight,
+                        fontWeight = AppTypographyTokens.Caption.fontWeight
+                    )
+                    Text(
+                        text = context.getString(reason.labelRes()),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
     }
 }
 

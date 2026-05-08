@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -148,7 +149,8 @@ internal class GitHubPageActions(
 
     fun refreshTrackedItem(
         item: GitHubTrackedApp,
-        showToastOnError: Boolean = true
+        showToastOnError: Boolean = true,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
     ) {
         if (env.state.trackedItems.none { it.id == item.id }) return
         if (env.state.itemRefreshLoading[item.id] == true) return
@@ -164,7 +166,8 @@ internal class GitHubPageActions(
                 refreshActions.refreshItemNow(
                     item = item,
                     showToastOnError = showToastOnError,
-                    keepCurrentVisualWhileRefreshing = true
+                    keepCurrentVisualWhileRefreshing = true,
+                    profilePurposeOverride = profilePurposeOverride
                 ) { updatedState ->
                     if (wasAssetExpanded && canLoadApkAssets(item, updatedState)) {
                         assetActions.clearApkAssetCache(item, updatedState)

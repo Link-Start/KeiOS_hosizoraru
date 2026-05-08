@@ -140,7 +140,7 @@ internal fun MainPagerLayout(
             .background(MiuixTheme.colorScheme.background)
             .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
-            val safeSelectedPageIndex = coordinator.selectedPageIndex.coerceIn(
+            val safeSelectedPageIndex = coordinator.pagerState.targetPage.coerceIn(
                 0,
                 (coordinator.tabs.size - 1).coerceAtLeast(0)
             )

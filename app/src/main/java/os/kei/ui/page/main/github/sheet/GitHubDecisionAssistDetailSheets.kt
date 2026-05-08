@@ -353,7 +353,6 @@ private fun GitHubReleaseNotesDetailContent(
     onOpenExternalUrl: (String, String) -> Unit
 ) {
     val context = LocalContext.current
-    var showRawMarkdown by remember(item.id, assetBundle?.tagName) { mutableStateOf(false) }
     var meaningsExpanded by remember(item.id, assetBundle?.tagName) { mutableStateOf(false) }
     val lines = buildGitHubReleaseNotesDetailLines(
         item = item,
@@ -399,20 +398,6 @@ private fun GitHubReleaseNotesDetailContent(
                 AppLiquidTextButton(
                     backdrop = backdrop,
                     variant = GlassVariant.SheetAction,
-                    text = stringResource(
-                        if (showRawMarkdown) {
-                            R.string.github_release_notes_action_preview
-                        } else {
-                            R.string.github_release_notes_action_raw
-                        }
-                    ),
-                    enabled = rawMarkdown.isNotBlank(),
-                    modifier = Modifier.weight(1f),
-                    onClick = { showRawMarkdown = !showRawMarkdown }
-                )
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
                     text = stringResource(R.string.common_copy),
                     leadingIcon = osLucideCopyIcon(),
                     enabled = copyText.isNotBlank(),
@@ -426,8 +411,6 @@ private fun GitHubReleaseNotesDetailContent(
                         ).show()
                     }
                 )
-            }
-            ActionButtonRow {
                 AppLiquidTextButton(
                     backdrop = backdrop,
                     variant = GlassVariant.SheetAction,
@@ -446,10 +429,10 @@ private fun GitHubReleaseNotesDetailContent(
         }
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
         SheetSectionCard(verticalSpacing = 10.dp) {
-            if (showRawMarkdown && rawMarkdown.isNotBlank()) {
+            if (rawMarkdown.isNotBlank()) {
                 DetailTextLine(
                     text = rawMarkdown,
-                    maxLines = 18,
+                    maxLines = Int.MAX_VALUE,
                     accent = true
                 )
             } else if (lines.isEmpty()) {
@@ -458,7 +441,7 @@ private fun GitHubReleaseNotesDetailContent(
                 lines.forEachIndexed { index, line ->
                     DetailTextLine(
                         text = if (index == 0) line else "• $line",
-                        maxLines = if (index == 0) 4 else 8,
+                        maxLines = Int.MAX_VALUE,
                         accent = index == 0
                     )
                 }

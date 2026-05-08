@@ -727,8 +727,6 @@
     <string name="github_release_notes_field_guide_atom">Atom：适合无 token 的公开页面解析</string>
     <string name="github_release_notes_field_guide_markdown">Markdown：保留发布方原始格式</string>
     <string name="github_release_notes_field_guide_assets">Assets：同步用于下载按钮和 APK 解析</string>
-    <string name="github_release_notes_action_raw">原始 Markdown</string>
-    <string name="github_release_notes_action_preview">预览摘要</string>
     <string name="github_release_notes_action_open_release">打开 Release</string>
     <string name="github_release_notes_toast_copied">已复制 Release Notes</string>
     <string name="github_apk_trust_good">可信</string>

@@ -467,7 +467,7 @@ private fun DetailInfoRow(
     label: String,
     value: String
 ) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top
@@ -560,7 +560,7 @@ private fun releaseNotesSourceLabel(source: String): String {
 
 @Composable
 private fun ActionButtonRow(content: @Composable RowScope.() -> Unit) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         content = content

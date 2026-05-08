@@ -129,7 +129,7 @@ val nonReleaseVersionCode = nonReleaseVersion.toVersionCode(
 val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
-        ?: "0.9.0-81ad71b1-SNAPSHOT"
+        ?: "0.9.0-8a5e4f4b-SNAPSHOT"
 val coreKtxVersion = "1.18.0"
 val activityComposeVersion = "1.13.0"
 val materialVersion = "1.13.0"
@@ -323,8 +323,6 @@ configurations.configureEach {
             .using(module("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"))
         substitute(module("top.yukonga.miuix.kmp:miuix-icons"))
             .using(module("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"))
-        substitute(module("top.yukonga.miuix.kmp:miuix-shapes"))
-            .using(module("top.yukonga.miuix.kmp:miuix-shapes-android:$miuixVersion"))
         substitute(module("top.yukonga.miuix.kmp:miuix-blur"))
             .using(module("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"))
         substitute(module("top.yukonga.miuix.kmp:miuix-navigation3-ui"))
@@ -348,7 +346,6 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
-    implementation("top.yukonga.miuix.kmp:miuix-shapes-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-navigation3-ui-android:$miuixVersion")
     implementation("io.github.kyant0:backdrop:$backdropVersion")

@@ -104,7 +104,8 @@ object GitHubVersionUtils {
                 InstalledAppItem(
                     label = label,
                     packageName = packageName,
-                    lastUpdateTimeMs = pkgInfo.lastUpdateTime
+                    lastUpdateTimeMs = pkgInfo.lastUpdateTime,
+                    isSystemApp = appInfo.isSystemAppForGitHubPicker()
                 )
             }
             .distinctBy { it.packageName }
@@ -644,4 +645,9 @@ private fun shouldIgnoreInstalledAppForGitHubList(
     if ((appInfo.flags and ApplicationInfo.FLAG_TEST_ONLY) != 0) return true
     if (overlayFlagMask != 0 && (appInfo.flags and overlayFlagMask) != 0) return true
     return false
+}
+
+private fun ApplicationInfo.isSystemAppForGitHubPicker(): Boolean {
+    return (flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
+            (flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
 }

@@ -39,7 +39,8 @@ internal fun GitHubTrackedApp.isKeiOsSelfTrack(): Boolean {
 data class InstalledAppItem(
     val label: String,
     val packageName: String,
-    val lastUpdateTimeMs: Long = -1L
+    val lastUpdateTimeMs: Long = -1L,
+    val isSystemApp: Boolean = false
 )
 
 data class GitHubCheckCacheEntry(

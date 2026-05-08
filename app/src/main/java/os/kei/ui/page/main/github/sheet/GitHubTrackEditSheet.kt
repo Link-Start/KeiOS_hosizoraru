@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -26,6 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
@@ -36,6 +41,7 @@ import os.kei.ui.page.main.github.GitHubSelectedAppCard
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -50,6 +56,9 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
 @Composable
@@ -166,40 +175,117 @@ internal fun GitHubTrackEditSheet(
 @Composable
 private fun GitHubTrackAppPickerControls(
     backdrop: LayerBackdrop,
-    filterScope: GitHubTrackAppPickerFilterScope,
+    includeUserApps: Boolean,
+    includeSystemApps: Boolean,
     sortMode: GitHubTrackAppPickerSortMode,
-    onFilterScopeChange: (GitHubTrackAppPickerFilterScope) -> Unit,
-    onSortModeChange: (GitHubTrackAppPickerSortMode) -> Unit
+    sortDirection: GitHubTrackAppPickerSortDirection,
+    onIncludeUserAppsChange: (Boolean) -> Unit,
+    onIncludeSystemAppsChange: (Boolean) -> Unit,
+    onSortModeChange: (GitHubTrackAppPickerSortMode) -> Unit,
+    onSortDirectionChange: (GitHubTrackAppPickerSortDirection) -> Unit
 ) {
+    var sortModeExpanded by remember { mutableStateOf(false) }
+    var sortDirectionExpanded by remember { mutableStateOf(false) }
+    var sortModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    var sortDirectionAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val sortModes = GitHubTrackAppPickerSortMode.entries
+    val sortDirections = GitHubTrackAppPickerSortDirection.entries
+    val sortOptions = sortModes.map { mode -> stringResource(mode.labelRes) }
+    val directionOptions = sortDirections.map { direction -> stringResource(direction.labelRes) }
+    val sortIndex = sortModes.indexOf(sortMode).coerceAtLeast(0)
+    val directionIndex = sortDirections.indexOf(sortDirection).coerceAtLeast(0)
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         GitHubTrackAppPickerButtonRow(
             label = stringResource(R.string.github_track_sheet_app_filter_scope_label)
         ) {
-            GitHubTrackAppPickerFilterScope.entries.forEach { scope ->
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    text = stringResource(scope.labelRes),
-                    onClick = { onFilterScopeChange(scope) },
-                    modifier = Modifier.weight(1f),
-                    variant = if (scope == filterScope) GlassVariant.SheetAction else GlassVariant.Content,
-                    textMaxLines = 1
-                )
-            }
+            GitHubTrackAppTypeCheckbox(
+                text = stringResource(R.string.github_track_sheet_app_filter_user_apps),
+                checked = includeUserApps,
+                onCheckedChange = onIncludeUserAppsChange,
+                modifier = Modifier.weight(1f)
+            )
+            GitHubTrackAppTypeCheckbox(
+                text = stringResource(R.string.github_track_sheet_app_filter_system_apps),
+                checked = includeSystemApps,
+                onCheckedChange = onIncludeSystemAppsChange,
+                modifier = Modifier.weight(1f)
+            )
         }
         GitHubTrackAppPickerButtonRow(
             label = stringResource(R.string.github_track_sheet_app_sort_label)
         ) {
-            GitHubTrackAppPickerSortMode.entries.forEach { mode ->
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    text = stringResource(mode.labelRes),
-                    onClick = { onSortModeChange(mode) },
-                    modifier = Modifier.weight(1f),
-                    variant = if (mode == sortMode) GlassVariant.SheetAction else GlassVariant.Content,
-                    textMaxLines = 1
-                )
-            }
+            AppDropdownSelector(
+                selectedText = stringResource(
+                    R.string.github_track_sheet_app_sort_dropdown_format,
+                    sortOptions.getOrElse(sortIndex) { "" }
+                ),
+                options = sortOptions,
+                selectedIndex = sortIndex,
+                expanded = sortModeExpanded,
+                anchorBounds = sortModeAnchorBounds,
+                onExpandedChange = { sortModeExpanded = it },
+                onSelectedIndexChange = { index ->
+                    sortModes.getOrNull(index)?.let(onSortModeChange)
+                },
+                onAnchorBoundsChange = { sortModeAnchorBounds = it },
+                modifier = Modifier.weight(1f),
+                backdrop = backdrop,
+                variant = GlassVariant.Content,
+                minHeight = 32.dp,
+                horizontalPadding = 8.dp,
+                verticalPadding = 4.dp
+            )
+            AppDropdownSelector(
+                selectedText = stringResource(
+                    R.string.github_track_sheet_app_sort_direction_dropdown_format,
+                    directionOptions.getOrElse(directionIndex) { "" }
+                ),
+                options = directionOptions,
+                selectedIndex = directionIndex,
+                expanded = sortDirectionExpanded,
+                anchorBounds = sortDirectionAnchorBounds,
+                onExpandedChange = { sortDirectionExpanded = it },
+                onSelectedIndexChange = { index ->
+                    sortDirections.getOrNull(index)?.let(onSortDirectionChange)
+                },
+                onAnchorBoundsChange = { sortDirectionAnchorBounds = it },
+                modifier = Modifier.weight(1f),
+                backdrop = backdrop,
+                variant = GlassVariant.Content,
+                minHeight = 32.dp,
+                horizontalPadding = 8.dp,
+                verticalPadding = 4.dp
+            )
         }
+    }
+}
+
+@Composable
+private fun GitHubTrackAppTypeCheckbox(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .heightIn(min = 34.dp)
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            state = if (checked) ToggleableState.On else ToggleableState.Off,
+            onClick = null
+        )
+        Text(
+            text = text,
+            color = MiuixTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -213,15 +299,10 @@ private fun GitHubTrackAppPickerButtonRow(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
             content = content
         )
     }
-}
-
-private enum class GitHubTrackAppPickerFilterScope(val labelRes: Int) {
-    All(R.string.github_track_sheet_app_filter_scope_all),
-    Name(R.string.github_track_sheet_app_filter_scope_name),
-    Package(R.string.github_track_sheet_app_filter_scope_package)
 }
 
 private enum class GitHubTrackAppPickerSortMode(val labelRes: Int) {
@@ -230,37 +311,46 @@ private enum class GitHubTrackAppPickerSortMode(val labelRes: Int) {
     Package(R.string.github_track_sheet_app_sort_package)
 }
 
-private fun InstalledAppItem.matchesAppPickerQuery(
-    query: String,
-    scope: GitHubTrackAppPickerFilterScope
-): Boolean {
+private enum class GitHubTrackAppPickerSortDirection(val labelRes: Int) {
+    Ascending(R.string.github_track_sheet_app_sort_direction_ascending),
+    Descending(R.string.github_track_sheet_app_sort_direction_descending)
+}
+
+private fun InstalledAppItem.matchesAppPickerQuery(query: String): Boolean {
     if (query.isBlank()) return true
-    return when (scope) {
-        GitHubTrackAppPickerFilterScope.All ->
-            label.contains(query, ignoreCase = true) ||
-                    packageName.contains(query, ignoreCase = true)
-
-        GitHubTrackAppPickerFilterScope.Name ->
-            label.contains(query, ignoreCase = true)
-
-        GitHubTrackAppPickerFilterScope.Package ->
+    return label.contains(query, ignoreCase = true) ||
             packageName.contains(query, ignoreCase = true)
+}
+
+private fun InstalledAppItem.matchesAppTypeFilter(
+    includeUserApps: Boolean,
+    includeSystemApps: Boolean
+): Boolean {
+    return when {
+        isSystemApp -> includeSystemApps
+        else -> includeUserApps
     }
 }
 
-private fun GitHubTrackAppPickerSortMode.comparator(): Comparator<InstalledAppItem> {
-    return when (this) {
+private fun GitHubTrackAppPickerSortMode.comparator(
+    direction: GitHubTrackAppPickerSortDirection
+): Comparator<InstalledAppItem> {
+    val baseComparator = when (this) {
         GitHubTrackAppPickerSortMode.Name ->
             compareBy<InstalledAppItem> { it.label.lowercase(Locale.ROOT) }
                 .thenBy { it.packageName.lowercase(Locale.ROOT) }
 
         GitHubTrackAppPickerSortMode.Recent ->
-            compareByDescending<InstalledAppItem> { it.lastUpdateTimeMs }
+            compareBy<InstalledAppItem> { it.lastUpdateTimeMs }
                 .thenBy { it.label.lowercase(Locale.ROOT) }
 
         GitHubTrackAppPickerSortMode.Package ->
             compareBy<InstalledAppItem> { it.packageName.lowercase(Locale.ROOT) }
                 .thenBy { it.label.lowercase(Locale.ROOT) }
+    }
+    return when (direction) {
+        GitHubTrackAppPickerSortDirection.Ascending -> baseComparator
+        GitHubTrackAppPickerSortDirection.Descending -> baseComparator.reversed()
     }
 }
 
@@ -418,14 +508,18 @@ private fun GitHubTrackAppPickerContent(
 ) {
     val configuration = LocalConfiguration.current
     val listMaxHeight = (configuration.screenHeightDp.dp * 0.60f).coerceIn(340.dp, 680.dp)
-    var filterScope by remember { mutableStateOf(GitHubTrackAppPickerFilterScope.All) }
+    var includeUserApps by remember { mutableStateOf(true) }
+    var includeSystemApps by remember { mutableStateOf(selectedApp?.isSystemApp == true) }
     var sortMode by remember { mutableStateOf(GitHubTrackAppPickerSortMode.Name) }
-    val filteredApps = remember(appList, appSearch, filterScope, sortMode) {
+    var sortDirection by remember { mutableStateOf(GitHubTrackAppPickerSortDirection.Ascending) }
+    val filteredApps =
+        remember(appList, appSearch, includeUserApps, includeSystemApps, sortMode, sortDirection) {
         val query = appSearch.trim()
         appList
             .asSequence()
-            .filter { app -> app.matchesAppPickerQuery(query, filterScope) }
-            .sortedWith(sortMode.comparator())
+            .filter { app -> app.matchesAppTypeFilter(includeUserApps, includeSystemApps) }
+            .filter { app -> app.matchesAppPickerQuery(query) }
+            .sortedWith(sortMode.comparator(sortDirection))
             .toList()
     }
 
@@ -462,10 +556,14 @@ private fun GitHubTrackAppPickerContent(
             )
             GitHubTrackAppPickerControls(
                 backdrop = backdrop,
-                filterScope = filterScope,
+                includeUserApps = includeUserApps,
+                includeSystemApps = includeSystemApps,
                 sortMode = sortMode,
-                onFilterScopeChange = { filterScope = it },
-                onSortModeChange = { sortMode = it }
+                sortDirection = sortDirection,
+                onIncludeUserAppsChange = { includeUserApps = it },
+                onIncludeSystemAppsChange = { includeSystemApps = it },
+                onSortModeChange = { sortMode = it },
+                onSortDirectionChange = { sortDirection = it }
             )
             MiuixInfoItem(
                 stringResource(R.string.github_track_sheet_label_app_list),

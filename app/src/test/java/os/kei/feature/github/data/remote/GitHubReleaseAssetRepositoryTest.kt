@@ -51,7 +51,17 @@ class GitHubReleaseAssetRepositoryTest {
 
                 bundles.forEach { bundle ->
                     assertEquals(listOf("demo.apk"), bundle.assets.map { it.name })
-                    assertEquals("Notes", bundle.releaseNotesBody)
+                    assertEquals(
+                        """
+                        Notes
+
+                        ## What's Changed
+
+                        - Added installer flow
+                        - Fixed cache refresh
+                        """.trimIndent(),
+                        bundle.releaseNotesBody
+                    )
                 }
                 val requestPaths = server.takeRequestPaths()
                 assertEquals(1, requestPaths.count { it == "/release" })
@@ -79,7 +89,14 @@ class GitHubReleaseAssetRepositoryTest {
                 <h1 class="d-inline mr-3">Version 1</h1>
                 <relative-time datetime="2026-05-01T10:00:00Z"></relative-time>
                 <include-fragment src="${server.url("/demo/app/releases/expanded_assets/v1")}"></include-fragment>
-                <div class="markdown-body"><p>Notes</p></div>
+                <div class="markdown-body">
+                  <p>Notes</p>
+                  <h2>What's Changed</h2>
+                  <ul>
+                    <li>Added <strong>installer</strong> flow</li>
+                    <li>Fixed cache refresh</li>
+                  </ul>
+                </div>
               </body>
             </html>
         """.trimIndent()

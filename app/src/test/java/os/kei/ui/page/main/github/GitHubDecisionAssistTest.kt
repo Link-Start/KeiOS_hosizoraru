@@ -128,6 +128,60 @@ class GitHubDecisionAssistTest {
         assertEquals(listOf("Added installer flow", "Fixed cache refresh"), lines)
     }
 
+    @Test
+    fun releaseNotesLinesKeepApiSingleLineItemsReadable() {
+        val lines = buildGitHubReleaseNotesLines(
+            item = trackedItem(),
+            state = VersionCheckUi(releaseHint = "fallback hint"),
+            assetBundle = GitHubReleaseAssetBundle(
+                releaseName = "Version 1.0",
+                tagName = "v1.0",
+                htmlUrl = "",
+                releaseNotesBody = """
+                    Added media notification support
+                    Fixed release notes markdown rendering
+                    Improved GitHub share import flow
+                """.trimIndent(),
+                assets = listOf(asset("demo.apk"))
+            ),
+            expanded = true
+        )
+
+        assertEquals(
+            listOf(
+                "Added media notification support",
+                "Fixed release notes markdown rendering",
+                "Improved GitHub share import flow"
+            ),
+            lines
+        )
+    }
+
+    @Test
+    fun releaseNotesLinesSkipGenericHeadingsAndKeepAtomMarkdownItems() {
+        val lines = buildGitHubReleaseNotesLines(
+            item = trackedItem(),
+            state = VersionCheckUi(releaseHint = "fallback hint"),
+            assetBundle = GitHubReleaseAssetBundle(
+                releaseName = "Version 1.0",
+                tagName = "v1.0",
+                htmlUrl = "",
+                releaseNotesBody = """
+                    # Release Notes
+
+                    ## What's Changed
+
+                    - Added installer flow
+                    - Fixed cache refresh
+                """.trimIndent(),
+                assets = listOf(asset("demo.apk"))
+            ),
+            expanded = false
+        )
+
+        assertEquals(listOf("Added installer flow", "Fixed cache refresh"), lines)
+    }
+
     private fun trackedItem(packageName: String = "os.kei.demo"): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = "https://github.com/demo/app",

@@ -7,6 +7,8 @@ import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.asset.assetFileExtensionLabel
 import os.kei.ui.page.main.github.asset.assetIsPreferredForDevice
 import os.kei.ui.page.main.github.asset.assetLikelyCompatibleWithDevice
+import os.kei.ui.page.main.widget.markdown.AppMarkdownBlock
+import os.kei.ui.page.main.widget.markdown.parseAppMarkdownBlocks
 
 internal enum class GitHubDecisionLevel {
     Good,
@@ -163,7 +165,9 @@ internal fun buildGitHubReleaseNotesLines(
         .orEmpty()
         .toReleaseNotesPreviewLines()
     if (releaseNotesBodyLines.isNotEmpty()) {
-        return releaseNotesBodyLines.take(if (expanded) 5 else 2)
+        return releaseNotesBodyLines.take(
+            if (expanded) RELEASE_NOTES_EXPANDED_LINE_LIMIT else RELEASE_NOTES_COMPACT_LINE_LIMIT
+        )
     }
     val lines = buildList {
         assetBundle?.releaseName?.trim()?.takeIf { it.isNotBlank() }?.let(::add)
@@ -182,7 +186,9 @@ internal fun buildGitHubReleaseNotesLines(
             ?.joinToString(" / ")
             ?.let(::add)
     }.distinct()
-    return lines.take(if (expanded) 5 else 2)
+    return lines.take(
+        if (expanded) RELEASE_NOTES_EXPANDED_LINE_LIMIT else RELEASE_NOTES_COMPACT_LINE_LIMIT
+    )
 }
 
 internal fun buildGitHubReleaseNotesDetailLines(
@@ -195,7 +201,7 @@ internal fun buildGitHubReleaseNotesDetailLines(
         .orEmpty()
         .toReleaseNotesPreviewLines()
     if (releaseNotesBodyLines.isNotEmpty()) {
-        return releaseNotesBodyLines.take(30)
+        return releaseNotesBodyLines.take(RELEASE_NOTES_DETAIL_LINE_LIMIT)
     }
     return buildGitHubReleaseNotesLines(
         item = item,
@@ -223,10 +229,29 @@ internal fun buildGitHubRepositoryHealthImpactLines(
 }
 
 private const val FRESH_RELEASE_WINDOW_MS = 1000L * 60L * 60L * 24L * 14L
-private const val RELEASE_NOTES_LINE_MAX_CHARS = 180
+private const val RELEASE_NOTES_COMPACT_LINE_LIMIT = 2
+private const val RELEASE_NOTES_EXPANDED_LINE_LIMIT = 7
+private const val RELEASE_NOTES_DETAIL_LINE_LIMIT = 30
+private const val RELEASE_NOTES_LINE_MAX_CHARS = 124
 
 private fun String.toReleaseNotesPreviewLines(): List<String> {
-    return lines()
+    val markdownLines = parseAppMarkdownBlocks(
+        markdown = this,
+        preserveLineBreaks = true
+    ).asSequence()
+        .flatMap { block ->
+            when (block) {
+                is AppMarkdownBlock.Heading -> sequenceOf(block.text)
+                is AppMarkdownBlock.Paragraph -> block.text.lines().asSequence()
+                is AppMarkdownBlock.Bullet -> sequenceOf(block.text)
+                is AppMarkdownBlock.Ordered -> sequenceOf(block.text)
+                is AppMarkdownBlock.Code -> emptySequence()
+            }
+        }
+        .toList()
+
+    val sourceLines = markdownLines.ifEmpty { lines() }
+    return sourceLines
         .asSequence()
         .map { line ->
             line.trim()
@@ -245,7 +270,9 @@ private fun String.toReleaseNotesPreviewLines(): List<String> {
         .filter { it.length >= 3 }
         .filterNot { line ->
             line.equals("changelog", ignoreCase = true) ||
-                    line.equals("release notes", ignoreCase = true)
+                    line.equals("release notes", ignoreCase = true) ||
+                    line.equals("what's changed", ignoreCase = true) ||
+                    line.equals("whats changed", ignoreCase = true)
         }
         .map { line ->
             if (line.length > RELEASE_NOTES_LINE_MAX_CHARS) {

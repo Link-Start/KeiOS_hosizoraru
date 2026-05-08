@@ -507,17 +507,84 @@ object GitHubReleaseAssetRepository {
                     ?.getOrNull(1)
                     .orEmpty()
             }
-        return markdownBlock
+        return markdownBlock.htmlReleaseNotesToMarkdown().take(MAX_RELEASE_NOTES_BODY_CHARS)
+    }
+
+    private fun String.htmlReleaseNotesToMarkdown(): String {
+        return this
+            .replace(
+                Regex(
+                    """<h([1-6])[^>]*>(.*?)</h\1>""",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+                )
+            ) { match ->
+                val level = match.groupValues.getOrNull(1)?.toIntOrNull()?.coerceIn(1, 4) ?: 2
+                val text = match.groupValues.getOrNull(2).orEmpty().htmlFragmentToText()
+                "\n${"#".repeat(level)} $text\n\n"
+            }
+            .replace(
+                Regex(
+                    """<li[^>]*>(.*?)</li>""",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+                )
+            ) { match ->
+                val text = match.groupValues.getOrNull(1).orEmpty().htmlFragmentToText()
+                "\n- $text\n"
+            }
+            .replace(
+                Regex(
+                    """<p[^>]*>(.*?)</p>""",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+                )
+            ) { match ->
+                val text = match.groupValues.getOrNull(1).orEmpty().htmlFragmentToText()
+                "\n$text\n\n"
+            }
             .replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("""</(?:p|li|h[1-6]|div|ul|ol)>""", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("""</(?:div|section|article|ul|ol)>""", RegexOption.IGNORE_CASE), "\n")
             .replace(Regex("<[^>]+>"), " ")
             .decodeHtmlEntities()
+            .normalizeReleaseNotesMarkdownLines()
+    }
+
+    private fun String.htmlFragmentToText(): String {
+        return replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("<[^>]+>"), " ")
+            .decodeHtmlEntities()
+            .replace(Regex("""[ \t\x0B\f\r]+"""), " ")
             .lines()
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
+            .joinToString(" ") { it.trim() }
+            .trim()
+    }
+
+    private fun String.normalizeReleaseNotesMarkdownLines(): String {
+        val lines = lines().map { it.trim() }
+        val nextNonBlankLines = MutableList(lines.size) { "" }
+        var nextNonBlank = ""
+        for (index in lines.indices.reversed()) {
+            nextNonBlankLines[index] = nextNonBlank
+            if (lines[index].isNotBlank()) {
+                nextNonBlank = lines[index]
+            }
+        }
+        val normalized = mutableListOf<String>()
+        lines.forEachIndexed { index, line ->
+            val nextLine = nextNonBlankLines[index]
+            when {
+                line.isBlank() &&
+                        normalized.lastOrNull()?.startsWith("- ") == true &&
+                        nextLine.startsWith("- ") -> Unit
+
+                line.isBlank() && normalized.lastOrNull().isNullOrBlank() -> Unit
+                line.isBlank() -> normalized += ""
+                else -> normalized += line
+            }
+        }
+        return normalized
+            .dropWhile { it.isBlank() }
+            .dropLastWhile { it.isBlank() }
             .joinToString("\n")
-            .take(MAX_RELEASE_NOTES_BODY_CHARS)
+            .trim()
     }
 
     private fun parseExpandedAssetsUrl(html: String): String? {

@@ -3,13 +3,19 @@ package os.kei.ui.page.main.github.section
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -385,19 +391,9 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             expanded = lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded
                         )
                         if (releaseNotesLines.isNotEmpty()) {
-                            AppSupportingBlock(
-                                text = buildString {
-                                    append(stringResource(R.string.github_release_notes_title))
-                                    append('\n')
-                                    append(releaseNotesLines.joinToString("\n"))
-                                },
-                                accentColor = GitHubStatusPalette.Active,
-                                maxLines = if (lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded) {
-                                    6
-                                } else {
-                                    3
-                                },
-                                overflow = TextOverflow.Ellipsis,
+                            GitHubReleaseNotesPreviewBlock(
+                                lines = releaseNotesLines,
+                                expanded = lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded,
                                 onClick = {
                                     onOpenDecisionAssistDetail(
                                         GitHubDecisionAssistDetailType.ReleaseNotes,
@@ -424,6 +420,88 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         onShareApkLink = onShareApkLink,
                         context = context,
                         supportedAbis = supportedAbis
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubReleaseNotesPreviewBlock(
+    lines: List<String>,
+    expanded: Boolean,
+    onClick: () -> Unit
+) {
+    val backdrop = rememberLayerBackdrop()
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val surfaceColor = if (isDark) {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
+    } else {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
+    }
+    LiquidSurface(
+        backdrop = backdrop,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        tint = GitHubStatusPalette.Active.copy(alpha = if (isDark) 0.16f else 0.10f),
+        surfaceColor = surfaceColor,
+        blurRadius = UiPerformanceBudget.backdropBlur,
+        lensRadius = UiPerformanceBudget.backdropLens,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.github_release_notes_title),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                    modifier = Modifier.weight(1f)
+                )
+                StatusPill(
+                    label = stringResource(
+                        if (expanded) {
+                            R.string.github_release_notes_mode_expanded
+                        } else {
+                            R.string.github_release_notes_mode_compact
+                        }
+                    ),
+                    color = GitHubStatusPalette.Active,
+                    size = AppStatusPillSize.Compact,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+            lines.forEach { line ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "•",
+                        color = GitHubStatusPalette.Active,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight
+                    )
+                    Text(
+                        text = line,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        maxLines = if (expanded) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }

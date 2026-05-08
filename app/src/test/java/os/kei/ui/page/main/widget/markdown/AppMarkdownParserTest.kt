@@ -46,4 +46,18 @@ class AppMarkdownParserTest {
             }
         )
     }
+
+    @Test
+    fun preserveLineBreaksKeepsReleaseNoteLinesSeparate() {
+        val blocks = parseAppMarkdownBlocks(
+            markdown = """
+                Added media notification support
+                Fixed release notes rendering
+            """.trimIndent(),
+            preserveLineBreaks = true
+        )
+
+        assertEquals(AppMarkdownBlock.Paragraph("Added media notification support"), blocks[0])
+        assertEquals(AppMarkdownBlock.Paragraph("Fixed release notes rendering"), blocks[1])
+    }
 }

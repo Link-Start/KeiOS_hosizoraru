@@ -426,7 +426,8 @@ private fun GitHubReleaseNotesDetailContent(
                         titleColor = MiuixTheme.colorScheme.onBackground,
                         subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         accentColor = MiuixTheme.colorScheme.primary,
-                        codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f)
+                        codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f),
+                        preserveLineBreaks = true
                     )
                 }
             } else if (lines.isEmpty()) {

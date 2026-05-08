@@ -32,9 +32,12 @@ internal fun AppMarkdownContent(
     codeContainerColor: Color,
     modifier: Modifier = Modifier,
     paragraphMarker: String? = null,
-    emptyText: String? = null
+    emptyText: String? = null,
+    preserveLineBreaks: Boolean = false
 ) {
-    val blocks = remember(markdown) { parseAppMarkdownBlocks(markdown) }
+    val blocks = remember(markdown, preserveLineBreaks) {
+        parseAppMarkdownBlocks(markdown, preserveLineBreaks = preserveLineBreaks)
+    }
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)

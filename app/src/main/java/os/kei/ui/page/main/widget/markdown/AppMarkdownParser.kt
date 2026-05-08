@@ -14,7 +14,10 @@ private val INLINE_TOKEN_REGEX = Regex(
     "`([^`]+)`|\\*\\*([^*]+)\\*\\*|\\*([^*]+)\\*|\\[(.+?)]\\((https?://[^)\\s]+)\\)"
 )
 
-internal fun parseAppMarkdownBlocks(markdown: String): List<AppMarkdownBlock> {
+internal fun parseAppMarkdownBlocks(
+    markdown: String,
+    preserveLineBreaks: Boolean = false
+): List<AppMarkdownBlock> {
     val lines = markdown.replace("\r\n", "\n").split('\n')
     val blocks = mutableListOf<AppMarkdownBlock>()
     val paragraphBuffer = mutableListOf<String>()
@@ -24,7 +27,9 @@ internal fun parseAppMarkdownBlocks(markdown: String): List<AppMarkdownBlock> {
 
     fun flushParagraph() {
         if (paragraphBuffer.isNotEmpty()) {
-            val text = paragraphBuffer.joinToString(" ").trim()
+            val text = paragraphBuffer.joinToString(
+                separator = if (preserveLineBreaks) "\n" else " "
+            ).trim()
             if (text.isNotBlank()) blocks += AppMarkdownBlock.Paragraph(text)
             paragraphBuffer.clear()
         }
@@ -102,6 +107,9 @@ internal fun parseAppMarkdownBlocks(markdown: String): List<AppMarkdownBlock> {
         }
 
         paragraphBuffer += trimmed
+        if (preserveLineBreaks) {
+            flushParagraph()
+        }
     }
 
     flushParagraph()

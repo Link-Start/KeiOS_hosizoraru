@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
@@ -359,12 +360,12 @@ fun OsShellRunnerPage(
         showDangerousCommandConfirm = false
         pendingDangerousCommand = ""
     }
-    OsShellBackHandler(
+    KeiOSActivityRootBackHandler(
         enabled = !showSaveSheet &&
                 !showBehaviorSettingsSheet &&
                 !showOutputSettingsSheet &&
                 !showDangerousCommandConfirm,
-        source = BackNavigationSource.Activity
+        needsInterception = false
     ) {
         requestClose()
     }

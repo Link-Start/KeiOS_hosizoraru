@@ -80,6 +80,7 @@ class BackNavigationRuntimeTest {
                 popDirectionFollowsSwipeEdge = false,
                 routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
+                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 romFamily = PredictiveBackOemCompat.RomFamily.Aosp
             ),
             transitionAnimationsEnabled = true,
@@ -97,6 +98,7 @@ class BackNavigationRuntimeTest {
                 popDirectionFollowsSwipeEdge = true,
                 routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
             ),
             transitionAnimationsEnabled = true,
@@ -114,6 +116,7 @@ class BackNavigationRuntimeTest {
                 popDirectionFollowsSwipeEdge = false,
                 routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
                 romFamily = PredictiveBackOemCompat.RomFamily.Aosp
             ),
             transitionAnimationsEnabled = false,
@@ -121,5 +124,99 @@ class BackNavigationRuntimeTest {
         )
 
         assertEquals(BackNavigationHandlerMode.CommitOnly, mode)
+    }
+
+    @Test
+    fun `activity root uses framework finish when predictive back is enabled`() {
+        val mode = resolveActivityBackHandlerMode(
+            policy = PredictiveBackOemCompat.Policy(
+                frameworkAnimationsEnabled = true,
+                popDirectionFollowsSwipeEdge = true,
+                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+                romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
+            ),
+            transitionAnimationsEnabled = true,
+            predictiveBackAnimationsEnabled = false,
+            needsInterception = false
+        )
+
+        assertEquals(ActivityBackHandlerMode.FrameworkFinish, mode)
+        assertFalse(
+            shouldInstallActivityBackCallback(
+                policy = PredictiveBackOemCompat.Policy(
+                    frameworkAnimationsEnabled = true,
+                    popDirectionFollowsSwipeEdge = true,
+                    routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+                    localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                    activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+                    romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
+                ),
+                transitionAnimationsEnabled = true,
+                predictiveBackAnimationsEnabled = false,
+                needsInterception = false
+            )
+        )
+    }
+
+    @Test
+    fun `activity root installs callback for local interception`() {
+        val policy = PredictiveBackOemCompat.Policy(
+            frameworkAnimationsEnabled = true,
+            popDirectionFollowsSwipeEdge = false,
+            routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+            localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
+            activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+            romFamily = PredictiveBackOemCompat.RomFamily.Aosp
+        )
+
+        assertEquals(
+            ActivityBackHandlerMode.CommitCallback,
+            resolveActivityBackHandlerMode(
+                policy = policy,
+                transitionAnimationsEnabled = true,
+                predictiveBackAnimationsEnabled = true,
+                needsInterception = true
+            )
+        )
+        assertTrue(
+            shouldInstallActivityBackCallback(
+                policy = policy,
+                transitionAnimationsEnabled = true,
+                predictiveBackAnimationsEnabled = true,
+                needsInterception = true
+            )
+        )
+    }
+
+    @Test
+    fun `disabled predictive back setting keeps activity root callback`() {
+        val policy = PredictiveBackOemCompat.Policy(
+            frameworkAnimationsEnabled = false,
+            popDirectionFollowsSwipeEdge = false,
+            routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
+            localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+            activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
+            romFamily = PredictiveBackOemCompat.RomFamily.Aosp
+        )
+
+        assertEquals(
+            ActivityBackHandlerMode.CommitCallback,
+            resolveActivityBackHandlerMode(
+                policy = policy,
+                transitionAnimationsEnabled = true,
+                predictiveBackAnimationsEnabled = false,
+                needsInterception = false
+            )
+        )
+        assertTrue(
+            shouldInstallActivityBackCallback(
+                policy = policy,
+                transitionAnimationsEnabled = true,
+                predictiveBackAnimationsEnabled = false,
+                needsInterception = false
+            )
+        )
     }
 }

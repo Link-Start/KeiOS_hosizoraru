@@ -130,7 +130,10 @@ private fun GuideVideoFullscreenScreen(
     mediaUrl: String,
     onClose: () -> Unit
 ) {
-    val backGestureState = rememberFullscreenBackNavigationGestureState(onBack = onClose)
+    val backGestureState = rememberFullscreenBackNavigationGestureState(
+        allowActivityFrameworkFinish = true,
+        onBack = onClose
+    )
 
     val context = androidx.compose.ui.platform.LocalContext.current
     var loadError by remember(mediaUrl) { mutableStateOf<String?>(null) }

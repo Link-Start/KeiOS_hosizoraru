@@ -18,8 +18,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.ui.page.main.back.BackNavigationSource
-import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
+import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -68,9 +67,10 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         }
     }
 
-    KeiOSBackNavigationHandler(
-        enabled = true,
-        source = BackNavigationSource.Activity
+    KeiOSActivityRootBackHandler(
+        needsInterception = uiState.hasPendingImportWork ||
+                uiState.showExitConfirm ||
+                uiState.importing
     ) {
         viewModel.requestClose()
     }

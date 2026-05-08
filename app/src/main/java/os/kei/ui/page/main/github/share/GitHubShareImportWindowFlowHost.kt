@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +37,7 @@ internal fun GitHubShareImportWindowFlowHost(
     onNavigateToGitHubPage: () -> Unit,
     showPendingArmedSheet: Boolean = false,
     onNotificationOnlyResolveChanged: ((Boolean) -> Unit)? = null,
+    onActivityBackInterceptionChanged: ((Boolean) -> Unit)? = null,
     onMinimizeActiveFlow: (() -> Unit)? = null,
     onClosePendingArmedSheet: (() -> Unit)? = null,
     onIdleWithNoPendingFlow: (() -> Unit)? = null
@@ -44,9 +46,17 @@ internal fun GitHubShareImportWindowFlowHost(
     val scope = remember {
         CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     }
+    val latestOnActivityBackInterceptionChanged by rememberUpdatedState(
+        onActivityBackInterceptionChanged
+    )
     DisposableEffect(Unit) {
         onDispose {
             scope.cancel()
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            latestOnActivityBackInterceptionChanged?.invoke(false)
         }
     }
     var pendingPreview by remember { mutableStateOf<GitHubShareImportPreview?>(null) }
@@ -101,6 +111,14 @@ internal fun GitHubShareImportWindowFlowHost(
 
     LaunchedEffect(notificationOnlyIncomingResolve) {
         onNotificationOnlyResolveChanged?.invoke(notificationOnlyIncomingResolve)
+    }
+    val pendingArmedSheetVisible = showPendingArmedSheet &&
+            pendingTrack != null &&
+            pendingPreview == null &&
+            !resolving &&
+            attachCandidate == null
+    LaunchedEffect(pendingArmedSheetVisible) {
+        latestOnActivityBackInterceptionChanged?.invoke(pendingArmedSheetVisible)
     }
 
     LaunchedEffect(Unit) {
@@ -483,13 +501,7 @@ internal fun GitHubShareImportWindowFlowHost(
         }
     )
     GitHubShareImportPendingSheet(
-        pending = if (
-            showPendingArmedSheet &&
-            pendingTrack != null &&
-            pendingPreview == null &&
-            !resolving &&
-            attachCandidate == null
-        ) {
+        pending = if (pendingArmedSheetVisible) {
             pendingTrack
         } else {
             null

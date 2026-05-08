@@ -112,6 +112,11 @@ internal enum class BackNavigationHandlerMode {
     CommitOnly
 }
 
+internal enum class ActivityBackHandlerMode {
+    FrameworkFinish,
+    CommitCallback
+}
+
 @Composable
 internal fun ProvideBackNavigationRuntime(
     policy: PredictiveBackOemCompat.Policy,
@@ -149,6 +154,46 @@ internal fun resolveBackNavigationHandlerMode(
     }
 }
 
+internal fun resolveActivityBackHandlerMode(
+    policy: PredictiveBackOemCompat.Policy?,
+    transitionAnimationsEnabled: Boolean,
+    predictiveBackAnimationsEnabled: Boolean,
+    needsInterception: Boolean
+): ActivityBackHandlerMode {
+    if (needsInterception) return ActivityBackHandlerMode.CommitCallback
+    val policyAnimationsEnabled = policy?.frameworkAnimationsEnabled
+        ?: (transitionAnimationsEnabled && predictiveBackAnimationsEnabled)
+    val activityBackPipeline = policy?.activityBackPipeline
+        ?: if (policyAnimationsEnabled) {
+            PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish
+        } else {
+            PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback
+        }
+    return if (
+        transitionAnimationsEnabled &&
+        policyAnimationsEnabled &&
+        activityBackPipeline == PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish
+    ) {
+        ActivityBackHandlerMode.FrameworkFinish
+    } else {
+        ActivityBackHandlerMode.CommitCallback
+    }
+}
+
+internal fun shouldInstallActivityBackCallback(
+    policy: PredictiveBackOemCompat.Policy?,
+    transitionAnimationsEnabled: Boolean,
+    predictiveBackAnimationsEnabled: Boolean,
+    needsInterception: Boolean
+): Boolean {
+    return resolveActivityBackHandlerMode(
+        policy = policy,
+        transitionAnimationsEnabled = transitionAnimationsEnabled,
+        predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
+        needsInterception = needsInterception
+    ) == ActivityBackHandlerMode.CommitCallback
+}
+
 internal data class FullscreenBackNavigationGestureState(
     val translationX: Float,
     val contentAlpha: Float,
@@ -160,6 +205,7 @@ internal data class FullscreenBackNavigationGestureState(
 @Composable
 internal fun rememberFullscreenBackNavigationGestureState(
     enabled: Boolean = true,
+    allowActivityFrameworkFinish: Boolean = false,
     onBack: () -> Unit
 ): FullscreenBackNavigationGestureState {
     val latestOnBack by rememberUpdatedState(onBack)
@@ -172,12 +218,21 @@ internal fun rememberFullscreenBackNavigationGestureState(
         transitionAnimationsEnabled = transitionAnimationsEnabled,
         predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled
     ) == BackNavigationHandlerMode.ComposePredictive
+    val frameworkFinishEnabled = allowActivityFrameworkFinish &&
+            enabled &&
+            !predictiveEnabled &&
+            resolveActivityBackHandlerMode(
+                policy = runtimeState.policy,
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
+                needsInterception = false
+            ) == ActivityBackHandlerMode.FrameworkFinish
     val commitGate = remember { BackNavigationCommitGate() }
     var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
     var predictiveBackSwipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_NONE) }
     var containerWidthPx by remember { mutableIntStateOf(0) }
 
-    BackHandler(enabled = enabled && !predictiveEnabled) {
+    BackHandler(enabled = enabled && !predictiveEnabled && !frameworkFinishEnabled) {
         commitGate.reset()
         runtimeController.beginCommit(BackNavigationSource.Fullscreen)
         try {
@@ -294,6 +349,36 @@ internal fun KeiOSBackNavigationHandler(
             runtimeController.beginCommit(source)
             commitGate.tryCommit(latestOnBack)
         } catch (_: CancellationException) {
+        } finally {
+            runtimeController.reset()
+        }
+    }
+}
+
+@Composable
+internal fun KeiOSActivityRootBackHandler(
+    enabled: Boolean = true,
+    needsInterception: Boolean,
+    onBack: () -> Unit
+) {
+    val latestOnBack by rememberUpdatedState(onBack)
+    val runtimeController = LocalBackNavigationRuntimeController.current
+    val runtimeState = LocalBackNavigationRuntimeState.current
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
+    val predictiveBackAnimationsEnabled = LocalPredictiveBackAnimationsEnabled.current
+    val shouldInstallCallback = enabled && shouldInstallActivityBackCallback(
+        policy = runtimeState.policy,
+        transitionAnimationsEnabled = transitionAnimationsEnabled,
+        predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
+        needsInterception = needsInterception
+    )
+    val commitGate = remember { BackNavigationCommitGate() }
+
+    BackHandler(enabled = shouldInstallCallback) {
+        commitGate.reset()
+        runtimeController.beginCommit(BackNavigationSource.Activity)
+        try {
+            commitGate.tryCommit(latestOnBack)
         } finally {
             runtimeController.reset()
         }

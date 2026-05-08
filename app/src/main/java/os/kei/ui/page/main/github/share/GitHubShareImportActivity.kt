@@ -27,7 +27,7 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
-import os.kei.ui.page.main.back.KeiOSActivityBackHandler
+import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -41,6 +41,7 @@ class GitHubShareImportActivity : ComponentActivity() {
     private var shareImportResumeToken by mutableIntStateOf(0)
     private var shareImportDisabled by mutableStateOf(false)
     private var sendInstallInProgress by mutableStateOf(false)
+    private var flowActivityBackNeedsInterception by mutableStateOf(false)
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -70,7 +71,12 @@ class GitHubShareImportActivity : ComponentActivity() {
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
                     ) {
-                        KeiOSActivityBackHandler(onBack = { finishSafely() })
+                        KeiOSActivityRootBackHandler(
+                            needsInterception = shareImportDisabled ||
+                                    sendInstallInProgress ||
+                                    flowActivityBackNeedsInterception,
+                            onBack = { finishSafely() }
+                        )
                         Box(modifier = Modifier.fillMaxSize())
                         if (sendInstallInProgress) {
                             Box(modifier = Modifier.fillMaxSize())
@@ -106,6 +112,9 @@ class GitHubShareImportActivity : ComponentActivity() {
                                 onNotificationOnlyResolveChanged = { notificationOnly ->
                                     setShareImportWindowDim(enabled = !notificationOnly)
                                 },
+                                onActivityBackInterceptionChanged = { needsInterception ->
+                                    flowActivityBackNeedsInterception = needsInterception
+                                },
                                 onMinimizeActiveFlow = { finishSafely() },
                                 onClosePendingArmedSheet = { finishSafely() },
                                 onIdleWithNoPendingFlow = { finishSafely() }
@@ -130,17 +139,20 @@ class GitHubShareImportActivity : ComponentActivity() {
         if (intent?.action == ACTION_RESUME_SHARE_IMPORT) {
             shareImportDisabled = false
             sendInstallInProgress = false
+            flowActivityBackNeedsInterception = false
             incomingGitHubShareText = null
             shareImportResumeToken += 1
             return
         }
         if (intent?.action == ACTION_SEND_INSTALL_SHARE_IMPORT) {
             shareImportDisabled = false
+            flowActivityBackNeedsInterception = false
             incomingGitHubShareText = null
             launchSendInstallAndFinish()
             return
         }
         sendInstallInProgress = false
+        flowActivityBackNeedsInterception = false
         if (!SafeExternalIntents.isPlainTextSend(intent)) {
             finishSafely()
             return

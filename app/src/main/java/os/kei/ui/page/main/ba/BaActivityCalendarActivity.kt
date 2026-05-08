@@ -46,7 +46,7 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
-import os.kei.ui.page.main.back.KeiOSActivityBackHandler
+import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -90,7 +90,10 @@ class BaActivityCalendarActivity : ComponentActivity() {
 private fun BaActivityCalendarPage(
     onClose: () -> Unit,
 ) {
-    KeiOSActivityBackHandler(onBack = onClose)
+    KeiOSActivityRootBackHandler(
+        needsInterception = false,
+        onBack = onClose
+    )
 
     val context = LocalContext.current
     val snapshot = remember { BASettingsStore.loadSnapshot() }

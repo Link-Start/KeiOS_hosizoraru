@@ -34,6 +34,11 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             policy.localBackPipeline
         )
+        assertEquals(
+            PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+            policy.activityBackPipeline
+        )
+        assertTrue(policy.activityFrameworkFinishEnabled)
     }
 
     @Test
@@ -61,6 +66,11 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
             policy.localBackPipeline
         )
+        assertEquals(
+            PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+            policy.activityBackPipeline
+        )
+        assertTrue(policy.activityFrameworkFinishEnabled)
     }
 
     @Test
@@ -88,6 +98,11 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             policy.localBackPipeline
         )
+        assertEquals(
+            PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+            policy.activityBackPipeline
+        )
+        assertTrue(policy.activityFrameworkFinishEnabled)
     }
 
     @Test
@@ -126,6 +141,11 @@ class PredictiveBackOemCompatTest {
                 PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                 policy.localBackPipeline
             )
+            assertEquals(
+                PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+                policy.activityBackPipeline
+            )
+            assertTrue(policy.activityFrameworkFinishEnabled)
         }
         assertEquals(PredictiveBackOemCompat.RomFamily.Miui, miuiPolicy.romFamily)
         assertEquals(PredictiveBackOemCompat.RomFamily.Xiaomi, xiaomiPolicy.romFamily)
@@ -156,5 +176,10 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             policy.localBackPipeline
         )
+        assertEquals(
+            PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
+            policy.activityBackPipeline
+        )
+        assertFalse(policy.activityFrameworkFinishEnabled)
     }
 }

@@ -28,6 +28,11 @@ object PredictiveBackOemCompat {
         CommitOnly
     }
 
+    enum class ActivityBackPipeline {
+        FrameworkFinish,
+        CommitCallback
+    }
+
     data class DeviceSignals(
         val brand: String,
         val manufacturer: String,
@@ -41,6 +46,7 @@ object PredictiveBackOemCompat {
         val popDirectionFollowsSwipeEdge: Boolean,
         val routeBackPipeline: RouteBackPipeline,
         val localBackPipeline: LocalBackPipeline,
+        val activityBackPipeline: ActivityBackPipeline,
         val romFamily: RomFamily
     ) {
         val routePredictiveBackEnabled: Boolean
@@ -48,6 +54,9 @@ object PredictiveBackOemCompat {
 
         val localPredictiveBackEnabled: Boolean
             get() = frameworkAnimationsEnabled && localBackPipeline == LocalBackPipeline.ComposePredictive
+
+        val activityFrameworkFinishEnabled: Boolean
+            get() = frameworkAnimationsEnabled && activityBackPipeline == ActivityBackPipeline.FrameworkFinish
     }
 
     private val currentRomFamily: RomFamily by lazy {
@@ -94,11 +103,17 @@ object PredictiveBackOemCompat {
             } else {
                 LocalBackPipeline.CommitOnly
             }
+        val activityBackPipeline = if (frameworkAnimationsEnabled) {
+            ActivityBackPipeline.FrameworkFinish
+        } else {
+            ActivityBackPipeline.CommitCallback
+        }
         return Policy(
             frameworkAnimationsEnabled = frameworkAnimationsEnabled,
             popDirectionFollowsSwipeEdge = frameworkAnimationsEnabled && romFamily.usesTwoEdgeBackAnimation,
             routeBackPipeline = routeBackPipeline,
             localBackPipeline = localBackPipeline,
+            activityBackPipeline = activityBackPipeline,
             romFamily = romFamily
         )
     }

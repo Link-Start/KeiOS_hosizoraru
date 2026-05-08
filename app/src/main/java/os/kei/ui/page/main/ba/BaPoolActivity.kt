@@ -52,7 +52,7 @@ import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.back.BackNavigationSource
-import os.kei.ui.page.main.back.KeiOSActivityBackHandler
+import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -133,7 +133,10 @@ private fun BaPoolPage(
     onClose: () -> Unit,
     onOpenGuide: () -> Unit,
 ) {
-    KeiOSActivityBackHandler(onBack = onClose)
+    KeiOSActivityRootBackHandler(
+        needsInterception = false,
+        onBack = onClose
+    )
 
     val context = LocalContext.current
     val snapshot = remember { BASettingsStore.loadSnapshot() }

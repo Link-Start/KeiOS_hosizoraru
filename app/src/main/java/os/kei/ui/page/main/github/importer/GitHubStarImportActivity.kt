@@ -13,6 +13,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
+import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -60,12 +61,14 @@ private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
         AppThemeMode.DARK -> ColorSchemeMode.Dark
     }
     MiuixTheme(controller = ThemeController(colorSchemeMode)) {
-        CompositionLocalProvider(
-            LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-            LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled,
-            LocalLiquidControlsEnabled provides UiPrefs.isLiquidSwitchEnabled()
-        ) {
-            content()
+        ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
+            CompositionLocalProvider(
+                LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
+                LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
+                LocalLiquidControlsEnabled provides UiPrefs.isLiquidSwitchEnabled()
+            ) {
+                content()
+            }
         }
     }
 }

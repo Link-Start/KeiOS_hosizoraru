@@ -18,6 +18,16 @@ object PredictiveBackOemCompat {
         Unknown
     }
 
+    enum class RouteBackPipeline {
+        NavigationEvent,
+        CommitOnly
+    }
+
+    enum class LocalBackPipeline {
+        ComposePredictive,
+        CommitOnly
+    }
+
     data class DeviceSignals(
         val brand: String,
         val manufacturer: String,
@@ -29,8 +39,16 @@ object PredictiveBackOemCompat {
     data class Policy(
         val frameworkAnimationsEnabled: Boolean,
         val popDirectionFollowsSwipeEdge: Boolean,
+        val routeBackPipeline: RouteBackPipeline,
+        val localBackPipeline: LocalBackPipeline,
         val romFamily: RomFamily
-    )
+    ) {
+        val routePredictiveBackEnabled: Boolean
+            get() = frameworkAnimationsEnabled && routeBackPipeline == RouteBackPipeline.NavigationEvent
+
+        val localPredictiveBackEnabled: Boolean
+            get() = frameworkAnimationsEnabled && localBackPipeline == LocalBackPipeline.ComposePredictive
+    }
 
     private val currentRomFamily: RomFamily by lazy {
         resolveRomFamily(currentDeviceSignals())
@@ -65,9 +83,22 @@ object PredictiveBackOemCompat {
         romFamily: RomFamily
     ): Policy {
         val frameworkAnimationsEnabled = transitionAnimationsEnabled && predictiveBackAnimationsEnabled
+        val routeBackPipeline = if (frameworkAnimationsEnabled) {
+            RouteBackPipeline.NavigationEvent
+        } else {
+            RouteBackPipeline.CommitOnly
+        }
+        val localBackPipeline =
+            if (frameworkAnimationsEnabled && romFamily.usesComposePredictiveLocalBack) {
+                LocalBackPipeline.ComposePredictive
+            } else {
+                LocalBackPipeline.CommitOnly
+            }
         return Policy(
             frameworkAnimationsEnabled = frameworkAnimationsEnabled,
             popDirectionFollowsSwipeEdge = frameworkAnimationsEnabled && romFamily.usesTwoEdgeBackAnimation,
+            routeBackPipeline = routeBackPipeline,
+            localBackPipeline = localBackPipeline,
             romFamily = romFamily
         )
     }
@@ -129,6 +160,21 @@ object PredictiveBackOemCompat {
             RomFamily.OneUi -> true
             RomFamily.Aosp,
             RomFamily.Unknown -> false
+        }
+
+    private val RomFamily.usesComposePredictiveLocalBack: Boolean
+        get() = when (this) {
+            RomFamily.Aosp,
+            RomFamily.Unknown -> true
+
+            RomFamily.HyperOs,
+            RomFamily.Miui,
+            RomFamily.Xiaomi,
+            RomFamily.ColorOs,
+            RomFamily.OriginOs,
+            RomFamily.MagicOs,
+            RomFamily.Emui,
+            RomFamily.OneUi -> false
         }
 
     private val DeviceSignals.normalizedText: List<String>

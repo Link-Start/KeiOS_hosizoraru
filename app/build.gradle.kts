@@ -136,6 +136,7 @@ val materialVersion = "1.13.0"
 val composeVersion = "1.11.1"
 val constraintLayoutComposeVersion = "1.1.1"
 val navigation3Version = "1.1.1"
+val navigationEventVersion = "1.1.1"
 val navigationCommonVersion = "2.9.8"
 val backdropVersion = "2.0.0-alpha03"
 val capsuleVersion = "2.1.3"
@@ -202,6 +203,7 @@ android {
         buildConfigField("String", "COMPOSE_VERSION", "\"$composeVersion\"")
         buildConfigField("String", "CONSTRAINT_LAYOUT_COMPOSE_VERSION", "\"$constraintLayoutComposeVersion\"")
         buildConfigField("String", "NAVIGATION3_VERSION", "\"$navigation3Version\"")
+        buildConfigField("String", "NAVIGATION_EVENT_VERSION", "\"$navigationEventVersion\"")
         buildConfigField("String", "NAVIGATION_COMMON_VERSION", "\"$navigationCommonVersion\"")
         buildConfigField("String", "BACKDROP_VERSION", "\"$backdropVersion\"")
         buildConfigField("String", "CAPSULE_VERSION", "\"$capsuleVersion\"")
@@ -340,6 +342,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
     implementation("androidx.constraintlayout:constraintlayout-compose:$constraintLayoutComposeVersion")
     implementation("androidx.navigation3:navigation3-runtime:$navigation3Version")
+    implementation("androidx.navigationevent:navigationevent:$navigationEventVersion")
+    implementation("androidx.navigationevent:navigationevent-compose:$navigationEventVersion")
     implementation("androidx.navigation:navigation-common-ktx:$navigationCommonVersion")
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
 

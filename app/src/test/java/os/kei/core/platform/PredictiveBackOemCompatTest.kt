@@ -26,6 +26,14 @@ class PredictiveBackOemCompatTest {
         assertEquals(PredictiveBackOemCompat.RomFamily.HyperOs, policy.romFamily)
         assertTrue(policy.frameworkAnimationsEnabled)
         assertTrue(policy.popDirectionFollowsSwipeEdge)
+        assertEquals(
+            PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+            policy.routeBackPipeline
+        )
+        assertEquals(
+            PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+            policy.localBackPipeline
+        )
     }
 
     @Test
@@ -45,6 +53,14 @@ class PredictiveBackOemCompatTest {
         assertEquals(PredictiveBackOemCompat.RomFamily.Aosp, policy.romFamily)
         assertTrue(policy.frameworkAnimationsEnabled)
         assertFalse(policy.popDirectionFollowsSwipeEdge)
+        assertEquals(
+            PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+            policy.routeBackPipeline
+        )
+        assertEquals(
+            PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
+            policy.localBackPipeline
+        )
     }
 
     @Test
@@ -64,6 +80,55 @@ class PredictiveBackOemCompatTest {
         assertEquals(PredictiveBackOemCompat.RomFamily.ColorOs, policy.romFamily)
         assertTrue(policy.frameworkAnimationsEnabled)
         assertTrue(policy.popDirectionFollowsSwipeEdge)
+        assertEquals(
+            PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+            policy.routeBackPipeline
+        )
+        assertEquals(
+            PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+            policy.localBackPipeline
+        )
+    }
+
+    @Test
+    fun `miui and xiaomi families keep route predictive and commit local back`() {
+        val miuiPolicy = PredictiveBackOemCompat.resolvePolicy(
+            transitionAnimationsEnabled = true,
+            predictiveBackAnimationsEnabled = true,
+            signals = PredictiveBackOemCompat.DeviceSignals(
+                brand = "Xiaomi",
+                manufacturer = "Xiaomi",
+                display = "MIUI",
+                model = "Xiaomi",
+                properties = mapOf("ro.miui.ui.version.name" to "V15")
+            )
+        )
+        val xiaomiPolicy = PredictiveBackOemCompat.resolvePolicy(
+            transitionAnimationsEnabled = true,
+            predictiveBackAnimationsEnabled = true,
+            signals = PredictiveBackOemCompat.DeviceSignals(
+                brand = "Redmi",
+                manufacturer = "Xiaomi",
+                display = "Android",
+                model = "Redmi",
+                properties = emptyMap()
+            )
+        )
+
+        listOf(miuiPolicy, xiaomiPolicy).forEach { policy ->
+            assertTrue(policy.routePredictiveBackEnabled)
+            assertFalse(policy.localPredictiveBackEnabled)
+            assertEquals(
+                PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+                policy.routeBackPipeline
+            )
+            assertEquals(
+                PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                policy.localBackPipeline
+            )
+        }
+        assertEquals(PredictiveBackOemCompat.RomFamily.Miui, miuiPolicy.romFamily)
+        assertEquals(PredictiveBackOemCompat.RomFamily.Xiaomi, xiaomiPolicy.romFamily)
     }
 
     @Test
@@ -83,5 +148,13 @@ class PredictiveBackOemCompatTest {
         assertEquals(PredictiveBackOemCompat.RomFamily.HyperOs, policy.romFamily)
         assertFalse(policy.frameworkAnimationsEnabled)
         assertFalse(policy.popDirectionFollowsSwipeEdge)
+        assertEquals(
+            PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
+            policy.routeBackPipeline
+        )
+        assertEquals(
+            PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+            policy.localBackPipeline
+        )
     }
 }

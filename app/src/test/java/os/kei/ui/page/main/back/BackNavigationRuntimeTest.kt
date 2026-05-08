@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.back
 
 import org.junit.Test
+import os.kei.core.platform.PredictiveBackOemCompat
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -70,5 +71,55 @@ class BackNavigationRuntimeTest {
             ).contentWorkAllowed
         )
     }
-}
 
+    @Test
+    fun `aosp policy enables compose predictive local back`() {
+        val mode = resolveBackNavigationHandlerMode(
+            policy = PredictiveBackOemCompat.Policy(
+                frameworkAnimationsEnabled = true,
+                popDirectionFollowsSwipeEdge = false,
+                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
+                romFamily = PredictiveBackOemCompat.RomFamily.Aosp
+            ),
+            transitionAnimationsEnabled = true,
+            predictiveBackAnimationsEnabled = true
+        )
+
+        assertEquals(BackNavigationHandlerMode.ComposePredictive, mode)
+    }
+
+    @Test
+    fun `hyperos policy keeps local back commit only`() {
+        val mode = resolveBackNavigationHandlerMode(
+            policy = PredictiveBackOemCompat.Policy(
+                frameworkAnimationsEnabled = true,
+                popDirectionFollowsSwipeEdge = true,
+                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
+            ),
+            transitionAnimationsEnabled = true,
+            predictiveBackAnimationsEnabled = true
+        )
+
+        assertEquals(BackNavigationHandlerMode.CommitOnly, mode)
+    }
+
+    @Test
+    fun `disabled animation setting keeps local back commit only`() {
+        val mode = resolveBackNavigationHandlerMode(
+            policy = PredictiveBackOemCompat.Policy(
+                frameworkAnimationsEnabled = false,
+                popDirectionFollowsSwipeEdge = false,
+                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
+                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                romFamily = PredictiveBackOemCompat.RomFamily.Aosp
+            ),
+            transitionAnimationsEnabled = false,
+            predictiveBackAnimationsEnabled = true
+        )
+
+        assertEquals(BackNavigationHandlerMode.CommitOnly, mode)
+    }
+}

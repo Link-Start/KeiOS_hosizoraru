@@ -28,6 +28,7 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
 import os.kei.ui.page.main.back.KeiOSActivityBackHandler
+import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -64,50 +65,52 @@ class GitHubShareImportActivity : ComponentActivity() {
             val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
-                CompositionLocalProvider(
-                    LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-                    LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled
-                ) {
-                    KeiOSActivityBackHandler(onBack = { finishSafely() })
-                    Box(modifier = Modifier.fillMaxSize())
-                    if (sendInstallInProgress) {
+                ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
+                    CompositionLocalProvider(
+                        LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
+                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
+                    ) {
+                        KeiOSActivityBackHandler(onBack = { finishSafely() })
                         Box(modifier = Modifier.fillMaxSize())
-                    } else if (shareImportDisabled) {
-                        GitHubShareImportDisabledSheet(
-                            show = true,
-                            onClose = { finishSafely() },
-                            onOpenGitHub = {
-                                openGitHubPage()
-                                finishSafely()
-                            }
-                        )
-                    } else {
-                        GitHubShareImportWindowFlowHost(
-                            incomingGitHubShareText = incomingGitHubShareText,
-                            incomingGitHubShareToken = incomingGitHubShareToken,
-                            resumeRequestToken = shareImportResumeToken,
-                            onIncomingGitHubShareConsumed = {
-                                incomingGitHubShareText = null
-                            },
-                            onNavigateToGitHubPage = {
-                                val launched = openGitHubPage()
-                                if (!launched) {
-                                    Toast.makeText(
-                                        this,
-                                        getString(R.string.common_open_link_failed),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                        if (sendInstallInProgress) {
+                            Box(modifier = Modifier.fillMaxSize())
+                        } else if (shareImportDisabled) {
+                            GitHubShareImportDisabledSheet(
+                                show = true,
+                                onClose = { finishSafely() },
+                                onOpenGitHub = {
+                                    openGitHubPage()
+                                    finishSafely()
                                 }
-                                finishSafely()
-                            },
-                            showPendingArmedSheet = true,
-                            onNotificationOnlyResolveChanged = { notificationOnly ->
-                                setShareImportWindowDim(enabled = !notificationOnly)
-                            },
-                            onMinimizeActiveFlow = { finishSafely() },
-                            onClosePendingArmedSheet = { finishSafely() },
-                            onIdleWithNoPendingFlow = { finishSafely() }
-                        )
+                            )
+                        } else {
+                            GitHubShareImportWindowFlowHost(
+                                incomingGitHubShareText = incomingGitHubShareText,
+                                incomingGitHubShareToken = incomingGitHubShareToken,
+                                resumeRequestToken = shareImportResumeToken,
+                                onIncomingGitHubShareConsumed = {
+                                    incomingGitHubShareText = null
+                                },
+                                onNavigateToGitHubPage = {
+                                    val launched = openGitHubPage()
+                                    if (!launched) {
+                                        Toast.makeText(
+                                            this,
+                                            getString(R.string.common_open_link_failed),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    finishSafely()
+                                },
+                                showPendingArmedSheet = true,
+                                onNotificationOnlyResolveChanged = { notificationOnly ->
+                                    setShareImportWindowDim(enabled = !notificationOnly)
+                                },
+                                onMinimizeActiveFlow = { finishSafely() },
+                                onClosePendingArmedSheet = { finishSafely() },
+                                onIdleWithNoPendingFlow = { finishSafely() }
+                            )
+                        }
                     }
                 }
             }

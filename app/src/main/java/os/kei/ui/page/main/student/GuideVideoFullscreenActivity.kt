@@ -39,6 +39,7 @@ import os.kei.R
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.back.rememberFullscreenBackNavigationGestureState
 import os.kei.ui.page.main.student.section.gallery.BindGuideVideoForegroundPlaybackGuard
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
@@ -62,14 +63,16 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
                 transitionAnimationsEnabled = transitionAnimationsEnabled,
                 predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
             )
-            CompositionLocalProvider(
-                LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-                LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled
-            ) {
-                GuideVideoFullscreenScreen(
-                    mediaUrl = normalizedUrl,
-                    onClose = { finish() }
-                )
+            ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
+                CompositionLocalProvider(
+                    LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
+                    LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
+                ) {
+                    GuideVideoFullscreenScreen(
+                        mediaUrl = normalizedUrl,
+                        onClose = { finish() }
+                    )
+                }
             }
         }
     }

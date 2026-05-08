@@ -5,6 +5,8 @@ import androidx.activity.ExperimentalActivityApi
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -105,6 +107,48 @@ internal class BackNavigationCommitGate {
     }
 }
 
+internal enum class BackNavigationHandlerMode {
+    ComposePredictive,
+    CommitOnly
+}
+
+@Composable
+internal fun ProvideBackNavigationRuntime(
+    policy: PredictiveBackOemCompat.Policy,
+    content: @Composable () -> Unit
+) {
+    val controller = remember { BackNavigationRuntimeController() }
+    SideEffect {
+        controller.updatePolicy(policy)
+    }
+    CompositionLocalProvider(
+        LocalBackNavigationRuntimeController provides controller,
+        LocalBackNavigationRuntimeState provides controller.state,
+        content = content
+    )
+}
+
+internal fun resolveBackNavigationHandlerMode(
+    policy: PredictiveBackOemCompat.Policy?,
+    transitionAnimationsEnabled: Boolean,
+    predictiveBackAnimationsEnabled: Boolean
+): BackNavigationHandlerMode {
+    val localBackPipeline = policy?.localBackPipeline
+        ?: PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive
+    val policyAnimationsEnabled = policy?.frameworkAnimationsEnabled
+        ?: (transitionAnimationsEnabled && predictiveBackAnimationsEnabled)
+    return if (
+        transitionAnimationsEnabled &&
+        predictiveBackAnimationsEnabled &&
+        policyAnimationsEnabled &&
+        localBackPipeline == PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive
+    ) {
+        BackNavigationHandlerMode.ComposePredictive
+    } else {
+        BackNavigationHandlerMode.CommitOnly
+    }
+}
+
 internal data class FullscreenBackNavigationGestureState(
     val translationX: Float,
     val contentAlpha: Float,
@@ -120,10 +164,14 @@ internal fun rememberFullscreenBackNavigationGestureState(
 ): FullscreenBackNavigationGestureState {
     val latestOnBack by rememberUpdatedState(onBack)
     val runtimeController = LocalBackNavigationRuntimeController.current
+    val runtimeState = LocalBackNavigationRuntimeState.current
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val predictiveBackAnimationsEnabled = LocalPredictiveBackAnimationsEnabled.current
-    val predictiveEnabled =
-        enabled && transitionAnimationsEnabled && predictiveBackAnimationsEnabled
+    val predictiveEnabled = enabled && resolveBackNavigationHandlerMode(
+        policy = runtimeState.policy,
+        transitionAnimationsEnabled = transitionAnimationsEnabled,
+        predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled
+    ) == BackNavigationHandlerMode.ComposePredictive
     val commitGate = remember { BackNavigationCommitGate() }
     var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
     var predictiveBackSwipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_NONE) }
@@ -216,10 +264,14 @@ internal fun KeiOSBackNavigationHandler(
 ) {
     val latestOnBack by rememberUpdatedState(onBack)
     val runtimeController = LocalBackNavigationRuntimeController.current
+    val runtimeState = LocalBackNavigationRuntimeState.current
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val predictiveBackAnimationsEnabled = LocalPredictiveBackAnimationsEnabled.current
-    val predictiveEnabled =
-        enabled && transitionAnimationsEnabled && predictiveBackAnimationsEnabled
+    val predictiveEnabled = enabled && resolveBackNavigationHandlerMode(
+        policy = runtimeState.policy,
+        transitionAnimationsEnabled = transitionAnimationsEnabled,
+        predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled
+    ) == BackNavigationHandlerMode.ComposePredictive
     val commitGate = remember { BackNavigationCommitGate() }
 
     BackHandler(enabled = enabled && !predictiveEnabled) {

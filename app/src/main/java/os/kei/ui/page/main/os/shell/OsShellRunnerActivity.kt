@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
+import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -52,19 +53,27 @@ class OsShellRunnerActivity : ComponentActivity() {
             )
 
             MiuixTheme(controller = controller) {
-                CompositionLocalProvider(
-                    LocalTransitionAnimationsEnabled provides chromePrefs.transitionAnimationsEnabled,
-                    LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.frameworkAnimationsEnabled
-                ) {
-                    OsShellRunnerPage(
-                        canRunShellCommand = shizukuStatus.contains("granted", ignoreCase = true) ||
-                            shizukuApiUtils.canUseCommand(),
-                        onRequestShizukuPermission = { shizukuApiUtils.requestPermissionIfNeeded() },
-                        onRunShellCommand = { command, timeoutMs ->
-                            shizukuApiUtils.execCommandCancellable(command = command, timeoutMs = timeoutMs)
-                        },
-                        onClose = { finish() }
-                    )
+                ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
+                    CompositionLocalProvider(
+                        LocalTransitionAnimationsEnabled provides chromePrefs.transitionAnimationsEnabled,
+                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
+                    ) {
+                        OsShellRunnerPage(
+                            canRunShellCommand = shizukuStatus.contains(
+                                "granted",
+                                ignoreCase = true
+                            ) ||
+                                    shizukuApiUtils.canUseCommand(),
+                            onRequestShizukuPermission = { shizukuApiUtils.requestPermissionIfNeeded() },
+                            onRunShellCommand = { command, timeoutMs ->
+                                shizukuApiUtils.execCommandCancellable(
+                                    command = command,
+                                    timeoutMs = timeoutMs
+                                )
+                            },
+                            onClose = { finish() }
+                        )
+                    }
                 }
             }
         }

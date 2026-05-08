@@ -15,7 +15,11 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.scene.NavigationBackHandler
 import androidx.navigation3.scene.Scene
+import androidx.navigation3.scene.SinglePaneSceneStrategy
+import androidx.navigation3.scene.rememberNavigationEventState
+import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.NavDisplayTransitionEffects
 import androidx.navigation3.ui.defaultPredictivePopTransitionSpec
@@ -177,9 +181,9 @@ internal fun MainScreenNavHost(
         transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
         predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled
     )
-    val predictiveBackPreviewEnabled = predictiveBackPolicy.frameworkAnimationsEnabled
+    val routePredictiveBackEnabled = predictiveBackPolicy.routePredictiveBackEnabled
     val predictivePopTransitionSpec =
-        if (predictiveBackPreviewEnabled) {
+        if (routePredictiveBackEnabled) {
             defaultPredictivePopTransitionSpec<NavKey>()
         } else {
             disabledPredictiveBackTransitionSpec<NavKey>()
@@ -198,23 +202,38 @@ internal fun MainScreenNavHost(
         entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
         entryProvider = entryProvider,
     )
+    val sceneState = rememberSceneState(
+        entries = entries,
+        sceneStrategies = listOf(SinglePaneSceneStrategy()),
+        sceneDecoratorStrategies = emptyList(),
+        sharedTransitionScope = null,
+        onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+    )
+    val navigationEventState = rememberNavigationEventState(sceneState)
     CompositionLocalProvider(
         LocalBackNavigationRuntimeController provides backRuntimeController,
         LocalBackNavigationRuntimeState provides backRuntimeController.state,
         LocalTransitionAnimationsEnabled provides prefsState.transitionAnimationsEnabled,
-        LocalPredictiveBackAnimationsEnabled provides predictiveBackPreviewEnabled,
+        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
         LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled
     ) {
+        if (routePredictiveBackEnabled) {
+            NavigationBackHandler(
+                sceneState = sceneState,
+                state = navigationEventState,
+                onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) }
+            )
+        }
         NavDisplay(
-            entries = entries,
-            onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+            sceneState = sceneState,
+            navigationEventState = navigationEventState,
             predictivePopTransitionSpec = predictivePopTransitionSpec,
             transitionEffects = transitionEffects,
             modifier = Modifier.fillMaxSize()
         )
         KeiOSBackNavigationHandler(
-            enabled = !predictiveBackPreviewEnabled && backStack.size > 1,
+            enabled = !routePredictiveBackEnabled && backStack.size > 1,
             source = BackNavigationSource.MainRoute
         ) {
             handleMainScreenBack(backStack, navigator, pagerCoordinator)

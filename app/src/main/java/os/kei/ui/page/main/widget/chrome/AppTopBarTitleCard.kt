@@ -98,7 +98,7 @@ private fun AppTopBarTitleCardSurface(
             textSize = textSize,
             textLineHeight = lineHeight,
             textFontWeight = FontWeight.SemiBold,
-            consumeDragChangesForInteraction = true,
+            consumeDragChangesForInteraction = false,
         )
     }
 }

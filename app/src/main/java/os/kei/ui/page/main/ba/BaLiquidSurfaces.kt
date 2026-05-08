@@ -135,7 +135,7 @@ private fun BaLiquidSurfaceColumn(
                 lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, variant),
                 shadow = glass.shadowAlpha > 0f,
                 interactionSource = interactionSource,
-                consumeDragChanges = hasLiquidPress,
+                consumeDragChanges = false,
                 onClick = if (useLiquidClick) onClick else null,
             ) {
                 Column(

@@ -49,7 +49,7 @@ internal fun AppFloatingLiquidVerticalDockSurface(
             animationScope = animationScope,
             highlightStrength = 1.18f,
             highlightRadiusScale = 1.34f,
-            consumeDragChanges = true
+            consumeDragChanges = false
         )
     }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer

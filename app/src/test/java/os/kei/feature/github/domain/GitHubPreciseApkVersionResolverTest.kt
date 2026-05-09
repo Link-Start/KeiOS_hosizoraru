@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.apk.BinaryManifestFixture
@@ -30,7 +31,8 @@ class GitHubPreciseApkVersionResolverTest {
             )
         )
 
-        val result = GitHubPreciseApkVersionResolver(source).resolve(
+        val result = runBlocking {
+            GitHubPreciseApkVersionResolver(source).resolve(
             GitHubPreciseApkVersionRequest(
                 owner = "demo",
                 repo = "app",
@@ -38,7 +40,8 @@ class GitHubPreciseApkVersionResolverTest {
                 packageName = "demo.app",
                 lookupConfig = GitHubLookupConfig()
             )
-        ).getOrThrow()
+            )
+        }.getOrThrow()
 
         assertEquals("demo-arm64.apk", result.assetName)
         assertEquals("demo.app", result.packageName)
@@ -61,7 +64,8 @@ class GitHubPreciseApkVersionResolverTest {
             }
         )
 
-        GitHubPreciseApkVersionResolver(source).resolve(
+        runBlocking {
+            GitHubPreciseApkVersionResolver(source).resolve(
             GitHubPreciseApkVersionRequest(
                 owner = "demo",
                 repo = "app",
@@ -69,7 +73,8 @@ class GitHubPreciseApkVersionResolverTest {
                 packageName = "missing.app",
                 lookupConfig = GitHubLookupConfig()
             )
-        ).getOrThrow()
+            )
+        }.getOrThrow()
 
         assertEquals(4, source.inspectCount)
     }
@@ -122,7 +127,7 @@ class GitHubPreciseApkVersionResolverTest {
         var inspectCount = 0
             private set
 
-        override fun loadReleaseAssetBundle(
+        override suspend fun loadReleaseAssetBundle(
             owner: String,
             repo: String,
             rawTag: String,
@@ -139,7 +144,7 @@ class GitHubPreciseApkVersionResolverTest {
             )
         }
 
-        override fun inspectApk(
+        override suspend fun inspectApk(
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<GitHubApkManifestInfo> {

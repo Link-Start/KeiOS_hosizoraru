@@ -69,8 +69,8 @@ internal object GitHubReleaseAssetSelector {
     ): Boolean {
         return "armeabi-v7a" in lowerName ||
                 "x86_64" in lowerName ||
-                Regex("(^|[^a-z0-9])armeabi([^a-z0-9]|$)").containsMatchIn(lowerName) ||
-                Regex("(^|[^a-z0-9])x86([^a-z0-9]|$)").containsMatchIn(lowerName) ||
+                armeabiTokenRegex.containsMatchIn(lowerName) ||
+                x86TokenRegex.containsMatchIn(lowerName) ||
                 (hasExplicitArm64 && ("universal" in lowerName || "fat" in lowerName))
     }
 
@@ -88,15 +88,19 @@ internal object GitHubReleaseAssetSelector {
         val lower = fileName.lowercase(Locale.ROOT)
         return when {
             "arm64-v8a" in lower || "aarch64" in lower ||
-                    Regex("(^|[^a-z0-9])arm64([^a-z0-9]|$)").containsMatchIn(lower) -> 0
+                    arm64TokenRegex.containsMatchIn(lower) -> 0
 
             "universal" in lower || "fat" in lower -> 1
             "armeabi-v7a" in lower || "armv7" in lower ||
-                    Regex("(^|[^a-z0-9])armeabi([^a-z0-9]|$)").containsMatchIn(lower) -> 2
+                    armeabiTokenRegex.containsMatchIn(lower) -> 2
 
             "x86_64" in lower -> 3
-            Regex("(^|[^a-z0-9])x86([^a-z0-9]|$)").containsMatchIn(lower) -> 4
+            x86TokenRegex.containsMatchIn(lower) -> 4
             else -> 5
         }
     }
+
+    private val arm64TokenRegex = Regex("""(?:^|[^a-z0-9])arm64(?:[^a-z0-9]|$)""")
+    private val armeabiTokenRegex = Regex("""(?:^|[^a-z0-9])armeabi(?:[^a-z0-9]|$)""")
+    private val x86TokenRegex = Regex("""(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)""")
 }

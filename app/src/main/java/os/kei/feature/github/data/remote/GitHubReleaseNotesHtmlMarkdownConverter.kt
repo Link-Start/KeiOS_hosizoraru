@@ -2,20 +2,48 @@ package os.kei.feature.github.data.remote
 
 internal object GitHubReleaseNotesHtmlMarkdownConverter {
     private const val MAX_RELEASE_NOTES_BODY_CHARS = 24_000
+    private val htmlBlockOptions = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+    private val markdownBodyNestedRegex = Regex(
+        """<div[^>]*class="[^"]*markdown-body[^"]*"[^>]*>(.*?)</div>\s*</div>""",
+        htmlBlockOptions
+    )
+    private val markdownBodyRegex = Regex(
+        """<div[^>]*class="[^"]*markdown-body[^"]*"[^>]*>(.*?)</div>""",
+        htmlBlockOptions
+    )
+    private val preCodeRegex = Regex(
+        """<pre[^>]*>\s*<code[^>]*>(.*?)</code>\s*</pre>""",
+        htmlBlockOptions
+    )
+    private val tableRegex = Regex("""<table[^>]*>(.*?)</table>""", htmlBlockOptions)
+    private val headingRegex = Regex("""<h([1-6])[^>]*>(.*?)</h\1>""", htmlBlockOptions)
+    private val summaryRegex = Regex("""<summary[^>]*>(.*?)</summary>""", htmlBlockOptions)
+    private val blockquoteRegex = Regex("""<blockquote[^>]*>(.*?)</blockquote>""", htmlBlockOptions)
+    private val listItemRegex = Regex("""<li[^>]*>(.*?)</li>""", htmlBlockOptions)
+    private val paragraphRegex = Regex("""<p[^>]*>(.*?)</p>""", htmlBlockOptions)
+    private val horizontalRuleRegex = Regex("""<hr\s*/?>""", RegexOption.IGNORE_CASE)
+    private val lineBreakRegex = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
+    private val closingBlockRegex =
+        Regex("""</(?:div|section|article|ul|ol|details)>""", RegexOption.IGNORE_CASE)
+    private val htmlTagRegex = Regex("""<[^>]+>""")
+    private val tableRowRegex = Regex("""<tr[^>]*>(.*?)</tr>""", htmlBlockOptions)
+    private val tableCellRegex = Regex("""<t([hd])[^>]*>(.*?)</t\1>""", htmlBlockOptions)
+    private val imageRegex = Regex("""<img\b([^>]*)>""", htmlBlockOptions)
+    private val anchorRegex = Regex("""<a\b([^>]*)>(.*?)</a>""", htmlBlockOptions)
+    private val codeRegex = Regex("""<(?:code|tt)[^>]*>(.*?)</(?:code|tt)>""", htmlBlockOptions)
+    private val strongRegex = Regex("""<(?:strong|b)[^>]*>(.*?)</(?:strong|b)>""", htmlBlockOptions)
+    private val emphasisRegex = Regex("""<(?:em|i)[^>]*>(.*?)</(?:em|i)>""", htmlBlockOptions)
+    private val checkboxRegex = Regex("""<input\b([^>]*)>""", RegexOption.IGNORE_CASE)
+    private val horizontalWhitespaceRegex = Regex("""[ \t\x0B\f\r]+""")
+    private val whitespaceRegex = Regex("""\s+""")
 
     fun parse(html: String): String {
-        val markdownBlock = Regex(
-            """<div[^>]*class="[^"]*markdown-body[^"]*"[^>]*>(.*?)</div>\s*</div>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        ).find(html)
+        val markdownBlock = markdownBodyNestedRegex.find(html)
             ?.groupValues
             ?.getOrNull(1)
             .orEmpty()
             .ifBlank {
-                Regex(
-                    """<div[^>]*class="[^"]*markdown-body[^"]*"[^>]*>(.*?)</div>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                ).find(html)
+                markdownBodyRegex.find(html)
                     ?.groupValues
                     ?.getOrNull(1)
                     .orEmpty()
@@ -25,97 +53,51 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
 
     private fun String.htmlReleaseNotesToMarkdown(): String {
         return this
-            .replace(
-                Regex(
-                    """<pre[^>]*>\s*<code[^>]*>(.*?)</code>\s*</pre>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(preCodeRegex) { match ->
                 val code = match.groupValues.getOrNull(1).orEmpty()
                     .stripHtml()
                     .decodeHtmlEntities()
                     .trimEnd()
                 "\n```\n$code\n```\n"
             }
-            .replace(
-                Regex(
-                    """<table[^>]*>(.*?)</table>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(tableRegex) { match ->
                 "\n${match.groupValues.getOrNull(1).orEmpty().htmlTableToMarkdown()}\n"
             }
-            .replace(
-                Regex(
-                    """<h([1-6])[^>]*>(.*?)</h\1>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(headingRegex) { match ->
                 val level = match.groupValues.getOrNull(1)?.toIntOrNull()?.coerceIn(1, 4) ?: 2
                 val text = match.groupValues.getOrNull(2).orEmpty().htmlFragmentToMarkdown()
                 "\n${"#".repeat(level)} $text\n\n"
             }
-            .replace(
-                Regex(
-                    """<summary[^>]*>(.*?)</summary>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(summaryRegex) { match ->
                 val text = match.groupValues.getOrNull(1).orEmpty().htmlFragmentToMarkdown()
                 "\n### $text\n\n"
             }
-            .replace(
-                Regex(
-                    """<blockquote[^>]*>(.*?)</blockquote>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(blockquoteRegex) { match ->
                 val text = match.groupValues.getOrNull(1).orEmpty().htmlFragmentToMarkdown()
                 "\n> $text\n"
             }
-            .replace(
-                Regex(
-                    """<li[^>]*>(.*?)</li>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(listItemRegex) { match ->
                 val text = match.groupValues.getOrNull(1).orEmpty()
                     .htmlTaskPrefixAndBody()
                     .let { (prefix, body) -> "$prefix${body.htmlFragmentToMarkdown()}" }
                 "\n- $text\n"
             }
-            .replace(
-                Regex(
-                    """<p[^>]*>(.*?)</p>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(paragraphRegex) { match ->
                 val text = match.groupValues.getOrNull(1).orEmpty().htmlFragmentToMarkdown()
                 "\n$text\n\n"
             }
-            .replace(Regex("""<hr\s*/?>""", RegexOption.IGNORE_CASE), "\n---\n")
-            .replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
-            .replace(
-                Regex("""</(?:div|section|article|ul|ol|details)>""", RegexOption.IGNORE_CASE),
-                "\n"
-            )
-            .replace(Regex("<[^>]+>"), " ")
+            .replace(horizontalRuleRegex, "\n---\n")
+            .replace(lineBreakRegex, "\n")
+            .replace(closingBlockRegex, "\n")
+            .replace(htmlTagRegex, " ")
             .decodeHtmlEntities()
             .normalizeReleaseNotesMarkdownLines()
     }
 
     private fun String.htmlTableToMarkdown(): String {
-        val rowRegex = Regex(
-            """<tr[^>]*>(.*?)</tr>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
-        val cellRegex = Regex(
-            """<t([hd])[^>]*>(.*?)</t\1>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
-        val rows = rowRegex.findAll(this).mapNotNull { rowMatch ->
+        val rows = tableRowRegex.findAll(this).mapNotNull { rowMatch ->
             val rowHtml = rowMatch.groupValues.getOrNull(1).orEmpty()
-            val cells = cellRegex.findAll(rowHtml)
+            val cells = tableCellRegex.findAll(rowHtml)
                 .map { cellMatch ->
                     cellMatch.groupValues.getOrNull(2)
                         .orEmpty()
@@ -149,9 +131,7 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
     }
 
     private fun String.htmlFragmentToMarkdown(): String {
-        return replace(
-            Regex("""<img\b([^>]*)>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-        ) { match ->
+        return replace(imageRegex) { match ->
             val attrs = match.groupValues.getOrNull(1).orEmpty()
             val src = attrs.htmlAttribute("data-canonical-src")
                 .ifBlank { attrs.htmlAttribute("src") }
@@ -159,12 +139,7 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
             val alt = attrs.htmlAttribute("alt").ifBlank { "image" }
             if (src.isBlank()) alt else "[$alt]($src)"
         }
-            .replace(
-                Regex(
-                    """<a\b([^>]*)>(.*?)</a>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(anchorRegex) { match ->
                 val href = match.groupValues.getOrNull(1).orEmpty()
                     .htmlAttribute("href")
                     .normalizeGitHubUrl()
@@ -174,43 +149,28 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
                     .ifBlank { href }
                 if (href.isBlank()) label else "[$label]($href)"
             }
-            .replace(
-                Regex(
-                    """<(?:code|tt)[^>]*>(.*?)</(?:code|tt)>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(codeRegex) { match ->
                 "`${
                     match.groupValues.getOrNull(1).orEmpty().stripHtml().decodeHtmlEntities().trim()
                 }`"
             }
-            .replace(
-                Regex(
-                    """<(?:strong|b)[^>]*>(.*?)</(?:strong|b)>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(strongRegex) { match ->
                 "**${match.groupValues.getOrNull(1).orEmpty().htmlFragmentToMarkdown()}**"
             }
-            .replace(
-                Regex(
-                    """<(?:em|i)[^>]*>(.*?)</(?:em|i)>""",
-                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-                )
-            ) { match ->
+            .replace(emphasisRegex) { match ->
                 "*${match.groupValues.getOrNull(1).orEmpty().htmlFragmentToMarkdown()}*"
             }
-            .replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("<[^>]+>"), " ")
+            .replace(lineBreakRegex, "\n")
+            .replace(htmlTagRegex, " ")
             .decodeHtmlEntities()
-            .replace(Regex("""[ \t\x0B\f\r]+"""), " ")
+            .replace(horizontalWhitespaceRegex, " ")
             .lines()
             .joinToString(" ") { it.trim() }
             .trim()
     }
 
     private fun String.htmlTaskPrefixAndBody(): Pair<String, String> {
-        val checkbox = Regex("""<input\b([^>]*)>""", RegexOption.IGNORE_CASE).find(this)
+        val checkbox = checkboxRegex.find(this)
             ?: return "" to this
         val attrs = checkbox.groupValues.getOrNull(1).orEmpty()
         val checked = attrs.contains("checked", ignoreCase = true)
@@ -228,19 +188,36 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
     }
 
     private fun String.htmlAttribute(name: String): String {
-        val doubleQuoted =
-            Regex("""\b${Regex.escape(name)}\s*=\s*"([^"]*)"""", RegexOption.IGNORE_CASE)
-                .find(this)
-                ?.groupValues
-                ?.getOrNull(1)
-        if (doubleQuoted != null) return doubleQuoted.decodeHtmlEntities().trim()
-        return Regex("""\b${Regex.escape(name)}\s*=\s*'([^']*)'""", RegexOption.IGNORE_CASE)
-            .find(this)
-            ?.groupValues
-            ?.getOrNull(1)
-            .orEmpty()
-            .decodeHtmlEntities()
-            .trim()
+        val needle = name.trim().takeIf { it.isNotBlank() } ?: return ""
+        var searchFrom = 0
+        while (searchFrom < length) {
+            val nameIndex = indexOf(needle, startIndex = searchFrom, ignoreCase = true)
+            if (nameIndex < 0) return ""
+            val before = getOrNull(nameIndex - 1)
+            val afterNameIndex = nameIndex + needle.length
+            if (before != null && (before.isLetterOrDigit() || before == '-' || before == '_')) {
+                searchFrom = afterNameIndex
+                continue
+            }
+            var cursor = afterNameIndex
+            while (cursor < length && this[cursor].isWhitespace()) cursor += 1
+            if (getOrNull(cursor) != '=') {
+                searchFrom = afterNameIndex
+                continue
+            }
+            cursor += 1
+            while (cursor < length && this[cursor].isWhitespace()) cursor += 1
+            val quote = getOrNull(cursor)
+            if (quote != '"' && quote != '\'') {
+                searchFrom = afterNameIndex
+                continue
+            }
+            val valueStart = cursor + 1
+            val valueEnd = indexOf(quote, startIndex = valueStart)
+            if (valueEnd < 0) return ""
+            return substring(valueStart, valueEnd).decodeHtmlEntities().trim()
+        }
+        return ""
     }
 
     private fun String.normalizeGitHubUrl(): String {
@@ -257,7 +234,7 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
     private fun String.asMarkdownTableCell(): String {
         return replace('\n', ' ')
             .replace("|", "\\|")
-            .replace(Regex("""\s+"""), " ")
+            .replace(whitespaceRegex, " ")
             .trim()
     }
 
@@ -292,8 +269,8 @@ internal object GitHubReleaseNotesHtmlMarkdownConverter {
     }
 
     private fun String.stripHtml(): String {
-        return replace(Regex("<[^>]+>"), " ")
-            .replace(Regex("\\s+"), " ")
+        return replace(htmlTagRegex, " ")
+            .replace(whitespaceRegex, " ")
             .trim()
     }
 

@@ -1,7 +1,7 @@
 package os.kei.feature.github.domain
 
 import android.content.Context
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseLookupStrategy
@@ -28,7 +28,7 @@ import java.io.IOException
 object GitHubReleaseCheckService {
     private const val transientRetryCount = 1
 
-    fun evaluateTrackedApp(
+    suspend fun evaluateTrackedApp(
         context: Context,
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
@@ -45,7 +45,25 @@ object GitHubReleaseCheckService {
         )
     }
 
-    internal fun evaluateTrackedAppForTest(
+    fun evaluateTrackedAppBlocking(
+        context: Context,
+        item: GitHubTrackedApp,
+        strategy: GitHubReleaseLookupStrategy? = null,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false
+    ): GitHubTrackedReleaseCheck {
+        return GitHubExecution.runBlockingIo {
+            evaluateTrackedApp(
+                context = context,
+                item = item,
+                strategy = strategy,
+                profilePurposeOverride = profilePurposeOverride,
+                forceRefresh = forceRefresh
+            )
+        }
+    }
+
+    internal suspend fun evaluateTrackedAppForTest(
         context: Context,
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
@@ -63,7 +81,7 @@ object GitHubReleaseCheckService {
         )
     }
 
-    private fun evaluateTrackedAppInternal(
+    private suspend fun evaluateTrackedAppInternal(
         context: Context,
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy?,
@@ -312,7 +330,7 @@ object GitHubReleaseCheckService {
         )
     }
 
-    private fun resolvePreciseApkVersions(
+    private suspend fun resolvePreciseApkVersions(
         item: GitHubTrackedApp,
         localVersion: String,
         snapshot: GitHubRepositoryReleaseSnapshot,
@@ -336,10 +354,9 @@ object GitHubReleaseCheckService {
             }
         }
         if (targets.isEmpty()) return PreciseApkVersionPair()
-        val results = GitHubBoundedRunner.mapOrdered(
+        val results = GitHubExecution.mapOrderedBounded(
             items = targets,
-            maxConcurrency = 2,
-            threadName = "github-precise-release-check"
+            maxConcurrency = 2
         ) { target ->
             target.channel to resolver.resolve(
                 GitHubPreciseApkVersionRequest(
@@ -357,7 +374,7 @@ object GitHubReleaseCheckService {
         )
     }
 
-    private fun loadRepositoryProfile(
+    private suspend fun loadRepositoryProfile(
         profileRepository: GitHubRepositoryProfileRepository,
         item: GitHubTrackedApp,
         lookupConfig: GitHubLookupConfig,
@@ -386,7 +403,7 @@ object GitHubReleaseCheckService {
         }.getOrNull()
     }
 
-    private fun loadSnapshotWithFallback(
+    private suspend fun loadSnapshotWithFallback(
         owner: String,
         repo: String,
         strategy: GitHubReleaseLookupStrategy,
@@ -436,7 +453,7 @@ object GitHubReleaseCheckService {
         )
     }
 
-    private fun loadSnapshotWithTransientRetry(
+    private suspend fun loadSnapshotWithTransientRetry(
         strategy: GitHubReleaseLookupStrategy,
         owner: String,
         repo: String,

@@ -24,10 +24,10 @@ object GitHubVersionUtils {
     private val versionCandidateRegex = Regex(
         """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?"""
     )
-    private val preReleaseKeywordRegex = Regex("""(?i)pre[- ]release""")
-    private val snapshotKeywordRegex = Regex("""(?i)snapshot""")
-    private val nightlyKeywordRegex = Regex("""(?i)nightly""")
-    private val canaryKeywordRegex = Regex("""(?i)canary""")
+    private val preReleaseKeywordRegex = Regex("""pre[- ]release""", RegexOption.IGNORE_CASE)
+    private val snapshotKeywordRegex = Regex("""snapshot""", RegexOption.IGNORE_CASE)
+    private val nightlyKeywordRegex = Regex("""nightly""", RegexOption.IGNORE_CASE)
+    private val canaryKeywordRegex = Regex("""canary""", RegexOption.IGNORE_CASE)
     private val whitespaceRegex = Regex("""\s+""")
     private val separatorCleanupRegex = Regex("""\.\-|\-\.|--""")
     private val coreVersionRegex = Regex("""\d+(?:[._]\d+)*""")

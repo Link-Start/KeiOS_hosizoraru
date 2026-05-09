@@ -6,7 +6,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryProfileSourceState
 
 internal object GitHubDistributionProfileSource {
-    fun fetch(
+    suspend fun fetch(
         request: GitHubRepositoryProfileRequest,
         fetchedAtMillis: Long,
         availability: MutableList<GitHubRepositoryProfileSourceState>
@@ -23,7 +23,7 @@ internal object GitHubDistributionProfileSource {
             )
             return buildLocal(request, fetchedAtMillis)
         }
-        val bundleResult = GitHubReleaseAssetRepository.fetchApkAssets(
+        val bundleResult = GitHubReleaseAssetRepository.fetchApkAssetsAsync(
             owner = request.owner,
             repo = request.repo,
             rawTag = rawTag,

@@ -1,6 +1,6 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubRepositoryCandidate
@@ -172,10 +172,9 @@ internal class GitHubRepositoryDiscoveryService(
         scheduledQueries: List<RepositorySearchQuery>,
         limit: Int
     ): List<GitHubRepositoryCandidate> {
-        val outcomes = GitHubBoundedRunner.mapOrdered(
+        val outcomes = GitHubExecution.mapOrderedBoundedBlocking(
             items = scheduledQueries,
-            maxConcurrency = MAX_PARALLEL_SEARCH_QUERIES,
-            threadName = "github-app-repo-search"
+            maxConcurrency = MAX_PARALLEL_SEARCH_QUERIES
         ) { scheduledQuery ->
             fetchSearchOutcome(
                 query = scheduledQuery.query,

@@ -28,6 +28,10 @@ private val releaseUpdatedAtNoYearFormatter: DateTimeFormatter = DateTimeFormatt
     .ofPattern("MM-dd HH:mm", Locale.getDefault())
     .withZone(ZoneId.systemDefault())
 
+private val arm64TokenRegex = Regex("""(?:^|[^a-z0-9])arm64(?:[^a-z0-9]|$)""")
+private val armeabiTokenRegex = Regex("""(?:^|[^a-z0-9])armeabi(?:[^a-z0-9]|$)""")
+private val x86TokenRegex = Regex("""(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)""")
+
 private data class LatestReleaseCandidate(
     val rawTag: String,
     val releaseUrl: String,
@@ -172,12 +176,12 @@ internal fun assetAbiLabel(fileName: String): String? {
     val lower = fileName.lowercase()
     return when {
         "arm64-v8a" in lower || "aarch64" in lower ||
-            Regex("(^|[^a-z0-9])arm64([^a-z0-9]|$)").containsMatchIn(lower) -> "arm64"
+                arm64TokenRegex.containsMatchIn(lower) -> "arm64"
         "universal" in lower || "fat" in lower -> "universal"
         "armeabi-v7a" in lower || "armv7" in lower -> "armeabi-v7a"
-        Regex("(^|[^a-z0-9])armeabi([^a-z0-9]|$)").containsMatchIn(lower) -> "armeabi"
+        armeabiTokenRegex.containsMatchIn(lower) -> "armeabi"
         "x86_64" in lower -> "x86_64"
-        Regex("""(^|[^a-z0-9])x86([^a-z0-9]|$)""").containsMatchIn(lower) -> "x86"
+        x86TokenRegex.containsMatchIn(lower) -> "x86"
         else -> null
     }
 }
@@ -233,7 +237,7 @@ internal fun assetIsPreferredForDevice(
     }
     val hasX86_64 = deviceAbiSet.any { abi -> "x86_64" in abi }
     val hasX86 = deviceAbiSet.any { abi ->
-        Regex("""(^|[^a-z0-9])x86([^a-z0-9]|$)""").containsMatchIn(abi)
+        x86TokenRegex.containsMatchIn(abi)
     }
     return when (assetAbi) {
         "arm64" -> hasArm64
@@ -259,7 +263,7 @@ internal fun assetLikelyCompatibleWithDevice(
     }
     val hasX86_64 = deviceAbiSet.any { abi -> "x86_64" in abi }
     val hasX86 = deviceAbiSet.any { abi ->
-        Regex("""(^|[^a-z0-9])x86([^a-z0-9]|$)""").containsMatchIn(abi)
+        x86TokenRegex.containsMatchIn(abi)
     }
     return when (assetAbi) {
         "universal" -> true

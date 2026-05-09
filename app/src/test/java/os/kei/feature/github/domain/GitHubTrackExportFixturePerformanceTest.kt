@@ -105,15 +105,17 @@ class GitHubTrackExportFixturePerformanceTest {
                 itemCount = items.size
             ) {
                 items.forEachIndexed { index, item ->
-                    val result = preciseResolver.resolve(
-                        GitHubPreciseApkVersionRequest(
-                            owner = item.owner,
-                            repo = item.repo,
-                            release = releaseSnapshots[index].latestStable,
-                            packageName = item.packageName,
-                            lookupConfig = lookupConfig.copy(preciseApkVersionEnabled = true)
+                    val result = runBlocking {
+                        preciseResolver.resolve(
+                            GitHubPreciseApkVersionRequest(
+                                owner = item.owner,
+                                repo = item.repo,
+                                release = releaseSnapshots[index].latestStable,
+                                packageName = item.packageName,
+                                lookupConfig = lookupConfig.copy(preciseApkVersionEnabled = true)
+                            )
                         )
-                    ).getOrThrow()
+                    }.getOrThrow()
                     assertEquals(item.packageName, result.packageName)
                     assertTrue(result.versionLabel().isNotBlank())
                 }
@@ -481,7 +483,7 @@ class GitHubTrackExportFixturePerformanceTest {
         val inspectCount: Int
             get() = inspectCounter.get()
 
-        override fun loadReleaseAssetBundle(
+        override suspend fun loadReleaseAssetBundle(
             owner: String,
             repo: String,
             rawTag: String,
@@ -506,7 +508,7 @@ class GitHubTrackExportFixturePerformanceTest {
             )
         }
 
-        override fun inspectApk(
+        override suspend fun inspectApk(
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<GitHubApkManifestInfo> = runCatching {

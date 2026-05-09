@@ -92,12 +92,15 @@ private fun cleanShareImportAssetName(assetName: String): String {
         .substringAfterLast('\\')
     if (fileName.isBlank()) return ""
     return fileName
-        .replace(Regex("\\.apk$", RegexOption.IGNORE_CASE), "")
+        .replace(apkExtensionRegex, "")
         .replace('_', ' ')
         .replace('-', ' ')
-        .replace(Regex("\\s+"), " ")
+        .replace(whitespaceRegex, " ")
         .trim()
 }
+
+private val apkExtensionRegex = Regex("""\.apk$""", RegexOption.IGNORE_CASE)
+private val whitespaceRegex = Regex("""\s+""")
 
 internal enum class GitHubShareImportResultKind(
     val storageValue: String,

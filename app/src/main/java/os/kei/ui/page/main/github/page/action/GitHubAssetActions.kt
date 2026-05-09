@@ -72,7 +72,7 @@ internal class GitHubAssetActions(
         state.apkInfoErrors.remove(key)
         scope.launch {
             val result = withContext(Dispatchers.IO) {
-                apkInfoRepository.inspect(
+                apkInfoRepository.inspectAsync(
                     asset = asset,
                     lookupConfig = state.lookupConfig,
                     forceRefresh = forceRefresh

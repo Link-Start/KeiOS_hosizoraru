@@ -1,15 +1,30 @@
 package os.kei.feature.github.data.remote
 
+import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.GitHubSingleFlight
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
-import java.util.concurrent.CompletableFuture
+import os.kei.feature.github.model.githubAssetSourceSignature
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
 
 internal class GitHubApkInfoRepository(
     private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
 ) {
     fun inspect(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig,
+        forceRefresh: Boolean = false
+    ): Result<GitHubApkManifestInfo> {
+        return GitHubExecution.runBlockingIo {
+            inspectAsync(
+                asset = asset,
+                lookupConfig = lookupConfig,
+                forceRefresh = forceRefresh
+            )
+        }
+    }
+
+    suspend fun inspectAsync(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,
         forceRefresh: Boolean = false
@@ -21,38 +36,19 @@ internal class GitHubApkInfoRepository(
         completedInspectCache[cacheKey]?.let { cached ->
             return Result.success(cached)
         }
-        val newFuture = CompletableFuture<Result<GitHubApkManifestInfo>>()
-        val activeFuture = inFlightInspectCache.putIfAbsent(cacheKey, newFuture)
-        if (activeFuture != null) {
-            return activeFuture.awaitInspectResult()
-        }
-        val result = runCatching {
-            manifestReader.inspect(asset = asset, lookupConfig = lookupConfig)
-        }.getOrElse { error ->
-            Result.failure(error)
-        }
-        try {
+        return inFlightInspectCache.run(cacheKey) {
+            val result = runCatching {
+                manifestReader.inspect(asset = asset, lookupConfig = lookupConfig)
+            }.getOrElse { error ->
+                Result.failure(error)
+            }
             result.getOrNull()?.let { info ->
                 if (completedInspectCache.size >= MAX_COMPLETED_INSPECT_CACHE_SIZE) {
                     completedInspectCache.clear()
                 }
                 completedInspectCache[cacheKey] = info
             }
-            newFuture.complete(result)
-        } finally {
-            inFlightInspectCache.remove(cacheKey, newFuture)
-        }
-        return result
-    }
-
-    private fun CompletableFuture<Result<GitHubApkManifestInfo>>.awaitInspectResult(): Result<GitHubApkManifestInfo> {
-        return try {
-            get()
-        } catch (error: ExecutionException) {
-            Result.failure(error.cause ?: error)
-        } catch (error: InterruptedException) {
-            Thread.currentThread().interrupt()
-            Result.failure(error)
+            result
         }
     }
 
@@ -64,15 +60,21 @@ internal class GitHubApkInfoRepository(
             asset.name.trim(),
             asset.downloadUrl.trim(),
             asset.apiAssetUrl.trim(),
+            asset.digest.trim(),
+            asset.sizeBytes.toString(),
+            (asset.updatedAtMillis ?: -1L).toString(),
+            lookupConfig.githubAssetSourceSignature(),
             lookupConfig.selectedStrategy.storageId,
-            lookupConfig.apiToken.trim().hashCode().toString()
+            lookupConfig.apiToken.trim()
+                .takeIf { it.isNotBlank() }
+                ?.let { token -> "token:${token.hashCode()}" }
+                ?: "guest"
         ).joinToString("|")
     }
 
     private companion object {
         const val MAX_COMPLETED_INSPECT_CACHE_SIZE = 128
         val completedInspectCache = ConcurrentHashMap<String, GitHubApkManifestInfo>()
-        val inFlightInspectCache =
-            ConcurrentHashMap<String, CompletableFuture<Result<GitHubApkManifestInfo>>>()
+        val inFlightInspectCache = GitHubSingleFlight<String, GitHubApkManifestInfo>()
     }
 }

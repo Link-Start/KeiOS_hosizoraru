@@ -2,7 +2,7 @@ package os.kei.feature.github.data.remote
 
 import org.json.JSONArray
 import org.json.JSONObject
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
@@ -22,7 +22,7 @@ internal data class GitHubDeepRepositoryProfileResult(
 internal class GitHubDeepRepositoryProfileSource(
     private val http: GitHubRepositoryProfileHttpClient
 ) {
-    fun fetch(
+    suspend fun fetch(
         request: GitHubRepositoryProfileRequest,
         identity: GitHubRepositoryIdentityProfile,
         lifecycle: GitHubRepositoryLifecycleProfile,
@@ -35,10 +35,9 @@ internal class GitHubDeepRepositoryProfileSource(
             { fetchDependabotAlerts(request, fetchedAtMillis) },
             { fetchCodeScanningAlerts(request, fetchedAtMillis) }
         )
-        val chunks = GitHubBoundedRunner.mapOrdered(
+        val chunks = GitHubExecution.mapOrderedBounded(
             items = tasks,
-            maxConcurrency = DEEP_SOURCE_CONCURRENCY,
-            threadName = "github-profile-deep"
+            maxConcurrency = DEEP_SOURCE_CONCURRENCY
         ) { task ->
             task()
         }

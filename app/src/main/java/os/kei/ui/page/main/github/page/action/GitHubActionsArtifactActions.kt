@@ -14,6 +14,7 @@ import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS = 2_500L
+private val invalidArchiveFileNameRegex = Regex("""[\\/:*?"<>|]+""")
 
 internal class GitHubActionsArtifactActions(
     private val env: GitHubPageActionEnvironment,
@@ -266,7 +267,7 @@ internal class GitHubActionsArtifactActions(
     private fun artifactArchiveFileName(artifact: GitHubActionsArtifact): String {
         val baseName = artifact.name
             .trim()
-            .replace(Regex("""[\\/:*?"<>|]+"""), "_")
+            .replace(invalidArchiveFileNameRegex, "_")
             .ifBlank { "artifact-${artifact.id}" }
         return if (baseName.endsWith(".zip", ignoreCase = true)) baseName else "$baseName.zip"
     }

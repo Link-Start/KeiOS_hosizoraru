@@ -1,5 +1,8 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsWorkflowRun
@@ -12,11 +15,11 @@ internal class GitHubActionsProfileSource(
     private val client: okhttp3.OkHttpClient,
     private val apiBaseUrl: String
 ) {
-    fun fetch(
+    suspend fun fetch(
         request: GitHubRepositoryProfileRequest,
         fetchedAtMillis: Long,
         availability: MutableList<GitHubRepositoryProfileSourceState>
-    ): GitHubRepositoryActionsProfile {
+    ): GitHubRepositoryActionsProfile = coroutineScope {
         val actionsRepository = GitHubActionsRepository(
             apiToken = request.lookupConfig.apiToken,
             client = client,
@@ -24,16 +27,22 @@ internal class GitHubActionsProfileSource(
             actionsStrategy = GitHubActionsLookupStrategyOption.GitHubApiToken,
             requireApiTokenForApiStrategy = false
         )
-        val runsResult = actionsRepository.fetchRecentRepositoryWorkflowRuns(
-            owner = request.owner,
-            repo = request.repo,
-            limit = ACTIONS_PROFILE_RUN_LIMIT
-        ).result
-        val artifactsResult = actionsRepository.fetchRecentRepositoryArtifacts(
-            owner = request.owner,
-            repo = request.repo,
-            limit = ACTIONS_PROFILE_ARTIFACT_LIMIT
-        ).result
+        val runsDeferred = async(Dispatchers.IO) {
+            actionsRepository.fetchRecentRepositoryWorkflowRuns(
+                owner = request.owner,
+                repo = request.repo,
+                limit = ACTIONS_PROFILE_RUN_LIMIT
+            ).result
+        }
+        val artifactsDeferred = async(Dispatchers.IO) {
+            actionsRepository.fetchRecentRepositoryArtifacts(
+                owner = request.owner,
+                repo = request.repo,
+                limit = ACTIONS_PROFILE_ARTIFACT_LIMIT
+            ).result
+        }
+        val runsResult = runsDeferred.await()
+        val artifactsResult = artifactsDeferred.await()
         val runs = runsResult.getOrNull().orEmpty()
         val artifacts = artifactsResult.getOrNull().orEmpty()
         if (runsResult.isSuccess) {
@@ -59,7 +68,7 @@ internal class GitHubActionsProfileSource(
                     ?: IllegalStateException("actions artifacts unavailable")
             )
         }
-        return build(runs, artifacts, fetchedAtMillis)
+        build(runs, artifacts, fetchedAtMillis)
     }
 
     fun build(

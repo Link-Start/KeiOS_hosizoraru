@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import java.time.Instant
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToLong
 
 internal object GitHubActionsNightlyLinkHtmlParser {
@@ -142,7 +143,7 @@ internal object GitHubActionsNightlyLinkHtmlParser {
         val displayTitle = title.substringBefore(marker, missingDelimiterValue = title)
             .removeSuffix(" · GitHub")
             .cleanText()
-        val sha = Regex("""${Regex.escape(owner)}/${Regex.escape(repo)}@([0-9a-f]{7,40})""", RegexOption.IGNORE_CASE)
+        val sha = commitTitleRegex(owner, repo)
             .find(title)
             ?.groupValues
             ?.getOrNull(1)
@@ -167,17 +168,41 @@ internal object GitHubActionsNightlyLinkHtmlParser {
     }
 
     private fun commitRegex(owner: String, repo: String): Regex {
-        return Regex(
-            """/${Regex.escape(owner)}/${Regex.escape(repo)}/commit/([0-9a-f]{7,40})""",
-            RegexOption.IGNORE_CASE
-        )
+        val key = "${owner.lowercase(Locale.ROOT)}/${repo.lowercase(Locale.ROOT)}"
+        if (commitRegexCache.size > MAX_DYNAMIC_REGEX_CACHE_SIZE) {
+            commitRegexCache.clear()
+        }
+        return commitRegexCache.getOrPut(key) {
+            Regex(
+                """/${Regex.escape(owner)}/${Regex.escape(repo)}/commit/([0-9a-f]{7,40})""",
+                RegexOption.IGNORE_CASE
+            )
+        }
+    }
+
+    private fun commitTitleRegex(owner: String, repo: String): Regex {
+        val key = "${owner.lowercase(Locale.ROOT)}/${repo.lowercase(Locale.ROOT)}"
+        if (commitTitleRegexCache.size > MAX_DYNAMIC_REGEX_CACHE_SIZE) {
+            commitTitleRegexCache.clear()
+        }
+        return commitTitleRegexCache.getOrPut(key) {
+            Regex(
+                """${Regex.escape(owner)}/${Regex.escape(repo)}@([0-9a-f]{7,40})""",
+                RegexOption.IGNORE_CASE
+            )
+        }
     }
 
     private fun workflowNameRegex(runId: Long): Regex {
-        return Regex(
-            """actions/runs/$runId/workflow["'][^>]*>\s*([^<]+)\s*</a>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
+        if (workflowNameRegexCache.size > MAX_DYNAMIC_REGEX_CACHE_SIZE) {
+            workflowNameRegexCache.clear()
+        }
+        return workflowNameRegexCache.getOrPut(runId) {
+            Regex(
+                """actions/runs/$runId/workflow["'][^>]*>\s*([^<]+)\s*</a>""",
+                htmlBlockOptions
+            )
+        }
     }
 
     private fun String.parseIsoInstantOrNull(): Long? {
@@ -185,7 +210,7 @@ internal object GitHubActionsNightlyLinkHtmlParser {
     }
 
     private fun String.htmlToText(): String {
-        return replace(Regex("""<[^>]+>"""), " ")
+        return replace(htmlTagRegex, " ")
             .htmlUnescape()
             .cleanText()
     }
@@ -201,7 +226,7 @@ internal object GitHubActionsNightlyLinkHtmlParser {
     }
 
     private fun String.cleanText(): String {
-        return replace(Regex("""\s+"""), " ").trim()
+        return replace(whitespaceRegex, " ").trim()
     }
 
     private data class RunTitleParts(
@@ -214,6 +239,8 @@ internal object GitHubActionsNightlyLinkHtmlParser {
         val conclusion: String
     )
 
+    private const val MAX_DYNAMIC_REGEX_CACHE_SIZE = 64
+    private val htmlBlockOptions = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
     private val titleRegex = Regex("""<title>\s*(.*?)\s*</title>""", RegexOption.DOT_MATCHES_ALL)
     private val triggeredAtRegex = Regex(
         """Triggered via[\s\S]*?<relative-time[^>]*datetime=["']([^"']+)["']""",
@@ -221,11 +248,11 @@ internal object GitHubActionsNightlyLinkHtmlParser {
     )
     private val triggeredEventRegex = Regex(
         """Triggered via\s+([^<]+?)\s*<relative-time""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        htmlBlockOptions
     )
     private val statusRegex = Regex(
         """<span[^>]*>\s*Status\s*</span>\s*<span[^>]*>\s*([^<]+)\s*</span>""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        htmlBlockOptions
     )
     private val branchRegex = Regex(
         """<a\b(?=[^>]*class=["'][^"']*branch-name)(?=[^>]*title=["']([^"']+)["'])[^>]*>""",
@@ -233,21 +260,26 @@ internal object GitHubActionsNightlyLinkHtmlParser {
     )
     private val artifactRowRegex = Regex(
         """<tr\b[^>]*\bdata-artifact-id=["']([0-9]+)["'][^>]*>(.*?)</tr>""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        htmlBlockOptions
     )
     private val artifactNameRegex = Regex(
         """<span\b[^>]*class=["'][^"']*\btext-bold\b[^"']*["'][^>]*>(.*?)</span>""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        htmlBlockOptions
     )
     private val tableCellRegex = Regex(
         """<td\b[^>]*>(.*?)</td>""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        htmlBlockOptions
     )
     private val digestRegex = Regex(
         """<code\b[^>]*>\s*([^<]*sha256:[^<]+)\s*</code>""",
-        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        htmlBlockOptions
     )
     private val sizeRegex = Regex("""([0-9]+(?:\.[0-9]+)?)\s*([a-zA-Z]+)?""")
+    private val htmlTagRegex = Regex("""<[^>]+>""")
+    private val whitespaceRegex = Regex("""\s+""")
+    private val commitRegexCache = ConcurrentHashMap<String, Regex>()
+    private val commitTitleRegexCache = ConcurrentHashMap<String, Regex>()
+    private val workflowNameRegexCache = ConcurrentHashMap<Long, Regex>()
 }
 
 internal data class GitHubActionsNightlyRunPublicDetail(

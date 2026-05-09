@@ -1,18 +1,20 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.model.GitHubActionsRunArtifacts
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubActionsRunArtifacts
+import os.kei.feature.github.model.GitHubActionsRunBranchTrust
+import os.kei.feature.github.model.GitHubActionsRunSelectionOptions
 import os.kei.feature.github.model.GitHubActionsWorkflow
 import os.kei.feature.github.model.GitHubActionsWorkflowArtifactSignal
 import os.kei.feature.github.model.GitHubActionsWorkflowKind
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubActionsWorkflowSelectionOptions
 import os.kei.feature.github.model.GitHubActionsWorkflowTraits
-import os.kei.feature.github.model.GitHubActionsRunBranchTrust
-import os.kei.feature.github.model.GitHubActionsRunSelectionOptions
 import java.util.Locale
 
 object GitHubActionsWorkflowSelector {
+    private val querySplitRegex = Regex("""\s+""")
+
     fun inspectWorkflow(workflow: GitHubActionsWorkflow): GitHubActionsWorkflowTraits {
         val normalizedName = workflow.name.trim().lowercase(Locale.ROOT)
         val normalizedPath = workflow.path.trim().lowercase(Locale.ROOT)
@@ -288,7 +290,7 @@ object GitHubActionsWorkflowSelector {
         val tokens = query
             .trim()
             .lowercase(Locale.ROOT)
-            .split(Regex("""\s+"""))
+            .split(querySplitRegex)
             .filter { it.isNotBlank() }
         if (tokens.isEmpty()) return true
         return tokens.all { value.contains(it) }

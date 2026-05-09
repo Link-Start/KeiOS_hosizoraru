@@ -1,6 +1,6 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
@@ -315,10 +315,9 @@ object GitHubStrategyBenchmarkService {
         maxConcurrency: Int,
         block: (T) -> R
     ): List<R> {
-        return GitHubBoundedRunner.mapOrdered(
+        return GitHubExecution.mapOrderedBoundedBlocking(
             items = items,
             maxConcurrency = maxConcurrency,
-            threadName = "github-strategy-benchmark",
             block = block
         )
     }

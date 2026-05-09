@@ -8,19 +8,33 @@ internal object GitHubAtomHeuristics {
     private val htmlClosingBlockRegex = Regex("""</(?:p|div|h[1-6]|li|ul|ol|pre|code|section|article)>""", RegexOption.IGNORE_CASE)
     private val htmlTagRegex = Regex("""<[^>]+>""")
     private val whitespaceRegex = Regex("""[ \t\x0B\f\r]+""")
+    private val anyWhitespaceRegex = Regex("""\s+""")
     private val excessiveNewlineRegex = Regex("""\n{3,}""")
     private val versionTokenRegex = Regex(
-        """(?i)\b(?:version\s*)?[vV]?\d+(?:[._-]\d+)*(?:[-._ ]?(?:dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:[-._ ]?\d+)?)?(?:\+[0-9a-z.-]+)?\b"""
+        """\b(?:version\s*)?[vV]?\d+(?:[._-]\d+)*(?:[-._ ]?(?:dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:[-._ ]?\d+)?)?(?:\+[0-9a-z.-]+)?\b""",
+        RegexOption.IGNORE_CASE
     )
     private val artifactNameRegex = Regex(
-        """(?i)\b\S+\.(?:zip|apk|aab|apkm|tar\.gz|tgz|appimage|msi|dmg|exe|deb|rpm|pkg|ipa)\b"""
+        """\b\S+\.(?:zip|apk|aab|apkm|tar\.gz|tgz|appimage|msi|dmg|exe|deb|rpm|pkg|ipa)\b""",
+        RegexOption.IGNORE_CASE
     )
     private val lineNoiseRegexes = listOf(
-        Regex("""(?i)^\s*(?:curl|wget)\b"""),
-        Regex("""(?i)\b(?:sha|checksum|md5|sha1|sha256|sha512|artifact|workflow|actions?)\b"""),
-        Regex("""(?i)\b(?:docker|ghcr\.io|quay\.io|registry)\b"""),
-        Regex("""(?i)^\s*download\b.*$""")
+        Regex("""^\s*(?:curl|wget)\b""", RegexOption.IGNORE_CASE),
+        Regex(
+            """\b(?:sha|checksum|md5|sha1|sha256|sha512|artifact|workflow|actions?)\b""",
+            RegexOption.IGNORE_CASE
+        ),
+        Regex("""\b(?:docker|ghcr\.io|quay\.io|registry)\b""", RegexOption.IGNORE_CASE),
+        Regex("""^\s*download\b.*$""", RegexOption.IGNORE_CASE)
     )
+    private val devKeywordRegex =
+        Regex("""(?:^|[^a-z])(?:nightly|snapshot|canary|dev)(?:[^a-z]|$)""")
+    private val alphaKeywordRegex = Regex("""(?:^|[^a-z])alpha(?:[^a-z]|$)""")
+    private val betaKeywordRegex = Regex("""(?:^|[^a-z])beta(?:[^a-z]|$)""")
+    private val rcKeywordRegex = Regex("""(?:^|[^a-z])rc(?:[^a-z]|$)""")
+    private val previewKeywordRegex =
+        Regex("""(?:^|[^a-z])(?:preview|pre-release|prerelease)(?:[^a-z]|$)""")
+    private val urlRegex = Regex("""https?://\S+""", RegexOption.IGNORE_CASE)
 
     private val strongStableHints = listOf(
         "release notes",
@@ -83,11 +97,11 @@ internal object GitHubAtomHeuristics {
             .replace('_', ' ')
 
         return when {
-            Regex("""(^|[^a-z])(nightly|snapshot|canary|dev)([^a-z]|$)""").containsMatchIn(hints) -> GitHubReleaseChannel.DEV
-            Regex("""(^|[^a-z])alpha([^a-z]|$)""").containsMatchIn(hints) -> GitHubReleaseChannel.ALPHA
-            Regex("""(^|[^a-z])beta([^a-z]|$)""").containsMatchIn(hints) -> GitHubReleaseChannel.BETA
-            Regex("""(^|[^a-z])rc([^a-z]|$)""").containsMatchIn(hints) -> GitHubReleaseChannel.RC
-            Regex("""(^|[^a-z])(preview|pre-release|prerelease)([^a-z]|$)""").containsMatchIn(hints) -> GitHubReleaseChannel.PREVIEW
+            devKeywordRegex.containsMatchIn(hints) -> GitHubReleaseChannel.DEV
+            alphaKeywordRegex.containsMatchIn(hints) -> GitHubReleaseChannel.ALPHA
+            betaKeywordRegex.containsMatchIn(hints) -> GitHubReleaseChannel.BETA
+            rcKeywordRegex.containsMatchIn(hints) -> GitHubReleaseChannel.RC
+            previewKeywordRegex.containsMatchIn(hints) -> GitHubReleaseChannel.PREVIEW
             strongStableHints.any { it in hints } -> GitHubReleaseChannel.STABLE
             else -> null
         }
@@ -95,8 +109,8 @@ internal object GitHubAtomHeuristics {
 
     private fun sanitizePreviewLine(raw: String): String? {
         val line = raw
-            .replace(Regex("""https?://\S+""", RegexOption.IGNORE_CASE), " ")
-            .replace(Regex("""\s+"""), " ")
+            .replace(urlRegex, " ")
+            .replace(anyWhitespaceRegex, " ")
             .trim(' ', '-', '*', '•', '|', '>')
             .trim()
         if (line.isBlank()) return null

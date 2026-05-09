@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 internal class GitHubHtmlRepositoryProfileSource(
     private val http: GitHubRepositoryProfileHttpClient
@@ -136,30 +137,22 @@ internal class GitHubHtmlRepositoryProfileSource(
     }
 
     private fun String.extractTopics(): List<String> {
-        val encoded = Regex("""href=["']/topics/([^"']+)["']""")
-            .findAll(this)
+        val encoded = topicHrefRegex.findAll(this)
             .map { it.groupValues[1].trim().lowercase(Locale.ROOT) }
             .filter { it.isNotBlank() }
-        val json = Regex(""""topicNames"\s*:\s*\[(.*?)]""")
-            .find(this)
+        val json = topicNamesJsonRegex.find(this)
             ?.groupValues
             ?.getOrNull(1)
             .orEmpty()
             .let { raw ->
-                Regex(""""([^"]+)"""")
-                    .findAll(raw)
+                quotedJsonStringRegex.findAll(raw)
                     .map { it.groupValues[1].trim().lowercase(Locale.ROOT) }
             }
         return (encoded + json).distinct().take(20).toList()
     }
 
     private fun String.extractDefaultBranch(): String {
-        val patterns = listOf(
-            Regex(""""defaultBranch"\s*:\s*"([^"]+)""""),
-            Regex("""data-default-branch=["']([^"']+)["']"""),
-            Regex("""href=["'][^"']+/tree/([^/"']+)["']""")
-        )
-        return patterns.firstNotNullOfOrNull { pattern ->
+        return defaultBranchPatterns.firstNotNullOfOrNull { pattern ->
             pattern.find(this)?.groupValues?.getOrNull(1)
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
@@ -174,8 +167,7 @@ internal class GitHubHtmlRepositoryProfileSource(
     }
 
     private fun String.extractLatestRelativeTimeMillis(): Long {
-        return Regex("""<relative-time[^>]*datetime=["']([^"']+)["']""")
-            .find(this)
+        return relativeTimeRegex.find(this)
             ?.groupValues
             ?.getOrNull(1)
             ?.parseIsoInstantOrDefault()
@@ -187,24 +179,22 @@ internal class GitHubHtmlRepositoryProfileSource(
         repo: String,
         path: String
     ): Int? {
-        val hrefPattern = Regex(
-            """href=["'][^"']*/${Regex.escape(owner)}/${Regex.escape(repo)}/$path["'][^>]*>(.*?)</a>""",
-            RegexOption.IGNORE_CASE
-        )
-        val hrefMatch = hrefPattern.find(this)?.groupValues?.getOrNull(1).orEmpty()
+        val hrefMatch = visibleHrefRegex(owner, repo, path).find(this)
+            ?.groupValues
+            ?.getOrNull(1)
+            .orEmpty()
         return hrefMatch.parseCompactCountOrNull()
-            ?: Regex("""([0-9][0-9,.]*\s*[kKmM]?)\s+$path""")
-                .find(this)
+            ?: visibleFallbackRegex(path).find(this)
                 ?.groupValues
                 ?.getOrNull(1)
                 ?.parseCompactCountOrNull()
     }
 
     private fun String.parseCompactCountOrNull(): Int? {
-        val raw = replace(Regex("<[^>]+>"), " ")
+        val raw = replace(htmlTagRegex, " ")
             .replace(",", "")
             .trim()
-            .split(Regex("\\s+"))
+            .split(whitespaceRegex)
             .firstOrNull { token -> token.any(Char::isDigit) }
             ?.lowercase(Locale.ROOT)
             ?: return null
@@ -215,5 +205,49 @@ internal class GitHubHtmlRepositoryProfileSource(
         }
         val number = raw.trimEnd('k', 'm').toDoubleOrNull() ?: return null
         return (number * multiplier).toInt().coerceAtLeast(0)
+    }
+
+    private fun visibleHrefRegex(owner: String, repo: String, path: String): Regex {
+        val key = "$owner/$repo/$path"
+        return cachedRegex(visibleHrefRegexCache, key) {
+            Regex(
+                """href=["'][^"']*/${Regex.escape(owner)}/${Regex.escape(repo)}/$path["'][^>]*>(.*?)</a>""",
+                RegexOption.IGNORE_CASE
+            )
+        }
+    }
+
+    private fun visibleFallbackRegex(path: String): Regex {
+        return cachedRegex(visibleFallbackRegexCache, path) {
+            Regex("""([0-9][0-9,.]*\s*[kKmM]?)\s+${Regex.escape(path)}""")
+        }
+    }
+
+    private fun cachedRegex(
+        cache: ConcurrentHashMap<String, Regex>,
+        key: String,
+        build: () -> Regex
+    ): Regex {
+        if (cache.size > MAX_DYNAMIC_REGEX_CACHE_SIZE) {
+            cache.clear()
+        }
+        return cache.getOrPut(key, build)
+    }
+
+    private companion object {
+        private const val MAX_DYNAMIC_REGEX_CACHE_SIZE = 64
+        private val topicHrefRegex = Regex("""href=["']/topics/([^"']+)["']""")
+        private val topicNamesJsonRegex = Regex(""""topicNames"\s*:\s*\[(.*?)]""")
+        private val quotedJsonStringRegex = Regex(""""([^"]+)"""")
+        private val defaultBranchPatterns = listOf(
+            Regex(""""defaultBranch"\s*:\s*"([^"]+)""""),
+            Regex("""data-default-branch=["']([^"']+)["']"""),
+            Regex("""href=["'][^"']+/tree/([^/"']+)["']""")
+        )
+        private val relativeTimeRegex = Regex("""<relative-time[^>]*datetime=["']([^"']+)["']""")
+        private val htmlTagRegex = Regex("""<[^>]+>""")
+        private val whitespaceRegex = Regex("""\s+""")
+        private val visibleHrefRegexCache = ConcurrentHashMap<String, Regex>()
+        private val visibleFallbackRegexCache = ConcurrentHashMap<String, Regex>()
     }
 }

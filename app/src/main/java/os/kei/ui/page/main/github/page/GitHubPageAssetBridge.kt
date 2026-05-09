@@ -83,7 +83,7 @@ internal class GitHubPageAssetBridge(
         apiToken: String
     ): Result<GitHubReleaseAssetBundle> {
         return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.fetchApkAssets(
+            GitHubReleaseAssetRepository.fetchApkAssetsAsync(
                 owner = owner,
                 repo = repo,
                 rawTag = rawTag,

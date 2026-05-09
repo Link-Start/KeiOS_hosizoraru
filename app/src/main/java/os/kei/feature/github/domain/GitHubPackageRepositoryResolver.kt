@@ -1,6 +1,6 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -293,10 +293,9 @@ internal class GitHubPackageRepositoryResolver(
             )
         }
         val workerCount = min(MAX_PARALLEL_VERIFICATIONS, targets.size)
-        val outcomes = GitHubBoundedRunner.mapOrdered(
+        val outcomes = GitHubExecution.mapOrderedBoundedBlocking(
             items = targets,
-            maxConcurrency = workerCount,
-            threadName = "github-package-repo-scan"
+            maxConcurrency = workerCount
         ) { (candidate, score) ->
             verifyCandidate(
                 candidate = candidate,

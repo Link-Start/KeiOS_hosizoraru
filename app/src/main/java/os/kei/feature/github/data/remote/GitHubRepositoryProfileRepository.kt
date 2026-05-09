@@ -1,7 +1,7 @@
 package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
@@ -45,7 +45,7 @@ class GitHubRepositoryProfileRepository(
     private val actionsSource = GitHubActionsProfileSource(client, apiBaseUrl)
     private val deepSource = GitHubDeepRepositoryProfileSource(http)
 
-    fun fetchProfile(request: GitHubRepositoryProfileRequest): GitHubRepositoryProfileSnapshot {
+    suspend fun fetchProfile(request: GitHubRepositoryProfileRequest): GitHubRepositoryProfileSnapshot {
         val fetchedAtMillis = System.currentTimeMillis()
         val policy = GitHubRepositoryProfileFetchPolicy.from(request)
         val sourceConfigSignature = request.lookupConfig.githubProfileSourceSignature(
@@ -200,13 +200,13 @@ class GitHubRepositoryProfileRepository(
         return GitHubReleaseProfileSource.build(snapshot, fetchedAtMillis)
     }
 
-    private fun fetchSupplementSources(
+    private suspend fun fetchSupplementSources(
         request: GitHubRepositoryProfileRequest,
         policy: GitHubRepositoryProfileFetchPolicy,
         fetchedAtMillis: Long,
         sourceConfigSignature: String
     ): List<GitHubProfileSourceChunk> {
-        val tasks = buildList<() -> GitHubProfileSourceChunk> {
+        val tasks = buildList<suspend () -> GitHubProfileSourceChunk> {
             if (policy.requiresDistribution) {
                 add {
                     val startNs = System.nanoTime()
@@ -267,10 +267,9 @@ class GitHubRepositoryProfileRepository(
             }
         }
         if (tasks.isEmpty()) return emptyList()
-        return GitHubBoundedRunner.mapOrdered(
+        return GitHubExecution.mapOrderedBounded(
             items = tasks,
-            maxConcurrency = SUPPLEMENT_SOURCE_CONCURRENCY,
-            threadName = "github-profile-supplement"
+            maxConcurrency = SUPPLEMENT_SOURCE_CONCURRENCY
         ) { task ->
             task()
         }

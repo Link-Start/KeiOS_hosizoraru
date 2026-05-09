@@ -4,15 +4,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.GitHubSingleFlight
 import java.io.IOException
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.time.Instant
 import java.util.Locale
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
 import kotlin.math.roundToLong
 import kotlin.time.Duration.Companion.seconds
 
@@ -55,6 +54,36 @@ private data class HtmlReleaseMetadata(
 
 object GitHubReleaseAssetRepository {
     private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
+    private val htmlBlockOptions = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+    private val htmlHrefRegex = Regex("""href="([^"]+)"""", RegexOption.IGNORE_CASE)
+    private val releaseTitleRegex =
+        Regex("""<h1[^>]*class="[^"]*d-inline[^"]*"[^>]*>(.*?)</h1>""", htmlBlockOptions)
+    private val openGraphTitleRegex =
+        Regex("""<meta[^>]*property="og:title"[^>]*content="([^"]+)"""", RegexOption.IGNORE_CASE)
+    private val releaseUpdatedAtRegex = Regex(
+        """(?:released|published)\s+this\s*<relative-time[^>]*datetime="([^"]+)"""",
+        htmlBlockOptions
+    )
+    private val expandedAssetsSrcRegex =
+        Regex(
+            """<include-fragment[^>]*src="([^"]*?/releases/expanded_assets/[^"]+)"""",
+            RegexOption.IGNORE_CASE
+        )
+    private val expandedAssetRowRegex =
+        Regex("""<li\b[^>]*class="[^"]*Box-row[^"]*"[^>]*>(.*?)</li>""", htmlBlockOptions)
+    private val expandedAssetLinkRegex =
+        Regex(
+            """<a[^>]*href="([^"]+)"[^>]*class="[^"]*Truncate[^"]*"[^>]*>(.*?)</a>""",
+            htmlBlockOptions
+        )
+    private val expandedAssetSizeRegex =
+        Regex(""">\s*(\d+(?:\.\d+)?)\s*([KMGT]?B)\s*<""", RegexOption.IGNORE_CASE)
+    private val relativeTimeRegex =
+        Regex("""<relative-time[^>]*datetime="([^"]+)"""", RegexOption.IGNORE_CASE)
+    private val sourceCodeArchiveLabelRegex =
+        Regex("""^Source code\s*\(([^)]+)\)$""", RegexOption.IGNORE_CASE)
+    private val htmlTagRegex = Regex("""<[^>]+>""")
+    private val whitespaceRegex = Regex("""\s+""")
 
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -71,10 +100,33 @@ object GitHubReleaseAssetRepository {
     private val apiClient: GitHubReleaseApiClient by lazy {
         GitHubReleaseApiClient(client)
     }
-    private val inFlightAssetFetches =
-        ConcurrentHashMap<String, CompletableFuture<Result<GitHubReleaseAssetBundle>>>()
+    private val inFlightAssetFetches = GitHubSingleFlight<String, GitHubReleaseAssetBundle>()
 
     fun fetchApkAssets(
+        owner: String,
+        repo: String,
+        rawTag: String,
+        releaseUrl: String = "",
+        preferHtml: Boolean = false,
+        aggressiveFiltering: Boolean = false,
+        includeAllAssets: Boolean = false,
+        apiToken: String = ""
+    ): Result<GitHubReleaseAssetBundle> {
+        return GitHubExecution.runBlockingIo {
+            fetchApkAssetsAsync(
+                owner = owner,
+                repo = repo,
+                rawTag = rawTag,
+                releaseUrl = releaseUrl,
+                preferHtml = preferHtml,
+                aggressiveFiltering = aggressiveFiltering,
+                includeAllAssets = includeAllAssets,
+                apiToken = apiToken
+            )
+        }
+    }
+
+    suspend fun fetchApkAssetsAsync(
         owner: String,
         repo: String,
         rawTag: String,
@@ -177,6 +229,22 @@ object GitHubReleaseAssetRepository {
         aggressiveFiltering: Boolean = false,
         apiToken: String = ""
     ): Result<GitHubReleaseAssetBundle> {
+        return GitHubExecution.runBlockingIo {
+            fetchLatestStableApkAssetsAsync(
+                owner = owner,
+                repo = repo,
+                aggressiveFiltering = aggressiveFiltering,
+                apiToken = apiToken
+            )
+        }
+    }
+
+    suspend fun fetchLatestStableApkAssetsAsync(
+        owner: String,
+        repo: String,
+        aggressiveFiltering: Boolean = false,
+        apiToken: String = ""
+    ): Result<GitHubReleaseAssetBundle> {
         val inFlightKey = buildAssetFetchKey(
             requestKind = ASSET_FETCH_KIND_LATEST,
             owner = owner,
@@ -262,33 +330,16 @@ object GitHubReleaseAssetRepository {
         )
     }
 
-    private fun runInFlightAssetFetch(
+    private suspend fun runInFlightAssetFetch(
         key: String,
         block: () -> Result<GitHubReleaseAssetBundle>
     ): Result<GitHubReleaseAssetBundle> {
-        val newFuture = CompletableFuture<Result<GitHubReleaseAssetBundle>>()
-        val activeFuture = inFlightAssetFetches.putIfAbsent(key, newFuture)
-        if (activeFuture != null) {
-            return activeFuture.awaitResult()
-        }
-        val result = try {
-            block()
-        } catch (error: Throwable) {
-            Result.failure(error)
-        }
-        newFuture.complete(result)
-        inFlightAssetFetches.remove(key, newFuture)
-        return result
-    }
-
-    private fun CompletableFuture<Result<GitHubReleaseAssetBundle>>.awaitResult(): Result<GitHubReleaseAssetBundle> {
-        return try {
-            get()
-        } catch (error: ExecutionException) {
-            Result.failure(error.cause ?: error)
-        } catch (error: InterruptedException) {
-            Thread.currentThread().interrupt()
-            Result.failure(error)
+        return inFlightAssetFetches.run(key) {
+            try {
+                block()
+            } catch (error: Throwable) {
+                Result.failure(error)
+            }
         }
     }
 
@@ -376,30 +427,28 @@ object GitHubReleaseAssetRepository {
 
     private fun fetchHtml(url: String, apiToken: String): String {
         val token = apiToken.trim()
-        var lastError: Throwable? = null
-        repeat(2) { attempt ->
-            try {
-                val requestBuilder = Request.Builder()
-                    .url(url)
-                    .get()
-                    .header("Accept", "text/html,application/xhtml+xml")
-                    .header("User-Agent", GITHUB_USER_AGENT)
-                    .header("Connection", "close")
-                if (token.isNotBlank()) {
-                    requestBuilder.header("Authorization", "Bearer $token")
+        val result = GitHubExecution.retryOnceBlocking(
+            shouldRetry = { error -> error is IOException }
+        ) {
+            val requestBuilder = Request.Builder()
+                .url(url)
+                .get()
+                .header("Accept", "text/html,application/xhtml+xml")
+                .header("User-Agent", GITHUB_USER_AGENT)
+                .header("Connection", "close")
+            if (token.isNotBlank()) {
+                requestBuilder.header("Authorization", "Bearer $token")
+            }
+            client.newCall(requestBuilder.build()).execute().use { response ->
+                val bodyText = response.body.string()
+                if (!response.isSuccessful) {
+                    error("GitHub release page request failed (HTTP ${response.code})")
                 }
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val bodyText = response.body.string()
-                    if (!response.isSuccessful) {
-                        error("GitHub release page request failed (HTTP ${response.code})")
-                    }
-                    return bodyText
-                }
-            } catch (error: Throwable) {
-                lastError = error
-                if (attempt == 0 && error is IOException) Thread.sleep(220)
+                bodyText
             }
         }
+        val lastError = result.exceptionOrNull()
+        result.getOrNull()?.let { return it }
         val message = lastError?.message.orEmpty()
         if (message.contains("connection closed", ignoreCase = true)) {
             error("GitHub page connection closed unexpectedly. Try again later.")
@@ -413,9 +462,8 @@ object GitHubReleaseAssetRepository {
         repo: String,
         rawTag: String
     ): List<GitHubReleaseAssetFile> {
-        val hrefRegex = Regex("""href=\"([^\"]+)\""", RegexOption.IGNORE_CASE)
         val unique = linkedMapOf<String, GitHubReleaseAssetFile>()
-        hrefRegex.findAll(html).forEach { match ->
+        htmlHrefRegex.findAll(html).forEach { match ->
             val rawHref = match.groupValues.getOrNull(1).orEmpty()
             val href = rawHref.replace("&amp;", "&")
             val normalizedUrl = when {
@@ -449,10 +497,7 @@ object GitHubReleaseAssetRepository {
         rawTag: String,
         releaseUrl: String
     ): HtmlReleaseMetadata {
-        val releaseName = Regex(
-            """<h1[^>]*class="[^"]*d-inline[^"]*"[^>]*>(.*?)</h1>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        ).find(html)
+        val releaseName = releaseTitleRegex.find(html)
             ?.groupValues
             ?.getOrNull(1)
             .orEmpty()
@@ -460,10 +505,7 @@ object GitHubReleaseAssetRepository {
             .decodeHtmlEntities()
             .trim()
             .ifBlank {
-                Regex(
-                    """<meta[^>]*property="og:title"[^>]*content="([^"]+)"""",
-                    RegexOption.IGNORE_CASE
-                ).find(html)
+                openGraphTitleRegex.find(html)
                     ?.groupValues
                     ?.getOrNull(1)
                     .orEmpty()
@@ -473,10 +515,7 @@ object GitHubReleaseAssetRepository {
             }
             .ifBlank { rawTag }
 
-        val releaseUpdatedAtMillis = Regex(
-            """(?:released|published)\s+this\s*<relative-time[^>]*datetime="([^"]+)"""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        ).find(html)
+        val releaseUpdatedAtMillis = releaseUpdatedAtRegex.find(html)
             ?.groupValues
             ?.getOrNull(1)
             .orEmpty()
@@ -492,10 +531,7 @@ object GitHubReleaseAssetRepository {
     }
 
     private fun parseExpandedAssetsUrl(html: String): String? {
-        val src = Regex(
-            """<include-fragment[^>]*src="([^"]*?/releases/expanded_assets/[^"]+)"""",
-            RegexOption.IGNORE_CASE
-        ).find(html)
+        val src = expandedAssetsSrcRegex.find(html)
             ?.groupValues
             ?.getOrNull(1)
             .orEmpty()
@@ -519,32 +555,22 @@ object GitHubReleaseAssetRepository {
         repo: String,
         rawTag: String
     ): List<GitHubReleaseAssetFile> {
-        val rowRegex = Regex(
-            """<li\b[^>]*class="[^"]*Box-row[^"]*"[^>]*>(.*?)</li>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
-        val linkRegex = Regex(
-            """<a[^>]*href="([^"]+)"[^>]*class="[^"]*Truncate[^"]*"[^>]*>(.*?)</a>""",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
-        )
-        val sizeRegex = Regex(""">\s*(\d+(?:\.\d+)?)\s*([KMGT]?B)\s*<""", RegexOption.IGNORE_CASE)
-        val updatedAtRegex = Regex("""<relative-time[^>]*datetime="([^"]+)"""", RegexOption.IGNORE_CASE)
         val unique = linkedMapOf<String, GitHubReleaseAssetFile>()
-        rowRegex.findAll(html).forEach { rowMatch ->
+        expandedAssetRowRegex.findAll(html).forEach { rowMatch ->
             val rowHtml = rowMatch.groupValues.getOrNull(1).orEmpty()
-            val linkMatch = linkRegex.find(rowHtml) ?: return@forEach
+            val linkMatch = expandedAssetLinkRegex.find(rowHtml) ?: return@forEach
             val normalizedUrl = normalizeGitHubUrl(linkMatch.groupValues.getOrNull(1).orEmpty())
             if (normalizedUrl.isNullOrBlank()) return@forEach
             val fileName = inferHtmlAssetFileName(normalizedUrl, linkMatch.groupValues.getOrNull(2).orEmpty())
             if (fileName.isBlank()) return@forEach
             if (!normalizedUrl.contains("/$owner/$repo/")) return@forEach
-            val sizeBytes = sizeRegex.find(rowHtml)?.let { sizeMatch ->
+            val sizeBytes = expandedAssetSizeRegex.find(rowHtml)?.let { sizeMatch ->
                 parseSizeBytes(
                     sizeValue = sizeMatch.groupValues.getOrNull(1).orEmpty(),
                     sizeUnit = sizeMatch.groupValues.getOrNull(2).orEmpty()
                 )
             } ?: 0L
-            val updatedAtMillis = updatedAtRegex.find(rowHtml)
+            val updatedAtMillis = relativeTimeRegex.find(rowHtml)
                 ?.groupValues
                 ?.getOrNull(1)
                 .orEmpty()
@@ -587,8 +613,7 @@ object GitHubReleaseAssetRepository {
         if (decodedUrlName.isNotBlank()) return decodedUrlName
 
         val linkText = linkInnerHtml.stripHtml().decodeHtmlEntities().trim()
-        val sourceCodeMatch = Regex("""^Source code\s*\(([^)]+)\)$""", RegexOption.IGNORE_CASE)
-            .find(linkText)
+        val sourceCodeMatch = sourceCodeArchiveLabelRegex.find(linkText)
         if (sourceCodeMatch != null) {
             return "Source code.${sourceCodeMatch.groupValues[1].trim()}"
         }
@@ -672,8 +697,8 @@ object GitHubReleaseAssetRepository {
     }
 
     private fun String.stripHtml(): String {
-        return replace(Regex("<[^>]+>"), " ")
-            .replace(Regex("\\s+"), " ")
+        return replace(htmlTagRegex, " ")
+            .replace(whitespaceRegex, " ")
             .trim()
     }
 

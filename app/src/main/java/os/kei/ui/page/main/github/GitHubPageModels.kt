@@ -184,7 +184,7 @@ private fun String.normalizeVersionPrefix(): String {
 
 private fun String.removeIgnoreCase(token: String): String {
     if (token.isBlank()) return this
-    return replace(Regex(Regex.escape(token), RegexOption.IGNORE_CASE), " ")
+    return replace(token, " ", ignoreCase = true)
 }
 
 private fun String.compactVersionCandidate(): String? {

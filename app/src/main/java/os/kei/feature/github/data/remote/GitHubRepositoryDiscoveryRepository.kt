@@ -260,7 +260,7 @@ internal class GitHubRepositoryDiscoveryRepository(
                 val text = body
                     .replace(htmlTagRegex, " ")
                     .htmlUnescape()
-                    .replace(Regex("""\s+"""), " ")
+                    .replace(whitespaceRegex, " ")
                     .trim()
                 val count = repositoryCountRegex.find(text)
                     ?.groupValues
@@ -432,8 +432,10 @@ internal class GitHubRepositoryDiscoveryRepository(
             setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
         )
         private val htmlTagRegex = Regex("""<[^>]+>""")
+        private val whitespaceRegex = Regex("""\s+""")
         private val repositoryCountRegex = Regex(
-            """(?i)(\d[\d,]*)\s+repositories?"""
+            """(\d[\d,]*)\s+repositories?""",
+            RegexOption.IGNORE_CASE
         )
         private val repositoryPathSegmentRegex = Regex("""[A-Za-z0-9_.-]+""")
         private val githubUsernameRegex = Regex("""[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?""")

@@ -7,6 +7,8 @@ import java.net.URI
 import java.util.zip.Inflater
 import kotlin.time.Duration.Companion.seconds
 
+private val contentRangeRegex = Regex("""bytes\s+(\d+)-(\d+)/(\d+|\*)""")
+
 internal data class RemoteZipSelectedEntries(
     val entryNames: List<String>,
     val entries: Map<String, ByteArray>
@@ -497,7 +499,7 @@ internal class RemoteZipEntryReader(
 
     private fun String?.parseContentRange(): ContentRange? {
         val value = this?.trim().orEmpty()
-        val match = Regex("""bytes\s+(\d+)-(\d+)/(\d+|\*)""").matchEntire(value) ?: return null
+        val match = contentRangeRegex.matchEntire(value) ?: return null
         val total = match.groupValues[3].takeUnless { it == "*" }?.toLongOrNull() ?: return null
         return ContentRange(
             start = match.groupValues[1].toLong(),

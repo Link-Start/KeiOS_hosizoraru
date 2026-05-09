@@ -214,9 +214,9 @@ private fun String.toReleaseNotesPreviewLines(): List<String> {
                 .trim()
         }
         .map { line ->
-            line.replace(Regex("""\[(.+?)]\((.+?)\)"""), "$1")
-                .replace(Regex("""[`*_>]+"""), "")
-                .replace(Regex("""\s+"""), " ")
+            line.replace(markdownLinkRegex, "$1")
+                .replace(markdownMarkerRegex, "")
+                .replace(whitespaceRegex, " ")
                 .trim()
         }
         .filter { it.length >= 3 }
@@ -236,6 +236,10 @@ private fun String.toReleaseNotesPreviewLines(): List<String> {
         .distinct()
         .toList()
 }
+
+private val markdownLinkRegex = Regex("""\[(.+?)]\((.+?)\)""")
+private val markdownMarkerRegex = Regex("""[`*_>]+""")
+private val whitespaceRegex = Regex("""\s+""")
 
 private val GitHubApkTrustReason.priority: Int
     get() = when (this) {

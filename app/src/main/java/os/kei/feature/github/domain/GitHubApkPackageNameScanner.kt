@@ -1,6 +1,6 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
@@ -118,10 +118,9 @@ internal class GitHubApkPackageNameScanner(
             ).getOrThrow()
         }
 
-        return GitHubBoundedRunner.firstSuccess(
+        return GitHubExecution.firstSuccessBoundedBlocking(
             items = scanTargets,
-            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS,
-            threadName = "github-apk-package-scan"
+            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS
         ) { asset ->
             scanApkAsset(
                 asset = asset,
@@ -163,7 +162,7 @@ internal class GitHubApkPackageNameScanner(
 }
 
 internal object GitHubPackageNameValidator {
-    private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$""")
+    private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
 
     fun isValid(packageName: String): Boolean {
         return packageNamePattern.matches(packageName.trim())

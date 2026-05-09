@@ -5,6 +5,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.feature.github.GitHubExecution
 import java.io.IOException
 import java.net.URLEncoder
 
@@ -106,43 +107,38 @@ internal class GitHubReleaseApiClient(
         noStore: Boolean = false
     ): String {
         val token = apiToken.trim()
-        var lastError: Throwable? = null
-
-        repeat(2) { attempt ->
-            try {
-                val requestBuilder = Request.Builder()
-                    .url(url)
-                    .get()
-                    .header("Accept", "application/vnd.github+json")
-                    .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
-                    .header("User-Agent", GITHUB_USER_AGENT)
-                    .header("Connection", "close")
-                if (noStore) {
-                    requestBuilder
-                        .header("Cache-Control", "no-store")
-                        .header("Pragma", "no-cache")
+        val result = GitHubExecution.retryOnceBlocking(
+            shouldRetry = { error -> error is IOException }
+        ) {
+            val requestBuilder = Request.Builder()
+                .url(url)
+                .get()
+                .header("Accept", "application/vnd.github+json")
+                .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
+                .header("User-Agent", GITHUB_USER_AGENT)
+                .header("Connection", "close")
+            if (noStore) {
+                requestBuilder
+                    .header("Cache-Control", "no-store")
+                    .header("Pragma", "no-cache")
+            }
+            if (token.isNotBlank()) {
+                requestBuilder.header("Authorization", "Bearer $token")
+            }
+            client.newCall(requestBuilder.build()).execute().use { response ->
+                val bodyText = response.body.string()
+                if (!response.isSuccessful) {
+                    val apiMessage = runCatching {
+                        JSONObject(bodyText).optString("message").trim()
+                    }.getOrDefault("")
+                    error(buildJsonErrorMessage(response, token, apiMessage))
                 }
-                if (token.isNotBlank()) {
-                    requestBuilder.header("Authorization", "Bearer $token")
-                }
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val bodyText = response.body.string()
-                    if (!response.isSuccessful) {
-                        val apiMessage = runCatching {
-                            JSONObject(bodyText).optString("message").trim()
-                        }.getOrDefault("")
-                        error(buildJsonErrorMessage(response, token, apiMessage))
-                    }
-                    return bodyText
-                }
-            } catch (error: Throwable) {
-                lastError = error
-                if (attempt == 0 && error is IOException) {
-                    Thread.sleep(220)
-                }
+                bodyText
             }
         }
 
+        val lastError = result.exceptionOrNull()
+        result.getOrNull()?.let { return it }
         val message = lastError?.message.orEmpty()
         if (message.contains("connection closed", ignoreCase = true)) {
             error("GitHub connection closed unexpectedly. Try again later.")

@@ -28,8 +28,7 @@ internal class GitHubActionsNightlyLinkRepository(
         val cacheKey = metadataCacheKey(owner, repo)
         cachedValue(repositoryInfoCache[cacheKey], PUBLIC_METADATA_CACHE_TTL_MS)?.let { return@runCatching it }
         val html = fetchPublicHtml(buildGitHubRepoUrl(owner, repo)).getOrThrow()
-        val defaultBranch = Regex(""""defaultBranch"\s*:\s*"([^"]+)"""")
-            .find(html)
+        val defaultBranch = defaultBranchRegex.find(html)
             ?.groupValues
             ?.getOrNull(1)
             ?.htmlUnescape()
@@ -343,13 +342,7 @@ internal class GitHubActionsNightlyLinkRepository(
         owner: String,
         repo: String
     ): List<String> {
-        val ownerPattern = Regex.escape(owner)
-        val repoPattern = Regex.escape(repo)
-        val pattern = Regex(
-            """/$ownerPattern/$repoPattern/(?:blob|actions/workflows)/[^"'\s<>]*?([^/"'\s<>]+\.ya?ml)(?:["'?#/]|$)""",
-            RegexOption.IGNORE_CASE
-        )
-        return pattern.findAll(html)
+        return workflowFileRegex(owner, repo).findAll(html)
             .map { match -> match.groupValues[1].htmlUnescape().urlDecode().trim() }
             .filter { it.endsWith(".yml", ignoreCase = true) || it.endsWith(".yaml", ignoreCase = true) }
             .distinctBy { it.lowercase(Locale.ROOT) }
@@ -402,8 +395,7 @@ internal class GitHubActionsNightlyLinkRepository(
 
     private fun parseNightlyArtifactNames(html: String, encodedBasePath: String): List<String> {
         val absoluteBase = nightlyLinkBaseUrl.trimEnd('/') + encodedBasePath
-        val hrefPattern = Regex("""href="([^"]+\.zip(?:\?[^"]*)?)"""", RegexOption.IGNORE_CASE)
-        return hrefPattern.findAll(html)
+        return zipHrefRegex.findAll(html)
             .map { match -> match.groupValues[1].substringBefore('?') }
             .mapNotNull { href ->
                 val normalized = when {
@@ -429,19 +421,13 @@ internal class GitHubActionsNightlyLinkRepository(
             "workflows/${workflowSlug.urlEncode()}/${branch.urlEncode()}/${artifactName.urlEncode()}"
         return fetchPublicHtml(url)
             .mapCatching { html ->
-                val runId = Regex("""/${
-                    Regex.escape(owner)
-                }/${Regex.escape(repo)}/actions/runs/([0-9]+)""")
-                    .find(html)
+                val runId = runIdRegex(owner, repo).find(html)
                     ?.groupValues
                     ?.getOrNull(1)
                     ?.toLongOrNull()
                     ?: 0L
-                val repoPrefix = """/${Regex.escape(owner)}/${Regex.escape(repo)}"""
-                val artifactId = listOf(
-                    Regex("""$repoPrefix/actions/artifacts/([0-9]+)"""),
-                    Regex("""$repoPrefix/suites/[0-9]+/artifacts/([0-9]+)""")
-                ).asSequence()
+                val artifactId = artifactIdRegexes(owner, repo)
+                    .asSequence()
                     .mapNotNull { regex -> regex.find(html) }
                     .firstOrNull()
                     ?.groupValues
@@ -670,7 +656,7 @@ internal class GitHubActionsNightlyLinkRepository(
             .removeSuffix(".yml")
             .replace('-', ' ')
             .replace('_', ' ')
-            .split(Regex("""\s+"""))
+            .split(whitespaceRegex)
             .filter { it.isNotBlank() }
             .joinToString(" ") { part ->
                 part.replaceFirstChar { char ->
@@ -716,6 +702,62 @@ internal class GitHubActionsNightlyLinkRepository(
         cache[key] = CachedValue(value, System.currentTimeMillis())
     }
 
+    private fun workflowFileRegex(owner: String, repo: String): Regex {
+        return cachedRegex(workflowFileRegexCache, repoRegexKey(owner, repo)) {
+            val ownerPattern = Regex.escape(owner)
+            val repoPattern = Regex.escape(repo)
+            Regex(
+                """/$ownerPattern/$repoPattern/(?:blob|actions/workflows)/[^"'\s<>]*?([^/"'\s<>]+\.ya?ml)(?:["'?#/]|$)""",
+                RegexOption.IGNORE_CASE
+            )
+        }
+    }
+
+    private fun runIdRegex(owner: String, repo: String): Regex {
+        return cachedRegex(runIdRegexCache, repoRegexKey(owner, repo)) {
+            Regex(
+                """/${Regex.escape(owner)}/${Regex.escape(repo)}/actions/runs/([0-9]+)""",
+                RegexOption.IGNORE_CASE
+            )
+        }
+    }
+
+    private fun artifactIdRegexes(owner: String, repo: String): List<Regex> {
+        return cachedRegexList(artifactIdRegexCache, repoRegexKey(owner, repo)) {
+            val repoPrefix = """/${Regex.escape(owner)}/${Regex.escape(repo)}"""
+            listOf(
+                Regex("""$repoPrefix/actions/artifacts/([0-9]+)"""),
+                Regex("""$repoPrefix/suites/[0-9]+/artifacts/([0-9]+)""")
+            )
+        }
+    }
+
+    private fun repoRegexKey(owner: String, repo: String): String {
+        return "${owner.lowercase(Locale.ROOT)}/${repo.lowercase(Locale.ROOT)}"
+    }
+
+    private fun cachedRegex(
+        cache: ConcurrentHashMap<String, Regex>,
+        key: String,
+        build: () -> Regex
+    ): Regex {
+        if (cache.size > PUBLIC_METADATA_CACHE_MAX_ENTRIES) {
+            cache.clear()
+        }
+        return cache.getOrPut(key, build)
+    }
+
+    private fun cachedRegexList(
+        cache: ConcurrentHashMap<String, List<Regex>>,
+        key: String,
+        build: () -> List<Regex>
+    ): List<Regex> {
+        if (cache.size > PUBLIC_METADATA_CACHE_MAX_ENTRIES) {
+            cache.clear()
+        }
+        return cache.getOrPut(key, build)
+    }
+
     private data class NightlyArtifactDetail(
         val artifactName: String,
         val runId: Long,
@@ -741,8 +783,14 @@ internal class GitHubActionsNightlyLinkRepository(
         const val PUBLIC_METADATA_CACHE_TTL_MS = 120_000L
         const val PUBLIC_METADATA_CACHE_MAX_ENTRIES = 64
 
+        val defaultBranchRegex = Regex(""""defaultBranch"\s*:\s*"([^"]+)"""")
+        val zipHrefRegex = Regex("""href="([^"]+\.zip(?:\?[^"]*)?)"""", RegexOption.IGNORE_CASE)
+        val whitespaceRegex = Regex("""\s+""")
         val repositoryInfoCache = ConcurrentHashMap<String, CachedValue<GitHubActionsRepositoryInfo>>()
         val workflowFilesCache = ConcurrentHashMap<String, CachedValue<List<String>>>()
         val publicHtmlCache = ConcurrentHashMap<String, CachedValue<String>>()
+        val workflowFileRegexCache = ConcurrentHashMap<String, Regex>()
+        val runIdRegexCache = ConcurrentHashMap<String, Regex>()
+        val artifactIdRegexCache = ConcurrentHashMap<String, List<Regex>>()
     }
 }

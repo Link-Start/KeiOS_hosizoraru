@@ -1,6 +1,6 @@
 package os.kei.feature.github.domain
 
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
@@ -24,7 +24,7 @@ internal data class GitHubPreciseApkVersionRequest(
 )
 
 internal interface GitHubPreciseApkVersionSource {
-    fun loadReleaseAssetBundle(
+    suspend fun loadReleaseAssetBundle(
         owner: String,
         repo: String,
         rawTag: String,
@@ -32,7 +32,7 @@ internal interface GitHubPreciseApkVersionSource {
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubReleaseAssetBundle>
 
-    fun inspectApk(
+    suspend fun inspectApk(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo>
@@ -41,7 +41,7 @@ internal interface GitHubPreciseApkVersionSource {
 internal class GitHubPreciseApkVersionResolver(
     private val source: GitHubPreciseApkVersionSource = DefaultGitHubPreciseApkVersionSource()
 ) {
-    fun resolve(request: GitHubPreciseApkVersionRequest): Result<GitHubRemoteApkVersionInfo> =
+    suspend fun resolve(request: GitHubPreciseApkVersionRequest): Result<GitHubRemoteApkVersionInfo> =
         runCatching {
             val rawTag = request.release.rawTag.trim().ifBlank {
                 GitHubReleaseAssetRepository.parseReleaseTagFromUrl(request.release.link)
@@ -62,10 +62,9 @@ internal class GitHubPreciseApkVersionResolver(
                 .take(MAX_APK_INSPECT_CANDIDATES)
             check(apkAssets.isNotEmpty()) { "Release contains no APK asset" }
 
-            val inspected = GitHubBoundedRunner.mapOrdered(
+            val inspected = GitHubExecution.mapOrderedBounded(
                 items = apkAssets,
-                maxConcurrency = MAX_PARALLEL_APK_INSPECTS,
-                threadName = "github-precise-apk-version"
+                maxConcurrency = MAX_PARALLEL_APK_INSPECTS
             ) { asset ->
                 asset to source.inspectApk(asset = asset, lookupConfig = request.lookupConfig)
             }
@@ -114,7 +113,7 @@ internal class GitHubPreciseApkVersionResolver(
 private class DefaultGitHubPreciseApkVersionSource(
     private val apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository()
 ) : GitHubPreciseApkVersionSource {
-    override fun loadReleaseAssetBundle(
+    override suspend fun loadReleaseAssetBundle(
         owner: String,
         repo: String,
         rawTag: String,
@@ -146,7 +145,7 @@ private class DefaultGitHubPreciseApkVersionSource(
             return@runCatching signed
         }
 
-        GitHubReleaseAssetRepository.fetchApkAssets(
+        GitHubReleaseAssetRepository.fetchApkAssetsAsync(
             owner = owner,
             repo = repo,
             rawTag = rawTag,
@@ -162,10 +161,10 @@ private class DefaultGitHubPreciseApkVersionSource(
         }
     }
 
-    override fun inspectApk(
+    override suspend fun inspectApk(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> {
-        return apkInfoRepository.inspect(asset = asset, lookupConfig = lookupConfig)
+        return apkInfoRepository.inspectAsync(asset = asset, lookupConfig = lookupConfig)
     }
 }

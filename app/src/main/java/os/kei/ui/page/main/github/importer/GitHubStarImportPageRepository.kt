@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -138,10 +138,9 @@ internal class GitHubStarImportPageRepository(
         return withContext(ioDispatcher) {
             val snapshot = snapshotLoader()
             val verifier = apkVerifierFactory()
-            GitHubBoundedRunner.mapOrdered(
+            GitHubExecution.mapOrderedBounded(
                 items = uniqueTargets,
-                maxConcurrency = MAX_PARALLEL_APK_VERIFICATIONS,
-                threadName = "github-star-import-verify"
+                maxConcurrency = MAX_PARALLEL_APK_VERIFICATIONS
             ) { candidate ->
                 candidate.trackedApp.id to verifier.verify(
                     candidate = candidate,

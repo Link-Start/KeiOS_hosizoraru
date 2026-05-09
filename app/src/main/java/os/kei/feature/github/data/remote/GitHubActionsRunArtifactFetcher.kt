@@ -1,6 +1,6 @@
 package os.kei.feature.github.data.remote
 
-import os.kei.feature.github.GitHubBoundedRunner
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsWorkflowRun
 
@@ -26,10 +26,9 @@ internal class GitHubActionsRunArtifactFetcher(
                 run to fetchRunArtifacts(owner, repo, run.id, limit)
             }
         }
-        return GitHubBoundedRunner.mapOrdered(
+        return GitHubExecution.mapOrderedBoundedBlocking(
             items = runs,
-            maxConcurrency = concurrency,
-            threadName = "github-actions-artifact-fetch"
+            maxConcurrency = concurrency
         ) { run ->
             run to fetchRunArtifacts(owner, repo, run.id, limit)
         }

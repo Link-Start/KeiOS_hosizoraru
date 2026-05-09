@@ -16,6 +16,7 @@ private val TASK_LIST_REGEX = Regex("""^[-*+]\s+\[([ xX])]\s+(.*)$""")
 private val ORDERED_LIST_PREFIX_REGEX = Regex("^\\d+\\.\\s+")
 private val ORDERED_LIST_CONTENT_REGEX = Regex("^(\\d+)\\.\\s+(.*)$")
 private val UNORDERED_LIST_REGEX = Regex("^[-*+]\\s+(.*)$")
+private val TABLE_SEPARATOR_CELL_REGEX = Regex(""":?-{3,}:?""")
 private val INLINE_TOKEN_REGEX = Regex(
     "`([^`]+)`|\\*\\*([^*]+)\\*\\*|__([^_]+)__|\\*([^*]+)\\*|_([^_]+)_|!\\[(.*?)]\\(([^)\\s]+)(?:\\s+\"[^\"]*\")?\\)|\\[(.+?)]\\(([^)\\s]+)(?:\\s+\"[^\"]*\")?\\)|<((?:https?://|mailto:)[^>\\s]+)>|((?:https?://|mailto:)[^\\s<]+)"
 )
@@ -198,7 +199,7 @@ private fun String.splitMarkdownTableCells(): List<String> {
 private fun String.isMarkdownTableSeparator(): Boolean {
     val cells = markdownTableCellsOrNull() ?: return false
     return cells.all { cell ->
-        cell.matches(Regex(""":?-{3,}:?"""))
+        cell.matches(TABLE_SEPARATOR_CELL_REGEX)
     }
 }
 

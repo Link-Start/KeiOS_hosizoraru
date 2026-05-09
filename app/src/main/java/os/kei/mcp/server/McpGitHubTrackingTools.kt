@@ -301,7 +301,7 @@ internal class McpGitHubTrackingTools(
     }
 
     private fun evaluateTrackedApp(item: GitHubTrackedApp): GitHubCheckRow {
-        val check = GitHubReleaseCheckService.evaluateTrackedApp(appContext, item)
+        val check = GitHubReleaseCheckService.evaluateTrackedAppBlocking(appContext, item)
         return GitHubCheckRow(
             item = item,
             localVersion = check.localVersion,

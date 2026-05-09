@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -237,7 +238,8 @@ class GitHubRepositoryProfileRepositoryTest {
                 htmlBaseUrl = "https://github.test"
             )
 
-            val profile = repository.fetchProfile(
+            val profile = runBlocking {
+                repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
@@ -247,7 +249,8 @@ class GitHubRepositoryProfileRepositoryTest {
                         source = GitHubReleaseSignalSource.LatestRedirect
                     )
                 )
-            )
+                )
+            }
 
             val paths = server.takeRequestPaths()
             assertContains(paths, "/repos/demo/app")
@@ -284,14 +287,16 @@ class GitHubRepositoryProfileRepositoryTest {
                 htmlBaseUrl = server.url("/").toString().trimEnd('/')
             )
 
-            val profile = repository.fetchProfile(
+            val profile = runBlocking {
+                repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
                     lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
                     purpose = GitHubRepositoryProfilePurpose.HealthCard
                 )
-            )
+                )
+            }
 
             val paths = server.takeRequestPaths()
             assertContains(paths, "/repos/demo/app/actions/runs?per_page=12")
@@ -336,13 +341,15 @@ class GitHubRepositoryProfileRepositoryTest {
                 htmlBaseUrl = server.url("/").toString().trimEnd('/')
             )
 
-            val profile = repository.fetchProfile(
+            val profile = runBlocking {
+                repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
                     lookupConfig = GitHubLookupConfig()
                 )
-            )
+                )
+            }
 
             val archived = profile.lifecycle.archived ?: error("archived field should exist")
             assertTrue(archived.value)
@@ -370,14 +377,16 @@ class GitHubRepositoryProfileRepositoryTest {
                 htmlBaseUrl = server.url("/").toString().trimEnd('/')
             )
 
-            val profile = repository.fetchProfile(
+            val profile = runBlocking {
+                repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
                     lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
                     purpose = GitHubRepositoryProfilePurpose.DetailFull
                 )
-            )
+                )
+            }
 
             val paths = server.takeRequestPaths()
             assertContains(paths, "/demo/app")
@@ -408,14 +417,16 @@ class GitHubRepositoryProfileRepositoryTest {
                 htmlBaseUrl = server.url("/").toString().trimEnd('/')
             )
 
-            val profile = repository.fetchProfile(
+            val profile = runBlocking {
+                repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
                     lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic),
                     purpose = GitHubRepositoryProfilePurpose.ManualDeepRefresh
                 )
-            )
+                )
+            }
 
             val paths = server.takeRequestPaths()
             assertContains(paths, "/demo/app")
@@ -432,14 +443,16 @@ class GitHubRepositoryProfileRepositoryTest {
                 htmlBaseUrl = server.url("/").toString().trimEnd('/')
             )
 
-            val profile = repository.fetchProfile(
+            val profile = runBlocking {
+                repository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
                     lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
                     purpose = GitHubRepositoryProfilePurpose.ManualDeepRefresh
                 )
-            )
+                )
+            }
 
             val paths = server.takeRequestPaths()
             assertContains(paths, "/repos/demo/app/traffic/views")

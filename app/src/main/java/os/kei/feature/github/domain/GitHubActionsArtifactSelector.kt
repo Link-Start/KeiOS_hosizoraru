@@ -424,7 +424,7 @@ object GitHubActionsArtifactSelector {
     private val namedVersionRegex = Regex(
         """(?:^|[^a-z0-9])(?:version|ver|versioncode|vc)[-._ ]?(\d{2,})(?=$|[^a-z0-9])"""
     )
-    private val rcChannelRegex = Regex("""(^|[^a-z0-9])rc\d*([^a-z0-9]|$)""")
+    private val rcChannelRegex = Regex("""(?:^|[^a-z0-9])rc\d*(?:[^a-z0-9]|$)""")
     private val querySplitRegex = Regex("""\s+""")
     private val artifactNameTraitsCache =
         BoundedArtifactSelectorCache<String, GitHubActionsArtifactNameTraits>(512)

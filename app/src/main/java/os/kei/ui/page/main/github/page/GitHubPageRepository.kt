@@ -90,7 +90,7 @@ internal class GitHubPageRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$""")
+    private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
     private val contentStateDeriver = GitHubPageContentStateDeriver(defaultDispatcher)
     private val assetBridge = GitHubPageAssetBridge(ioDispatcher)
     private val notificationBridge = GitHubPageRefreshNotificationBridge(ioDispatcher)

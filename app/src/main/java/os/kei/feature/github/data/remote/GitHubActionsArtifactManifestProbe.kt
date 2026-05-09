@@ -84,6 +84,6 @@ internal class GitHubActionsArtifactManifestProbe(
     private companion object {
         private const val MAX_NESTED_APK_SCAN_CANDIDATES = 4
         private val androidPackageNamePattern =
-            Regex("""^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$""")
+            Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
     }
 }

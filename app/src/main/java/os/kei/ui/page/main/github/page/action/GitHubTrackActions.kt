@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
@@ -13,6 +14,7 @@ internal class GitHubTrackActions(
     private val env: GitHubPageActionEnvironment,
     private val refreshActions: GitHubRefreshActions
 ) {
+    private var appListRefreshJob: Job? = null
     private val state get() = env.state
     private val scope get() = env.scope
     private val repository get() = env.repository
@@ -20,6 +22,7 @@ internal class GitHubTrackActions(
     fun openTrackSheetForAdd() {
         state.resetTrackEditor()
         state.showAddSheet = true
+        refreshAppListForTrackSheet()
     }
 
     fun openTrackSheetForEdit(item: GitHubTrackedApp) {
@@ -34,10 +37,26 @@ internal class GitHubTrackActions(
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.showAddSheet = true
+        refreshAppListForTrackSheet()
     }
 
     fun dismissTrackSheet() {
         state.dismissTrackSheet()
+    }
+
+    fun setTrackAppPickerExpanded(value: Boolean) {
+        state.pickerExpanded = value
+        if (value) {
+            refreshAppListForTrackSheet()
+        }
+    }
+
+    fun refreshAppListForTrackSheet() {
+        if (appListRefreshJob?.isActive == true) return
+        appListRefreshJob = scope.launch {
+            refreshActions.reloadApps(forceRefresh = true)
+            syncSelectedAppFromPackageInput()
+        }
     }
 
     fun ensureKeiOsSelfTrack() {
@@ -81,6 +100,7 @@ internal class GitHubTrackActions(
                     )
                     return@launch
                 }
+                refreshActions.reloadApps(forceRefresh = true)
                 state.packageNameInput = result.packageName
                 state.selectedApp = state.appList.firstOrNull { app ->
                     app.packageName.equals(result.packageName, ignoreCase = true)
@@ -131,6 +151,7 @@ internal class GitHubTrackActions(
                     env.toast(R.string.github_toast_repo_scan_no_match)
                     return@launch
                 }
+                refreshActions.reloadApps(forceRefresh = true)
                 state.repoUrlInput = candidate.trackedApp.repoUrl
                 state.packageNameInput = candidate.trackedApp.packageName
                 state.selectedApp = state.appList.firstOrNull { app ->
@@ -228,5 +249,14 @@ internal class GitHubTrackActions(
             }
         }
         state.pendingDeleteItem = null
+    }
+
+    private fun syncSelectedAppFromPackageInput() {
+        val packageName = state.packageNameInput.trim()
+        if (packageName.isBlank()) return
+        val refreshedApp = state.appList.firstOrNull { app ->
+            app.packageName.equals(packageName, ignoreCase = true)
+        } ?: return
+        state.selectedApp = refreshedApp
     }
 }

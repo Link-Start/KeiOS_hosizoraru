@@ -150,7 +150,8 @@ internal class GitHubPageActions(
     fun refreshTrackedItem(
         item: GitHubTrackedApp,
         showToastOnError: Boolean = true,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false
     ) {
         if (env.state.trackedItems.none { it.id == item.id }) return
         if (env.state.itemRefreshLoading[item.id] == true) return
@@ -167,7 +168,8 @@ internal class GitHubPageActions(
                     item = item,
                     showToastOnError = showToastOnError,
                     keepCurrentVisualWhileRefreshing = true,
-                    profilePurposeOverride = profilePurposeOverride
+                    profilePurposeOverride = profilePurposeOverride,
+                    forceRefresh = forceRefresh
                 ) { updatedState ->
                     if (wasAssetExpanded && canLoadApkAssets(item, updatedState)) {
                         assetActions.clearApkAssetCache(item, updatedState)
@@ -347,6 +349,10 @@ internal class GitHubPageActions(
     fun openTrackSheetForEdit(item: GitHubTrackedApp) = trackActions.openTrackSheetForEdit(item)
 
     fun dismissTrackSheet() = trackActions.dismissTrackSheet()
+
+    fun setTrackAppPickerExpanded(value: Boolean) = trackActions.setTrackAppPickerExpanded(value)
+
+    fun refreshTrackAppList() = trackActions.refreshAppListForTrackSheet()
 
     fun requestDeleteTrackedItem(item: GitHubTrackedApp) = trackActions.requestDeleteItem(item)
 

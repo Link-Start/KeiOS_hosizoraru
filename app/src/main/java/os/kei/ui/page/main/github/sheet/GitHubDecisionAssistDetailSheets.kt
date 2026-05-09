@@ -62,6 +62,7 @@ internal fun GitHubDecisionAssistDetailSheet(
     assetBundle: GitHubReleaseAssetBundle?,
     assetLoading: Boolean,
     assetError: String,
+    healthRefreshing: Boolean = false,
     onDismissRequest: () -> Unit,
     onRefreshHealth: (GitHubTrackedApp) -> Unit,
     onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit
@@ -85,11 +86,18 @@ internal fun GitHubDecisionAssistDetailSheet(
             )
         },
         endAction = {
+            val refreshing = detail.type == GitHubDecisionAssistDetailType.RepositoryHealth &&
+                    healthRefreshing
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideRefreshIcon(),
-                contentDescription = stringResource(R.string.common_refresh),
+                contentDescription = if (refreshing) {
+                    stringResource(R.string.common_loading)
+                } else {
+                    stringResource(R.string.common_refresh)
+                },
+                enabled = !refreshing,
                 onClick = {
                     when (detail.type) {
                         GitHubDecisionAssistDetailType.RepositoryHealth -> onRefreshHealth(detail.item)
@@ -104,7 +112,8 @@ internal fun GitHubDecisionAssistDetailSheet(
         when (detail.type) {
             GitHubDecisionAssistDetailType.RepositoryHealth -> GitHubHealthDetailContent(
                 item = detail.item,
-                state = versionState
+                state = versionState,
+                refreshing = healthRefreshing
             )
 
             GitHubDecisionAssistDetailType.ReleaseNotes -> GitHubReleaseNotesDetailContent(

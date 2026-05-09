@@ -44,7 +44,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun GitHubHealthDetailContent(
     item: GitHubTrackedApp,
-    state: VersionCheckUi
+    state: VersionCheckUi,
+    refreshing: Boolean = false
 ) {
     val context = LocalContext.current
     val health = buildGitHubRepositoryHealth(item, state)
@@ -54,7 +55,8 @@ internal fun GitHubHealthDetailContent(
             item = item,
             state = state,
             health = health,
-            profileUi = profileUi
+            profileUi = profileUi,
+            refreshing = refreshing
         )
         SheetSectionTitle(stringResource(R.string.github_health_detail_diagnosis_title))
         GitHubHealthDiagnosisCard(health = health, context = context)
@@ -99,7 +101,8 @@ internal fun RepositoryProfileOverviewCard(
     item: GitHubTrackedApp,
     state: VersionCheckUi,
     health: GitHubRepositoryHealth,
-    profileUi: GitHubRepositoryProfileUiSummary?
+    profileUi: GitHubRepositoryProfileUiSummary?,
+    refreshing: Boolean = false
 ) {
     val levelLabel = stringResource(health.level.repositoryHealthLabelRes())
     SheetSummaryCard(
@@ -131,8 +134,12 @@ internal fun RepositoryProfileOverviewCard(
             ?.let { fetchedAt ->
                 DetailInfoRow(
                     label = stringResource(R.string.github_profile_section_sources),
-                    value = formatReleaseUpdatedAtNoYear(fetchedAt)
-                        ?: stringResource(R.string.common_unknown)
+                    value = if (refreshing) {
+                        stringResource(R.string.common_loading)
+                    } else {
+                        formatReleaseUpdatedAtNoYear(fetchedAt)
+                            ?: stringResource(R.string.common_unknown)
+                    }
                 )
             }
     }

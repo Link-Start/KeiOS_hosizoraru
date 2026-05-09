@@ -46,6 +46,7 @@ internal class GitHubRefreshActions(
     private val scope get() = env.scope
     private val state get() = env.state
     private val repository get() = env.repository
+    private val appListReloadMutex = Mutex()
 
     fun persistCheckCache(refreshTimestamp: Long = state.lastRefreshMs) {
         val states = buildCheckCacheEntries()
@@ -91,19 +92,26 @@ internal class GitHubRefreshActions(
     }
 
     suspend fun reloadApps(forceRefresh: Boolean = false) {
-        state.appList = repository.queryInstalledLaunchableApps(
-            context = context,
-            forceRefresh = forceRefresh
-        )
-        val trackedPackages = state.trackedItems
-            .map { it.packageName.trim() }
-            .filter { it.isNotBlank() }
-            .distinct()
-        repository.preloadAppIcons(
-            context = context,
-            packageNames = trackedPackages
-        )
-        state.appListLoaded = true
+        appListReloadMutex.withLock {
+            state.appListRefreshing = true
+            try {
+                state.appList = repository.queryInstalledLaunchableApps(
+                    context = context,
+                    forceRefresh = forceRefresh
+                )
+                val trackedPackages = state.trackedItems
+                    .map { it.packageName.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                repository.preloadAppIcons(
+                    context = context,
+                    packageNames = trackedPackages
+                )
+                state.appListLoaded = true
+            } finally {
+                state.appListRefreshing = false
+            }
+        }
     }
 
     suspend fun initializeWarmSnapshot() {
@@ -193,6 +201,7 @@ internal class GitHubRefreshActions(
         showToastOnError: Boolean = false,
         keepCurrentVisualWhileRefreshing: Boolean = false,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false,
         onUpdated: ((VersionCheckUi) -> Unit)? = null
     ): Job {
         return scope.launch {
@@ -201,6 +210,7 @@ internal class GitHubRefreshActions(
                 showToastOnError = showToastOnError,
                 keepCurrentVisualWhileRefreshing = keepCurrentVisualWhileRefreshing,
                 profilePurposeOverride = profilePurposeOverride,
+                forceRefresh = forceRefresh,
                 onUpdated = onUpdated
             )
         }
@@ -211,6 +221,7 @@ internal class GitHubRefreshActions(
         showToastOnError: Boolean = false,
         keepCurrentVisualWhileRefreshing: Boolean = false,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false,
         onUpdated: ((VersionCheckUi) -> Unit)? = null
     ) {
         val previousState = state.checkStates[item.id] ?: VersionCheckUi()
@@ -225,7 +236,8 @@ internal class GitHubRefreshActions(
         }
         val itemState = resolveItemState(
             item = item,
-            profilePurposeOverride = profilePurposeOverride
+            profilePurposeOverride = profilePurposeOverride,
+            forceRefresh = forceRefresh
         )
         if (state.trackedItems.none { it.id == item.id }) return
         if (showToastOnError && itemState.failed) {
@@ -410,12 +422,14 @@ internal class GitHubRefreshActions(
 
     private suspend fun resolveItemState(
         item: GitHubTrackedApp,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false
     ): VersionCheckUi {
         return repository.evaluateTrackedApp(
             context = context,
             item = item,
-            profilePurposeOverride = profilePurposeOverride
+            profilePurposeOverride = profilePurposeOverride,
+            forceRefresh = forceRefresh
         )
     }
 

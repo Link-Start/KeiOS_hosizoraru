@@ -3,11 +3,15 @@ package os.kei.feature.github.domain
 import org.junit.Test
 import os.kei.feature.github.model.GitHubDecisionLevel
 import os.kei.feature.github.model.GitHubProfileField
+import os.kei.feature.github.model.GitHubRepositoryActionsProfile
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
+import os.kei.feature.github.model.GitHubRepositoryCommunityProfile
+import os.kei.feature.github.model.GitHubRepositoryDistributionProfile
 import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryHealthInput
 import os.kei.feature.github.model.GitHubRepositoryHealthReason
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
+import os.kei.feature.github.model.GitHubRepositoryLocalFitProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
@@ -49,12 +53,12 @@ class GitHubRepositoryHealthEvaluatorTest {
             nowMillis = NOW
         )
 
-        assertEquals(GitHubDecisionLevel.Good, health.level)
+        assertEquals(GitHubDecisionLevel.Review, health.level)
         assertTrue(GitHubRepositoryHealthReason.ForkMaintainedIndependently in health.reasons)
     }
 
     @Test
-    fun `stale fork behind active upstream enters review`() {
+    fun `stale fork behind active upstream enters risk`() {
         val health = GitHubRepositoryHealthEvaluator.evaluate(
             input = baseInput(
                 profile = profile(
@@ -67,7 +71,7 @@ class GitHubRepositoryHealthEvaluatorTest {
             nowMillis = NOW
         )
 
-        assertEquals(GitHubDecisionLevel.Review, health.level)
+        assertEquals(GitHubDecisionLevel.Risk, health.level)
         assertTrue(GitHubRepositoryHealthReason.ForkBehindUpstream in health.reasons)
     }
 
@@ -90,11 +94,49 @@ class GitHubRepositoryHealthEvaluatorTest {
 
         assertTrue(GitHubRepositoryHealthReason.ForkCompareBehind in health.reasons)
         assertTrue(GitHubRepositoryHealthReason.OpenSecurityAlerts in health.reasons)
-        assertTrue(health.score >= 55)
+        assertEquals(GitHubDecisionLevel.Review, health.level)
+    }
+
+    @Test
+    fun `full healthy evidence reaches good without saturating score`() {
+        val health = GitHubRepositoryHealthEvaluator.evaluate(
+            input = baseInput(
+                profile = profile(
+                    pushedAtMillis = NOW - DAY_MS,
+                    latestRunUpdatedAtMillis = NOW - DAY_MS,
+                    latestRunConclusion = "success",
+                    hasInstallableAsset = true,
+                    hasCommunityFiles = true,
+                    packageNameMatched = true
+                ),
+                latestStableUpdatedAtMillis = NOW - DAY_MS
+            ),
+            nowMillis = NOW
+        )
+
+        assertEquals(GitHubDecisionLevel.Good, health.level)
+        assertTrue(health.score in 80..94)
+        assertTrue(GitHubRepositoryHealthReason.LocalPackageMatched in health.reasons)
+    }
+
+    @Test
+    fun `minimal fresh stable release stays in review`() {
+        val health = GitHubRepositoryHealthEvaluator.evaluate(
+            input = baseInput(
+                profile = profile(pushedAtMillis = NOW - DAY_MS),
+                latestStableUpdatedAtMillis = NOW - DAY_MS
+            ),
+            nowMillis = NOW
+        )
+
+        assertEquals(GitHubDecisionLevel.Review, health.level)
+        assertTrue(health.score < 80)
+        assertTrue(GitHubRepositoryHealthReason.FreshRelease in health.reasons)
     }
 
     private fun baseInput(
-        profile: GitHubRepositoryProfileSnapshot
+        profile: GitHubRepositoryProfileSnapshot,
+        latestStableUpdatedAtMillis: Long = NOW - 30L * DAY_MS
     ): GitHubRepositoryHealthInput {
         return GitHubRepositoryHealthInput(
             packageName = "demo.app",
@@ -103,7 +145,7 @@ class GitHubRepositoryHealthEvaluatorTest {
             hasStableRelease = true,
             hasUpdate = false,
             latestStableRawTag = "v1.0.0",
-            latestStableUpdatedAtMillis = NOW - 30L * DAY_MS,
+            latestStableUpdatedAtMillis = latestStableUpdatedAtMillis,
             profile = profile
         )
     }
@@ -116,7 +158,12 @@ class GitHubRepositoryHealthEvaluatorTest {
         upstreamPushedAtMillis: Long = -1L,
         forkSyncBehindBy: Int = 0,
         openSecurityAlerts: Int = 0,
-        trafficLatestAtMillis: Long = -1L
+        trafficLatestAtMillis: Long = -1L,
+        latestRunUpdatedAtMillis: Long = -1L,
+        latestRunConclusion: String = "",
+        hasInstallableAsset: Boolean = false,
+        hasCommunityFiles: Boolean = false,
+        packageNameMatched: Boolean? = null
     ): GitHubRepositoryProfileSnapshot {
         return GitHubRepositoryProfileSnapshot(
             owner = "demo",
@@ -150,6 +197,21 @@ class GitHubRepositoryHealthEvaluatorTest {
             security = GitHubRepositorySecurityProfile(
                 dependabotAlertsAvailable = field(true),
                 openDependabotAlertsCount = field(openSecurityAlerts)
+            ),
+            distribution = GitHubRepositoryDistributionProfile(
+                hasInstallableAndroidAsset = field(hasInstallableAsset),
+                apkLikeAssetCount = field(if (hasInstallableAsset) 1 else 0)
+            ),
+            actions = GitHubRepositoryActionsProfile(
+                latestRunUpdatedAtMillis = field(latestRunUpdatedAtMillis),
+                latestRunConclusion = field(latestRunConclusion)
+            ),
+            community = GitHubRepositoryCommunityProfile(
+                hasReadme = field(hasCommunityFiles),
+                hasLicense = field(hasCommunityFiles)
+            ),
+            localFit = GitHubRepositoryLocalFitProfile(
+                packageNameMatched = packageNameMatched?.let(::field)
             )
         )
     }

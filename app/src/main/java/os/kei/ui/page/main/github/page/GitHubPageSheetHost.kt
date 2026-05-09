@@ -187,12 +187,18 @@ internal fun GitHubPageSheetHost(
             ?.id
             ?.let { state.releaseNotesErrors[it] }
             .orEmpty(),
+        healthRefreshing = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.RepositoryHealth }
+            ?.item
+            ?.id
+            ?.let { state.itemRefreshLoading[it] == true || state.checkStates[it]?.loading == true } == true,
         onDismissRequest = { state.decisionAssistDetailRequest = null },
         onRefreshHealth = { item ->
             actions.refreshTrackedItem(
                 item = item,
                 showToastOnError = true,
-                profilePurposeOverride = GitHubRepositoryProfilePurpose.ManualDeepRefresh
+                profilePurposeOverride = GitHubRepositoryProfilePurpose.ManualDeepRefresh,
+                forceRefresh = true
             )
         },
         onRefreshReleaseNotes = { item, itemState ->
@@ -245,6 +251,7 @@ internal fun GitHubPageSheetHost(
         pickerExpanded = state.pickerExpanded,
         selectedApp = state.selectedApp,
         appList = state.appList,
+        appListRefreshing = state.appListRefreshing,
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
         onDismissRequest = actions::dismissTrackSheet,
@@ -265,7 +272,8 @@ internal fun GitHubPageSheetHost(
         },
         onScanRepoUrl = actions::scanRepoUrlFromPackage,
         onScanPackageName = actions::scanPackageNameFromRepo,
-        onPickerExpandedChange = { state.pickerExpanded = it },
+        onPickerExpandedChange = actions::setTrackAppPickerExpanded,
+        onRefreshAppList = actions::refreshTrackAppList,
         onSelectedAppChange = { app ->
             state.selectedApp = app
             if (app != null) {

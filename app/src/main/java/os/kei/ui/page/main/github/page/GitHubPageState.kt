@@ -98,6 +98,7 @@ internal class GitHubPageState(
     var selectedApp by mutableStateOf<InstalledAppItem?>(null)
     var appList by mutableStateOf<List<InstalledAppItem>>(emptyList())
     var appListLoaded by mutableStateOf(false)
+    var appListRefreshing by mutableStateOf(false)
     var hasAutoRequestedPermission by mutableStateOf(false)
     var hasInitialized by mutableStateOf(false)
     var hasActiveInitialized by mutableStateOf(false)

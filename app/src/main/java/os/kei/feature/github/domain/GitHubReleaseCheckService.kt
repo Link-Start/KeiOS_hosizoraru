@@ -32,14 +32,16 @@ object GitHubReleaseCheckService {
         context: Context,
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
             context = context,
             item = item,
             strategy = strategy,
             preciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
-            profilePurposeOverride = profilePurposeOverride
+            profilePurposeOverride = profilePurposeOverride,
+            forceRefresh = forceRefresh
         )
     }
 
@@ -48,14 +50,16 @@ object GitHubReleaseCheckService {
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
         preciseApkVersionResolver: GitHubPreciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
             context = context,
             item = item,
             strategy = strategy,
             preciseApkVersionResolver = preciseApkVersionResolver,
-            profilePurposeOverride = profilePurposeOverride
+            profilePurposeOverride = profilePurposeOverride,
+            forceRefresh = forceRefresh
         )
     }
 
@@ -64,7 +68,8 @@ object GitHubReleaseCheckService {
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy?,
         preciseApkVersionResolver: GitHubPreciseApkVersionResolver,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose?
+        profilePurposeOverride: GitHubRepositoryProfilePurpose?,
+        forceRefresh: Boolean
     ): GitHubTrackedReleaseCheck {
         val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig()
         val sourceConfigSignature = lookupConfig.githubCheckSourceSignature()
@@ -105,7 +110,8 @@ object GitHubReleaseCheckService {
             repo = item.repo,
             strategy = effectiveStrategy,
             lookupConfig = lookupConfig,
-            allowFallback = strategy == null
+            allowFallback = strategy == null,
+            forceRefresh = forceRefresh
         ).getOrElse { error ->
             val profile = loadRepositoryProfile(
                 profileRepository = profileRepository,
@@ -370,12 +376,14 @@ object GitHubReleaseCheckService {
         repo: String,
         strategy: GitHubReleaseLookupStrategy,
         lookupConfig: GitHubLookupConfig,
-        allowFallback: Boolean
+        allowFallback: Boolean,
+        forceRefresh: Boolean = false
     ): Result<GitHubRepositoryReleaseSnapshot> {
         val primaryResult = loadSnapshotWithTransientRetry(
             strategy = strategy,
             owner = owner,
-            repo = repo
+            repo = repo,
+            forceRefresh = forceRefresh
         )
         if (primaryResult.isSuccess) return primaryResult
 
@@ -392,7 +400,8 @@ object GitHubReleaseCheckService {
         val fallbackResult = loadSnapshotWithTransientRetry(
             strategy = fallbackStrategy,
             owner = owner,
-            repo = repo
+            repo = repo,
+            forceRefresh = forceRefresh
         )
         if (fallbackResult.isSuccess) return fallbackResult
 
@@ -415,8 +424,12 @@ object GitHubReleaseCheckService {
     private fun loadSnapshotWithTransientRetry(
         strategy: GitHubReleaseLookupStrategy,
         owner: String,
-        repo: String
+        repo: String,
+        forceRefresh: Boolean = false
     ): Result<GitHubRepositoryReleaseSnapshot> {
+        if (forceRefresh) {
+            strategy.clearCaches()
+        }
         var latestResult = strategy.loadSnapshot(owner, repo)
         if (latestResult.isSuccess) return latestResult
 

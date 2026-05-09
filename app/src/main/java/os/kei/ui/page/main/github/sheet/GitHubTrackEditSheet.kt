@@ -47,6 +47,7 @@ import os.kei.ui.page.main.github.GitHubAppCandidateRow
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
@@ -81,6 +82,7 @@ internal fun GitHubTrackEditSheet(
     pickerExpanded: Boolean,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
+    appListRefreshing: Boolean,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     onDismissRequest: () -> Unit,
@@ -91,6 +93,7 @@ internal fun GitHubTrackEditSheet(
     onScanRepoUrl: () -> Unit,
     onScanPackageName: () -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
+    onRefreshAppList: () -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
@@ -152,8 +155,10 @@ internal fun GitHubTrackEditSheet(
                     appSearch = appSearch,
                     selectedApp = selectedApp,
                     appList = appList,
+                    appListRefreshing = appListRefreshing,
                     onAppSearchChange = onAppSearchChange,
                     onPickerExpandedChange = onPickerExpandedChange,
+                    onRefreshAppList = onRefreshAppList,
                     onSelectedAppChange = onSelectedAppChange
                 )
             } else {
@@ -571,8 +576,10 @@ private fun GitHubTrackAppPickerContent(
     appSearch: String,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
+    appListRefreshing: Boolean,
     onAppSearchChange: (String) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
+    onRefreshAppList: () -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit
 ) {
     val configuration = LocalConfiguration.current
@@ -633,20 +640,46 @@ private fun GitHubTrackAppPickerContent(
         SheetSectionCard(verticalSpacing = 8.dp) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SheetInputTitle(stringResource(R.string.github_track_sheet_input_app_filter_title))
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.github_track_sheet_btn_collapse),
-                    onClick = { onPickerExpandedChange(false) },
-                    minHeight = 30.dp,
-                    horizontalPadding = 10.dp,
-                    verticalPadding = 4.dp,
-                    textMaxLines = 1
+                SheetInputTitle(
+                    text = stringResource(R.string.github_track_sheet_input_app_filter_title),
+                    modifier = Modifier.weight(1f)
                 )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text = if (appListRefreshing) {
+                            stringResource(R.string.common_loading)
+                        } else {
+                            stringResource(R.string.common_refresh)
+                        },
+                        leadingIcon = appLucideRefreshIcon(),
+                        enabled = !appListRefreshing,
+                        onClick = onRefreshAppList,
+                        minHeight = 30.dp,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 4.dp,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis
+                    )
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text = stringResource(R.string.github_track_sheet_btn_collapse),
+                        onClick = { onPickerExpandedChange(false) },
+                        minHeight = 30.dp,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 4.dp,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             AppLiquidSearchField(
                 value = appSearch,

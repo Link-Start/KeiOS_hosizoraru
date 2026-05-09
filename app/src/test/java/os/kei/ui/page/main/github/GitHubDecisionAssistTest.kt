@@ -51,7 +51,8 @@ class GitHubDecisionAssistTest {
             nowMillis = now
         )
 
-        assertEquals(GitHubDecisionLevel.Good, health.level)
+        assertEquals(GitHubDecisionLevel.Review, health.level)
+        assertTrue(health.score < 80)
         assertTrue(GitHubRepositoryHealthReason.StableDetected in health.reasons)
         assertTrue(GitHubRepositoryHealthReason.FreshRelease in health.reasons)
     }
@@ -116,7 +117,7 @@ class GitHubDecisionAssistTest {
             nowMillis = now
         )
 
-        assertEquals(GitHubDecisionLevel.Good, health.level)
+        assertEquals(GitHubDecisionLevel.Review, health.level)
         assertTrue(GitHubRepositoryHealthReason.ForkUpstreamArchived in health.reasons)
         assertTrue(GitHubRepositoryHealthReason.ForkMaintainedIndependently in health.reasons)
     }

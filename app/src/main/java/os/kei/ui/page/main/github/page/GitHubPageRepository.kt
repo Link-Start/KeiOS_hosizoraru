@@ -286,13 +286,15 @@ internal class GitHubPageRepository(
     suspend fun evaluateTrackedApp(
         context: Context,
         item: GitHubTrackedApp,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false
     ): VersionCheckUi {
         return withContext(ioDispatcher) {
             GitHubReleaseCheckService.evaluateTrackedApp(
                 context = context,
                 item = item,
-                profilePurposeOverride = profilePurposeOverride
+                profilePurposeOverride = profilePurposeOverride,
+                forceRefresh = forceRefresh
             ).toUi()
         }
     }

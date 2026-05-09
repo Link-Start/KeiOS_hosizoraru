@@ -12,7 +12,7 @@ object GitHubRepositoryHealthEvaluator {
         nowMillis: Long = System.currentTimeMillis()
     ): GitHubRepositoryHealth {
         val profile = input.profile
-        var score = 82
+        var score = 64
         val reasons = mutableListOf<GitHubRepositoryHealthReason>()
 
         if (input.repositoryArchived || profile?.lifecycle?.archived.valueOr(false)) {
@@ -24,7 +24,7 @@ object GitHubRepositoryHealthEvaluator {
             reasons += GitHubRepositoryHealthReason.RepositoryDisabled
         }
         if (input.repositoryFork || profile?.lifecycle?.fork.valueOr(false)) {
-            score -= 6
+            score -= 4
             reasons += GitHubRepositoryHealthReason.RepositoryFork
             val forkMaintenance = evaluateForkMaintenance(input, profile, nowMillis)
             score += forkMaintenance.scoreDelta
@@ -47,7 +47,7 @@ object GitHubRepositoryHealthEvaluator {
             reasons += GitHubRepositoryHealthReason.LocalMissing
         }
         if (input.hasUpdate == true) {
-            score += 7
+            score += 4
             reasons += GitHubRepositoryHealthReason.UpdateAvailable
         }
         if (input.recommendsPreRelease) {
@@ -55,13 +55,13 @@ object GitHubRepositoryHealthEvaluator {
             reasons += GitHubRepositoryHealthReason.PreReleaseRecommended
         }
         if (input.hasStableRelease && input.latestStableRawTag.isNotBlank()) {
-            score += 6
+            score += 5
             reasons += GitHubRepositoryHealthReason.StableDetected
         }
         val latestReleaseMillis =
             maxOf(input.latestStableUpdatedAtMillis, input.latestPreUpdatedAtMillis)
         if (latestReleaseMillis > 0L && nowMillis - latestReleaseMillis <= FRESH_RELEASE_WINDOW_MS) {
-            score += 5
+            score += 4
             reasons += GitHubRepositoryHealthReason.FreshRelease
         }
 
@@ -74,14 +74,14 @@ object GitHubRepositoryHealthEvaluator {
 
         val normalizedScore = score.coerceIn(0, 100)
         val level = when {
-            normalizedScore >= 78 -> GitHubDecisionLevel.Good
-            normalizedScore >= 55 -> GitHubDecisionLevel.Review
+            normalizedScore >= 80 -> GitHubDecisionLevel.Good
+            normalizedScore >= 50 -> GitHubDecisionLevel.Review
             else -> GitHubDecisionLevel.Risk
         }
         return GitHubRepositoryHealth(
             score = normalizedScore,
             level = level,
-            reasons = reasons.distinct().take(4)
+            reasons = prioritizeReasons(reasons.distinct()).take(MAX_REASON_COUNT)
         )
     }
 
@@ -89,35 +89,35 @@ object GitHubRepositoryHealthEvaluator {
         return when (reason) {
             GitHubRepositoryHealthReason.RepositoryArchived -> -55
             GitHubRepositoryHealthReason.RepositoryDisabled -> -50
-            GitHubRepositoryHealthReason.RepositoryFork -> -6
-            GitHubRepositoryHealthReason.ForkUpstreamArchived -> -4
-            GitHubRepositoryHealthReason.ForkBehindUpstream -> -16
-            GitHubRepositoryHealthReason.ForkCompareCurrent -> 2
-            GitHubRepositoryHealthReason.ForkCompareBehind -> -6
-            GitHubRepositoryHealthReason.ForkMaintainedIndependently -> 8
-            GitHubRepositoryHealthReason.ForkTracksUpstream -> -4
+            GitHubRepositoryHealthReason.RepositoryFork -> -4
+            GitHubRepositoryHealthReason.ForkUpstreamArchived -> -3
+            GitHubRepositoryHealthReason.ForkBehindUpstream -> -12
+            GitHubRepositoryHealthReason.ForkCompareCurrent -> 1
+            GitHubRepositoryHealthReason.ForkCompareBehind -> -4
+            GitHubRepositoryHealthReason.ForkMaintainedIndependently -> 10
+            GitHubRepositoryHealthReason.ForkTracksUpstream -> -3
             GitHubRepositoryHealthReason.StaleRepositoryActivity -> -14
             GitHubRepositoryHealthReason.StaleRelease -> -10
-            GitHubRepositoryHealthReason.TrafficRecentlyActive -> 2
+            GitHubRepositoryHealthReason.TrafficRecentlyActive -> 1
             GitHubRepositoryHealthReason.ActionsHealthy -> 4
             GitHubRepositoryHealthReason.ActionsFailing -> -8
             GitHubRepositoryHealthReason.AndroidAssetsDetected -> 4
             GitHubRepositoryHealthReason.MissingAndroidAssets -> -8
-            GitHubRepositoryHealthReason.CommunityProfileComplete -> 4
+            GitHubRepositoryHealthReason.CommunityProfileComplete -> 3
             GitHubRepositoryHealthReason.MissingReadme -> -5
             GitHubRepositoryHealthReason.MissingLicense -> -4
-            GitHubRepositoryHealthReason.SecuritySignalsAvailable -> 2
-            GitHubRepositoryHealthReason.OpenSecurityAlerts -> -4
-            GitHubRepositoryHealthReason.LocalPackageMatched -> 6
+            GitHubRepositoryHealthReason.SecuritySignalsAvailable -> 1
+            GitHubRepositoryHealthReason.OpenSecurityAlerts -> -3
+            GitHubRepositoryHealthReason.LocalPackageMatched -> 5
             GitHubRepositoryHealthReason.LocalPackageMismatch -> -14
-            GitHubRepositoryHealthReason.UpdateAvailable -> 7
+            GitHubRepositoryHealthReason.UpdateAvailable -> 4
             GitHubRepositoryHealthReason.PreReleaseRecommended -> -6
             GitHubRepositoryHealthReason.CheckFailed -> -28
             GitHubRepositoryHealthReason.MissingPackageName -> -12
             GitHubRepositoryHealthReason.MissingStableRelease -> -18
             GitHubRepositoryHealthReason.LocalMissing -> -10
-            GitHubRepositoryHealthReason.StableDetected -> 6
-            GitHubRepositoryHealthReason.FreshRelease -> 5
+            GitHubRepositoryHealthReason.StableDetected -> 5
+            GitHubRepositoryHealthReason.FreshRelease -> 4
         }
     }
 
@@ -200,7 +200,7 @@ object GitHubRepositoryHealthEvaluator {
         val hasReadme = profile.community.hasReadme?.value
         val hasLicense = profile.community.hasLicense?.value
         if (hasReadme == true && hasLicense == true) {
-            scoreDelta += 4
+            scoreDelta += 3
             reasons += GitHubRepositoryHealthReason.CommunityProfileComplete
         } else {
             if (hasReadme == false) {
@@ -223,7 +223,7 @@ object GitHubRepositoryHealthEvaluator {
         val packageNameMatched = profile.localFit.packageNameMatched?.value ?: return 0
         return if (packageNameMatched) {
             reasons += GitHubRepositoryHealthReason.LocalPackageMatched
-            6
+            5
         } else {
             reasons += GitHubRepositoryHealthReason.LocalPackageMismatch
             -14
@@ -240,10 +240,10 @@ object GitHubRepositoryHealthEvaluator {
         val behindBy = profile.forkSync.behindBy.valueOr(0)
         val compared = profile.forkSync.comparedAtMillis.valueOr(-1L) > 0L
         if (behindBy > 0) {
-            scoreDelta -= 6
+            scoreDelta -= 4
             reasons += GitHubRepositoryHealthReason.ForkCompareBehind
         } else if (compared && profile.lifecycle.fork.valueOr(false)) {
-            scoreDelta += 2
+            scoreDelta += 1
             reasons += GitHubRepositoryHealthReason.ForkCompareCurrent
         }
 
@@ -254,20 +254,20 @@ object GitHubRepositoryHealthEvaluator {
         val trafficCount =
             profile.traffic.viewCount.valueOr(0) + profile.traffic.cloneCount.valueOr(0)
         if (trafficCount > 0 && latestTrafficMillis > 0L && nowMillis - latestTrafficMillis <= RECENT_TRAFFIC_WINDOW_MS) {
-            scoreDelta += 2
+            scoreDelta += 1
             reasons += GitHubRepositoryHealthReason.TrafficRecentlyActive
         }
 
         val openSecurityAlerts = profile.security.openDependabotAlertsCount.valueOr(0) +
                 profile.security.openCodeScanningAlertsCount.valueOr(0)
         if (openSecurityAlerts > 0) {
-            scoreDelta -= 4
+            scoreDelta -= 3
             reasons += GitHubRepositoryHealthReason.OpenSecurityAlerts
         } else if (
             profile.security.dependabotAlertsAvailable.valueOr(false) ||
             profile.security.codeScanningAvailable.valueOr(false)
         ) {
-            scoreDelta += 2
+            scoreDelta += 1
             reasons += GitHubRepositoryHealthReason.SecuritySignalsAvailable
         }
         return scoreDelta
@@ -292,10 +292,10 @@ object GitHubRepositoryHealthEvaluator {
             upstreamPushedAt > 0L && nowMillis - upstreamPushedAt <= FORK_RECENT_ACTIVITY_WINDOW_MS
 
         if (upstreamArchived) {
-            scoreDelta -= 4
+            scoreDelta -= 3
             reasons += GitHubRepositoryHealthReason.ForkUpstreamArchived
             if (forkFresh) {
-                scoreDelta += 8
+                scoreDelta += 10
                 reasons += GitHubRepositoryHealthReason.ForkMaintainedIndependently
             }
             return ForkMaintenanceImpact(scoreDelta, reasons)
@@ -305,13 +305,13 @@ object GitHubRepositoryHealthEvaluator {
                 upstreamPushedAt > 0L &&
                 upstreamPushedAt - forkPushedAt >= FORK_UPSTREAM_DRIFT_WINDOW_MS
         if (upstreamMuchNewer) {
-            scoreDelta -= 16
+            scoreDelta -= 12
             reasons += GitHubRepositoryHealthReason.ForkBehindUpstream
         } else if (forkFresh && upstreamFresh) {
-            scoreDelta -= 4
+            scoreDelta -= 3
             reasons += GitHubRepositoryHealthReason.ForkTracksUpstream
         } else if (forkFresh && !upstreamFresh) {
-            scoreDelta += 8
+            scoreDelta += 10
             reasons += GitHubRepositoryHealthReason.ForkMaintainedIndependently
         }
         return ForkMaintenanceImpact(scoreDelta, reasons)
@@ -326,6 +326,24 @@ object GitHubRepositoryHealthEvaluator {
     private data class ForkMaintenanceImpact(
         val scoreDelta: Int,
         val reasons: List<GitHubRepositoryHealthReason>
+    )
+
+    private fun prioritizeReasons(
+        reasons: List<GitHubRepositoryHealthReason>
+    ): List<GitHubRepositoryHealthReason> {
+        return reasons
+            .mapIndexed { index, reason -> IndexedReason(index, reason) }
+            .sortedWith(
+                compareBy<IndexedReason> { impactFor(it.reason) >= 0 }
+                    .thenByDescending { kotlin.math.abs(impactFor(it.reason)) }
+                    .thenBy { it.index }
+            )
+            .map { it.reason }
+    }
+
+    private data class IndexedReason(
+        val index: Int,
+        val reason: GitHubRepositoryHealthReason
     )
 
     private val failingActionConclusions = setOf(
@@ -344,4 +362,5 @@ object GitHubRepositoryHealthEvaluator {
     private const val RECENT_ACTIONS_WINDOW_MS = 1000L * 60L * 60L * 24L * 30L
     private const val ACTIONS_FAILURE_SIGNAL_WINDOW_MS = 1000L * 60L * 60L * 24L * 90L
     private const val RECENT_TRAFFIC_WINDOW_MS = 1000L * 60L * 60L * 24L * 30L
+    private const val MAX_REASON_COUNT = 6
 }

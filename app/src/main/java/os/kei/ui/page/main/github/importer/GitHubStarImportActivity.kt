@@ -36,7 +36,7 @@ class GitHubStarImportActivity : ComponentActivity() {
             GitHubStarImportTheme {
                 GitHubStarImportPage(
                     onImported = { result ->
-                        setResult(Activity.RESULT_OK, buildResultIntent(result))
+                        setResult(RESULT_OK, buildResultIntent(result))
                     },
                     onClose = { finish() }
                 )
@@ -62,7 +62,7 @@ class GitHubStarImportActivity : ComponentActivity() {
         }
 
         internal fun parseResult(resultCode: Int, data: Intent?): GitHubStarImportActivityResult? {
-            if (resultCode != Activity.RESULT_OK) return null
+            if (resultCode != RESULT_OK) return null
             data ?: return null
             val changedCount = data.getIntExtra(EXTRA_CHANGED_COUNT, 0)
             val affectedTrackIds = data.getStringArrayListExtra(EXTRA_AFFECTED_TRACK_IDS)

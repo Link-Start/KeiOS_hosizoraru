@@ -10,7 +10,7 @@ import os.kei.feature.github.model.StarImportApplyResult
 private const val STAR_IMPORT_IMMEDIATE_REFRESH_REQUEST_LIMIT = 8
 
 internal object GitHubStarImportApplier {
-    suspend fun apply(
+    fun apply(
         context: Context,
         candidates: List<GitHubRepositoryImportCandidate>
     ): StarImportApplyResult {

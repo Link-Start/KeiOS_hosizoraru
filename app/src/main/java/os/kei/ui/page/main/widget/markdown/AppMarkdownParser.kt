@@ -2,7 +2,6 @@ package os.kei.ui.page.main.widget.markdown
 
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
@@ -233,7 +232,7 @@ internal fun buildAppMarkdownInlineText(
                             LinkAnnotation.Url(
                                 url = token.url,
                                 styles = TextLinkStyles(style = linkStyle),
-                                linkInteractionListener = LinkInteractionListener { link ->
+                                linkInteractionListener = { link ->
                                     val url = (link as? LinkAnnotation.Url)?.url ?: token.url
                                     onOpenLink(url)
                                 }

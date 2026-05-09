@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import os.kei.core.system.HyperOsSettingsIntents
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidate
@@ -53,6 +52,12 @@ object GitHubVersionUtils {
         val apps: List<InstalledAppItem>
     )
 
+    private data class InstalledAppSortEntry(
+        val item: InstalledAppItem,
+        val labelSortKey: String,
+        val packageSortKey: String
+    )
+
     data class LocalVersionInfo(
         val versionName: String,
         val versionCode: Long
@@ -89,6 +94,7 @@ object GitHubVersionUtils {
         val pm = context.packageManager
         val overlayFlagMask = installedAppResourceOverlayFlagMask()
         val installSourceLabelCache = mutableMapOf<String, String>()
+        val labelSortLocale = Locale.getDefault()
         val apps = pm.queryInstalledPackageInfos()
             .asSequence()
             .mapNotNull { pkgInfo ->
@@ -104,7 +110,7 @@ object GitHubVersionUtils {
                     pm.getApplicationLabel(appInfo).toString()
                 }.getOrDefault(packageName).trim().ifBlank { packageName }
                 val installSource = pm.resolveInstallSource(packageName, installSourceLabelCache)
-                InstalledAppItem(
+                val item = InstalledAppItem(
                     label = label,
                     packageName = packageName,
                     firstInstallTimeMs = pkgInfo.firstInstallTime,
@@ -113,12 +119,18 @@ object GitHubVersionUtils {
                     installSourcePackageName = installSource.packageName,
                     installSourceLabel = installSource.label
                 )
+                InstalledAppSortEntry(
+                    item = item,
+                    labelSortKey = label.lowercase(labelSortLocale),
+                    packageSortKey = packageName.lowercase(Locale.ROOT)
+                )
             }
-            .distinctBy { it.packageName }
+            .distinctBy { it.item.packageName }
             .sortedWith(
-                compareBy<InstalledAppItem> { it.label.lowercase(Locale.getDefault()) }
-                    .thenBy { it.packageName.lowercase(Locale.ROOT) }
+                compareBy<InstalledAppSortEntry> { it.labelSortKey }
+                    .thenBy { it.packageSortKey }
             )
+            .map { it.item }
             .toList()
         installedAppsCache = CachedInstalledApps(
             updatedAtMs = now,
@@ -267,22 +279,34 @@ object GitHubVersionUtils {
         if (localVersionCode < 100L) return false
         val code = localVersionCode.toString()
         if (code.length < 3) return false
-        val localCandidates = normalizeVersionCandidates(localVersion)
-            .map { canonicalizeCandidate(it).lowercase(Locale.ROOT).removePrefix("v") }
-            .filter { it.isNotBlank() }
-            .distinct()
-        if (localCandidates.isEmpty()) return false
-        val remoteNormalized = remoteCandidates
-            .flatMap { normalizeVersionCandidates(it.value) }
-            .map { canonicalizeCandidate(it).lowercase(Locale.ROOT).removePrefix("v") }
-            .distinct()
-        return remoteNormalized.any { remote ->
-            localCandidates.any { local ->
-                remote == "$local.$code" ||
-                        remote == "$local-$code" ||
-                        remote == "$local+$code"
+        val localCandidates = linkedSetOf<String>()
+        normalizeVersionCandidates(localVersion).forEach { candidate ->
+            val normalized = canonicalizeCandidate(candidate)
+                .lowercase(Locale.ROOT)
+                .removePrefix("v")
+            if (normalized.isNotBlank()) {
+                localCandidates += normalized
             }
         }
+        if (localCandidates.isEmpty()) return false
+
+        remoteCandidates.forEach { remoteCandidate ->
+            normalizeVersionCandidates(remoteCandidate.value).forEach { candidate ->
+                val remote = canonicalizeCandidate(candidate)
+                    .lowercase(Locale.ROOT)
+                    .removePrefix("v")
+                if (remote.isBlank()) return@forEach
+                localCandidates.forEach { local ->
+                    if (remote == "$local.$code" ||
+                        remote == "$local-$code" ||
+                        remote == "$local+$code"
+                    ) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
     }
 
     fun compareStructuredCandidateSets(
@@ -298,20 +322,8 @@ object GitHubVersionUtils {
         rightCandidates: List<GitHubVersionCandidate>,
         maxSourcePriority: Int = GitHubVersionCandidateSource.Link.priority
     ): Boolean {
-        val left = leftCandidates
-            .filter { it.source.priority <= maxSourcePriority }
-            .flatMap { normalizeVersionCandidates(it.value) }
-            .mapNotNull(::parseVersionParts)
-            .filter(::isMeaningfulReleaseIdentity)
-            .map(::releaseIdentityKey)
-            .toSet()
-        val right = rightCandidates
-            .filter { it.source.priority <= maxSourcePriority }
-            .flatMap { normalizeVersionCandidates(it.value) }
-            .mapNotNull(::parseVersionParts)
-            .filter(::isMeaningfulReleaseIdentity)
-            .map(::releaseIdentityKey)
-            .toSet()
+        val left = releaseIdentityKeys(leftCandidates, maxSourcePriority)
+        val right = releaseIdentityKeys(rightCandidates, maxSourcePriority)
         if (left.isEmpty() || right.isEmpty()) return false
         return left.any(right::contains)
     }
@@ -333,14 +345,32 @@ object GitHubVersionUtils {
         maxSourcePriority: Int = GitHubVersionCandidateSource.Link.priority
     ): Boolean {
         return candidates.any { candidate ->
-            candidate.source.priority <= maxSourcePriority &&
-                normalizeVersionCandidates(candidate.value).mapNotNull { normalized ->
-                    parseVersionParts(normalized)
-                }.any { parts ->
-                    parts.numbers.size >= 2 ||
+            if (candidate.source.priority > maxSourcePriority) return@any false
+            normalizeVersionCandidates(candidate.value).any { normalized ->
+                val parts = parseVersionParts(normalized) ?: return@any false
+                parts.numbers.size >= 2 ||
                         (parts.channel.isPreRelease && parts.channelNumber > 0)
-                }
+            }
         }
+    }
+
+    private fun releaseIdentityKeys(
+        candidates: List<GitHubVersionCandidate>,
+        maxSourcePriority: Int
+    ): Set<String> {
+        if (candidates.isEmpty()) return emptySet()
+        val keys = linkedSetOf<String>()
+        candidates.forEach { candidate ->
+            if (candidate.source.priority <= maxSourcePriority) {
+                normalizeVersionCandidates(candidate.value).forEach { normalized ->
+                    val parts = parseVersionParts(normalized) ?: return@forEach
+                    if (isMeaningfulReleaseIdentity(parts)) {
+                        keys += releaseIdentityKey(parts)
+                    }
+                }
+            }
+        }
+        return keys
     }
 
     internal fun isRelevantPreRelease(
@@ -359,12 +389,17 @@ object GitHubVersionUtils {
     }
 
     fun classifyVersionChannel(text: String): GitHubReleaseChannel? {
-        val normalized = normalizeVersionCandidates(text)
-        val parsed = normalized
-            .mapNotNull(::parseVersionParts)
-            .maxByOrNull(::versionPartsSpecificityScore)
-            ?.channel
-        return parsed
+        var bestChannel: GitHubReleaseChannel? = null
+        var bestScore = Int.MIN_VALUE
+        normalizeVersionCandidates(text).forEach { normalized ->
+            val parts = parseVersionParts(normalized) ?: return@forEach
+            val score = versionPartsSpecificityScore(parts)
+            if (score > bestScore) {
+                bestScore = score
+                bestChannel = parts.channel
+            }
+        }
+        return bestChannel
     }
 
     fun compareCandidateSets(
@@ -379,20 +414,12 @@ object GitHubVersionUtils {
         leftCandidates: List<String>,
         rightCandidates: List<GitHubVersionCandidate>
     ): Int? {
-        val left = leftCandidates
-            .flatMap(::normalizeVersionCandidates)
-            .distinct()
-            .mapNotNull { parseComparableCandidate(it, sourcePriority = 0) }
-        val parsedRight = rightCandidates
-            .flatMap { candidate ->
-                normalizeVersionCandidates(candidate.value).mapNotNull { parsed ->
-                    parseComparableCandidate(parsed, candidate.source.priority)
-                }
-            }
-            .distinctBy { it.normalized to it.sourcePriority }
-        val right = parsedRight
-            .filter { it.sourcePriority <= GitHubVersionCandidateSource.Link.priority }
-            .ifEmpty { parsedRight }
+        val left = parseComparableLocalCandidates(leftCandidates)
+        val parsedRight = parseComparableRemoteCandidates(rightCandidates)
+        val preferredRight = parsedRight.filterTo(ArrayList()) {
+            it.sourcePriority <= GitHubVersionCandidateSource.Link.priority
+        }
+        val right = preferredRight.ifEmpty { parsedRight }
 
         if (left.isEmpty() || right.isEmpty()) return null
 
@@ -416,6 +443,42 @@ object GitHubVersionUtils {
         return bestCmp
     }
 
+    private fun parseComparableLocalCandidates(
+        candidates: List<String>
+    ): List<ComparableVersionCandidate> {
+        if (candidates.isEmpty()) return emptyList()
+        val seen = linkedSetOf<String>()
+        val parsed = ArrayList<ComparableVersionCandidate>()
+        candidates.forEach { candidate ->
+            normalizeVersionCandidates(candidate).forEach { normalized ->
+                if (seen.add(normalized)) {
+                    parseComparableCandidate(normalized, sourcePriority = 0)?.let(parsed::add)
+                }
+            }
+        }
+        return parsed
+    }
+
+    private fun parseComparableRemoteCandidates(
+        candidates: List<GitHubVersionCandidate>
+    ): List<ComparableVersionCandidate> {
+        if (candidates.isEmpty()) return emptyList()
+        val seen = linkedSetOf<ComparableCandidateKey>()
+        val parsed = ArrayList<ComparableVersionCandidate>()
+        candidates.forEach { candidate ->
+            normalizeVersionCandidates(candidate.value).forEach { normalized ->
+                val key = ComparableCandidateKey(normalized, candidate.source.priority)
+                if (seen.add(key)) {
+                    parseComparableCandidate(
+                        normalized,
+                        candidate.source.priority
+                    )?.let(parsed::add)
+                }
+            }
+        }
+        return parsed
+    }
+
     private fun canonicalizeCandidate(raw: String): String {
         return raw
             .replace(preReleaseKeywordRegex, "preview")
@@ -430,19 +493,32 @@ object GitHubVersionUtils {
     private fun filterLessSpecificCandidates(candidates: List<String>): List<String> {
         if (candidates.size <= 1) return candidates
 
-        val richerKeys = candidates.mapNotNull { candidate ->
-            parseVersionParts(candidate)?.takeIf { parts ->
-                parts.channel != GitHubReleaseChannel.STABLE || parts.channelNumber > 0
-            }?.numbers
-        }.toSet()
+        val parsedCandidates = candidates.map { candidate ->
+            candidate to parseVersionParts(candidate)
+        }
+        val richerKeys = linkedSetOf<List<Int>>()
+        parsedCandidates.forEach { (_, parts) ->
+            if (parts != null &&
+                (parts.channel != GitHubReleaseChannel.STABLE || parts.channelNumber > 0)
+            ) {
+                richerKeys += parts.numbers
+            }
+        }
 
-        return candidates.filter { candidate ->
-            val parts = parseVersionParts(candidate) ?: return@filter true
+        val filtered = linkedSetOf<String>()
+        parsedCandidates.forEach { (candidate, parts) ->
+            if (parts == null) {
+                filtered += candidate
+                return@forEach
+            }
             val isTruncatedStable = parts.channel == GitHubReleaseChannel.STABLE &&
                 parts.channelNumber == 0 &&
                 parts.numbers in richerKeys
-            !isTruncatedStable
-        }.distinct()
+            if (!isTruncatedStable) {
+                filtered += candidate
+            }
+        }
+        return filtered.toList()
     }
 
     private data class ComparableVersionCandidate(
@@ -644,7 +720,14 @@ object GitHubVersionUtils {
                     @Suppress("UNCHECKED_CAST")
                     return values[key] as V
                 }
-                return createValue().also { value ->
+            }
+            val created = createValue()
+            synchronized(values) {
+                if (values.containsKey(key)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return values[key] as V
+                }
+                return created.also { value ->
                     values[key] = value
                 }
             }
@@ -671,15 +754,10 @@ private fun PackageManager.resolveInstallSource(
     labelCache: MutableMap<String, String>
 ): InstalledAppInstallSource {
     val sourcePackageName = runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val sourceInfo = getInstallSourceInfo(packageName)
-            sourceInfo.installingPackageName
-                ?: sourceInfo.initiatingPackageName
-                ?: sourceInfo.originatingPackageName
-        } else {
-            @Suppress("DEPRECATION")
-            getInstallerPackageName(packageName)
-        }
+        val sourceInfo = getInstallSourceInfo(packageName)
+        sourceInfo.installingPackageName
+            ?: sourceInfo.initiatingPackageName
+            ?: sourceInfo.originatingPackageName
     }.getOrNull()?.trim().orEmpty()
     if (sourcePackageName.isBlank()) return InstalledAppInstallSource("", "")
     val sourceLabel = labelCache.getOrPut(sourcePackageName) {

@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os.components
 
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import os.kei.R
@@ -14,6 +15,7 @@ import os.kei.ui.page.main.os.shortcut.currentGoogleSystemServiceSuggestionField
 import os.kei.ui.page.main.os.shortcut.parseIntentTokenText
 import java.util.Locale
 
+@Immutable
 internal data class OsGoogleSystemServiceSuggestionUiState(
     val sheetTitle: String,
     val showPackageSearch: Boolean,

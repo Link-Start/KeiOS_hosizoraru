@@ -2,12 +2,13 @@ package os.kei.ui.page.main.os.transfer
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.R
-import os.kei.ui.page.main.os.state.OsCardImportTarget
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.state.OsCardImportTarget
 
 internal const val OS_ACTIVITY_CARD_EXPORT_SCHEMA = "keios.os.activity.cards.v1"
 internal const val OS_SHELL_CARD_EXPORT_SCHEMA = "keios.os.shell.cards.v1"
@@ -50,6 +51,7 @@ internal data class OsCardImportRoot(
     val isLegacyFormat: Boolean
 )
 
+@Immutable
 internal sealed interface OsCardImportPayload {
     val sourceCount: Int
     val invalidCount: Int
@@ -59,6 +61,7 @@ internal sealed interface OsCardImportPayload {
     val isLegacyFormat: Boolean
 }
 
+@Immutable
 internal data class OsActivityCardImportPayload(
     val cards: List<OsActivityShortcutCard>,
     override val sourceCount: Int,
@@ -69,6 +72,7 @@ internal data class OsActivityCardImportPayload(
     override val isLegacyFormat: Boolean
 ) : OsCardImportPayload
 
+@Immutable
 internal data class OsShellCardImportPayload(
     val cards: List<OsShellCommandCard>,
     override val sourceCount: Int,
@@ -79,6 +83,7 @@ internal data class OsShellCardImportPayload(
     override val isLegacyFormat: Boolean
 ) : OsCardImportPayload
 
+@Immutable
 internal data class OsUnknownCardImportPayload(
     override val sourceCount: Int,
     override val invalidCount: Int,
@@ -88,6 +93,7 @@ internal data class OsUnknownCardImportPayload(
     override val isLegacyFormat: Boolean = false
 ) : OsCardImportPayload
 
+@Immutable
 internal data class OsCardImportPreview(
     val target: OsCardImportTarget,
     val payload: OsCardImportPayload,

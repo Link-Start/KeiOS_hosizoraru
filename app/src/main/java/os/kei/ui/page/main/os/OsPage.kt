@@ -15,16 +15,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
-import os.kei.ui.page.main.os.shell.OsShellRunnerActivity
 import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
-import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.os.state.createOsPageActionState
 import os.kei.ui.page.main.os.state.rememberOsPageCardTransferState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayState
@@ -284,6 +280,31 @@ fun OsPage(
     val indicatorProgress = derivedState.overviewUiState.indicatorProgress
     val indicatorBg = derivedState.overviewUiState.indicatorBg
     val overviewMetricRows = derivedState.overviewMetricRows
+    val mainListActions = remember(
+        context,
+        scope,
+        textBundle,
+        overlayState,
+        actionState,
+        routeState,
+        shizukuStatus,
+        activityCardExpanded,
+        shellCommandCardExpanded,
+        cardTransferState
+    ) {
+        createOsPageMainListActions(
+            context = context,
+            scope = scope,
+            textBundle = textBundle,
+            overlayState = overlayState,
+            actionState = actionState,
+            routeState = routeState,
+            shizukuStatus = shizukuStatus,
+            activityCardExpanded = activityCardExpanded,
+            shellCommandCardExpanded = shellCommandCardExpanded,
+            cardTransferState = cardTransferState
+        )
+    }
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides osGlassRuntime) {
         OsPageScaffoldShell(
@@ -345,52 +366,19 @@ fun OsPage(
                 shellRunnerRows = derivedState.shellRunnerRows,
                 shellRunnerExpanded = shellRunnerExpanded,
                 onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
-                onOpenShellRunner = { OsShellRunnerActivity.launch(context) },
+                onOpenShellRunner = mainListActions.onOpenShellRunner,
                 shellCommandCards = derivedState.visibleShellCommandCards,
                 shellCommandCardExpanded = shellCommandCardExpanded,
                 runningShellCommandCardIds = routeState.runningShellCommandCardIds,
-                onShellCommandCardExpandedChange = { cardId, expanded ->
-                    shellCommandCardExpanded[cardId] = expanded
-                },
-                onOpenShellCommandCardEditor = { card ->
-                    overlayState.onEditingShellCommandCardIdChange(card.id)
-                    overlayState.onShellCommandCardDraftChange(card)
-                    overlayState.onShowShellCommandCardEditorChange(true)
-                },
-                onRunShellCommandCard = { card ->
-                    scope.launch { actionState.runShellCommandCard(card) }
-                },
+                onShellCommandCardExpandedChange = mainListActions.onShellCommandCardExpandedChange,
+                onOpenShellCommandCardEditor = mainListActions.onOpenShellCommandCardEditor,
+                onRunShellCommandCard = mainListActions.onRunShellCommandCard,
                 activityShortcutCards = derivedState.visibleActivityShortcutCards,
                 defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
                 activityCardExpanded = activityCardExpanded,
-                onActivityCardExpandedChange = { cardId, expanded ->
-                    activityCardExpanded[cardId] = expanded
-                },
-                onOpenActivityShortcutCard = { card ->
-                    openOsActivityShortcutCard(
-                        context = context,
-                        card = card,
-                        defaults = textBundle.googleSystemServiceDefaults,
-                        invalidTargetMessage = context.getString(R.string.os_google_system_service_toast_invalid_target),
-                        openFailedMessage = { error ->
-                            context.getString(
-                                R.string.os_google_system_service_toast_open_failed,
-                                error.javaClass.simpleName
-                            )
-                        }
-                    )
-                },
-                onOpenActivityShortcutCardEditor = { card ->
-                    beginEditingOsActivityShortcutCard(
-                        card = card,
-                        defaults = textBundle.googleSystemServiceDefaults,
-                        onEditModeChange = overlayState.onActivityCardEditModeChange,
-                        onEditingCardIdChange = overlayState.onEditingActivityShortcutCardIdChange,
-                        onEditingBuiltInChange = overlayState.onEditingActivityShortcutBuiltInChange,
-                        onDraftChange = overlayState.onActivityShortcutDraftChange,
-                        onShowEditorChange = overlayState.onShowActivityShortcutEditorChange
-                    )
-                },
+                onActivityCardExpandedChange = mainListActions.onActivityCardExpandedChange,
+                onOpenActivityShortcutCard = mainListActions.onOpenActivityShortcutCard,
+                onOpenActivityShortcutCardEditor = mainListActions.onOpenActivityShortcutCardEditor,
                 displayedSystemRows = derivedState.displayedSystemRows,
                 displayedSecureRows = derivedState.displayedSecureRows,
                 displayedGlobalRows = derivedState.displayedGlobalRows,
@@ -415,49 +403,15 @@ fun OsPage(
                 onJavaPropsExpandedChange = osPageViewModel::updateJavaPropsExpanded,
                 linuxEnvExpanded = linuxEnvExpanded,
                 onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
-                isCardVisible = { card -> isCardVisible(visibleCards, card) },
-                sectionSubtitle = { section, size ->
-                    sectionSubtitle(
-                        sectionStates = sectionStates,
-                        context = context,
-                        section = section,
-                        size = size
-                    )
-                },
+                isCardVisible = mainListActions.isCardVisible,
+                sectionSubtitle = mainListActions.sectionSubtitle,
                 exportingCard = overlayState.exportingCard,
-                onExportCard = { card ->
-                    scope.launch {
-                        exportOsPageCard(
-                            card = card,
-                            currentExportingCard = overlayState.exportingCard,
-                            updateExportingCard = overlayState.onExportingCardChange,
-                            visibleCardsProvider = { visibleCards },
-                            ensureLoad = actionState.ensureLoad,
-                            sectionStatesProvider = { sectionStates },
-                            activityShortcutCardsProvider = { activityShortcutCards },
-                            googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
-                            context = context,
-                            shizukuStatus = shizukuStatus,
-                            launchExport = { fileName, payload ->
-                                overlayState.onPendingExportContentChange(payload)
-                                cardTransferState.exportLauncher.launch(fileName)
-                            }
-                        )
-                    }
-                },
-                onRefreshAll = { scope.launch { actionState.refreshAllSections() } },
+                onExportCard = mainListActions.onExportCard,
+                onRefreshAll = mainListActions.onRefreshAll,
                 contentBottomPadding = runtime.contentBottomPadding,
                 showFloatingAddButton = !overlayState.showActivitySuggestionSheet &&
                     !overlayState.showShellCardVisibilityManager,
-                onOpenAddActivityShortcutCard = {
-                    overlayState.onActivityCardEditModeChange(OsActivityCardEditMode.Add)
-                    overlayState.onEditingActivityShortcutCardIdChange(null)
-                    overlayState.onEditingActivityShortcutBuiltInChange(false)
-                    overlayState.onActivityShortcutDraftChange(
-                        createDefaultActivityShortcutDraft(textBundle.googleSystemServiceDefaults)
-                    )
-                    overlayState.onShowActivityShortcutEditorChange(true)
-                },
+                onOpenAddActivityShortcutCard = mainListActions.onOpenAddActivityShortcutCard,
                 bottomBarVisible = runtime.bottomBarVisible,
                 searchExpanded = enableSearchBar && searchExpanded,
                 queryInput = queryInput,

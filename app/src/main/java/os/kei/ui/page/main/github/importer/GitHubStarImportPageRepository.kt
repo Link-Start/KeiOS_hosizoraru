@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.importer
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,6 +24,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.StarImportApplyResult
 
+@Immutable
 internal data class StarImportLoadRequest(
     val source: StarImportUiSource,
     val usernameInput: String,
@@ -30,13 +32,17 @@ internal data class StarImportLoadRequest(
     val forcedStarListUrl: String? = null
 )
 
+@Immutable
 internal data class StarImportProgress(
     val progress: Float,
     @param:StringRes val phaseRes: Int
 )
 
 internal sealed interface StarImportLoadResult {
+    @Immutable
     data class Lists(val items: List<GitHubStarListSummary>) : StarImportLoadResult
+
+    @Immutable
     data class Preview(val preview: GitHubStarredRepositoryImportPreview) : StarImportLoadResult
 }
 

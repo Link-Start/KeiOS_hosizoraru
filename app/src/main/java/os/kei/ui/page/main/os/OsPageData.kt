@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.FeatureInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.Immutable
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.core.system.RuntimeCommandExecutor
@@ -279,6 +280,7 @@ internal fun buildSectionRows(
     }
 }
 
+@Immutable
 internal data class ExportSections(
     val topInfo: List<InfoRow>,
     val system: List<InfoRow>,

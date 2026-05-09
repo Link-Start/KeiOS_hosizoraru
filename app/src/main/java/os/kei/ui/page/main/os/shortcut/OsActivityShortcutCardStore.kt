@@ -1,5 +1,9 @@
 package os.kei.ui.page.main.os.shortcut
 
+import androidx.compose.runtime.Immutable
+import com.tencent.mmkv.MMKV
+import org.json.JSONArray
+import org.json.JSONObject
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsShortcutCardStore
 import os.kei.ui.page.main.os.transfer.OS_ACTIVITY_CARD_EXPORT_SCHEMA
@@ -8,10 +12,8 @@ import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
 import os.kei.ui.page.main.os.transfer.OsCardImportError
 import os.kei.ui.page.main.os.transfer.OsCardImportException
 import os.kei.ui.page.main.os.transfer.OsCardImportRoot
-import com.tencent.mmkv.MMKV
-import org.json.JSONArray
-import org.json.JSONObject
 
+@Immutable
 internal data class OsActivityCardImportMergeResult(
     val cards: List<OsActivityShortcutCard>,
     val addedCount: Int,

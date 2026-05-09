@@ -14,6 +14,7 @@ private data class AboutExplainRes(
     @get:StringRes val usedInRes: Int
 )
 
+@Immutable
 data class AboutPermissionEntry(
     val name: String,
     val title: String,

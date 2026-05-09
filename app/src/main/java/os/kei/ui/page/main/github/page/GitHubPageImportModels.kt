@@ -1,7 +1,9 @@
 package os.kei.ui.page.main.github.page
 
+import androidx.compose.runtime.Immutable
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 
+@Immutable
 internal data class GitHubTrackImportApplyResult(
     val addedCount: Int,
     val updatedCount: Int,
@@ -10,6 +12,7 @@ internal data class GitHubTrackImportApplyResult(
     val duplicateCount: Int
 )
 
+@Immutable
 internal data class GitHubTrackImportPreview(
     val payload: GitHubTrackedItemsImportPayload,
     val fileItemCount: Int,

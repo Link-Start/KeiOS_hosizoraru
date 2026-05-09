@@ -1,5 +1,8 @@
 package os.kei.ui.page.main.github.page
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 internal data class GitHubPageContentDerivedState(
     val trackedUi: GitHubPageDerivedState = GitHubPageDerivedState(),
     val appLastUpdatedAtByTrackId: Map<String, Long> = emptyMap(),

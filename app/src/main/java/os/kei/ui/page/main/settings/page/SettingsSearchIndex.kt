@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.settings.page
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import java.util.Locale
@@ -17,6 +18,7 @@ internal enum class SettingsSearchCard {
     Log,
 }
 
+@Immutable
 internal data class SettingsSearchTarget(
     val card: SettingsSearchCard,
     val category: SettingsCategory,

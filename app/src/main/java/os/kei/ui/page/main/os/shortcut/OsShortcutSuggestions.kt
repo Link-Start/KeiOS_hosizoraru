@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.Immutable
 import java.util.Locale
 
 internal enum class ShortcutSuggestionField {
@@ -16,6 +17,7 @@ internal enum class ShortcutSuggestionField {
     IntentMimeType
 }
 
+@Immutable
 internal data class ShortcutSuggestionItem(
     val label: String,
     val value: String,
@@ -25,11 +27,13 @@ internal data class ShortcutSuggestionItem(
     val classItemExported: Boolean = false
 )
 
+@Immutable
 internal data class ShortcutInstalledAppOption(
     val appName: String,
     val packageName: String
 )
 
+@Immutable
 internal data class ShortcutActivityClassOption(
     val className: String,
     val activityName: String,

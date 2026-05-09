@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +41,11 @@ import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private val StarImportPrimaryButtonMinHeight = 44.dp
+private val StarImportPrimaryButtonHorizontalPadding = 14.dp
+private val StarImportPrimaryButtonVerticalPadding = 7.dp
+private val StarImportLoadButtonMinWidth = 112.dp
 
 @Composable
 internal fun StarImportSourceCard(
@@ -225,11 +231,17 @@ private fun StarImportLoadButton(
             stringResource(R.string.github_star_import_action_load_short)
         },
         onClick = onClick,
+        modifier = Modifier.widthIn(min = StarImportLoadButtonMinWidth),
         enabled = enabled && !loading && !importing,
         variant = GlassVariant.SheetAction,
-        leadingIcon = appLucideListIcon(),
+        leadingIcon = if (loading) null else appLucideListIcon(),
+        minHeight = StarImportPrimaryButtonMinHeight,
+        horizontalPadding = StarImportPrimaryButtonHorizontalPadding,
+        verticalPadding = StarImportPrimaryButtonVerticalPadding,
+        textSize = AppTypographyTokens.Body.fontSize,
+        textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis
+        textOverflow = TextOverflow.Clip
     )
 }
 
@@ -293,8 +305,13 @@ private fun StarImportSourceButton(
         leadingIcon = if (selected) appLucideConfirmIcon() else null,
         iconTint = activeColor,
         variant = if (selected) GlassVariant.SheetAction else GlassVariant.Content,
+        minHeight = StarImportPrimaryButtonMinHeight,
+        horizontalPadding = StarImportPrimaryButtonHorizontalPadding,
+        verticalPadding = StarImportPrimaryButtonVerticalPadding,
+        textSize = AppTypographyTokens.Body.fontSize,
+        textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis
+        textOverflow = TextOverflow.Clip
     )
 }
 

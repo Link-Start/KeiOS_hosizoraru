@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,6 +42,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 private val StarImportChipHorizontalPadding = 12.dp
 private val StarImportChipVerticalPadding = 6.dp
 private val StarImportChipMinHeight = 38.dp
+private val StarImportStatusChipMinHeight = 30.dp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -252,68 +255,75 @@ private fun StarImportActiveFilterPills(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        StatusPill(
+        StarImportActiveStatusPill(
             label = stringResource(viewFilter.labelRes),
-            color = GitHubStatusPalette.Active,
-            size = AppStatusPillSize.Compact
+            color = GitHubStatusPalette.Active
         )
-        StatusPill(
+        StarImportActiveStatusPill(
             label = stringResource(conflictStrategy.labelRes),
-            color = MiuixTheme.colorScheme.primary,
-            size = AppStatusPillSize.Compact
+            color = MiuixTheme.colorScheme.primary
         )
         activeQualities.take(2).forEach { quality ->
-            StatusPill(
+            StarImportActiveStatusPill(
                 label = stringResource(
                     R.string.github_star_import_quality_chip_format,
                     stringResource(quality.labelRes()),
                     qualityFilterCounts[quality] ?: 0
                 ),
-                color = starImportQualityColor(quality),
-                size = AppStatusPillSize.Compact
+                color = starImportQualityColor(quality)
             )
         }
         if (activeQualities.size > 2) {
-            StatusPill(
+            StarImportActiveStatusPill(
                 label = stringResource(
                     R.string.github_star_import_filter_more_count,
                     activeQualities.size - 2
                 ),
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                size = AppStatusPillSize.Compact
+                color = MiuixTheme.colorScheme.onBackgroundVariant
             )
         }
         if (selectedCount > 0) {
-            StatusPill(
+            StarImportActiveStatusPill(
                 label = stringResource(
                     R.string.github_star_import_selected_count_pill,
                     selectedCount
                 ),
-                color = GitHubStatusPalette.Update,
-                size = AppStatusPillSize.Compact
+                color = GitHubStatusPalette.Update
             )
         }
         if (visibleVerifiedApkCount > 0) {
-            StatusPill(
+            StarImportActiveStatusPill(
                 label = stringResource(
                     R.string.github_star_import_visible_verified_pill,
                     visibleVerifiedApkCount
                 ),
-                color = GitHubStatusPalette.Update,
-                size = AppStatusPillSize.Compact
+                color = GitHubStatusPalette.Update
             )
         }
         if (checkingCount > 0) {
-            StatusPill(
+            StarImportActiveStatusPill(
                 label = stringResource(
                     R.string.github_star_import_checking_count_pill,
                     checkingCount
                 ),
-                color = GitHubStatusPalette.Active,
-                size = AppStatusPillSize.Compact
+                color = GitHubStatusPalette.Active
             )
         }
     }
+}
+
+@Composable
+private fun StarImportActiveStatusPill(
+    label: String,
+    color: androidx.compose.ui.graphics.Color
+) {
+    StatusPill(
+        label = label,
+        color = color,
+        modifier = Modifier.defaultMinSize(minHeight = StarImportStatusChipMinHeight),
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)

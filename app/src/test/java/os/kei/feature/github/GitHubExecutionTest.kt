@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 class GitHubExecutionTest {
     @Test
@@ -26,7 +27,7 @@ class GitHubExecutionTest {
         ) { value ->
             val active = activeCount.incrementAndGet()
             maxActiveCount.updateAndGet { current -> maxOf(current, active) }
-            delay(20)
+            delay(20.milliseconds)
             activeCount.decrementAndGet()
             value * 2
         }
@@ -60,17 +61,17 @@ class GitHubExecutionTest {
         ) { value ->
             when (value) {
                 1 -> {
-                    delay(40)
+                    delay(40.milliseconds)
                     Result.failure(IllegalStateException("slow failure"))
                 }
 
                 2 -> {
-                    delay(10)
+                    delay(10.milliseconds)
                     Result.success("winner")
                 }
 
                 else -> {
-                    delay(80)
+                    delay(80.milliseconds)
                     Result.success("late")
                 }
             }
@@ -100,7 +101,7 @@ class GitHubExecutionTest {
         while (startedCount.get() == 0) {
             yield()
         }
-        delay(50)
+        delay(50.milliseconds)
         gate.complete(Unit)
 
         assertEquals(List(8) { 42 }, shared.awaitAll().map { it.getOrThrow() })

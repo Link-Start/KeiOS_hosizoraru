@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -14,6 +15,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 
 internal object GitHubExecution {
     suspend fun <T, R> mapOrderedBounded(
@@ -35,9 +37,7 @@ internal object GitHubExecution {
                         block(item)
                     }
                 }
-            }.map { deferred ->
-                deferred.await()
-            }
+            }.awaitAll()
         }
     }
 
@@ -110,7 +110,7 @@ internal object GitHubExecution {
                 if (firstError is CancellationException || !shouldRetry(firstError)) {
                     throw firstError
                 }
-                delay(delayMillis)
+                delay(delayMillis.milliseconds)
                 block()
             }
         }

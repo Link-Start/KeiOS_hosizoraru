@@ -105,17 +105,15 @@ class GitHubTrackExportFixturePerformanceTest {
                 itemCount = items.size
             ) {
                 items.forEachIndexed { index, item ->
-                    val result = runBlocking {
-                        preciseResolver.resolve(
-                            GitHubPreciseApkVersionRequest(
-                                owner = item.owner,
-                                repo = item.repo,
-                                release = releaseSnapshots[index].latestStable,
-                                packageName = item.packageName,
-                                lookupConfig = lookupConfig.copy(preciseApkVersionEnabled = true)
-                            )
+                    val result = preciseResolver.resolve(
+                        GitHubPreciseApkVersionRequest(
+                            owner = item.owner,
+                            repo = item.repo,
+                            release = releaseSnapshots[index].latestStable,
+                            packageName = item.packageName,
+                            lookupConfig = lookupConfig.copy(preciseApkVersionEnabled = true)
                         )
-                    }.getOrThrow()
+                    ).getOrThrow()
                     assertEquals(item.packageName, result.packageName)
                     assertTrue(result.versionLabel().isNotBlank())
                 }

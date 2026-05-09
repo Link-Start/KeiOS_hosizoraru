@@ -3,13 +3,14 @@ import java.util.Properties
 
 fun runGitCommandOrNull(vararg args: String): String? {
     return try {
-        val process = ProcessBuilder(listOf("git", *args))
-            .directory(rootDir)
-            .redirectErrorStream(true)
-            .start()
-        val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
-        val exitCode = process.waitFor()
-        if (exitCode == 0 && output.isNotEmpty()) output else null
+        val output = providers.exec {
+            commandLine("git", *args)
+            workingDir = rootDir
+            isIgnoreExitValue = true
+        }
+        val exitCode = output.result.get().exitValue
+        val stdout = output.standardOutput.asText.get().trim()
+        if (exitCode == 0 && stdout.isNotEmpty()) stdout else null
     } catch (_: Exception) {
         null
     }
@@ -157,6 +158,7 @@ val documentFileVersion = "1.1.0"
 val uCropVersion = "2.2.11"
 val focusApiVersion = "1.4"
 val metricsPerformanceVersion = "1.0.0"
+val profileInstallerVersion = "1.4.1"
 val lifecycleViewModelComposeVersion = "2.10.0"
 val robolectricVersion = "4.16.1"
 val androidTestExtJunitVersion = "1.3.0"
@@ -172,6 +174,7 @@ plugins {
     id("com.android.application")
     id("io.github.takahirom.roborazzi")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("androidx.baselineprofile")
 }
 
 android {
@@ -337,6 +340,7 @@ configurations.configureEach {
 dependencies {
     implementation("androidx.core:core-ktx:$coreKtxVersion")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
+    implementation("androidx.profileinstaller:profileinstaller:$profileInstallerVersion")
     implementation("com.google.android.material:material:$materialVersion")
 
     implementation("androidx.compose.ui:ui:$composeVersion")
@@ -347,6 +351,7 @@ dependencies {
     implementation("androidx.navigationevent:navigationevent:$navigationEventVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventVersion")
     implementation("androidx.navigation:navigation-common-ktx:$navigationCommonVersion")
+    "baselineProfile"(project(":baselineprofile"))
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
 
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")

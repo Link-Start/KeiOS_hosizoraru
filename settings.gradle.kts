@@ -33,3 +33,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "KeiOS"
 include(":app")
+include(":baselineprofile")

@@ -68,7 +68,6 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.util.Locale
 
 @Composable
 internal fun GitHubTrackEditSheet(
@@ -84,6 +83,7 @@ internal fun GitHubTrackEditSheet(
     pickerExpanded: Boolean,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
+    trackedPackageNames: Set<String>,
     appListRefreshing: Boolean,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
@@ -158,6 +158,8 @@ internal fun GitHubTrackEditSheet(
                     appSearch = appSearch,
                     selectedApp = selectedApp,
                     appList = appList,
+                    trackedPackageNames = trackedPackageNames,
+                    editingPackageName = editingTrackedItem?.packageName.orEmpty(),
                     appListRefreshing = appListRefreshing,
                     onAppSearchChange = onAppSearchChange,
                     onPickerExpandedChange = onPickerExpandedChange,
@@ -194,10 +196,12 @@ private fun GitHubTrackAppPickerControls(
     backdrop: LayerBackdrop,
     includeUserApps: Boolean,
     includeSystemApps: Boolean,
+    includeTrackedApps: Boolean,
     sortMode: GitHubTrackAppPickerSortMode,
     sortDirection: GitHubTrackAppPickerSortDirection,
     onIncludeUserAppsChange: (Boolean) -> Unit,
     onIncludeSystemAppsChange: (Boolean) -> Unit,
+    onIncludeTrackedAppsChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubTrackAppPickerSortMode) -> Unit,
     onSortDirectionChange: (GitHubTrackAppPickerSortDirection) -> Unit
 ) {
@@ -228,6 +232,13 @@ private fun GitHubTrackAppPickerControls(
                 text = stringResource(R.string.github_track_sheet_app_filter_system_apps),
                 checked = includeSystemApps,
                 onCheckedChange = onIncludeSystemAppsChange,
+                modifier = Modifier.weight(1f)
+            )
+            GitHubTrackAppTypeCheckbox(
+                backdrop = backdrop,
+                text = stringResource(R.string.github_track_sheet_app_filter_tracked_apps),
+                checked = includeTrackedApps,
+                onCheckedChange = onIncludeTrackedAppsChange,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -351,101 +362,6 @@ private fun GitHubTrackAppPickerButtonRow(
             content = content
         )
     }
-}
-
-private enum class GitHubTrackAppPickerSortMode(
-    val labelRes: Int,
-    val storageId: String
-) {
-    Name(R.string.github_track_sheet_app_sort_name, "name"),
-    LastUpdated(R.string.github_track_sheet_app_sort_last_updated, "last_updated"),
-    RecentlyInstalled(
-        R.string.github_track_sheet_app_sort_recently_installed,
-        "recently_installed"
-    ),
-    InstallSource(R.string.github_track_sheet_app_sort_install_source, "install_source"),
-    Package(R.string.github_track_sheet_app_sort_package, "package");
-
-    companion object {
-        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortMode {
-            return entries.firstOrNull { it.storageId == storageId } ?: Name
-        }
-    }
-}
-
-private enum class GitHubTrackAppPickerSortDirection(
-    val labelRes: Int,
-    val storageId: String
-) {
-    Ascending(R.string.github_track_sheet_app_sort_direction_ascending, "ascending"),
-    Descending(R.string.github_track_sheet_app_sort_direction_descending, "descending");
-
-    companion object {
-        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortDirection {
-            return entries.firstOrNull { it.storageId == storageId } ?: Ascending
-        }
-    }
-}
-
-private fun InstalledAppItem.matchesAppPickerQuery(query: String): Boolean {
-    if (query.isBlank()) return true
-    return label.contains(query, ignoreCase = true) ||
-            packageName.contains(query, ignoreCase = true) ||
-            installSourceLabel.contains(query, ignoreCase = true) ||
-            installSourcePackageName.contains(query, ignoreCase = true)
-}
-
-private fun InstalledAppItem.matchesAppTypeFilter(
-    includeUserApps: Boolean,
-    includeSystemApps: Boolean
-): Boolean {
-    return when {
-        isSystemApp -> includeSystemApps
-        else -> includeUserApps
-    }
-}
-
-private fun GitHubTrackAppPickerSortMode.comparator(
-    direction: GitHubTrackAppPickerSortDirection
-): Comparator<InstalledAppItem> {
-    val baseComparator = when (this) {
-        GitHubTrackAppPickerSortMode.Name ->
-            compareBy<InstalledAppItem> { it.label.lowercase(Locale.ROOT) }
-                .thenBy { it.packageName.lowercase(Locale.ROOT) }
-
-        GitHubTrackAppPickerSortMode.LastUpdated ->
-            compareBy<InstalledAppItem> { it.lastUpdateTimeMs }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
-
-        GitHubTrackAppPickerSortMode.RecentlyInstalled ->
-            compareBy<InstalledAppItem> { it.firstInstallTimeMs }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
-
-        GitHubTrackAppPickerSortMode.InstallSource ->
-            compareBy<InstalledAppItem> { it.installSourceSortKey().isBlank() }
-                .thenBy { it.installSourceSortKey() }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
-                .thenBy { it.packageName.lowercase(Locale.ROOT) }
-
-        GitHubTrackAppPickerSortMode.Package ->
-            compareBy<InstalledAppItem> { it.packageName.lowercase(Locale.ROOT) }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
-    }
-    return when (direction) {
-        GitHubTrackAppPickerSortDirection.Ascending -> baseComparator
-        GitHubTrackAppPickerSortDirection.Descending -> baseComparator.reversed()
-    }
-}
-
-private fun GitHubTrackAppPickerSortMode.isTimeSort(): Boolean {
-    return this == GitHubTrackAppPickerSortMode.LastUpdated ||
-            this == GitHubTrackAppPickerSortMode.RecentlyInstalled
-}
-
-private fun InstalledAppItem.installSourceSortKey(): String {
-    return installSourceLabel
-        .ifBlank { installSourcePackageName }
-        .lowercase(Locale.ROOT)
 }
 
 @Composable
@@ -605,6 +521,8 @@ private fun GitHubTrackAppPickerContent(
     appSearch: String,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
+    trackedPackageNames: Set<String>,
+    editingPackageName: String,
     appListRefreshing: Boolean,
     onAppSearchChange: (String) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
@@ -622,6 +540,9 @@ private fun GitHubTrackAppPickerContent(
     var includeSystemApps by remember {
         mutableStateOf(savedPreferences.includeSystemApps)
     }
+    var includeTrackedApps by remember {
+        mutableStateOf(savedPreferences.includeTrackedApps)
+    }
     var sortMode by remember {
         mutableStateOf(GitHubTrackAppPickerSortMode.fromStorageId(savedPreferences.sortModeId))
     }
@@ -631,20 +552,39 @@ private fun GitHubTrackAppPickerContent(
         )
     }
     val filteredApps =
-        remember(appList, appSearch, includeUserApps, includeSystemApps, sortMode, sortDirection) {
-        val query = appSearch.trim()
-        appList
-            .asSequence()
-            .filter { app -> app.matchesAppTypeFilter(includeUserApps, includeSystemApps) }
-            .filter { app -> app.matchesAppPickerQuery(query) }
-            .sortedWith(sortMode.comparator(sortDirection))
-            .toList()
-    }
+        remember(
+            appList,
+            appSearch,
+            includeUserApps,
+            includeSystemApps,
+            includeTrackedApps,
+            trackedPackageNames,
+            selectedApp,
+            editingPackageName,
+            sortMode,
+            sortDirection
+        ) {
+            filterAndSortGitHubTrackAppCandidates(
+                apps = appList,
+                query = appSearch,
+                includeUserApps = includeUserApps,
+                includeSystemApps = includeSystemApps,
+                includeTrackedApps = includeTrackedApps,
+                trackedPackageNames = trackedPackageNames,
+                pinnedPackageNames = setOf(
+                    selectedApp?.packageName.orEmpty(),
+                    editingPackageName
+                ),
+                sortMode = sortMode,
+                sortDirection = sortDirection
+            )
+        }
     fun saveAppPickerPreferences() {
         GitHubTrackStore.saveAppPickerPreferences(
             GitHubAppPickerPreferences(
                 includeUserApps = includeUserApps,
                 includeSystemApps = includeSystemApps,
+                includeTrackedApps = includeTrackedApps,
                 sortModeId = sortMode.storageId,
                 sortDirectionId = sortDirection.storageId
             )
@@ -657,7 +597,14 @@ private fun GitHubTrackAppPickerContent(
         }
     }
 
-    LaunchedEffect(appSearch, includeUserApps, includeSystemApps, sortMode, sortDirection) {
+    LaunchedEffect(
+        appSearch,
+        includeUserApps,
+        includeSystemApps,
+        includeTrackedApps,
+        sortMode,
+        sortDirection
+    ) {
         listState.scrollToItem(0)
     }
 
@@ -722,6 +669,7 @@ private fun GitHubTrackAppPickerContent(
                 backdrop = backdrop,
                 includeUserApps = includeUserApps,
                 includeSystemApps = includeSystemApps,
+                includeTrackedApps = includeTrackedApps,
                 sortMode = sortMode,
                 sortDirection = sortDirection,
                 onIncludeUserAppsChange = {
@@ -731,6 +679,11 @@ private fun GitHubTrackAppPickerContent(
                 },
                 onIncludeSystemAppsChange = {
                     includeSystemApps = it
+                    saveAppPickerPreferences()
+                    scrollAppListToTop()
+                },
+                onIncludeTrackedAppsChange = {
+                    includeTrackedApps = it
                     saveAppPickerPreferences()
                     scrollAppListToTop()
                 },

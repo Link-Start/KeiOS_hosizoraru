@@ -255,6 +255,7 @@ internal fun GitHubPageSheetHost(
         pickerExpanded = state.pickerExpanded,
         selectedApp = state.selectedApp,
         appList = state.appList,
+        trackedPackageNames = state.trackedItems.map { it.packageName }.toSet(),
         appListRefreshing = state.appListRefreshing,
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,

@@ -613,6 +613,7 @@
     <string name="github_track_sheet_app_filter_scope_label">App 类型</string>
     <string name="github_track_sheet_app_filter_user_apps">用户 App</string>
     <string name="github_track_sheet_app_filter_system_apps">系统 App</string>
+    <string name="github_track_sheet_app_filter_tracked_apps">已追踪</string>
     <string name="github_track_sheet_app_sort_label">排序</string>
     <string name="github_track_sheet_app_sort_dropdown_format">按 %1$s</string>
     <string name="github_track_sheet_app_sort_direction_dropdown_format">%1$s</string>

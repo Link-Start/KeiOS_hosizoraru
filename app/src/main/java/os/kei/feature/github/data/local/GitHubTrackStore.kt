@@ -51,6 +51,7 @@ data class GitHubPendingShareImportTrackRecord(
 data class GitHubAppPickerPreferences(
     val includeUserApps: Boolean = true,
     val includeSystemApps: Boolean = false,
+    val includeTrackedApps: Boolean = false,
     val sortModeId: String = "name",
     val sortDirectionId: String = "ascending"
 )
@@ -83,6 +84,7 @@ object GitHubTrackStore {
     private const val KEY_TRACKED_ADDED_AT_BY_ID = "github_tracked_added_at_by_id"
     private const val KEY_APP_PICKER_INCLUDE_USER_APPS = "github_app_picker_include_user_apps"
     private const val KEY_APP_PICKER_INCLUDE_SYSTEM_APPS = "github_app_picker_include_system_apps"
+    private const val KEY_APP_PICKER_INCLUDE_TRACKED_APPS = "github_app_picker_include_tracked_apps"
     private const val KEY_APP_PICKER_SORT_MODE = "github_app_picker_sort_mode"
     private const val KEY_APP_PICKER_SORT_DIRECTION = "github_app_picker_sort_direction"
 
@@ -171,6 +173,7 @@ object GitHubTrackStore {
         return GitHubAppPickerPreferences(
             includeUserApps = store.decodeBool(KEY_APP_PICKER_INCLUDE_USER_APPS, true),
             includeSystemApps = store.decodeBool(KEY_APP_PICKER_INCLUDE_SYSTEM_APPS, false),
+            includeTrackedApps = store.decodeBool(KEY_APP_PICKER_INCLUDE_TRACKED_APPS, false),
             sortModeId = store.decodeString(KEY_APP_PICKER_SORT_MODE, "name").orEmpty(),
             sortDirectionId = store.decodeString(
                 KEY_APP_PICKER_SORT_DIRECTION,
@@ -183,6 +186,7 @@ object GitHubTrackStore {
         val store = kv()
         store.encode(KEY_APP_PICKER_INCLUDE_USER_APPS, preferences.includeUserApps)
         store.encode(KEY_APP_PICKER_INCLUDE_SYSTEM_APPS, preferences.includeSystemApps)
+        store.encode(KEY_APP_PICKER_INCLUDE_TRACKED_APPS, preferences.includeTrackedApps)
         store.encode(KEY_APP_PICKER_SORT_MODE, preferences.sortModeId)
         store.encode(KEY_APP_PICKER_SORT_DIRECTION, preferences.sortDirectionId)
     }

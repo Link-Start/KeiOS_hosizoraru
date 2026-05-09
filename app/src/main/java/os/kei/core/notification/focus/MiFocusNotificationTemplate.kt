@@ -46,7 +46,7 @@ import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
  * - Pictures are registered with `createPicture(key, Icon/Bitmap)` and referenced by string keys.
  * - Actions are registered with `createAction(key, Notification.Action)` and referenced by string keys.
  * - R8 must keep focus-api serializers, template fields, and this facade's names; see
- *   `app/proguard-rules.pro`.
+ *   `app/src/main/keepRules/proguard-rules.keep`.
  */
 internal object MiFocusNotificationTemplate {
     const val OUTER_GLOW_SRC = "outer_glow"

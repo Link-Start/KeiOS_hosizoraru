@@ -11,6 +11,7 @@ import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
 import os.kei.ui.page.main.github.sheet.GitHubDecisionAssistDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
+import os.kei.ui.page.main.github.sheet.GitHubOverviewEntrySheet
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackImportDialog
@@ -34,6 +35,15 @@ internal fun GitHubPageSheetHost(
     onOpenStarImport: () -> Unit,
     onConfirmTrackImport: () -> Unit
 ) {
+    GitHubOverviewEntrySheet(
+        show = state.showOverviewEntrySheet,
+        backdrop = backdrops.sheet,
+        visibleEntries = state.overviewVisibleEntries,
+        onEntryVisibleChange = actions::setOverviewEntryVisible,
+        onReset = actions::resetOverviewEntries,
+        onDismissRequest = actions::closeOverviewEntrySheet
+    )
+
     GitHubStrategySheet(
         show = state.showStrategySheet,
         backdrop = backdrops.sheet,
@@ -86,18 +96,15 @@ internal fun GitHubPageSheetHost(
         decisionAssistEnabledInput = state.decisionAssistEnabledInput,
         repositoryHealthCardEnabledInput = state.repositoryHealthCardEnabledInput,
         apkTrustCheckEnabledInput = state.apkTrustCheckEnabledInput,
-        releaseNotesModeInput = state.releaseNotesModeInput,
         installedOnlineShareTargets = installedOnlineShareTargets,
         showCheckLogicIntervalPopup = state.showCheckLogicIntervalPopup,
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
         showShareImportFlowModePopup = state.showShareImportFlowModePopup,
-        showReleaseNotesModePopup = state.showReleaseNotesModePopup,
         checkLogicIntervalPopupAnchorBounds = state.checkLogicIntervalPopupAnchorBounds,
         downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
         onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
         shareImportFlowModePopupAnchorBounds = state.shareImportFlowModePopupAnchorBounds,
-        releaseNotesModePopupAnchorBounds = state.releaseNotesModePopupAnchorBounds,
         downloaderOptions = checkLogicDownloaderOptions,
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
         exportInProgress = tracksExporting,
@@ -120,12 +127,10 @@ internal fun GitHubPageSheetHost(
         onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },
         onRepositoryHealthCardEnabledInputChange = { state.repositoryHealthCardEnabledInput = it },
         onApkTrustCheckEnabledInputChange = { state.apkTrustCheckEnabledInput = it },
-        onReleaseNotesModeInputChange = { state.releaseNotesModeInput = it },
         onShowCheckLogicIntervalPopupChange = { state.showCheckLogicIntervalPopup = it },
         onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
         onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
         onShowShareImportFlowModePopupChange = { state.showShareImportFlowModePopup = it },
-        onShowReleaseNotesModePopupChange = { state.showReleaseNotesModePopup = it },
         onCheckLogicIntervalPopupAnchorBoundsChange = {
             state.checkLogicIntervalPopupAnchorBounds = it
         },
@@ -135,9 +140,6 @@ internal fun GitHubPageSheetHost(
         },
         onShareImportFlowModePopupAnchorBoundsChange = {
             state.shareImportFlowModePopupAnchorBounds = it
-        },
-        onReleaseNotesModePopupAnchorBoundsChange = {
-            state.releaseNotesModePopupAnchorBounds = it
         }
     )
 

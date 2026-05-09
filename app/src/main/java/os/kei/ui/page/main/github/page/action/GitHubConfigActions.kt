@@ -48,7 +48,6 @@ internal class GitHubConfigActions(
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
         state.showShareImportFlowModePopup = false
-        state.showReleaseNotesModePopup = false
         scope.launch {
             val config = repository.loadLookupConfig()
             state.lookupConfig = config
@@ -63,7 +62,6 @@ internal class GitHubConfigActions(
             state.decisionAssistEnabledInput = config.decisionAssistEnabled
             state.repositoryHealthCardEnabledInput = config.repositoryHealthCardEnabled
             state.apkTrustCheckEnabledInput = config.apkTrustCheckEnabled
-            state.releaseNotesModeInput = config.releaseNotesMode
             state.refreshIntervalHoursInput = repository.loadRefreshIntervalHours()
             state.showCheckLogicSheet = true
         }
@@ -194,8 +192,7 @@ internal class GitHubConfigActions(
                 preferredDownloaderPackage = state.preferredDownloaderPackageInput.trim(),
                 decisionAssistEnabled = state.decisionAssistEnabledInput,
                 repositoryHealthCardEnabled = state.repositoryHealthCardEnabledInput,
-                apkTrustCheckEnabled = state.apkTrustCheckEnabledInput,
-                releaseNotesMode = state.releaseNotesModeInput
+                apkTrustCheckEnabled = state.apkTrustCheckEnabledInput
             )
             repository.saveLookupConfig(newConfig)
             repository.saveRefreshIntervalHours(state.refreshIntervalHoursInput)
@@ -222,8 +219,7 @@ internal class GitHubConfigActions(
             val decisionAssistChanged =
                 previousConfig.decisionAssistEnabled != newConfig.decisionAssistEnabled ||
                         previousConfig.repositoryHealthCardEnabled != newConfig.repositoryHealthCardEnabled ||
-                        previousConfig.apkTrustCheckEnabled != newConfig.apkTrustCheckEnabled ||
-                        previousConfig.releaseNotesMode != newConfig.releaseNotesMode
+                        previousConfig.apkTrustCheckEnabled != newConfig.apkTrustCheckEnabled
             val intervalChanged = previousRefreshIntervalHours != state.refreshIntervalHoursInput
             val preferenceChangedCount = listOf(
                 shareImportChanged,

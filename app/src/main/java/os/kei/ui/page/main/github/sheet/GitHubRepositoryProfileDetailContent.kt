@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +38,7 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
+import os.kei.ui.page.main.widget.sheet.SheetExpandableCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
@@ -50,6 +55,7 @@ internal fun GitHubHealthDetailContent(
     val context = LocalContext.current
     val health = buildGitHubRepositoryHealth(item, state)
     val profileUi = GitHubRepositoryProfileUiMapper.build(state.repositoryProfile)
+    var rulesExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
     SheetContentColumn(verticalSpacing = 10.dp) {
         RepositoryProfileOverviewCard(
             item = item,
@@ -71,28 +77,42 @@ internal fun GitHubHealthDetailContent(
             }
             SourceAvailabilitySection(profileUi.sourceRows)
         }
-        SheetSectionTitle(stringResource(R.string.github_health_detail_rule_title))
-        SheetSectionCard(
-            verticalSpacing = 4.dp,
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_check),
-                maxLines = Int.MAX_VALUE
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_release),
-                maxLines = Int.MAX_VALUE
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_package),
-                maxLines = Int.MAX_VALUE
-            )
-            DetailTextLine(
-                text = stringResource(R.string.github_health_detail_rule_scope),
-                maxLines = Int.MAX_VALUE
-            )
-        }
+        GitHubHealthRulesCard(
+            expanded = rulesExpanded,
+            onExpandedChange = { rulesExpanded = it }
+        )
+    }
+}
+
+@Composable
+private fun GitHubHealthRulesCard(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit
+) {
+    SheetExpandableCard(
+        title = stringResource(R.string.github_health_detail_rule_title),
+        collapsedSummary = stringResource(R.string.github_health_detail_rule_summary_collapsed),
+        expandedSummary = stringResource(R.string.github_health_detail_rule_summary_expanded),
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        accentColor = GitHubStatusPalette.Active
+    ) {
+        DetailTextLine(
+            text = stringResource(R.string.github_health_detail_rule_check),
+            maxLines = Int.MAX_VALUE
+        )
+        DetailTextLine(
+            text = stringResource(R.string.github_health_detail_rule_release),
+            maxLines = Int.MAX_VALUE
+        )
+        DetailTextLine(
+            text = stringResource(R.string.github_health_detail_rule_package),
+            maxLines = Int.MAX_VALUE
+        )
+        DetailTextLine(
+            text = stringResource(R.string.github_health_detail_rule_scope),
+            maxLines = Int.MAX_VALUE
+        )
     }
 }
 

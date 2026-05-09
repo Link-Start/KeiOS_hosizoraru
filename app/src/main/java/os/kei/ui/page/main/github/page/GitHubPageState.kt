@@ -40,6 +40,7 @@ import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
+import os.kei.ui.page.main.github.section.GitHubOverviewUiState
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
@@ -49,7 +50,8 @@ import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 @Stable
 internal class GitHubPageState(
     private val searchBarHideThresholdPx: Float,
-    actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState()
+    actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
+    overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState()
 ) {
     var trackedSearch by mutableStateOf("")
     var showFailedOnly by mutableStateOf(false)
@@ -61,6 +63,7 @@ internal class GitHubPageState(
     var showStrategySheet by mutableStateOf(false)
     var showCheckLogicSheet by mutableStateOf(false)
     var showActionsSheet by mutableStateOf(false)
+    var showOverviewEntrySheet by mutableStateOf(false)
     var showDownloaderPopup by mutableStateOf(false)
     var editingTrackedItem by mutableStateOf<GitHubTrackedApp?>(null)
     var actionsTargetItem by mutableStateOf<GitHubTrackedApp?>(null)
@@ -110,7 +113,6 @@ internal class GitHubPageState(
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var releaseNotesModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var pendingTrackImportPreview by mutableStateOf<GitHubTrackImportPreview?>(null)
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
     var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
@@ -121,6 +123,8 @@ internal class GitHubPageState(
     var apkInfoDetailRequest by mutableStateOf<GitHubReleaseAssetFile?>(null)
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(GitHubSortMode.UpdateFirst)
+    var overviewExpanded by mutableStateOf(overviewUiState.expanded)
+    var overviewVisibleEntries by mutableStateOf(overviewUiState.visibleEntries)
     var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)
     var overviewRefreshState by mutableStateOf(OverviewRefreshState.Idle)
     var lastRefreshMs by mutableStateOf(0L)
@@ -141,11 +145,9 @@ internal class GitHubPageState(
     var decisionAssistEnabledInput by mutableStateOf(false)
     var repositoryHealthCardEnabledInput by mutableStateOf(false)
     var apkTrustCheckEnabledInput by mutableStateOf(false)
-    var releaseNotesModeInput by mutableStateOf(lookupConfig.releaseNotesMode)
     var refreshIntervalHoursInput by mutableStateOf(refreshIntervalHours)
     var showApiTokenPlainText by mutableStateOf(false)
     var showShareImportFlowModePopup by mutableStateOf(false)
-    var showReleaseNotesModePopup by mutableStateOf(false)
     var strategyBenchmarkRunning by mutableStateOf(false)
     var strategyBenchmarkError by mutableStateOf<String?>(null)
     var strategyBenchmarkReport by mutableStateOf<GitHubStrategyBenchmarkReport?>(null)
@@ -312,7 +314,6 @@ internal class GitHubPageState(
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false
         showShareImportFlowModePopup = false
-        showReleaseNotesModePopup = false
         pendingTrackImportPreview = null
         showCheckLogicSheet = false
     }

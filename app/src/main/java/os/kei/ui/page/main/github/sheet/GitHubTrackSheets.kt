@@ -18,7 +18,6 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
-import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -65,18 +64,15 @@ internal fun GitHubCheckLogicSheet(
     decisionAssistEnabledInput: Boolean,
     repositoryHealthCardEnabledInput: Boolean,
     apkTrustCheckEnabledInput: Boolean,
-    releaseNotesModeInput: GitHubReleaseNotesMode,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     showCheckLogicIntervalPopup: Boolean,
     showDownloaderPopup: Boolean,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
-    showReleaseNotesModePopup: Boolean,
     checkLogicIntervalPopupAnchorBounds: IntRect?,
     downloaderPopupAnchorBounds: IntRect?,
     onlineShareTargetPopupAnchorBounds: IntRect?,
     shareImportFlowModePopupAnchorBounds: IntRect?,
-    releaseNotesModePopupAnchorBounds: IntRect?,
     downloaderOptions: List<DownloaderOption>,
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
@@ -99,17 +95,14 @@ internal fun GitHubCheckLogicSheet(
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
     onRepositoryHealthCardEnabledInputChange: (Boolean) -> Unit,
     onApkTrustCheckEnabledInputChange: (Boolean) -> Unit,
-    onReleaseNotesModeInputChange: (GitHubReleaseNotesMode) -> Unit,
     onShowCheckLogicIntervalPopupChange: (Boolean) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
-    onShowReleaseNotesModePopupChange: (Boolean) -> Unit,
     onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onReleaseNotesModePopupAnchorBoundsChange: (IntRect?) -> Unit
+    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     val context = LocalContext.current
     SnapshotWindowBottomSheet(
@@ -159,8 +152,7 @@ internal fun GitHubCheckLogicSheet(
                 preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
                 decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
                 repositoryHealthCardEnabledInput != lookupConfig.repositoryHealthCardEnabled ||
-                apkTrustCheckEnabledInput != lookupConfig.apkTrustCheckEnabled ||
-                releaseNotesModeInput != lookupConfig.releaseNotesMode
+                apkTrustCheckEnabledInput != lookupConfig.apkTrustCheckEnabled
 
         SheetContentColumn(verticalSpacing = 10.dp) {
             GitHubCheckOverviewSection(
@@ -218,19 +210,12 @@ internal fun GitHubCheckLogicSheet(
                 onShareImportFlowModePopupAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange
             )
             GitHubCheckEnhancementSection(
-                backdrop = backdrop,
                 decisionAssistEnabledInput = decisionAssistEnabledInput,
                 repositoryHealthCardEnabledInput = repositoryHealthCardEnabledInput,
                 apkTrustCheckEnabledInput = apkTrustCheckEnabledInput,
-                releaseNotesModeInput = releaseNotesModeInput,
-                showReleaseNotesModePopup = showReleaseNotesModePopup,
-                releaseNotesModePopupAnchorBounds = releaseNotesModePopupAnchorBounds,
                 onDecisionAssistEnabledInputChange = onDecisionAssistEnabledInputChange,
                 onRepositoryHealthCardEnabledInputChange = onRepositoryHealthCardEnabledInputChange,
-                onApkTrustCheckEnabledInputChange = onApkTrustCheckEnabledInputChange,
-                onReleaseNotesModeInputChange = onReleaseNotesModeInputChange,
-                onShowReleaseNotesModePopupChange = onShowReleaseNotesModePopupChange,
-                onReleaseNotesModePopupAnchorBoundsChange = onReleaseNotesModePopupAnchorBoundsChange
+                onApkTrustCheckEnabledInputChange = onApkTrustCheckEnabledInputChange
             )
             GitHubCheckTracksSection(
                 backdrop = backdrop,
@@ -580,28 +565,13 @@ private fun GitHubCheckTransferSection(
 
 @Composable
 private fun GitHubCheckEnhancementSection(
-    backdrop: LayerBackdrop,
     decisionAssistEnabledInput: Boolean,
     repositoryHealthCardEnabledInput: Boolean,
     apkTrustCheckEnabledInput: Boolean,
-    releaseNotesModeInput: GitHubReleaseNotesMode,
-    showReleaseNotesModePopup: Boolean,
-    releaseNotesModePopupAnchorBounds: IntRect?,
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
     onRepositoryHealthCardEnabledInputChange: (Boolean) -> Unit,
-    onApkTrustCheckEnabledInputChange: (Boolean) -> Unit,
-    onReleaseNotesModeInputChange: (GitHubReleaseNotesMode) -> Unit,
-    onShowReleaseNotesModePopupChange: (Boolean) -> Unit,
-    onReleaseNotesModePopupAnchorBoundsChange: (IntRect?) -> Unit
+    onApkTrustCheckEnabledInputChange: (Boolean) -> Unit
 ) {
-    val releaseNotesModeOptions = GitHubReleaseNotesMode.entries
-    val context = LocalContext.current
-    val releaseNotesModeLabels = releaseNotesModeOptions.map { mode ->
-        context.getString(mode.labelRes())
-    }
-    val selectedReleaseNotesModeIndex = releaseNotesModeOptions
-        .indexOf(releaseNotesModeInput)
-        .coerceAtLeast(0)
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_enhancements))
     SheetSectionCard {
         SheetControlRow(
@@ -631,25 +601,6 @@ private fun GitHubCheckEnhancementSection(
                 checked = apkTrustCheckEnabledInput,
                 onCheckedChange = onApkTrustCheckEnabledInputChange,
                 enabled = decisionAssistEnabledInput
-            )
-        }
-        SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_release_notes_mode),
-            summary = stringResource(R.string.github_check_sheet_summary_release_notes_mode)
-        ) {
-            AppDropdownSelector(
-                selectedText = releaseNotesModeLabels[selectedReleaseNotesModeIndex],
-                options = if (decisionAssistEnabledInput) releaseNotesModeLabels else emptyList(),
-                selectedIndex = selectedReleaseNotesModeIndex,
-                expanded = showReleaseNotesModePopup,
-                anchorBounds = releaseNotesModePopupAnchorBounds,
-                onExpandedChange = onShowReleaseNotesModePopupChange,
-                onSelectedIndexChange = { selectedIndex ->
-                    onReleaseNotesModeInputChange(releaseNotesModeOptions[selectedIndex])
-                },
-                onAnchorBoundsChange = onReleaseNotesModePopupAnchorBoundsChange,
-                backdrop = backdrop,
-                variant = GlassVariant.SheetAction
             )
         }
     }
@@ -739,14 +690,6 @@ private fun GitHubCheckTracksSection(
                 )
             }
         }
-    }
-}
-
-private fun GitHubReleaseNotesMode.labelRes(): Int {
-    return when (this) {
-        GitHubReleaseNotesMode.Off -> R.string.github_release_notes_mode_off
-        GitHubReleaseNotesMode.Compact -> R.string.github_release_notes_mode_compact
-        GitHubReleaseNotesMode.Expanded -> R.string.github_release_notes_mode_expanded
     }
 }
 

@@ -40,7 +40,6 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
@@ -50,15 +49,12 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
-import os.kei.ui.page.main.github.buildGitHubReleaseNotesLines
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
-import os.kei.ui.page.main.github.buildGitHubRepositoryHealthImpactLines
 import os.kei.ui.page.main.github.formatApkVersionValue
 import os.kei.ui.page.main.github.formatReleaseMetaValue
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.isLocalAppUninstalled
-import os.kei.ui.page.main.github.labelRes
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.preReleaseVersionColor
 import os.kei.ui.page.main.github.repositoryHealthLabelRes
@@ -96,7 +92,6 @@ import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.abs
 
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.GitHubTrackedItemsSection(
@@ -246,8 +241,15 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             item = item,
                             state = state,
                             iconTint = iconTint,
+                            showReleaseNotesAction = lookupConfig.decisionAssistEnabled,
                             onRefreshTrackedItem = onRefreshTrackedItem,
                             onOpenActionsSheet = onOpenActionsSheet,
+                            onOpenReleaseNotes = {
+                                onOpenDecisionAssistDetail(
+                                    GitHubDecisionAssistDetailType.ReleaseNotes,
+                                    item
+                                )
+                            },
                             onRequestDeleteTrackedItem = onRequestDeleteTrackedItem
                         )
                     }
@@ -375,7 +377,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         val health = buildGitHubRepositoryHealth(item, state)
                         GitHubHealthPreviewBlock(
                             health = health,
-                            context = context,
                             onClick = {
                                 onOpenDecisionAssistDetail(
                                     GitHubDecisionAssistDetailType.RepositoryHealth,
@@ -383,28 +384,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 )
                             }
                         )
-                    }
-                    if (lookupConfig.decisionAssistEnabled &&
-                        lookupConfig.releaseNotesMode != GitHubReleaseNotesMode.Off
-                    ) {
-                        val releaseNotesLines = buildGitHubReleaseNotesLines(
-                            item = item,
-                            state = state,
-                            assetBundle = assetBundle,
-                            expanded = lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded
-                        )
-                        if (releaseNotesLines.isNotEmpty()) {
-                            GitHubReleaseNotesPreviewBlock(
-                                lines = releaseNotesLines,
-                                expanded = lookupConfig.releaseNotesMode == GitHubReleaseNotesMode.Expanded,
-                                onClick = {
-                                    onOpenDecisionAssistDetail(
-                                        GitHubDecisionAssistDetailType.ReleaseNotes,
-                                        item
-                                    )
-                                }
-                            )
-                        }
                     }
                     GitHubTrackedItemAssetPanel(
                         item = item,
@@ -431,91 +410,8 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
 }
 
 @Composable
-private fun GitHubReleaseNotesPreviewBlock(
-    lines: List<String>,
-    expanded: Boolean,
-    onClick: () -> Unit
-) {
-    val backdrop = rememberLayerBackdrop()
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val surfaceColor = if (isDark) {
-        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
-    } else {
-        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
-    }
-    LiquidSurface(
-        backdrop = backdrop,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        tint = GitHubStatusPalette.Active.copy(alpha = if (isDark) 0.16f else 0.10f),
-        surfaceColor = surfaceColor,
-        blurRadius = UiPerformanceBudget.backdropBlur,
-        lensRadius = UiPerformanceBudget.backdropLens,
-        onClick = onClick
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.github_release_notes_title),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = AppTypographyTokens.Body.fontSize,
-                    lineHeight = AppTypographyTokens.Body.lineHeight,
-                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-                    modifier = Modifier.weight(1f)
-                )
-                StatusPill(
-                    label = stringResource(
-                        if (expanded) {
-                            R.string.github_release_notes_mode_expanded
-                        } else {
-                            R.string.github_release_notes_mode_compact
-                        }
-                    ),
-                    color = GitHubStatusPalette.Active,
-                    size = AppStatusPillSize.Compact,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
-                )
-            }
-            lines.forEach { line ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = "•",
-                        color = GitHubStatusPalette.Active,
-                        fontSize = AppTypographyTokens.Supporting.fontSize,
-                        lineHeight = AppTypographyTokens.Supporting.lineHeight
-                    )
-                    Text(
-                        text = line,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        fontSize = AppTypographyTokens.Supporting.fontSize,
-                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                        maxLines = if (expanded) 2 else 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun GitHubHealthPreviewBlock(
     health: GitHubRepositoryHealth,
-    context: Context,
     onClick: () -> Unit
 ) {
     val backdrop = rememberLayerBackdrop()
@@ -526,9 +422,6 @@ private fun GitHubHealthPreviewBlock(
     } else {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
     }
-    val reasonLines = buildGitHubRepositoryHealthImpactLines(health)
-        .sortedByDescending { (_, impact) -> abs(impact) }
-        .take(2)
     LiquidSurface(
         backdrop = backdrop,
         modifier = Modifier.fillMaxWidth(),
@@ -571,35 +464,6 @@ private fun GitHubHealthPreviewBlock(
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
-            reasonLines.forEach { (reason, impact) ->
-                val impactColor = when {
-                    impact > 0 -> GitHubStatusPalette.Update
-                    impact < 0 -> GitHubStatusPalette.Error
-                    else -> MiuixTheme.colorScheme.onBackgroundVariant
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
-                        text = if (impact > 0) "+$impact" else impact.toString(),
-                        color = impactColor,
-                        fontSize = AppTypographyTokens.Caption.fontSize,
-                        lineHeight = AppTypographyTokens.Caption.lineHeight,
-                        fontWeight = AppTypographyTokens.Caption.fontWeight
-                    )
-                    Text(
-                        text = context.getString(reason.labelRes()),
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        fontSize = AppTypographyTokens.Supporting.fontSize,
-                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
         }
     }
 }
@@ -609,12 +473,15 @@ private fun GitHubTrackedItemMoreActions(
     item: GitHubTrackedApp,
     state: VersionCheckUi,
     iconTint: Color,
+    showReleaseNotesAction: Boolean,
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
+    onOpenReleaseNotes: () -> Unit,
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit
 ) {
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
+    val optionSize = if (showReleaseNotesAction) 4 else 3
     Box(
         modifier = Modifier.capturePopupAnchor { menuAnchorBounds = it },
         contentAlignment = Alignment.Center
@@ -639,7 +506,7 @@ private fun GitHubTrackedItemMoreActions(
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.common_refresh),
                         index = 0,
-                        optionSize = 3,
+                        optionSize = optionSize,
                         onClick = {
                             menuExpanded = false
                             onRefreshTrackedItem(item)
@@ -648,16 +515,27 @@ private fun GitHubTrackedItemMoreActions(
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.github_actions_menu),
                         index = 1,
-                        optionSize = 3,
+                        optionSize = optionSize,
                         onClick = {
                             menuExpanded = false
                             onOpenActionsSheet(item)
                         }
                     )
+                    if (showReleaseNotesAction) {
+                        GitHubTrackedItemMenuAction(
+                            text = stringResource(R.string.github_release_notes_title),
+                            index = 2,
+                            optionSize = optionSize,
+                            onClick = {
+                                menuExpanded = false
+                                onOpenReleaseNotes()
+                            }
+                        )
+                    }
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.github_track_sheet_btn_delete),
-                        index = 2,
-                        optionSize = 3,
+                        index = optionSize - 1,
+                        optionSize = optionSize,
                         variant = GlassVariant.SheetDangerAction,
                         onClick = {
                             menuExpanded = false

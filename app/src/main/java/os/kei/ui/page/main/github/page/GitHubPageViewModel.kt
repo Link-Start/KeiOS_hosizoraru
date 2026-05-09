@@ -18,6 +18,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val pendingShareImportCardTickMs = 15_000L
@@ -74,7 +75,8 @@ internal class GitHubPageViewModel : ViewModel() {
         if (current != null) return current
         return GitHubPageState(
             searchBarHideThresholdPx = searchBarHideThresholdPx,
-            actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState()
+            actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
+            overviewUiState = GitHubOverviewUiStateStore.load()
         ).also {
             pageState = it
             bindContentState(it)

@@ -19,6 +19,10 @@ import os.kei.ui.page.main.github.page.action.GitHubRefreshActions
 import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.section.GitHubOverviewEntry
+import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
+import os.kei.ui.page.main.github.section.defaultGitHubOverviewEntries
+import os.kei.ui.page.main.github.section.orDefaultGitHubOverviewEntries
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.github.share.GitHubShareImportResultKind
@@ -84,6 +88,38 @@ internal class GitHubPageActions(
     fun setActionsWorkflowsExpanded(value: Boolean) = actionsActions.setWorkflowsExpanded(value)
 
     fun setActionsRunsExpanded(value: Boolean) = actionsActions.setRunsExpanded(value)
+
+    fun setOverviewExpanded(value: Boolean) {
+        env.state.overviewExpanded = value
+        GitHubOverviewUiStateStore.setExpanded(value)
+    }
+
+    fun openOverviewEntrySheet() {
+        env.state.showOverviewEntrySheet = true
+        env.state.overviewExpanded = true
+        GitHubOverviewUiStateStore.setExpanded(true)
+    }
+
+    fun closeOverviewEntrySheet() {
+        env.state.showOverviewEntrySheet = false
+    }
+
+    fun setOverviewEntryVisible(entry: GitHubOverviewEntry, visible: Boolean) {
+        val current = env.state.overviewVisibleEntries.orDefaultGitHubOverviewEntries()
+        val next = if (visible) {
+            current + entry
+        } else {
+            (current - entry).ifEmpty { setOf(entry) }
+        }
+        env.state.overviewVisibleEntries = next
+        GitHubOverviewUiStateStore.setVisibleEntries(next)
+    }
+
+    fun resetOverviewEntries() {
+        val defaults = defaultGitHubOverviewEntries()
+        env.state.overviewVisibleEntries = defaults
+        GitHubOverviewUiStateStore.setVisibleEntries(defaults)
+    }
 
     fun refreshActionsRunStatus(runId: Long) = actionsActions.refreshActionsRunStatus(runId)
 

@@ -125,6 +125,17 @@ fun GitHubPage(
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             scope.launch { actions.reloadApps(forceRefresh = true) }
         }
+    val starImportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val importResult = GitHubStarImportActivity.parseResult(
+                resultCode = result.resultCode,
+                data = result.data
+            ) ?: return@rememberLauncherForActivityResult
+            actions.handleTrackMutationRefresh(
+                affectedTrackIds = importResult.affectedTrackIds,
+                removedTrackIds = importResult.removedTrackIds
+            )
+        }
     val tracksExportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -387,7 +398,11 @@ fun GitHubPage(
     }
 
     val onOpenStarImport: () -> Unit = {
-        GitHubStarImportActivity.launch(context)
+        runCatching {
+            starImportLauncher.launch(GitHubStarImportActivity.buildIntent(context))
+        }.onFailure {
+            GitHubStarImportActivity.launch(context)
+        }
     }
 
     val onConfirmTrackImport: () -> Unit = {

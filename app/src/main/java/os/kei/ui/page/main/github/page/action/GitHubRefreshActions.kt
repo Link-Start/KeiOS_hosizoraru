@@ -30,6 +30,8 @@ private const val GITHUB_REFRESH_UI_BATCH_SIZE = 4
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_BATCH_SIZE = 2
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS = 850L
+internal const val GITHUB_TRACK_MUTATION_IMMEDIATE_REFRESH_LIMIT = 8
+private const val GITHUB_TRACK_MUTATION_REFRESH_PARALLELISM = 2
 
 private data class GitHubRefreshProgressSnapshot(
     val current: Int,
@@ -147,12 +149,17 @@ internal class GitHubRefreshActions(
         }
     }
 
-    suspend fun syncSnapshotFromStore(forceRefreshApps: Boolean = true) {
+    suspend fun syncSnapshotFromStore(
+        forceRefreshApps: Boolean = true,
+        consumeRequestedRefreshes: Boolean = true
+    ) {
         applyTrackSnapshot(repository.loadTrackSnapshot())
         if (forceRefreshApps) {
             reloadApps(forceRefresh = true)
         }
-        refreshRequestedTracksIfNeeded()
+        if (consumeRequestedRefreshes) {
+            refreshRequestedTracksIfNeeded()
+        }
         val hasTracked = state.trackedItems.isNotEmpty()
         val hasCachedForTracked = state.trackedItems.any { item ->
             state.checkStates.containsKey(item.id)
@@ -161,6 +168,52 @@ internal class GitHubRefreshActions(
             !hasTracked -> OverviewRefreshState.Idle
             hasCachedForTracked -> OverviewRefreshState.Cached
             else -> OverviewRefreshState.Idle
+        }
+    }
+
+    suspend fun handleTrackMutationRefresh(
+        affectedTrackIds: Set<String>,
+        removedTrackIds: Set<String>
+    ) {
+        removedTrackIds.forEach { trackId ->
+            state.checkStates.remove(trackId)
+            state.trackedCardExpanded.remove(trackId)
+            state.trackedAddedAtById.remove(trackId)
+            state.clearAssetUiState(trackId)
+        }
+        syncSnapshotFromStore(
+            forceRefreshApps = true,
+            consumeRequestedRefreshes = false
+        )
+        val trackedById = state.trackedItems.associateBy { it.id }
+        val immediateIds = selectImmediateTrackMutationRefreshIds(
+            affectedTrackIds = affectedTrackIds,
+            validTrackIds = trackedById.keys
+        )
+        if (immediateIds.isEmpty()) return
+        repository.consumeTrackRefreshRequests(immediateIds.toSet())
+        val semaphore = Semaphore(GITHUB_TRACK_MUTATION_REFRESH_PARALLELISM)
+        supervisorScope {
+            immediateIds.mapNotNull { trackedById[it] }.map { item ->
+                launch {
+                    semaphore.withPermit {
+                        refreshItemNow(
+                            item = item,
+                            showToastOnError = false,
+                            keepCurrentVisualWhileRefreshing = true,
+                            profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast
+                        )
+                    }
+                }
+            }.joinAll()
+        }
+        val hasCachedForTracked = state.trackedItems.any { item ->
+            state.checkStates.containsKey(item.id)
+        }
+        state.overviewRefreshState = if (hasCachedForTracked) {
+            OverviewRefreshState.Cached
+        } else {
+            OverviewRefreshState.Idle
         }
     }
 
@@ -505,4 +558,19 @@ internal class GitHubRefreshActions(
             0L
         }
     }
+}
+
+internal fun selectImmediateTrackMutationRefreshIds(
+    affectedTrackIds: Set<String>,
+    validTrackIds: Set<String>,
+    limit: Int = GITHUB_TRACK_MUTATION_IMMEDIATE_REFRESH_LIMIT
+): List<String> {
+    if (affectedTrackIds.isEmpty() || validTrackIds.isEmpty() || limit <= 0) return emptyList()
+    return affectedTrackIds
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() && it in validTrackIds }
+        .distinct()
+        .take(limit)
+        .toList()
 }

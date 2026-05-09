@@ -175,7 +175,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                 },
                 onHeaderLongClick = { onOpenTrackSheetForEdit(item) },
                 headerActions = {
-                    val state = checkStates[item.id] ?: VersionCheckUi()
+                    val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
                     val isItemRefreshLoading = itemRefreshLoading[item.id] == true
                     val alwaysLatestReleaseDownload = item.alwaysShowLatestReleaseDownloadButton
                     val latestReleaseAccent = Color(0xFF06B6D4)
@@ -255,7 +255,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     }
                 }
             ) {
-                val state = checkStates[item.id] ?: VersionCheckUi()
+                val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
                 AppInfoListBody(
                     modifier = Modifier.fillMaxWidth(),
                     verticalSpacing = CardLayoutRhythm.denseSectionGap
@@ -269,7 +269,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             onOpenExternalUrl(GitHubVersionUtils.buildReleaseUrl(item.owner, item.repo))
                         }
                     )
-                    val localText = formatLocalVersionText(context, state)
+                    val localText = formatLocalVersionText(context, checkStates[item.id])
                     if (localText != null) {
                         VersionValueRow(
                             label = stringResource(R.string.github_item_label_local_version),
@@ -567,8 +567,9 @@ private fun GitHubTrackedItemMenuAction(
 
 internal fun formatLocalVersionText(
     context: Context,
-    state: VersionCheckUi
+    state: VersionCheckUi?
 ): String? {
+    state ?: return null
     val rawLocalVersion = state.localVersion.trim()
     if (state.isLocalAppUninstalled()) {
         return context.getString(R.string.github_item_value_local_version_uninstalled)
@@ -583,6 +584,14 @@ internal fun formatLocalVersionText(
     } else {
         normalizedLocalVersion
     }
+}
+
+private fun pendingVersionCheckUi(context: Context): VersionCheckUi {
+    val pending = context.getString(R.string.github_item_value_check_pending)
+    return VersionCheckUi(
+        localVersion = pending,
+        message = pending
+    )
 }
 
 @Composable

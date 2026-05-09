@@ -15,11 +15,13 @@ import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
 import os.kei.feature.github.domain.GitHubStarImportApkVerifier
+import os.kei.feature.github.domain.GitHubStarImportApplier
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
+import os.kei.feature.github.model.StarImportApplyResult
 
 internal data class StarImportLoadRequest(
     val source: StarImportUiSource,
@@ -154,13 +156,13 @@ internal class GitHubStarImportPageRepository(
         context: Context,
         candidates: List<GitHubRepositoryImportCandidate>,
         verificationStates: Map<String, StarImportApkVerificationUiState>
-    ): Int {
+    ): StarImportApplyResult {
         val selectedForImport = applyVerifiedPackageNamesToStarImportCandidates(
             candidates = candidates,
             verificationStates = verificationStates
         )
         return withContext(ioDispatcher) {
-            applyStarImport(
+            GitHubStarImportApplier.apply(
                 context = context,
                 candidates = selectedForImport
             )

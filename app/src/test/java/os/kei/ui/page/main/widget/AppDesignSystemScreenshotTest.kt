@@ -19,10 +19,19 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.feature.github.model.GitHubRepositoryCandidate
+import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
+import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
+import os.kei.feature.github.model.GitHubRepositoryImportCandidate
+import os.kei.feature.github.model.GitHubStarImportApkVerification
+import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
+import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
 import os.kei.ui.page.main.github.VersionValueRow
+import os.kei.ui.page.main.github.importer.StarImportApkVerificationUiState
+import os.kei.ui.page.main.github.importer.StarImportCandidateCard
 import os.kei.ui.page.main.github.importer.StarImportConflictStrategy
 import os.kei.ui.page.main.github.importer.StarImportListControlCard
 import os.kei.ui.page.main.github.importer.StarImportViewFilter
@@ -425,6 +434,61 @@ class AppDesignSystemScreenshotTest {
                             onSelectVisible = {},
                             onClearSelection = {},
                             onImport = {}
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun githubStarImportCandidateCardLight() {
+        val repository = GitHubRepositoryCandidate(
+            owner = "Miuzarte",
+            repo = "ScrcpyForAndroid",
+            repoUrl = "https://github.com/Miuzarte/ScrcpyForAndroid",
+            description = "Android scrcpy client with APK releases",
+            language = "Kotlin",
+            starCount = 1280,
+            fork = true,
+            sourceType = GitHubRepositoryDiscoverySourceType.StarList,
+            matchReason = GitHubRepositoryCandidateMatchReason.Starred
+        )
+        val candidate = GitHubRepositoryImportCandidate(
+            repository = repository,
+            trackedApp = GitHubTrackedApp(
+                repoUrl = repository.repoUrl,
+                owner = repository.owner,
+                repo = repository.repo,
+                packageName = "io.github.miuzarte.scrcpyforandroid",
+                appLabel = "ScrcpyForAndroid"
+            ),
+            alreadyTracked = false,
+            score = 86
+        )
+        val verification = StarImportApkVerificationUiState(
+            verification = GitHubStarImportApkVerification(
+                owner = repository.owner,
+                repo = repository.repo,
+                status = GitHubStarImportApkVerificationStatus.HasApk,
+                apkAssetCount = 3,
+                packageName = "io.github.miuzarte.scrcpyforandroid"
+            )
+        )
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_candidate_card_light.png") {
+            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFF3F4F6))
+                            .padding(16.dp)
+                    ) {
+                        StarImportCandidateCard(
+                            candidate = candidate,
+                            selected = true,
+                            trackedSelectable = false,
+                            apkVerificationState = verification,
+                            onToggle = {}
                         )
                     }
                 }

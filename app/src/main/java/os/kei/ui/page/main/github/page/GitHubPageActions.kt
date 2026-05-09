@@ -142,6 +142,18 @@ internal class GitHubPageActions(
     suspend fun syncTrackSnapshotFromStore(forceRefreshApps: Boolean = true) =
         refreshActions.syncSnapshotFromStore(forceRefreshApps)
 
+    fun handleTrackMutationRefresh(
+        affectedTrackIds: Set<String>,
+        removedTrackIds: Set<String>
+    ) {
+        env.scope.launch {
+            refreshActions.handleTrackMutationRefresh(
+                affectedTrackIds = affectedTrackIds,
+                removedTrackIds = removedTrackIds
+            )
+        }
+    }
+
     suspend fun syncActiveShareImportFlowFromStore() {
         val flow = env.repository.loadActiveShareImportFlow()
         env.state.pendingShareImportPreview = flow.preview

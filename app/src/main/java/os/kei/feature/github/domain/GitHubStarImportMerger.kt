@@ -1,0 +1,102 @@
+package os.kei.feature.github.domain
+
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.StarImportApplyResult
+import java.util.Locale
+
+internal data class GitHubStarImportMergeResult(
+    val items: List<GitHubTrackedApp>,
+    val result: StarImportApplyResult
+)
+
+internal object GitHubStarImportMerger {
+    fun merge(
+        existingItems: List<GitHubTrackedApp>,
+        importedItems: List<GitHubTrackedApp>
+    ): GitHubStarImportMergeResult {
+        if (importedItems.isEmpty()) {
+            return GitHubStarImportMergeResult(
+                items = existingItems,
+                result = StarImportApplyResult()
+            )
+        }
+
+        val mergedItems = existingItems.toMutableList()
+        val indexById = mergedItems.withIndex()
+            .associate { it.value.id to it.index }
+            .toMutableMap()
+        val repoOnlyIndexByRepo = mergedItems.withIndex()
+            .filter { (_, item) -> item.packageName.trim().isBlank() }
+            .associate { (index, item) -> item.repoKey() to index }
+            .toMutableMap()
+
+        var addedCount = 0
+        var updatedCount = 0
+        var unchangedCount = 0
+        val affectedTrackIds = linkedSetOf<String>()
+        val removedTrackIds = linkedSetOf<String>()
+        val affectedPackages = linkedSetOf<String>()
+
+        importedItems.forEach { item ->
+            val exactIndex = indexById[item.id]
+            val fallbackIndex = if (exactIndex == null && item.packageName.trim().isNotBlank()) {
+                repoOnlyIndexByRepo[item.repoKey()]
+            } else {
+                null
+            }
+
+            when {
+                exactIndex != null -> {
+                    if (mergedItems[exactIndex] == item) {
+                        unchangedCount += 1
+                    } else {
+                        mergedItems[exactIndex] = item
+                        updatedCount += 1
+                        affectedTrackIds += item.id
+                        item.packageName.trim().takeIf { it.isNotBlank() }
+                            ?.let(affectedPackages::add)
+                    }
+                }
+
+                fallbackIndex != null -> {
+                    val previous = mergedItems[fallbackIndex]
+                    mergedItems[fallbackIndex] = item
+                    indexById.remove(previous.id)
+                    indexById[item.id] = fallbackIndex
+                    repoOnlyIndexByRepo.remove(previous.repoKey())
+                    updatedCount += 1
+                    removedTrackIds += previous.id
+                    affectedTrackIds += item.id
+                    item.packageName.trim().takeIf { it.isNotBlank() }?.let(affectedPackages::add)
+                }
+
+                else -> {
+                    mergedItems += item
+                    indexById[item.id] = mergedItems.lastIndex
+                    if (item.packageName.trim().isBlank()) {
+                        repoOnlyIndexByRepo[item.repoKey()] = mergedItems.lastIndex
+                    }
+                    addedCount += 1
+                    affectedTrackIds += item.id
+                    item.packageName.trim().takeIf { it.isNotBlank() }?.let(affectedPackages::add)
+                }
+            }
+        }
+
+        return GitHubStarImportMergeResult(
+            items = mergedItems,
+            result = StarImportApplyResult(
+                addedCount = addedCount,
+                updatedCount = updatedCount,
+                unchangedCount = unchangedCount,
+                affectedTrackIds = affectedTrackIds,
+                removedTrackIds = removedTrackIds,
+                affectedPackages = affectedPackages
+            )
+        )
+    }
+}
+
+private fun GitHubTrackedApp.repoKey(): String {
+    return "${owner.trim().lowercase(Locale.ROOT)}/${repo.trim().lowercase(Locale.ROOT)}"
+}

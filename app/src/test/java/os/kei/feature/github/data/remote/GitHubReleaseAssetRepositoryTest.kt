@@ -57,7 +57,7 @@ class GitHubReleaseAssetRepositoryTest {
 
                         ## What's Changed
 
-                        - Added installer flow
+                        - Added **installer** flow
                         - Fixed cache refresh
                         """.trimIndent(),
                         bundle.releaseNotesBody

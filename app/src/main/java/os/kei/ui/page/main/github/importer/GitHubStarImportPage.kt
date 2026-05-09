@@ -18,6 +18,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.feature.github.model.StarImportApplyResult
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -29,7 +30,10 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @Composable
-internal fun GitHubStarImportPage(onClose: () -> Unit) {
+internal fun GitHubStarImportPage(
+    onImported: (StarImportApplyResult) -> Unit,
+    onClose: () -> Unit
+) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -55,9 +59,13 @@ internal fun GitHubStarImportPage(onClose: () -> Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is GitHubStarImportEvent.Imported -> {
+                    onImported(event.result)
                     Toast.makeText(
                         context,
-                        context.getString(R.string.github_star_import_toast_imported, event.count),
+                        context.getString(
+                            R.string.github_star_import_toast_imported,
+                            event.result.changedCount
+                        ),
                         Toast.LENGTH_SHORT
                     ).show()
                 }

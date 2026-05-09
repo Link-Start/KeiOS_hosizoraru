@@ -1,10 +1,8 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
@@ -12,6 +10,7 @@ import os.kei.feature.github.domain.GitHubPackageNameValidator
 import os.kei.feature.github.domain.GitHubPackageRepositoryResolver
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
 import os.kei.feature.github.domain.GitHubStarImportApkVerifier
+import os.kei.feature.github.domain.GitHubStarImportApplier
 import os.kei.feature.github.domain.GitHubStarImportClassifier
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
@@ -216,7 +215,7 @@ internal class McpGitHubDiscoveryTools(
         )
     }
 
-    private fun buildStarImportText(
+    private suspend fun buildStarImportText(
         arguments: Map<String, Any?>,
         apply: Boolean
     ): String {
@@ -329,35 +328,11 @@ internal class McpGitHubDiscoveryTools(
         }
     }
 
-    private fun applyGitHubStarImport(candidates: List<GitHubRepositoryImportCandidate>): Int {
-        if (candidates.isEmpty()) return 0
-        val selectedItems = candidates.map { it.trackedApp }
-        val existing = GitHubTrackStore.load()
-        val merged = existing.toMutableList()
-        val indexById = merged.withIndex().associate { it.value.id to it.index }.toMutableMap()
-        var changedCount = 0
-        selectedItems.forEach { item ->
-            val existingIndex = indexById[item.id]
-            if (existingIndex == null) {
-                merged += item
-                indexById[item.id] = merged.lastIndex
-                changedCount += 1
-            } else if (merged[existingIndex] != item) {
-                merged[existingIndex] = item
-                changedCount += 1
-            }
-        }
-        if (changedCount == 0) return 0
-        GitHubTrackStore.save(merged)
-        selectedItems.forEach { item ->
-            GitHubTrackStoreSignals.requestTrackRefresh(
-                trackId = item.id,
-                notifyChangeSignal = false
-            )
-        }
-        GitHubTrackStoreSignals.notifyChanged()
-        AppBackgroundScheduler.scheduleGitHubRefresh(appContext)
-        return changedCount
+    private suspend fun applyGitHubStarImport(candidates: List<GitHubRepositoryImportCandidate>): Int {
+        return GitHubStarImportApplier.apply(
+            context = appContext,
+            candidates = candidates
+        ).changedCount
     }
 
 }

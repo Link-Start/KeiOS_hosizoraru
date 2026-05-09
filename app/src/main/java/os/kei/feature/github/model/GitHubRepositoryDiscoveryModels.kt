@@ -67,6 +67,21 @@ data class GitHubRepositoryImportCandidate(
     val score: Int
 )
 
+data class StarImportApplyResult(
+    val addedCount: Int = 0,
+    val updatedCount: Int = 0,
+    val unchangedCount: Int = 0,
+    val affectedTrackIds: Set<String> = emptySet(),
+    val removedTrackIds: Set<String> = emptySet(),
+    val affectedPackages: Set<String> = emptySet()
+) {
+    val changedCount: Int
+        get() = addedCount + updatedCount
+
+    val hasChanges: Boolean
+        get() = changedCount > 0 || removedTrackIds.isNotEmpty()
+}
+
 enum class GitHubStarImportQuality {
     LikelyAndroid,
     NeedsReview,

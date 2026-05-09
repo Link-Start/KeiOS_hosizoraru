@@ -25,6 +25,7 @@ import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
+import os.kei.feature.github.model.StarImportApplyResult
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class GitHubStarImportUiState(
@@ -79,7 +80,7 @@ internal data class GitHubStarImportUiState(
 }
 
 internal sealed interface GitHubStarImportEvent {
-    data class Imported(val count: Int) : GitHubStarImportEvent
+    data class Imported(val result: StarImportApplyResult) : GitHubStarImportEvent
     data object Close : GitHubStarImportEvent
 }
 
@@ -424,9 +425,9 @@ internal class GitHubStarImportViewModel(
                 )
             }
             _uiState.update { it.copy(importing = false) }
-            result.onSuccess { count ->
+            result.onSuccess { applyResult ->
                 GitHubStarImportDraftStore.clearSelection()
-                _events.emit(GitHubStarImportEvent.Imported(count))
+                _events.emit(GitHubStarImportEvent.Imported(applyResult))
                 _events.emit(GitHubStarImportEvent.Close)
             }.onFailure { throwable ->
                 _uiState.update {

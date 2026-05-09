@@ -4,6 +4,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
+import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
@@ -34,6 +35,7 @@ internal class GitHubTrackActions(
         }
         state.appSearch = ""
         state.pickerExpanded = false
+        state.repoScanCandidates = emptyList()
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.showAddSheet = true
@@ -84,6 +86,7 @@ internal class GitHubTrackActions(
             return
         }
         state.packageNameScanRunning = true
+        state.repoScanCandidates = emptyList()
         scope.launch {
             try {
                 val result = repository.scanPackageNameFromLatestStableApk(
@@ -121,6 +124,7 @@ internal class GitHubTrackActions(
             env.toast(R.string.github_toast_repo_scan_requires_package)
             return
         }
+        state.repoScanCandidates = emptyList()
         val appLabel = state.selectedApp?.label?.trim().orEmpty()
             .ifBlank {
                 state.appList.firstOrNull { app ->
@@ -151,21 +155,30 @@ internal class GitHubTrackActions(
                     env.toast(R.string.github_toast_repo_scan_no_match)
                     return@launch
                 }
-                refreshActions.reloadApps(forceRefresh = true)
-                state.repoUrlInput = candidate.trackedApp.repoUrl
-                state.packageNameInput = candidate.trackedApp.packageName
-                state.selectedApp = state.appList.firstOrNull { app ->
-                    app.packageName.equals(candidate.trackedApp.packageName, ignoreCase = true)
-                } ?: state.selectedApp
+                state.repoScanCandidates = result.matchedCandidates
                 env.toast(
-                    R.string.github_toast_repo_scan_success,
-                    candidate.repository.owner,
-                    candidate.repository.repo
+                    R.string.github_toast_repo_scan_candidates_found,
+                    result.matchedCandidates.size
                 )
             } finally {
                 state.repoUrlScanRunning = false
             }
         }
+    }
+
+    fun selectRepoScanCandidate(candidate: GitHubPackageRepositoryScanCandidate) {
+        state.repoUrlInput = candidate.trackedApp.repoUrl
+        state.packageNameInput = candidate.trackedApp.packageName
+        state.selectedApp = state.appList.firstOrNull { app ->
+            app.packageName.equals(candidate.trackedApp.packageName, ignoreCase = true)
+        } ?: state.selectedApp?.takeIf { selected ->
+            selected.packageName.equals(candidate.trackedApp.packageName, ignoreCase = true)
+        }
+        env.toast(
+            R.string.github_toast_repo_scan_success,
+            candidate.repository.owner,
+            candidate.repository.repo
+        )
     }
 
     fun applyTrackSheet() {

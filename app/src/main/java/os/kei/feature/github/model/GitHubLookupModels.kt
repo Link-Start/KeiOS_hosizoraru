@@ -148,7 +148,7 @@ fun GitHubLookupConfig.githubProfileSourceSignature(
 
 fun GitHubLookupConfig.githubAssetSourceSignature(): String {
     return listOf(
-        "asset-v3",
+        "asset-v4",
         selectedStrategy.storageId,
         actionsStrategy.storageId,
         apiToken.trim().isNotBlank().toString(),

@@ -181,6 +181,7 @@
     <string name="github_toast_track_import_no_valid">The import file contains no valid tracked projects</string>
     <string name="github_toast_track_imported_summary">Import completed: added %1$d, updated %2$d, unchanged %3$d, ignored %4$d</string>
     <string name="github_toast_repo_scan_success">Project URL scanned: %1$s/%2$s</string>
+    <string name="github_toast_repo_scan_candidates_found">Found %1$d project candidates</string>
     <string name="github_toast_repo_scan_no_match">No matching project URL found</string>
     <string name="github_toast_repo_scan_failed">Project URL scan failed: %1$s</string>
     <string name="github_toast_package_scan_success">Package name scanned: %1$s</string>
@@ -568,6 +569,14 @@
     <string name="github_track_sheet_section_package_app">Package &amp; local app</string>
     <string name="github_track_sheet_input_repo">GitHub project URL</string>
     <string name="github_track_sheet_summary_repo">Use a repository or release URL. The project URL can also be scanned from the package name.</string>
+    <string name="github_track_sheet_section_repo_candidates">Project candidates</string>
+    <string name="github_track_sheet_repo_candidates_summary">These repositories were verified against the same package name. Select one to fill the draft.</string>
+    <string name="github_track_sheet_repo_candidate_count_format">%1$d found</string>
+    <string name="github_track_sheet_repo_candidate_recommended">Recommended</string>
+    <string name="github_track_sheet_repo_candidate_selected">Selected</string>
+    <string name="github_track_sheet_repo_candidate_fork">Fork</string>
+    <string name="github_track_sheet_repo_candidate_archived">Archived</string>
+    <string name="github_track_sheet_repo_candidate_stars_format">★ %1$s</string>
     <string name="github_track_sheet_input_app_filter_title">Filter local apps</string>
     <string name="github_track_sheet_input_app_filter">Name or package name</string>
     <string name="github_track_sheet_input_package_title">Package name (optional)</string>

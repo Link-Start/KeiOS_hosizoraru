@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
@@ -395,6 +396,9 @@ internal class GitHubPageActions(
     fun scanPackageNameFromRepo() = trackActions.scanPackageNameFromRepo()
 
     fun scanRepoUrlFromPackage() = trackActions.scanRepoUrlFromPackage()
+
+    fun selectRepoScanCandidate(candidate: GitHubPackageRepositoryScanCandidate) =
+        trackActions.selectRepoScanCandidate(candidate)
 
     fun applyTrackSheet() = trackActions.applyTrackSheet()
 

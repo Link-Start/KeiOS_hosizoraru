@@ -78,10 +78,27 @@ internal fun buildSkillSections(
                 currentItems += SkillSectionItem.Bullet(block.text)
             }
 
+            is AppMarkdownBlock.Task -> {
+                ensureSectionStarted()
+                currentItems += SkillSectionItem.Bullet("${if (block.checked) "[x]" else "[ ]"} ${block.text}")
+            }
+
             is AppMarkdownBlock.Ordered -> {
                 ensureSectionStarted()
                 currentItems += SkillSectionItem.Ordered(block.index, block.text)
             }
+
+            is AppMarkdownBlock.Quote -> {
+                ensureSectionStarted()
+                currentItems += SkillSectionItem.Paragraph(block.text)
+            }
+
+            is AppMarkdownBlock.TableRow -> {
+                ensureSectionStarted()
+                currentItems += SkillSectionItem.Paragraph(block.cells.joinToString(" · "))
+            }
+
+            AppMarkdownBlock.HorizontalRule -> Unit
 
             is AppMarkdownBlock.Code -> {
                 ensureSectionStarted()

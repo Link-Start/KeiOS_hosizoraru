@@ -45,6 +45,33 @@ class AppMarkdownParserTest {
                 )
             }
         )
+        assertTrue(
+            parseAppMarkdownInlineTokens("[`v1...v2`](https://github.com/demo/app/compare/v1...v2)").any {
+                it == AppMarkdownInlineToken.Link(
+                    label = "v1...v2",
+                    url = "https://github.com/demo/app/compare/v1...v2"
+                )
+            }
+        )
+    }
+
+    @Test
+    fun inlineTextAddsClickableLinkAnnotations() {
+        val annotated = buildAppMarkdownInlineText(
+            text = "Full Changelog: [v1...v2](https://github.com/demo/app/compare/v1...v2)",
+            baseStyle = androidx.compose.ui.text.SpanStyle(),
+            accentStyle = androidx.compose.ui.text.SpanStyle(),
+            linkStyle = androidx.compose.ui.text.SpanStyle(),
+            onOpenLink = {}
+        )
+
+        assertTrue(
+            annotated.getLinkAnnotations(16, annotated.length)
+                .any {
+                    (it.item as? androidx.compose.ui.text.LinkAnnotation.Url)?.url ==
+                            "https://github.com/demo/app/compare/v1...v2"
+                }
+        )
     }
 
     @Test
@@ -59,5 +86,64 @@ class AppMarkdownParserTest {
 
         assertEquals(AppMarkdownBlock.Paragraph("Added media notification support"), blocks[0])
         assertEquals(AppMarkdownBlock.Paragraph("Fixed release notes rendering"), blocks[1])
+    }
+
+    @Test
+    fun githubReleaseNotesRichMarkdownKeepsInteractiveSignals() {
+        val blocks = parseAppMarkdownBlocks(
+            """
+                - [x] Signed universal APK
+                > Install from a trusted source.
+                ---
+                Full Changelog: [v5.4.3...v5.5.0-alpha02](https://github.com/open-ani/animeko/compare/v5.4.3...v5.5.0-alpha02)
+
+                | 处理器架构 | 下载 |
+                | --- | --- |
+                | universal | [主线](https://d.myani.org/app.apk) / [GitHub](https://github.com/open-ani/animeko/releases/download/v5.5.0-alpha02/app.apk) |
+
+                ### Android 细分架构下载
+                如果不知道自己是什么架构，建议下载 `universal` 版本。
+                https://github.com/open-ani/animeko/releases
+                <https://github.com/open-ani/animeko/issues>
+                ![QR code](https://example.com/qr.png)
+            """.trimIndent()
+        )
+
+        assertTrue(blocks.any { it == AppMarkdownBlock.Task(true, "Signed universal APK") })
+        assertTrue(blocks.any { it == AppMarkdownBlock.Quote("Install from a trusted source.") })
+        assertTrue(blocks.any { it == AppMarkdownBlock.HorizontalRule })
+        assertTrue(
+            blocks.any {
+                it is AppMarkdownBlock.TableRow &&
+                        it.header &&
+                        it.cells == listOf("处理器架构", "下载")
+            }
+        )
+        assertTrue(blocks.any { it == AppMarkdownBlock.Heading(3, "Android 细分架构下载") })
+
+        val tokens = parseAppMarkdownInlineTokens(
+            blocks.filterIsInstance<AppMarkdownBlock.Paragraph>().joinToString(" ") { it.text }
+        )
+        assertTrue(
+            tokens.any {
+                it == AppMarkdownInlineToken.Link(
+                    "v5.4.3...v5.5.0-alpha02",
+                    "https://github.com/open-ani/animeko/compare/v5.4.3...v5.5.0-alpha02"
+                )
+            }
+        )
+        assertTrue(tokens.any { it == AppMarkdownInlineToken.Code("universal") })
+        assertTrue(tokens.any {
+            it == AppMarkdownInlineToken.Link(
+                "QR code",
+                "https://example.com/qr.png"
+            )
+        })
+        assertTrue(tokens.any {
+            it == AppMarkdownInlineToken.Link(
+                "https://github.com/open-ani/animeko/issues",
+                "https://github.com/open-ani/animeko/issues"
+            )
+        })
     }
 }

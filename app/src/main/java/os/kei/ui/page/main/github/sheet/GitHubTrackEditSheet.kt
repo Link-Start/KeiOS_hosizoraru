@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
@@ -75,6 +76,7 @@ internal fun GitHubTrackEditSheet(
     backdrop: LayerBackdrop,
     editingTrackedItem: GitHubTrackedApp?,
     repoUrlInput: String,
+    repoScanCandidates: List<GitHubPackageRepositoryScanCandidate>,
     appSearch: String,
     packageNameInput: String,
     repoUrlScanRunning: Boolean,
@@ -92,6 +94,7 @@ internal fun GitHubTrackEditSheet(
     onPackageNameInputChange: (String) -> Unit,
     onScanRepoUrl: () -> Unit,
     onScanPackageName: () -> Unit,
+    onRepoScanCandidateSelected: (GitHubPackageRepositoryScanCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
@@ -165,6 +168,7 @@ internal fun GitHubTrackEditSheet(
                 GitHubTrackEditFormContent(
                     backdrop = backdrop,
                     repoUrlInput = repoUrlInput,
+                    repoScanCandidates = repoScanCandidates,
                     packageNameInput = packageNameInput,
                     repoUrlScanRunning = repoUrlScanRunning,
                     packageNameScanRunning = packageNameScanRunning,
@@ -175,6 +179,7 @@ internal fun GitHubTrackEditSheet(
                     onPackageNameInputChange = onPackageNameInputChange,
                     onScanRepoUrl = onScanRepoUrl,
                     onScanPackageName = onScanPackageName,
+                    onRepoScanCandidateSelected = onRepoScanCandidateSelected,
                     onPickerExpandedChange = onPickerExpandedChange,
                     onPreferPreReleaseInputChange = onPreferPreReleaseInputChange,
                     onAlwaysShowLatestReleaseDownloadButtonInputChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
@@ -447,6 +452,7 @@ private fun InstalledAppItem.installSourceSortKey(): String {
 private fun GitHubTrackEditFormContent(
     backdrop: LayerBackdrop,
     repoUrlInput: String,
+    repoScanCandidates: List<GitHubPackageRepositoryScanCandidate>,
     packageNameInput: String,
     repoUrlScanRunning: Boolean,
     packageNameScanRunning: Boolean,
@@ -457,6 +463,7 @@ private fun GitHubTrackEditFormContent(
     onPackageNameInputChange: (String) -> Unit,
     onScanRepoUrl: () -> Unit,
     onScanPackageName: () -> Unit,
+    onRepoScanCandidateSelected: (GitHubPackageRepositoryScanCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
@@ -504,6 +511,13 @@ private fun GitHubTrackEditFormContent(
             SheetDescriptionText(
                 text = stringResource(R.string.github_track_sheet_summary_repo)
             )
+            if (repoScanCandidates.isNotEmpty()) {
+                RepositoryScanCandidateList(
+                    candidates = repoScanCandidates,
+                    selectedRepoUrl = repoUrlInput,
+                    onCandidateClick = onRepoScanCandidateSelected
+                )
+            }
         }
 
         SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))

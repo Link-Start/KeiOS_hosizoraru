@@ -4,7 +4,11 @@ internal sealed interface AppMarkdownBlock {
     data class Heading(val level: Int, val text: String) : AppMarkdownBlock
     data class Paragraph(val text: String) : AppMarkdownBlock
     data class Bullet(val text: String) : AppMarkdownBlock
+    data class Task(val checked: Boolean, val text: String) : AppMarkdownBlock
     data class Ordered(val index: Int, val text: String) : AppMarkdownBlock
+    data class Quote(val text: String) : AppMarkdownBlock
+    data class TableRow(val cells: List<String>, val header: Boolean) : AppMarkdownBlock
+    data object HorizontalRule : AppMarkdownBlock
     data class Code(val text: String) : AppMarkdownBlock
 }
 

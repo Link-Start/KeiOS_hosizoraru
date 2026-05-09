@@ -65,7 +65,8 @@ internal fun GitHubDecisionAssistDetailSheet(
     healthRefreshing: Boolean = false,
     onDismissRequest: () -> Unit,
     onRefreshHealth: (GitHubTrackedApp) -> Unit,
-    onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit
+    onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit,
+    onOpenExternalUrl: (String) -> Unit
 ) {
     val detail = request ?: return
     val title = when (detail.type) {
@@ -122,6 +123,7 @@ internal fun GitHubDecisionAssistDetailSheet(
                 assetBundle = assetBundle,
                 assetLoading = assetLoading,
                 assetError = assetError,
+                onOpenExternalUrl = onOpenExternalUrl
             )
         }
     }
@@ -288,7 +290,8 @@ private fun GitHubReleaseNotesDetailContent(
     state: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
     assetLoading: Boolean,
-    assetError: String
+    assetError: String,
+    onOpenExternalUrl: (String) -> Unit
 ) {
     val lines = buildGitHubReleaseNotesDetailLines(
         item = item,
@@ -322,14 +325,15 @@ private fun GitHubReleaseNotesDetailContent(
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
         SheetSectionCard(verticalSpacing = 10.dp) {
             if (rawMarkdown.isNotBlank()) {
-                CompositionLocalProvider(LocalTextCopyExpandedOverride provides true) {
+                CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                     AppMarkdownContent(
                         markdown = rawMarkdown,
                         titleColor = MiuixTheme.colorScheme.onBackground,
                         subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         accentColor = MiuixTheme.colorScheme.primary,
                         codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f),
-                        preserveLineBreaks = true
+                        preserveLineBreaks = true,
+                        onOpenLink = onOpenExternalUrl
                     )
                 }
             } else if (lines.isEmpty()) {

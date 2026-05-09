@@ -87,6 +87,50 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
+    fun `resolver keeps multiple package-matched repositories for user choice`() {
+        val official = candidate(
+            owner = "Absinthe",
+            repo = "LibChecker",
+            description = "Android app com.absinthe.libchecker",
+            stars = 12_000
+        )
+        val fork = candidate(
+            owner = "forker",
+            repo = "LibChecker",
+            description = "LibChecker fork for com.absinthe.libchecker",
+            stars = 240
+        ).copy(fork = true)
+        val discovery = FakeDiscoverySource(listOf(fork, official))
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = mapOf(
+                "absinthe/libchecker" to "com.absinthe.libchecker",
+                "forker/libchecker" to "com.absinthe.libchecker"
+            )
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "com.absinthe.libchecker",
+                appLabel = "LibChecker",
+                lookupConfig = GitHubLookupConfig(),
+                candidateLimit = 10,
+                verificationLimit = 4
+            )
+        ).getOrThrow()
+
+        assertEquals(2, result.matchedCandidates.size)
+        assertEquals(
+            listOf("Absinthe/LibChecker", "forker/LibChecker"),
+            result.matchedCandidates.map { it.repository.fullName }
+        )
+        assertTrue(result.matchedCandidates[1].repository.fork)
+    }
+
+    @Test
     fun `resolver rejects invalid package name before repository search`() {
         val discovery = FakeDiscoverySource(emptyList())
         val resolver = GitHubPackageRepositoryResolver(

@@ -192,7 +192,11 @@ private fun String.toReleaseNotesPreviewLines(): List<String> {
                 is AppMarkdownBlock.Heading -> sequenceOf(block.text)
                 is AppMarkdownBlock.Paragraph -> block.text.lines().asSequence()
                 is AppMarkdownBlock.Bullet -> sequenceOf(block.text)
+                is AppMarkdownBlock.Task -> sequenceOf(block.text)
                 is AppMarkdownBlock.Ordered -> sequenceOf(block.text)
+                is AppMarkdownBlock.Quote -> sequenceOf(block.text)
+                is AppMarkdownBlock.TableRow -> block.cells.asSequence()
+                AppMarkdownBlock.HorizontalRule -> emptySequence()
                 is AppMarkdownBlock.Code -> emptySequence()
             }
         }

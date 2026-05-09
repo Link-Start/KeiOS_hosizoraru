@@ -31,6 +31,7 @@ import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -57,6 +58,7 @@ internal class GitHubPageState(
     var showFailedOnly by mutableStateOf(false)
     var repoUrlInput by mutableStateOf("")
     var packageNameInput by mutableStateOf("")
+    var repoScanCandidates by mutableStateOf<List<GitHubPackageRepositoryScanCandidate>>(emptyList())
     var appSearch by mutableStateOf("")
     var pickerExpanded by mutableStateOf(false)
     var showAddSheet by mutableStateOf(false)
@@ -366,6 +368,7 @@ internal class GitHubPageState(
         editingTrackedItem = null
         repoUrlInput = ""
         packageNameInput = ""
+        repoScanCandidates = emptyList()
         selectedApp = null
         appSearch = ""
         pickerExpanded = false

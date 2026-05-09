@@ -209,7 +209,8 @@ internal fun GitHubPageSheetHost(
                 itemState = itemState,
                 clearCache = true
             )
-        }
+        },
+        onOpenExternalUrl = actions::openExternalUrl
     )
 
     GitHubActionsArtifactDetailSheet(
@@ -246,6 +247,7 @@ internal fun GitHubPageSheetHost(
         backdrop = backdrops.sheet,
         editingTrackedItem = state.editingTrackedItem,
         repoUrlInput = state.repoUrlInput,
+        repoScanCandidates = state.repoScanCandidates,
         appSearch = state.appSearch,
         packageNameInput = state.packageNameInput,
         repoUrlScanRunning = state.repoUrlScanRunning,
@@ -258,10 +260,14 @@ internal fun GitHubPageSheetHost(
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
         onDismissRequest = actions::dismissTrackSheet,
         onApply = actions::applyTrackSheet,
-        onRepoUrlInputChange = { state.repoUrlInput = it },
+        onRepoUrlInputChange = {
+            state.repoUrlInput = it
+            state.repoScanCandidates = emptyList()
+        },
         onAppSearchChange = { state.appSearch = it },
         onPackageNameInputChange = { input ->
             state.packageNameInput = input
+            state.repoScanCandidates = emptyList()
             val selected = state.selectedApp
             val normalizedInput = input.trim()
             if (selected != null) {
@@ -274,10 +280,12 @@ internal fun GitHubPageSheetHost(
         },
         onScanRepoUrl = actions::scanRepoUrlFromPackage,
         onScanPackageName = actions::scanPackageNameFromRepo,
+        onRepoScanCandidateSelected = actions::selectRepoScanCandidate,
         onPickerExpandedChange = actions::setTrackAppPickerExpanded,
         onRefreshAppList = actions::refreshTrackAppList,
         onSelectedAppChange = { app ->
             state.selectedApp = app
+            state.repoScanCandidates = emptyList()
             if (app != null) {
                 state.packageNameInput = app.packageName
             }

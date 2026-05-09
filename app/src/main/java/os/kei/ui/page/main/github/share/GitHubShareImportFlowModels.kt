@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.share
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import os.kei.R
 import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED
@@ -14,6 +15,7 @@ import os.kei.feature.github.data.local.GitHubShareImportResultRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.ui.page.main.github.GitHubStatusPalette
 
+@Immutable
 internal data class GitHubShareImportPreview(
     val sourceUrl: String,
     val projectUrl: String,

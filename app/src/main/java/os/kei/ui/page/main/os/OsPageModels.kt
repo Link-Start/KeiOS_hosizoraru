@@ -3,11 +3,13 @@ package os.kei.ui.page.main.os
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
 import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 
+@Immutable
 internal data class InfoRow(
     val key: String,
     val value: String
@@ -47,6 +49,7 @@ internal enum class SystemOverviewState {
     Failed
 }
 
+@Immutable
 internal data class OsUiSnapshot(
     val topInfoExpanded: Boolean = false,
     val shellRunnerExpanded: Boolean = false,
@@ -60,6 +63,7 @@ internal data class OsUiSnapshot(
     val visibleCards: Set<OsSectionCard> = OsCardVisibilityStore.defaultVisibleCards()
 )
 
+@Immutable
 internal data class OsGoogleSystemServiceConfig(
     val title: String = "Google system services",
     val subtitle: String = "Update Google system service app",
@@ -90,11 +94,13 @@ internal data class OsGoogleSystemServiceConfig(
     }
 }
 
+@Immutable
 internal data class CachedSectionsSnapshot(
     val cached: CachedSections = CachedSections(),
     val hasPersistedCache: Boolean = false
 )
 
+@Immutable
 internal data class SectionState(
     val rows: List<InfoRow> = emptyList(),
     val loading: Boolean = false,
@@ -102,6 +108,7 @@ internal data class SectionState(
     val loadFailed: Boolean = false
 )
 
+@Immutable
 internal data class CachedSections(
     val system: List<InfoRow> = emptyList(),
     val secure: List<InfoRow> = emptyList(),

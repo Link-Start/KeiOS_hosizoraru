@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.importer
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,6 +29,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.StarImportApplyResult
 import kotlin.time.Duration.Companion.milliseconds
 
+@Immutable
 internal data class GitHubStarImportUiState(
     val source: StarImportUiSource = StarImportUiSource.MyStars,
     val apiTokenAvailable: Boolean = false,

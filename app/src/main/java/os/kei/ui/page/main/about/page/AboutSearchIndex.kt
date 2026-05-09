@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.about.page
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.about.model.AboutComponentEntry
@@ -22,6 +23,7 @@ internal enum class AboutSearchCard {
     Lab
 }
 
+@Immutable
 internal data class AboutSearchTarget(
     val card: AboutSearchCard,
     val category: AboutCategory,

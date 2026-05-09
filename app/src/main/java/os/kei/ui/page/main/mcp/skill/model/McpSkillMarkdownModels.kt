@@ -1,5 +1,8 @@
 package os.kei.ui.page.main.mcp.skill.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 internal data class SkillSection(
     val level: Int,
     val title: String,

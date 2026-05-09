@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
@@ -91,6 +92,7 @@ class GitHubStarImportActivity : ComponentActivity() {
     }
 }
 
+@Immutable
 internal data class GitHubStarImportActivityResult(
     val changedCount: Int,
     val affectedTrackIds: Set<String>,

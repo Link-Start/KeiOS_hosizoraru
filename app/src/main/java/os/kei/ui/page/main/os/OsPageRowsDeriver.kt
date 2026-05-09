@@ -1,5 +1,8 @@
 package os.kei.ui.page.main.os
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 internal data class OsPageExpansionFlags(
     val topInfoExpanded: Boolean,
     val systemTableExpanded: Boolean,
@@ -10,6 +13,7 @@ internal data class OsPageExpansionFlags(
     val linuxEnvExpanded: Boolean
 )
 
+@Immutable
 internal data class OsPageRowsDerivedState(
     val query: String,
     val topInfoRows: List<InfoRow>,

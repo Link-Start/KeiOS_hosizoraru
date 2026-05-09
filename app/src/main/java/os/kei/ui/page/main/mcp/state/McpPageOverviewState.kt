@@ -2,6 +2,7 @@ package os.kei.ui.page.main.mcp.state
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -15,6 +16,7 @@ import os.kei.ui.page.main.mcp.model.toMcpTokenPreview
 import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
 import kotlin.time.Duration.Companion.milliseconds
 
+@Immutable
 internal data class McpPageOverviewState(
     val overviewAccentColor: Color,
     val overviewCardColor: Color,

@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.os.shell.state
 
+import androidx.compose.runtime.Immutable
 import os.kei.ui.page.main.os.shell.OsShellRunnerOutputSaveMode
 import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
 import os.kei.ui.page.main.os.shell.parseShellOutputDisplayEntries
@@ -13,6 +14,7 @@ import java.util.Locale
 
 internal const val shellOutputDefaultMaxChars = 120_000
 
+@Immutable
 internal data class OsShellRunnerOutputState(
     val outputText: String,
     val outputEntries: List<ShellOutputDisplayEntry>,

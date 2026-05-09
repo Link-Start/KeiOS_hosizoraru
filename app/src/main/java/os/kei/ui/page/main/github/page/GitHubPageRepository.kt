@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +61,7 @@ import os.kei.ui.page.main.github.share.toShareImportResult
 import os.kei.ui.page.main.github.share.toShareImportTrack
 import os.kei.ui.page.main.github.state.toUi
 
+@Immutable
 internal data class GitHubTrackEditorDraft(
     val repoUrl: String,
     val packageName: String,
@@ -74,11 +76,13 @@ internal sealed interface GitHubTrackEditorResult {
     data object InvalidPackageName : GitHubTrackEditorResult
 }
 
+@Immutable
 internal data class GitHubOnlineShareTargetInput(
     val shouldResolve: Boolean,
     val appList: List<InstalledAppItem>
 )
 
+@Immutable
 internal data class GitHubActiveShareImportFlow(
     val preview: GitHubShareImportPreview?,
     val pendingTrack: GitHubPendingShareImportTrack?,

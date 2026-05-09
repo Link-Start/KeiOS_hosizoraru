@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
@@ -15,6 +16,7 @@ import os.kei.ui.page.main.ba.support.fetchBaCalendarRemoteResult
 import os.kei.ui.page.main.ba.support.fetchBaPoolRemoteResult
 import os.kei.ui.page.main.ba.support.runWithHardTimeout
 
+@Immutable
 internal data class BaCalendarSyncSnapshot(
     val entries: List<BaCalendarEntry>,
     val loading: Boolean,
@@ -22,6 +24,7 @@ internal data class BaCalendarSyncSnapshot(
     val lastSyncMs: Long
 )
 
+@Immutable
 internal data class BaPoolSyncSnapshot(
     val entries: List<BaPoolEntry>,
     val loading: Boolean,

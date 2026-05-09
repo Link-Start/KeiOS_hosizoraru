@@ -15,6 +15,22 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
 - Known unstable arguments: `1427`
 - Inferred unstable classes: `365`
 
+## Latest Audit Snapshot
+
+- Date: 2026-05-09
+- Command:
+  `GRADLE_OPTS="-Xmx4096m -Dfile.encoding=UTF-8" ./gradlew clean :app:compileReleaseKotlin --init-script /tmp/keios-compose-skill-audit/jetpack-compose-audit/scripts/compose-reports.init.gradle --no-daemon --quiet --max-workers=2 -Dkotlin.daemon.jvm.options=-Xmx4096m`
+- Full reports: `app/build/compose_audit/app-classes.txt`,
+  `app/build/compose_audit/app-composables.csv`, `app/build/compose_audit/app-composables.txt`,
+  `app/build/compose_audit/release/app-module.json`
+- Total composables: `2501`
+- Skippable composables: `1578`
+- Known unstable arguments: `1372`
+- Inferred unstable classes: `310`
+- Marked stable classes: `105`
+- Effectively stable classes: `480`
+- UI package class stability: `307` stable / `141` unstable
+
 ## P0 - Completed Highest-Priority Fixes
 
 - [x] Move Release Notes Markdown parsing out of composition-thread work.
@@ -45,7 +61,7 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
 
 ## P1 - Recommended Next Optimization Options
 
-- [ ] Rerun the Compose audit and compare metrics after the P0 fixes.
+- [x] Rerun the Compose audit and compare metrics after the P0 fixes.
     - Priority: highest.
     - Goal: confirm the 5 source-level findings disappeared and capture the new baseline.
     - Suggested gate: `:app:compileReleaseKotlin` with the audit init script, plus a short
@@ -63,12 +79,24 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
     - Candidate output: immutable displayed model with content IDs, resolved count, loading count,
       and playable favorites.
 
-- [ ] Triage compiler-reported unstable shared types.
+- [x] Triage compiler-reported unstable shared types.
     - Priority: high.
     - Goal: reduce the `365` inferred unstable classes and `1427` known unstable arguments that
       still cap broad recomposition quality.
-    - Start with high-traffic UI-state models and list item models used by Home, GitHub, BA, OS, and
-      shared chrome.
+  - First pass marked high-traffic GitHub UI snapshot models as immutable: `VersionCheckUi`,
+    release notes trust/profile UI models, Star Import UI state, share-import preview, and GitHub
+    overview state.
+
+- [x] Continue compiler-reported unstable type triage outside simple UI snapshots.
+    - Priority: high.
+    - Goal: reduce remaining `349` inferred unstable classes without over-marking ViewModel,
+      Repository, Activity, cache store, or mutable runtime owner classes.
+    - Done for Home / OS / BA / GitHub / MCP / Settings / Student snapshot models whose
+      immutability contract is explicit.
+    - Verified full release compiler report moved `knownUnstableArguments` from `1406` to `1372`
+      and `inferredUnstableClasses` from `349` to `310`.
+    - Mutable owners remain untreated: ViewModel, Repository, Activity, cache store, controller,
+      CoroutineScope, Context, Mutex, and MMKV-backed state holders.
 
 - [x] Sweep remaining production Lazy lists for missing `key` and `contentType`.
     - Priority: medium.

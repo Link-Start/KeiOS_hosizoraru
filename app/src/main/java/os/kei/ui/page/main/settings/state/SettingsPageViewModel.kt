@@ -2,6 +2,7 @@ package os.kei.ui.page.main.settings.state
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -18,6 +19,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 private const val SETTINGS_LOG_STATS_REFRESH_MS = 1_200L
 
+@Immutable
 internal data class SettingsCacheUiState(
     val cacheEntries: List<CacheEntrySummary>? = emptyList(),
     val cacheEntriesLoading: Boolean = false,

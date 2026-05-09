@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github
 
+import androidx.compose.runtime.Immutable
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.domain.GitHubRepositoryHealthEvaluator
@@ -30,6 +31,7 @@ internal enum class GitHubApkTrustReason {
     UnknownFormat
 }
 
+@Immutable
 internal data class GitHubApkTrustSignal(
     val level: GitHubDecisionLevel,
     val reasons: List<GitHubApkTrustReason>

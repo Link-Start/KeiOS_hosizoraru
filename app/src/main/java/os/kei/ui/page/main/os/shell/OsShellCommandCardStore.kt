@@ -1,17 +1,19 @@
 package os.kei.ui.page.main.os.shell
 
+import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import org.json.JSONArray
+import org.json.JSONObject
 import os.kei.ui.page.main.os.transfer.OS_CARD_EXPORT_SCHEMA_VERSION
 import os.kei.ui.page.main.os.transfer.OS_SHELL_CARD_EXPORT_SCHEMA
 import os.kei.ui.page.main.os.transfer.OsCardImportError
 import os.kei.ui.page.main.os.transfer.OsCardImportException
 import os.kei.ui.page.main.os.transfer.OsCardImportRoot
 import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.Locale
 import java.util.UUID
 
+@Immutable
 internal data class OsShellCardImportMergeResult(
     val cards: List<OsShellCommandCard>,
     val addedCount: Int,
@@ -19,6 +21,7 @@ internal data class OsShellCardImportMergeResult(
     val unchangedCount: Int
 )
 
+@Immutable
 internal data class OsShellCommandCard(
     val id: String,
     val visible: Boolean = true,

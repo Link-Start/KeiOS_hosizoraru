@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import os.kei.R
 
 private data class AboutExplainRes(
@@ -27,11 +28,13 @@ enum class AboutComponentType(@get:StringRes val titleRes: Int) {
     Provider(R.string.about_component_type_provider)
 }
 
+@Immutable
 data class AboutComponentExtraEntry(
     @get:StringRes val labelRes: Int,
     val value: String
 )
 
+@Immutable
 data class AboutComponentEntry(
     val type: AboutComponentType,
     val name: String,

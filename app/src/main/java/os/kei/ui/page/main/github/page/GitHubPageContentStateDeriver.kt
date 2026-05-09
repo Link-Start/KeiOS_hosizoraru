@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page
 
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -11,6 +12,7 @@ import os.kei.ui.page.main.github.section.GitHubOverviewMetrics
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.shareImportTrackMaxAgeMs
 
+@Immutable
 internal data class GitHubPageContentInput(
     val trackedItems: List<GitHubTrackedApp>,
     val trackedSearch: String,

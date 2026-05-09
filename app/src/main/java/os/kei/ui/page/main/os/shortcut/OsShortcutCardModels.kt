@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.os.shortcut
 
+import androidx.compose.runtime.Immutable
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import java.util.Locale
@@ -13,6 +14,7 @@ internal enum class OsActivityCardEditMode {
     Edit
 }
 
+@Immutable
 internal data class OsActivityShortcutCard(
     val id: String,
     val visible: Boolean = true,
@@ -40,6 +42,7 @@ internal enum class ShortcutIntentExtraType(
     }
 }
 
+@Immutable
 internal data class ShortcutIntentExtra(
     val key: String = "",
     val type: ShortcutIntentExtraType = ShortcutIntentExtraType.String,

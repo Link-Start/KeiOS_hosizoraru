@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.profile
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.feature.github.model.GitHubDecisionLevel
@@ -16,6 +17,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSummarySection
 import os.kei.feature.github.model.toSummary
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 
+@Immutable
 internal data class GitHubRepositoryProfileUiText(
     @param:StringRes val resId: Int = 0,
     val raw: String = "",
@@ -38,6 +40,7 @@ internal data class GitHubRepositoryProfileUiText(
     }
 }
 
+@Immutable
 internal data class GitHubRepositoryProfileUiRow(
     val key: GitHubRepositoryProfileSummaryKey,
     @param:StringRes val labelRes: Int,
@@ -48,12 +51,14 @@ internal data class GitHubRepositoryProfileUiRow(
     val fetchedAtMillis: Long = -1L
 )
 
+@Immutable
 internal data class GitHubRepositoryProfileUiSection(
     val section: GitHubRepositoryProfileSummarySection,
     @param:StringRes val titleRes: Int,
     val rows: List<GitHubRepositoryProfileUiRow>
 )
 
+@Immutable
 internal data class GitHubRepositoryProfileSourceUiRow(
     val source: GitHubRepositoryProfileSource,
     @param:StringRes val sourceLabelRes: Int,
@@ -66,6 +71,7 @@ internal data class GitHubRepositoryProfileSourceUiRow(
     val fetchedAtMillis: Long
 )
 
+@Immutable
 internal data class GitHubRepositoryProfileUiSummary(
     val ownerRepo: String,
     val fetchedAtMillis: Long,

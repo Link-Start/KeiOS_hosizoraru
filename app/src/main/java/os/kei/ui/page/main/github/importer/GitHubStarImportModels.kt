@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.importer
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import os.kei.R
 import os.kei.feature.github.domain.GitHubStarImportClassifier
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
@@ -104,11 +105,13 @@ internal fun GitHubRepositoryImportCandidate.matchesStarImportQuality(
     return GitHubStarImportClassifier.classify(this) == quality
 }
 
+@Immutable
 internal data class StarImportApkVerificationUiState(
     val checking: Boolean = false,
     val verification: GitHubStarImportApkVerification? = null
 )
 
+@Immutable
 internal data class StarImportCandidateListUiState(
     val searchedCandidates: List<GitHubRepositoryImportCandidate>,
     val filteredCandidates: List<GitHubRepositoryImportCandidate>,

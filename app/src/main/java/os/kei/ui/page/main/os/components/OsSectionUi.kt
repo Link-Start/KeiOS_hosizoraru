@@ -3,6 +3,7 @@ package os.kei.ui.page.main.os.components
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -11,7 +12,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.os.OsSectionCard
-import os.kei.ui.page.main.os.titleText
 import os.kei.ui.page.main.os.appLucideAppWindowIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
@@ -21,18 +21,21 @@ import os.kei.ui.page.main.os.appLucideListIcon
 import os.kei.ui.page.main.os.appLucideLockIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.osLucideConsoleIcon
+import os.kei.ui.page.main.os.titleText
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@Immutable
 internal data class OsOverviewMetric(
     val label: String,
     val value: String,
     val valueColor: Color? = null
 )
 
+@Immutable
 internal data class OsOverviewMetricRow(
     val first: OsOverviewMetric,
     val second: OsOverviewMetric?

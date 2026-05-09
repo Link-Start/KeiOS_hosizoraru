@@ -1,11 +1,13 @@
 package os.kei.ui.page.main.host.pager
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.model.toHomeOverviewCardOrNull
 
+@Immutable
 internal data class MainPagerBackgroundState(
     val hasNonHomeBackground: Boolean,
     val effectiveNonHomeBackgroundUri: String
@@ -30,6 +32,7 @@ internal fun rememberMainPagerBackgroundState(
     }
 }
 
+@Immutable
 internal data class MainPagerTabsState(
     val tabs: List<BottomPage>,
     val initialPageIndex: Int,

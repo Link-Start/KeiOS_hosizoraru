@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 import os.kei.R
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -10,6 +11,7 @@ import top.yukonga.miuix.kmp.icon.extended.Mic
 import top.yukonga.miuix.kmp.icon.extended.Stopwatch
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 
+@Immutable
 data class BaStudentGuideInfo(
     val sourceUrl: String,
     val title: String,
@@ -37,6 +39,7 @@ data class BaStudentGuideInfo(
     val syncedAtMs: Long
 )
 
+@Immutable
 data class BaGuideRow(
     val key: String,
     val value: String,
@@ -53,6 +56,7 @@ data class BaGuideGalleryItem(
     val note: String = ""
 )
 
+@Immutable
 data class BaGuideVoiceEntry(
     val section: String,
     val title: String,

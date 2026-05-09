@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.os
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import os.kei.R
 import os.kei.ui.page.main.os.components.OsOverviewMetric
@@ -8,16 +9,19 @@ import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.widget.status.AppStatusColors
 
+@Immutable
 internal data class OsActivityOverviewStats(
     val totalCount: Int,
     val visibleCount: Int
 )
 
+@Immutable
 internal data class OsShellOverviewStats(
     val totalCount: Int,
     val visibleCount: Int
 )
 
+@Immutable
 internal data class OsOverviewUiState(
     val overviewState: SystemOverviewState,
     val statusLabel: String,

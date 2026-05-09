@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.app.Application
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -11,6 +12,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 
+@Immutable
 internal data class BaCalendarUiState(
     val entries: List<BaCalendarEntry> = emptyList(),
     val loading: Boolean = true,
@@ -18,6 +20,7 @@ internal data class BaCalendarUiState(
     val lastSyncMs: Long = 0L
 )
 
+@Immutable
 internal data class BaPoolUiState(
     val entries: List<BaPoolEntry> = emptyList(),
     val loading: Boolean = true,

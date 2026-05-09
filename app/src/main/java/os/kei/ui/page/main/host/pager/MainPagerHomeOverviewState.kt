@@ -2,6 +2,7 @@ package os.kei.ui.page.main.host.pager
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.HomeOverviewSnapshot
 import os.kei.mcp.server.McpServerManager
 
+@Immutable
 internal data class MainPagerHomeOverviewState(
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,

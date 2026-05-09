@@ -7,6 +7,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ internal data class HomePageHeroMotionState(
     val onSummaryBottomChanged: (Float) -> Unit
 )
 
+@Immutable
 internal data class HomePageOverviewCardState(
     val homeHeaderStatusPills: List<HomeHeaderStatusPillState>,
     val mcpOverviewStats: List<HomeCardStatItem>,

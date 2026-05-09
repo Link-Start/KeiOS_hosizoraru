@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import os.kei.R
 
 internal data class TopInfoTopic(
@@ -17,6 +18,7 @@ internal enum class TopInfoRowsStatus {
     Fresh
 }
 
+@Immutable
 internal data class TopInfoRowsSnapshot(
     val rows: List<InfoRow>,
     val status: TopInfoRowsStatus

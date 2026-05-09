@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import os.kei.R
@@ -9,6 +10,7 @@ import os.kei.ui.page.main.os.components.OsOverviewMetricRow
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 
+@Immutable
 internal data class OsPageDerivedState(
     val query: String,
     val displayedTopInfoRows: List<InfoRow>,

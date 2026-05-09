@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -11,6 +12,7 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import kotlin.math.max
 
+@Immutable
 internal data class VersionCheckUi(
     val loading: Boolean = false,
     val localVersion: String = "",
@@ -47,6 +49,7 @@ internal data class VersionCheckUi(
     val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
 )
 
+@Immutable
 internal data class GitHubStrategyGuide(
     val option: GitHubLookupStrategyOption,
     val summary: String,
@@ -55,6 +58,7 @@ internal data class GitHubStrategyGuide(
     val requirement: String
 )
 
+@Immutable
 internal data class GitHubActionsStrategyGuide(
     val option: GitHubActionsLookupStrategyOption,
     val summary: String,
@@ -69,6 +73,7 @@ internal data class GitHubTokenGuideField(
     val emphasized: Boolean = false
 )
 
+@Immutable
 internal data class GitHubRecommendedTokenGuide(
     val collapsedSummary: String,
     val summary: String,

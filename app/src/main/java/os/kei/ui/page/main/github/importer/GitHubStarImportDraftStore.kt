@@ -1,8 +1,10 @@
 package os.kei.ui.page.main.github.importer
 
+import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
 import os.kei.feature.github.model.GitHubStarImportQuality
 
+@Immutable
 internal data class GitHubStarImportDraft(
     val source: StarImportUiSource = StarImportUiSource.MyStars,
     val usernameInput: String = "",

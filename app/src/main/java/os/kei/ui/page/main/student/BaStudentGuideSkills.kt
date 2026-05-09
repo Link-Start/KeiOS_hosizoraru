@@ -1,5 +1,8 @@
 package os.kei.ui.page.main.student
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class GuideSkillCardModel(
     val id: String,
     val type: String,

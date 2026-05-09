@@ -1,9 +1,11 @@
 package os.kei.ui.page.main.github.section
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
 import os.kei.R
 
+@Immutable
 internal data class GitHubOverviewUiState(
     val expanded: Boolean = true,
     val visibleEntries: Set<GitHubOverviewEntry> = defaultGitHubOverviewEntries()

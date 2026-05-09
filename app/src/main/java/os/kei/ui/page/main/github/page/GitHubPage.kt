@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.github.page
 
-import android.widget.Toast
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -25,16 +25,12 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.importer.GitHubStarImportActivity
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun GitHubPage(
@@ -93,9 +89,6 @@ fun GitHubPage(
             canScrollForward = listState.canScrollForward
         )
     }
-    val exportFileNameFormatter = remember {
-        DateTimeFormatter.ofPattern("yyMMdd-HHmm", Locale.getDefault())
-    }
     val actions = remember(
         context,
         scope,
@@ -113,6 +106,42 @@ fun GitHubPage(
             openLinkFailureMessage = openLinkFailureMessage
         )
     }
+    val appListPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            scope.launch { actions.reloadApps(forceRefresh = true) }
+        }
+    val launchAppListPermission: (Intent) -> Unit = remember(appListPermissionLauncher) {
+        { intent: Intent -> appListPermissionLauncher.launch(intent) }
+    }
+    val starImportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            handleGitHubStarImportActivityResult(
+                result = result,
+                actions = actions
+            )
+        }
+    val tracksExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        handleGitHubTrackExportDestinationResult(
+            context = context,
+            scope = scope,
+            githubPageViewModel = githubPageViewModel,
+            uri = uri
+        )
+    }
+    val tracksImportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        handleGitHubTrackImportSourceResult(
+            context = context,
+            scope = scope,
+            state = state,
+            actions = actions,
+            githubPageViewModel = githubPageViewModel,
+            uri = uri
+        )
+    }
     LaunchedEffect(externalRefreshTriggerToken) {
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
@@ -120,86 +149,6 @@ fun GitHubPage(
     LaunchedEffect(actions, runtime.contentReady) {
         if (!runtime.contentReady) return@LaunchedEffect
         actions.syncActiveShareImportFlowFromStore()
-    }
-    val appListPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            scope.launch { actions.reloadApps(forceRefresh = true) }
-        }
-    val starImportLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val importResult = GitHubStarImportActivity.parseResult(
-                resultCode = result.resultCode,
-                data = result.data
-            ) ?: return@rememberLauncherForActivityResult
-            actions.handleTrackMutationRefresh(
-                affectedTrackIds = importResult.affectedTrackIds,
-                removedTrackIds = importResult.removedTrackIds
-            )
-        }
-    val tracksExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        val request = githubPageViewModel.consumePendingExport()
-        if (uri == null || request == null) {
-            githubPageViewModel.finishTrackedExport()
-            return@rememberLauncherForActivityResult
-        }
-        scope.launch {
-            val result = runCatching {
-                githubPageViewModel.writeExport(
-                    contentResolver = context.contentResolver,
-                    uri = uri,
-                    request = request
-                )
-            }
-            githubPageViewModel.finishTrackedExport()
-            result.onSuccess {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.github_toast_track_exported),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }.onFailure {
-                Toast.makeText(
-                    context,
-                    context.getString(
-                        R.string.github_toast_track_export_failed,
-                        it.javaClass.simpleName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-    val tracksImportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri == null) {
-            githubPageViewModel.finishTrackedImport()
-            return@rememberLauncherForActivityResult
-        }
-        scope.launch {
-            val result = runCatching {
-                val raw = githubPageViewModel.readImport(
-                    contentResolver = context.contentResolver,
-                    uri = uri
-                )
-                actions.previewTrackedItemsImport(raw)
-            }
-            githubPageViewModel.finishTrackedImport()
-            result.onSuccess { preview ->
-                state.pendingTrackImportPreview = preview
-            }.onFailure {
-                Toast.makeText(
-                    context,
-                    context.getString(
-                        R.string.github_toast_track_import_failed,
-                        it.javaClass.simpleName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
     }
 
     BindGitHubPageLifecycleCoordinator(
@@ -211,7 +160,7 @@ fun GitHubPage(
         state = state,
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,
-        onLaunchAppListPermission = { intent -> appListPermissionLauncher.launch(intent) },
+        onLaunchAppListPermission = launchAppListPermission,
         onActionBarInteractingChanged = onActionBarInteractingChanged
     )
 
@@ -322,136 +271,26 @@ fun GitHubPage(
         )
     }
 
-    val onExportTrackedItems: () -> Unit = {
-        scope.launch {
-            val exportedAtMillis = System.currentTimeMillis()
-            val exportFileName = buildString {
-                append("keios-github-tracks-")
-                append(LocalDateTime.now().format(exportFileNameFormatter))
-                append(".json")
-            }
-            when (
-                val result = githubPageViewModel.beginTrackedExport(
-                    items = state.trackedItems.toList(),
-                    exportedAtMillis = exportedAtMillis,
-                    fileName = exportFileName
-                )
-            ) {
-                GitHubTrackedExportStartResult.Busy -> Unit
-                GitHubTrackedExportStartResult.Empty -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.github_toast_require_track_item),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                is GitHubTrackedExportStartResult.Failed -> {
-                    Toast.makeText(
-                        context,
-                        context.getString(
-                            R.string.github_toast_track_export_failed,
-                            result.reason ?: result.javaClass.simpleName
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                GitHubTrackedExportStartResult.Ready -> {
-                    runCatching {
-                        tracksExportLauncher.launch(exportFileName)
-                    }.onFailure {
-                        githubPageViewModel.finishTrackedExport()
-                        Toast.makeText(
-                            context,
-                            context.getString(
-                                R.string.github_toast_track_export_failed,
-                                it.javaClass.simpleName
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            }
-        }
-    }
-
-    val onImportTrackedItems: () -> Unit = {
-        when (githubPageViewModel.beginTrackedImport()) {
-            GitHubTrackedImportStartResult.Busy -> Unit
-            GitHubTrackedImportStartResult.Ready -> {
-                runCatching {
-                    tracksImportLauncher.launch(arrayOf("application/json", "text/plain"))
-                }.onFailure {
-                    githubPageViewModel.finishTrackedImport()
-                    Toast.makeText(
-                        context,
-                        context.getString(
-                            R.string.github_toast_track_import_failed,
-                            it.javaClass.simpleName
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-    }
-
-    val onOpenStarImport: () -> Unit = {
-        runCatching {
-            starImportLauncher.launch(GitHubStarImportActivity.buildIntent(context))
-        }.onFailure {
-            GitHubStarImportActivity.launch(context)
-        }
-    }
-
-    val onConfirmTrackImport: () -> Unit = {
-        val preview = state.pendingTrackImportPreview
-        if (preview != null) {
-            when (githubPageViewModel.beginTrackedImport()) {
-                GitHubTrackedImportStartResult.Busy -> Unit
-                GitHubTrackedImportStartResult.Ready -> {
-                    scope.launch {
-                        val result = runCatching { actions.applyTrackedItemsImport(preview) }
-                        githubPageViewModel.finishTrackedImport()
-                        result.onSuccess { importResult ->
-                            state.dismissTrackImportPreview()
-                            val effectiveCount = importResult.addedCount +
-                                importResult.updatedCount +
-                                importResult.unchangedCount
-                            if (effectiveCount == 0) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.github_toast_track_import_no_valid),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.github_toast_track_imported_summary,
-                                        importResult.addedCount,
-                                        importResult.updatedCount,
-                                        importResult.unchangedCount,
-                                        importResult.invalidCount + importResult.duplicateCount
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }.onFailure {
-                            Toast.makeText(
-                                context,
-                                context.getString(
-                                    R.string.github_toast_track_import_failed,
-                                    it.javaClass.simpleName
-                                ),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        }
+    val transferCallbacks = remember(
+        context,
+        scope,
+        state,
+        actions,
+        githubPageViewModel,
+        tracksExportLauncher,
+        tracksImportLauncher,
+        starImportLauncher
+    ) {
+        buildGitHubPageTrackTransferCallbacks(
+            context = context,
+            scope = scope,
+            state = state,
+            actions = actions,
+            githubPageViewModel = githubPageViewModel,
+            launchTrackedExport = { fileName -> tracksExportLauncher.launch(fileName) },
+            launchTrackedImport = { mimeTypes -> tracksImportLauncher.launch(mimeTypes) },
+            launchStarImport = { intent -> starImportLauncher.launch(intent) }
+        )
     }
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
@@ -467,10 +306,10 @@ fun GitHubPage(
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
-            onExportTrackedItems = onExportTrackedItems,
-            onImportTrackedItems = onImportTrackedItems,
-            onOpenStarImport = onOpenStarImport,
-            onConfirmTrackImport = onConfirmTrackImport
+            onExportTrackedItems = transferCallbacks.onExportTrackedItems,
+            onImportTrackedItems = transferCallbacks.onImportTrackedItems,
+            onOpenStarImport = transferCallbacks.onOpenStarImport,
+            onConfirmTrackImport = transferCallbacks.onConfirmTrackImport
         )
     }
 

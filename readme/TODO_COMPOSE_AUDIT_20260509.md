@@ -19,17 +19,19 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
 
 - Date: 2026-05-09
 - Command:
-  `GRADLE_OPTS="-Xmx4096m -Dfile.encoding=UTF-8" ./gradlew clean :app:compileReleaseKotlin --init-script /tmp/keios-compose-skill-audit/jetpack-compose-audit/scripts/compose-reports.init.gradle --no-daemon --quiet --max-workers=2 -Dkotlin.daemon.jvm.options=-Xmx4096m`
+  `./gradlew clean :app:compileReleaseKotlin --init-script /tmp/keios-compose-skill-audit/jetpack-compose-audit/scripts/compose-reports.init.gradle --no-daemon --quiet --max-workers=2`
 - Full reports: `app/build/compose_audit/app-classes.txt`,
   `app/build/compose_audit/app-composables.csv`, `app/build/compose_audit/app-composables.txt`,
   `app/build/compose_audit/release/app-module.json`
+- JVM budget: project defaults now use `org.gradle.jvmargs=-Xmx4096m` and
+  `kotlin.daemon.jvmargs=-Xmx4096m`.
 - Total composables: `2501`
 - Skippable composables: `1578`
 - Known unstable arguments: `1372`
 - Inferred unstable classes: `310`
-- Marked stable classes: `105`
-- Effectively stable classes: `480`
-- UI package class stability: `307` stable / `141` unstable
+- Marked stable classes: `106`
+- Effectively stable classes: `481`
+- UI package class stability: `308` stable / `141` unstable
 
 ## P0 - Completed Highest-Priority Fixes
 
@@ -109,11 +111,13 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
     - Goal: clean up report evidence around `mutableStateOf(0)` event tokens.
     - Candidate owner: `MainActivity` event-token fields.
 
-- [ ] Split dense Compose route files only where the split reduces recomposition ownership.
+- [x] Split dense Compose route files only where the split reduces recomposition ownership.
     - Priority: medium.
     - Goal: keep page orchestration, derived UI models, and card rendering separated.
-    - Candidate surfaces: large GitHub, BA, OS, and settings route files that still mix state
-      derivation with rendering.
+  - First pass split GitHub import/export/Star Import transfer handling out of `GitHubPage`
+    into a plain helper file, keeping launcher callbacks out of the main route.
+  - Verified compiler metrics stayed clean: total composables remained `2501`,
+    `knownUnstableArguments` stayed `1372`, and the new transfer callback model is stable.
 
 ## P2 - Measurement And Long-Term Quality
 

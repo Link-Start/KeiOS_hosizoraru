@@ -238,27 +238,17 @@ internal fun StarImportSourceGuideCard(
     source: StarImportUiSource,
     sourceReady: Boolean
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    var expanded by rememberSaveable(source) { mutableStateOf(true) }
     AppFeatureCard(
         title = stringResource(R.string.github_star_import_source_guide_title),
-        subtitle = stringResource(source.inputHintRes),
+        subtitle = "",
         sectionIcon = appLucideInfoIcon(),
         collapsible = true,
         expanded = expanded,
         onExpandedChange = { expanded = it },
         showIndication = false,
         contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
-        contentVerticalSpacing = 8.dp,
-        headerEndActions = {
-            StatusPill(
-                label = stringResource(source.labelRes),
-                color = if (sourceReady) {
-                    GitHubStatusPalette.Update
-                } else {
-                    MiuixTheme.colorScheme.onBackgroundVariant
-                }
-            )
-        }
+        contentVerticalSpacing = 8.dp
     ) {
         StarImportInfoLine(
             label = stringResource(R.string.github_star_import_requirement_label),
@@ -267,12 +257,14 @@ internal fun StarImportSourceGuideCard(
                 GitHubStatusPalette.Update
             } else {
                 MiuixTheme.colorScheme.onBackgroundVariant
-            }
+            },
+            maxLines = 3
         )
         StarImportInfoLine(
             label = stringResource(R.string.github_star_import_sample_label),
             value = stringResource(source.sampleRes),
-            color = MiuixTheme.colorScheme.onBackground
+            color = MiuixTheme.colorScheme.onBackground,
+            maxLines = 3
         )
         StarImportInfoLine(
             label = stringResource(R.string.github_star_import_input_hint_label),
@@ -454,7 +446,7 @@ private fun StarImportInfoLine(
     label: String,
     value: String,
     color: Color,
-    maxLines: Int = 2
+    maxLines: Int = 3
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(

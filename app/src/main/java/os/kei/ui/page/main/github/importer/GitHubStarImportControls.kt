@@ -37,6 +37,10 @@ import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private val StarImportChipHorizontalPadding = 12.dp
+private val StarImportChipVerticalPadding = 6.dp
+private val StarImportChipMinHeight = 38.dp
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun StarImportListControlCard(
@@ -210,21 +214,22 @@ internal fun StarImportListControlCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StarImportViewFilterRow(
     selected: StarImportViewFilter,
     onSelectedChange: (StarImportViewFilter) -> Unit
 ) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         StarImportViewFilter.entries.forEach { filter ->
             StarImportFilterButton(
                 filter = filter,
                 selected = selected == filter,
-                onClick = onSelectedChange,
-                modifier = Modifier.weight(1f)
+                onClick = onSelectedChange
             )
         }
     }
@@ -364,6 +369,11 @@ private fun StarImportAdvancedControls(
                     leadingIcon = if (selected) appLucideConfirmIcon() else null,
                     iconTint = starImportQualityColor(quality),
                     variant = if (selected) GlassVariant.SheetAction else GlassVariant.Content,
+                    minHeight = StarImportChipMinHeight,
+                    horizontalPadding = StarImportChipHorizontalPadding,
+                    verticalPadding = StarImportChipVerticalPadding,
+                    textSize = AppTypographyTokens.Body.fontSize,
+                    textLineHeight = AppTypographyTokens.Body.lineHeight,
                     textMaxLines = 1,
                     textOverflow = TextOverflow.Ellipsis
                 )
@@ -457,6 +467,11 @@ private fun StarImportCompactAction(
         modifier = modifier,
         enabled = enabled,
         variant = GlassVariant.Content,
+        minHeight = StarImportChipMinHeight,
+        horizontalPadding = StarImportChipHorizontalPadding,
+        verticalPadding = StarImportChipVerticalPadding,
+        textSize = AppTypographyTokens.Body.fontSize,
+        textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
         textOverflow = TextOverflow.Ellipsis
     )
@@ -479,7 +494,12 @@ private fun StarImportFilterButton(
         leadingIcon = if (selected) appLucideConfirmIcon() else null,
         iconTint = GitHubStatusPalette.Update,
         variant = if (selected) GlassVariant.SheetAction else GlassVariant.Content,
+        minHeight = StarImportChipMinHeight,
+        horizontalPadding = StarImportChipHorizontalPadding,
+        verticalPadding = StarImportChipVerticalPadding,
+        textSize = AppTypographyTokens.Body.fontSize,
+        textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis
+        textOverflow = TextOverflow.Clip
     )
 }

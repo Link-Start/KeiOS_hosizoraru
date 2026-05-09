@@ -86,6 +86,7 @@ data class GitHubRepositoryIdentityProfile(
     val name: GitHubProfileField<String>? = null,
     val fullName: GitHubProfileField<String>? = null,
     val htmlUrl: GitHubProfileField<String>? = null,
+    val ownerAvatarUrl: GitHubProfileField<String>? = null,
     val defaultBranch: GitHubProfileField<String>? = null,
     val ownerType: GitHubProfileField<String>? = null,
     val visibility: GitHubProfileField<String>? = null,

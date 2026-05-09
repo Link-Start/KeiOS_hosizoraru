@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.section.GitHubOverviewMetrics
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.shareImportTrackMaxAgeMs
@@ -31,11 +32,16 @@ internal class GitHubPageContentStateDeriver(
 ) {
     suspend fun build(input: GitHubPageContentInput): GitHubPageContentDerivedState {
         return withContext(dispatcher) {
+            val displayTitleById = input.trackedItems.associate { item ->
+                item.id to item.githubTrackedDisplayTitle(input.checkStates[item.id])
+            }
             val searchedTracked = input.trackedItems.filter { item ->
+                val displayTitle = displayTitleById[item.id].orEmpty()
                 input.trackedSearch.isBlank() ||
                         item.owner.contains(input.trackedSearch, ignoreCase = true) ||
                         item.repo.contains(input.trackedSearch, ignoreCase = true) ||
                         item.appLabel.contains(input.trackedSearch, ignoreCase = true) ||
+                        displayTitle.contains(input.trackedSearch, ignoreCase = true) ||
                         item.packageName.contains(input.trackedSearch, ignoreCase = true)
             }
             val filteredTracked = if (input.showFailedOnly) {
@@ -50,16 +56,18 @@ internal class GitHubPageContentStateDeriver(
                 GitHubSortMode.UpdateFirst -> filteredTracked.sortedWith(
                     compareByDescending<GitHubTrackedApp> { isSortUpdatable(it) }
                         .thenByDescending { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
-                        .thenBy { it.appLabel.lowercase() }
+                        .thenBy { displayTitleById[it.id].orEmpty().lowercase() }
                 )
 
-                GitHubSortMode.NameAsc -> filteredTracked.sortedBy { it.appLabel.lowercase() }
+                GitHubSortMode.NameAsc -> filteredTracked.sortedBy {
+                    displayTitleById[it.id].orEmpty().lowercase()
+                }
                 GitHubSortMode.PreReleaseFirst -> filteredTracked.sortedWith(
                     compareByDescending<GitHubTrackedApp> {
                         input.checkStates[it.id]?.isPreRelease == true
                     }
                         .thenByDescending { isSortUpdatable(it) }
-                        .thenBy { it.appLabel.lowercase() }
+                        .thenBy { displayTitleById[it.id].orEmpty().lowercase() }
                 )
             }
             val pendingShareImportRepoOverlapCount = input.pendingShareImportTrack?.let { pending ->

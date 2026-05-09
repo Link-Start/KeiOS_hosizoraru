@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -43,7 +44,6 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
-import os.kei.ui.page.main.github.GitHubCompactInfoRow
 import os.kei.ui.page.main.github.GitHubRepositoryHealth
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -54,6 +54,9 @@ import os.kei.ui.page.main.github.formatApkVersionValue
 import os.kei.ui.page.main.github.formatReleaseMetaValue
 import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.githubReleaseHintMessage
+import os.kei.ui.page.main.github.githubRemoteIconUrl
+import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
+import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.preReleaseVersionColor
@@ -145,10 +148,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
             contentType = { "tracked_app" }
         ) { item ->
             val expanded = trackedCardExpanded[item.id] == true
+            val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
+            val displayTitle = item.githubTrackedDisplayTitle(state)
+            val displaySubtitle = item.githubTrackedDisplaySubtitle(state, displayTitle)
             AppLiquidAccordionCard(
                 backdrop = contentBackdrop,
-                title = item.appLabel,
-                subtitle = item.packageName,
+                title = displayTitle,
+                subtitle = displaySubtitle,
                 expanded = expanded,
                 onExpandedChange = {
                     trackedCardExpanded[item.id] = it
@@ -162,7 +168,11 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     }
                 },
                 headerStartAction = {
-                    AppIcon(packageName = item.packageName, size = 24.dp)
+                    AppIcon(
+                        packageName = item.packageName,
+                        remoteIconUrl = state.githubRemoteIconUrl(),
+                        size = 24.dp
+                    )
                 },
                 titleAccessory = {
                     if (item.isKeiOsSelfTrack()) {
@@ -175,7 +185,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                 },
                 onHeaderLongClick = { onOpenTrackSheetForEdit(item) },
                 headerActions = {
-                    val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
                     val isItemRefreshLoading = itemRefreshLoading[item.id] == true
                     val alwaysLatestReleaseDownload = item.alwaysShowLatestReleaseDownloadButton
                     val latestReleaseAccent = Color(0xFF06B6D4)
@@ -255,19 +264,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     }
                 }
             ) {
-                val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
                 AppInfoListBody(
                     modifier = Modifier.fillMaxWidth(),
                     verticalSpacing = CardLayoutRhythm.denseSectionGap
                 ) {
-                    GitHubCompactInfoRow(
-                        label = stringResource(R.string.github_item_label_repo),
-                        value = "${item.owner}/${item.repo}",
-                        valueColor = MiuixTheme.colorScheme.primary,
-                        titleColor = MiuixTheme.colorScheme.primary,
-                        onClick = {
-                            onOpenExternalUrl(GitHubVersionUtils.buildReleaseUrl(item.owner, item.repo))
-                        }
+                    GitHubRepositoryLinkCard(
+                        item = item,
+                        onOpenExternalUrl = onOpenExternalUrl
                     )
                     val localText = formatLocalVersionText(context, checkStates[item.id])
                     if (localText != null) {
@@ -305,6 +308,19 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             valueColor = latestColor,
                             emphasized = state.hasUpdate == true && !state.recommendsPreRelease
                         )
+                        if (lookupConfig.preciseApkVersionEnabled) {
+                            formatReleaseMetaValue(
+                                preciseInfo = state.latestStableApkVersion,
+                                releaseName = state.latestStableName.ifBlank { state.latestTag },
+                                rawTag = state.latestStableRawTag
+                            ).takeIf { it.isNotBlank() }?.let { label ->
+                                VersionValueRow(
+                                    label = stringResource(R.string.github_item_label_stable_release),
+                                    value = label,
+                                    valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+                                )
+                            }
+                        }
                     }
                     if (showPreRelease) {
                         val preColor = state.preReleaseVersionColor(
@@ -322,34 +338,18 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             valueColor = preColor,
                             emphasized = state.recommendsPreRelease || state.hasPreReleaseUpdate
                         )
-                    }
-                    if (lookupConfig.preciseApkVersionEnabled) {
-                        val releaseMetaValues = buildList {
-                            if (showStableRelease) {
-                                formatReleaseMetaValue(
-                                    preciseInfo = state.latestStableApkVersion,
-                                    releaseName = state.latestStableName.ifBlank { state.latestTag },
-                                    rawTag = state.latestStableRawTag
-                                ).takeIf { it.isNotBlank() }?.let { label ->
-                                    add("${context.getString(R.string.github_release_meta_prefix_stable)}: $label")
-                                }
+                        if (lookupConfig.preciseApkVersionEnabled) {
+                            formatReleaseMetaValue(
+                                preciseInfo = state.latestPreApkVersion,
+                                releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
+                                rawTag = state.latestPreRawTag
+                            ).takeIf { it.isNotBlank() }?.let { label ->
+                                VersionValueRow(
+                                    label = stringResource(R.string.github_item_label_prerelease_release),
+                                    value = label,
+                                    valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+                                )
                             }
-                            if (showPreRelease) {
-                                formatReleaseMetaValue(
-                                    preciseInfo = state.latestPreApkVersion,
-                                    releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
-                                    rawTag = state.latestPreRawTag
-                                ).takeIf { it.isNotBlank() }?.let { label ->
-                                    add("${context.getString(R.string.github_release_meta_prefix_prerelease)}: $label")
-                                }
-                            }
-                        }
-                        if (releaseMetaValues.isNotEmpty()) {
-                            VersionValueRow(
-                                label = stringResource(R.string.github_item_label_releases),
-                                value = releaseMetaValues.joinToString(" / "),
-                                valueColor = MiuixTheme.colorScheme.onBackgroundVariant
-                            )
                         }
                     }
                     val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
@@ -405,6 +405,59 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GitHubRepositoryLinkCard(
+    item: GitHubTrackedApp,
+    onOpenExternalUrl: (String) -> Unit
+) {
+    val backdrop = rememberLayerBackdrop()
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val repoUrl = GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
+    val surfaceColor = if (isDark) {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
+    } else {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
+    }
+    LiquidSurface(
+        backdrop = backdrop,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        tint = MiuixTheme.colorScheme.primary.copy(alpha = if (isDark) 0.18f else 0.10f),
+        surfaceColor = surfaceColor,
+        blurRadius = UiPerformanceBudget.backdropBlur,
+        lensRadius = UiPerformanceBudget.backdropLens,
+        onClick = { onOpenExternalUrl(repoUrl) }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.github_item_label_repo),
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${item.owner}/${item.repo}",
+                color = MiuixTheme.colorScheme.onBackground,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.End
+            )
         }
     }
 }

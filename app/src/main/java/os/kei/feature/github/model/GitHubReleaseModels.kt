@@ -105,7 +105,8 @@ data class GitHubReleaseVersionSignals(
     val versionCandidates: List<GitHubVersionCandidate> = emptyList(),
     val source: GitHubReleaseSignalSource = GitHubReleaseSignalSource.AtomFallback,
     val channel: GitHubReleaseChannel = GitHubReleaseChannel.UNKNOWN,
-    val authorName: String = ""
+    val authorName: String = "",
+    val authorAvatarUrl: String = ""
 ) {
     val candidates: List<String>
         get() = versionCandidates.map { it.value }

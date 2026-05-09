@@ -59,6 +59,11 @@ internal class GitHubApiRepositoryProfileSource(
                 fetchedAtMillis
             ),
             htmlUrl = stringField(root.optString("html_url"), source, fetchedAtMillis),
+            ownerAvatarUrl = stringField(
+                owner?.optString("avatar_url").orEmpty(),
+                source,
+                fetchedAtMillis
+            ),
             defaultBranch = stringField(root.optString("default_branch"), source, fetchedAtMillis),
             ownerType = stringField(owner?.optString("type").orEmpty(), source, fetchedAtMillis),
             visibility = stringField(root.optString("visibility"), source, fetchedAtMillis),

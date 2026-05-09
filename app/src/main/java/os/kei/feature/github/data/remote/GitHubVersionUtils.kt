@@ -63,8 +63,12 @@ object GitHubVersionUtils {
         val versionCode: Long
     )
 
+    fun buildRepositoryUrl(owner: String, repo: String): String {
+        return "https://github.com/$owner/$repo"
+    }
+
     fun buildReleaseUrl(owner: String, repo: String): String {
-        return "https://github.com/$owner/$repo/releases"
+        return "${buildRepositoryUrl(owner, repo)}/releases"
     }
 
     fun buildReleaseTagUrl(owner: String, repo: String, tag: String): String {

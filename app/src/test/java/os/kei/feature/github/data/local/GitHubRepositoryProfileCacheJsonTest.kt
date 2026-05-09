@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
 import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
+import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
 import os.kei.feature.github.model.GitHubRepositoryProfileCapability
@@ -32,6 +33,10 @@ class GitHubRepositoryProfileCacheJsonTest {
             sourceConfigSignature = "check-v2|fixture",
             fetchedAtMillis = FETCHED_AT,
             purpose = GitHubRepositoryProfilePurpose.DetailFull,
+            identity = GitHubRepositoryIdentityProfile(
+                name = field("app"),
+                ownerAvatarUrl = field("https://avatars.githubusercontent.com/u/42?v=4")
+            ),
             capabilities = setOf(
                 GitHubRepositoryProfileCapability.RepositoryCore,
                 GitHubRepositoryProfileCapability.ReleaseSignals,
@@ -82,6 +87,10 @@ class GitHubRepositoryProfileCacheJsonTest {
 
         assertEquals("demo", restored.owner)
         assertEquals("check-v2|fixture", restored.sourceConfigSignature)
+        assertEquals(
+            "https://avatars.githubusercontent.com/u/42?v=4",
+            restored.identity.ownerAvatarUrl?.value
+        )
         assertTrue(restored.lifecycle.archived?.value == true)
         assertEquals("upstream/app", restored.lifecycle.upstream?.fullName?.value)
         assertFalse(restored.lifecycle.upstream?.archived?.value == true)

@@ -181,43 +181,23 @@ internal fun ProfileSignalSection(section: GitHubRepositoryProfileUiSection) {
 @Composable
 private fun ProfileSignalRow(row: GitHubRepositoryProfileUiRow) {
     val rowColor = row.level?.repositoryHealthStatusColor()
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(
-            modifier = Modifier.weight(0.44f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
         ) {
             Text(
                 text = stringResource(row.labelRes),
+                modifier = Modifier.weight(1f),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            ProfileMetaLine(
-                sourceLabelRes = row.sourceLabelRes,
-                confidenceLabelRes = row.confidenceLabelRes,
-                fetchedAtMillis = row.fetchedAtMillis
-            )
-        }
-        Row(
-            modifier = Modifier.weight(0.56f),
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = gitHubRepositoryProfileUiText(row.value),
-                color = rowColor ?: MiuixTheme.colorScheme.onBackground,
-                fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight,
-                fontWeight = if (rowColor != null) AppTypographyTokens.BodyEmphasis.fontWeight else null,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                overflow = TextOverflow.Ellipsis
             )
             row.level?.let { level ->
                 StatusPill(
@@ -228,6 +208,20 @@ private fun ProfileSignalRow(row: GitHubRepositoryProfileUiRow) {
                 )
             }
         }
+        ProfileMetaLine(
+            sourceLabelRes = row.sourceLabelRes,
+            confidenceLabelRes = row.confidenceLabelRes,
+            fetchedAtMillis = row.fetchedAtMillis
+        )
+        Text(
+            text = gitHubRepositoryProfileUiText(row.value),
+            color = rowColor ?: MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.Body.fontSize,
+            lineHeight = AppTypographyTokens.Body.lineHeight,
+            fontWeight = if (rowColor != null) AppTypographyTokens.BodyEmphasis.fontWeight else null,
+            maxLines = Int.MAX_VALUE,
+            overflow = TextOverflow.Clip
+        )
     }
 }
 
@@ -252,7 +246,7 @@ private fun ProfileMetaLine(
         color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.72f),
         fontSize = AppTypographyTokens.Caption.fontSize,
         lineHeight = AppTypographyTokens.Caption.lineHeight,
-        maxLines = 1,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis
     )
 }
@@ -290,7 +284,7 @@ private fun SourceAvailabilityRow(row: GitHubRepositoryProfileSourceUiRow) {
                 color = MiuixTheme.colorScheme.onBackground,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             SourceAvailabilityMeta(row)
@@ -300,7 +294,7 @@ private fun SourceAvailabilityRow(row: GitHubRepositoryProfileSourceUiRow) {
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
                     fontSize = AppTypographyTokens.Caption.fontSize,
                     lineHeight = AppTypographyTokens.Caption.lineHeight,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -332,7 +326,7 @@ private fun SourceAvailabilityMeta(row: GitHubRepositoryProfileSourceUiRow) {
         color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.72f),
         fontSize = AppTypographyTokens.Caption.fontSize,
         lineHeight = AppTypographyTokens.Caption.lineHeight,
-        maxLines = 1,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis
     )
 }
@@ -383,7 +377,7 @@ private fun GitHubHealthDiagnosisLine(
         )
         DetailTextLine(
             text = reason,
-            maxLines = 2,
+            maxLines = 3,
             modifier = Modifier.weight(1f)
         )
     }
@@ -405,7 +399,7 @@ private fun DetailInfoRow(
             color = MiuixTheme.colorScheme.onBackgroundVariant,
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
         Text(
@@ -414,7 +408,7 @@ private fun DetailInfoRow(
             color = MiuixTheme.colorScheme.onBackground,
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 2,
+            maxLines = 3,
             overflow = TextOverflow.Ellipsis
         )
     }

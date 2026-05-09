@@ -44,6 +44,10 @@ class GitHubRepositoryProfileRepositoryTest {
 
         assertEquals("demo/app", profile.identity.fullName?.value)
         assertEquals("main", profile.identity.defaultBranch?.value)
+        assertEquals(
+            "https://avatars.githubusercontent.com/u/42?v=4",
+            profile.identity.ownerAvatarUrl?.value
+        )
         assertTrue(profile.lifecycle.archived?.value == true)
         assertTrue(profile.lifecycle.fork?.value == true)
         assertEquals("upstream/app", profile.lifecycle.upstream?.fullName?.value)
@@ -104,6 +108,10 @@ class GitHubRepositoryProfileRepositoryTest {
         assertEquals(GitHubRepositoryProfileConfidence.Low, archivedField.confidence)
         assertEquals(listOf("android"), profile.identity.topics?.value)
         assertEquals("main", profile.identity.defaultBranch?.value)
+        assertEquals(
+            "https://github.test/venera-app.png?size=96",
+            profile.identity.ownerAvatarUrl?.value
+        )
         assertEquals(1200, profile.activity.stargazersCount?.value)
         assertTrue(profile.community.hasReadme?.value == true)
     }
@@ -524,7 +532,11 @@ class GitHubRepositoryProfileRepositoryTest {
               "size": 2048,
               "topics": [$topicsJson],
               $licenseJson
-              "owner": {"login": "demo", "type": "Organization"},
+              "owner": {
+                "login": "demo",
+                "type": "Organization",
+                "avatar_url": "https://avatars.githubusercontent.com/u/42?v=4"
+              },
               "parent": {
                 "full_name": "upstream/app",
                 "html_url": "https://github.com/upstream/app",

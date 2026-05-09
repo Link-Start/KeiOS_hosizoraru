@@ -378,7 +378,11 @@ class GitHubReleaseCheckServiceTest {
     @Test
     fun `repository profile survives release check cache round trip`() {
         val item = trackedApp(preferPreRelease = false)
-        val stable = signal(tag = "v1.0.0", title = "Demo 1.0.0")
+        val stable = signal(
+            tag = "v1.0.0",
+            title = "Demo 1.0.0",
+            authorAvatarUrl = "https://avatars.githubusercontent.com/u/42?v=4"
+        )
         val profile = GitHubRepositoryProfileSnapshot(
             owner = "demo",
             repo = "app",
@@ -421,6 +425,10 @@ class GitHubReleaseCheckServiceTest {
             "upstream/app",
             restored.repositoryProfile?.lifecycle?.upstream?.fullName?.value
         )
+        assertEquals(
+            "https://avatars.githubusercontent.com/u/42?v=4",
+            restored.stableRelease?.authorAvatarUrl
+        )
         assertEquals("check-v2|fixture", restored.repositoryProfile?.sourceConfigSignature)
     }
 
@@ -460,7 +468,8 @@ class GitHubReleaseCheckServiceTest {
         tag: String,
         title: String = tag,
         updatedAtMillis: Long? = null,
-        contentPreview: String = ""
+        contentPreview: String = "",
+        authorAvatarUrl: String = ""
     ): GitHubReleaseVersionSignals {
         return GitHubReleaseVersionSignals(
             displayVersion = title,
@@ -474,7 +483,9 @@ class GitHubReleaseCheckServiceTest {
                 GitHubVersionCandidateSource.Content to contentPreview
             ),
             source = GitHubReleaseSignalSource.GitHubApi,
-            channel = GitHubVersionUtils.classifyVersionChannel(tag) ?: GitHubReleaseChannel.UNKNOWN
+            channel = GitHubVersionUtils.classifyVersionChannel(tag)
+                ?: GitHubReleaseChannel.UNKNOWN,
+            authorAvatarUrl = authorAvatarUrl
         )
     }
 

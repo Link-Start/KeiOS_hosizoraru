@@ -87,6 +87,10 @@ internal class GitHubRepositoryProfileHttpClient(
         return "${htmlBaseUrl.trimEnd('/')}/$owner/$repo"
     }
 
+    fun ownerAvatarUrl(owner: String): String {
+        return "${htmlBaseUrl.trimEnd('/')}/$owner.png?size=96"
+    }
+
     private fun apiUrl(path: String): String {
         return "${apiBaseUrl.trimEnd('/')}${path.ensureLeadingSlash()}"
     }

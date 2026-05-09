@@ -66,6 +66,12 @@ internal class GitHubHtmlRepositoryProfileSource(
                 fetchedAtMillis,
                 GitHubRepositoryProfileConfidence.Low
             ),
+            ownerAvatarUrl = stringField(
+                http.ownerAvatarUrl(owner),
+                source,
+                fetchedAtMillis,
+                GitHubRepositoryProfileConfidence.Low
+            ),
             defaultBranch = stringField(
                 html.extractDefaultBranch(),
                 source,

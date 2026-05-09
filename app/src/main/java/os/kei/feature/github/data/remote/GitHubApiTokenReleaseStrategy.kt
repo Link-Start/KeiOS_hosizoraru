@@ -429,7 +429,8 @@ class GitHubApiTokenReleaseStrategy(
             versionCandidates = versionCandidates,
             source = GitHubReleaseSignalSource.GitHubApi,
             channel = channel,
-            authorName = authorName
+            authorName = authorName,
+            authorAvatarUrl = authorAvatarUrl
         )
     }
 

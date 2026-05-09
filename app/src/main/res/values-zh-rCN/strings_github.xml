@@ -246,6 +246,8 @@
     <string name="github_item_label_stable_version">稳定版本</string>
     <string name="github_item_label_prerelease_version">预发版本</string>
     <string name="github_item_label_releases">Releases</string>
+    <string name="github_item_label_stable_release">稳定 Release</string>
+    <string name="github_item_label_prerelease_release">预发 Release</string>
     <string name="github_release_meta_prefix_stable">稳定</string>
     <string name="github_release_meta_prefix_prerelease">预发</string>
     <string name="github_item_label_updated_at">更新时间</string>
@@ -394,7 +396,7 @@
     <string name="github_check_sheet_value_enabled">开启</string>
     <string name="github_check_sheet_value_disabled">关闭</string>
     <string name="github_check_sheet_label_refresh_interval">更新间隔</string>
-    <string name="github_check_sheet_summary_refresh_interval">超时后自动视为过期</string>
+    <string name="github_check_sheet_summary_refresh_interval">超过所选间隔后，后台和页面刷新会把缓存视为过期；间隔越短请求越频繁，追踪较多时建议 3-6 小时。</string>
     <string name="github_check_sheet_label_prerelease_check">检查所有追踪项的预发行最新版</string>
     <string name="github_check_sheet_summary_prerelease_check">额外检查每个项目的最新预发，但不代表自动推荐安装</string>
     <string name="github_check_sheet_label_aggressive_filter">更激进的过滤方式</string>
@@ -402,7 +404,7 @@
     <string name="github_check_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
     <string name="github_check_sheet_summary_precise_apk_version">从远端 APK Manifest 读取真实 versionName 与 versionCode；追踪项目较多时会增加少量解析耗时</string>
     <string name="github_check_sheet_label_deep_profile">深度仓库画像</string>
-    <string name="github_check_sheet_summary_deep_profile">额外读取流量、fork 同步与安全扫描端点；需要更多请求，Token 下信息更完整</string>
+    <string name="github_check_sheet_summary_deep_profile">默认关闭。开启后会额外读取流量、Fork 同步与安全扫描端点，适合手动复查重点仓库；Token 下信息更完整，请求量也更高。</string>
     <string name="github_check_sheet_label_downloader">下载器</string>
     <string name="github_check_sheet_summary_downloader">用于直链下载跳转；默认跟随系统</string>
     <string name="github_check_sheet_label_share_import_linkage">分享导入联动</string>

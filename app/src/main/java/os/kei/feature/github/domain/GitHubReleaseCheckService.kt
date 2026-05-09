@@ -533,10 +533,12 @@ object GitHubReleaseCheckService {
             latestStableName = stableRelease?.rawName.orEmpty(),
             latestStableRawTag = stableRelease?.rawTag.orEmpty(),
             latestStableUrl = stableRelease?.link.orEmpty(),
+            latestStableAuthorAvatarUrl = stableRelease?.authorAvatarUrl.orEmpty(),
             latestStableUpdatedAtMillis = stableRelease?.updatedAtMillis ?: -1L,
             latestPreName = preRelease?.rawName.orEmpty(),
             latestPreRawTag = preRelease?.rawTag.orEmpty(),
             latestPreUrl = preRelease?.link.orEmpty(),
+            latestPreAuthorAvatarUrl = preRelease?.authorAvatarUrl.orEmpty(),
             latestPreUpdatedAtMillis = preRelease?.updatedAtMillis ?: -1L,
             hasStableRelease = hasStableRelease,
             hasUpdate = hasUpdate,
@@ -577,7 +579,8 @@ object GitHubReleaseCheckService {
                         rawTag = it.latestStableRawTag.ifBlank { it.latestTag },
                         rawName = it.latestStableName.ifBlank { it.latestTag.ifBlank { it.latestStableRawTag } },
                         link = entry.latestStableUrl,
-                        updatedAtMillis = entry.latestStableUpdatedAtMillis.takeIf { ts -> ts > 0L }
+                        updatedAtMillis = entry.latestStableUpdatedAtMillis.takeIf { ts -> ts > 0L },
+                        authorAvatarUrl = entry.latestStableAuthorAvatarUrl
                     )
             },
             preRelease = entry
@@ -588,7 +591,8 @@ object GitHubReleaseCheckService {
                         rawTag = it.latestPreRawTag.ifBlank { it.preReleaseInfo },
                         rawName = it.latestPreName.ifBlank { it.preReleaseInfo.ifBlank { it.latestPreRawTag } },
                         link = entry.latestPreUrl,
-                        updatedAtMillis = entry.latestPreUpdatedAtMillis.takeIf { ts -> ts > 0L }
+                        updatedAtMillis = entry.latestPreUpdatedAtMillis.takeIf { ts -> ts > 0L },
+                        authorAvatarUrl = entry.latestPreAuthorAvatarUrl
                     )
             },
             hasStableRelease = entry.hasStableRelease,

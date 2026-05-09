@@ -246,6 +246,8 @@
     <string name="github_item_label_stable_version">Stable version</string>
     <string name="github_item_label_prerelease_version">Pre-release version</string>
     <string name="github_item_label_releases">Releases</string>
+    <string name="github_item_label_stable_release">Stable Release</string>
+    <string name="github_item_label_prerelease_release">Pre-release</string>
     <string name="github_release_meta_prefix_stable">Stable</string>
     <string name="github_release_meta_prefix_prerelease">Pre-release</string>
     <string name="github_item_label_updated_at">Updated at</string>
@@ -402,7 +404,7 @@
     <string name="github_check_sheet_value_enabled">On</string>
     <string name="github_check_sheet_value_disabled">Off</string>
     <string name="github_check_sheet_label_refresh_interval">Refresh interval</string>
-    <string name="github_check_sheet_summary_refresh_interval">Treat as expired after timeout</string>
+    <string name="github_check_sheet_summary_refresh_interval">After the selected interval, background and page refreshes treat the cache as stale. Shorter intervals send more requests; 3-6 hours fits larger tracking lists.</string>
     <string name="github_check_sheet_label_prerelease_check">Check latest pre-release for every tracked item</string>
     <string name="github_check_sheet_summary_prerelease_check">Also checks the latest pre-release for each project. This does not automatically recommend installing it.</string>
     <string name="github_check_sheet_label_aggressive_filter">More aggressive filtering</string>
@@ -410,7 +412,7 @@
     <string name="github_check_sheet_label_precise_apk_version">More precise version logic</string>
     <string name="github_check_sheet_summary_precise_apk_version">Reads real versionName and versionCode from remote APK Manifest data; large tracking lists may spend a little more time parsing.</string>
     <string name="github_check_sheet_label_deep_profile">Deep repository profile</string>
-    <string name="github_check_sheet_summary_deep_profile">Also reads traffic, fork sync, and security scanning endpoints. It uses more requests and works best with a token.</string>
+    <string name="github_check_sheet_summary_deep_profile">Off by default. When enabled, traffic, fork sync, and security endpoints are read for deeper checks. Token mode gives fuller data and uses more requests.</string>
     <string name="github_check_sheet_label_downloader">Downloader</string>
     <string name="github_check_sheet_summary_downloader">Used for opening direct download links; follows system default by default.</string>
     <string name="github_check_sheet_label_share_import_linkage">Share import linkage</string>

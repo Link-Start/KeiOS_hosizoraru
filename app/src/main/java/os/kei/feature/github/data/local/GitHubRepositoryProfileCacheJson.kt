@@ -114,6 +114,7 @@ private fun GitHubRepositoryIdentityProfile.toCacheJson(): JSONObject =
         .putField("name", name)
         .putField("fullName", fullName)
         .putField("htmlUrl", htmlUrl)
+        .putField("ownerAvatarUrl", ownerAvatarUrl)
         .putField("defaultBranch", defaultBranch)
         .putField("ownerType", ownerType)
         .putField("visibility", visibility)
@@ -242,6 +243,7 @@ private fun parseIdentity(obj: JSONObject?): GitHubRepositoryIdentityProfile {
         name = obj.stringField("name"),
         fullName = obj.stringField("fullName"),
         htmlUrl = obj.stringField("htmlUrl"),
+        ownerAvatarUrl = obj.stringField("ownerAvatarUrl"),
         defaultBranch = obj.stringField("defaultBranch"),
         ownerType = obj.stringField("ownerType"),
         visibility = obj.stringField("visibility"),

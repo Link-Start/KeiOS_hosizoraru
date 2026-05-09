@@ -345,12 +345,18 @@ object GitHubTrackStore {
                             },
                             latestStableRawTag = item.optString("latestStableRawTag"),
                             latestStableUrl = item.optString("latestStableUrl"),
+                            latestStableAuthorAvatarUrl = item.optString(
+                                "latestStableAuthorAvatarUrl"
+                            ),
                             latestStableUpdatedAtMillis = item.optLong("latestStableUpdatedAtMillis", -1L),
                             latestPreName = item.optString("latestPreName").ifBlank {
                                 item.optString("preReleaseInfo")
                             },
                             latestPreRawTag = item.optString("latestPreRawTag"),
                             latestPreUrl = item.optString("latestPreUrl"),
+                            latestPreAuthorAvatarUrl = item.optString(
+                                "latestPreAuthorAvatarUrl"
+                            ),
                             latestPreUpdatedAtMillis = item.optLong("latestPreUpdatedAtMillis", -1L),
                             hasStableRelease = if (item.has("hasStableRelease")) {
                                 item.optBoolean("hasStableRelease", true)
@@ -463,10 +469,12 @@ object GitHubTrackStore {
                     .put("latestStableName", state.latestStableName)
                     .put("latestStableRawTag", state.latestStableRawTag)
                     .put("latestStableUrl", state.latestStableUrl)
+                    .put("latestStableAuthorAvatarUrl", state.latestStableAuthorAvatarUrl)
                     .put("latestStableUpdatedAtMillis", state.latestStableUpdatedAtMillis)
                     .put("latestPreName", state.latestPreName)
                     .put("latestPreRawTag", state.latestPreRawTag)
                     .put("latestPreUrl", state.latestPreUrl)
+                    .put("latestPreAuthorAvatarUrl", state.latestPreAuthorAvatarUrl)
                     .put("latestPreUpdatedAtMillis", state.latestPreUpdatedAtMillis)
                     .put("hasStableRelease", state.hasStableRelease)
                     .put("hasUpdate", state.hasUpdate)
@@ -531,9 +539,11 @@ object GitHubTrackStore {
                 state.latestStableName,
                 state.latestStableRawTag,
                 state.latestStableUrl,
+                state.latestStableAuthorAvatarUrl,
                 state.latestPreName,
                 state.latestPreRawTag,
                 state.latestPreUrl,
+                state.latestPreAuthorAvatarUrl,
                 state.message,
                 state.preReleaseInfo,
                 state.releaseHint,

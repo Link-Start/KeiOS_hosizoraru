@@ -502,7 +502,8 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             versionCandidates = versionCandidates,
             source = source,
             channel = channel,
-            authorName = authorName
+            authorName = authorName,
+            authorAvatarUrl = authorAvatarUrl
         )
     }
 

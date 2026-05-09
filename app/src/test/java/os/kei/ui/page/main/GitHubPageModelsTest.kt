@@ -2,8 +2,17 @@ package os.kei.ui.page.main
 
 import androidx.compose.ui.graphics.Color
 import org.junit.Test
+import os.kei.feature.github.model.GitHubProfileField
+import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
+import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
+import os.kei.feature.github.model.GitHubRepositoryProfileSource
+import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.formatReleaseValue
+import os.kei.ui.page.main.github.githubRemoteIconUrl
+import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
+import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.statusActionUrl
 import os.kei.ui.page.main.github.statusColor
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -63,5 +72,59 @@ class GitHubPageModelsTest {
         )
 
         assertEquals(AppStatusColors.Cached, state.statusColor(Color.Gray))
+    }
+
+    @Test
+    fun `uninstalled generated track uses remote repository display identity`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/demo/remote-app",
+            owner = "demo",
+            repo = "remote-app",
+            packageName = "com.demo.remote",
+            appLabel = "com.demo.remote"
+        )
+        val state = VersionCheckUi(
+            repositoryProfile = GitHubRepositoryProfileSnapshot(
+                owner = "demo",
+                repo = "remote-app",
+                sourceConfigSignature = "profile-v1|fixture",
+                fetchedAtMillis = 1_700_000_000_000L,
+                identity = GitHubRepositoryIdentityProfile(
+                    name = profileField("Remote App"),
+                    ownerAvatarUrl = profileField("https://avatars.githubusercontent.com/u/42?v=4")
+                )
+            )
+        )
+
+        val title = item.githubTrackedDisplayTitle(state)
+
+        assertEquals("Remote App", title)
+        assertEquals("com.demo.remote", item.githubTrackedDisplaySubtitle(state, title))
+        assertEquals(
+            "https://avatars.githubusercontent.com/u/42?v=4",
+            state.githubRemoteIconUrl()
+        )
+    }
+
+    @Test
+    fun `empty repository parts keep subtitle readable`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "",
+            owner = "",
+            repo = "",
+            packageName = "",
+            appLabel = "Demo"
+        )
+
+        assertEquals("", item.githubTrackedDisplaySubtitle(state = null, title = "Demo"))
+    }
+
+    private fun profileField(value: String): GitHubProfileField<String> {
+        return GitHubProfileField(
+            value = value,
+            source = GitHubRepositoryProfileSource.GitHubApiRepository,
+            fetchedAtMillis = 1_700_000_000_000L,
+            confidence = GitHubRepositoryProfileConfidence.High
+        )
     }
 }

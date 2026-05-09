@@ -298,6 +298,12 @@ class GitHubRepositoryProfileRepository(
                 source,
                 fetchedAtMillis,
                 GitHubRepositoryProfileConfidence.Medium
+            ),
+            ownerAvatarUrl = stringField(
+                "${htmlBaseUrl.trimEnd('/')}/${request.owner}.png?size=96",
+                source,
+                fetchedAtMillis,
+                GitHubRepositoryProfileConfidence.Low
             )
         )
     }

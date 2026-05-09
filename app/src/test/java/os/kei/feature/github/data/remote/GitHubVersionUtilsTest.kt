@@ -1,7 +1,7 @@
 package os.kei.feature.github.data.remote
 
-import os.kei.feature.github.model.GitHubVersionCandidateSource
 import org.junit.Test
+import os.kei.feature.github.model.GitHubVersionCandidateSource
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -155,5 +155,36 @@ class GitHubVersionUtilsTest {
         )
 
         assertEquals(false, GitHubVersionUtils.referToSameReleaseVersion(preCandidates, stableCandidates))
+    }
+
+    @Test
+    fun `remote candidate can match local versionName plus versionCode`() {
+        val candidates = GitHubVersionUtils.buildVersionCandidates(
+            GitHubVersionCandidateSource.Tag to "v1.2.18.2102"
+        )
+
+        assertTrue(
+            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
+                localVersion = "1.2.18",
+                localVersionCode = 2102L,
+                remoteCandidates = candidates
+            )
+        )
+    }
+
+    @Test
+    fun `remote candidate with different build code stays newer`() {
+        val candidates = GitHubVersionUtils.buildVersionCandidates(
+            GitHubVersionCandidateSource.Tag to "v1.2.18.2102"
+        )
+
+        assertEquals(
+            false,
+            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
+                localVersion = "1.2.18",
+                localVersionCode = 2101L,
+                remoteCandidates = candidates
+            )
+        )
     }
 }

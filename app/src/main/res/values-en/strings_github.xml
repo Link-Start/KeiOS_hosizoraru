@@ -601,9 +601,11 @@
     <string name="github_track_sheet_app_sort_name">Name</string>
     <string name="github_track_sheet_app_sort_last_updated">Last updated</string>
     <string name="github_track_sheet_app_sort_recently_installed">Recently installed</string>
+    <string name="github_track_sheet_app_sort_install_source">Install source</string>
     <string name="github_track_sheet_app_sort_package">Package</string>
     <string name="github_track_sheet_app_sort_direction_ascending">Ascending</string>
     <string name="github_track_sheet_app_sort_direction_descending">Descending</string>
+    <string name="github_track_sheet_app_install_source_unknown">Unknown source</string>
     <string name="github_track_sheet_msg_app_no_match">No matching results</string>
     <string name="github_track_sheet_danger_title">Danger zone</string>
     <string name="github_track_sheet_btn_delete">Delete tracking</string>

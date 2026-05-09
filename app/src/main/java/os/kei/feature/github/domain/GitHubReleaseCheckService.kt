@@ -212,6 +212,13 @@ object GitHubReleaseCheckService {
         val stableCmp = latestStable?.let {
             GitHubVersionUtils.compareVersionToStructuredCandidates(localVersion, it.versionCandidates)
         }
+        val stableTagMatchesLocalNameAndCode = latestStable?.let {
+            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                remoteCandidates = it.versionCandidates
+            )
+        } == true
         val latestPreIsRelevant = when {
             latestPre == null -> false
             latestStable == null -> true
@@ -227,6 +234,13 @@ object GitHubReleaseCheckService {
         } else {
             null
         }
+        val preTagMatchesLocalNameAndCode = latestPre?.let {
+            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                remoteCandidates = it.versionCandidates
+            )
+        } == true
 
         val preciseStableCmp = preciseStableApkVersion
             ?.versionCodeLong
@@ -238,9 +252,10 @@ object GitHubReleaseCheckService {
             ?.compareTo(localVersionCode)
         val hasPreReleaseUpdate = inspectPreRelease &&
             latestPreIsRelevant &&
-                (precisePreCmp?.let { it > 0 } ?: (latestPreCmp?.let { it < 0 } == true))
+                (precisePreCmp?.let { it > 0 }
+                    ?: (!preTagMatchesLocalNameAndCode && latestPreCmp?.let { it < 0 } == true))
         val stableHasUpdate = preciseStableCmp?.let { it > 0 }
-            ?: (stableCmp?.let { it < 0 } == true)
+            ?: (!stableTagMatchesLocalNameAndCode && stableCmp?.let { it < 0 } == true)
         val recommendsPreRelease = hasPreReleaseUpdate &&
             (item.preferPreRelease || (isLocalPreReleaseInstalled && !stableHasUpdate))
         val hasUpdate = stableHasUpdate || recommendsPreRelease

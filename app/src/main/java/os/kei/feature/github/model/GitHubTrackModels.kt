@@ -43,7 +43,9 @@ data class InstalledAppItem(
     val packageName: String,
     val firstInstallTimeMs: Long = -1L,
     val lastUpdateTimeMs: Long = -1L,
-    val isSystemApp: Boolean = false
+    val isSystemApp: Boolean = false,
+    val installSourcePackageName: String = "",
+    val installSourceLabel: String = ""
 )
 
 data class GitHubCheckCacheEntry(

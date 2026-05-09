@@ -2,6 +2,8 @@ package os.kei.ui.page.main.github
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,7 +11,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -23,15 +27,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import os.kei.R
-import os.kei.feature.github.data.local.AppIconCache
-import os.kei.feature.github.model.InstalledAppItem
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.sheet.SheetSurfaceCard
-import os.kei.ui.page.main.widget.status.StatusPill
 import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.R
+import os.kei.feature.github.data.local.AppIconCache
+import os.kei.feature.github.model.InstalledAppItem
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
+import os.kei.ui.page.main.widget.sheet.SheetSurfaceCard
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -76,10 +81,7 @@ internal fun GitHubSelectedAppCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            StatusPill(
-                label = stringResource(R.string.github_strategy_status_selected),
-                color = GitHubStatusPalette.Update
-            )
+            InstallSourcePill(label = selectedApp.installSourceDisplayLabel())
         }
     }
 }
@@ -135,13 +137,51 @@ internal fun GitHubAppCandidateRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            if (selected) {
-                StatusPill(
-                    label = stringResource(R.string.github_strategy_status_current),
-                    color = GitHubStatusPalette.Update
-                )
-            }
+            InstallSourcePill(
+                label = app.installSourceDisplayLabel(),
+                selected = selected
+            )
         }
+    }
+}
+
+@Composable
+private fun InstalledAppItem.installSourceDisplayLabel(): String {
+    return installSourceLabel
+        .ifBlank { installSourcePackageName }
+        .ifBlank { stringResource(R.string.github_track_sheet_app_install_source_unknown) }
+}
+
+@Composable
+private fun InstallSourcePill(
+    label: String,
+    selected: Boolean = false
+) {
+    val color = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
+    val isDark = isSystemInDarkTheme()
+    val metrics = rememberAppStatusPillMetrics(AppStatusPillSize.Compact)
+    Box(
+        modifier = Modifier
+            .widthIn(max = 156.dp)
+            .clip(ContinuousCapsule)
+            .background(color.copy(alpha = if (isDark) 0.16f else 0.2f))
+            .border(
+                width = 0.8.dp,
+                color = color.copy(alpha = if (isDark) 0.32f else 0.4f),
+                shape = ContinuousCapsule
+            )
+            .padding(metrics.contentPadding),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = if (isDark) color else color.copy(alpha = 0.96f),
+            fontSize = metrics.typography.fontSize,
+            lineHeight = metrics.typography.lineHeight,
+            fontWeight = metrics.typography.fontWeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

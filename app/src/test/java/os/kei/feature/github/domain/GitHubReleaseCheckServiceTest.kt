@@ -337,6 +337,45 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
+    fun `remote tag using local versionName and versionCode is treated as installed Karing release`() {
+        val item = trackedApp(preferPreRelease = false)
+        val stable = signal(tag = "v1.2.18.2102", title = "v1.2.18.2102")
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.2.18",
+            localVersionCode = 2102L,
+            snapshot = snapshot(
+                stable = stable,
+                entries = listOf(entry(tag = "v1.2.18.2102", title = "v1.2.18.2102"))
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpToDate, result.status)
+        assertEquals(false, result.hasUpdate)
+        assertEquals("v1.2.18.2102", result.stableRelease?.rawTag)
+    }
+
+    @Test
+    fun `remote tag using different versionCode still reports Karing release update`() {
+        val item = trackedApp(preferPreRelease = false)
+        val stable = signal(tag = "v1.2.18.2102", title = "v1.2.18.2102")
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.2.18",
+            localVersionCode = 2101L,
+            snapshot = snapshot(
+                stable = stable,
+                entries = listOf(entry(tag = "v1.2.18.2102", title = "v1.2.18.2102"))
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+    }
+
+    @Test
     fun `repository profile survives release check cache round trip`() {
         val item = trackedApp(preferPreRelease = false)
         val stable = signal(tag = "v1.0.0", title = "Demo 1.0.0")

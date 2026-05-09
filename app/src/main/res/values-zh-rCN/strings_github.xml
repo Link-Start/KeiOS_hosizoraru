@@ -593,9 +593,11 @@
     <string name="github_track_sheet_app_sort_name">名称</string>
     <string name="github_track_sheet_app_sort_last_updated">最新更新</string>
     <string name="github_track_sheet_app_sort_recently_installed">最近安装</string>
+    <string name="github_track_sheet_app_sort_install_source">安装来源</string>
     <string name="github_track_sheet_app_sort_package">包名</string>
     <string name="github_track_sheet_app_sort_direction_ascending">正序</string>
     <string name="github_track_sheet_app_sort_direction_descending">反序</string>
+    <string name="github_track_sheet_app_install_source_unknown">未知来源</string>
     <string name="github_track_sheet_msg_app_no_match">没有匹配结果</string>
     <string name="github_track_sheet_danger_title">危险操作</string>
     <string name="github_track_sheet_btn_delete">删除跟踪</string>

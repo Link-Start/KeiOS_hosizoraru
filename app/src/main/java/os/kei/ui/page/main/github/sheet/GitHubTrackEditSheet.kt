@@ -358,6 +358,7 @@ private enum class GitHubTrackAppPickerSortMode(
         R.string.github_track_sheet_app_sort_recently_installed,
         "recently_installed"
     ),
+    InstallSource(R.string.github_track_sheet_app_sort_install_source, "install_source"),
     Package(R.string.github_track_sheet_app_sort_package, "package");
 
     companion object {
@@ -384,7 +385,9 @@ private enum class GitHubTrackAppPickerSortDirection(
 private fun InstalledAppItem.matchesAppPickerQuery(query: String): Boolean {
     if (query.isBlank()) return true
     return label.contains(query, ignoreCase = true) ||
-            packageName.contains(query, ignoreCase = true)
+            packageName.contains(query, ignoreCase = true) ||
+            installSourceLabel.contains(query, ignoreCase = true) ||
+            installSourcePackageName.contains(query, ignoreCase = true)
 }
 
 private fun InstalledAppItem.matchesAppTypeFilter(
@@ -413,6 +416,12 @@ private fun GitHubTrackAppPickerSortMode.comparator(
             compareBy<InstalledAppItem> { it.firstInstallTimeMs }
                 .thenBy { it.label.lowercase(Locale.ROOT) }
 
+        GitHubTrackAppPickerSortMode.InstallSource ->
+            compareBy<InstalledAppItem> { it.installSourceSortKey().isBlank() }
+                .thenBy { it.installSourceSortKey() }
+                .thenBy { it.label.lowercase(Locale.ROOT) }
+                .thenBy { it.packageName.lowercase(Locale.ROOT) }
+
         GitHubTrackAppPickerSortMode.Package ->
             compareBy<InstalledAppItem> { it.packageName.lowercase(Locale.ROOT) }
                 .thenBy { it.label.lowercase(Locale.ROOT) }
@@ -426,6 +435,12 @@ private fun GitHubTrackAppPickerSortMode.comparator(
 private fun GitHubTrackAppPickerSortMode.isTimeSort(): Boolean {
     return this == GitHubTrackAppPickerSortMode.LastUpdated ||
             this == GitHubTrackAppPickerSortMode.RecentlyInstalled
+}
+
+private fun InstalledAppItem.installSourceSortKey(): String {
+    return installSourceLabel
+        .ifBlank { installSourcePackageName }
+        .lowercase(Locale.ROOT)
 }
 
 @Composable

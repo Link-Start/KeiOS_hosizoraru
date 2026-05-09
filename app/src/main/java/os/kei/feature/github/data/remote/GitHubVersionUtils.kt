@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import os.kei.core.system.HyperOsSettingsIntents
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidate
@@ -87,6 +88,7 @@ object GitHubVersionUtils {
 
         val pm = context.packageManager
         val overlayFlagMask = installedAppResourceOverlayFlagMask()
+        val installSourceLabelCache = mutableMapOf<String, String>()
         val apps = pm.queryInstalledPackageInfos()
             .asSequence()
             .mapNotNull { pkgInfo ->
@@ -101,12 +103,15 @@ object GitHubVersionUtils {
                 val label = runCatching {
                     pm.getApplicationLabel(appInfo).toString()
                 }.getOrDefault(packageName).trim().ifBlank { packageName }
+                val installSource = pm.resolveInstallSource(packageName, installSourceLabelCache)
                 InstalledAppItem(
                     label = label,
                     packageName = packageName,
                     firstInstallTimeMs = pkgInfo.firstInstallTime,
                     lastUpdateTimeMs = pkgInfo.lastUpdateTime,
-                    isSystemApp = appInfo.isSystemAppForGitHubPicker()
+                    isSystemApp = appInfo.isSystemAppForGitHubPicker(),
+                    installSourcePackageName = installSource.packageName,
+                    installSourceLabel = installSource.label
                 )
             }
             .distinctBy { it.packageName }
@@ -252,6 +257,32 @@ object GitHubVersionUtils {
 
     fun compareVersionToStructuredCandidates(localVersion: String, candidates: List<GitHubVersionCandidate>): Int? {
         return compareCandidateSetsWithSources(normalizeVersionCandidates(localVersion), candidates)
+    }
+
+    fun remoteCandidateMatchesLocalVersionNameAndCode(
+        localVersion: String,
+        localVersionCode: Long,
+        remoteCandidates: List<GitHubVersionCandidate>
+    ): Boolean {
+        if (localVersionCode < 100L) return false
+        val code = localVersionCode.toString()
+        if (code.length < 3) return false
+        val localCandidates = normalizeVersionCandidates(localVersion)
+            .map { canonicalizeCandidate(it).lowercase(Locale.ROOT).removePrefix("v") }
+            .filter { it.isNotBlank() }
+            .distinct()
+        if (localCandidates.isEmpty()) return false
+        val remoteNormalized = remoteCandidates
+            .flatMap { normalizeVersionCandidates(it.value) }
+            .map { canonicalizeCandidate(it).lowercase(Locale.ROOT).removePrefix("v") }
+            .distinct()
+        return remoteNormalized.any { remote ->
+            localCandidates.any { local ->
+                remote == "$local.$code" ||
+                        remote == "$local-$code" ||
+                        remote == "$local+$code"
+            }
+        }
     }
 
     fun compareStructuredCandidateSets(
@@ -628,6 +659,43 @@ private fun PackageManager.getApplicationInfoCompat(packageName: String): Applic
     return runCatching {
         getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
     }.getOrNull()
+}
+
+private data class InstalledAppInstallSource(
+    val packageName: String,
+    val label: String
+)
+
+private fun PackageManager.resolveInstallSource(
+    packageName: String,
+    labelCache: MutableMap<String, String>
+): InstalledAppInstallSource {
+    val sourcePackageName = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val sourceInfo = getInstallSourceInfo(packageName)
+            sourceInfo.installingPackageName
+                ?: sourceInfo.initiatingPackageName
+                ?: sourceInfo.originatingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            getInstallerPackageName(packageName)
+        }
+    }.getOrNull()?.trim().orEmpty()
+    if (sourcePackageName.isBlank()) return InstalledAppInstallSource("", "")
+    val sourceLabel = labelCache.getOrPut(sourcePackageName) {
+        runCatching {
+            val sourceInfo = getApplicationInfoCompat(sourcePackageName)
+            if (sourceInfo == null) {
+                sourcePackageName
+            } else {
+                getApplicationLabel(sourceInfo).toString()
+            }
+        }.getOrDefault(sourcePackageName).trim().ifBlank { sourcePackageName }
+    }
+    return InstalledAppInstallSource(
+        packageName = sourcePackageName,
+        label = sourceLabel
+    )
 }
 
 private fun installedAppResourceOverlayFlagMask(): Int {

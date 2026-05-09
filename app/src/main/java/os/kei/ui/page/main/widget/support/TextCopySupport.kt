@@ -8,17 +8,17 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.composed
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.prefs.UiPrefs
@@ -35,7 +35,9 @@ internal fun buildTextCopyPayload(key: String, value: String): String {
 internal fun rememberTextCopyExpandedEnabled(): Boolean {
     LocalTextCopyExpandedOverride.current?.let { return it }
     val copyFlow = remember { UiPrefs.observeTextCopyCapabilityExpanded() }
-    val enabled by copyFlow.collectAsState(initial = UiPrefs.isTextCopyCapabilityExpanded())
+    val enabled by copyFlow.collectAsStateWithLifecycle(
+        initialValue = UiPrefs.isTextCopyCapabilityExpanded()
+    )
     return enabled
 }
 

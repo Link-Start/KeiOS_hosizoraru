@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -42,9 +45,41 @@ internal fun AppMarkdownContent(
     preserveLineBreaks: Boolean = false,
     onOpenLink: ((String) -> Unit)? = null
 ) {
-    val blocks = remember(markdown, preserveLineBreaks) {
-        parseAppMarkdownBlocks(markdown, preserveLineBreaks = preserveLineBreaks)
+    val blocksState = produceState<List<AppMarkdownBlock>>(
+        initialValue = emptyList(),
+        markdown,
+        preserveLineBreaks
+    ) {
+        value = emptyList()
+        value = withContext(Dispatchers.Default) {
+            parseAppMarkdownBlocks(markdown, preserveLineBreaks = preserveLineBreaks)
+        }
     }
+    AppMarkdownBlocksContent(
+        blocks = blocksState.value,
+        titleColor = titleColor,
+        subtitleColor = subtitleColor,
+        accentColor = accentColor,
+        codeContainerColor = codeContainerColor,
+        modifier = modifier,
+        paragraphMarker = paragraphMarker,
+        emptyText = emptyText,
+        onOpenLink = onOpenLink
+    )
+}
+
+@Composable
+internal fun AppMarkdownBlocksContent(
+    blocks: List<AppMarkdownBlock>,
+    titleColor: Color,
+    subtitleColor: Color,
+    accentColor: Color,
+    codeContainerColor: Color,
+    modifier: Modifier = Modifier,
+    paragraphMarker: String? = null,
+    emptyText: String? = null,
+    onOpenLink: ((String) -> Unit)? = null
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)

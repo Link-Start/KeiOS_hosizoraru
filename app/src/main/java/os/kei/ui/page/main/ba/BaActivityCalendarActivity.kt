@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -338,8 +339,11 @@ private fun BaActivityCalendarListContent(
             }
 
             else -> {
-                items(visibleEntries.size) { index ->
-                    val activity = visibleEntries[index]
+                items(
+                    items = visibleEntries,
+                    key = { activity -> activity.id },
+                    contentType = { "ba_calendar_entry" }
+                ) { activity ->
                     BaCalendarEntryPanel(
                         backdrop = backdrop,
                         isPageActive = true,

@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -392,8 +393,11 @@ private fun BaPoolListContent(
             }
 
             else -> {
-                items(visibleEntries.size) { index ->
-                    val pool = visibleEntries[index]
+                items(
+                    items = visibleEntries,
+                    key = { pool -> pool.id },
+                    contentType = { "ba_pool_entry" }
+                ) { pool ->
                     BaPoolEntryPanel(
                         backdrop = backdrop,
                         isPageActive = true,

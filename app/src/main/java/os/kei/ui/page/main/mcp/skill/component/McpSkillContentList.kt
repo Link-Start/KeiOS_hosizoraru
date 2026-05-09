@@ -3,7 +3,7 @@ package os.kei.ui.page.main.mcp.skill.component
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,7 +53,11 @@ internal fun McpSkillContentList(
                 codeColor = codeColor
             )
         }
-        items(items = contentState.sections) { section ->
+        itemsIndexed(
+            items = contentState.sections,
+            key = { index, section -> "${section.level}:${section.title}:$index" },
+            contentType = { _, _ -> "mcp_skill_section" }
+        ) { _, section ->
             SkillSectionCard(
                 section = section,
                 titleColor = titleColor,

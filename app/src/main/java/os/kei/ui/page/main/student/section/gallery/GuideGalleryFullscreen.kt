@@ -21,7 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -29,6 +28,12 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.github.panpf.zoomimage.CoilZoomAsyncImage
+import com.github.panpf.zoomimage.rememberCoilZoomState
+import com.github.panpf.zoomimage.zoom.ContinuousTransformType
+import com.github.panpf.zoomimage.zoom.GestureType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_GESTURE_COOLDOWN_MS
@@ -43,12 +48,6 @@ import os.kei.ui.page.main.student.rememberSystemAutoRotateEnabled
 import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
-import com.github.panpf.zoomimage.CoilZoomAsyncImage
-import com.github.panpf.zoomimage.rememberCoilZoomState
-import com.github.panpf.zoomimage.zoom.ContinuousTransformType
-import com.github.panpf.zoomimage.zoom.GestureType
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import kotlin.math.abs
 
@@ -212,7 +211,7 @@ internal fun GuideImageFullscreenDialog(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .rotate(rotationTransition.value)
+                        .graphicsLayer { rotationZ = rotationTransition.value }
                         .align(Alignment.Center),
                     contentScale = ContentScale.Fit,
                     zoomState = zoomState,

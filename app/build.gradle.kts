@@ -273,6 +273,13 @@ android {
         buildConfig = true
         compose = true
     }
+
+    packaging {
+        jniLibs {
+            excludes += "lib/*/libandroidx.graphics.path.so"
+        }
+    }
+
     compileSdkMinor = 0
 
     testOptions {

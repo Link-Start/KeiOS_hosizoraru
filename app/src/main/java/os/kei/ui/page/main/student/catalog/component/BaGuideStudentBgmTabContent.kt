@@ -58,13 +58,6 @@ import kotlin.math.max
 private const val STUDENT_BGM_BATCH_SIZE = 20
 private const val STUDENT_BGM_LOAD_MORE_THRESHOLD = 10
 
-private data class StudentBgmDisplayedStats(
-    val contentIds: List<Long>,
-    val playableFavorites: List<GuideBgmFavoriteItem>,
-    val resolvedCount: Int,
-    val loadingCount: Int
-)
-
 @Composable
 internal fun BaGuideStudentBgmTabContent(
     catalog: BaGuideCatalogBundle,
@@ -184,24 +177,20 @@ internal fun BaGuideStudentBgmTabContent(
     }
 
     fun favoriteForEntry(entry: BaGuideCatalogEntry): GuideBgmFavoriteItem? {
-        val detailUrl = normalizeGuideUrl(entry.detailUrl)
-        if (detailUrl.isBlank()) return null
-        return favoriteByNormalizedSourceUrl[detailUrl]
+        return favoriteForStudentBgmEntry(
+            entry = entry,
+            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
+        )
     }
 
     fun stateWithFavoriteFallback(
         entry: BaGuideCatalogEntry,
         lookupState: BaGuideStudentBgmLookupState
     ): BaGuideStudentBgmLookupState {
-        if (lookupState is BaGuideStudentBgmLookupState.Ready) return lookupState
-        if (lookupState == BaGuideStudentBgmLookupState.Loading) return lookupState
-        val favorite = favoriteForEntry(entry) ?: return lookupState
-        return BaGuideStudentBgmLookupState.Ready(
-            BaGuideStudentBgmResolvedItem(
-                favorite = favorite,
-                fromCache = false,
-                fromFavorite = true
-            )
+        return studentBgmStateWithFavoriteFallback(
+            entry = entry,
+            lookupState = lookupState,
+            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
         )
     }
 
@@ -297,36 +286,15 @@ internal fun BaGuideStudentBgmTabContent(
         return favoriteForEntry(entry) != null
     }
 
-    val displayedBgmStats =
+    val displayedBgmModel =
         remember(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl) {
-            val contentIds = ArrayList<Long>(displayedEntries.size)
-            val playableFavorites = ArrayList<GuideBgmFavoriteItem>()
-            val seenAudioUrls = mutableSetOf<String>()
-            var resolvedCount = 0
-            var loadingCount = 0
-            displayedEntries.forEach { entry ->
-                contentIds += entry.contentId
-            val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
-                if (lookupState == BaGuideStudentBgmLookupState.Loading) {
-                    loadingCount += 1
-                }
-                val readyFavorite =
-                    stateWithFavoriteFallback(entry, lookupState).readyFavoriteOrNull()
-                if (readyFavorite != null) {
-                    resolvedCount += 1
-                    if (seenAudioUrls.add(readyFavorite.audioUrl)) {
-                        playableFavorites += readyFavorite
-                    }
-                }
-            }
-            StudentBgmDisplayedStats(
-                contentIds = contentIds,
-                playableFavorites = playableFavorites,
-                resolvedCount = resolvedCount,
-                loadingCount = loadingCount
+            buildBaGuideStudentBgmDisplayedModel(
+                displayedEntries = displayedEntries,
+                lookupStates = lookupStates,
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
             )
         }
-    val displayedPlayableFavorites = displayedBgmStats.playableFavorites
+    val displayedPlayableFavorites = displayedBgmModel.playableFavorites
     LaunchedEffect(playbackCoordinator, displayedPlayableFavorites, isPageActive) {
         if (isPageActive) {
             playbackCoordinator.updateQueue(displayedPlayableFavorites)
@@ -367,7 +335,7 @@ internal fun BaGuideStudentBgmTabContent(
     LaunchedEffect(catalog.syncedAtMs) {
         lookupCoordinator.clear()
     }
-    LaunchedEffect(displayedBgmStats.contentIds) {
+    LaunchedEffect(displayedBgmModel.contentIds) {
         lookupCoordinator.prewarmCached(displayedEntries)
     }
     LaunchedEffect(selectedFavorite?.audioUrl) {
@@ -448,9 +416,9 @@ internal fun BaGuideStudentBgmTabContent(
                     BaGuideStudentBgmHeader(
                         totalCount = allStudentEntries.size,
                         displayedCount = filteredEntries.size,
-                        resolvedCount = displayedBgmStats.resolvedCount,
+                        resolvedCount = displayedBgmModel.resolvedCount,
                         favoriteCount = favorites.size,
-                        loadingCount = displayedBgmStats.loadingCount,
+                        loadingCount = displayedBgmModel.loadingCount,
                         searchActive = searchQuery.isNotBlank(),
                         accent = accent
                     )
@@ -469,7 +437,8 @@ internal fun BaGuideStudentBgmTabContent(
             } else {
                 items(
                     items = displayedEntries,
-                    key = { it.contentId }
+                    key = { it.contentId },
+                    contentType = { "student_bgm_entry" }
                 ) { entry ->
                     val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
                     val displayState = stateWithFavoriteFallback(entry, lookupState)

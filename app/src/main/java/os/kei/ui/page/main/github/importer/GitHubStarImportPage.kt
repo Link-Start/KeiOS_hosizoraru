@@ -210,7 +210,8 @@ internal fun GitHubStarImportPage(
                 }
                 items(
                     items = listUiState.filteredCandidates,
-                    key = { candidate -> candidate.trackedApp.id }
+                    key = { candidate -> candidate.trackedApp.id },
+                    contentType = { "github_star_import_candidate" }
                 ) { candidate ->
                     StarImportCandidateCard(
                         candidate = candidate,

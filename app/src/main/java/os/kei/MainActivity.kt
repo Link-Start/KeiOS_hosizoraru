@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.toArgb
@@ -59,9 +60,9 @@ class MainActivity : ComponentActivity() {
     private var appThemeModeState = mutableStateOf(UiPrefs.getAppThemeMode())
     private var notificationPermissionGranted by mutableStateOf(true)
     private var requestedBottomPage by mutableStateOf<String?>(null)
-    private var requestedBottomPageToken by mutableStateOf(0)
-    private var requestedGitHubRefreshToken by mutableStateOf(0)
-    private var requestedBaBgmPlaybackToken by mutableStateOf(0)
+    private var requestedBottomPageToken by mutableIntStateOf(0)
+    private var requestedGitHubRefreshToken by mutableIntStateOf(0)
+    private var requestedBaBgmPlaybackToken by mutableIntStateOf(0)
     private var transientExternalLaunchActive by mutableStateOf(false)
     private var pendingMcpServerAction: String? = null
     private var pendingShortcutAction: String? = null

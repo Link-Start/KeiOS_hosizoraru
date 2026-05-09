@@ -203,7 +203,8 @@ internal fun GitHubShareImportSheet(
                 ) {
                     itemsIndexed(
                         items = preview.assets,
-                        key = { _, asset -> asset.name }
+                        key = { _, asset -> asset.name },
+                        contentType = { _, _ -> "github_share_asset" }
                     ) { index, asset ->
                         val preferredForDevice = assetIsPreferredForDevice(asset.name, supportedAbis)
                         val likelyCompatible = assetLikelyCompatibleWithDevice(asset.name, supportedAbis)

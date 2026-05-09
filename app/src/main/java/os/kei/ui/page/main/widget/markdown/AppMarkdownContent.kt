@@ -26,8 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -43,17 +41,21 @@ internal fun AppMarkdownContent(
     paragraphMarker: String? = null,
     emptyText: String? = null,
     preserveLineBreaks: Boolean = false,
+    sourceKey: String? = null,
     onOpenLink: ((String) -> Unit)? = null
 ) {
     val blocksState = produceState<List<AppMarkdownBlock>>(
         initialValue = emptyList(),
         markdown,
-        preserveLineBreaks
+        preserveLineBreaks,
+        sourceKey
     ) {
         value = emptyList()
-        value = withContext(Dispatchers.Default) {
-            parseAppMarkdownBlocks(markdown, preserveLineBreaks = preserveLineBreaks)
-        }
+        value = parseCachedAppMarkdownBlocks(
+            markdown = markdown,
+            preserveLineBreaks = preserveLineBreaks,
+            sourceKey = sourceKey
+        )
     }
     AppMarkdownBlocksContent(
         blocks = blocksState.value,

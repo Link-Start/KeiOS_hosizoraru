@@ -3,12 +3,12 @@ package os.kei.ui.page.main.os.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,36 +16,36 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.InfoRow
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.OsSectionCard
-import os.kei.ui.page.main.os.titleText
-import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
-import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 import os.kei.ui.page.main.os.osLucideEnterIcon
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
+import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
+import os.kei.ui.page.main.os.titleText
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppSwitch
+import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -253,7 +253,8 @@ private fun OsVirtualizedInfoRows(
     ) {
         itemsIndexed(
             items = rows,
-            key = { index, row -> "${row.key}-${row.value}-$index" }
+            key = { index, row -> "${row.key}-${row.value}-$index" },
+            contentType = { _, _ -> "os_info_row" }
         ) { _, row ->
             OsSectionInfoRow(
                 label = row.key,
@@ -328,6 +329,12 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
                 when (item) {
                     is TopInfoVirtualizedItem.Header -> "header-${item.title}-$index"
                     is TopInfoVirtualizedItem.Entry -> "entry-${item.row.key}-${item.row.value}-$index"
+                }
+            },
+            contentType = { _, item ->
+                when (item) {
+                    is TopInfoVirtualizedItem.Header -> "os_top_info_header"
+                    is TopInfoVirtualizedItem.Entry -> "os_top_info_entry"
                 }
             }
         ) { index, item ->

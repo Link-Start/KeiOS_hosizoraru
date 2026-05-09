@@ -725,7 +725,8 @@ private fun GitHubTrackAppPickerContent(
                 ) {
                     items(
                         items = filteredApps,
-                        key = { it.packageName }
+                        key = { it.packageName },
+                        contentType = { "github_app_candidate" }
                     ) { app ->
                         GitHubAppCandidateRow(
                             app = app,

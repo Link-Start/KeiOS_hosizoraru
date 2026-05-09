@@ -26,7 +26,7 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
     - Done in `BaGuideStudentBgmTabContent`.
     - Favorite lookup now uses normalized source URL and audio URL maps.
     - Displayed IDs, playable queue, resolved count, and loading count are grouped in
-      `StudentBgmDisplayedStats`.
+      `BaGuideStudentBgmDisplayedModel`.
     - `LaunchedEffect` now uses stable displayed content IDs.
 
 - [x] Add stable Lazy list keys and content types for audited BA and MCP lists.
@@ -51,13 +51,13 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
     - Suggested gate: `:app:compileReleaseKotlin` with the audit init script, plus a short
       release-notes sheet render check.
 
-- [ ] Add Release Notes parsed-block caching by source key.
+- [x] Add Release Notes parsed-block caching by source key.
     - Priority: high.
     - Goal: avoid reparsing the same long release notes after sheet recreation or repeated
       open/close.
     - Candidate owner: GitHub detail sheet state or a small Markdown cache helper.
 
-- [ ] Hoist BGM displayed stats into a stable UI model closer to the coordinator or page state.
+- [x] Hoist BGM displayed stats into a stable UI model closer to the coordinator or page state.
     - Priority: high.
     - Goal: keep the composable as a renderer and make queue/count derivation easier to test.
     - Candidate output: immutable displayed model with content IDs, resolved count, loading count,
@@ -70,13 +70,13 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
     - Start with high-traffic UI-state models and list item models used by Home, GitHub, BA, OS, and
       shared chrome.
 
-- [ ] Sweep remaining production Lazy lists for missing `key` and `contentType`.
+- [x] Sweep remaining production Lazy lists for missing `key` and `contentType`.
     - Priority: medium.
     - Goal: extend the same list identity hygiene beyond the three audited call sites.
     - Suggested scan: production `LazyColumn`, `LazyRow`, `LazyVerticalGrid`, and `items(size)`
       usages under `app/src/main`.
 
-- [ ] Replace boxed primitive route event tokens with typed primitive state.
+- [x] Replace boxed primitive route event tokens with typed primitive state.
     - Priority: medium.
     - Goal: clean up report evidence around `mutableStateOf(0)` event tokens.
     - Candidate owner: `MainActivity` event-token fields.
@@ -103,4 +103,3 @@ Source report: `artifacts/compose-audit-20260509/COMPOSE-AUDIT-REPORT.md`
 - [ ] Keep the Compose audit TODO updated after each audit run.
     - Priority: low.
     - Add the new score, date, changed findings, and completed checkboxes.
-

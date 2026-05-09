@@ -1,6 +1,9 @@
 package os.kei.ui.page.main.widget.markdown
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -145,5 +148,27 @@ class AppMarkdownParserTest {
                 "https://github.com/open-ani/animeko/issues"
             )
         })
+    }
+
+    @Test
+    fun cachedParserReusesBlocksForSameSourceKeyAndContent() = runBlocking {
+        val first = parseCachedAppMarkdownBlocks(
+            markdown = "## Release\n- Fixed cache",
+            preserveLineBreaks = false,
+            sourceKey = "github-release-notes/demo/v1"
+        )
+        val second = parseCachedAppMarkdownBlocks(
+            markdown = "## Release\n- Fixed cache",
+            preserveLineBreaks = false,
+            sourceKey = "github-release-notes/demo/v1"
+        )
+        val changed = parseCachedAppMarkdownBlocks(
+            markdown = "## Release\n- Fixed cache\n- Added profile",
+            preserveLineBreaks = false,
+            sourceKey = "github-release-notes/demo/v1"
+        )
+
+        assertSame(first, second)
+        assertNotSame(first, changed)
     }
 }

@@ -27,7 +27,8 @@ internal fun LazyListScope.renderBaGuideCatalogEntryListAdapter(
 ) {
     items(
         items = displayedEntries,
-        key = { "${it.tab.name}-${it.entryId}-${it.contentId}" }
+        key = { "${it.tab.name}-${it.entryId}-${it.contentId}" },
+        contentType = { "ba_guide_catalog_entry" }
     ) { entry ->
         BaGuideCatalogEntryCard(
             entry = entry,

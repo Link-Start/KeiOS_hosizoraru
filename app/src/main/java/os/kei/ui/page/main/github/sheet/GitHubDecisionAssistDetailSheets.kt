@@ -299,6 +299,7 @@ private fun GitHubReleaseNotesDetailContent(
         assetBundle = assetBundle
     )
     val rawMarkdown = assetBundle?.releaseNotesBody.orEmpty()
+    val markdownSourceKey = releaseNotesMarkdownSourceKey(item, assetBundle, rawMarkdown)
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSummaryCard(
             title = assetBundle?.releaseName?.takeIf { it.isNotBlank() }
@@ -333,6 +334,7 @@ private fun GitHubReleaseNotesDetailContent(
                         accentColor = MiuixTheme.colorScheme.primary,
                         codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f),
                         preserveLineBreaks = true,
+                        sourceKey = markdownSourceKey,
                         onOpenLink = onOpenExternalUrl
                     )
                 }
@@ -461,6 +463,35 @@ private fun releaseNotesSourceLabel(source: String): String {
         "api" -> stringResource(R.string.github_release_notes_source_api)
         "html" -> stringResource(R.string.github_release_notes_source_atom)
         else -> stringResource(R.string.common_unknown)
+    }
+}
+
+private fun releaseNotesMarkdownSourceKey(
+    item: GitHubTrackedApp,
+    bundle: GitHubReleaseAssetBundle?,
+    body: String
+): String {
+    return buildString {
+        append("github-release-notes|")
+        append(item.id)
+        append('|')
+        append(item.owner)
+        append('/')
+        append(item.repo)
+        append('|')
+        append(bundle?.tagName.orEmpty())
+        append('|')
+        append(bundle?.htmlUrl.orEmpty())
+        append('|')
+        append(bundle?.releaseUpdatedAtMillis ?: 0L)
+        append('|')
+        append(bundle?.fetchSource.orEmpty())
+        append('|')
+        append(bundle?.sourceConfigSignature.orEmpty())
+        append('|')
+        append(body.length)
+        append(':')
+        append(body.hashCode())
     }
 }
 

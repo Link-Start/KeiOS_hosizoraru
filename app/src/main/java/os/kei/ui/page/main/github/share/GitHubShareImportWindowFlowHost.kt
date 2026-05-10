@@ -22,10 +22,7 @@ import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.remote.GitHubShareImportResolver
-import os.kei.feature.github.data.remote.GitHubShareIntentParser
 import os.kei.feature.github.model.GitHubShareImportFlowMode
-import os.kei.ui.page.main.github.localizedGitHubShareImportErrorMessage
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -283,110 +280,32 @@ internal fun GitHubShareImportWindowFlowHost(
         incomingResolveRunning = true
         onIncomingGitHubShareConsumed()
         pendingPreview = null
+        pendingTrack = null
+        attachCandidate = null
+        attachDuplicateExists = false
         withContext(Dispatchers.IO) {
             GitHubShareImportFlowStore.clearActiveFlow()
         }
         try {
-            val lookupConfig = withContext(Dispatchers.IO) { GitHubTrackStore.loadLookupConfig() }
-            if (!lookupConfig.shareImportLinkageEnabled) {
-                phase = GitHubShareImportPhase.Idle
-                return@LaunchedEffect
-            }
-            notificationOnlyIncomingResolve =
-                lookupConfig.shareImportFlowMode == GitHubShareImportFlowMode.NotificationFirst
             resolving = true
             phase = GitHubShareImportPhase.Resolving
-            notifyShareImportResolving(context, sharedText)
-            try {
-                val parsedIncoming = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
-                    ?: error(context.getString(R.string.github_share_import_error_no_valid_link))
-                withContext(Dispatchers.IO) {
-                    GitHubTrackStore.savePendingShareImportTrack(null)
-                    GitHubShareImportFlowStore.clearActiveFlow()
-                }
-                GitHubTrackStoreSignals.notifyChanged()
-                pendingTrack = null
-                attachCandidate = null
-                attachDuplicateExists = false
-                val plan = withContext(Dispatchers.IO) {
-                    GitHubShareImportResolver.resolve(
-                        sharedText = parsedIncoming.sourceUrl,
-                        lookupConfig = lookupConfig
-                    ).getOrThrow()
-                }
-                if (plan.assets.isEmpty()) {
-                    withContext(Dispatchers.IO) {
-                        GitHubShareImportFlowStore.clearActiveFlow()
-                    }
-                    phase = GitHubShareImportPhase.Failed
-                    saveShareImportResult(
-                        GitHubShareImportResult(
-                            kind = GitHubShareImportResultKind.Failed,
-                            projectUrl = plan.parsedLink.projectUrl,
-                            owner = plan.parsedLink.owner,
-                            repo = plan.parsedLink.repo,
-                            message = context.getString(R.string.github_toast_share_import_no_apk)
-                        )
-                    )
-                    notifyShareImportFailed(
-                        context = context,
-                        reason = context.getString(R.string.github_toast_share_import_no_apk)
-                    )
-                    toast(context, R.string.github_toast_share_import_no_apk)
+            val incomingResult = GitHubShareImportFlowCoordinator.startIncomingShare(
+                context = context,
+                sharedText = sharedText
+            )
+            if (incomingResult.notificationFirst) {
+                onMinimizeActiveFlow?.invoke()
+                return@LaunchedEffect
+            }
+            notificationOnlyIncomingResolve = false
+            applyCoordinatorResult(incomingResult.coordinatorResult)
+            val toastResId = incomingResult.toastResId
+            if (toastResId != null) {
+                if (incomingResult.toastMessage.isBlank()) {
+                    toast(context, toastResId)
                 } else {
-                    phase = GitHubShareImportPhase.AssetReady
-                    val preview = GitHubShareImportPreview(
-                        sourceUrl = plan.parsedLink.sourceUrl,
-                        projectUrl = plan.parsedLink.projectUrl,
-                        owner = plan.parsedLink.owner,
-                        repo = plan.parsedLink.repo,
-                        releaseTag = plan.resolvedReleaseTag,
-                        releaseUrl = plan.resolvedReleaseUrl,
-                        strategyLabel = lookupConfig.selectedStrategy.label,
-                        assets = plan.assets,
-                        preferredAssetName = plan.preferredAssetName,
-                        targetDisplayName = buildShareImportTargetDisplayName(
-                            repo = plan.parsedLink.repo,
-                            assetName = plan.preferredAssetName.ifBlank {
-                                plan.assets.singleOrNull()?.name.orEmpty()
-                            }
-                        )
-                    )
-                    val directNotificationSend =
-                        shouldUseNotificationOnlySingleApkFlow(
-                            flowMode = lookupConfig.shareImportFlowMode,
-                            assetCount = preview.assets.size
-                        )
-                    val coordinatorResult = GitHubShareImportFlowCoordinator.prepareAssetReady(
-                        context = context,
-                        preview = preview,
-                        sendInstallActionEnabled = directNotificationSend
-                    )
-                    if (directNotificationSend) {
-                        onMinimizeActiveFlow?.invoke()
-                    } else {
-                        notificationOnlyIncomingResolve = false
-                        applyCoordinatorResult(coordinatorResult)
-                    }
+                    toast(context, toastResId, incomingResult.toastMessage)
                 }
-            } catch (error: Throwable) {
-                if (error.shouldSuppressShareImportFailureToast()) return@LaunchedEffect
-                withContext(Dispatchers.IO) {
-                    GitHubShareImportFlowStore.clearActiveFlow()
-                }
-                phase = GitHubShareImportPhase.Failed
-                val reason = localizedGitHubShareImportErrorMessage(
-                    context = context,
-                    rawMessage = error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
-                )
-                saveShareImportResult(
-                    GitHubShareImportResult(
-                        kind = GitHubShareImportResultKind.Failed,
-                        message = reason
-                    )
-                )
-                notifyShareImportFailed(context, reason)
-                toast(context, R.string.github_toast_share_import_failed, reason)
             }
         } finally {
             resolving = false
@@ -629,16 +548,9 @@ internal fun GitHubShareImportWindowFlowHost(
     )
 }
 
-private suspend fun saveShareImportResult(result: GitHubShareImportResult) {
-    withContext(Dispatchers.IO) {
-        GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
-    }
-    GitHubTrackStoreSignals.notifyChanged()
-}
-
-internal fun shouldUseNotificationOnlySingleApkFlow(
+internal fun shouldUseNotificationFirstFlow(
     flowMode: GitHubShareImportFlowMode,
     assetCount: Int
 ): Boolean {
-    return flowMode == GitHubShareImportFlowMode.NotificationFirst && assetCount == 1
+    return flowMode == GitHubShareImportFlowMode.NotificationFirst && assetCount > 0
 }

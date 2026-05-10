@@ -8,7 +8,7 @@
     <style name="Theme.KeiOS.ShareImportWindow" parent="Theme.KeiOS">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowNoTitle">true</item>
     </style>
 </resources>

@@ -298,23 +298,29 @@ class GitHubShareImportWindowFlowSupportTest {
     }
 
     @Test
-    fun `notification first uses notification only flow for single apk`() {
+    fun `notification first uses notification flow for available apk choices`() {
         assertTrue(
-            shouldUseNotificationOnlySingleApkFlow(
+            shouldUseNotificationFirstFlow(
                 flowMode = GitHubShareImportFlowMode.NotificationFirst,
                 assetCount = 1
             )
         )
-        assertFalse(
-            shouldUseNotificationOnlySingleApkFlow(
+        assertTrue(
+            shouldUseNotificationFirstFlow(
                 flowMode = GitHubShareImportFlowMode.NotificationFirst,
                 assetCount = 2
             )
         )
         assertFalse(
-            shouldUseNotificationOnlySingleApkFlow(
+            shouldUseNotificationFirstFlow(
                 flowMode = GitHubShareImportFlowMode.SheetAssisted,
                 assetCount = 1
+            )
+        )
+        assertFalse(
+            shouldUseNotificationFirstFlow(
+                flowMode = GitHubShareImportFlowMode.NotificationFirst,
+                assetCount = 0
             )
         )
     }

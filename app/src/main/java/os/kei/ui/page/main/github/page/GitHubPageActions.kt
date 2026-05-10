@@ -314,6 +314,7 @@ internal class GitHubPageActions(
     fun openShareImportFlow() {
         val intent = Intent(env.context, GitHubShareImportActivity::class.java).apply {
             action = GitHubShareImportActivity.ACTION_RESUME_SHARE_IMPORT
+            putExtra(GitHubShareImportActivity.EXTRA_FORCE_SHEET, true)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         env.context.startActivity(intent)

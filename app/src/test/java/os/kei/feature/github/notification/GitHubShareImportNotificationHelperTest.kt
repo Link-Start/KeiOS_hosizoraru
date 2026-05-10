@@ -48,8 +48,8 @@ class GitHubShareImportNotificationHelperTest {
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, notification.actions.size)
-        assertEquals("Check install", notification.actions[0].title.toString())
-        assertEquals("Cancel linkage", notification.actions[1].title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertEquals("Refresh", notification.actions[1].title.toString())
     }
 
     @Test
@@ -87,7 +87,7 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(2, notification.actions.size)
-        assertEquals("Choose APK", notification.actions[0].title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
         assertEquals("Cancel linkage", notification.actions[1].title.toString())
     }
 
@@ -107,11 +107,25 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(2, notification.actions.size)
-        assertEquals("Send install", notification.actions[0].title.toString())
-        assertEquals("Cancel linkage", notification.actions[1].title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertEquals("Send install", notification.actions[1].title.toString())
         assertEquals(
             GitHubShareImportActivity::class.java.name,
             shadowOf(notification.actions[0].actionIntent).savedIntent.component?.className
+        )
+        assertEquals(
+            GitHubShareImportActivity.ACTION_RESUME_SHARE_IMPORT,
+            shadowOf(notification.actions[0].actionIntent).savedIntent.action
+        )
+        assertTrue(
+            shadowOf(notification.actions[0].actionIntent).savedIntent.getBooleanExtra(
+                GitHubShareImportActivity.EXTRA_FORCE_SHEET,
+                false
+            )
+        )
+        assertEquals(
+            GitHubShareImportActivity.ACTION_SEND_INSTALL_SHARE_IMPORT,
+            shadowOf(notification.actions[1].actionIntent).savedIntent.action
         )
     }
 
@@ -225,7 +239,7 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(1, notification.actions.size)
-        assertEquals("View progress", notification.actions[0].title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
     }
 
     @Test
@@ -243,8 +257,8 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(2, notification.actions.size)
-        assertEquals("Confirm tracking", notification.actions[0].title.toString())
-        assertEquals("Cancel linkage", notification.actions[1].title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertEquals("Confirm tracking", notification.actions[1].title.toString())
     }
 
     @Test
@@ -266,10 +280,10 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
         assertEquals(McpNotificationHelper.CHANNEL_ID, notification.channelId)
-        assertEquals("Check install", notification.actions[0].title.toString())
-        assertEquals("Cancel linkage", notification.actions[1].title.toString())
-        assertEquals("Check install", focusOpenAction.title.toString())
-        assertEquals("Cancel linkage", focusCancelAction.title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertEquals("Refresh", notification.actions[1].title.toString())
+        assertEquals("Open flow", focusOpenAction.title.toString())
+        assertEquals("Refresh", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"progress\":72"))
         assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
@@ -293,10 +307,10 @@ class GitHubShareImportNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals(2, notification.actions.size)
-        assertEquals("Send install", notification.actions[0].title.toString())
-        assertEquals("Cancel linkage", notification.actions[1].title.toString())
-        assertEquals("Send install", focusOpenAction.title.toString())
-        assertEquals("Cancel linkage", focusCancelAction.title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertEquals("Send install", notification.actions[1].title.toString())
+        assertEquals("Open flow", focusOpenAction.title.toString())
+        assertEquals("Send install", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"title\":\"Ready\""))
         assertTrue(focusParam.contains("\"progress\":32"))
     }
@@ -313,7 +327,7 @@ class GitHubShareImportNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals(1, notification.actions.size)
-        assertEquals("View progress", notification.actions[0].title.toString())
+        assertEquals("Open flow", notification.actions[0].title.toString())
         assertTrue(focusParam.contains("mcp_action_open"))
         assertFalse(focusParam.contains("mcp_action_stop"))
         assertTrue(focusParam.contains("\"progress\":12"))

@@ -41,11 +41,7 @@ internal object GitHubApkInstallNotificationBridge {
         val previous = lastDispatchSnapshot
         lastDispatchSnapshot = snapshot
         if (!useXiaomiMagic) return McpNotificationDispatchMode.Plain
-        return if (previous == null ||
-            previous.sessionId != snapshot.sessionId ||
-            previous.phase != snapshot.phase ||
-            previous.usesProgressTemplate != snapshot.usesProgressTemplate
-        ) {
+        return if (previous == null || previous.requiresPulseFor(snapshot)) {
             McpNotificationDispatchMode.Pulse
         } else {
             McpNotificationDispatchMode.Update
@@ -64,9 +60,20 @@ private data class InstallNotificationDispatchSnapshot(
 ) {
     val usesProgressTemplate: Boolean
         get() = progressPercent != null
+
+    fun requiresPulseFor(next: InstallNotificationDispatchSnapshot): Boolean {
+        if (sessionId != next.sessionId) return true
+        if (phase != next.phase) return true
+        if (usesProgressTemplate != next.usesProgressTemplate) return true
+        return phase == GitHubApkInstallPhase.Downloading &&
+                progressPercent.orZero() <= 0 &&
+                next.progressPercent.orZero() > 0
+    }
 }
 
 private fun GitHubApkInstallFlowState.downloadProgressPercentForDispatch(): Int? {
     if (!showsDeterminateDownloadProgress) return null
     return stageProgressPercent.coerceIn(0, 99)
 }
+
+private fun Int?.orZero(): Int = this ?: 0

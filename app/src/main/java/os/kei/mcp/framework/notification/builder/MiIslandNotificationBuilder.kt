@@ -479,7 +479,7 @@ class MiIslandNotificationBuilder(
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100)
             val useProgressTemplate = progressPercent != null
             return IslandPresentation(
-                allowFloat = true,
+                allowFloat = !useProgressTemplate,
                 showTextButtons = true,
                 bigTemplateKind = if (useProgressTemplate) {
                     IslandBigTemplateKind.PROGRESS_TEXT

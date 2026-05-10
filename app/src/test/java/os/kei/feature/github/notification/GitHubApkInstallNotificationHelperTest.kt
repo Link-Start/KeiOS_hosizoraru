@@ -256,6 +256,41 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
+    fun `first non zero download progress pulses before smooth updates`() {
+        GitHubApkInstallNotificationHelper.resetDispatchStateForTest()
+        val zero = GitHubApkInstallFlowState(
+            sessionId = 12L,
+            phase = GitHubApkInstallPhase.Downloading,
+            progressKind = GitHubApkInstallProgressKind.Download,
+            stageProgress = 0f
+        )
+        val firstProgress = zero.copy(stageProgress = 0.04f, progress = 0.04f)
+        val laterProgress = zero.copy(stageProgress = 0.18f, progress = 0.18f)
+
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = zero,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = firstProgress,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Update,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = laterProgress,
+                useXiaomiMagic = true
+            )
+        )
+    }
+
+    @Test
     fun `same phase status refresh uses smooth dispatch`() {
         GitHubApkInstallNotificationHelper.resetDispatchStateForTest()
         val first = GitHubApkInstallFlowState(

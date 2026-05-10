@@ -302,6 +302,7 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":62"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertTrue(focusParam.contains("demo.apk"))
     }
 

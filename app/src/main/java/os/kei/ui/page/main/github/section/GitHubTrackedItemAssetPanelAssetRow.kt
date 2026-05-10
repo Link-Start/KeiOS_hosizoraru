@@ -244,5 +244,16 @@ private fun GitHubApkTrustReason.labelRes(): Int {
         GitHubApkTrustReason.SourceArchive -> R.string.github_apk_trust_reason_source
         GitHubApkTrustReason.ApkLike -> R.string.github_apk_trust_reason_apk
         GitHubApkTrustReason.UnknownFormat -> R.string.github_apk_trust_reason_unknown_format
+        GitHubApkTrustReason.PackageMatched -> R.string.github_apk_trust_reason_package_matched
+        GitHubApkTrustReason.PackageMismatch -> R.string.github_apk_trust_reason_package_mismatch
+        GitHubApkTrustReason.SignatureMatched -> R.string.github_apk_trust_reason_signature_matched
+        GitHubApkTrustReason.SignatureMismatch -> R.string.github_apk_trust_reason_signature_mismatch
+        GitHubApkTrustReason.SignatureUnknown -> R.string.github_apk_trust_reason_signature_unknown
+        GitHubApkTrustReason.VersionUpgrade -> R.string.github_apk_trust_reason_version_upgrade
+        GitHubApkTrustReason.VersionDowngrade -> R.string.github_apk_trust_reason_version_downgrade
+        GitHubApkTrustReason.MinSdkTooHigh -> R.string.github_apk_trust_reason_min_sdk_high
+        GitHubApkTrustReason.TestOnly -> R.string.github_apk_trust_reason_test_only
+        GitHubApkTrustReason.SensitivePermission -> R.string.github_apk_trust_reason_sensitive_permission
+        GitHubApkTrustReason.ExportedComponent -> R.string.github_apk_trust_reason_exported_component
     }
 }

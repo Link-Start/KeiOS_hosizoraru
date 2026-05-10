@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,6 +18,7 @@ import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.statusActionUrl
+import java.security.MessageDigest
 
 internal class GitHubAssetActions(
     private val env: GitHubPageActionEnvironment
@@ -108,7 +110,8 @@ internal class GitHubAssetActions(
             versionName = packageInfo.versionName?.trim().orEmpty(),
             versionCode = packageInfo.longVersionCode,
             minSdk = applicationInfo?.minSdkVersion ?: -1,
-            targetSdk = applicationInfo?.targetSdkVersion ?: -1
+            targetSdk = applicationInfo?.targetSdkVersion ?: -1,
+            signatureSha256 = packageInfo.signatureSha256List()
         )
     }
 
@@ -448,4 +451,27 @@ internal class GitHubAssetActions(
             )
         }
     }
+}
+
+private fun PackageInfo.signatureSha256List(): List<String> {
+    val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+        val signing = signingInfo ?: return emptyList()
+        if (signing.hasMultipleSigners()) {
+            signing.apkContentsSigners
+        } else {
+            signing.signingCertificateHistory
+        }
+    } else {
+        @Suppress("DEPRECATION")
+        signatures
+    } ?: return emptyList()
+    return signatures
+        .map { signature -> signature.toByteArray().sha256Hex() }
+        .distinct()
+}
+
+private fun ByteArray.sha256Hex(): String {
+    return MessageDigest.getInstance("SHA-256")
+        .digest(this)
+        .joinToString("") { byte -> "%02x".format(byte) }
 }

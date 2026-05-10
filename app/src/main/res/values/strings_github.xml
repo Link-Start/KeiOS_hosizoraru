@@ -880,6 +880,17 @@
     <string name="github_apk_trust_reason_source">源码归档</string>
     <string name="github_apk_trust_reason_apk">安装包格式</string>
     <string name="github_apk_trust_reason_unknown_format">未知安装格式</string>
+    <string name="github_apk_trust_reason_package_matched">包名匹配</string>
+    <string name="github_apk_trust_reason_package_mismatch">包名不匹配</string>
+    <string name="github_apk_trust_reason_signature_matched">签名匹配本地安装</string>
+    <string name="github_apk_trust_reason_signature_mismatch">签名与本地安装不一致</string>
+    <string name="github_apk_trust_reason_signature_unknown">签名信息不足</string>
+    <string name="github_apk_trust_reason_version_upgrade">版本高于本地安装</string>
+    <string name="github_apk_trust_reason_version_downgrade">版本低于本地安装</string>
+    <string name="github_apk_trust_reason_min_sdk_high">最低系统版本高于当前设备</string>
+    <string name="github_apk_trust_reason_test_only">Test-only 安装包</string>
+    <string name="github_apk_trust_reason_sensitive_permission">包含敏感权限</string>
+    <string name="github_apk_trust_reason_exported_component">存在开放组件</string>
     <string name="github_apk_info_title">APK 信息</string>
     <string name="github_apk_info_badge_manifest">Manifest</string>
     <string name="github_apk_info_loading">正在读取 AndroidManifest.xml</string>

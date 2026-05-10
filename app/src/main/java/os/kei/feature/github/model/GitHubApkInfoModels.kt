@@ -67,7 +67,8 @@ data class GitHubInstalledPackageInfo(
     val versionName: String = "",
     val versionCode: Long = -1L,
     val minSdk: Int = -1,
-    val targetSdk: Int = -1
+    val targetSdk: Int = -1,
+    val signatureSha256: List<String> = emptyList()
 )
 
 data class GitHubApkManifestNode(
@@ -85,4 +86,31 @@ data class GitHubApkSignatureInfo(
     val notBeforeMillis: Long = -1L,
     val notAfterMillis: Long = -1L,
     val sha256: String = ""
+)
+
+enum class GitHubApkTrustReason {
+    PreferredAbi,
+    UniversalAsset,
+    IncompatibleAbi,
+    DebugBuild,
+    UnsignedBuild,
+    SourceArchive,
+    ApkLike,
+    UnknownFormat,
+    PackageMatched,
+    PackageMismatch,
+    SignatureMatched,
+    SignatureMismatch,
+    SignatureUnknown,
+    VersionUpgrade,
+    VersionDowngrade,
+    MinSdkTooHigh,
+    TestOnly,
+    SensitivePermission,
+    ExportedComponent
+}
+
+data class GitHubApkTrustSignal(
+    val level: GitHubDecisionLevel,
+    val reasons: List<GitHubApkTrustReason>
 )

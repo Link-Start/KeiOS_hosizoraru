@@ -62,7 +62,6 @@ import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
-import os.kei.ui.page.main.github.preReleaseVersionColor
 import os.kei.ui.page.main.github.repositoryHealthLabelRes
 import os.kei.ui.page.main.github.repositoryHealthStatusColor
 import os.kei.ui.page.main.github.stableVersionColor
@@ -325,7 +324,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 releaseName = state.latestStableName.ifBlank { state.latestTag },
                                 rawTag = state.latestStableRawTag
                             ),
-                            valueColor = latestColor,
+                            textColor = latestColor,
                             expanded = stableExpanded,
                             emphasized = state.hasUpdate == true && !state.recommendsPreRelease,
                             onExpandedChange = { expanded ->
@@ -355,9 +354,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         }
                     }
                     if (showPreRelease) {
-                        val preColor = state.preReleaseVersionColor(
-                            neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
-                        )
+                        val preReleaseCardTextColor = gitHubPreReleaseCardTextColor()
                         val preReleaseMeta = formatReleaseMetaValue(
                             preciseInfo = state.latestPreApkVersion.takeIf {
                                 lookupConfig.preciseApkVersionEnabled
@@ -375,7 +372,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
                                 rawTag = state.latestPreRawTag
                             ),
-                            valueColor = preColor,
+                            textColor = preReleaseCardTextColor,
                             expanded = preExpanded,
                             emphasized = state.recommendsPreRelease || state.hasPreReleaseUpdate,
                             onExpandedChange = { expanded ->
@@ -394,7 +391,8 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 GitHubLinkedInfoCard(
                                     label = stringResource(R.string.github_item_label_prerelease_release),
                                     value = preReleaseMeta,
-                                    valueColor = MiuixTheme.colorScheme.primary,
+                                    labelColor = preReleaseCardTextColor,
+                                    valueColor = preReleaseCardTextColor,
                                     onClick = {
                                         onOpenExternalUrl(
                                             state.githubPreReleaseLinkUrl(item.owner, item.repo)
@@ -479,7 +477,7 @@ private fun GitHubRepositoryLinkCard(
 private fun GitHubReleaseVersionCard(
     label: String,
     value: String,
-    valueColor: Color,
+    textColor: Color,
     expanded: Boolean,
     emphasized: Boolean,
     onExpandedChange: (Boolean) -> Unit
@@ -487,9 +485,11 @@ private fun GitHubReleaseVersionCard(
     GitHubLinkedInfoCard(
         label = label,
         value = value,
-        valueColor = valueColor,
+        labelColor = textColor,
+        valueColor = textColor,
         valueEmphasized = emphasized,
         trailingIcon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
+        trailingIconColor = textColor,
         onClick = { onExpandedChange(!expanded) }
     )
 }
@@ -498,9 +498,11 @@ private fun GitHubReleaseVersionCard(
 private fun GitHubLinkedInfoCard(
     label: String,
     value: String,
+    labelColor: Color = MiuixTheme.colorScheme.primary,
     valueColor: Color,
     valueEmphasized: Boolean = false,
     trailingIcon: ImageVector? = null,
+    trailingIconColor: Color = labelColor,
     onClick: () -> Unit
 ) {
     val backdrop = rememberLayerBackdrop()
@@ -529,7 +531,7 @@ private fun GitHubLinkedInfoCard(
         ) {
             Text(
                 text = label,
-                color = MiuixTheme.colorScheme.primary,
+                color = labelColor,
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
@@ -555,11 +557,21 @@ private fun GitHubLinkedInfoCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MiuixTheme.colorScheme.primary,
+                    tint = trailingIconColor,
                     modifier = Modifier.size(17.dp)
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun gitHubPreReleaseCardTextColor(): Color {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    return if (isDark) {
+        Color(0xFF93C5FD)
+    } else {
+        Color(0xFF60A5FA)
     }
 }
 

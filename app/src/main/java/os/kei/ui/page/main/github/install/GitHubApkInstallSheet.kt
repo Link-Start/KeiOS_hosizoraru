@@ -716,8 +716,8 @@ private fun InstallPrepareButtons(
     ) {
         InstallSheetActionButton(
             backdrop = backdrop,
-            text = stringResource(R.string.github_apk_install_action_more),
-            onClick = { GitHubApkInstallFlowCoordinator.openExternalCurrent(context) },
+            text = stringResource(R.string.common_cancel),
+            onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
             modifier = Modifier.weight(1f),
         )
         InstallSheetActionButton(
@@ -741,8 +741,8 @@ private fun InstallConfirmButtons(
     ) {
         InstallSheetActionButton(
             backdrop = backdrop,
-            text = stringResource(R.string.github_apk_install_action_more),
-            onClick = { GitHubApkInstallFlowCoordinator.openExternalCurrent(context) },
+            text = stringResource(R.string.common_cancel),
+            onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
             modifier = Modifier.weight(1f),
         )
         InstallSheetActionButton(

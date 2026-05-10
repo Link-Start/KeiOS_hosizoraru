@@ -83,7 +83,10 @@ internal object McpXiaomiMagicDispatcher {
             }
         }
         if (!shouldLaunchPulse) {
-            notificationManager.notify(notificationId, notification)
+            AppLogger.i(
+                TAG,
+                "merge Xiaomi magic pulse into active snapshot: notifId=$notificationId"
+            )
             return
         }
         val pulseGeneration = pulseState.generation.get()
@@ -112,12 +115,16 @@ internal object McpXiaomiMagicDispatcher {
                             )
                             return@withLock
                         }
-                        val latestNotification = synchronized(pulseState) {
+                        var latestNotification = synchronized(pulseState) {
                             pulseState.latest
                         } ?: notification
                         notificationManager.notify(notificationId, latestNotification)
                         notificationDispatched = true
                         delay(resolveBlockIntervalMs().milliseconds)
+                        latestNotification = synchronized(pulseState) {
+                            pulseState.latest
+                        } ?: latestNotification
+                        notificationManager.notify(notificationId, latestNotification)
                     } catch (throwable: Throwable) {
                         if (throwable is CancellationException) throw throwable
                         AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
@@ -163,13 +170,22 @@ internal object McpXiaomiMagicDispatcher {
         notification: Notification
     ) {
         val appContext = context.applicationContext
+        val notificationManager = NotificationManagerCompat.from(appContext)
         val pulseState = notificationStates.computeIfAbsent(notificationId) {
             NotificationPulseState()
         }
-        synchronized(pulseState) {
+        val pulseActive = synchronized(pulseState) {
             pulseState.latest = notification
+            pulseState.pulseActive
         }
-        NotificationManagerCompat.from(appContext).notify(notificationId, notification)
+        if (pulseActive) {
+            AppLogger.i(
+                TAG,
+                "merge Xiaomi magic update into active snapshot: notifId=$notificationId"
+            )
+            return
+        }
+        notificationManager.notify(notificationId, notification)
     }
 
     fun invalidateNotification(notificationId: Int) {

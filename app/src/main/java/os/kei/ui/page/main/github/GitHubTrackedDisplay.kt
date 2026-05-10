@@ -1,5 +1,7 @@
 package os.kei.ui.page.main.github
 
+import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 
 internal fun GitHubTrackedApp.githubTrackedDisplayTitle(state: VersionCheckUi?): String {
@@ -52,15 +54,41 @@ internal fun VersionCheckUi?.githubRemoteDisplayName(fallbackRepo: String = ""):
         .ifBlank { fallbackRepo }
 }
 
-internal fun VersionCheckUi?.githubRemoteIconUrl(): String {
-    this ?: return ""
-    return repositoryProfile
-        ?.identity
-        ?.ownerAvatarUrl
-        ?.value
-        .orEmpty()
-        .ifBlank { latestStableAuthorAvatarUrl }
-        .ifBlank { latestPreAuthorAvatarUrl }
+internal fun VersionCheckUi.githubStableReleaseLinkUrl(owner: String, repo: String): String {
+    return githubReleaseLinkUrl(
+        owner = owner,
+        repo = repo,
+        releaseUrl = latestStableUrl,
+        rawTag = latestStableRawTag.ifBlank { latestTag },
+        apkVersionInfo = latestStableApkVersion
+    )
+}
+
+internal fun VersionCheckUi.githubPreReleaseLinkUrl(owner: String, repo: String): String {
+    return githubReleaseLinkUrl(
+        owner = owner,
+        repo = repo,
+        releaseUrl = latestPreUrl,
+        rawTag = latestPreRawTag.ifBlank { preReleaseInfo },
+        apkVersionInfo = latestPreApkVersion
+    )
+}
+
+private fun githubReleaseLinkUrl(
+    owner: String,
+    repo: String,
+    releaseUrl: String,
+    rawTag: String,
+    apkVersionInfo: GitHubRemoteApkVersionInfo?
+): String {
+    return releaseUrl.trim()
+        .ifBlank { apkVersionInfo?.releaseUrl.orEmpty().trim() }
+        .ifBlank {
+            rawTag.trim().takeIf { it.isNotBlank() }?.let { tag ->
+                GitHubVersionUtils.buildReleaseTagUrl(owner, repo, tag)
+            }.orEmpty()
+        }
+        .ifBlank { GitHubVersionUtils.buildReleaseUrl(owner, repo) }
 }
 
 private fun GitHubTrackedApp.isGeneratedTrackingLabel(label: String): Boolean {

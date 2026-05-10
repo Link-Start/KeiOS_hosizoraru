@@ -376,7 +376,7 @@ internal object OsActivityShortcutCardStore {
                 add(
                     ShortcutIntentExtra(
                         key = item.optString(KEY_EXTRA_KEY),
-                        type = ShortcutIntentExtraType.Companion.fromRaw(
+                        type = ShortcutIntentExtraType.fromRaw(
                             item.optString(
                                 KEY_EXTRA_TYPE
                             )

@@ -3,6 +3,7 @@ package os.kei.ui.page.main
 import androidx.compose.ui.graphics.Color
 import org.junit.Test
 import os.kei.feature.github.model.GitHubProfileField
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
@@ -10,7 +11,8 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.formatReleaseValue
-import os.kei.ui.page.main.github.githubRemoteIconUrl
+import os.kei.ui.page.main.github.githubPreReleaseLinkUrl
+import os.kei.ui.page.main.github.githubStableReleaseLinkUrl
 import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.statusActionUrl
@@ -100,9 +102,25 @@ class GitHubPageModelsTest {
 
         assertEquals("Remote App", title)
         assertEquals("com.demo.remote", item.githubTrackedDisplaySubtitle(state, title))
+    }
+
+    @Test
+    fun `release link urls prefer explicit release urls and fall back to tags`() {
+        val state = VersionCheckUi(
+            latestStableRawTag = "v1.2.3",
+            latestPreRawTag = "v1.3.0-beta1",
+            latestPreApkVersion = GitHubRemoteApkVersionInfo(
+                releaseUrl = "https://github.com/demo/app/releases/tag/v1.3.0-beta1"
+            )
+        )
+
         assertEquals(
-            "https://avatars.githubusercontent.com/u/42?v=4",
-            state.githubRemoteIconUrl()
+            "https://github.com/demo/app/releases/tag/v1.2.3",
+            state.githubStableReleaseLinkUrl("demo", "app")
+        )
+        assertEquals(
+            "https://github.com/demo/app/releases/tag/v1.3.0-beta1",
+            state.githubPreReleaseLinkUrl("demo", "app")
         )
     }
 

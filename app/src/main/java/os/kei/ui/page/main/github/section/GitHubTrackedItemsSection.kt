@@ -53,8 +53,9 @@ import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
 import os.kei.ui.page.main.github.formatApkVersionValue
 import os.kei.ui.page.main.github.formatReleaseMetaValue
 import os.kei.ui.page.main.github.formatReleaseValue
+import os.kei.ui.page.main.github.githubPreReleaseLinkUrl
 import os.kei.ui.page.main.github.githubReleaseHintMessage
-import os.kei.ui.page.main.github.githubRemoteIconUrl
+import os.kei.ui.page.main.github.githubStableReleaseLinkUrl
 import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -170,7 +171,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                 headerStartAction = {
                     AppIcon(
                         packageName = item.packageName,
-                        remoteIconUrl = state.githubRemoteIconUrl(),
+                        localRefreshKey = state.localVersionCode to state.localVersion,
                         size = 24.dp
                     )
                 },
@@ -314,10 +315,15 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 releaseName = state.latestStableName.ifBlank { state.latestTag },
                                 rawTag = state.latestStableRawTag
                             ).takeIf { it.isNotBlank() }?.let { label ->
-                                VersionValueRow(
+                                GitHubLinkedInfoCard(
                                     label = stringResource(R.string.github_item_label_stable_release),
                                     value = label,
-                                    valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+                                    valueColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                                    onClick = {
+                                        onOpenExternalUrl(
+                                            state.githubStableReleaseLinkUrl(item.owner, item.repo)
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -344,10 +350,15 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
                                 rawTag = state.latestPreRawTag
                             ).takeIf { it.isNotBlank() }?.let { label ->
-                                VersionValueRow(
+                                GitHubLinkedInfoCard(
                                     label = stringResource(R.string.github_item_label_prerelease_release),
                                     value = label,
-                                    valueColor = MiuixTheme.colorScheme.onBackgroundVariant
+                                    valueColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                                    onClick = {
+                                        onOpenExternalUrl(
+                                            state.githubPreReleaseLinkUrl(item.owner, item.repo)
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -414,9 +425,24 @@ private fun GitHubRepositoryLinkCard(
     item: GitHubTrackedApp,
     onOpenExternalUrl: (String) -> Unit
 ) {
+    val repoUrl = GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
+    GitHubLinkedInfoCard(
+        label = stringResource(R.string.github_item_label_repo),
+        value = "${item.owner}/${item.repo}",
+        valueColor = MiuixTheme.colorScheme.onBackground,
+        onClick = { onOpenExternalUrl(repoUrl) }
+    )
+}
+
+@Composable
+private fun GitHubLinkedInfoCard(
+    label: String,
+    value: String,
+    valueColor: Color,
+    onClick: () -> Unit
+) {
     val backdrop = rememberLayerBackdrop()
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val repoUrl = GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
     val surfaceColor = if (isDark) {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
     } else {
@@ -430,7 +456,7 @@ private fun GitHubRepositoryLinkCard(
         surfaceColor = surfaceColor,
         blurRadius = UiPerformanceBudget.backdropBlur,
         lensRadius = UiPerformanceBudget.backdropLens,
-        onClick = { onOpenExternalUrl(repoUrl) }
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -440,7 +466,7 @@ private fun GitHubRepositoryLinkCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.github_item_label_repo),
+                text = label,
                 color = MiuixTheme.colorScheme.primary,
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
@@ -449,8 +475,8 @@ private fun GitHubRepositoryLinkCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${item.owner}/${item.repo}",
-                color = MiuixTheme.colorScheme.onBackground,
+                text = value,
+                color = valueColor,
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 maxLines = 1,

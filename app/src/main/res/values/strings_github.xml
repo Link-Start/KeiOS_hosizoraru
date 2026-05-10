@@ -246,8 +246,8 @@
     <string name="github_item_label_stable_version">稳定版本</string>
     <string name="github_item_label_prerelease_version">预发版本</string>
     <string name="github_item_label_releases">Releases</string>
-    <string name="github_item_label_stable_release">稳定 Release</string>
-    <string name="github_item_label_prerelease_release">预发 Release</string>
+    <string name="github_item_label_stable_release">稳定发布</string>
+    <string name="github_item_label_prerelease_release">预发发布</string>
     <string name="github_release_meta_prefix_stable">稳定</string>
     <string name="github_release_meta_prefix_prerelease">预发</string>
     <string name="github_item_label_updated_at">更新时间</string>

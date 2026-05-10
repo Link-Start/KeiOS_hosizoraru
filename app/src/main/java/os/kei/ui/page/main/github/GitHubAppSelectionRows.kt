@@ -21,17 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.size.Precision
 import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -194,14 +189,14 @@ private fun InstallSourcePill(
 internal fun AppIcon(
     packageName: String,
     size: Dp,
-    remoteIconUrl: String = ""
+    localRefreshKey: Any? = Unit
 ) {
     val normalizedPackageName = packageName.trim()
-    val normalizedRemoteIconUrl = remoteIconUrl.trim()
     val context = LocalContext.current
     val bitmapState = produceState<Bitmap?>(
         initialValue = AppIconCache.get(normalizedPackageName),
-        normalizedPackageName
+        normalizedPackageName,
+        localRefreshKey
     ) {
         if (normalizedPackageName.isBlank()) return@produceState
         if (value == null) {
@@ -224,36 +219,12 @@ internal fun AppIcon(
             )
         }
 
-        normalizedRemoteIconUrl.isNotBlank() -> {
-            RemoteAppIcon(
-                iconUrl = normalizedRemoteIconUrl,
-                contentDescription = normalizedPackageName.ifBlank { normalizedRemoteIconUrl },
-                size = size
-            )
-        }
-
         else -> AppIconFallback(size = size)
     }
 }
 
 @Composable
-private fun RemoteAppIcon(
-    iconUrl: String,
-    contentDescription: String,
-    size: Dp
-) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val sizePx = remember(size, density) {
-        with(density) { size.roundToPx().coerceAtLeast(1) }
-    }
-    val request = remember(iconUrl, sizePx) {
-        ImageRequest.Builder(context)
-            .data(iconUrl)
-            .size(sizePx, sizePx)
-            .precision(Precision.INEXACT)
-            .build()
-    }
+private fun AppIconFallback(size: Dp) {
     Box(
         modifier = Modifier
             .width(size)
@@ -261,30 +232,11 @@ private fun RemoteAppIcon(
             .clip(ContinuousCapsule),
         contentAlignment = Alignment.Center
     ) {
-        AppIconFallback(size = size)
-        AsyncImage(
-            model = request,
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
+        Text(
+            text = stringResource(R.string.github_strategy_app_fallback),
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = AppTypographyTokens.Caption.fontSize,
+            lineHeight = AppTypographyTokens.Caption.lineHeight
         )
     }
-}
-
-@Composable
-private fun AppIconFallback(size: Dp) {
-        Box(
-            modifier = Modifier
-                .width(size)
-                .height(size)
-                .clip(ContinuousCapsule),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = stringResource(R.string.github_strategy_app_fallback),
-                color = MiuixTheme.colorScheme.primary,
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight
-            )
-        }
 }

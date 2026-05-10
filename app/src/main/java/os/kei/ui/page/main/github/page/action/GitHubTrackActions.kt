@@ -10,6 +10,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
 import os.kei.ui.page.main.github.page.GitHubTrackEditorResult
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 
 internal class GitHubTrackActions(
     private val env: GitHubPageActionEnvironment,
@@ -232,6 +233,9 @@ internal class GitHubTrackActions(
                 if (editing.id != newItem.id) {
                     state.checkStates.remove(editing.id)
                     state.trackedCardExpanded.remove(editing.id)
+                    state.trackedStableVersionExpanded.remove(editing.id)
+                    state.trackedPreReleaseVersionExpanded.remove(editing.id)
+                    GitHubTrackedReleaseUiStateStore.remove(editing.id)
                     state.clearAssetUiState(editing.id)
                     state.trackedAddedAtById.remove(editing.id)
                 }
@@ -252,6 +256,9 @@ internal class GitHubTrackActions(
                 state.trackedItems.remove(deleting)
                 state.checkStates.remove(deleting.id)
                 state.trackedCardExpanded.remove(deleting.id)
+                state.trackedStableVersionExpanded.remove(deleting.id)
+                state.trackedPreReleaseVersionExpanded.remove(deleting.id)
+                GitHubTrackedReleaseUiStateStore.remove(deleting.id)
                 state.trackedAddedAtById.remove(deleting.id)
                 state.clearAssetUiState(deleting.id)
                 env.saveTrackedItems()

@@ -22,6 +22,7 @@ import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.section.GitHubOverviewEntry
 import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import os.kei.ui.page.main.github.section.defaultGitHubOverviewEntries
 import os.kei.ui.page.main.github.section.orDefaultGitHubOverviewEntries
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
@@ -93,6 +94,16 @@ internal class GitHubPageActions(
     fun setOverviewExpanded(value: Boolean) {
         env.state.overviewExpanded = value
         GitHubOverviewUiStateStore.setExpanded(value)
+    }
+
+    fun setTrackedStableVersionExpanded(itemId: String, value: Boolean) {
+        env.state.trackedStableVersionExpanded[itemId] = value
+        GitHubTrackedReleaseUiStateStore.setStableVersionExpanded(itemId, value)
+    }
+
+    fun setTrackedPreReleaseVersionExpanded(itemId: String, value: Boolean) {
+        env.state.trackedPreReleaseVersionExpanded[itemId] = value
+        GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)
     }
 
     fun openOverviewEntrySheet() {

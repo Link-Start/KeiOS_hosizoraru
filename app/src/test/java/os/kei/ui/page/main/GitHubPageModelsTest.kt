@@ -15,10 +15,14 @@ import os.kei.ui.page.main.github.githubPreReleaseLinkUrl
 import os.kei.ui.page.main.github.githubStableReleaseLinkUrl
 import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import os.kei.ui.page.main.github.statusActionUrl
 import os.kei.ui.page.main.github.statusColor
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class GitHubPageModelsTest {
     @Test
@@ -135,6 +139,22 @@ class GitHubPageModelsTest {
         )
 
         assertEquals("", item.githubTrackedDisplaySubtitle(state = null, title = "Demo"))
+    }
+
+    @Test
+    fun `tracked release expansion codec persists expanded items only`() {
+        val raw = GitHubTrackedReleaseUiStateStore.encodeExpansionState(
+            GitHubTrackedReleaseExpansionState(
+                stableVersionExpanded = mapOf("owner/app" to true, "owner/closed" to false),
+                preReleaseVersionExpanded = mapOf("owner/beta" to true)
+            )
+        )
+
+        val decoded = GitHubTrackedReleaseUiStateStore.decodeExpansionState(raw)
+
+        assertTrue(decoded.stableVersionExpanded["owner/app"] == true)
+        assertFalse(decoded.stableVersionExpanded.containsKey("owner/closed"))
+        assertTrue(decoded.preReleaseVersionExpanded["owner/beta"] == true)
     }
 
     private fun profileField(value: String): GitHubProfileField<String> {

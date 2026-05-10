@@ -42,6 +42,7 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
 import os.kei.ui.page.main.github.section.GitHubOverviewUiState
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
@@ -52,7 +53,8 @@ import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 internal class GitHubPageState(
     private val searchBarHideThresholdPx: Float,
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
-    overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState()
+    overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
+    trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState()
 ) {
     var trackedSearch by mutableStateOf("")
     var showFailedOnly by mutableStateOf(false)
@@ -182,6 +184,12 @@ internal class GitHubPageState(
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
+    val trackedStableVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
+        putAll(trackedReleaseExpansionState.stableVersionExpanded)
+    }
+    val trackedPreReleaseVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
+        putAll(trackedReleaseExpansionState.preReleaseVersionExpanded)
+    }
     val trackedFirstInstallAtByPackage = mutableStateMapOf<String, Long>()
     val trackedAddedAtById = mutableStateMapOf<String, Long>()
 
@@ -258,6 +266,8 @@ internal class GitHubPageState(
 
     fun retainTrackedUiState(validItemIds: Set<String>) {
         trackedCardExpanded.keys.retainAll(validItemIds)
+        trackedStableVersionExpanded.keys.retainAll(validItemIds)
+        trackedPreReleaseVersionExpanded.keys.retainAll(validItemIds)
         apkAssetExpanded.keys.retainAll(validItemIds)
         apkAssetIncludeAll.keys.retainAll(validItemIds)
         itemRefreshLoading.keys.retainAll(validItemIds)

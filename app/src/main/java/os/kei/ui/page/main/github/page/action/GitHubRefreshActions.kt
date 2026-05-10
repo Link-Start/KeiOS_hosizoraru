@@ -18,6 +18,7 @@ import os.kei.feature.github.model.githubCheckSourceSignature
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.toShareImportPreview
 import os.kei.ui.page.main.github.share.toShareImportResult
@@ -513,7 +514,9 @@ internal class GitHubRefreshActions(
 
         state.trackedItems.clear()
         state.trackedItems.addAll(trackSnapshot.items)
-        state.retainTrackedUiState(trackSnapshot.items.map { it.id }.toSet())
+        val validItemIds = trackSnapshot.items.map { it.id }.toSet()
+        state.retainTrackedUiState(validItemIds)
+        GitHubTrackedReleaseUiStateStore.retain(validItemIds)
         state.trackedFirstInstallAtByPackage.clear()
         state.trackedFirstInstallAtByPackage.putAll(trackSnapshot.trackedFirstInstallAtByPackage)
         state.retainTrackedFirstInstallAtByTrackedItems()

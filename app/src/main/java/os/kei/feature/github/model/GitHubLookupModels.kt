@@ -75,7 +75,12 @@ enum class GitHubApkInstallDeliveryMode(
 
     companion object {
         fun fromStorageId(value: String): GitHubApkInstallDeliveryMode {
-            return entries.firstOrNull { it.storageId == value } ?: External
+            return when (value) {
+                AppShizuku.storageId,
+                External.storageId -> AppShizuku
+
+                else -> AppShizuku
+            }
         }
     }
 }
@@ -116,7 +121,7 @@ data class GitHubLookupConfig(
     val profileDepth: GitHubProfileDepth = GitHubProfileDepth.Basic,
     val shareImportLinkageEnabled: Boolean = false,
     val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
-    val apkInstallDeliveryMode: GitHubApkInstallDeliveryMode = GitHubApkInstallDeliveryMode.External,
+    val apkInstallDeliveryMode: GitHubApkInstallDeliveryMode = GitHubApkInstallDeliveryMode.AppShizuku,
     val apkInstallUiMode: GitHubApkInstallUiMode = GitHubApkInstallUiMode.SheetFirst,
     val onlineShareTargetPackage: String = "",
     val preferredDownloaderPackage: String = "",

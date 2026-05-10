@@ -28,7 +28,7 @@ class GitHubLookupModelsTest {
     @Test
     fun `apk install delivery mode resolves storage ids`() {
         assertEquals(
-            GitHubApkInstallDeliveryMode.External,
+            GitHubApkInstallDeliveryMode.AppShizuku,
             GitHubApkInstallDeliveryMode.fromStorageId("external")
         )
         assertEquals(
@@ -36,7 +36,7 @@ class GitHubLookupModelsTest {
             GitHubApkInstallDeliveryMode.fromStorageId("app_shizuku")
         )
         assertEquals(
-            GitHubApkInstallDeliveryMode.External,
+            GitHubApkInstallDeliveryMode.AppShizuku,
             GitHubApkInstallDeliveryMode.fromStorageId("missing")
         )
     }
@@ -58,10 +58,10 @@ class GitHubLookupModelsTest {
     }
 
     @Test
-    fun `lookup config keeps existing external install defaults`() {
+    fun `lookup config defaults to app shizuku install`() {
         val config = GitHubLookupConfig()
 
-        assertEquals(GitHubApkInstallDeliveryMode.External, config.apkInstallDeliveryMode)
+        assertEquals(GitHubApkInstallDeliveryMode.AppShizuku, config.apkInstallDeliveryMode)
         assertEquals(GitHubApkInstallUiMode.SheetFirst, config.apkInstallUiMode)
     }
 

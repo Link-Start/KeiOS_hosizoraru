@@ -1,6 +1,7 @@
 package os.kei.feature.github.notification
 
 import android.app.Application
+import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
@@ -10,7 +11,11 @@ import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.MainActivity
+import os.kei.R
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
+import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
@@ -32,6 +37,62 @@ class GitHubApkInstallNotificationHelperTest {
         assertEquals(
             MainActivity.SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET,
             savedIntent.getStringExtra(MainActivity.EXTRA_SHORTCUT_ACTION)
+        )
+    }
+
+    @Test
+    fun `installing notification shows progress and cancel action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Installing,
+                overallProgress = 0.72f,
+                selectedCandidateName = "demo.apk",
+                message = "Installing"
+            )
+        )
+
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals(2, notification.actions.size)
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            notification.actions[0].title.toString()
+        )
+        assertEquals(
+            context.getString(R.string.common_cancel),
+            notification.actions[1].title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `failed notification uses retry action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Failed,
+                message = "Install failed"
+            )
+        )
+
+        assertEquals(2, notification.actions.size)
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            notification.actions[0].title.toString()
+        )
+        assertEquals(
+            context.getString(R.string.github_apk_install_action_retry),
+            notification.actions[1].title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_RETRY_INSTALL,
+            shadowOf(notification.actions[1].actionIntent).savedIntent.action
         )
     }
 

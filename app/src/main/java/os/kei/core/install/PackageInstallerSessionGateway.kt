@@ -7,6 +7,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
+import android.os.IInterface
 import android.os.Process
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
@@ -70,9 +71,12 @@ class AndroidPackageInstallerSessionGateway(
 
     override suspend fun openSession(sessionId: Int): PackageInstallerSessionHandle =
         withContext(ioDispatcher) {
+            val session = resolveShizukuPackageInstaller()
+                .openSession(sessionId)
+                .wrapSessionBinder()
             AndroidPackageInstallerSessionHandle(
                 context = context.applicationContext,
-                session = resolveShizukuPackageInstaller().openSession(sessionId),
+                session = session,
                 ioDispatcher = ioDispatcher
             )
         }
@@ -135,13 +139,45 @@ class AndroidPackageInstallerSessionGateway(
             }
             ?.invoke(packageManagerInterface)
             ?: error("IPackageManager.getPackageInstaller unavailable")
-        return newPackageInstaller(packageInstallerInterface)
+        return newPackageInstaller(
+            wrapBinderInterface(
+                target = packageInstallerInterface,
+                stubClassName = "android.content.pm.IPackageInstaller\$Stub",
+                debugName = "IPackageInstaller"
+            )
+        )
     }
 
     private fun invokeStaticAsInterface(className: String, binder: IBinder): Any {
         val stubClass = Class.forName(className)
         val method = stubClass.getMethod("asInterface", IBinder::class.java)
         return method.invoke(null, binder) ?: error("$className.asInterface returned null")
+    }
+
+    private fun wrapBinderInterface(
+        target: Any,
+        stubClassName: String,
+        debugName: String
+    ): Any {
+        val iInterface = target as? IInterface
+            ?: error("$debugName is not an IInterface")
+        val wrappedBinder = ShizukuBinderWrapper(iInterface.asBinder())
+        return invokeStaticAsInterface(stubClassName, wrappedBinder)
+    }
+
+    private fun PackageInstaller.Session.wrapSessionBinder(): PackageInstaller.Session {
+        val sessionField = javaClass.getDeclaredField("mSession").apply {
+            isAccessible = true
+        }
+        val rawSession = sessionField.get(this) as? IInterface
+            ?: error("IPackageInstallerSession unavailable")
+        val wrappedSession = wrapBinderInterface(
+            target = rawSession,
+            stubClassName = "android.content.pm.IPackageInstallerSession\$Stub",
+            debugName = "IPackageInstallerSession"
+        )
+        sessionField.set(this, wrappedSession)
+        return this
     }
 
     private fun newPackageInstaller(iPackageInstaller: Any): PackageInstaller {

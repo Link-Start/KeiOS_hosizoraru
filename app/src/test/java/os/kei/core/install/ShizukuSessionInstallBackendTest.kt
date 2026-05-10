@@ -67,26 +67,6 @@ class ShizukuSessionInstallBackendTest {
         assertEquals(listOf(42), gateway.abandonedSessionIds)
     }
 
-    @Test
-    fun `dual backend falls back to shell when session is unavailable`() = runBlocking {
-        val sessionBackend = ApkInstallBackend { _, _ ->
-            ApkInstallResult.Failure(
-                backendId = ApkInstallBackendId.ShizukuSession,
-                reason = ApkInstallFailureReason.BackendUnavailable,
-                message = "hidden constructor unavailable"
-            )
-        }
-        val shellBackend = ApkInstallBackend { _, _ ->
-            ApkInstallResult.Success(ApkInstallBackendId.ShizukuShell, "os.kei.demo")
-        }
-        val dual = ShizukuDualInstallBackend(sessionBackend, shellBackend)
-
-        val result = dual.install(request())
-
-        assertIs<ApkInstallResult.Success>(result)
-        assertEquals(ApkInstallBackendId.ShizukuShell, result.backendId)
-    }
-
     private fun backend(gateway: FakeSessionGateway): ShizukuSessionInstallBackend {
         return ShizukuSessionInstallBackend(
             runtimeCapabilities = sessionRuntimeCapabilities(),

@@ -5,10 +5,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.gif.AnimatedImageDecoder
 import com.tencent.mmkv.MMKV
+import org.lsposed.hiddenapibypass.HiddenApiBypass
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.log.AppLogger
 import os.kei.core.perf.Android17AnomalyProfiler
@@ -57,6 +59,9 @@ class KeiOSApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            HiddenApiBypass.addHiddenApiExemptions("")
+        }
         SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
                 .components {

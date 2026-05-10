@@ -517,13 +517,6 @@ private fun GitHubCheckTransferSection(
     val selectedFlowModeIndex = flowModeOptions
         .indexOf(shareImportFlowModeInput)
         .coerceAtLeast(0)
-    val installDeliveryOptions = GitHubApkInstallDeliveryMode.entries
-    val installDeliveryLabels = installDeliveryOptions.map { mode ->
-        context.getString(mode.labelRes())
-    }
-    val selectedInstallDeliveryIndex = installDeliveryOptions
-        .indexOf(apkInstallDeliveryModeInput)
-        .coerceAtLeast(0)
     val installUiOptions = GitHubApkInstallUiMode.entries
     val installUiLabels = installUiOptions.map { mode ->
         context.getString(mode.labelRes())
@@ -531,7 +524,7 @@ private fun GitHubCheckTransferSection(
     val selectedInstallUiIndex = installUiOptions
         .indexOf(apkInstallUiModeInput)
         .coerceAtLeast(0)
-    val shizukuInstallCapability = remember(showApkInstallDeliveryModePopup) {
+    val shizukuInstallCapability = remember(showApkInstallUiModePopup) {
         ShizukuRuntimeCapabilities().current()
     }
     val shizukuStatusSummary = shizukuInstallCapabilitySummary(shizukuInstallCapability)
@@ -565,33 +558,8 @@ private fun GitHubCheckTransferSection(
             )
         }
         SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_install_delivery),
-            summary = stringResource(R.string.github_check_sheet_summary_install_delivery)
-        ) {
-            AppDropdownSelector(
-                selectedText = installDeliveryLabels.getOrElse(selectedInstallDeliveryIndex) {
-                    installDeliveryLabels.firstOrNull().orEmpty()
-                },
-                options = installDeliveryLabels,
-                selectedIndex = selectedInstallDeliveryIndex,
-                expanded = showApkInstallDeliveryModePopup,
-                anchorBounds = apkInstallDeliveryModePopupAnchorBounds,
-                onExpandedChange = onShowApkInstallDeliveryModePopupChange,
-                onSelectedIndexChange = { selectedIndex ->
-                    onApkInstallDeliveryModeInputChange(installDeliveryOptions[selectedIndex])
-                },
-                onAnchorBoundsChange = onApkInstallDeliveryModePopupAnchorBoundsChange,
-                backdrop = backdrop,
-                variant = GlassVariant.SheetAction
-            )
-        }
-        SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_install_ui),
-            summary = if (apkInstallDeliveryModeInput == GitHubApkInstallDeliveryMode.AppShizuku) {
-                stringResource(R.string.github_check_sheet_summary_install_ui)
-            } else {
-                stringResource(R.string.github_check_sheet_summary_install_ui_disabled)
-            }
+            summary = stringResource(R.string.github_check_sheet_summary_install_ui)
         ) {
             AppDropdownSelector(
                 selectedText = installUiLabels.getOrElse(selectedInstallUiIndex) {
@@ -601,11 +569,7 @@ private fun GitHubCheckTransferSection(
                 selectedIndex = selectedInstallUiIndex,
                 expanded = showApkInstallUiModePopup,
                 anchorBounds = apkInstallUiModePopupAnchorBounds,
-                onExpandedChange = { expanded ->
-                    if (apkInstallDeliveryModeInput == GitHubApkInstallDeliveryMode.AppShizuku) {
-                        onShowApkInstallUiModePopupChange(expanded)
-                    }
-                },
+                onExpandedChange = onShowApkInstallUiModePopupChange,
                 onSelectedIndexChange = { selectedIndex ->
                     onApkInstallUiModeInputChange(installUiOptions[selectedIndex])
                 },
@@ -614,19 +578,17 @@ private fun GitHubCheckTransferSection(
                 variant = GlassVariant.SheetAction
             )
         }
-        if (apkInstallDeliveryModeInput == GitHubApkInstallDeliveryMode.AppShizuku) {
-            SheetControlRow(
-                label = stringResource(R.string.github_check_sheet_label_shizuku_install_status),
-                summary = shizukuStatusSummary
-            ) {
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.github_check_sheet_action_request_shizuku),
-                    enabled = !shizukuInstallCapability.anyBackendReady,
-                    onClick = { shizukuApiUtils.requestPermissionIfNeeded() }
-                )
-            }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_shizuku_install_status),
+            summary = shizukuStatusSummary
+        ) {
+            AppLiquidTextButton(
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction,
+                text = stringResource(R.string.github_check_sheet_action_request_shizuku),
+                enabled = !shizukuInstallCapability.sessionReady,
+                onClick = { shizukuApiUtils.requestPermissionIfNeeded() }
+            )
         }
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_share_import_linkage),
@@ -825,13 +787,6 @@ private fun GitHubShareImportFlowMode.labelRes(): Int {
     }
 }
 
-private fun GitHubApkInstallDeliveryMode.labelRes(): Int {
-    return when (this) {
-        GitHubApkInstallDeliveryMode.External -> R.string.github_apk_install_delivery_external
-        GitHubApkInstallDeliveryMode.AppShizuku -> R.string.github_apk_install_delivery_app_shizuku
-    }
-}
-
 private fun GitHubApkInstallUiMode.labelRes(): Int {
     return when (this) {
         GitHubApkInstallUiMode.SheetFirst -> R.string.github_apk_install_ui_sheet
@@ -859,10 +814,6 @@ private fun shizukuInstallCapabilitySummary(
 
         capability.sessionReady -> stringResource(
             R.string.github_check_sheet_summary_app_install_ready
-        )
-
-        capability.shellReady -> stringResource(
-            R.string.github_check_sheet_summary_app_install_shell_ready
         )
 
         !capability.remoteInstallPermissionGranted -> stringResource(

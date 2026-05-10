@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -59,7 +60,7 @@ internal class GitHubConfigActions(
             state.profileDepthInput = config.profileDepth
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
-            state.apkInstallDeliveryModeInput = config.apkInstallDeliveryMode
+            state.apkInstallDeliveryModeInput = GitHubApkInstallDeliveryMode.AppShizuku
             state.apkInstallUiModeInput = config.apkInstallUiMode
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
@@ -192,7 +193,7 @@ internal class GitHubConfigActions(
                 profileDepth = state.profileDepthInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
                 shareImportFlowMode = state.shareImportFlowModeInput,
-                apkInstallDeliveryMode = state.apkInstallDeliveryModeInput,
+                apkInstallDeliveryMode = GitHubApkInstallDeliveryMode.AppShizuku,
                 apkInstallUiMode = state.apkInstallUiModeInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
                     installedOnlineShareTargets.any { it.packageName == selected }

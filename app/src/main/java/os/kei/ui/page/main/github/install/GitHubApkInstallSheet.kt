@@ -104,7 +104,7 @@ private fun InstallMainCard(
         InstallHeader(state = state)
         if (state.phase in progressPhases) {
             LiquidLinearProgressBar(
-                progress = { state.progress.coerceIn(0f, 1f) },
+                progress = { state.overallProgress.coerceIn(0f, 1f) },
                 height = 5.dp,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -178,7 +178,7 @@ private fun InstallHeader(state: GitHubApkInstallFlowState) {
             Text(
                 text = stringResource(
                     R.string.github_apk_install_summary_progress,
-                    (state.progress * 100).toInt().coerceIn(0, 100)
+                    state.overallProgressPercent
                 ),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
@@ -511,13 +511,25 @@ private fun InstallActionSection(
         InstallBottomResult(state)
         when (state.phase) {
             GitHubApkInstallPhase.ReadyToInstall -> InstallConfirmButtons(state, context, backdrop)
-            GitHubApkInstallPhase.PendingUserAction -> AppLiquidTextButton(
-                backdrop = backdrop,
-                text = stringResource(R.string.github_apk_install_action_open_system_confirm),
-                onClick = { GitHubApkInstallFlowCoordinator.launchPendingUserAction(context) },
+            GitHubApkInstallPhase.PendingUserAction -> Row(
                 modifier = Modifier.fillMaxWidth(),
-                variant = GlassVariant.SheetAction
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    text = stringResource(R.string.common_cancel),
+                    onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
+                    modifier = Modifier.weight(1f),
+                    variant = GlassVariant.SheetAction
+                )
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    text = stringResource(R.string.github_apk_install_action_open_system_confirm),
+                    onClick = { GitHubApkInstallFlowCoordinator.launchPendingUserAction(context) },
+                    modifier = Modifier.weight(1f),
+                    variant = GlassVariant.SheetAction
+                )
+            }
 
             GitHubApkInstallPhase.Failed -> {
                 AppLiquidTextButton(

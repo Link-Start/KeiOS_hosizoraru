@@ -66,6 +66,13 @@ internal object GitHubApkInstallNotificationHelper {
         context: Context,
         state: GitHubApkInstallFlowState
     ): Notification {
+        return buildFrameworkLiveUpdateNotification(context, state)
+    }
+
+    internal fun buildFrameworkLiveUpdateNotification(
+        context: Context,
+        state: GitHubApkInstallFlowState
+    ): Notification {
         val helper = NotificationHelper(context)
         return if (helper.isModernLiveUpdateEligible) {
             ModernNotificationBuilder(context).build(buildPayload(context, state, helper, false))
@@ -93,11 +100,12 @@ internal object GitHubApkInstallNotificationHelper {
         val openIntent = buildOpenPendingIntent(context)
         val running = state.phase.running
         val content = installContent(context, state)
+        val progressPercent = state.phase.progressPercent(state)
         return NotificationPayload(
             state = McpNotificationPayload(
                 serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
                 running = running,
-                port = state.phase.progressPercent(state),
+                port = progressPercent,
                 path = content,
                 clients = if (running) 1 else 0,
                 ongoing = running,
@@ -112,7 +120,7 @@ internal object GitHubApkInstallNotificationHelper {
                 overrideContent = content,
                 overrideOnlineText = context.getString(state.phase.shortTextRes),
                 overrideShortText = context.getString(state.phase.shortTextRes),
-                overrideProgressPercent = state.phase.progressPercent(state)
+                overrideProgressPercent = progressPercent
             ),
             settings = UserSettings(miIslandOuterGlow = miIsland),
             environment = EnvironmentContext(
@@ -283,12 +291,13 @@ private val GitHubApkInstallPhase.shortTextRes: Int
 
 private fun GitHubApkInstallPhase.progressPercent(state: GitHubApkInstallFlowState): Int {
     return when (this) {
-        GitHubApkInstallPhase.Downloading -> (8 + state.progress * 34).toInt().coerceIn(8, 42)
-        GitHubApkInstallPhase.SelectingApk -> 44
-        GitHubApkInstallPhase.Inspecting -> 52
-        GitHubApkInstallPhase.ReadyToInstall -> 58
-        GitHubApkInstallPhase.Installing -> (62 + state.progress * 24).toInt().coerceIn(62, 86)
-        GitHubApkInstallPhase.PendingUserAction -> 88
+        GitHubApkInstallPhase.Downloading,
+        GitHubApkInstallPhase.SelectingApk,
+        GitHubApkInstallPhase.Inspecting,
+        GitHubApkInstallPhase.ReadyToInstall,
+        GitHubApkInstallPhase.Installing,
+        GitHubApkInstallPhase.PendingUserAction -> state.overallProgressPercent.coerceIn(1, 99)
+
         GitHubApkInstallPhase.Success -> 100
         GitHubApkInstallPhase.Failed,
         GitHubApkInstallPhase.Cancelled,

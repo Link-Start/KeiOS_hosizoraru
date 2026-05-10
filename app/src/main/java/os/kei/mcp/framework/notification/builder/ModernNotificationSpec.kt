@@ -11,7 +11,8 @@ internal enum class ModernNotificationKind {
     BA_CAFE_VISIT,
     BA_ARENA_REFRESH,
     BA_CALENDAR_POOL,
-    GITHUB_SHARE_IMPORT
+    GITHUB_SHARE_IMPORT,
+    GITHUB_APK_INSTALL
 }
 
 internal enum class ModernShortCriticalMode {
@@ -80,6 +81,7 @@ internal object ModernNotificationSpecResolver {
             McpNotificationPayload.isBaArenaRefreshServerName(serverName) -> ModernNotificationKind.BA_ARENA_REFRESH
             McpNotificationPayload.isBaCalendarPoolServerName(serverName) -> ModernNotificationKind.BA_CALENDAR_POOL
             McpNotificationPayload.isGitHubShareImportServerName(serverName) -> ModernNotificationKind.GITHUB_SHARE_IMPORT
+            McpNotificationPayload.isGitHubApkInstallServerName(serverName) -> ModernNotificationKind.GITHUB_APK_INSTALL
             else -> ModernNotificationKind.DEFAULT
         }
     }
@@ -99,7 +101,8 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH,
             ModernNotificationKind.BA_CALENDAR_POOL,
-            ModernNotificationKind.GITHUB_SHARE_IMPORT -> resolveSemanticCompactIcon(kind)
+            ModernNotificationKind.GITHUB_SHARE_IMPORT,
+            ModernNotificationKind.GITHUB_APK_INSTALL -> resolveSemanticCompactIcon(kind)
         }
     }
 
@@ -109,7 +112,8 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT -> ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> ICON_BA_CALENDAR_POOL
-            ModernNotificationKind.GITHUB_SHARE_IMPORT -> ICON_GITHUB_SHARE_IMPORT
+            ModernNotificationKind.GITHUB_SHARE_IMPORT,
+            ModernNotificationKind.GITHUB_APK_INSTALL -> ICON_GITHUB_SHARE_IMPORT
             ModernNotificationKind.DEFAULT -> ICON_DEFAULT_OEM
         }
     }
@@ -129,7 +133,8 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT -> CONTENT_ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> CONTENT_ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> CONTENT_ICON_BA_CALENDAR_POOL
-            ModernNotificationKind.GITHUB_SHARE_IMPORT -> CONTENT_ICON_GITHUB_SHARE_IMPORT
+            ModernNotificationKind.GITHUB_SHARE_IMPORT,
+            ModernNotificationKind.GITHUB_APK_INSTALL -> CONTENT_ICON_GITHUB_SHARE_IMPORT
         }
     }
 
@@ -141,7 +146,8 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.DEFAULT,
             ModernNotificationKind.BA_AP,
             ModernNotificationKind.BA_CALENDAR_POOL,
-            ModernNotificationKind.GITHUB_SHARE_IMPORT -> ModernShortCriticalMode.SHORT_TEXT
+            ModernNotificationKind.GITHUB_SHARE_IMPORT,
+            ModernNotificationKind.GITHUB_APK_INSTALL -> ModernShortCriticalMode.SHORT_TEXT
         }
     }
 
@@ -155,7 +161,8 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_ARENA_REFRESH -> 100
 
             ModernNotificationKind.BA_CALENDAR_POOL,
-            ModernNotificationKind.GITHUB_SHARE_IMPORT -> {
+            ModernNotificationKind.GITHUB_SHARE_IMPORT,
+            ModernNotificationKind.GITHUB_APK_INSTALL -> {
                 state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             }
 

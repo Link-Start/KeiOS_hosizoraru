@@ -143,6 +143,7 @@ val backdropVersion = "2.0.0-alpha03"
 val capsuleVersion = "2.1.3"
 val shapesVersion = "1.2.0"
 val shizukuVersion = "13.1.5"
+val hiddenApiBypassVersion = "6.1"
 val mmkvVersion = "2.4.0"
 val mcpKotlinSdkVersion = "0.12.0"
 val ktorVersion = "3.4.3"
@@ -224,6 +225,7 @@ android {
         buildConfigField("String", "METRICS_PERFORMANCE_VERSION", "\"$metricsPerformanceVersion\"")
         buildConfigField("String", "DOCUMENTFILE_VERSION", "\"$documentFileVersion\"")
         buildConfigField("String", "SHIZUKU_VERSION", "\"$shizukuVersion\"")
+        buildConfigField("String", "HIDDEN_API_BYPASS_VERSION", "\"$hiddenApiBypassVersion\"")
         buildConfigField("String", "FOCUS_API_VERSION", "\"$focusApiVersion\"")
         buildConfigField("String", "GRADLE_VERSION", "\"$projectGradleVersion\"")
         buildConfigField("String", "BASE_VERSION_NAME", "\"${releaseVersion.name}\"")
@@ -365,6 +367,7 @@ dependencies {
 
     implementation("dev.rikka.shizuku:api:$shizukuVersion")
     implementation("dev.rikka.shizuku:provider:$shizukuVersion")
+    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:$hiddenApiBypassVersion")
     implementation("com.tencent:mmkv:$mmkvVersion")
     implementation("io.modelcontextprotocol:kotlin-sdk:$mcpKotlinSdkVersion")
     implementation("io.ktor:ktor-server-cio:$ktorVersion")

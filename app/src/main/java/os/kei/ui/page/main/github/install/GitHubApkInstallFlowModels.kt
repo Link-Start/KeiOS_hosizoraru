@@ -28,6 +28,15 @@ internal enum class GitHubApkInstallPhase {
     Cancelled
 }
 
+internal enum class GitHubApkInstallProgressKind {
+    None,
+    Download,
+    Inspect,
+    Staging,
+    Commit,
+    Waiting
+}
+
 internal data class GitHubApkInstallRequestContext(
     val sourceKind: GitHubApkInstallSourceKind,
     val owner: String = "",
@@ -73,22 +82,40 @@ internal data class GitHubApkInstallFlowState(
     val backendId: ApkInstallBackendId? = null,
     val failureReason: ApkInstallFailureReason? = null,
     val progress: Float = 0f,
+    val stageProgress: Float = progress,
+    val overallProgress: Float = progress,
+    val progressKind: GitHubApkInstallProgressKind = GitHubApkInstallProgressKind.None,
     val bytesDone: Long = 0L,
     val totalBytes: Long = 0L,
     val message: String = "",
+    val rawMessage: String = "",
     val sheetVisible: Boolean = false,
     val notificationFirst: Boolean = false
 ) {
     val active: Boolean
-        get() = phase != GitHubApkInstallPhase.Idle &&
-                phase != GitHubApkInstallPhase.Cancelled
+        get() = phase != GitHubApkInstallPhase.Idle
 
     val needsUserDecision: Boolean
         get() = phase == GitHubApkInstallPhase.SelectingApk ||
                 phase == GitHubApkInstallPhase.ReadyToInstall ||
                 phase == GitHubApkInstallPhase.PendingUserAction ||
                 phase == GitHubApkInstallPhase.Failed ||
-                phase == GitHubApkInstallPhase.Success
+                phase == GitHubApkInstallPhase.Success ||
+                phase == GitHubApkInstallPhase.Cancelled
+
+    val cancellable: Boolean
+        get() = phase == GitHubApkInstallPhase.Downloading ||
+                phase == GitHubApkInstallPhase.SelectingApk ||
+                phase == GitHubApkInstallPhase.Inspecting ||
+                phase == GitHubApkInstallPhase.ReadyToInstall ||
+                phase == GitHubApkInstallPhase.Installing ||
+                phase == GitHubApkInstallPhase.PendingUserAction
+
+    val overallProgressPercent: Int
+        get() = (overallProgress.coerceIn(0f, 1f) * 100f).toInt().coerceIn(0, 100)
+
+    val stageProgressPercent: Int
+        get() = (stageProgress.coerceIn(0f, 1f) * 100f).toInt().coerceIn(0, 100)
 
     val packageName: String
         get() = localArchiveInfo?.packageName.orEmpty()

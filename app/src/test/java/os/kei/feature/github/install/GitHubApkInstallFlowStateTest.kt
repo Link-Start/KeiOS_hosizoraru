@@ -26,4 +26,17 @@ class GitHubApkInstallFlowStateTest {
         assertTrue(state.active)
         assertFalse(state.needsUserDecision)
     }
+
+    @Test
+    fun `cancelled remains active terminal notification state`() {
+        val state = GitHubApkInstallFlowState(
+            phase = GitHubApkInstallPhase.Cancelled,
+            overallProgress = 0.42f
+        )
+
+        assertTrue(state.active)
+        assertTrue(state.needsUserDecision)
+        assertFalse(state.cancellable)
+        assertTrue(state.overallProgressPercent == 42)
+    }
 }

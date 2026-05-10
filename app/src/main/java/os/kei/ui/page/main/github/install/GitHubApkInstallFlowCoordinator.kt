@@ -25,9 +25,7 @@ import os.kei.core.install.ApkInstallProgress
 import os.kei.core.install.ApkInstallRequest
 import os.kei.core.install.ApkInstallResult
 import os.kei.core.install.LocalApkArchiveInfo
-import os.kei.core.install.ShizukuDualInstallBackend
 import os.kei.core.install.ShizukuSessionInstallBackend
-import os.kei.core.install.ShizukuShellInstallBackend
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -40,6 +38,7 @@ import os.kei.feature.github.model.GitHubDecisionLevel
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.notification.GitHubApkInstallNotificationHelper
+import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.resolvePreferredAssetUrl
 import java.io.File
@@ -74,6 +73,9 @@ internal object GitHubApkInstallFlowCoordinator {
         val sessionId = sessionIds.incrementAndGet()
         val notificationFirst =
             lookupConfig.apkInstallUiMode == GitHubApkInstallUiMode.NotificationFirst
+        if (request.sourceKind == GitHubApkInstallSourceKind.ShareImport) {
+            GitHubShareImportNotificationHelper.cancel(appContext)
+        }
         updateState(
             GitHubApkInstallFlowState(
                 sessionId = sessionId,
@@ -88,6 +90,13 @@ internal object GitHubApkInstallFlowCoordinator {
                     request = request,
                     installedInfo = null,
                     archiveInfo = null
+                ),
+                progressKind = GitHubApkInstallProgressKind.Download,
+                stageProgress = 0f,
+                progress = 0f,
+                overallProgress = installOverallProgress(
+                    phase = GitHubApkInstallPhase.Downloading,
+                    stageProgress = 0f
                 ),
                 sheetVisible = !notificationFirst,
                 notificationFirst = notificationFirst
@@ -120,7 +129,12 @@ internal object GitHubApkInstallFlowCoordinator {
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                fail(appContext, error.localizedInstallMessage(appContext))
+                failActive(
+                    context = appContext,
+                    sessionId = sessionId,
+                    message = error.localizedInstallMessage(appContext),
+                    rawMessage = error.message.orEmpty()
+                )
             }
         }
     }
@@ -200,14 +214,20 @@ internal object GitHubApkInstallFlowCoordinator {
     }
 
     fun cancel(context: Context) {
+        val current = _state.value
+        if (current.phase == GitHubApkInstallPhase.Idle) return
+        val work = activeWork
         activeJob?.cancel()
         activeJob = null
-        activeWork?.cleanup()
+        work?.cleanup()
         activeWork = null
         updateState(
-            _state.value.copy(
+            current.copy(
                 phase = GitHubApkInstallPhase.Cancelled,
+                progressKind = GitHubApkInstallProgressKind.None,
                 progress = 0f,
+                stageProgress = 0f,
+                overallProgress = current.overallProgress.coerceIn(0f, 1f),
                 message = context.getString(R.string.github_apk_install_cancelled),
                 sheetVisible = false
             )
@@ -239,7 +259,9 @@ internal object GitHubApkInstallFlowCoordinator {
             fileName = work.asset.name
         ) { done, total ->
             updateProgress(
+                sessionId = work.sessionId,
                 phase = GitHubApkInstallPhase.Downloading,
+                kind = GitHubApkInstallProgressKind.Download,
                 bytesDone = done,
                 totalBytes = total
             )
@@ -261,7 +283,13 @@ internal object GitHubApkInstallFlowCoordinator {
                     candidates = candidates.mapIndexed { index, file ->
                         GitHubApkInstallCandidate(index, file.name, file.sizeBytes)
                     },
+                    progressKind = GitHubApkInstallProgressKind.Waiting,
+                    stageProgress = 1f,
                     progress = 0.44f,
+                    overallProgress = installOverallProgress(
+                        phase = GitHubApkInstallPhase.SelectingApk,
+                        stageProgress = 1f
+                    ),
                     sheetVisible = true,
                     message = work.appContext.getString(R.string.github_apk_install_select_apk)
                 )
@@ -281,7 +309,13 @@ internal object GitHubApkInstallFlowCoordinator {
                 phase = GitHubApkInstallPhase.Inspecting,
                 selectedCandidateName = candidate.name,
                 selectedCandidateSizeBytes = candidate.sizeBytes,
-                progress = 0.52f,
+                progressKind = GitHubApkInstallProgressKind.Inspect,
+                stageProgress = 0f,
+                progress = 0f,
+                overallProgress = installOverallProgress(
+                    phase = GitHubApkInstallPhase.Inspecting,
+                    stageProgress = 0f
+                ),
                 message = work.appContext.getString(R.string.github_apk_install_inspecting)
             )
         )
@@ -310,7 +344,13 @@ internal object GitHubApkInstallFlowCoordinator {
                 selectedCandidateName = candidate.name,
                 selectedCandidateSizeBytes = candidate.sizeBytes,
                 phase = GitHubApkInstallPhase.ReadyToInstall,
-                progress = 0.58f,
+                progressKind = GitHubApkInstallProgressKind.Waiting,
+                stageProgress = 1f,
+                progress = 1f,
+                overallProgress = installOverallProgress(
+                    phase = GitHubApkInstallPhase.ReadyToInstall,
+                    stageProgress = 1f
+                ),
                 sheetVisible = true,
                 message = work.appContext.getString(
                     when (trust.level) {
@@ -337,6 +377,12 @@ internal object GitHubApkInstallFlowCoordinator {
                 selectedCandidateName = candidate.name,
                 selectedCandidateSizeBytes = candidate.sizeBytes,
                 progress = 0.62f,
+                stageProgress = 0f,
+                overallProgress = installOverallProgress(
+                    phase = GitHubApkInstallPhase.Installing,
+                    stageProgress = 0f
+                ),
+                progressKind = GitHubApkInstallProgressKind.Staging,
                 message = work.appContext.getString(R.string.github_apk_install_installing)
             )
         )
@@ -354,12 +400,25 @@ internal object GitHubApkInstallFlowCoordinator {
         ) { progress ->
             if (progress is ApkInstallProgress.Staging) {
                 updateProgress(
+                    sessionId = work.sessionId,
                     phase = GitHubApkInstallPhase.Installing,
+                    kind = GitHubApkInstallProgressKind.Staging,
                     bytesDone = progress.bytesWritten,
                     totalBytes = progress.totalBytes
                 )
             } else if (progress is ApkInstallProgress.Committing) {
-                updateState(_state.value.copy(progress = 0.86f))
+                updateActiveState(work.sessionId) { current ->
+                    current.copy(
+                        progressKind = GitHubApkInstallProgressKind.Commit,
+                        stageProgress = 1f,
+                        progress = 1f,
+                        overallProgress = installOverallProgress(
+                            phase = GitHubApkInstallPhase.Installing,
+                            stageProgress = 1f
+                        ),
+                        message = work.appContext.getString(R.string.github_apk_install_installing)
+                    )
+                }
             }
         }
         when (result) {
@@ -371,7 +430,10 @@ internal object GitHubApkInstallFlowCoordinator {
                     _state.value.copy(
                         phase = GitHubApkInstallPhase.Success,
                         backendId = result.backendId,
+                        progressKind = GitHubApkInstallProgressKind.None,
+                        stageProgress = 1f,
                         progress = 1f,
+                        overallProgress = 1f,
                         message = result.message
                     )
                 )
@@ -397,7 +459,13 @@ internal object GitHubApkInstallFlowCoordinator {
                     _state.value.copy(
                         phase = GitHubApkInstallPhase.PendingUserAction,
                         backendId = result.backendId,
-                        progress = 0.88f,
+                        progressKind = GitHubApkInstallProgressKind.Waiting,
+                        stageProgress = 1f,
+                        progress = 1f,
+                        overallProgress = installOverallProgress(
+                            phase = GitHubApkInstallPhase.PendingUserAction,
+                            stageProgress = 1f
+                        ),
                         sheetVisible = true,
                         message = result.message
                     )
@@ -410,9 +478,13 @@ internal object GitHubApkInstallFlowCoordinator {
                         phase = GitHubApkInstallPhase.Failed,
                         backendId = result.backendId,
                         failureReason = result.reason,
+                        progressKind = GitHubApkInstallProgressKind.None,
+                        stageProgress = 0f,
                         progress = 0f,
+                        overallProgress = _state.value.overallProgress.coerceIn(0f, 1f),
                         sheetVisible = true,
-                        message = result.message.ifBlank {
+                        message = result.userFacingMessage(work.appContext),
+                        rawMessage = result.message.ifBlank {
                             work.appContext.getString(R.string.github_apk_install_error_failed)
                         }
                     )
@@ -422,10 +494,7 @@ internal object GitHubApkInstallFlowCoordinator {
     }
 
     private fun installBackend(context: Context): ApkInstallBackend {
-        return ShizukuDualInstallBackend(
-            sessionBackend = ShizukuSessionInstallBackend(context.applicationContext),
-            shellBackend = ShizukuShellInstallBackend()
-        )
+        return ShizukuSessionInstallBackend(context.applicationContext)
     }
 
     private fun preheatInstalledInfo(work: ActiveInstallWork) {
@@ -506,12 +575,14 @@ internal object GitHubApkInstallFlowCoordinator {
         transform: (GitHubApkInstallFlowState) -> GitHubApkInstallFlowState
     ) {
         val current = _state.value
-        if (current.sessionId != sessionId || !current.active) return
+        if (current.sessionId != sessionId || current.phase.isTerminalForAsyncUpdates()) return
         updateState(transform(current))
     }
 
     private fun updateProgress(
+        sessionId: Long,
         phase: GitHubApkInstallPhase,
+        kind: GitHubApkInstallProgressKind,
         bytesDone: Long,
         totalBytes: Long
     ) {
@@ -520,21 +591,30 @@ internal object GitHubApkInstallFlowCoordinator {
         } else {
             0f
         }.coerceIn(0f, 1f)
-        updateState(
-            _state.value.copy(
+        updateActiveState(sessionId) { current ->
+            current.copy(
                 phase = phase,
+                progressKind = kind,
                 bytesDone = bytesDone,
                 totalBytes = totalBytes,
-                progress = fraction
+                stageProgress = fraction,
+                progress = fraction,
+                overallProgress = installOverallProgress(
+                    phase = phase,
+                    stageProgress = fraction
+                )
             )
-        )
+        }
     }
 
     private fun fail(context: Context, message: String) {
         updateState(
             _state.value.copy(
                 phase = GitHubApkInstallPhase.Failed,
+                progressKind = GitHubApkInstallProgressKind.None,
+                stageProgress = 0f,
                 progress = 0f,
+                overallProgress = _state.value.overallProgress.coerceIn(0f, 1f),
                 sheetVisible = true,
                 message = message
             )
@@ -542,9 +622,31 @@ internal object GitHubApkInstallFlowCoordinator {
         GitHubApkInstallNotificationHelper.notify(context, _state.value)
     }
 
+    private fun failActive(
+        context: Context,
+        sessionId: Long,
+        message: String,
+        rawMessage: String = ""
+    ) {
+        val current = _state.value
+        if (current.sessionId != sessionId || current.phase.isTerminalForAsyncUpdates()) return
+        updateState(
+            current.copy(
+                phase = GitHubApkInstallPhase.Failed,
+                progressKind = GitHubApkInstallProgressKind.None,
+                stageProgress = 0f,
+                progress = 0f,
+                overallProgress = current.overallProgress.coerceIn(0f, 1f),
+                sheetVisible = true,
+                message = sanitizeInstallFailureMessage(context, message),
+                rawMessage = rawMessage
+            )
+        )
+    }
+
     private fun updateState(next: GitHubApkInstallFlowState) {
         _state.value = next
-        if (next.active) {
+        if (next.phase != GitHubApkInstallPhase.Idle) {
             GitHubApkInstallNotificationHelper.notify(next.requestContext(), next)
         }
     }
@@ -555,8 +657,11 @@ internal object GitHubApkInstallFlowCoordinator {
     }
 
     private fun Throwable.localizedInstallMessage(context: Context): String {
-        return message?.takeIf { it.isNotBlank() }
+        return sanitizeInstallFailureMessage(
+            context = context,
+            raw = message?.takeIf { it.isNotBlank() }
             ?: context.getString(R.string.github_apk_install_error_failed)
+        )
     }
 
     private fun ActiveInstallWork.cleanup() {
@@ -690,6 +795,51 @@ internal object GitHubApkInstallFlowCoordinator {
         return MessageDigest.getInstance("SHA-256")
             .digest(this)
             .joinToString("") { byte -> "%02x".format(byte) }
+    }
+
+    private fun installOverallProgress(
+        phase: GitHubApkInstallPhase,
+        stageProgress: Float
+    ): Float {
+        val stage = stageProgress.coerceIn(0f, 1f)
+        return when (phase) {
+            GitHubApkInstallPhase.Downloading -> 0.06f + stage * 0.44f
+            GitHubApkInstallPhase.SelectingApk -> 0.52f
+            GitHubApkInstallPhase.Inspecting -> 0.54f + stage * 0.04f
+            GitHubApkInstallPhase.ReadyToInstall -> 0.60f
+            GitHubApkInstallPhase.Installing -> 0.62f + stage * 0.26f
+            GitHubApkInstallPhase.PendingUserAction -> 0.90f
+            GitHubApkInstallPhase.Success -> 1f
+            GitHubApkInstallPhase.Failed,
+            GitHubApkInstallPhase.Cancelled,
+            GitHubApkInstallPhase.Idle -> 0f
+        }.coerceIn(0f, 1f)
+    }
+
+    private fun GitHubApkInstallPhase.isTerminalForAsyncUpdates(): Boolean {
+        return this == GitHubApkInstallPhase.Idle ||
+                this == GitHubApkInstallPhase.Success ||
+                this == GitHubApkInstallPhase.Failed ||
+                this == GitHubApkInstallPhase.Cancelled
+    }
+
+    private fun ApkInstallResult.Failure.userFacingMessage(context: Context): String {
+        return sanitizeInstallFailureMessage(
+            context = context,
+            raw = message.ifBlank { context.getString(R.string.github_apk_install_error_failed) }
+        )
+    }
+
+    private fun sanitizeInstallFailureMessage(context: Context, raw: String): String {
+        val normalized = raw.trim()
+        if (normalized.isBlank()) return context.getString(R.string.github_apk_install_error_failed)
+        val lower = normalized.lowercase()
+        return when {
+            "timed out" in lower || "timeout" in lower ->
+                context.getString(R.string.github_apk_install_error_timeout)
+
+            else -> normalized
+        }
     }
 
     private const val INSTALL_SUCCESS_PACKAGE_INFO_RETRY_COUNT = 3

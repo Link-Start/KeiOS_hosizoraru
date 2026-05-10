@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.install
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -39,8 +40,14 @@ internal class GitHubApkInstallFileDownloader(
             .url(safeUrl)
             .header("User-Agent", "KeiOS")
             .build()
+        val call = client.newCall(request)
+        val cancelHandle = currentCoroutineContext()[Job]?.invokeOnCompletion { cause ->
+            if (cause is CancellationException) {
+                call.cancel()
+            }
+        }
         try {
-            client.newCall(request).execute().use { response ->
+            call.execute().use { response ->
                 if (!response.isSuccessful) {
                     error("Download failed: HTTP ${response.code}")
                 }
@@ -67,6 +74,8 @@ internal class GitHubApkInstallFileDownloader(
         } catch (error: Throwable) {
             runCatching { target.delete() }
             throw error
+        } finally {
+            cancelHandle?.dispose()
         }
         GitHubApkInstallDownloadedFile(
             file = target,

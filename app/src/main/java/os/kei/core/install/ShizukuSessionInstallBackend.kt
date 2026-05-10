@@ -42,6 +42,7 @@ class ShizukuSessionInstallBackend(
 
         var sessionId: Int? = null
         var handle: PackageInstallerSessionHandle? = null
+        var committing = false
         try {
             onProgress(ApkInstallProgress.Preparing(ApkInstallBackendId.ShizukuSession))
             sessionId = gateway.createSession(
@@ -66,6 +67,7 @@ class ShizukuSessionInstallBackend(
                 }
             }
             onProgress(ApkInstallProgress.Committing(ApkInstallBackendId.ShizukuSession))
+            committing = true
             val result = handle.commit()
             result.toInstallResult(request.packageName)
         } catch (error: CancellationException) {
@@ -77,6 +79,8 @@ class ShizukuSessionInstallBackend(
                 backendId = ApkInstallBackendId.ShizukuSession,
                 reason = if (sessionId == null) {
                     ApkInstallFailureReason.SessionCreateFailed
+                } else if (committing) {
+                    ApkInstallFailureReason.CommitFailed
                 } else {
                     ApkInstallFailureReason.StagingFailed
                 },
@@ -112,30 +116,5 @@ class ShizukuSessionInstallBackend(
                 message = message.ifBlank { "PackageInstaller commit failed: $status#$legacyStatus" }
             )
         }
-    }
-}
-
-class ShizukuDualInstallBackend(
-    private val sessionBackend: ApkInstallBackend,
-    private val shellBackend: ApkInstallBackend
-) : ApkInstallBackend {
-    override suspend fun install(
-        request: ApkInstallRequest,
-        onProgress: suspend (ApkInstallProgress) -> Unit
-    ): ApkInstallResult {
-        val sessionResult = sessionBackend.install(request, onProgress)
-        if (sessionResult is ApkInstallResult.Failure &&
-            sessionResult.reason in fallbackReasons
-        ) {
-            return shellBackend.install(request, onProgress)
-        }
-        return sessionResult
-    }
-
-    private companion object {
-        val fallbackReasons = setOf(
-            ApkInstallFailureReason.BackendUnavailable,
-            ApkInstallFailureReason.SessionCreateFailed
-        )
     }
 }

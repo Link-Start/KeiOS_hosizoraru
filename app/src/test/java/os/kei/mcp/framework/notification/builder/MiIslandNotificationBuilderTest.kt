@@ -249,6 +249,63 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
+    fun `github apk install island uses progress and stop action labels`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 821,
+            action = "os.kei.test.OPEN_GITHUB_APK_INSTALL"
+        )
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            822,
+            Intent("os.kei.test.CANCEL_GITHUB_APK_INSTALL").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = true,
+                port = 62,
+                path = "正在安装 demo.app",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = cancelPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                primaryActionLabel = "打开 Sheet",
+                secondaryActionLabel = "停止",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "正在安装",
+                overrideContent = "正在安装 demo.app",
+                overrideOnlineText = "安装",
+                overrideShortText = "安装",
+                overrideProgressPercent = 62
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(notificationOpenPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
+        assertEquals("打开 Sheet", focusOpenAction.title.toString())
+        assertEquals("停止", focusStopAction.title.toString())
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"progress\":62"))
+        assertTrue(focusParam.contains("demo.app"))
+    }
+
+    @Test
     fun `github share import success island uses compact completed text`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(

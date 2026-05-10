@@ -15,58 +15,36 @@ class ShizukuRuntimeCapabilitiesTest {
         )
 
         assertFalse(capability.sessionReady)
-        assertFalse(capability.shellReady)
-        assertFalse(capability.anyBackendReady)
     }
 
     @Test
-    fun `pre v11 disables every install backend`() {
+    fun `pre v11 disables install session`() {
         val capability = capability(
             state = state(preV11 = true),
             remoteInstallGranted = true
         )
 
         assertFalse(capability.sessionReady)
-        assertFalse(capability.shellReady)
     }
 
     @Test
-    fun `missing self permission disables every install backend`() {
+    fun `missing self permission disables install session`() {
         val capability = capability(
             state = state(permissionGranted = false),
             remoteInstallGranted = true
         )
 
         assertFalse(capability.sessionReady)
-        assertFalse(capability.shellReady)
     }
 
     @Test
-    fun `remote install permission gates session while shell remains usable`() {
+    fun `remote install permission gates app install`() {
         val capability = capability(
             state = state(commandIdentity = ShizukuCommandIdentity.SHELL),
             remoteInstallGranted = false
         )
 
         assertFalse(capability.sessionReady)
-        assertTrue(capability.shellReady)
-        assertTrue(capability.anyBackendReady)
-    }
-
-    @Test
-    fun `shell and root identities allow shell fallback`() {
-        assertTrue(
-            capability(
-                state = state(commandIdentity = ShizukuCommandIdentity.SHELL),
-                remoteInstallGranted = false
-            ).shellReady
-        )
-        assertTrue(
-            capability(
-                state = state(commandIdentity = ShizukuCommandIdentity.ROOT),
-                remoteInstallGranted = true
-            ).shellReady
-        )
     }
 
     @Test
@@ -77,7 +55,6 @@ class ShizukuRuntimeCapabilitiesTest {
         )
 
         assertTrue(capability.sessionReady)
-        assertFalse(capability.shellReady)
     }
 
     private fun capability(

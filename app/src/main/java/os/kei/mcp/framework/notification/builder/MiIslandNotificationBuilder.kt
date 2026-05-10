@@ -82,6 +82,9 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
+        val isGitHubApkInstall =
+            McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
+        val isGitHubFlow = isGitHubShareImport || isGitHubApkInstall
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -92,7 +95,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit -> ISLAND_ICON_RES_ID_BA_CAFE_VISIT
             isBlueArchiveArenaRefresh -> ISLAND_ICON_RES_ID_BA_ARENA_REFRESH
             isBlueArchiveCalendarPool -> ISLAND_ICON_RES_ID_BA_CALENDAR_POOL
-            isGitHubShareImport -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
+            isGitHubFlow -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
             else -> ISLAND_ICON_RES_ID_DEFAULT
         }
         val shortCriticalText = resolveShortCriticalText(
@@ -101,7 +104,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubShareImport = isGitHubShareImport
+            isGitHubFlow = isGitHubFlow
         )
         val presentation = resolvePresentation(
             state = state,
@@ -109,7 +112,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubShareImport = isGitHubShareImport,
+            isGitHubFlow = isGitHubFlow,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
@@ -121,7 +124,7 @@ class MiIslandNotificationBuilder(
                 when {
                     isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     isBlueArchiveCalendarPool && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isGitHubShareImport && state.running -> NotificationCompat.CATEGORY_PROGRESS
+                    isGitHubFlow && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
                     else -> NotificationCompat.CATEGORY_STATUS
                 }
@@ -143,7 +146,7 @@ class MiIslandNotificationBuilder(
         if (!isBlueArchiveNotification) {
             resolveIslandActions(
                 state = state,
-                isGitHubShareImport = isGitHubShareImport,
+                isGitHubFlow = isGitHubFlow,
                 forFocusExtras = false
             ).forEach { action ->
                 val pendingIntent = if (action.key == "mcp_action_open") {
@@ -170,6 +173,9 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
+        val isGitHubApkInstall =
+            McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
+        val isGitHubFlow = isGitHubShareImport || isGitHubApkInstall
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -181,10 +187,10 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubShareImport = isGitHubShareImport,
+            isGitHubFlow = isGitHubFlow,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
-        val useSemanticIcon = isBlueArchiveNotification || isGitHubShareImport
+        val useSemanticIcon = isBlueArchiveNotification || isGitHubFlow
         val lightLogoIcon = if (useSemanticIcon) {
             Icon.createWithResource(context, islandIconResId)
         } else {
@@ -197,7 +203,7 @@ class MiIslandNotificationBuilder(
         }
         val actions = resolveIslandActions(
             state = state,
-            isGitHubShareImport = isGitHubShareImport,
+            isGitHubFlow = isGitHubFlow,
             forFocusExtras = true
         )
         val displayIcon = payload.semanticIconBitmap?.let { bitmap ->
@@ -354,7 +360,7 @@ class MiIslandNotificationBuilder(
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubShareImport: Boolean,
+        isGitHubFlow: Boolean,
         miIslandProgressColorOverride: String? = null
     ): IslandPresentation {
         if (isBlueArchiveAp && state.running) {
@@ -429,7 +435,7 @@ class MiIslandNotificationBuilder(
                 notificationAccentColor = BA_EVENT_ACCENT_COLOR
             )
         }
-        if (isGitHubShareImport && state.running) {
+        if (isGitHubFlow && state.running) {
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
@@ -496,13 +502,13 @@ class MiIslandNotificationBuilder(
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubShareImport: Boolean
+        isGitHubFlow: Boolean
     ): String? {
         return when {
             !state.running -> state.statusText(context)
             isBlueArchiveAp -> context.getString(R.string.ba_notification_ap_island_text)
             isBlueArchiveCalendarPool -> state.shortText
-            isGitHubShareImport -> state.onlineText(context)
+            isGitHubFlow -> state.onlineText(context)
             isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh -> state.onlineText(context)
             else -> state.onlineText(context)
         }.takeIf { it.isNotBlank() }
@@ -510,13 +516,13 @@ class MiIslandNotificationBuilder(
 
     private fun resolveIslandActions(
         state: McpNotificationPayload,
-        isGitHubShareImport: Boolean,
+        isGitHubFlow: Boolean,
         forFocusExtras: Boolean
     ): List<IslandAction> {
         val actions = mutableListOf(
             IslandAction(
                 key = "mcp_action_open",
-                title = if (isGitHubShareImport) {
+                title = if (isGitHubFlow) {
                     state.primaryActionTitle(context)
                 } else {
                     context.getString(R.string.common_open)
@@ -526,7 +532,7 @@ class MiIslandNotificationBuilder(
             )
         )
         val showSecondaryAction = when {
-            isGitHubShareImport ->
+            isGitHubFlow ->
                 state.stopPendingIntent != state.openPendingIntent &&
                         (state.running || state.showSecondaryActionWhenStopped)
 

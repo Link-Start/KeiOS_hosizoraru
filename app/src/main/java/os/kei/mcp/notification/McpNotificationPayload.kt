@@ -56,6 +56,10 @@ data class McpNotificationPayload(
             return serverName.trim() == GITHUB_SHARE_IMPORT_SERVER_NAME
         }
 
+        fun isGitHubApkInstallServerName(serverName: String): Boolean {
+            return serverName.trim() == GITHUB_APK_INSTALL_SERVER_NAME
+        }
+
         fun isBaNotificationServerName(serverName: String): Boolean {
             return isBaApServerName(serverName) ||
                 isBaCafeVisitServerName(serverName) ||

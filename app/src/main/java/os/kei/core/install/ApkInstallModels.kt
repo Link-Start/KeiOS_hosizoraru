@@ -4,8 +4,7 @@ import android.content.Intent
 import java.io.InputStream
 
 enum class ApkInstallBackendId {
-    ShizukuSession,
-    ShizukuShell
+    ShizukuSession
 }
 
 class ApkInstallEntry(

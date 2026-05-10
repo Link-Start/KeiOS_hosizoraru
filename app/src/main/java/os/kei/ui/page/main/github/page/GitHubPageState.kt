@@ -150,7 +150,7 @@ internal class GitHubPageState(
     var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
-    var apkInstallDeliveryModeInput by mutableStateOf(GitHubApkInstallDeliveryMode.External)
+    var apkInstallDeliveryModeInput by mutableStateOf(GitHubApkInstallDeliveryMode.AppShizuku)
     var apkInstallUiModeInput by mutableStateOf(GitHubApkInstallUiMode.SheetFirst)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")

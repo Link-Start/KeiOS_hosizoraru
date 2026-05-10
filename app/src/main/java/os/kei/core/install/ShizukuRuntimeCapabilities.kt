@@ -16,19 +16,12 @@ data class ShizukuInstallCapability(
                 runtimeState.permissionGranted &&
                 remoteInstallPermissionGranted
 
-    val shellReady: Boolean
-        get() = runtimeState.commandReady
-
-    val anyBackendReady: Boolean
-        get() = sessionReady || shellReady
-
     val statusText: String
         get() = when {
             !runtimeState.binderAlive -> runtimeState.statusText
             runtimeState.preV11 -> runtimeState.statusText
             !runtimeState.permissionGranted -> runtimeState.statusText
             sessionReady -> "Shizuku install session ready"
-            shellReady -> "Shizuku shell install ready"
             !remoteInstallPermissionGranted -> "Shizuku remote install permission unavailable"
             else -> runtimeState.statusText
         }

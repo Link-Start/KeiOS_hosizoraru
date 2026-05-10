@@ -694,12 +694,6 @@ internal object GitHubApkInstallFlowCoordinator {
                 normalized,
                 PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
             )
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageInfo(
-                normalized,
-                PackageManager.GET_SIGNATURES
-            )
         }.getOrNull() ?: return null
         val appInfo = info.applicationInfo
         return GitHubInstalledPackageInfo(
@@ -775,16 +769,11 @@ internal object GitHubApkInstallFlowCoordinator {
     }
 
     private fun PackageInfo.signatureSha256List(): List<String> {
-        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val signingInfo = signingInfo ?: return emptyList()
-            if (signingInfo.hasMultipleSigners()) {
-                signingInfo.apkContentsSigners
-            } else {
-                signingInfo.signingCertificateHistory
-            }
+        val signingInfo = signingInfo ?: return emptyList()
+        val signatures = if (signingInfo.hasMultipleSigners()) {
+            signingInfo.apkContentsSigners
         } else {
-            @Suppress("DEPRECATION")
-            signatures
+            signingInfo.signingCertificateHistory
         } ?: return emptyList()
         return signatures
             .map { signature -> signature.toByteArray().sha256Hex() }

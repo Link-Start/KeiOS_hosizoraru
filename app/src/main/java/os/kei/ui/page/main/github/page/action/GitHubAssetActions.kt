@@ -103,9 +103,6 @@ internal class GitHubAssetActions(
                 normalizedPackageName,
                 PackageManager.PackageInfoFlags.of(0)
             )
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageInfo(normalizedPackageName, 0)
         }.getOrNull() ?: return null
         val applicationInfo = packageInfo.applicationInfo
         return GitHubInstalledPackageInfo(
@@ -481,16 +478,11 @@ internal class GitHubAssetActions(
 }
 
 private fun PackageInfo.signatureSha256List(): List<String> {
-    val signatures = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-        val signing = signingInfo ?: return emptyList()
-        if (signing.hasMultipleSigners()) {
-            signing.apkContentsSigners
-        } else {
-            signing.signingCertificateHistory
-        }
+    val signing = signingInfo ?: return emptyList()
+    val signatures = if (signing.hasMultipleSigners()) {
+        signing.apkContentsSigners
     } else {
-        @Suppress("DEPRECATION")
-        signatures
+        signing.signingCertificateHistory
     } ?: return emptyList()
     return signatures
         .map { signature -> signature.toByteArray().sha256Hex() }

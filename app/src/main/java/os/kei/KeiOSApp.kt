@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.gif.AnimatedImageDecoder
@@ -59,9 +58,7 @@ class KeiOSApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            HiddenApiBypass.addHiddenApiExemptions("")
-        }
+        HiddenApiBypass.addHiddenApiExemptions("")
         SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
                 .components {

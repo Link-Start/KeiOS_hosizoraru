@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Process
@@ -92,9 +91,7 @@ class AndroidPackageInstallerSessionGateway(
         return PackageInstaller.SessionParams(mode).apply {
             setInstallReason(PackageManager.INSTALL_REASON_USER)
             if (packageName.isNotBlank()) setAppPackageName(packageName)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                setPackageSource(PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE)
-            }
+            setPackageSource(PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE)
             applyOptionalInstallFlags(this@toSessionParams)
         }
     }
@@ -298,12 +295,7 @@ private class AndroidPackageInstallerSessionHandle(
     }
 
     private fun Intent.installUserActionIntent(): Intent? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            getParcelableExtra(Intent.EXTRA_INTENT)
-        }
+        return getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
     }
 
     private companion object {

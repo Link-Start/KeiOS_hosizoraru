@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import java.io.File
 import java.security.MessageDigest
 import java.util.zip.ZipFile
@@ -27,12 +26,8 @@ class ApkArchiveInspector(
 ) {
     fun inspect(file: File): Result<LocalApkArchiveInfo> = runCatching {
         require(file.exists() && file.isFile) { "APK file does not exist: ${file.absolutePath}" }
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val flags =
             PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
-        } else {
-            @Suppress("DEPRECATION")
-            PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNATURES.toLong())
-        }
         val info = context.packageManager.getPackageArchiveInfo(file.absolutePath, flags)
             ?: error("APK package info unavailable")
         info.applicationInfo?.sourceDir = file.absolutePath
@@ -84,16 +79,11 @@ private fun File.nativeAbis(): List<String> {
 }
 
 private fun PackageInfo.signatureSha256List(): List<String> {
-    val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        val signingInfo = signingInfo ?: return emptyList()
-        if (signingInfo.hasMultipleSigners()) {
-            signingInfo.apkContentsSigners
-        } else {
-            signingInfo.signingCertificateHistory
-        }
+    val signingInfo = signingInfo ?: return emptyList()
+    val signatures = if (signingInfo.hasMultipleSigners()) {
+        signingInfo.apkContentsSigners
     } else {
-        @Suppress("DEPRECATION")
-        signatures
+        signingInfo.signingCertificateHistory
     } ?: return emptyList()
     return signatures
         .map { signature -> signature.toByteArray().sha256Hex() }

@@ -28,7 +28,6 @@ import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
-import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubApkInstallUiMode
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
@@ -49,6 +48,7 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
+import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 @Stable
@@ -68,6 +68,8 @@ internal class GitHubPageState(
     var showAddSheet by mutableStateOf(false)
     var showStrategySheet by mutableStateOf(false)
     var showCheckLogicSheet by mutableStateOf(false)
+    var showCheckLogicMenuPopup by mutableStateOf(false)
+    var checkLogicSheetCategory by mutableStateOf(GitHubCheckSheetCategory.UpdateChecks)
     var showActionsSheet by mutableStateOf(false)
     var showOverviewEntrySheet by mutableStateOf(false)
     var showDownloaderPopup by mutableStateOf(false)
@@ -115,13 +117,11 @@ internal class GitHubPageState(
     var showSortPopup by mutableStateOf(false)
     var showCheckLogicIntervalPopup by mutableStateOf(false)
     var showOnlineShareTargetPopup by mutableStateOf(false)
-    var showApkInstallDeliveryModePopup by mutableStateOf(false)
     var showApkInstallUiModePopup by mutableStateOf(false)
     var checkLogicIntervalPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var apkInstallDeliveryModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var apkInstallUiModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var pendingTrackImportPreview by mutableStateOf<GitHubTrackImportPreview?>(null)
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
@@ -150,7 +150,6 @@ internal class GitHubPageState(
     var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
-    var apkInstallDeliveryModeInput by mutableStateOf(GitHubApkInstallDeliveryMode.AppShizuku)
     var apkInstallUiModeInput by mutableStateOf(GitHubApkInstallUiMode.SheetFirst)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
@@ -334,11 +333,11 @@ internal class GitHubPageState(
     }
 
     fun dismissCheckLogicSheet() {
+        showCheckLogicMenuPopup = false
         showCheckLogicIntervalPopup = false
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false
         showShareImportFlowModePopup = false
-        showApkInstallDeliveryModePopup = false
         showApkInstallUiModePopup = false
         pendingTrackImportPreview = null
         showCheckLogicSheet = false

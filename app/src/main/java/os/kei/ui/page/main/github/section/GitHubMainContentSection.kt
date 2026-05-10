@@ -31,6 +31,7 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
+import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -62,6 +63,7 @@ internal fun GitHubMainContent(
     sortMode: GitHubSortMode,
     showFailedOnly: Boolean,
     showSortPopup: Boolean,
+    showCheckLogicMenuPopup: Boolean,
     floatingDockSide: AppFloatingDockSide,
     deleteInProgress: Boolean,
     isDark: Boolean,
@@ -95,9 +97,10 @@ internal fun GitHubMainContent(
     onTrackedSearchChange: (String) -> Unit,
     onSearchExpandedChange: (Boolean) -> Unit,
     onShowSortPopupChange: (Boolean) -> Unit,
+    onShowCheckLogicMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
     onOpenStrategySheet: () -> Unit,
-    onOpenCheckLogicSheet: () -> Unit,
+    onOpenCheckLogicSheet: (GitHubCheckSheetCategory) -> Unit,
     onOverviewExpandedChange: (Boolean) -> Unit,
     onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     onStableVersionExpandedChange: (String, Boolean) -> Unit,
@@ -313,9 +316,11 @@ internal fun GitHubMainContent(
                 liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 sortMode = sortMode,
                 showSortPopup = showSortPopup,
+                showCheckLogicMenuPopup = showCheckLogicMenuPopup,
                 deleteInProgress = deleteInProgress,
                 onOpenStrategySheet = onOpenStrategySheet,
                 onOpenCheckLogicSheet = onOpenCheckLogicSheet,
+                onShowCheckLogicMenuPopupChange = onShowCheckLogicMenuPopupChange,
                 onShowSortPopupChange = onShowSortPopupChange,
                 onSortModeChange = onSortModeChange,
                 onRefreshAllTracked = onRefreshAllTracked,

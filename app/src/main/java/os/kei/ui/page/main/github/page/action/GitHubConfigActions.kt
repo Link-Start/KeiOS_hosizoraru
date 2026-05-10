@@ -12,6 +12,7 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 
 internal class GitHubConfigActions(
     private val env: GitHubPageActionEnvironment,
@@ -44,13 +45,14 @@ internal class GitHubConfigActions(
         state.dismissStrategySheet()
     }
 
-    fun openCheckLogicSheet() {
+    fun openCheckLogicSheet(category: GitHubCheckSheetCategory = GitHubCheckSheetCategory.UpdateChecks) {
+        state.showCheckLogicMenuPopup = false
         state.showCheckLogicIntervalPopup = false
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
         state.showShareImportFlowModePopup = false
-        state.showApkInstallDeliveryModePopup = false
         state.showApkInstallUiModePopup = false
+        state.checkLogicSheetCategory = category
         scope.launch {
             val config = repository.loadLookupConfig()
             state.lookupConfig = config
@@ -60,7 +62,6 @@ internal class GitHubConfigActions(
             state.profileDepthInput = config.profileDepth
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
-            state.apkInstallDeliveryModeInput = GitHubApkInstallDeliveryMode.AppShizuku
             state.apkInstallUiModeInput = config.apkInstallUiMode
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage

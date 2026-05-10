@@ -29,6 +29,7 @@ import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.github.share.GitHubShareImportResultKind
 import os.kei.ui.page.main.github.share.toShareImportResult
+import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 
 internal class GitHubPageActions(
     context: Context,
@@ -67,7 +68,8 @@ internal class GitHubPageActions(
 
     fun closeStrategySheet() = configActions.closeStrategySheet()
 
-    fun openCheckLogicSheet() = configActions.openCheckLogicSheet()
+    fun openCheckLogicSheet(category: GitHubCheckSheetCategory = GitHubCheckSheetCategory.UpdateChecks) =
+        configActions.openCheckLogicSheet(category)
 
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
 

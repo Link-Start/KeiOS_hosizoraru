@@ -186,6 +186,7 @@ fun GitHubPage(
             sortMode = state.sortMode,
             showFailedOnly = state.showFailedOnly,
             showSortPopup = state.showSortPopup,
+            showCheckLogicMenuPopup = state.showCheckLogicMenuPopup,
             floatingDockSide = runtime.floatingDockSide,
             deleteInProgress = state.deleteInProgress,
             isDark = isDark,
@@ -221,6 +222,7 @@ fun GitHubPage(
                 searchExpanded = enableSearchBar && expanded
             },
             onShowSortPopupChange = { state.showSortPopup = it },
+            onShowCheckLogicMenuPopupChange = { state.showCheckLogicMenuPopup = it },
             onSortModeChange = { state.sortMode = it },
             onOpenStrategySheet = actions::openStrategySheet,
             onOpenCheckLogicSheet = actions::openCheckLogicSheet,

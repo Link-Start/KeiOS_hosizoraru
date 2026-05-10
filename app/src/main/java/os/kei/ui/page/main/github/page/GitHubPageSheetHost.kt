@@ -89,6 +89,7 @@ internal fun GitHubPageSheetHost(
 
     GitHubCheckLogicSheet(
         show = state.showCheckLogicSheet,
+        category = state.checkLogicSheetCategory,
         backdrop = backdrops.sheet,
         lookupConfig = state.lookupConfig,
         trackedCount = contentDerivedState.trackedUi.overviewMetrics.trackedCount,
@@ -100,7 +101,6 @@ internal fun GitHubPageSheetHost(
         profileDepthInput = state.profileDepthInput,
         shareImportLinkageEnabledInput = state.shareImportLinkageEnabledInput,
         shareImportFlowModeInput = state.shareImportFlowModeInput,
-        apkInstallDeliveryModeInput = state.apkInstallDeliveryModeInput,
         apkInstallUiModeInput = state.apkInstallUiModeInput,
         onlineShareTargetPackageInput = state.onlineShareTargetPackageInput,
         preferredDownloaderPackageInput = state.preferredDownloaderPackageInput,
@@ -112,13 +112,11 @@ internal fun GitHubPageSheetHost(
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
         showShareImportFlowModePopup = state.showShareImportFlowModePopup,
-        showApkInstallDeliveryModePopup = state.showApkInstallDeliveryModePopup,
         showApkInstallUiModePopup = state.showApkInstallUiModePopup,
         checkLogicIntervalPopupAnchorBounds = state.checkLogicIntervalPopupAnchorBounds,
         downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
         onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
         shareImportFlowModePopupAnchorBounds = state.shareImportFlowModePopupAnchorBounds,
-        apkInstallDeliveryModePopupAnchorBounds = state.apkInstallDeliveryModePopupAnchorBounds,
         apkInstallUiModePopupAnchorBounds = state.apkInstallUiModePopupAnchorBounds,
         downloaderOptions = checkLogicDownloaderOptions,
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
@@ -126,6 +124,7 @@ internal fun GitHubPageSheetHost(
         importInProgress = tracksImporting,
         onDismissRequest = actions::closeCheckLogicSheet,
         onApply = { actions.applyCheckLogicSheet(installedOnlineShareTargets) },
+        onCategoryChange = { state.checkLogicSheetCategory = it },
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
         onExportTrackedItems = onExportTrackedItems,
         onImportTrackedItems = onImportTrackedItems,
@@ -137,7 +136,6 @@ internal fun GitHubPageSheetHost(
         onProfileDepthInputChange = { state.profileDepthInput = it },
         onShareImportLinkageEnabledInputChange = { state.shareImportLinkageEnabledInput = it },
         onShareImportFlowModeInputChange = { state.shareImportFlowModeInput = it },
-        onApkInstallDeliveryModeInputChange = { state.apkInstallDeliveryModeInput = it },
         onApkInstallUiModeInputChange = { state.apkInstallUiModeInput = it },
         onPreferredDownloaderPackageInputChange = { state.preferredDownloaderPackageInput = it },
         onOnlineShareTargetPackageInputChange = { state.onlineShareTargetPackageInput = it },
@@ -148,7 +146,6 @@ internal fun GitHubPageSheetHost(
         onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
         onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
         onShowShareImportFlowModePopupChange = { state.showShareImportFlowModePopup = it },
-        onShowApkInstallDeliveryModePopupChange = { state.showApkInstallDeliveryModePopup = it },
         onShowApkInstallUiModePopupChange = { state.showApkInstallUiModePopup = it },
         onCheckLogicIntervalPopupAnchorBoundsChange = {
             state.checkLogicIntervalPopupAnchorBounds = it
@@ -159,9 +156,6 @@ internal fun GitHubPageSheetHost(
         },
         onShareImportFlowModePopupAnchorBoundsChange = {
             state.shareImportFlowModePopupAnchorBounds = it
-        },
-        onApkInstallDeliveryModePopupAnchorBoundsChange = {
-            state.apkInstallDeliveryModePopupAnchorBounds = it
         },
         onApkInstallUiModePopupAnchorBoundsChange = {
             state.apkInstallUiModePopupAnchorBounds = it

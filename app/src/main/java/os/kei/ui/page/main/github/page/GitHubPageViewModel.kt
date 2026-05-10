@@ -20,6 +20,7 @@ import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
+import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val pendingShareImportCardTickMs = 15_000L
@@ -94,7 +95,10 @@ internal class GitHubPageViewModel : ViewModel() {
             onlineShareTargetsJob = viewModelScope.launch {
                 snapshotFlowManager.snapshotFlow {
                     GitHubOnlineShareTargetInput(
-                        shouldResolve = state.showCheckLogicSheet ||
+                        shouldResolve = (
+                                state.showCheckLogicSheet &&
+                                        state.checkLogicSheetCategory == GitHubCheckSheetCategory.ShareImport
+                                ) ||
                             state.lookupConfig.onlineShareTargetPackage.isNotBlank() ||
                             state.onlineShareTargetPackageInput.isNotBlank(),
                         appList = state.appList.toList()
@@ -109,14 +113,16 @@ internal class GitHubPageViewModel : ViewModel() {
         }
         if (downloaderOptionsJob?.isActive != true) {
             downloaderOptionsJob = viewModelScope.launch {
-                snapshotFlowManager.snapshotFlow { state.showCheckLogicSheet }
-                    .collectLatest { showCheckLogicSheet ->
-                        _checkLogicDownloaderOptions.value = if (showCheckLogicSheet) {
-                            repository.queryDownloaders(appContext)
-                        } else {
-                            emptyList()
-                        }
+                snapshotFlowManager.snapshotFlow {
+                    state.showCheckLogicSheet &&
+                            state.checkLogicSheetCategory == GitHubCheckSheetCategory.InstallFlow
+                }.collectLatest { shouldResolve ->
+                    _checkLogicDownloaderOptions.value = if (shouldResolve) {
+                        repository.queryDownloaders(appContext)
+                    } else {
+                        emptyList()
                     }
+                }
             }
         }
     }

@@ -8,14 +8,21 @@ import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubSortMode
+import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 import os.kei.ui.page.main.os.appLucideConfigIcon
+import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.os.appLucideListIcon
+import os.kei.ui.page.main.os.appLucideNotesIcon
+import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -45,9 +52,11 @@ internal fun GitHubTopBarActions(
     liquidActionBarLayeredStyleEnabled: Boolean,
     sortMode: GitHubSortMode,
     showSortPopup: Boolean,
+    showCheckLogicMenuPopup: Boolean,
     deleteInProgress: Boolean,
     onOpenStrategySheet: () -> Unit,
-    onOpenCheckLogicSheet: () -> Unit,
+    onOpenCheckLogicSheet: (GitHubCheckSheetCategory) -> Unit,
+    onShowCheckLogicMenuPopupChange: (Boolean) -> Unit,
     onShowSortPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
     onRefreshAllTracked: () -> Unit,
@@ -64,25 +73,36 @@ internal fun GitHubTopBarActions(
         checkLogicContentDescription,
         sortContentDescription,
         showSortPopup,
+        showCheckLogicMenuPopup,
         onOpenStrategySheet,
-        onOpenCheckLogicSheet,
+        onShowCheckLogicMenuPopupChange,
         onShowSortPopupChange,
     ) {
         listOf(
             LiquidActionItem(
                 icon = editStrategyIcon,
                 contentDescription = editStrategyContentDescription,
-                onClick = onOpenStrategySheet
+                onClick = {
+                    onShowCheckLogicMenuPopupChange(false)
+                    onShowSortPopupChange(false)
+                    onOpenStrategySheet()
+                }
             ),
             LiquidActionItem(
                 icon = checkLogicIcon,
                 contentDescription = checkLogicContentDescription,
-                onClick = onOpenCheckLogicSheet
+                onClick = {
+                    onShowSortPopupChange(false)
+                    onShowCheckLogicMenuPopupChange(!showCheckLogicMenuPopup)
+                }
             ),
             LiquidActionItem(
                 icon = sortIcon,
                 contentDescription = sortContentDescription,
-                onClick = { onShowSortPopupChange(!showSortPopup) }
+                onClick = {
+                    onShowCheckLogicMenuPopupChange(false)
+                    onShowSortPopupChange(!showSortPopup)
+                }
             )
         )
     }
@@ -96,6 +116,35 @@ internal fun GitHubTopBarActions(
 
         LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
             when (slotIndex) {
+                1 -> if (showCheckLogicMenuPopup) {
+                    SnapshotWindowListPopup(
+                        show = showCheckLogicMenuPopup,
+                        alignment = PopupPositionProvider.Align.BottomStart,
+                        anchorBounds = popupAnchorBounds,
+                        placement = SnapshotPopupPlacement.ActionBarCenter,
+                        onDismissRequest = { onShowCheckLogicMenuPopupChange(false) },
+                        enableWindowDim = false
+                    ) {
+                        val categories = GitHubCheckSheetCategory.entries
+                        LiquidGlassDropdownColumn(
+                            backdrop = backdrop,
+                            initialScrollItemIndex = 0
+                        ) {
+                            categories.forEachIndexed { index, category ->
+                                LiquidGlassDropdownActionItem(
+                                    text = stringResource(category.menuLabelRes),
+                                    optionSize = categories.size,
+                                    index = index,
+                                    onClick = {
+                                        onShowCheckLogicMenuPopupChange(false)
+                                        onOpenCheckLogicSheet(category)
+                                    },
+                                    leadingIcon = category.icon()
+                                )
+                            }
+                        }
+                    }
+                }
                 2 -> if (showSortPopup) {
                     SnapshotWindowListPopup(
                         show = showSortPopup,
@@ -129,4 +178,14 @@ internal fun GitHubTopBarActions(
             }
         }
     }
+}
+
+@Composable
+private fun GitHubCheckSheetCategory.icon() = when (this) {
+    GitHubCheckSheetCategory.UpdateChecks -> appLucideConfigIcon()
+    GitHubCheckSheetCategory.InstallFlow -> appLucideDownloadIcon()
+    GitHubCheckSheetCategory.ShareImport -> appLucideShareIcon()
+    GitHubCheckSheetCategory.Insights -> appLucideInfoIcon()
+    GitHubCheckSheetCategory.TrackData -> appLucideListIcon()
+    GitHubCheckSheetCategory.Notes -> appLucideNotesIcon()
 }

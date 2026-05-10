@@ -7,6 +7,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactKind
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
@@ -57,6 +58,7 @@ internal class GitHubActionsArtifactActions(
         }
         scope.launch {
             state.actionsArtifactDownloadLoadingId = artifact.id
+            var preparingInstallSessionId = 0L
             try {
                 if (
                     state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku &&
@@ -65,6 +67,30 @@ internal class GitHubActionsArtifactActions(
                     env.toast(R.string.github_apk_install_error_unsupported_bundle)
                     return@launch
                 }
+                val fileName = artifactArchiveFileName(artifact)
+                val appInstallRequest = GitHubApkInstallRequestContext(
+                    sourceKind = GitHubApkInstallSourceKind.ActionsArtifact,
+                    owner = item.owner,
+                    repo = item.repo,
+                    sourceLabel = artifact.name,
+                    expectedPackageName = item.packageName,
+                    externalFileName = fileName
+                )
+                if (state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
+                    state.actionsArtifactDetailRequest = null
+                    preparingInstallSessionId =
+                        GitHubApkInstallFlowCoordinator.beginPreparingInstall(
+                            context = context,
+                            lookupConfig = state.lookupConfig,
+                            asset = GitHubReleaseAssetFile(
+                                name = fileName,
+                                downloadUrl = "",
+                                sizeBytes = artifact.sizeBytes,
+                                downloadCount = 0
+                            ),
+                            request = appInstallRequest
+                        )
+                }
                 val resolution = actionsRepository.resolveGitHubActionsArtifactDownloadUrl(
                     artifact = artifact,
                     owner = item.owner,
@@ -72,9 +98,14 @@ internal class GitHubActionsArtifactActions(
                     lookupConfig = state.lookupConfig,
                     preferApiTokenRedirect = true
                 ).getOrThrow()
+                if (
+                    preparingInstallSessionId > 0L &&
+                    !GitHubApkInstallFlowCoordinator.isActiveSession(preparingInstallSessionId)
+                ) {
+                    return@launch
+                }
                 val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolution.downloadUrl)
                     ?: error(context.getString(R.string.github_actions_error_download_url_invalid))
-                val fileName = artifactArchiveFileName(artifact)
                 val artifactPackageNameDeferred = if (artifactMatch.traits.androidLike) {
                     async {
                         actionsRepository.probeGitHubActionsArtifactPackageName(
@@ -93,12 +124,7 @@ internal class GitHubActionsArtifactActions(
                         resolvedUrl = resolvedUrl,
                         fileName = fileName,
                         sizeBytes = artifact.sizeBytes,
-                        request = GitHubApkInstallRequestContext(
-                            sourceKind = GitHubApkInstallSourceKind.ActionsArtifact,
-                            owner = item.owner,
-                            repo = item.repo,
-                            sourceLabel = artifact.name,
-                            expectedPackageName = item.packageName,
+                        request = appInstallRequest.copy(
                             externalUrl = resolvedUrl,
                             externalFileName = fileName
                         )
@@ -158,6 +184,20 @@ internal class GitHubActionsArtifactActions(
                     artifactPackageNameDeferred?.cancel()
                 }
             } catch (error: Throwable) {
+                if (
+                    preparingInstallSessionId > 0L &&
+                    GitHubApkInstallFlowCoordinator.isActiveSession(preparingInstallSessionId)
+                ) {
+                    GitHubApkInstallFlowCoordinator.failPreparingInstall(
+                        context = context,
+                        sessionId = preparingInstallSessionId,
+                        message = localizedGitHubActionsErrorMessage(
+                            context = context,
+                            rawMessage = error.message ?: error.javaClass.simpleName
+                        ),
+                        rawMessage = error.message.orEmpty()
+                    )
+                }
                 env.toast(
                     context.getString(
                         R.string.github_actions_toast_download_failed,

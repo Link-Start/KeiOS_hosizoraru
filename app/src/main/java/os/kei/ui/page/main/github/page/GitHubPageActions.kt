@@ -378,6 +378,12 @@ internal class GitHubPageActions(
 
     fun openApkInDownloader(asset: GitHubReleaseAssetFile) = assetActions.openApkInDownloader(asset)
 
+    fun openTrackedApkInDownloader(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        asset: GitHubReleaseAssetFile
+    ) = assetActions.openTrackedApkInDownloader(item, itemState, asset)
+
     fun openApkInfo(asset: GitHubReleaseAssetFile) = assetActions.openApkInfo(asset)
 
     fun refreshApkInfo(asset: GitHubReleaseAssetFile) =

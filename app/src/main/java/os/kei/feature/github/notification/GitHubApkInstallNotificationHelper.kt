@@ -191,7 +191,7 @@ internal object GitHubApkInstallNotificationHelper {
             GitHubApkInstallPhase.Success,
             GitHubApkInstallPhase.Cancelled -> context.getString(R.string.common_mark_read)
 
-            else -> context.getString(R.string.common_cancel)
+            else -> context.getString(R.string.common_stop)
         }
     }
 

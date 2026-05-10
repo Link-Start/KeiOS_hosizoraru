@@ -10,6 +10,7 @@ import os.kei.feature.github.model.GitHubDecisionLevel
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 
 internal enum class GitHubApkInstallSourceKind {
+    TrackedReleaseAsset,
     ReleaseAsset,
     ShareImport,
     ActionsArtifact

@@ -61,7 +61,7 @@ class GitHubApkInstallNotificationHelperTest {
             notification.actions[0].title.toString()
         )
         assertEquals(
-            context.getString(R.string.common_cancel),
+            context.getString(R.string.common_stop),
             notification.actions[1].title.toString()
         )
         assertEquals(

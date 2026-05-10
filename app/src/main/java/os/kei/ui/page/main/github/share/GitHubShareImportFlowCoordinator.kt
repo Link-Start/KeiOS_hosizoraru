@@ -262,7 +262,31 @@ internal object GitHubShareImportFlowCoordinator {
             ).getOrDefault("")
         }
         if (lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
+            GitHubShareImportNotificationHelper.cancel(context)
+            val preparingSessionId = GitHubApkInstallFlowCoordinator.beginPreparingInstall(
+                context = context,
+                lookupConfig = lookupConfig,
+                asset = selectedAsset,
+                request = GitHubApkInstallRequestContext(
+                    sourceKind = GitHubApkInstallSourceKind.ShareImport,
+                    owner = preview.owner,
+                    repo = preview.repo,
+                    releaseTag = preview.releaseTag,
+                    sourceLabel = preview.targetDisplayName.ifBlank {
+                        buildShareImportTargetDisplayName(
+                            repo = preview.repo,
+                            assetName = selectedAsset.name
+                        )
+                    },
+                    externalFileName = selectedAsset.name
+                )
+            )
             val scannedPackageName = scannedPackageNameDeferred.await()
+            if (!GitHubApkInstallFlowCoordinator.isActiveSession(preparingSessionId)) {
+                return@coroutineScope ShareImportDeliveryCoordinatorResult.Failed(
+                    R.string.github_apk_install_cancelled
+                )
+            }
             val pending = buildPendingShareImportTrackRecord(
                 preview = preview,
                 selectedAsset = selectedAsset,
@@ -273,7 +297,6 @@ internal object GitHubShareImportFlowCoordinator {
                 GitHubShareImportFlowStore.clearActiveFlow()
             }
             GitHubTrackStoreSignals.notifyChanged()
-            GitHubShareImportNotificationHelper.cancel(context)
             GitHubShareImportPendingScheduler.scheduleNext(context)
             GitHubApkInstallFlowCoordinator.beginInstallAsset(
                 context = context,

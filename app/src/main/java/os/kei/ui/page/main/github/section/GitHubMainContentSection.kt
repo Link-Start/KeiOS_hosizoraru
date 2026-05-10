@@ -120,7 +120,7 @@ internal fun GitHubMainContent(
     onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
-    onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
+    onOpenTrackedApkInDownloader: (GitHubTrackedApp, VersionCheckUi, GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     onOpenShareImportFlow: () -> Unit,
     onOpenShareImportResult: () -> Unit,
@@ -273,7 +273,7 @@ internal fun GitHubMainContent(
                         onOpenDecisionAssistDetail = onOpenDecisionAssistDetail,
                         onOpenExternalUrl = onOpenExternalUrl,
                         onOpenApkInfo = onOpenApkInfo,
-                        onOpenApkInDownloader = onOpenApkInDownloader,
+                        onOpenTrackedApkInDownloader = onOpenTrackedApkInDownloader,
                         onShareApkLink = onShareApkLink,
                         context = context,
                         supportedAbis = supportedAbis

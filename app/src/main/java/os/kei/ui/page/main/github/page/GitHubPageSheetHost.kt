@@ -39,11 +39,6 @@ internal fun GitHubPageSheetHost(
     onOpenStarImport: () -> Unit,
     onConfirmTrackImport: () -> Unit
 ) {
-    GitHubApkInstallSheet(
-        state = apkInstallFlowState,
-        backdrop = backdrops.sheet
-    )
-
     GitHubOverviewEntrySheet(
         show = state.showOverviewEntrySheet,
         backdrop = backdrops.sheet,
@@ -355,4 +350,8 @@ internal fun GitHubPageSheetHost(
         }
     )
 
+    GitHubApkInstallSheet(
+        state = apkInstallFlowState,
+        backdrop = backdrops.sheet
+    )
 }

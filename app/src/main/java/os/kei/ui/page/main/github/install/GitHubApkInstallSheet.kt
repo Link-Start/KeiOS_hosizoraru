@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.install
 
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +30,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.feature.github.model.GitHubApkTrustReason
-import os.kei.feature.github.model.GitHubDecisionLevel
-import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.formatAssetSize
@@ -156,15 +152,17 @@ private fun InstallIdentityHeader(state: GitHubApkInstallFlowState) {
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun InstallHeader(state: GitHubApkInstallFlowState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        FlowRow(
+            modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             StatusPill(
                 label = stringResource(state.phase.labelRes()),
@@ -251,7 +249,7 @@ private fun InstallStepRail(state: GitHubApkInstallFlowState) {
         ) {
             installStepPhases.forEach { phase ->
                 Text(
-                    text = stringResource(phase.labelRes()),
+                    text = stringResource(phase.stepLabelRes()),
                     modifier = Modifier.weight(1f),
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
                     fontSize = AppTypographyTokens.Caption.fontSize,
@@ -439,11 +437,6 @@ private data class InstallComparisonRowModel(
     val value: String
 )
 
-private data class InstallComparisonVerdictModel(
-    val label: String,
-    val color: Color
-)
-
 private fun MutableList<InstallComparisonRowModel>.addIfUseful(
     row: InstallComparisonRowModel
 ) {
@@ -484,6 +477,7 @@ private fun InstallComparisonRow(row: InstallComparisonRowModel) {
             color = MiuixTheme.colorScheme.primary,
             fontSize = AppTypographyTokens.Body.fontSize,
             lineHeight = AppTypographyTokens.Body.lineHeight,
+            textAlign = TextAlign.End,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -632,65 +626,58 @@ private fun InstallActionSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AppLiquidTextButton(
+                InstallSheetActionButton(
                     backdrop = backdrop,
-                    text = stringResource(R.string.common_cancel),
+                    text = stringResource(R.string.common_stop),
                     onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
                     modifier = Modifier.weight(1f),
-                    variant = GlassVariant.SheetAction
                 )
-                AppLiquidTextButton(
+                InstallSheetActionButton(
                     backdrop = backdrop,
                     text = stringResource(R.string.github_apk_install_action_open_system_confirm),
                     onClick = { GitHubApkInstallFlowCoordinator.launchPendingUserAction(context) },
                     modifier = Modifier.weight(1f),
-                    variant = GlassVariant.SheetAction
                 )
             }
 
             GitHubApkInstallPhase.Failed -> {
-                AppLiquidTextButton(
+                InstallSheetActionButton(
                     backdrop = backdrop,
                     text = stringResource(R.string.github_apk_install_action_retry),
                     onClick = { GitHubApkInstallFlowCoordinator.retry(context) },
                     modifier = Modifier.fillMaxWidth(),
-                    variant = GlassVariant.SheetAction
                 )
-                AppLiquidTextButton(
+                InstallSheetActionButton(
                     backdrop = backdrop,
                     text = stringResource(R.string.github_apk_install_action_external),
                     onClick = { GitHubApkInstallFlowCoordinator.openExternalCurrent(context) },
                     modifier = Modifier.fillMaxWidth(),
-                    variant = GlassVariant.SheetAction
                 )
             }
 
-            GitHubApkInstallPhase.Success -> AppLiquidTextButton(
+            GitHubApkInstallPhase.Success -> InstallSheetActionButton(
                 backdrop = backdrop,
                 text = stringResource(R.string.common_mark_read),
                 onClick = { GitHubApkInstallFlowCoordinator.markRead(context) },
                 modifier = Modifier.fillMaxWidth(),
-                variant = GlassVariant.SheetAction
             )
 
             else -> Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                AppLiquidTextButton(
+                InstallSheetActionButton(
                     backdrop = backdrop,
-                    text = stringResource(R.string.common_cancel),
+                    text = stringResource(R.string.common_stop),
                     onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
                     modifier = Modifier.weight(1f),
-                    variant = GlassVariant.SheetAction
                 )
-                AppLiquidTextButton(
+                InstallSheetActionButton(
                     backdrop = backdrop,
                     text = stringResource(state.phase.passiveActionLabelRes()),
                     onClick = {},
                     enabled = false,
                     modifier = Modifier.weight(1f),
-                    variant = GlassVariant.SheetAction
                 )
             }
         }
@@ -707,21 +694,44 @@ private fun InstallConfirmButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AppLiquidTextButton(
+        InstallSheetActionButton(
             backdrop = backdrop,
             text = stringResource(R.string.github_apk_install_action_more),
             onClick = { GitHubApkInstallFlowCoordinator.openExternalCurrent(context) },
             modifier = Modifier.weight(1f),
-            variant = GlassVariant.SheetAction
         )
-        AppLiquidTextButton(
+        InstallSheetActionButton(
             backdrop = backdrop,
             text = stringResource(state.installPrimaryActionLabelRes()),
             onClick = GitHubApkInstallFlowCoordinator::confirmInstall,
             modifier = Modifier.weight(1f),
-            variant = GlassVariant.SheetAction
         )
     }
+}
+
+@Composable
+private fun InstallSheetActionButton(
+    backdrop: LayerBackdrop,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    AppLiquidTextButton(
+        backdrop = backdrop,
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        variant = GlassVariant.SheetAction,
+        minHeight = 46.dp,
+        horizontalPadding = 12.dp,
+        textMaxLines = 1,
+        textOverflow = TextOverflow.Ellipsis,
+        textSoftWrap = false,
+        textSize = AppTypographyTokens.Supporting.fontSize,
+        textLineHeight = AppTypographyTokens.Supporting.lineHeight
+    )
 }
 
 private val bottomResultPhases = setOf(
@@ -730,309 +740,3 @@ private val bottomResultPhases = setOf(
     GitHubApkInstallPhase.Success,
     GitHubApkInstallPhase.Failed
 )
-
-private fun GitHubApkInstallPhase.labelRes(): Int {
-    return when (this) {
-        GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_phase_downloading
-        GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_phase_selecting
-        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_phase_inspecting
-        GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_phase_ready
-        GitHubApkInstallPhase.Installing -> R.string.github_apk_install_phase_installing
-        GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_phase_pending
-        GitHubApkInstallPhase.Success -> R.string.github_apk_install_phase_success
-        GitHubApkInstallPhase.Failed -> R.string.github_apk_install_phase_failed
-        GitHubApkInstallPhase.Cancelled -> R.string.github_apk_install_cancelled
-        GitHubApkInstallPhase.Idle -> R.string.github_apk_install_phase_installing
-    }
-}
-
-private fun GitHubApkInstallPhase.statusColor(): Color {
-    return when (this) {
-        GitHubApkInstallPhase.Success -> GitHubStatusPalette.Update
-        GitHubApkInstallPhase.Failed,
-        GitHubApkInstallPhase.Cancelled -> GitHubStatusPalette.Error
-
-        GitHubApkInstallPhase.ReadyToInstall,
-        GitHubApkInstallPhase.PendingUserAction -> GitHubStatusPalette.Cache
-
-        else -> GitHubStatusPalette.Active
-    }
-}
-
-private fun Long?.orZero(): Long = this ?: 0L
-
-private fun GitHubApkInstallFlowState.displayFileName(): String {
-    return selectedCandidateName
-        .ifBlank { asset?.name.orEmpty() }
-        .ifBlank { request.externalFileName }
-        .ifBlank { request.displayLabel }
-}
-
-private fun GitHubApkInstallFlowState.identityName(): String {
-    return candidateAppLabel()
-        .ifBlank { installedPackageInfo?.appLabel.orEmpty() }
-        .ifBlank { request.sourceLabel }
-        .ifBlank { request.displayLabel }
-}
-
-private fun GitHubApkInstallFlowState.candidateAppLabel(): String {
-    return localArchiveInfo?.appLabel.orEmpty()
-}
-
-private fun GitHubApkInstallFlowState.candidateVersionName(): String {
-    return localArchiveInfo
-        ?.versionName
-        .orEmpty()
-        .ifBlank {
-            (remoteManifestInfo ?: request.remoteManifestInfo)
-                ?.versionName
-                ?.trim()
-                .orEmpty()
-        }
-}
-
-@Composable
-private fun GitHubApkInstallFlowState.versionVerdict(): InstallComparisonVerdictModel? {
-    val candidateCode = candidateVersionCode() ?: return null
-    val localCode = installedPackageInfo?.versionCode?.takeIf { it >= 0L }
-    val (labelRes, color) = when {
-        localCode == null ->
-            R.string.github_apk_install_version_status_new to GitHubStatusPalette.Active
-
-        candidateCode > localCode ->
-            R.string.github_apk_install_version_status_upgrade to GitHubStatusPalette.Update
-
-        candidateCode < localCode ->
-            R.string.github_apk_install_version_status_downgrade to GitHubStatusPalette.Error
-
-        else ->
-            R.string.github_apk_install_version_status_same to GitHubStatusPalette.Cache
-    }
-    return InstallComparisonVerdictModel(
-        label = stringResource(labelRes),
-        color = color
-    )
-}
-
-private fun GitHubApkInstallFlowState.candidateVersionCode(): Long? {
-    return localArchiveInfo
-        ?.versionCode
-        ?.takeIf { it >= 0L }
-        ?: (remoteManifestInfo ?: request.remoteManifestInfo)
-            ?.versionCode
-            ?.trim()
-            ?.toLongOrNull()
-}
-
-private fun GitHubApkInstallFlowState.candidateVersionCodeLabel(): String {
-    return candidateVersionCode()?.toString().orEmpty()
-}
-
-private fun GitHubInstalledPackageInfo.versionCodeLabel(): String {
-    return versionCode.takeIf { it >= 0L }?.toString().orEmpty()
-}
-
-private fun GitHubApkInstallFlowState.candidatePackageName(): String {
-    return localArchiveInfo?.packageName.orEmpty()
-        .ifBlank { remoteManifestInfo?.packageName.orEmpty() }
-        .ifBlank { request.remoteManifestInfo?.packageName.orEmpty() }
-        .ifBlank { request.expectedPackageName }
-}
-
-private fun GitHubApkInstallFlowState.candidateTargetSdkLabel(): String {
-    localArchiveInfo?.targetSdk?.takeIf { it >= 0 }?.let { return it.toString() }
-    return (remoteManifestInfo ?: request.remoteManifestInfo)
-        ?.targetSdk
-        ?.trim()
-        .orEmpty()
-}
-
-private fun GitHubApkInstallFlowState.candidateMinSdkLabel(): String {
-    localArchiveInfo?.minSdk?.takeIf { it >= 0 }?.let { return it.toString() }
-    return (remoteManifestInfo ?: request.remoteManifestInfo)
-        ?.minSdk
-        ?.trim()
-        .orEmpty()
-}
-
-private fun Int?.sdkLabel(): String {
-    return this?.takeIf { it >= 0 }?.toString().orEmpty()
-}
-
-@Composable
-private fun GitHubApkInstallFlowState.candidateAbiLabel(): String {
-    val universal = stringResource(R.string.github_apk_install_value_universal)
-    val unknown = stringResource(R.string.github_apk_install_value_unknown)
-    val archive = localArchiveInfo
-    if (archive != null) {
-        return archive.nativeAbis.shortAbiList().ifBlank { universal }
-    }
-    val remoteAbis = (remoteManifestInfo ?: request.remoteManifestInfo)?.nativeAbis.orEmpty()
-    if (remoteAbis.isNotEmpty()) {
-        return remoteAbis.shortAbiList()
-    }
-    return inferAbiNames(displayFileName()).shortAbiList().ifBlank { unknown }
-}
-
-private fun GitHubApkInstallFlowState.candidateSignatureShortLabel(): String {
-    val localSignature = localArchiveInfo?.signatureSha256?.firstOrNull()
-    if (!localSignature.isNullOrBlank()) {
-        return localSignature.shortSha()
-    }
-    val remoteSignature = (remoteManifestInfo ?: request.remoteManifestInfo)
-        ?.signatureInfo
-        ?.sha256
-        .orEmpty()
-    if (remoteSignature.isNotBlank()) {
-        return remoteSignature.shortSha()
-    }
-    return ""
-}
-
-private fun comparisonValue(
-    context: android.content.Context,
-    localValue: String,
-    candidateValue: String
-): String {
-    val local = localValue.trim()
-    val candidate = candidateValue.trim()
-    return when {
-        local.isNotBlank() && candidate.isNotBlank() && local != candidate ->
-            context.getString(R.string.github_apk_install_reference_compare_value, local, candidate)
-
-        candidate.isNotBlank() -> candidate
-        else -> local
-    }
-}
-
-private fun GitHubApkInstallFlowState.installPrimaryActionLabelRes(): Int {
-    val candidateCode = candidateVersionCode()
-    val localCode = installedPackageInfo?.versionCode?.takeIf { it >= 0L }
-    return when {
-        candidateCode != null && localCode != null && candidateCode > localCode ->
-            R.string.github_apk_install_action_upgrade
-
-        candidateCode != null && localCode != null && candidateCode < localCode ->
-            R.string.github_apk_install_action_downgrade
-
-        else -> R.string.github_apk_install_action_install
-    }
-}
-
-private fun deviceAbiLabel(): String {
-    return Build.SUPPORTED_ABIS
-        .orEmpty()
-        .toList()
-        .shortAbiList()
-}
-
-private fun List<String>.shortAbiList(maxItems: Int = 2): String {
-    val normalized = map { it.trim() }
-        .filter { it.isNotBlank() }
-        .distinct()
-    if (normalized.isEmpty()) return ""
-    val head = normalized.take(maxItems).joinToString("/")
-    val extra = normalized.size - maxItems
-    return if (extra > 0) "$head +$extra" else head
-}
-
-private fun inferAbiNames(name: String): List<String> {
-    val lowerName = name.lowercase()
-    return buildList {
-        if ("arm64-v8a" in lowerName || "arm64" in lowerName || "aarch64" in lowerName) {
-            add("arm64-v8a")
-        }
-        if ("armeabi-v7a" in lowerName || "armv7" in lowerName || "arm-v7" in lowerName) {
-            add("armeabi-v7a")
-        }
-        if ("x86_64" in lowerName || "x64" in lowerName) {
-            add("x86_64")
-        }
-        if (Regex("""(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)""").containsMatchIn(lowerName)) {
-            add("x86")
-        }
-    }
-}
-
-private fun String.shortSha(): String {
-    return trim()
-        .replace(":", "")
-        .take(12)
-        .takeIf { it.isNotBlank() }
-        .orEmpty()
-}
-
-private fun GitHubApkInstallPhase.passiveActionLabelRes(): Int {
-    return when (this) {
-        GitHubApkInstallPhase.Installing -> R.string.github_apk_install_phase_installing
-        GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_phase_selecting
-        else -> R.string.github_apk_install_action_preparing
-    }
-}
-
-private fun GitHubDecisionLevel.statusColor(): Color {
-    return when (this) {
-        GitHubDecisionLevel.Good -> GitHubStatusPalette.Update
-        GitHubDecisionLevel.Review -> GitHubStatusPalette.Cache
-        GitHubDecisionLevel.Risk -> GitHubStatusPalette.Error
-    }
-}
-
-private fun GitHubApkTrustReason.statusColor(): Color {
-    return when (this) {
-        GitHubApkTrustReason.PackageMismatch,
-        GitHubApkTrustReason.SignatureMismatch,
-        GitHubApkTrustReason.VersionDowngrade,
-        GitHubApkTrustReason.MinSdkTooHigh,
-        GitHubApkTrustReason.IncompatibleAbi,
-        GitHubApkTrustReason.UnsignedBuild,
-        GitHubApkTrustReason.SourceArchive,
-        GitHubApkTrustReason.UnknownFormat -> GitHubStatusPalette.Error
-
-        GitHubApkTrustReason.DebugBuild,
-        GitHubApkTrustReason.TestOnly,
-        GitHubApkTrustReason.SensitivePermission,
-        GitHubApkTrustReason.ExportedComponent,
-        GitHubApkTrustReason.SignatureUnknown -> GitHubStatusPalette.Cache
-
-        GitHubApkTrustReason.PackageMatched,
-        GitHubApkTrustReason.SignatureMatched,
-        GitHubApkTrustReason.VersionUpgrade,
-        GitHubApkTrustReason.PreferredAbi,
-        GitHubApkTrustReason.UniversalAsset -> GitHubStatusPalette.Update
-
-        GitHubApkTrustReason.ApkLike -> GitHubStatusPalette.Active
-    }
-}
-
-private fun GitHubDecisionLevel.labelRes(): Int {
-    return when (this) {
-        GitHubDecisionLevel.Good -> R.string.github_apk_trust_good
-        GitHubDecisionLevel.Review -> R.string.github_apk_trust_review
-        GitHubDecisionLevel.Risk -> R.string.github_apk_trust_risk
-    }
-}
-
-private fun GitHubApkTrustReason.labelRes(): Int {
-    return when (this) {
-        GitHubApkTrustReason.PreferredAbi -> R.string.github_apk_trust_reason_preferred_abi
-        GitHubApkTrustReason.UniversalAsset -> R.string.github_apk_trust_reason_universal
-        GitHubApkTrustReason.IncompatibleAbi -> R.string.github_apk_trust_reason_incompatible
-        GitHubApkTrustReason.DebugBuild -> R.string.github_apk_trust_reason_debug
-        GitHubApkTrustReason.UnsignedBuild -> R.string.github_apk_trust_reason_unsigned
-        GitHubApkTrustReason.SourceArchive -> R.string.github_apk_trust_reason_source
-        GitHubApkTrustReason.ApkLike -> R.string.github_apk_trust_reason_apk
-        GitHubApkTrustReason.UnknownFormat -> R.string.github_apk_trust_reason_unknown_format
-        GitHubApkTrustReason.PackageMatched -> R.string.github_apk_trust_reason_package_matched
-        GitHubApkTrustReason.PackageMismatch -> R.string.github_apk_trust_reason_package_mismatch
-        GitHubApkTrustReason.SignatureMatched -> R.string.github_apk_trust_reason_signature_matched
-        GitHubApkTrustReason.SignatureMismatch -> R.string.github_apk_trust_reason_signature_mismatch
-        GitHubApkTrustReason.SignatureUnknown -> R.string.github_apk_trust_reason_signature_unknown
-        GitHubApkTrustReason.VersionUpgrade -> R.string.github_apk_trust_reason_version_upgrade
-        GitHubApkTrustReason.VersionDowngrade -> R.string.github_apk_trust_reason_version_downgrade
-        GitHubApkTrustReason.MinSdkTooHigh -> R.string.github_apk_trust_reason_min_sdk_high
-        GitHubApkTrustReason.TestOnly -> R.string.github_apk_trust_reason_test_only
-        GitHubApkTrustReason.SensitivePermission -> R.string.github_apk_trust_reason_sensitive_permission
-        GitHubApkTrustReason.ExportedComponent -> R.string.github_apk_trust_reason_exported_component
-    }
-}

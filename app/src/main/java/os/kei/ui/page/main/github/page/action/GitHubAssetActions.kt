@@ -12,16 +12,20 @@ import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
 import os.kei.ui.page.main.github.install.GitHubApkInstallRequestContext
 import os.kei.ui.page.main.github.install.GitHubApkInstallSourceKind
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.statusActionUrl
+import java.io.File
 import java.security.MessageDigest
 
 internal class GitHubAssetActions(
@@ -52,6 +56,20 @@ internal class GitHubAssetActions(
     fun openApkInDownloader(asset: GitHubReleaseAssetFile) {
         scope.launch {
             openApkInDownloaderInternal(asset)
+        }
+    }
+
+    fun openTrackedApkInDownloader(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        asset: GitHubReleaseAssetFile
+    ) {
+        scope.launch {
+            openApkInDownloaderInternal(
+                asset = asset,
+                trackedItem = item,
+                trackedItemState = itemState
+            )
         }
     }
 
@@ -112,7 +130,8 @@ internal class GitHubAssetActions(
             versionCode = packageInfo.longVersionCode,
             minSdk = applicationInfo?.minSdkVersion ?: -1,
             targetSdk = applicationInfo?.targetSdkVersion ?: -1,
-            signatureSha256 = packageInfo.signatureSha256List()
+            signatureSha256 = packageInfo.signatureSha256List(),
+            sourceSizeBytes = applicationInfo.sourceApkSizeBytes()
         )
     }
 
@@ -392,9 +411,17 @@ internal class GitHubAssetActions(
         }
     }
 
-    private suspend fun openApkInDownloaderInternal(asset: GitHubReleaseAssetFile): Boolean {
+    private suspend fun openApkInDownloaderInternal(
+        asset: GitHubReleaseAssetFile,
+        trackedItem: GitHubTrackedApp? = null,
+        trackedItemState: VersionCheckUi? = null
+    ): Boolean {
         if (state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
-            return startAppInstallFlow(asset)
+            return startAppInstallFlow(
+                asset = asset,
+                trackedItem = trackedItem,
+                trackedItemState = trackedItemState
+            )
         }
         val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolvePreferredAssetUrl(asset))
             ?: run {
@@ -432,19 +459,57 @@ internal class GitHubAssetActions(
         }
     }
 
-    private fun startAppInstallFlow(asset: GitHubReleaseAssetFile): Boolean {
+    private fun startAppInstallFlow(
+        asset: GitHubReleaseAssetFile,
+        trackedItem: GitHubTrackedApp? = null,
+        trackedItemState: VersionCheckUi? = null
+    ): Boolean {
         val apkInfo = state.apkInfoResults[asset.githubApkInfoKey()]
+        val trackedTarget = trackedItemState?.let { itemState ->
+            trackedItem?.let { item ->
+                itemState.apkAssetTarget(
+                    owner = item.owner,
+                    repo = item.repo,
+                    context = context,
+                    alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton,
+                    allowLatestReleaseFallback = true
+                )
+            }
+        }
+        val trackedRemoteManifest = trackedItemState?.trackedRemoteManifestInfo(
+            asset = asset,
+            targetRawTag = trackedTarget?.rawTag.orEmpty()
+        )
+        val remoteManifestInfo = apkInfo ?: trackedRemoteManifest
+        val expectedPackageName = trackedItem?.packageName.orEmpty()
+            .ifBlank { remoteManifestInfo?.packageName.orEmpty() }
+        val installedInfo = trackedItem
+            ?.packageName
+            ?.takeIf { it.isNotBlank() }
+            ?.let(::loadInstalledPackageInfo)
+        state.apkInfoDetailRequest = null
         GitHubApkInstallFlowCoordinator.beginInstallAsset(
             context = context,
             lookupConfig = state.lookupConfig,
             asset = asset,
             request = GitHubApkInstallRequestContext(
-                sourceKind = GitHubApkInstallSourceKind.ReleaseAsset,
-                sourceLabel = asset.name,
-                expectedPackageName = apkInfo?.packageName.orEmpty(),
+                sourceKind = if (trackedItem != null) {
+                    GitHubApkInstallSourceKind.TrackedReleaseAsset
+                } else {
+                    GitHubApkInstallSourceKind.ReleaseAsset
+                },
+                owner = trackedItem?.owner.orEmpty(),
+                repo = trackedItem?.repo.orEmpty(),
+                releaseTag = trackedTarget?.rawTag.orEmpty(),
+                sourceLabel = trackedItem
+                    ?.githubTrackedDisplayTitle(trackedItemState)
+                    .orEmpty()
+                    .ifBlank { asset.name },
+                expectedPackageName = expectedPackageName,
                 externalFileName = asset.name,
-                remoteManifestInfo = apkInfo
-            )
+                remoteManifestInfo = remoteManifestInfo
+            ),
+            initialInstalledInfo = installedInfo
         )
         return true
     }
@@ -477,6 +542,50 @@ internal class GitHubAssetActions(
     }
 }
 
+private fun VersionCheckUi.trackedRemoteManifestInfo(
+    asset: GitHubReleaseAssetFile,
+    targetRawTag: String
+): GitHubApkManifestInfo? {
+    val candidates = listOfNotNull(latestStableApkVersion, latestPreApkVersion)
+    val byTag = targetRawTag
+        .takeIf { it.isNotBlank() }
+        ?.let { tag ->
+            candidates.firstOrNull { info -> info.releaseTag.equals(tag, ignoreCase = true) }
+        }
+    val byAsset = candidates.firstOrNull { info ->
+        info.assetName.equals(asset.name, ignoreCase = true)
+    }
+    val preferred = when {
+        latestPreRawTag.isNotBlank() &&
+                latestPreRawTag.equals(targetRawTag, ignoreCase = true) -> latestPreApkVersion
+
+        latestStableRawTag.isNotBlank() &&
+                latestStableRawTag.equals(targetRawTag, ignoreCase = true) -> latestStableApkVersion
+
+        recommendsPreRelease || hasPreReleaseUpdate -> latestPreApkVersion
+        else -> latestStableApkVersion
+    }
+    return (byTag ?: byAsset ?: preferred)
+        ?.takeIf { info ->
+            info.packageName.isNotBlank() ||
+                    info.versionName.isNotBlank() ||
+                    info.versionCode.isNotBlank()
+        }
+        ?.toManifestInfo(asset.name)
+}
+
+private fun GitHubRemoteApkVersionInfo.toManifestInfo(
+    fallbackAssetName: String
+): GitHubApkManifestInfo {
+    return GitHubApkManifestInfo(
+        assetName = assetName.ifBlank { fallbackAssetName },
+        fetchSource = fetchSource,
+        packageName = packageName,
+        versionName = versionName,
+        versionCode = versionCode
+    )
+}
+
 private fun PackageInfo.signatureSha256List(): List<String> {
     val signing = signingInfo ?: return emptyList()
     val signatures = if (signing.hasMultipleSigners()) {
@@ -487,6 +596,15 @@ private fun PackageInfo.signatureSha256List(): List<String> {
     return signatures
         .map { signature -> signature.toByteArray().sha256Hex() }
         .distinct()
+}
+
+private fun android.content.pm.ApplicationInfo?.sourceApkSizeBytes(): Long {
+    if (this == null) return 0L
+    val files = buildList {
+        sourceDir?.let { add(it) }
+        splitSourceDirs.orEmpty().forEach(::add)
+    }
+    return files.sumOf { path -> File(path).takeIf { it.isFile }?.length() ?: 0L }
 }
 
 private fun ByteArray.sha256Hex(): String {

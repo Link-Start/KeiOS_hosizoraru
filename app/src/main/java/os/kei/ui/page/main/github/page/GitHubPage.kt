@@ -270,7 +270,7 @@ fun GitHubPage(
             },
             onOpenExternalUrl = actions::openExternalUrl,
             onOpenApkInfo = actions::openApkInfo,
-            onOpenApkInDownloader = actions::openApkInDownloader,
+            onOpenTrackedApkInDownloader = actions::openTrackedApkInDownloader,
             onShareApkLink = actions::shareApkLink,
             onOpenShareImportFlow = actions::openShareImportFlow,
             onOpenShareImportResult = actions::focusShareImportResult,

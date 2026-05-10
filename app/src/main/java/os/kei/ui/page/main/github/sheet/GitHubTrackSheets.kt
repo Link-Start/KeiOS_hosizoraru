@@ -16,6 +16,10 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.core.install.ShizukuRuntimeCapabilities
+import os.kei.core.system.ShizukuApiUtils
+import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
+import os.kei.feature.github.model.GitHubApkInstallUiMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubShareImportFlowMode
@@ -59,6 +63,8 @@ internal fun GitHubCheckLogicSheet(
     profileDepthInput: GitHubProfileDepth,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
+    apkInstallDeliveryModeInput: GitHubApkInstallDeliveryMode,
+    apkInstallUiModeInput: GitHubApkInstallUiMode,
     onlineShareTargetPackageInput: String,
     preferredDownloaderPackageInput: String,
     decisionAssistEnabledInput: Boolean,
@@ -69,10 +75,14 @@ internal fun GitHubCheckLogicSheet(
     showDownloaderPopup: Boolean,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
+    showApkInstallDeliveryModePopup: Boolean,
+    showApkInstallUiModePopup: Boolean,
     checkLogicIntervalPopupAnchorBounds: IntRect?,
     downloaderPopupAnchorBounds: IntRect?,
     onlineShareTargetPopupAnchorBounds: IntRect?,
     shareImportFlowModePopupAnchorBounds: IntRect?,
+    apkInstallDeliveryModePopupAnchorBounds: IntRect?,
+    apkInstallUiModePopupAnchorBounds: IntRect?,
     downloaderOptions: List<DownloaderOption>,
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
@@ -90,6 +100,8 @@ internal fun GitHubCheckLogicSheet(
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
+    onApkInstallDeliveryModeInputChange: (GitHubApkInstallDeliveryMode) -> Unit,
+    onApkInstallUiModeInputChange: (GitHubApkInstallUiMode) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
@@ -99,10 +111,14 @@ internal fun GitHubCheckLogicSheet(
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
+    onShowApkInstallDeliveryModePopupChange: (Boolean) -> Unit,
+    onShowApkInstallUiModePopupChange: (Boolean) -> Unit,
     onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
+    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onApkInstallDeliveryModePopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onApkInstallUiModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     val context = LocalContext.current
     SnapshotWindowBottomSheet(
@@ -148,6 +164,8 @@ internal fun GitHubCheckLogicSheet(
                 profileDepthInput != lookupConfig.profileDepth ||
             shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
                 shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
+                apkInstallDeliveryModeInput != lookupConfig.apkInstallDeliveryMode ||
+                apkInstallUiModeInput != lookupConfig.apkInstallUiMode ||
             onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
                 preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
                 decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
@@ -190,24 +208,36 @@ internal fun GitHubCheckLogicSheet(
                 downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
                 shareImportLinkageEnabledInput = shareImportLinkageEnabledInput,
                 shareImportFlowModeInput = shareImportFlowModeInput,
+                apkInstallDeliveryModeInput = apkInstallDeliveryModeInput,
+                apkInstallUiModeInput = apkInstallUiModeInput,
                 selectedOnlineShareTargetLabel = selectedOnlineShareTargetLabel,
                 onlineShareTargetOptions = onlineShareTargetOptions,
                 installedOnlineShareTargets = installedOnlineShareTargets,
                 onlineShareTargetPackageInput = onlineShareTargetPackageInput,
                 showOnlineShareTargetPopup = showOnlineShareTargetPopup,
                 showShareImportFlowModePopup = showShareImportFlowModePopup,
+                showApkInstallDeliveryModePopup = showApkInstallDeliveryModePopup,
+                showApkInstallUiModePopup = showApkInstallUiModePopup,
                 onlineShareTargetPopupAnchorBounds = onlineShareTargetPopupAnchorBounds,
                 shareImportFlowModePopupAnchorBounds = shareImportFlowModePopupAnchorBounds,
+                apkInstallDeliveryModePopupAnchorBounds = apkInstallDeliveryModePopupAnchorBounds,
+                apkInstallUiModePopupAnchorBounds = apkInstallUiModePopupAnchorBounds,
                 onPreferredDownloaderPackageInputChange = onPreferredDownloaderPackageInputChange,
                 onShareImportLinkageEnabledInputChange = onShareImportLinkageEnabledInputChange,
                 onShareImportFlowModeInputChange = onShareImportFlowModeInputChange,
+                onApkInstallDeliveryModeInputChange = onApkInstallDeliveryModeInputChange,
+                onApkInstallUiModeInputChange = onApkInstallUiModeInputChange,
                 onOnlineShareTargetPackageInputChange = onOnlineShareTargetPackageInputChange,
                 onShowDownloaderPopupChange = onShowDownloaderPopupChange,
                 onShowOnlineShareTargetPopupChange = onShowOnlineShareTargetPopupChange,
                 onShowShareImportFlowModePopupChange = onShowShareImportFlowModePopupChange,
+                onShowApkInstallDeliveryModePopupChange = onShowApkInstallDeliveryModePopupChange,
+                onShowApkInstallUiModePopupChange = onShowApkInstallUiModePopupChange,
                 onDownloaderPopupAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
                 onOnlineShareTargetPopupAnchorBoundsChange = onOnlineShareTargetPopupAnchorBoundsChange,
-                onShareImportFlowModePopupAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange
+                onShareImportFlowModePopupAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange,
+                onApkInstallDeliveryModePopupAnchorBoundsChange = onApkInstallDeliveryModePopupAnchorBoundsChange,
+                onApkInstallUiModePopupAnchorBoundsChange = onApkInstallUiModePopupAnchorBoundsChange
             )
             GitHubCheckEnhancementSection(
                 decisionAssistEnabledInput = decisionAssistEnabledInput,
@@ -448,24 +478,36 @@ private fun GitHubCheckTransferSection(
     downloaderPopupAnchorBounds: IntRect?,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
+    apkInstallDeliveryModeInput: GitHubApkInstallDeliveryMode,
+    apkInstallUiModeInput: GitHubApkInstallUiMode,
     selectedOnlineShareTargetLabel: String,
     onlineShareTargetOptions: List<OnlineShareTargetOption>,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     onlineShareTargetPackageInput: String,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
+    showApkInstallDeliveryModePopup: Boolean,
+    showApkInstallUiModePopup: Boolean,
     onlineShareTargetPopupAnchorBounds: IntRect?,
     shareImportFlowModePopupAnchorBounds: IntRect?,
+    apkInstallDeliveryModePopupAnchorBounds: IntRect?,
+    apkInstallUiModePopupAnchorBounds: IntRect?,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
+    onApkInstallDeliveryModeInputChange: (GitHubApkInstallDeliveryMode) -> Unit,
+    onApkInstallUiModeInputChange: (GitHubApkInstallUiMode) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
+    onShowApkInstallDeliveryModePopupChange: (Boolean) -> Unit,
+    onShowApkInstallUiModePopupChange: (Boolean) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
+    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onApkInstallDeliveryModePopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onApkInstallUiModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     val context = LocalContext.current
     val flowModeOptions = GitHubShareImportFlowMode.entries
@@ -475,6 +517,25 @@ private fun GitHubCheckTransferSection(
     val selectedFlowModeIndex = flowModeOptions
         .indexOf(shareImportFlowModeInput)
         .coerceAtLeast(0)
+    val installDeliveryOptions = GitHubApkInstallDeliveryMode.entries
+    val installDeliveryLabels = installDeliveryOptions.map { mode ->
+        context.getString(mode.labelRes())
+    }
+    val selectedInstallDeliveryIndex = installDeliveryOptions
+        .indexOf(apkInstallDeliveryModeInput)
+        .coerceAtLeast(0)
+    val installUiOptions = GitHubApkInstallUiMode.entries
+    val installUiLabels = installUiOptions.map { mode ->
+        context.getString(mode.labelRes())
+    }
+    val selectedInstallUiIndex = installUiOptions
+        .indexOf(apkInstallUiModeInput)
+        .coerceAtLeast(0)
+    val shizukuInstallCapability = remember(showApkInstallDeliveryModePopup) {
+        ShizukuRuntimeCapabilities().current()
+    }
+    val shizukuStatusSummary = shizukuInstallCapabilitySummary(shizukuInstallCapability)
+    val shizukuApiUtils = remember { ShizukuApiUtils() }
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_transfer))
     SheetDescriptionText(
         text = stringResource(R.string.github_check_sheet_section_transfer_summary)
@@ -502,6 +563,70 @@ private fun GitHubCheckTransferSection(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction
             )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_install_delivery),
+            summary = stringResource(R.string.github_check_sheet_summary_install_delivery)
+        ) {
+            AppDropdownSelector(
+                selectedText = installDeliveryLabels.getOrElse(selectedInstallDeliveryIndex) {
+                    installDeliveryLabels.firstOrNull().orEmpty()
+                },
+                options = installDeliveryLabels,
+                selectedIndex = selectedInstallDeliveryIndex,
+                expanded = showApkInstallDeliveryModePopup,
+                anchorBounds = apkInstallDeliveryModePopupAnchorBounds,
+                onExpandedChange = onShowApkInstallDeliveryModePopupChange,
+                onSelectedIndexChange = { selectedIndex ->
+                    onApkInstallDeliveryModeInputChange(installDeliveryOptions[selectedIndex])
+                },
+                onAnchorBoundsChange = onApkInstallDeliveryModePopupAnchorBoundsChange,
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_install_ui),
+            summary = if (apkInstallDeliveryModeInput == GitHubApkInstallDeliveryMode.AppShizuku) {
+                stringResource(R.string.github_check_sheet_summary_install_ui)
+            } else {
+                stringResource(R.string.github_check_sheet_summary_install_ui_disabled)
+            }
+        ) {
+            AppDropdownSelector(
+                selectedText = installUiLabels.getOrElse(selectedInstallUiIndex) {
+                    installUiLabels.firstOrNull().orEmpty()
+                },
+                options = installUiLabels,
+                selectedIndex = selectedInstallUiIndex,
+                expanded = showApkInstallUiModePopup,
+                anchorBounds = apkInstallUiModePopupAnchorBounds,
+                onExpandedChange = { expanded ->
+                    if (apkInstallDeliveryModeInput == GitHubApkInstallDeliveryMode.AppShizuku) {
+                        onShowApkInstallUiModePopupChange(expanded)
+                    }
+                },
+                onSelectedIndexChange = { selectedIndex ->
+                    onApkInstallUiModeInputChange(installUiOptions[selectedIndex])
+                },
+                onAnchorBoundsChange = onApkInstallUiModePopupAnchorBoundsChange,
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction
+            )
+        }
+        if (apkInstallDeliveryModeInput == GitHubApkInstallDeliveryMode.AppShizuku) {
+            SheetControlRow(
+                label = stringResource(R.string.github_check_sheet_label_shizuku_install_status),
+                summary = shizukuStatusSummary
+            ) {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.github_check_sheet_action_request_shizuku),
+                    enabled = !shizukuInstallCapability.anyBackendReady,
+                    onClick = { shizukuApiUtils.requestPermissionIfNeeded() }
+                )
+            }
         }
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_share_import_linkage),
@@ -697,6 +822,57 @@ private fun GitHubShareImportFlowMode.labelRes(): Int {
     return when (this) {
         GitHubShareImportFlowMode.SheetAssisted -> R.string.github_share_import_flow_mode_sheet
         GitHubShareImportFlowMode.NotificationFirst -> R.string.github_share_import_flow_mode_notification
+    }
+}
+
+private fun GitHubApkInstallDeliveryMode.labelRes(): Int {
+    return when (this) {
+        GitHubApkInstallDeliveryMode.External -> R.string.github_apk_install_delivery_external
+        GitHubApkInstallDeliveryMode.AppShizuku -> R.string.github_apk_install_delivery_app_shizuku
+    }
+}
+
+private fun GitHubApkInstallUiMode.labelRes(): Int {
+    return when (this) {
+        GitHubApkInstallUiMode.SheetFirst -> R.string.github_apk_install_ui_sheet
+        GitHubApkInstallUiMode.NotificationFirst -> R.string.github_apk_install_ui_notification
+    }
+}
+
+@Composable
+private fun shizukuInstallCapabilitySummary(
+    capability: os.kei.core.install.ShizukuInstallCapability
+): String {
+    val runtimeState = capability.runtimeState
+    return when {
+        !runtimeState.binderAlive -> stringResource(
+            R.string.github_check_sheet_summary_app_install_shizuku_unavailable
+        )
+
+        runtimeState.preV11 -> stringResource(
+            R.string.github_check_sheet_summary_app_install_shizuku_pre_v11
+        )
+
+        !runtimeState.permissionGranted -> stringResource(
+            R.string.github_check_sheet_summary_app_install_permission_missing
+        )
+
+        capability.sessionReady -> stringResource(
+            R.string.github_check_sheet_summary_app_install_ready
+        )
+
+        capability.shellReady -> stringResource(
+            R.string.github_check_sheet_summary_app_install_shell_ready
+        )
+
+        !capability.remoteInstallPermissionGranted -> stringResource(
+            R.string.github_check_sheet_summary_app_install_remote_permission_missing
+        )
+
+        else -> stringResource(
+            R.string.github_check_sheet_summary_app_install_unsupported_uid,
+            runtimeState.serviceUid?.toString() ?: stringResource(R.string.common_unknown)
+        )
     }
 }
 

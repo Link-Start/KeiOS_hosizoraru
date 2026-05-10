@@ -25,6 +25,7 @@ import os.kei.ui.page.main.github.asset.assetRelativeTimeLabel
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
@@ -39,6 +40,7 @@ internal fun GitHubActionsArtifactCard(
     artifactMatch: GitHubActionsArtifactMatch,
     recommended: Boolean,
     hasToken: Boolean,
+    installMode: Boolean,
     downloading: Boolean,
     sharing: Boolean,
     context: Context,
@@ -68,6 +70,11 @@ internal fun GitHubActionsArtifactCard(
     val artifactSizeLabel = artifact.sizeBytes.takeIf { it > 0L }
         ?.let { formatAssetSize(it, context) }
         ?: stringResource(R.string.common_download)
+    val readyActionLabel = if (installMode) {
+        stringResource(R.string.github_apk_install_action_install)
+    } else {
+        artifactSizeLabel
+    }
     GitHubActionsSelectableCard(
         selected = false,
         isDark = isDark,
@@ -212,9 +219,9 @@ internal fun GitHubActionsArtifactCard(
                     completed = runMatch.traits.completed,
                     expired = artifact.expired,
                     downloading = downloading,
-                    readyLabel = artifactSizeLabel
+                    readyLabel = readyActionLabel
                 ),
-                leadingIcon = appLucideDownloadIcon(),
+                leadingIcon = if (installMode) appLucidePackageIcon() else appLucideDownloadIcon(),
                 enabled = canDownload,
                 textColor = actionColor,
                 iconTint = actionColor,

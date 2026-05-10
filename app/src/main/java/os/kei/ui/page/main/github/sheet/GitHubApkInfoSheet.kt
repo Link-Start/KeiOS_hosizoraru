@@ -32,6 +32,7 @@ import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
@@ -57,6 +58,7 @@ internal fun GitHubApkInfoSheet(
     installedInfo: GitHubInstalledPackageInfo?,
     loading: Boolean,
     error: String,
+    installMode: Boolean,
     backdrop: LayerBackdrop,
     onRefresh: () -> Unit,
     onDownload: () -> Unit,
@@ -120,6 +122,7 @@ internal fun GitHubApkInfoSheet(
                 ApkInfoActionRow(
                     backdrop = backdrop,
                     loading = loading,
+                    installMode = installMode,
                     onRefresh = onRefresh,
                     onDownload = onDownload,
                     onShare = onShare
@@ -183,6 +186,7 @@ internal fun GitHubApkInfoSheet(
 private fun ApkInfoActionRow(
     backdrop: LayerBackdrop,
     loading: Boolean,
+    installMode: Boolean,
     onRefresh: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit
@@ -209,8 +213,14 @@ private fun ApkInfoActionRow(
         )
         AppLiquidIconButton(
             backdrop = backdrop,
-            icon = appLucideDownloadIcon(),
-            contentDescription = stringResource(R.string.github_apk_info_action_download),
+            icon = if (installMode) appLucidePackageIcon() else appLucideDownloadIcon(),
+            contentDescription = stringResource(
+                if (installMode) {
+                    R.string.github_apk_install_action_install
+                } else {
+                    R.string.github_apk_info_action_download
+                }
+            ),
             onClick = onDownload,
             variant = GlassVariant.SheetPrimaryAction
         )

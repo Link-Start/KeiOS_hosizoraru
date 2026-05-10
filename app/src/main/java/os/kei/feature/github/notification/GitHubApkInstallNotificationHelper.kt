@@ -1,0 +1,286 @@
+package os.kei.feature.github.notification
+
+import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import os.kei.R
+import os.kei.core.prefs.UiPrefs
+import os.kei.feature.github.data.local.AppIconCache
+import os.kei.mcp.framework.notification.NotificationHelper
+import os.kei.mcp.framework.notification.builder.EnvironmentContext
+import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
+import os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder
+import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
+import os.kei.mcp.framework.notification.builder.NotificationPayload
+import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
+import os.kei.mcp.framework.notification.builder.UserSettings
+import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.notification.McpNotificationPayload
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
+import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
+
+internal object GitHubApkInstallNotificationHelper {
+    const val NOTIFICATION_ID = 38992
+    private const val REQUEST_OPEN = 2401
+    private const val REQUEST_CANCEL = 2402
+    private const val REQUEST_MARK_READ = 2403
+    private const val REQUEST_RETRY = 2404
+
+    fun notify(context: Context, state: GitHubApkInstallFlowState): Boolean {
+        if (!state.active) return false
+        return notifyState(context.applicationContext, state)
+    }
+
+    fun cancel(context: Context) {
+        McpNotificationHelper.cancelNotification(context, NOTIFICATION_ID)
+    }
+
+    @SuppressLint("MissingPermission")
+    internal fun notifyState(context: Context, state: GitHubApkInstallFlowState): Boolean {
+        if (!notificationsGranted(context)) return false
+        McpNotificationHelper.ensureChannel(context)
+        val helper = NotificationHelper(context)
+        val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
+        val useMiIsland = preferSuperIsland && helper.isSupportMiIsland
+        val notification = if (useMiIsland) {
+            buildMiIslandNotification(context, state)
+        } else {
+            buildLiveUpdateNotification(context, state)
+        }
+        McpNotificationHelper.dispatchNotification(
+            context = context,
+            notificationId = NOTIFICATION_ID,
+            notification = notification,
+            useXiaomiMagic = useMiIsland &&
+                    UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+        )
+        return true
+    }
+
+    private fun buildLiveUpdateNotification(
+        context: Context,
+        state: GitHubApkInstallFlowState
+    ): Notification {
+        val helper = NotificationHelper(context)
+        return if (helper.isModernLiveUpdateEligible) {
+            ModernNotificationBuilder(context).build(buildPayload(context, state, helper, false))
+        } else {
+            LegacyNotificationBuilder(context).build(buildPayload(context, state, helper, false))
+        }
+    }
+
+    private fun buildMiIslandNotification(
+        context: Context,
+        state: GitHubApkInstallFlowState
+    ): Notification {
+        val helper = NotificationHelper(context)
+        return MiIslandNotificationBuilder(context).build(
+            buildPayload(context, state, helper, true)
+        )
+    }
+
+    private fun buildPayload(
+        context: Context,
+        state: GitHubApkInstallFlowState,
+        helper: NotificationHelper,
+        miIsland: Boolean
+    ): NotificationPayload {
+        val openIntent = buildOpenPendingIntent(context)
+        val running = state.phase.running
+        val content = installContent(context, state)
+        return NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = running,
+                port = state.phase.progressPercent(state),
+                path = content,
+                clients = if (running) 1 else 0,
+                ongoing = running,
+                onlyAlertOnce = true,
+                openPendingIntent = openIntent,
+                stopPendingIntent = buildSecondaryPendingIntent(context, state),
+                focusOpenPendingIntent = openIntent,
+                primaryActionLabel = context.getString(R.string.github_apk_install_notify_action_open_sheet),
+                secondaryActionLabel = secondaryActionLabel(context, state),
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = context.getString(state.phase.titleRes),
+                overrideContent = content,
+                overrideOnlineText = context.getString(state.phase.shortTextRes),
+                overrideShortText = context.getString(state.phase.shortTextRes),
+                overrideProgressPercent = state.phase.progressPercent(state)
+            ),
+            settings = UserSettings(miIslandOuterGlow = miIsland),
+            environment = EnvironmentContext(
+                channelId = if (miIsland) {
+                    helper.resolveChannel(NotificationRenderStyle.MI_ISLAND)
+                } else {
+                    McpNotificationHelper.LIVE_CHANNEL_ID
+                },
+                isHyperOS = helper.isHyperOS,
+                preferOemLiveIconLayout = helper.preferOemLiveIconLayout
+            ),
+            semanticIconBitmap = state.packageName.takeIf { it.isNotBlank() }
+                ?.let { packageName -> AppIconCache.getOrLoad(context, packageName) }
+        )
+    }
+
+    private fun buildOpenPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, GitHubApkInstallActionReceiver::class.java).apply {
+            action = GitHubApkInstallActionReceiver.ACTION_OPEN_INSTALL_SHEET
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            REQUEST_OPEN,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun buildSecondaryPendingIntent(
+        context: Context,
+        state: GitHubApkInstallFlowState
+    ): PendingIntent {
+        val action = when (state.phase) {
+            GitHubApkInstallPhase.Failed -> GitHubApkInstallActionReceiver.ACTION_RETRY_INSTALL
+            GitHubApkInstallPhase.Success,
+            GitHubApkInstallPhase.Cancelled -> GitHubApkInstallActionReceiver.ACTION_MARK_READ_INSTALL
+
+            else -> GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL
+        }
+        val requestCode = when (action) {
+            GitHubApkInstallActionReceiver.ACTION_RETRY_INSTALL -> REQUEST_RETRY
+            GitHubApkInstallActionReceiver.ACTION_MARK_READ_INSTALL -> REQUEST_MARK_READ
+            else -> REQUEST_CANCEL
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            Intent(context, GitHubApkInstallActionReceiver::class.java).apply {
+                this.action = action
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun secondaryActionLabel(context: Context, state: GitHubApkInstallFlowState): String {
+        return when (state.phase) {
+            GitHubApkInstallPhase.Failed -> context.getString(R.string.github_apk_install_action_retry)
+            GitHubApkInstallPhase.Success,
+            GitHubApkInstallPhase.Cancelled -> context.getString(R.string.common_mark_read)
+
+            else -> context.getString(R.string.common_cancel)
+        }
+    }
+
+    private fun installContent(context: Context, state: GitHubApkInstallFlowState): String {
+        val name = state.selectedCandidateName
+            .ifBlank { state.asset?.name.orEmpty() }
+            .ifBlank { state.request.displayLabel }
+        return when (state.phase) {
+            GitHubApkInstallPhase.Downloading -> context.getString(
+                R.string.github_apk_install_notify_content_downloading,
+                name
+            )
+
+            GitHubApkInstallPhase.SelectingApk -> context.getString(
+                R.string.github_apk_install_notify_content_selecting,
+                state.candidates.size
+            )
+
+            GitHubApkInstallPhase.Inspecting -> context.getString(
+                R.string.github_apk_install_notify_content_inspecting,
+                name
+            )
+
+            GitHubApkInstallPhase.ReadyToInstall -> context.getString(
+                R.string.github_apk_install_notify_content_review,
+                name
+            )
+
+            GitHubApkInstallPhase.Installing -> context.getString(
+                R.string.github_apk_install_notify_content_installing,
+                state.packageName.ifBlank { name }
+            )
+
+            GitHubApkInstallPhase.PendingUserAction -> context.getString(
+                R.string.github_apk_install_notify_content_pending_user_action
+            )
+
+            GitHubApkInstallPhase.Success -> context.getString(
+                R.string.github_apk_install_notify_content_success,
+                state.packageName.ifBlank { name }
+            )
+
+            GitHubApkInstallPhase.Failed -> state.message.ifBlank {
+                context.getString(R.string.github_apk_install_notify_content_failed)
+            }
+
+            GitHubApkInstallPhase.Cancelled -> context.getString(
+                R.string.github_apk_install_notify_content_cancelled
+            )
+
+            GitHubApkInstallPhase.Idle -> ""
+        }
+    }
+
+    private fun notificationsGranted(context: Context): Boolean {
+        return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+    }
+}
+
+private val GitHubApkInstallPhase.running: Boolean
+    get() = this in setOf(
+        GitHubApkInstallPhase.Downloading,
+        GitHubApkInstallPhase.SelectingApk,
+        GitHubApkInstallPhase.Inspecting,
+        GitHubApkInstallPhase.ReadyToInstall,
+        GitHubApkInstallPhase.Installing,
+        GitHubApkInstallPhase.PendingUserAction
+    )
+
+private val GitHubApkInstallPhase.titleRes: Int
+    get() = when (this) {
+        GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_notify_title_downloading
+        GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_notify_title_selecting
+        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_notify_title_inspecting
+        GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_notify_title_review
+        GitHubApkInstallPhase.Installing -> R.string.github_apk_install_notify_title_installing
+        GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_notify_title_pending_user_action
+        GitHubApkInstallPhase.Success -> R.string.github_apk_install_notify_title_success
+        GitHubApkInstallPhase.Failed -> R.string.github_apk_install_notify_title_failed
+        GitHubApkInstallPhase.Cancelled -> R.string.github_apk_install_notify_title_cancelled
+        GitHubApkInstallPhase.Idle -> R.string.github_apk_install_notify_title_installing
+    }
+
+private val GitHubApkInstallPhase.shortTextRes: Int
+    get() = when (this) {
+        GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_notify_short_downloading
+        GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_notify_short_selecting
+        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_notify_short_inspecting
+        GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_notify_short_review
+        GitHubApkInstallPhase.Installing -> R.string.github_apk_install_notify_short_installing
+        GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_notify_short_pending
+        GitHubApkInstallPhase.Success -> R.string.github_apk_install_notify_short_success
+        GitHubApkInstallPhase.Failed -> R.string.github_apk_install_notify_short_failed
+        GitHubApkInstallPhase.Cancelled -> R.string.github_apk_install_notify_short_cancelled
+        GitHubApkInstallPhase.Idle -> R.string.github_apk_install_notify_short_installing
+    }
+
+private fun GitHubApkInstallPhase.progressPercent(state: GitHubApkInstallFlowState): Int {
+    return when (this) {
+        GitHubApkInstallPhase.Downloading -> (8 + state.progress * 34).toInt().coerceIn(8, 42)
+        GitHubApkInstallPhase.SelectingApk -> 44
+        GitHubApkInstallPhase.Inspecting -> 52
+        GitHubApkInstallPhase.ReadyToInstall -> 58
+        GitHubApkInstallPhase.Installing -> (62 + state.progress * 24).toInt().coerceIn(62, 86)
+        GitHubApkInstallPhase.PendingUserAction -> 88
+        GitHubApkInstallPhase.Success -> 100
+        GitHubApkInstallPhase.Failed,
+        GitHubApkInstallPhase.Cancelled,
+        GitHubApkInstallPhase.Idle -> 0
+    }
+}

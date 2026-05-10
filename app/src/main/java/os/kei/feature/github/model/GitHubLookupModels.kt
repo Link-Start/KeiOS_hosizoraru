@@ -67,6 +67,32 @@ enum class GitHubShareImportFlowMode(
     }
 }
 
+enum class GitHubApkInstallDeliveryMode(
+    val storageId: String
+) {
+    External("external"),
+    AppShizuku("app_shizuku");
+
+    companion object {
+        fun fromStorageId(value: String): GitHubApkInstallDeliveryMode {
+            return entries.firstOrNull { it.storageId == value } ?: External
+        }
+    }
+}
+
+enum class GitHubApkInstallUiMode(
+    val storageId: String
+) {
+    SheetFirst("sheet_first"),
+    NotificationFirst("notification_first");
+
+    companion object {
+        fun fromStorageId(value: String): GitHubApkInstallUiMode {
+            return entries.firstOrNull { it.storageId == value } ?: SheetFirst
+        }
+    }
+}
+
 enum class GitHubProfileDepth(
     val storageId: String
 ) {
@@ -90,6 +116,8 @@ data class GitHubLookupConfig(
     val profileDepth: GitHubProfileDepth = GitHubProfileDepth.Basic,
     val shareImportLinkageEnabled: Boolean = false,
     val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
+    val apkInstallDeliveryMode: GitHubApkInstallDeliveryMode = GitHubApkInstallDeliveryMode.External,
+    val apkInstallUiMode: GitHubApkInstallUiMode = GitHubApkInstallUiMode.SheetFirst,
     val onlineShareTargetPackage: String = "",
     val preferredDownloaderPackage: String = "",
     val decisionAssistEnabled: Boolean = false,

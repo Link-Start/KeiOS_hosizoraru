@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
@@ -346,6 +347,7 @@ class AppDesignSystemScreenshotTest {
                             contentBackdrop = rememberLayerBackdrop(),
                             supportedAbis = listOf("arm64-v8a"),
                             showApkTrustCheck = true,
+                            lookupConfig = GitHubLookupConfig(),
                             context = ApplicationProvider.getApplicationContext(),
                             onOpenApkInfo = {},
                             onOpenApkInDownloader = {},

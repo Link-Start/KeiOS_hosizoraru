@@ -25,6 +25,7 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -71,6 +72,7 @@ fun GitHubPage(
     val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsStateWithLifecycle()
     val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsStateWithLifecycle()
     val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsStateWithLifecycle()
+    val apkInstallFlowState by GitHubApkInstallFlowCoordinator.state.collectAsStateWithLifecycle()
     LaunchedEffect(isListScrolling) {
         if (!isListScrolling) {
             state.settleScrollChromeVisibility()
@@ -304,6 +306,7 @@ fun GitHubPage(
             context = context,
             backdrops = backdrops,
             state = state,
+            apkInstallFlowState = apkInstallFlowState,
             actions = actions,
             contentDerivedState = contentDerivedState,
             installedOnlineShareTargets = installedOnlineShareTargets,

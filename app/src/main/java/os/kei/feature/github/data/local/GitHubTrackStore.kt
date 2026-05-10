@@ -4,6 +4,8 @@ import com.tencent.mmkv.MMKV
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
+import os.kei.feature.github.model.GitHubApkInstallUiMode
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -73,6 +75,8 @@ object GitHubTrackStore {
     private const val KEY_PROFILE_DEPTH = "github_profile_depth"
     private const val KEY_SHARE_IMPORT_LINKAGE_ENABLED = "github_share_import_linkage_enabled"
     private const val KEY_SHARE_IMPORT_FLOW_MODE = "github_share_import_flow_mode"
+    private const val KEY_APK_INSTALL_DELIVERY_MODE = "github_apk_install_delivery_mode"
+    private const val KEY_APK_INSTALL_UI_MODE = "github_apk_install_ui_mode"
     private const val KEY_ONLINE_SHARE_TARGET_PACKAGE = "github_online_share_target_package"
     private const val KEY_PREFERRED_DOWNLOADER_PACKAGE = "github_preferred_downloader_package"
     private const val KEY_DECISION_ASSIST_ENABLED = "github_decision_assist_enabled"
@@ -609,6 +613,12 @@ object GitHubTrackStore {
             shareImportFlowMode = GitHubShareImportFlowMode.fromStorageId(
                 kv().decodeString(KEY_SHARE_IMPORT_FLOW_MODE).orEmpty()
             ),
+            apkInstallDeliveryMode = GitHubApkInstallDeliveryMode.fromStorageId(
+                kv().decodeString(KEY_APK_INSTALL_DELIVERY_MODE).orEmpty()
+            ),
+            apkInstallUiMode = GitHubApkInstallUiMode.fromStorageId(
+                kv().decodeString(KEY_APK_INSTALL_UI_MODE).orEmpty()
+            ),
             onlineShareTargetPackage = kv().decodeString(KEY_ONLINE_SHARE_TARGET_PACKAGE).orEmpty().trim(),
             preferredDownloaderPackage = kv().decodeString(KEY_PREFERRED_DOWNLOADER_PACKAGE)
                 .orEmpty().trim(),
@@ -634,6 +644,8 @@ object GitHubTrackStore {
         kv().encode(KEY_PROFILE_DEPTH, config.profileDepth.storageId)
         kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
         kv().encode(KEY_SHARE_IMPORT_FLOW_MODE, config.shareImportFlowMode.storageId)
+        kv().encode(KEY_APK_INSTALL_DELIVERY_MODE, config.apkInstallDeliveryMode.storageId)
+        kv().encode(KEY_APK_INSTALL_UI_MODE, config.apkInstallUiMode.storageId)
         kv().encode(KEY_ONLINE_SHARE_TARGET_PACKAGE, config.onlineShareTargetPackage.trim())
         kv().encode(KEY_PREFERRED_DOWNLOADER_PACKAGE, config.preferredDownloaderPackage.trim())
         kv().encode(KEY_DECISION_ASSIST_ENABLED, config.decisionAssistEnabled)

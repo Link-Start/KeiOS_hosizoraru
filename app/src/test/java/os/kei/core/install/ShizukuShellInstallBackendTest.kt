@@ -32,7 +32,7 @@ class ShizukuShellInstallBackendTest {
         assertIs<ApkInstallResult.Success>(result)
         assertEquals(
             listOf(
-                "cmd package install-create -r -t --pkg 'os.kei.demo' -S 4",
+                "cmd package install-create -r -t -S 4",
                 "cmd package install-write -S 4 42 'base.apk' -",
                 "cmd package install-commit 42"
             ),
@@ -63,9 +63,56 @@ class ShizukuShellInstallBackendTest {
         assertEquals(ApkInstallFailureReason.StagingFailed, failure.reason)
         assertEquals(
             listOf(
-                "cmd package install-create -r -t --pkg 'os.kei.demo' -S 4",
+                "cmd package install-create -r -t -S 4",
                 "cmd package install-write -S 4 7 'base.apk' -",
                 "cmd package install-abandon 7"
+            ),
+            processGateway.commands
+        )
+    }
+
+    @Test
+    fun `shell backend accepts empty successful commit output`() = runBlocking {
+        val processGateway = RecordingProcessGateway(
+            executeResults = ArrayDeque(
+                listOf(
+                    success("Success: created install session [9]"),
+                    success("")
+                )
+            ),
+            streamResults = ArrayDeque(listOf(success("Success: streamed 4 bytes")))
+        )
+        val backend = backend(processGateway)
+
+        val result = backend.install(request())
+
+        assertIs<ApkInstallResult.Success>(result)
+        Unit
+    }
+
+    @Test
+    fun `shell backend reports commit failure after successful write`() = runBlocking {
+        val processGateway = RecordingProcessGateway(
+            executeResults = ArrayDeque(
+                listOf(
+                    success("Success: created install session [10]"),
+                    failure("Failure [INSTALL_FAILED_VERSION_DOWNGRADE]")
+                )
+            ),
+            streamResults = ArrayDeque(listOf(success("Success: streamed 4 bytes")))
+        )
+        val backend = backend(processGateway)
+
+        val result = backend.install(request())
+
+        val failure = assertIs<ApkInstallResult.Failure>(result)
+        assertEquals(ApkInstallFailureReason.CommitFailed, failure.reason)
+        assertTrue(failure.message.contains("INSTALL_FAILED_VERSION_DOWNGRADE"))
+        assertEquals(
+            listOf(
+                "cmd package install-create -r -t -S 4",
+                "cmd package install-write -S 4 10 'base.apk' -",
+                "cmd package install-commit 10"
             ),
             processGateway.commands
         )

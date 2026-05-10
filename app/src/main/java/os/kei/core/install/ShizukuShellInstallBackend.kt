@@ -75,16 +75,17 @@ class ShizukuShellInstallBackend(
                 command = "cmd package install-commit $sessionId",
                 timeoutMs = ShizukuProcessGateway.DEFAULT_STREAM_TIMEOUT_MS
             )
-            if (commitResult.succeeded && commitResult.combinedOutput()
-                    .contains("success", ignoreCase = true)
-            ) {
+            if (commitResult.isSuccessfulPackageCommit()) {
                 ApkInstallResult.Success(
                     backendId = ApkInstallBackendId.ShizukuShell,
                     packageName = request.packageName,
-                    message = commitResult.combinedOutput()
+                    message = commitResult.fullOutput().ifBlank { "Success" }
                 )
             } else {
-                commitResult.toFailure(ApkInstallFailureReason.CommitFailed)
+                commitResult.toFailure(
+                    reason = ApkInstallFailureReason.CommitFailed,
+                    fallbackMessage = "Package manager install commit failed"
+                )
             }
         } catch (error: CancellationException) {
             sessionId?.let { abandonSession(it) }
@@ -112,10 +113,6 @@ class ShizukuShellInstallBackend(
             append("cmd package install-create")
             if (request.replaceExisting) append(" -r")
             if (request.allowTestOnly) append(" -t")
-            if (request.packageName.isNotBlank()) {
-                append(" --pkg ")
-                append(request.packageName.shellQuote())
-            }
             if (request.totalSizeBytes > 0L) {
                 append(" -S ")
                 append(request.totalSizeBytes)
@@ -154,8 +151,24 @@ class ShizukuShellInstallBackend(
                 timedOut -> ApkInstallFailureReason.TimedOut
                 else -> reason
             },
-            message = combinedOutput().ifBlank { fallbackMessage },
+            message = fullOutput().ifBlank { fallbackMessage },
         )
+    }
+
+    private fun AppCommandResult.isSuccessfulPackageCommit(): Boolean {
+        if (!succeeded) return false
+        val output = fullOutput()
+        if (output.isBlank()) return true
+        val lower = output.lowercase()
+        return "failure" !in lower && "error" !in lower
+    }
+
+    private fun AppCommandResult.fullOutput(): String {
+        return listOf(stdout, stderr)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString("\n")
     }
 }
 

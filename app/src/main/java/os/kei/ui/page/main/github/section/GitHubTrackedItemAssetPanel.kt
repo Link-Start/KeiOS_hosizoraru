@@ -115,6 +115,7 @@ internal fun GitHubTrackedItemAssetPanel(
                             supportedAbis = supportedAbis,
                             showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
                                     lookupConfig.apkTrustCheckEnabled,
+                            lookupConfig = lookupConfig,
                             context = context,
                             onOpenApkInfo = onOpenApkInfo,
                             onOpenApkInDownloader = onOpenApkInDownloader,

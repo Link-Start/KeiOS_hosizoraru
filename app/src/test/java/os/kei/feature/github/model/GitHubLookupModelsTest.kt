@@ -26,6 +26,46 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `apk install delivery mode resolves storage ids`() {
+        assertEquals(
+            GitHubApkInstallDeliveryMode.External,
+            GitHubApkInstallDeliveryMode.fromStorageId("external")
+        )
+        assertEquals(
+            GitHubApkInstallDeliveryMode.AppShizuku,
+            GitHubApkInstallDeliveryMode.fromStorageId("app_shizuku")
+        )
+        assertEquals(
+            GitHubApkInstallDeliveryMode.External,
+            GitHubApkInstallDeliveryMode.fromStorageId("missing")
+        )
+    }
+
+    @Test
+    fun `apk install ui mode resolves storage ids`() {
+        assertEquals(
+            GitHubApkInstallUiMode.SheetFirst,
+            GitHubApkInstallUiMode.fromStorageId("sheet_first")
+        )
+        assertEquals(
+            GitHubApkInstallUiMode.NotificationFirst,
+            GitHubApkInstallUiMode.fromStorageId("notification_first")
+        )
+        assertEquals(
+            GitHubApkInstallUiMode.SheetFirst,
+            GitHubApkInstallUiMode.fromStorageId("missing")
+        )
+    }
+
+    @Test
+    fun `lookup config keeps existing external install defaults`() {
+        val config = GitHubLookupConfig()
+
+        assertEquals(GitHubApkInstallDeliveryMode.External, config.apkInstallDeliveryMode)
+        assertEquals(GitHubApkInstallUiMode.SheetFirst, config.apkInstallUiMode)
+    }
+
+    @Test
     fun `profile depth resolves storage ids`() {
         assertEquals(GitHubProfileDepth.Basic, GitHubProfileDepth.fromStorageId("basic"))
         assertEquals(GitHubProfileDepth.Deep, GitHubProfileDepth.fromStorageId("deep"))

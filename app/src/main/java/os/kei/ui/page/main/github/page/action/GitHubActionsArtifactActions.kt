@@ -8,7 +8,12 @@ import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.model.GitHubActionsArtifact
+import os.kei.feature.github.model.GitHubActionsArtifactKind
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
+import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
+import os.kei.ui.page.main.github.install.GitHubApkInstallRequestContext
+import os.kei.ui.page.main.github.install.GitHubApkInstallSourceKind
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
 import kotlin.time.Duration.Companion.milliseconds
@@ -53,6 +58,13 @@ internal class GitHubActionsArtifactActions(
         scope.launch {
             state.actionsArtifactDownloadLoadingId = artifact.id
             try {
+                if (
+                    state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku &&
+                    artifactMatch.traits.kind == GitHubActionsArtifactKind.AndroidBundle
+                ) {
+                    env.toast(R.string.github_apk_install_error_unsupported_bundle)
+                    return@launch
+                }
                 val resolution = actionsRepository.resolveGitHubActionsArtifactDownloadUrl(
                     artifact = artifact,
                     owner = item.owner,
@@ -73,6 +85,49 @@ internal class GitHubActionsArtifactActions(
                     }
                 } else {
                     null
+                }
+                if (state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
+                    GitHubApkInstallFlowCoordinator.beginInstallResolvedUrl(
+                        context = context,
+                        lookupConfig = state.lookupConfig,
+                        resolvedUrl = resolvedUrl,
+                        fileName = fileName,
+                        sizeBytes = artifact.sizeBytes,
+                        request = GitHubApkInstallRequestContext(
+                            sourceKind = GitHubApkInstallSourceKind.ActionsArtifact,
+                            owner = item.owner,
+                            repo = item.repo,
+                            sourceLabel = artifact.name,
+                            expectedPackageName = item.packageName,
+                            externalUrl = resolvedUrl,
+                            externalFileName = fileName
+                        )
+                    )
+                    val artifactPackageName = artifactPackageNameDeferred?.let { deferred ->
+                        withTimeoutOrNull(ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS.milliseconds) {
+                            deferred.await()
+                        }.also { packageName ->
+                            if (packageName == null) deferred.cancel()
+                        }.orEmpty()
+                    }.orEmpty()
+                    val record = actionsRepository.buildGitHubActionsDownloadRecord(
+                        owner = item.owner,
+                        repo = item.repo,
+                        workflow = workflowMatch.workflow,
+                        run = runMatch.runArtifacts.run,
+                        artifact = artifact,
+                        sourceTrackId = item.id,
+                        packageName = item.packageName,
+                        artifactPackageName = artifactPackageName
+                    )
+                    actionsRepository.recordGitHubActionsArtifactDownload(record)
+                    state.actionsDownloadHistory =
+                        actionsRepository.loadGitHubActionsDownloadHistory(
+                            owner = item.owner,
+                            repo = item.repo
+                        )
+                    onDownloadHistoryChanged()
+                    return@launch
                 }
                 if (openResolvedArtifactDownloadUrl(resolvedUrl, fileName)) {
                     val artifactPackageName = artifactPackageNameDeferred?.let { deferred ->

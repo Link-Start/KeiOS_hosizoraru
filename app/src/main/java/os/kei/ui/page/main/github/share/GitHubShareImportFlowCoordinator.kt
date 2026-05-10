@@ -22,10 +22,14 @@ import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubShareImportResolver
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
+import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.notification.GitHubShareImportActionReceiver
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
+import os.kei.ui.page.main.github.install.GitHubApkInstallRequestContext
+import os.kei.ui.page.main.github.install.GitHubApkInstallSourceKind
 import os.kei.ui.page.main.github.localizedGitHubShareImportErrorMessage
 
 internal object GitHubShareImportFlowCoordinator {
@@ -257,6 +261,46 @@ internal object GitHubShareImportFlowCoordinator {
                 lookupConfig = lookupConfig
             ).getOrDefault("")
         }
+        if (lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
+            val scannedPackageName = scannedPackageNameDeferred.await()
+            val pending = buildPendingShareImportTrackRecord(
+                preview = preview,
+                selectedAsset = selectedAsset,
+                scannedPackageName = scannedPackageName
+            )
+            withContext(Dispatchers.IO) {
+                GitHubTrackStore.savePendingShareImportTrack(pending)
+                GitHubShareImportFlowStore.clearActiveFlow()
+            }
+            GitHubTrackStoreSignals.notifyChanged()
+            GitHubShareImportNotificationHelper.cancel(context)
+            GitHubShareImportPendingScheduler.scheduleNext(context)
+            GitHubApkInstallFlowCoordinator.beginInstallAsset(
+                context = context,
+                lookupConfig = lookupConfig,
+                asset = selectedAsset,
+                request = GitHubApkInstallRequestContext(
+                    sourceKind = GitHubApkInstallSourceKind.ShareImport,
+                    owner = preview.owner,
+                    repo = preview.repo,
+                    releaseTag = preview.releaseTag,
+                    sourceLabel = preview.targetDisplayName.ifBlank {
+                        buildShareImportTargetDisplayName(
+                            repo = preview.repo,
+                            assetName = selectedAsset.name,
+                            packageName = scannedPackageName
+                        )
+                    },
+                    expectedPackageName = scannedPackageName,
+                    externalFileName = selectedAsset.name
+                )
+            )
+            return@coroutineScope ShareImportDeliveryCoordinatorResult.WaitingInstall(
+                pending = pending,
+                toastResId = R.string.github_toast_share_import_wait_install,
+                assetName = selectedAsset.name
+            )
+        }
         val deliveryResult = sendAssetToConfiguredChannel(
             context = context,
             lookupConfig = lookupConfig,
@@ -275,19 +319,10 @@ internal object GitHubShareImportFlowCoordinator {
 
             is ShareImportDeliveryResult.Success -> {
                 val scannedPackageName = scannedPackageNameDeferred.await()
-                val pending = GitHubPendingShareImportTrackRecord(
-                    projectUrl = preview.projectUrl,
-                    owner = preview.owner,
-                    repo = preview.repo,
-                    releaseTag = preview.releaseTag,
-                    assetName = selectedAsset.name,
-                    packageName = scannedPackageName,
-                    targetDisplayName = buildShareImportTargetDisplayName(
-                        repo = preview.repo,
-                        assetName = selectedAsset.name,
-                        packageName = scannedPackageName
-                    ).ifBlank { preview.targetDisplayName },
-                    armedAtMillis = System.currentTimeMillis()
+                val pending = buildPendingShareImportTrackRecord(
+                    preview = preview,
+                    selectedAsset = selectedAsset,
+                    scannedPackageName = scannedPackageName
                 )
                 withContext(Dispatchers.IO) {
                     GitHubTrackStore.savePendingShareImportTrack(pending)
@@ -312,6 +347,27 @@ internal object GitHubShareImportFlowCoordinator {
                 )
             }
         }
+    }
+
+    private fun buildPendingShareImportTrackRecord(
+        preview: GitHubShareImportPreview,
+        selectedAsset: GitHubReleaseAssetFile,
+        scannedPackageName: String
+    ): GitHubPendingShareImportTrackRecord {
+        return GitHubPendingShareImportTrackRecord(
+            projectUrl = preview.projectUrl,
+            owner = preview.owner,
+            repo = preview.repo,
+            releaseTag = preview.releaseTag,
+            assetName = selectedAsset.name,
+            packageName = scannedPackageName,
+            targetDisplayName = buildShareImportTargetDisplayName(
+                repo = preview.repo,
+                assetName = selectedAsset.name,
+                packageName = scannedPackageName
+            ).ifBlank { preview.targetDisplayName },
+            armedAtMillis = System.currentTimeMillis()
+        )
     }
 
     suspend fun refreshPendingInstall(

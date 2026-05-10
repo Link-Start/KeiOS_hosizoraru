@@ -33,7 +33,7 @@ object AppPrivateDownloadManager {
         return manager.enqueue(request)
     }
 
-    internal fun sanitizeDownloadFileName(raw: String): String {
+    fun sanitizeDownloadFileName(raw: String): String {
         val cleaned = raw
             .substringAfterLast('/')
             .substringAfterLast('\\')

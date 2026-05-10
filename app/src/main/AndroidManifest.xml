@@ -173,6 +173,11 @@
             android:exported="false" />
 
         <receiver
+            android:name=".feature.github.notification.GitHubApkInstallActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver
             android:name=".core.install.ShizukuInstallResultReceiver"
             android:enabled="true"
             android:exported="false" />

@@ -11,11 +11,15 @@ import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
+import os.kei.ui.page.main.github.install.GitHubApkInstallRequestContext
+import os.kei.ui.page.main.github.install.GitHubApkInstallSourceKind
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.statusActionUrl
 import java.security.MessageDigest
@@ -116,6 +120,9 @@ internal class GitHubAssetActions(
     }
 
     suspend fun sendAssetToConfiguredChannel(asset: GitHubReleaseAssetFile): Boolean {
+        if (state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
+            return startAppInstallFlow(asset)
+        }
         return if (state.lookupConfig.onlineShareTargetPackage.isNotBlank()) {
             shareApkLinkInternal(asset)
         } else {
@@ -389,6 +396,9 @@ internal class GitHubAssetActions(
     }
 
     private suspend fun openApkInDownloaderInternal(asset: GitHubReleaseAssetFile): Boolean {
+        if (state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
+            return startAppInstallFlow(asset)
+        }
         val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolvePreferredAssetUrl(asset))
             ?: run {
                 env.toast(R.string.github_toast_open_downloader_failed)
@@ -423,6 +433,22 @@ internal class GitHubAssetActions(
             env.toast(R.string.github_toast_open_downloader_failed)
             false
         }
+    }
+
+    private fun startAppInstallFlow(asset: GitHubReleaseAssetFile): Boolean {
+        val apkInfo = state.apkInfoResults[asset.githubApkInfoKey()]
+        GitHubApkInstallFlowCoordinator.beginInstallAsset(
+            context = context,
+            lookupConfig = state.lookupConfig,
+            asset = asset,
+            request = GitHubApkInstallRequestContext(
+                sourceKind = GitHubApkInstallSourceKind.ReleaseAsset,
+                sourceLabel = asset.name,
+                expectedPackageName = apkInfo?.packageName.orEmpty(),
+                externalFileName = asset.name
+            )
+        )
+        return true
     }
 
     private fun enqueueWithSystemDownloadManager(url: String, fileName: String) {

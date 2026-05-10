@@ -4,6 +4,7 @@ import os.kei.core.install.ApkInstallBackendId
 import os.kei.core.install.ApkInstallFailureReason
 import os.kei.core.install.LocalApkArchiveInfo
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkTrustSignal
 import os.kei.feature.github.model.GitHubDecisionLevel
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
@@ -35,7 +36,8 @@ internal data class GitHubApkInstallRequestContext(
     val sourceLabel: String = "",
     val expectedPackageName: String = "",
     val externalUrl: String = "",
-    val externalFileName: String = ""
+    val externalFileName: String = "",
+    val remoteManifestInfo: GitHubApkManifestInfo? = null
 ) {
     val displayLabel: String
         get() = sourceLabel.ifBlank {
@@ -64,6 +66,7 @@ internal data class GitHubApkInstallFlowState(
     val candidates: List<GitHubApkInstallCandidate> = emptyList(),
     val selectedCandidateName: String = "",
     val selectedCandidateSizeBytes: Long = 0L,
+    val remoteManifestInfo: GitHubApkManifestInfo? = null,
     val localArchiveInfo: LocalApkArchiveInfo? = null,
     val installedPackageInfo: GitHubInstalledPackageInfo? = null,
     val trustSignal: GitHubApkTrustSignal? = null,
@@ -89,6 +92,8 @@ internal data class GitHubApkInstallFlowState(
 
     val packageName: String
         get() = localArchiveInfo?.packageName.orEmpty()
+            .ifBlank { remoteManifestInfo?.packageName.orEmpty() }
+            .ifBlank { request.expectedPackageName }
 
     val trustLevel: GitHubDecisionLevel?
         get() = trustSignal?.level

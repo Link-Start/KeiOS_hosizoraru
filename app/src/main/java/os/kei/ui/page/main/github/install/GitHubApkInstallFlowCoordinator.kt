@@ -23,11 +23,13 @@ import os.kei.core.install.ApkInstallEntry
 import os.kei.core.install.ApkInstallProgress
 import os.kei.core.install.ApkInstallRequest
 import os.kei.core.install.ApkInstallResult
+import os.kei.core.install.LocalApkArchiveInfo
 import os.kei.core.install.ShizukuDualInstallBackend
 import os.kei.core.install.ShizukuSessionInstallBackend
 import os.kei.core.install.ShizukuShellInstallBackend
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.domain.ApkTrustEvaluationInput
 import os.kei.feature.github.domain.ApkTrustEvaluator
@@ -38,6 +40,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.notification.GitHubApkInstallNotificationHelper
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.resolvePreferredAssetUrl
+import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
 
@@ -46,6 +49,7 @@ internal object GitHubApkInstallFlowCoordinator {
     private val sessionIds = AtomicLong(1L)
     private val downloader = GitHubApkInstallFileDownloader()
     private val extractor = GitHubApkInstallArchiveExtractor()
+    private val apkInfoRepository = GitHubApkInfoRepository()
     private val _state = MutableStateFlow(GitHubApkInstallFlowState())
     val state: StateFlow<GitHubApkInstallFlowState> = _state.asStateFlow()
 
@@ -63,6 +67,8 @@ internal object GitHubApkInstallFlowCoordinator {
         val snapshot = LastInstallRequest.Asset(appContext, lookupConfig, asset, request)
         lastRequest = snapshot
         activeJob?.cancel()
+        activeWork?.cleanup()
+        activeWork = null
         val sessionId = sessionIds.incrementAndGet()
         val notificationFirst =
             lookupConfig.apkInstallUiMode == GitHubApkInstallUiMode.NotificationFirst
@@ -72,6 +78,15 @@ internal object GitHubApkInstallFlowCoordinator {
                 phase = GitHubApkInstallPhase.Downloading,
                 request = request,
                 asset = asset,
+                selectedCandidateName = asset.name,
+                selectedCandidateSizeBytes = asset.sizeBytes,
+                remoteManifestInfo = request.remoteManifestInfo,
+                trustSignal = evaluateTrust(
+                    asset = asset,
+                    request = request,
+                    installedInfo = null,
+                    archiveInfo = null
+                ),
                 sheetVisible = !notificationFirst,
                 notificationFirst = notificationFirst
             )
@@ -79,18 +94,27 @@ internal object GitHubApkInstallFlowCoordinator {
         activeJob = scope.launch {
             try {
                 val resolvedUrl = resolvePreferredAssetUrl(lookupConfig, asset)
+                val preparedRequest = request.copy(
+                    externalUrl = resolvedUrl,
+                    externalFileName = asset.name
+                )
                 activeWork = ActiveInstallWork(
                     appContext = appContext,
                     lookupConfig = lookupConfig,
                     asset = asset,
-                    request = request.copy(
-                        externalUrl = resolvedUrl,
-                        externalFileName = asset.name
-                    ),
+                    request = preparedRequest,
                     sessionId = sessionId,
                     notificationFirst = notificationFirst
                 )
+                val installedInfoProbe = launch(Dispatchers.IO) {
+                    preheatInstalledInfo(activeWork!!)
+                }
+                val remoteManifestProbe = launch(Dispatchers.IO) {
+                    preheatRemoteManifest(activeWork!!)
+                }
                 downloadAndPrepare(activeWork!!)
+                installedInfoProbe.cancel()
+                remoteManifestProbe.cancel()
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
@@ -266,17 +290,18 @@ internal object GitHubApkInstallFlowCoordinator {
             context = work.appContext,
             packageName = work.request.expectedPackageName.ifBlank { archiveInfo.packageName }
         )
-        val trust = ApkTrustEvaluator.evaluate(
-            ApkTrustEvaluationInput(
-                asset = work.asset.copy(name = candidate.name, sizeBytes = candidate.sizeBytes),
-                supportedAbis = Build.SUPPORTED_ABIS.toList(),
-                installedInfo = installedInfo,
-                expectedPackageName = work.request.expectedPackageName,
-                localArchiveInfo = archiveInfo
-            )
+        val trustRequest = work.request.copy(
+            remoteManifestInfo = _state.value.remoteManifestInfo ?: work.request.remoteManifestInfo
+        )
+        val trust = evaluateTrust(
+            asset = work.asset.copy(name = candidate.name, sizeBytes = candidate.sizeBytes),
+            request = trustRequest,
+            installedInfo = installedInfo,
+            archiveInfo = archiveInfo
         )
         updateState(
             _state.value.copy(
+                remoteManifestInfo = trustRequest.remoteManifestInfo,
                 localArchiveInfo = archiveInfo,
                 installedPackageInfo = installedInfo,
                 trustSignal = trust,
@@ -345,6 +370,10 @@ internal object GitHubApkInstallFlowCoordinator {
                         message = result.message
                     )
                 )
+                work.cleanup()
+                if (activeWork === work) {
+                    activeWork = null
+                }
                 GitHubTrackStoreSignals.notifyChanged()
                 if (work.request.sourceKind == GitHubApkInstallSourceKind.ShareImport) {
                     GitHubShareImportFlowCoordinator.refreshPendingInstall(work.appContext)
@@ -386,6 +415,88 @@ internal object GitHubApkInstallFlowCoordinator {
             sessionBackend = ShizukuSessionInstallBackend(context.applicationContext),
             shellBackend = ShizukuShellInstallBackend()
         )
+    }
+
+    private fun preheatInstalledInfo(work: ActiveInstallWork) {
+        val packageName = work.request.expectedPackageName
+            .ifBlank { work.request.remoteManifestInfo?.packageName.orEmpty() }
+        val installedInfo = loadInstalledPackageInfo(work.appContext, packageName)
+        updateActiveState(work.sessionId) { current ->
+            val request = work.request.copy(
+                remoteManifestInfo = current.remoteManifestInfo ?: work.request.remoteManifestInfo
+            )
+            current.copy(
+                installedPackageInfo = installedInfo,
+                trustSignal = evaluateTrust(
+                    asset = work.asset.copy(
+                        name = current.selectedCandidateName.ifBlank { work.asset.name },
+                        sizeBytes = current.selectedCandidateSizeBytes.takeIf { it > 0L }
+                            ?: work.asset.sizeBytes
+                    ),
+                    request = request,
+                    installedInfo = installedInfo,
+                    archiveInfo = current.localArchiveInfo
+                ),
+                remoteManifestInfo = request.remoteManifestInfo
+            )
+        }
+    }
+
+    private suspend fun preheatRemoteManifest(work: ActiveInstallWork) {
+        if (work.request.remoteManifestInfo != null) return
+        if (!work.asset.name.endsWith(".apk", ignoreCase = true)) return
+        val manifest = apkInfoRepository.inspectAsync(
+            asset = work.asset,
+            lookupConfig = work.lookupConfig
+        ).getOrNull() ?: return
+        val installedInfo = loadInstalledPackageInfo(
+            context = work.appContext,
+            packageName = work.request.expectedPackageName.ifBlank { manifest.packageName }
+        )
+        updateActiveState(work.sessionId) { current ->
+            val request = work.request.copy(remoteManifestInfo = manifest)
+            current.copy(
+                remoteManifestInfo = manifest,
+                installedPackageInfo = installedInfo ?: current.installedPackageInfo,
+                trustSignal = evaluateTrust(
+                    asset = work.asset.copy(
+                        name = current.selectedCandidateName.ifBlank { work.asset.name },
+                        sizeBytes = current.selectedCandidateSizeBytes.takeIf { it > 0L }
+                            ?: work.asset.sizeBytes
+                    ),
+                    request = request,
+                    installedInfo = installedInfo ?: current.installedPackageInfo,
+                    archiveInfo = current.localArchiveInfo
+                )
+            )
+        }
+    }
+
+    private fun evaluateTrust(
+        asset: GitHubReleaseAssetFile,
+        request: GitHubApkInstallRequestContext,
+        installedInfo: GitHubInstalledPackageInfo?,
+        archiveInfo: LocalApkArchiveInfo?
+    ) = ApkTrustEvaluator.evaluate(
+        ApkTrustEvaluationInput(
+            asset = asset,
+            supportedAbis = Build.SUPPORTED_ABIS.toList(),
+            manifestInfo = request.remoteManifestInfo,
+            installedInfo = installedInfo,
+            expectedPackageName = request.expectedPackageName.ifBlank {
+                request.remoteManifestInfo?.packageName.orEmpty()
+            },
+            localArchiveInfo = archiveInfo
+        )
+    )
+
+    private fun updateActiveState(
+        sessionId: Long,
+        transform: (GitHubApkInstallFlowState) -> GitHubApkInstallFlowState
+    ) {
+        val current = _state.value
+        if (current.sessionId != sessionId || !current.active) return
+        updateState(transform(current))
     }
 
     private fun updateProgress(
@@ -438,8 +549,22 @@ internal object GitHubApkInstallFlowCoordinator {
     }
 
     private fun ActiveInstallWork.cleanup() {
-        downloadedFiles.forEach { file -> runCatching { file.file.delete() } }
-        candidates.forEach { file -> runCatching { file.file.delete() } }
+        val installCacheDir = File(appContext.cacheDir, "github_apk_install")
+        val files = (downloadedFiles + candidates)
+            .map { downloaded -> downloaded.file }
+            .distinctBy { file -> file.absolutePath }
+        files.forEach { file -> runCatching { file.delete() } }
+        files
+            .mapNotNull { file -> file.parentFile }
+            .distinctBy { dir -> dir.absolutePath }
+            .filter { dir -> dir.name.startsWith("extracted-") }
+            .forEach { dir -> runCatching { dir.deleteRecursively() } }
+        installCacheDir
+            .listFiles()
+            .orEmpty()
+            .filter { file -> file.isDirectory && file.name.startsWith("extracted-") }
+            .filter { dir -> dir.listFiles().orEmpty().isEmpty() }
+            .forEach { dir -> runCatching { dir.deleteRecursively() } }
     }
 
     private fun loadInstalledPackageInfo(
@@ -468,8 +593,18 @@ internal object GitHubApkInstallFlowCoordinator {
             versionCode = info.longVersionCode,
             minSdk = appInfo?.minSdkVersion ?: -1,
             targetSdk = appInfo?.targetSdkVersion ?: -1,
-            signatureSha256 = info.signatureSha256List()
+            signatureSha256 = info.signatureSha256List(),
+            sourceSizeBytes = appInfo.sourceApkSizeBytes()
         )
+    }
+
+    private fun android.content.pm.ApplicationInfo?.sourceApkSizeBytes(): Long {
+        if (this == null) return 0L
+        val files = buildList {
+            sourceDir?.let { add(it) }
+            splitSourceDirs.orEmpty().forEach(::add)
+        }
+        return files.sumOf { path -> File(path).takeIf { it.isFile }?.length() ?: 0L }
     }
 
     private fun PackageInfo.signatureSha256List(): List<String> {

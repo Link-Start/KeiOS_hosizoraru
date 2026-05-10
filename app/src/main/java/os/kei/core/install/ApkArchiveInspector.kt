@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import java.io.File
 import java.security.MessageDigest
+import java.util.zip.ZipFile
 
 data class LocalApkArchiveInfo(
     val packageName: String,
@@ -15,7 +16,8 @@ data class LocalApkArchiveInfo(
     val targetSdk: Int,
     val signatureSha256: List<String>,
     val debuggable: Boolean,
-    val testOnly: Boolean
+    val testOnly: Boolean,
+    val nativeAbis: List<String> = emptyList()
 )
 
 class ApkArchiveInspector(
@@ -33,11 +35,11 @@ class ApkArchiveInspector(
             ?: error("APK package info unavailable")
         info.applicationInfo?.sourceDir = file.absolutePath
         info.applicationInfo?.publicSourceDir = file.absolutePath
-        info.toLocalApkArchiveInfo()
+        info.toLocalApkArchiveInfo(file)
     }
 }
 
-private fun PackageInfo.toLocalApkArchiveInfo(): LocalApkArchiveInfo {
+private fun PackageInfo.toLocalApkArchiveInfo(file: File): LocalApkArchiveInfo {
     val appInfo = applicationInfo
     return LocalApkArchiveInfo(
         packageName = packageName.orEmpty(),
@@ -47,8 +49,25 @@ private fun PackageInfo.toLocalApkArchiveInfo(): LocalApkArchiveInfo {
         targetSdk = appInfo?.targetSdkVersion ?: -1,
         signatureSha256 = signatureSha256List(),
         debuggable = appInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0,
-        testOnly = appInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_TEST_ONLY) != 0
+        testOnly = appInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_TEST_ONLY) != 0,
+        nativeAbis = file.nativeAbis()
     )
+}
+
+private fun File.nativeAbis(): List<String> {
+    val abis = linkedSetOf<String>()
+    runCatching {
+        ZipFile(this).use { zip ->
+            val entries = zip.entries()
+            while (entries.hasMoreElements()) {
+                val name = entries.nextElement().name
+                if (!name.startsWith("lib/") || !name.endsWith(".so")) continue
+                val abi = name.removePrefix("lib/").substringBefore('/')
+                if (abi.isNotBlank()) abis += abi
+            }
+        }
+    }
+    return abis.toList()
 }
 
 private fun PackageInfo.signatureSha256List(): List<String> {

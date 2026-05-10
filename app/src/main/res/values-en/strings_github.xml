@@ -458,13 +458,17 @@
     <string name="github_apk_install_inspecting">Reading local APK information</string>
     <string name="github_apk_install_installing">Installing through Shizuku</string>
     <string name="github_apk_install_value_unknown">Unknown</string>
+    <string name="github_apk_install_value_universal">Universal</string>
     <string name="github_apk_install_reference_title">Install reference</string>
     <string name="github_apk_install_reference_package">Package</string>
     <string name="github_apk_install_reference_candidate_version">Candidate version</string>
     <string name="github_apk_install_reference_local_version">Local version</string>
+    <string name="github_apk_install_reference_version_compare">Version</string>
     <string name="github_apk_install_reference_sdk">SDK</string>
     <string name="github_apk_install_reference_size">File size</string>
+    <string name="github_apk_install_reference_abi">ABI</string>
     <string name="github_apk_install_reference_signature">Signature</string>
+    <string name="github_apk_install_reference_compare_value">Local %1$s -&gt; candidate %2$s</string>
     <string name="github_apk_install_reference_version_value">%1$s (%2$d)</string>
     <string name="github_apk_install_reference_sdk_value">min %1$d · target %2$d</string>
     <string name="github_apk_install_reference_signature_value">SHA-256 %1$s…</string>
@@ -474,6 +478,7 @@
     <string name="github_apk_install_error_unsupported_bundle">App install currently supports single APKs and APKs inside ZIP archives. Use external handling for APKS, XAPK, or AAB files.</string>
     <string name="github_apk_install_action_install">Install</string>
     <string name="github_apk_install_action_continue">Continue install</string>
+    <string name="github_apk_install_action_preparing">Preparing</string>
     <string name="github_apk_install_action_external">External handling</string>
     <string name="github_apk_install_action_open_system_confirm">Open system confirmation</string>
     <string name="github_apk_install_action_retry">Retry</string>

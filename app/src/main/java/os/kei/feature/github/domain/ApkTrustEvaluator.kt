@@ -64,8 +64,10 @@ object ApkTrustEvaluator {
         val supported = input.supportedAbis.map { it.lowercase(Locale.ROOT) }
         val manifestAbis =
             input.manifestInfo?.nativeAbis.orEmpty().map { it.lowercase(Locale.ROOT) }
+        val archiveAbis =
+            input.localArchiveInfo?.nativeAbis.orEmpty().map { it.lowercase(Locale.ROOT) }
         val fileAbis = knownAbis.filter { it in lowerName }
-        val candidateAbis = (manifestAbis + fileAbis).distinct()
+        val candidateAbis = (archiveAbis + manifestAbis + fileAbis).distinct()
         if (candidateAbis.isEmpty()) {
             if ("universal" in lowerName || "fat" in lowerName) {
                 reasons += GitHubApkTrustReason.UniversalAsset

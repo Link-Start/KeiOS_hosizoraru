@@ -68,7 +68,8 @@ data class GitHubInstalledPackageInfo(
     val versionCode: Long = -1L,
     val minSdk: Int = -1,
     val targetSdk: Int = -1,
-    val signatureSha256: List<String> = emptyList()
+    val signatureSha256: List<String> = emptyList(),
+    val sourceSizeBytes: Long = 0L
 )
 
 data class GitHubApkManifestNode(

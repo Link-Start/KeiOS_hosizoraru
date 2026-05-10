@@ -445,7 +445,8 @@ internal class GitHubAssetActions(
                 sourceKind = GitHubApkInstallSourceKind.ReleaseAsset,
                 sourceLabel = asset.name,
                 expectedPackageName = apkInfo?.packageName.orEmpty(),
-                externalFileName = asset.name
+                externalFileName = asset.name,
+                remoteManifestInfo = apkInfo
             )
         )
         return true

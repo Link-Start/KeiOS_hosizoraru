@@ -458,6 +458,8 @@
     <string name="github_apk_install_ui_sheet">Sheet 优先</string>
     <string name="github_apk_install_ui_notification">通知栏优先</string>
     <string name="github_apk_install_sheet_title">安装更新</string>
+    <string name="github_apk_install_phase_remote_resolving">获取远端信息</string>
+    <string name="github_apk_install_phase_remote_ready">确认候选 APK</string>
     <string name="github_apk_install_phase_downloading">下载 APK</string>
     <string name="github_apk_install_phase_selecting">选择 APK</string>
     <string name="github_apk_install_phase_inspecting">可信检查</string>
@@ -475,6 +477,8 @@
     <string name="github_apk_install_summary_sdk">SDK：min %1$d · target %2$d</string>
     <string name="github_apk_install_summary_progress">进度：%1$d%%</string>
     <string name="github_apk_install_preparing_download">正在准备下载链接</string>
+    <string name="github_apk_install_remote_ready">已获取候选 APK 信息，请对比后决定是否准备安装</string>
+    <string name="github_apk_install_downloading">正在下载 APK</string>
     <string name="github_apk_install_select_apk">检测到多个 APK，请选择要安装的文件</string>
     <string name="github_apk_install_review_required">可信检查需要你确认后继续</string>
     <string name="github_apk_install_ready_good">APK 已准备好，可信检查通过，确认后开始安装</string>
@@ -519,12 +523,15 @@
     <string name="github_apk_install_action_upgrade">升级</string>
     <string name="github_apk_install_action_downgrade">降级安装</string>
     <string name="github_apk_install_action_more">更多</string>
+    <string name="github_apk_install_action_prepare_install">准备安装</string>
     <string name="github_apk_install_action_continue">继续安装</string>
     <string name="github_apk_install_action_preparing">准备中</string>
     <string name="github_apk_install_action_external">外部处理</string>
     <string name="github_apk_install_action_open_system_confirm">打开系统确认</string>
     <string name="github_apk_install_action_retry">重试</string>
     <string name="github_apk_install_notify_action_open_sheet">打开 Sheet</string>
+    <string name="github_apk_install_notify_title_remote_resolving">正在获取 APK 信息</string>
+    <string name="github_apk_install_notify_title_remote_ready">等待准备安装</string>
     <string name="github_apk_install_notify_title_downloading">正在下载 APK</string>
     <string name="github_apk_install_notify_title_selecting">请选择 APK</string>
     <string name="github_apk_install_notify_title_inspecting">正在检查 APK</string>
@@ -534,6 +541,8 @@
     <string name="github_apk_install_notify_title_success">安装完成</string>
     <string name="github_apk_install_notify_title_failed">安装失败</string>
     <string name="github_apk_install_notify_title_cancelled">安装已取消</string>
+    <string name="github_apk_install_notify_short_resolving">获取</string>
+    <string name="github_apk_install_notify_short_ready">准备</string>
     <string name="github_apk_install_notify_short_downloading">下载</string>
     <string name="github_apk_install_notify_short_selecting">选择</string>
     <string name="github_apk_install_notify_short_inspecting">检查</string>
@@ -544,6 +553,8 @@
     <string name="github_apk_install_notify_short_failed">失败</string>
     <string name="github_apk_install_notify_short_cancelled">取消</string>
     <string name="github_apk_install_notify_short_with_progress">%1$s %2$d%%</string>
+    <string name="github_apk_install_notify_content_remote_resolving">正在获取 %1$s 的安装信息</string>
+    <string name="github_apk_install_notify_content_remote_ready">%1$s 可准备安装，点击查看对比信息</string>
     <string name="github_apk_install_notify_content_downloading">正在下载 %1$s</string>
     <string name="github_apk_install_notify_content_selecting">检测到 %1$d 个 APK，点击选择</string>
     <string name="github_apk_install_notify_content_inspecting">正在检查 %1$s</string>

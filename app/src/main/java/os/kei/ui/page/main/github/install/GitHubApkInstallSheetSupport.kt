@@ -17,9 +17,11 @@ internal data class InstallComparisonVerdictModel(
 
 internal fun GitHubApkInstallPhase.labelRes(): Int {
     return when (this) {
+        GitHubApkInstallPhase.RemoteResolving -> R.string.github_apk_install_phase_remote_resolving
+        GitHubApkInstallPhase.RemoteReady -> R.string.github_apk_install_phase_remote_ready
         GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_phase_downloading
         GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_phase_selecting
-        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_phase_inspecting
+        GitHubApkInstallPhase.InspectingLocal -> R.string.github_apk_install_phase_inspecting
         GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_phase_ready
         GitHubApkInstallPhase.Installing -> R.string.github_apk_install_phase_installing
         GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_phase_pending
@@ -32,9 +34,11 @@ internal fun GitHubApkInstallPhase.labelRes(): Int {
 
 internal fun GitHubApkInstallPhase.stepLabelRes(): Int {
     return when (this) {
+        GitHubApkInstallPhase.RemoteResolving -> R.string.github_apk_install_notify_short_resolving
+        GitHubApkInstallPhase.RemoteReady -> R.string.github_apk_install_notify_short_ready
         GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_notify_short_downloading
         GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_notify_short_selecting
-        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_notify_short_inspecting
+        GitHubApkInstallPhase.InspectingLocal -> R.string.github_apk_install_notify_short_inspecting
         GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_notify_short_review
         GitHubApkInstallPhase.Installing,
         GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_notify_short_installing
@@ -52,6 +56,7 @@ internal fun GitHubApkInstallPhase.statusColor(): Color {
         GitHubApkInstallPhase.Failed,
         GitHubApkInstallPhase.Cancelled -> GitHubStatusPalette.Error
 
+        GitHubApkInstallPhase.RemoteReady,
         GitHubApkInstallPhase.ReadyToInstall,
         GitHubApkInstallPhase.PendingUserAction -> GitHubStatusPalette.Cache
 
@@ -264,6 +269,8 @@ internal fun String.shortSha(): String {
 
 internal fun GitHubApkInstallPhase.passiveActionLabelRes(): Int {
     return when (this) {
+        GitHubApkInstallPhase.RemoteResolving -> R.string.github_apk_install_action_preparing
+        GitHubApkInstallPhase.RemoteReady -> R.string.github_apk_install_action_prepare_install
         GitHubApkInstallPhase.Installing -> R.string.github_apk_install_phase_installing
         GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_phase_selecting
         else -> R.string.github_apk_install_action_preparing

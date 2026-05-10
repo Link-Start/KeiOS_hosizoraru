@@ -19,7 +19,6 @@ import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
 import os.kei.mcp.framework.notification.builder.NotificationPayload
 import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
 import os.kei.mcp.framework.notification.builder.UserSettings
-import os.kei.mcp.notification.McpNotificationDispatchMode
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
@@ -34,16 +33,13 @@ internal object GitHubApkInstallNotificationHelper {
     private const val REQUEST_CONFIRM_INSTALL = 2405
     private const val REQUEST_LAUNCH_PENDING_USER_ACTION = 2406
 
-    @Volatile
-    private var lastDispatchSnapshot: InstallNotificationDispatchSnapshot? = null
-
     fun notify(context: Context, state: GitHubApkInstallFlowState): Boolean {
         if (!state.active) return false
         return notifyState(context.applicationContext, state)
     }
 
     fun cancel(context: Context) {
-        lastDispatchSnapshot = null
+        GitHubApkInstallNotificationBridge.resetDispatchState()
         McpNotificationHelper.cancelNotification(context, NOTIFICATION_ID)
     }
 
@@ -59,15 +55,13 @@ internal object GitHubApkInstallNotificationHelper {
         } else {
             buildLiveUpdateNotification(context, state)
         }
-        McpNotificationHelper.dispatchNotification(
+        GitHubApkInstallNotificationBridge.dispatch(
             context = context,
             notificationId = NOTIFICATION_ID,
             notification = notification,
-            dispatchMode = resolveDispatchMode(
-                state = state,
-                useXiaomiMagic = useMiIsland &&
-                        UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
-            )
+            state = state,
+            useXiaomiMagic = useMiIsland &&
+                    UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
         )
         return true
     }
@@ -150,32 +144,8 @@ internal object GitHubApkInstallNotificationHelper {
         )
     }
 
-    internal fun resolveDispatchMode(
-        state: GitHubApkInstallFlowState,
-        useXiaomiMagic: Boolean
-    ): McpNotificationDispatchMode {
-        val snapshot = InstallNotificationDispatchSnapshot(
-            sessionId = state.sessionId,
-            phase = state.phase,
-            hasDownloadProgress = state.downloadProgressPercentOrNull() != null
-        )
-        val previous = lastDispatchSnapshot
-        lastDispatchSnapshot = snapshot
-        if (!useXiaomiMagic) return McpNotificationDispatchMode.Plain
-        return if (
-            snapshot.phase == GitHubApkInstallPhase.Downloading &&
-            previous?.sessionId == snapshot.sessionId &&
-            previous.phase == snapshot.phase &&
-            previous.hasDownloadProgress == snapshot.hasDownloadProgress
-        ) {
-            McpNotificationDispatchMode.Update
-        } else {
-            McpNotificationDispatchMode.Pulse
-        }
-    }
-
     internal fun resetDispatchStateForTest() {
-        lastDispatchSnapshot = null
+        GitHubApkInstallNotificationBridge.resetDispatchState()
     }
 
     private fun buildOpenPendingIntent(context: Context): PendingIntent {
@@ -277,6 +247,8 @@ internal object GitHubApkInstallNotificationHelper {
             GitHubApkInstallPhase.Success,
             GitHubApkInstallPhase.Cancelled -> context.getString(R.string.common_mark_read)
 
+            GitHubApkInstallPhase.RemoteResolving,
+            GitHubApkInstallPhase.RemoteReady,
             GitHubApkInstallPhase.ReadyToInstall -> context.getString(R.string.common_cancel)
             else -> context.getString(R.string.common_stop)
         }
@@ -287,6 +259,16 @@ internal object GitHubApkInstallNotificationHelper {
             .ifBlank { state.asset?.name.orEmpty() }
             .ifBlank { state.request.displayLabel }
         return when (state.phase) {
+            GitHubApkInstallPhase.RemoteResolving -> context.getString(
+                R.string.github_apk_install_notify_content_remote_resolving,
+                name
+            )
+
+            GitHubApkInstallPhase.RemoteReady -> context.getString(
+                R.string.github_apk_install_notify_content_remote_ready,
+                name
+            )
+
             GitHubApkInstallPhase.Downloading -> context.getString(
                 R.string.github_apk_install_notify_content_downloading,
                 name
@@ -297,7 +279,7 @@ internal object GitHubApkInstallNotificationHelper {
                 state.candidates.size
             )
 
-            GitHubApkInstallPhase.Inspecting -> context.getString(
+            GitHubApkInstallPhase.InspectingLocal -> context.getString(
                 R.string.github_apk_install_notify_content_inspecting,
                 name
             )
@@ -339,17 +321,13 @@ internal object GitHubApkInstallNotificationHelper {
     }
 }
 
-private data class InstallNotificationDispatchSnapshot(
-    val sessionId: Long,
-    val phase: GitHubApkInstallPhase,
-    val hasDownloadProgress: Boolean
-)
-
 private val GitHubApkInstallPhase.running: Boolean
     get() = this in setOf(
+        GitHubApkInstallPhase.RemoteResolving,
+        GitHubApkInstallPhase.RemoteReady,
         GitHubApkInstallPhase.Downloading,
         GitHubApkInstallPhase.SelectingApk,
-        GitHubApkInstallPhase.Inspecting,
+        GitHubApkInstallPhase.InspectingLocal,
         GitHubApkInstallPhase.ReadyToInstall,
         GitHubApkInstallPhase.Installing,
         GitHubApkInstallPhase.PendingUserAction
@@ -357,9 +335,11 @@ private val GitHubApkInstallPhase.running: Boolean
 
 private val GitHubApkInstallPhase.titleRes: Int
     get() = when (this) {
+        GitHubApkInstallPhase.RemoteResolving -> R.string.github_apk_install_notify_title_remote_resolving
+        GitHubApkInstallPhase.RemoteReady -> R.string.github_apk_install_notify_title_remote_ready
         GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_notify_title_downloading
         GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_notify_title_selecting
-        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_notify_title_inspecting
+        GitHubApkInstallPhase.InspectingLocal -> R.string.github_apk_install_notify_title_inspecting
         GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_notify_title_review
         GitHubApkInstallPhase.Installing -> R.string.github_apk_install_notify_title_installing
         GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_notify_title_pending_user_action
@@ -371,9 +351,11 @@ private val GitHubApkInstallPhase.titleRes: Int
 
 private val GitHubApkInstallPhase.shortTextRes: Int
     get() = when (this) {
+        GitHubApkInstallPhase.RemoteResolving -> R.string.github_apk_install_notify_short_resolving
+        GitHubApkInstallPhase.RemoteReady -> R.string.github_apk_install_notify_short_ready
         GitHubApkInstallPhase.Downloading -> R.string.github_apk_install_notify_short_downloading
         GitHubApkInstallPhase.SelectingApk -> R.string.github_apk_install_notify_short_selecting
-        GitHubApkInstallPhase.Inspecting -> R.string.github_apk_install_notify_short_inspecting
+        GitHubApkInstallPhase.InspectingLocal -> R.string.github_apk_install_notify_short_inspecting
         GitHubApkInstallPhase.ReadyToInstall -> R.string.github_apk_install_notify_short_review
         GitHubApkInstallPhase.Installing -> R.string.github_apk_install_notify_short_installing
         GitHubApkInstallPhase.PendingUserAction -> R.string.github_apk_install_notify_short_pending
@@ -405,14 +387,16 @@ private fun installOnlineText(
 
 private val GitHubApkInstallPhase.stageOrdinal: Int
     get() = when (this) {
-        GitHubApkInstallPhase.Downloading -> 1
-        GitHubApkInstallPhase.SelectingApk -> 2
-        GitHubApkInstallPhase.Inspecting -> 3
-        GitHubApkInstallPhase.ReadyToInstall -> 4
+        GitHubApkInstallPhase.RemoteResolving -> 1
+        GitHubApkInstallPhase.RemoteReady -> 2
+        GitHubApkInstallPhase.Downloading -> 3
+        GitHubApkInstallPhase.SelectingApk -> 4
+        GitHubApkInstallPhase.InspectingLocal -> 5
+        GitHubApkInstallPhase.ReadyToInstall -> 6
         GitHubApkInstallPhase.Installing,
-        GitHubApkInstallPhase.PendingUserAction -> 5
+        GitHubApkInstallPhase.PendingUserAction -> 7
 
-        GitHubApkInstallPhase.Success -> 6
+        GitHubApkInstallPhase.Success -> 8
         GitHubApkInstallPhase.Failed,
         GitHubApkInstallPhase.Cancelled,
         GitHubApkInstallPhase.Idle -> 0

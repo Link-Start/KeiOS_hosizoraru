@@ -168,7 +168,10 @@ private fun InstallHeader(state: GitHubApkInstallFlowState) {
                 label = stringResource(state.phase.labelRes()),
                 color = state.phase.statusColor()
             )
-            if (state.phase == GitHubApkInstallPhase.ReadyToInstall) {
+            if (
+                state.phase == GitHubApkInstallPhase.RemoteReady ||
+                state.phase == GitHubApkInstallPhase.ReadyToInstall
+            ) {
                 state.versionVerdict()?.let { verdict ->
                     StatusPill(
                         label = verdict.label,
@@ -287,9 +290,9 @@ private fun failedAtLine(
 }
 
 private val installStepPhases = listOf(
+    GitHubApkInstallPhase.RemoteReady,
     GitHubApkInstallPhase.Downloading,
-    GitHubApkInstallPhase.SelectingApk,
-    GitHubApkInstallPhase.Inspecting,
+    GitHubApkInstallPhase.InspectingLocal,
     GitHubApkInstallPhase.ReadyToInstall,
     GitHubApkInstallPhase.Installing,
     GitHubApkInstallPhase.Success
@@ -297,9 +300,12 @@ private val installStepPhases = listOf(
 
 private fun GitHubApkInstallFlowState.installStepIndex(): Int {
     return when (phase) {
-        GitHubApkInstallPhase.Downloading -> 0
-        GitHubApkInstallPhase.SelectingApk -> 1
-        GitHubApkInstallPhase.Inspecting -> 2
+        GitHubApkInstallPhase.RemoteResolving,
+        GitHubApkInstallPhase.RemoteReady -> 0
+
+        GitHubApkInstallPhase.Downloading -> 1
+        GitHubApkInstallPhase.SelectingApk,
+        GitHubApkInstallPhase.InspectingLocal -> 2
         GitHubApkInstallPhase.ReadyToInstall -> 3
         GitHubApkInstallPhase.Installing,
         GitHubApkInstallPhase.PendingUserAction -> 4
@@ -488,7 +494,10 @@ private fun InstallComparisonRow(row: InstallComparisonRowModel) {
 private fun InstallBottomResult(state: GitHubApkInstallFlowState) {
     if (state.phase !in bottomResultPhases) return
     state.trustSignal
-        .takeIf { state.phase == GitHubApkInstallPhase.ReadyToInstall }
+        .takeIf {
+            state.phase == GitHubApkInstallPhase.RemoteReady ||
+                    state.phase == GitHubApkInstallPhase.ReadyToInstall
+        }
         ?.let { signal ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -621,6 +630,11 @@ private fun InstallActionSection(
     SheetSectionCard(verticalSpacing = 8.dp) {
         InstallBottomResult(state)
         when (state.phase) {
+            GitHubApkInstallPhase.RemoteReady -> InstallPrepareButtons(
+                context = context,
+                backdrop = backdrop
+            )
+
             GitHubApkInstallPhase.ReadyToInstall -> InstallConfirmButtons(state, context, backdrop)
             GitHubApkInstallPhase.PendingUserAction -> Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -655,7 +669,8 @@ private fun InstallActionSection(
                 )
             }
 
-            GitHubApkInstallPhase.Success -> InstallSheetActionButton(
+            GitHubApkInstallPhase.Success,
+            GitHubApkInstallPhase.Cancelled -> InstallSheetActionButton(
                 backdrop = backdrop,
                 text = stringResource(R.string.common_mark_read),
                 onClick = { GitHubApkInstallFlowCoordinator.markRead(context) },
@@ -668,7 +683,13 @@ private fun InstallActionSection(
             ) {
                 InstallSheetActionButton(
                     backdrop = backdrop,
-                    text = stringResource(R.string.common_stop),
+                    text = stringResource(
+                        if (state.phase == GitHubApkInstallPhase.RemoteResolving) {
+                            R.string.common_cancel
+                        } else {
+                            R.string.common_stop
+                        }
+                    ),
                     onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
                     modifier = Modifier.weight(1f),
                 )
@@ -681,6 +702,30 @@ private fun InstallActionSection(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun InstallPrepareButtons(
+    context: android.content.Context,
+    backdrop: LayerBackdrop
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        InstallSheetActionButton(
+            backdrop = backdrop,
+            text = stringResource(R.string.github_apk_install_action_more),
+            onClick = { GitHubApkInstallFlowCoordinator.openExternalCurrent(context) },
+            modifier = Modifier.weight(1f),
+        )
+        InstallSheetActionButton(
+            backdrop = backdrop,
+            text = stringResource(R.string.github_apk_install_action_prepare_install),
+            onClick = GitHubApkInstallFlowCoordinator::prepareInstall,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -735,8 +780,10 @@ private fun InstallSheetActionButton(
 }
 
 private val bottomResultPhases = setOf(
+    GitHubApkInstallPhase.RemoteReady,
     GitHubApkInstallPhase.ReadyToInstall,
     GitHubApkInstallPhase.PendingUserAction,
     GitHubApkInstallPhase.Success,
-    GitHubApkInstallPhase.Failed
+    GitHubApkInstallPhase.Failed,
+    GitHubApkInstallPhase.Cancelled
 )

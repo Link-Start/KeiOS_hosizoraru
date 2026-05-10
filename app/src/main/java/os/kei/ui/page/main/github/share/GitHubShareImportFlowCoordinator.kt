@@ -263,7 +263,7 @@ internal object GitHubShareImportFlowCoordinator {
         }
         if (lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
             GitHubShareImportNotificationHelper.cancel(context)
-            val preparingSessionId = GitHubApkInstallFlowCoordinator.beginPreparingInstall(
+            val installSessionId = GitHubApkInstallFlowCoordinator.beginInstallAsset(
                 context = context,
                 lookupConfig = lookupConfig,
                 asset = selectedAsset,
@@ -282,11 +282,15 @@ internal object GitHubShareImportFlowCoordinator {
                 )
             )
             val scannedPackageName = scannedPackageNameDeferred.await()
-            if (!GitHubApkInstallFlowCoordinator.isActiveSession(preparingSessionId)) {
+            if (!GitHubApkInstallFlowCoordinator.isActiveSession(installSessionId)) {
                 return@coroutineScope ShareImportDeliveryCoordinatorResult.Failed(
                     R.string.github_apk_install_cancelled
                 )
             }
+            GitHubApkInstallFlowCoordinator.updateExpectedPackageName(
+                sessionId = installSessionId,
+                packageName = scannedPackageName
+            )
             val pending = buildPendingShareImportTrackRecord(
                 preview = preview,
                 selectedAsset = selectedAsset,
@@ -297,27 +301,7 @@ internal object GitHubShareImportFlowCoordinator {
                 GitHubShareImportFlowStore.clearActiveFlow()
             }
             GitHubTrackStoreSignals.notifyChanged()
-            GitHubShareImportPendingScheduler.scheduleNext(context)
-            GitHubApkInstallFlowCoordinator.beginInstallAsset(
-                context = context,
-                lookupConfig = lookupConfig,
-                asset = selectedAsset,
-                request = GitHubApkInstallRequestContext(
-                    sourceKind = GitHubApkInstallSourceKind.ShareImport,
-                    owner = preview.owner,
-                    repo = preview.repo,
-                    releaseTag = preview.releaseTag,
-                    sourceLabel = preview.targetDisplayName.ifBlank {
-                        buildShareImportTargetDisplayName(
-                            repo = preview.repo,
-                            assetName = selectedAsset.name,
-                            packageName = scannedPackageName
-                        )
-                    },
-                    expectedPackageName = scannedPackageName,
-                    externalFileName = selectedAsset.name
-                )
-            )
+            GitHubShareImportPendingScheduler.cancel(context)
             return@coroutineScope ShareImportDeliveryCoordinatorResult.WaitingInstall(
                 pending = pending,
                 toastResId = R.string.github_toast_share_import_wait_install,

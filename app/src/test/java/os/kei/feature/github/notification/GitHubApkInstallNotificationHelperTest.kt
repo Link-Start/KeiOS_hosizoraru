@@ -74,12 +74,46 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
+    fun `remote ready notification opens sheet and keeps install preparation cancellable`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.RemoteReady,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertEquals(2, notification.actions.size)
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            notification.actions[0].title.toString()
+        )
+        assertEquals(
+            MainActivity::class.java.name,
+            shadowOf(notification.actions[0].actionIntent).savedIntent.component?.className
+        )
+        assertEquals(
+            context.getString(R.string.common_cancel),
+            notification.actions[1].title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+        assertFalse(notification.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
+        assertEquals(0, notification.extras.getInt(Notification.EXTRA_PROGRESS_MAX))
+        assertEquals(0, notification.extras.getInt(Notification.EXTRA_PROGRESS))
+    }
+
+    @Test
     fun `ready notification replaces inspecting text with confirmation state`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val inspecting = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
             context = context,
             state = GitHubApkInstallFlowState(
-                phase = GitHubApkInstallPhase.Inspecting,
+                phase = GitHubApkInstallPhase.InspectingLocal,
                 progressKind = GitHubApkInstallProgressKind.Inspect,
                 selectedCandidateName = "demo.apk"
             )
@@ -200,23 +234,49 @@ class GitHubApkInstallNotificationHelperTest {
 
         assertEquals(
             McpNotificationDispatchMode.Pulse,
-            GitHubApkInstallNotificationHelper.resolveDispatchMode(
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
                 state = first,
                 useXiaomiMagic = true
             )
         )
         assertEquals(
             McpNotificationDispatchMode.Update,
-            GitHubApkInstallNotificationHelper.resolveDispatchMode(
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
                 state = second,
                 useXiaomiMagic = true
             )
         )
         assertEquals(
             McpNotificationDispatchMode.Plain,
-            GitHubApkInstallNotificationHelper.resolveDispatchMode(
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
                 state = second.copy(sessionId = 10L),
                 useXiaomiMagic = false
+            )
+        )
+    }
+
+    @Test
+    fun `same phase status refresh uses smooth dispatch`() {
+        GitHubApkInstallNotificationHelper.resetDispatchStateForTest()
+        val first = GitHubApkInstallFlowState(
+            sessionId = 11L,
+            phase = GitHubApkInstallPhase.RemoteReady,
+            selectedCandidateName = "demo.apk"
+        )
+        val second = first.copy(message = "manifest ready")
+
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = first,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Update,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = second,
+                useXiaomiMagic = true
             )
         )
     }

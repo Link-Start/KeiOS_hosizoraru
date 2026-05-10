@@ -18,9 +18,11 @@ internal enum class GitHubApkInstallSourceKind {
 
 internal enum class GitHubApkInstallPhase {
     Idle,
+    RemoteResolving,
+    RemoteReady,
     Downloading,
     SelectingApk,
-    Inspecting,
+    InspectingLocal,
     ReadyToInstall,
     Installing,
     PendingUserAction,
@@ -97,7 +99,8 @@ internal data class GitHubApkInstallFlowState(
         get() = phase != GitHubApkInstallPhase.Idle
 
     val needsUserDecision: Boolean
-        get() = phase == GitHubApkInstallPhase.SelectingApk ||
+        get() = phase == GitHubApkInstallPhase.RemoteReady ||
+                phase == GitHubApkInstallPhase.SelectingApk ||
                 phase == GitHubApkInstallPhase.ReadyToInstall ||
                 phase == GitHubApkInstallPhase.PendingUserAction ||
                 phase == GitHubApkInstallPhase.Failed ||
@@ -105,9 +108,11 @@ internal data class GitHubApkInstallFlowState(
                 phase == GitHubApkInstallPhase.Cancelled
 
     val cancellable: Boolean
-        get() = phase == GitHubApkInstallPhase.Downloading ||
+        get() = phase == GitHubApkInstallPhase.RemoteResolving ||
+                phase == GitHubApkInstallPhase.RemoteReady ||
+                phase == GitHubApkInstallPhase.Downloading ||
                 phase == GitHubApkInstallPhase.SelectingApk ||
-                phase == GitHubApkInstallPhase.Inspecting ||
+                phase == GitHubApkInstallPhase.InspectingLocal ||
                 phase == GitHubApkInstallPhase.ReadyToInstall ||
                 phase == GitHubApkInstallPhase.Installing ||
                 phase == GitHubApkInstallPhase.PendingUserAction

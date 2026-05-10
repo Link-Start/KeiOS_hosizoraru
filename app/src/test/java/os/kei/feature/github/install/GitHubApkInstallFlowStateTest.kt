@@ -19,6 +19,18 @@ class GitHubApkInstallFlowStateTest {
     }
 
     @Test
+    fun `remote ready waits for preparation decision and stays cancellable`() {
+        val state = GitHubApkInstallFlowState(
+            phase = GitHubApkInstallPhase.RemoteReady
+        )
+
+        assertTrue(state.active)
+        assertTrue(state.needsUserDecision)
+        assertTrue(state.cancellable)
+        assertFalse(state.showsDeterminateDownloadProgress)
+    }
+
+    @Test
     fun `installing continues without user decision`() {
         val state = GitHubApkInstallFlowState(
             phase = GitHubApkInstallPhase.Installing

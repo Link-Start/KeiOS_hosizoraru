@@ -361,17 +361,79 @@ class MiIslandNotificationBuilderTest {
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertFalse(focusParam.contains("\"progress\":"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertTrue(focusParam.contains("demo.app"))
         assertEquals(Notification.CATEGORY_STATUS, notification.category)
     }
 
     @Test
-    fun `github apk install ready island uses confirmation status text`() {
+    fun `github apk install checking island uses stable status template and stop action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(
             context = context,
-            requestCode = 841,
-            action = "os.kei.test.OPEN_GITHUB_APK_INSTALL_READY"
+            requestCode = 843,
+            action = "os.kei.test.OPEN_GITHUB_APK_INSTALL_CHECKING"
+        )
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            844,
+            Intent("os.kei.test.CANCEL_GITHUB_APK_INSTALL_CHECKING").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = true,
+                port = 5,
+                path = "正在检查 demo.apk",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = cancelPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                primaryActionLabel = "打开 Sheet",
+                secondaryActionLabel = "停止",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "正在检查 APK",
+                overrideContent = "正在检查 demo.apk",
+                overrideOnlineText = "检查",
+                overrideShortText = "检查",
+                overrideProgressPercent = null
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(notificationOpenPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
+        assertEquals("打开 Sheet", focusOpenAction.title.toString())
+        assertEquals("停止", focusStopAction.title.toString())
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"检查\""))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+    }
+
+    @Test
+    fun `github apk install ready island uses install and cancel actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val installPendingIntent = PendingIntent.getBroadcast(
+            context,
+            841,
+            Intent("os.kei.test.INSTALL_GITHUB_APK_INSTALL_READY").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val cancelPendingIntent = PendingIntent.getBroadcast(
             context,
@@ -388,17 +450,18 @@ class MiIslandNotificationBuilderTest {
                 clients = 1,
                 ongoing = true,
                 onlyAlertOnce = true,
-                openPendingIntent = notificationOpenPendingIntent,
+                openPendingIntent = installPendingIntent,
                 stopPendingIntent = cancelPendingIntent,
-                focusOpenPendingIntent = notificationOpenPendingIntent,
-                primaryActionLabel = "打开 Sheet",
-                secondaryActionLabel = "停止",
+                focusOpenPendingIntent = installPendingIntent,
+                primaryActionLabel = "安装",
+                secondaryActionLabel = "取消",
                 showSecondaryActionWhenStopped = true,
                 overrideTitle = "等待确认安装",
                 overrideContent = "demo.apk 需要确认后安装",
                 overrideOnlineText = "确认",
                 overrideShortText = "确认",
-                overrideProgressPercent = null
+                overrideProgressPercent = null,
+                focusAllowFloat = true
             ),
             settings = UserSettings(miIslandOuterGlow = true),
             environment = EnvironmentContext(
@@ -408,11 +471,80 @@ class MiIslandNotificationBuilderTest {
         )
 
         val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
+        assertEquals(installPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
+        assertEquals("安装", focusOpenAction.title.toString())
+        assertEquals("取消", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"确认\""))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertTrue(focusParam.contains("demo.apk 需要确认后安装"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+    }
+
+    @Test
+    fun `github apk install pending user action island opens system confirmation`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val confirmPendingIntent = PendingIntent.getBroadcast(
+            context,
+            845,
+            Intent("os.kei.test.CONFIRM_GITHUB_APK_INSTALL_PENDING").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            846,
+            Intent("os.kei.test.CANCEL_GITHUB_APK_INSTALL_PENDING").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = true,
+                port = 7,
+                path = "等待系统确认",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = confirmPendingIntent,
+                stopPendingIntent = cancelPendingIntent,
+                focusOpenPendingIntent = confirmPendingIntent,
+                primaryActionLabel = "打开系统确认",
+                secondaryActionLabel = "停止",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "等待系统确认",
+                overrideContent = "等待系统确认",
+                overrideOnlineText = "确认",
+                overrideShortText = "确认",
+                overrideProgressPercent = null,
+                focusAllowFloat = true
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(confirmPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
+        assertEquals("打开系统确认", focusOpenAction.title.toString())
+        assertEquals("停止", focusStopAction.title.toString())
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"确认\""))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertFalse(focusParam.contains("\"progress\":"))

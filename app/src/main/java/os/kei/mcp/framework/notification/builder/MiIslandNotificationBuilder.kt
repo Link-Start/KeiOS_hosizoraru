@@ -479,7 +479,7 @@ class MiIslandNotificationBuilder(
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100)
             val useProgressTemplate = progressPercent != null
             return IslandPresentation(
-                allowFloat = !useProgressTemplate,
+                allowFloat = state.focusAllowFloat ?: false,
                 showTextButtons = true,
                 bigTemplateKind = if (useProgressTemplate) {
                     IslandBigTemplateKind.PROGRESS_TEXT
@@ -513,7 +513,7 @@ class MiIslandNotificationBuilder(
         }
         if (isGitHubApkInstall) {
             return IslandPresentation(
-                allowFloat = true,
+                allowFloat = state.focusAllowFloat ?: true,
                 showTextButtons = true,
                 compactTitle = resolveCompactTitle(
                     raw = state.onlineText(context),

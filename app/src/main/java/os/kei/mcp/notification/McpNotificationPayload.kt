@@ -25,6 +25,7 @@ data class McpNotificationPayload(
     val overrideOnlineText: String? = null,
     val overrideShortText: String? = null,
     val overrideProgressPercent: Int? = null,
+    val focusAllowFloat: Boolean? = null,
     val deadlineAtMs: Long? = null
 ) {
     companion object {

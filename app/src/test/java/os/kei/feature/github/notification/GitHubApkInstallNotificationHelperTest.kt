@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
+import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
@@ -18,6 +19,7 @@ import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
 import os.kei.ui.page.main.github.install.GitHubApkInstallProgressKind
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -74,7 +76,7 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
-    fun `remote ready notification opens sheet and keeps install preparation cancellable`() {
+    fun `remote ready notification prepares download and keeps content click on sheet`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
             context = context,
@@ -87,12 +89,16 @@ class GitHubApkInstallNotificationHelperTest {
         assertEquals(Notification.CATEGORY_STATUS, notification.category)
         assertEquals(2, notification.actions.size)
         assertEquals(
-            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            context.getString(R.string.github_apk_install_action_prepare_install),
             notification.actions[0].title.toString()
         )
         assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_PREPARE_INSTALL,
+            shadowOf(notification.actions[0].actionIntent).savedIntent.action
+        )
+        assertEquals(
             MainActivity::class.java.name,
-            shadowOf(notification.actions[0].actionIntent).savedIntent.component?.className
+            shadowOf(notification.contentIntent).savedIntent.component?.className
         )
         assertEquals(
             context.getString(R.string.common_cancel),
@@ -170,6 +176,70 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
+    fun `remote ready mi island offers download action and status template`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.RemoteReady,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(
+            context.getString(R.string.github_apk_install_action_prepare_install),
+            focusOpenAction.title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_PREPARE_INSTALL,
+            shadowOf(focusOpenAction.actionIntent).savedIntent.action
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(focusStopAction.actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `remote resolving mi island floats checking state without progress template`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.RemoteResolving,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            focusOpenAction.title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(focusStopAction.actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
     fun `failed notification uses retry action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
@@ -218,6 +288,72 @@ class GitHubApkInstallNotificationHelperTest {
         assertEquals(
             GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
             shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `checking mi island stays status template and keeps stop action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.InspectingLocal,
+                progressKind = GitHubApkInstallProgressKind.Inspect,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            focusOpenAction.title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(focusStopAction.actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `ready mi island floats install confirmation action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.ReadyToInstall,
+                progressKind = GitHubApkInstallProgressKind.Waiting,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(
+            context.getString(R.string.github_apk_install_action_install),
+            focusOpenAction.title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CONFIRM_INSTALL,
+            shadowOf(focusOpenAction.actionIntent).savedIntent.action
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(focusStopAction.actionIntent).savedIntent.action
         )
     }
 
@@ -316,6 +452,47 @@ class GitHubApkInstallNotificationHelperTest {
         )
     }
 
+    @Test
+    fun `checking and ready phase changes use pulse dispatch`() {
+        GitHubApkInstallNotificationHelper.resetDispatchStateForTest()
+        val downloading = GitHubApkInstallFlowState(
+            sessionId = 13L,
+            phase = GitHubApkInstallPhase.Downloading,
+            progressKind = GitHubApkInstallProgressKind.Download,
+            stageProgress = 0.98f
+        )
+        val checking = downloading.copy(
+            phase = GitHubApkInstallPhase.InspectingLocal,
+            progressKind = GitHubApkInstallProgressKind.Inspect
+        )
+        val ready = checking.copy(
+            phase = GitHubApkInstallPhase.ReadyToInstall,
+            progressKind = GitHubApkInstallProgressKind.Waiting
+        )
+
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = downloading,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = checking,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationBridge.resolveDispatchMode(
+                state = ready,
+                useXiaomiMagic = true
+            )
+        )
+    }
+
     private fun invokeOpenPendingIntent(context: Context): PendingIntent {
         val method = GitHubApkInstallNotificationHelper::class.java.getDeclaredMethod(
             "buildOpenPendingIntent",
@@ -324,6 +501,18 @@ class GitHubApkInstallNotificationHelperTest {
             isAccessible = true
         }
         return method.invoke(GitHubApkInstallNotificationHelper, context) as PendingIntent
+    }
+
+    private fun Notification.focusAction(key: String): Notification.Action {
+        val actions = extras.getBundle("miui.focus.actions")
+        assertNotNull(actions, "Focus actions bundle should be present")
+        return actions.getActionCompat(key)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun Bundle.getActionCompat(key: String): Notification.Action {
+        return getParcelable<Notification.Action>(key)
+            ?: error("Missing focus action: $key")
     }
 }
 

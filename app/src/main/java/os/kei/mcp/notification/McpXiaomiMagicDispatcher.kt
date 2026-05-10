@@ -76,90 +76,129 @@ internal object McpXiaomiMagicDispatcher {
         }
         val shouldLaunchPulse = synchronized(pulseState) {
             if (pulseState.pulseActive) {
+                pulseState.pendingPulse = true
                 false
             } else {
                 pulseState.pulseActive = true
+                pulseState.pendingPulse = false
                 true
             }
         }
         if (!shouldLaunchPulse) {
             AppLogger.i(
                 TAG,
-                "merge Xiaomi magic pulse into active snapshot: notifId=$notificationId"
+                "queue Xiaomi magic pulse after active snapshot: notifId=$notificationId"
             )
             return
         }
-        val pulseGeneration = pulseState.generation.get()
+        launchPulse(
+            notificationManager = notificationManager,
+            notificationId = notificationId,
+            notification = notification,
+            pulseState = pulseState,
+            nonNullUid = nonNullUid
+        )
+    }
 
+    private fun launchPulse(
+        notificationManager: NotificationManagerCompat,
+        notificationId: Int,
+        notification: Notification,
+        pulseState: NotificationPulseState,
+        nonNullUid: Int
+    ) {
         scope.launch {
             try {
-                networkMutex.withLock {
-                    if (pulseState.generation.get() != pulseGeneration) {
-                        AppLogger.i(
-                            TAG,
-                            "skip cancelled Xiaomi magic pulse: notifId=$notificationId"
-                        )
-                        return@withLock
-                    }
-                    var notificationDispatched = false
-                    var networkTouched = false
-                    try {
-                        healXmsfNetworkingLocked(nonNullUid)
-                        AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
-                        blockXmsfNetworkingLocked(nonNullUid)
-                        networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
+                var continuePulse = true
+                while (continuePulse) {
+                    val pulseGeneration = pulseState.generation.get()
+                    networkMutex.withLock {
                         if (pulseState.generation.get() != pulseGeneration) {
                             AppLogger.i(
                                 TAG,
-                                "skip superseded Xiaomi magic pulse: notifId=$notificationId"
+                                "skip cancelled Xiaomi magic pulse: notifId=$notificationId"
                             )
                             return@withLock
                         }
-                        var latestNotification = synchronized(pulseState) {
-                            pulseState.latest
-                        } ?: notification
-                        notificationManager.notify(notificationId, latestNotification)
-                        notificationDispatched = true
-                        delay(resolveBlockIntervalMs().milliseconds)
-                        latestNotification = synchronized(pulseState) {
-                            pulseState.latest
-                        } ?: latestNotification
-                        notificationManager.notify(notificationId, latestNotification)
-                    } catch (throwable: Throwable) {
-                        if (throwable is CancellationException) throw throwable
-                        AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
-                        if (!notificationDispatched) {
-                            runCatching {
-                                val latestNotification = synchronized(pulseState) {
-                                    pulseState.latest
-                                } ?: notification
-                                notificationManager.notify(notificationId, latestNotification)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Fallback notification dispatch failed", it)
+                        var notificationDispatched = false
+                        var networkTouched = false
+                        try {
+                            healXmsfNetworkingLocked(nonNullUid)
+                            AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
+                            blockXmsfNetworkingLocked(nonNullUid)
+                            networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
+                            if (pulseState.generation.get() != pulseGeneration) {
+                                AppLogger.i(
+                                    TAG,
+                                    "skip superseded Xiaomi magic pulse: notifId=$notificationId"
+                                )
+                                return@withLock
                             }
-                        }
-                    } finally {
-                        if (networkTouched || isXmsfNetworkBlocked || isUidFirewallChainEnabled) {
-                            AppLogger.i(TAG, "restoring xmsf network for uid=$nonNullUid")
-                            runCatching {
-                                restoreXmsfNetworkingLocked(nonNullUid)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
+                            var latestNotification = synchronized(pulseState) {
+                                pulseState.latest
+                            } ?: notification
+                            notificationManager.notify(notificationId, latestNotification)
+                            notificationDispatched = true
+                            delay(resolveBlockIntervalMs().milliseconds)
+                            latestNotification = synchronized(pulseState) {
+                                pulseState.latest
+                            } ?: latestNotification
+                            notificationManager.notify(notificationId, latestNotification)
+                        } catch (throwable: Throwable) {
+                            if (throwable is CancellationException) throw throwable
+                            AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
+                            if (!notificationDispatched) {
+                                runCatching {
+                                    val latestNotification = synchronized(pulseState) {
+                                        pulseState.latest
+                                    } ?: notification
+                                    notificationManager.notify(notificationId, latestNotification)
+                                }.onFailure {
+                                    AppLogger.e(TAG, "Fallback notification dispatch failed", it)
+                                }
                             }
-                            runCatching {
-                                healXmsfNetworkingLocked(nonNullUid)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
+                        } finally {
+                            if (networkTouched || isXmsfNetworkBlocked || isUidFirewallChainEnabled) {
+                                AppLogger.i(TAG, "restoring xmsf network for uid=$nonNullUid")
+                                runCatching {
+                                    restoreXmsfNetworkingLocked(nonNullUid)
+                                }.onFailure {
+                                    AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
+                                }
+                                runCatching {
+                                    healXmsfNetworkingLocked(nonNullUid)
+                                }.onFailure {
+                                    AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
+                                }
                             }
                         }
                     }
+                    continuePulse = synchronized(pulseState) {
+                        if (pulseState.generation.get() != pulseGeneration) {
+                            pulseState.pendingPulse = false
+                            pulseState.pulseActive = false
+                            false
+                        } else if (pulseState.pendingPulse) {
+                            pulseState.pendingPulse = false
+                            true
+                        } else {
+                            pulseState.pulseActive = false
+                            false
+                        }
+                    }
+                    if (continuePulse) {
+                        AppLogger.i(
+                            TAG,
+                            "run queued Xiaomi magic pulse with latest snapshot: notifId=$notificationId"
+                        )
+                    }
                 }
-            } finally {
+            } catch (throwable: CancellationException) {
                 synchronized(pulseState) {
-                    if (pulseState.generation.get() == pulseGeneration) {
-                        pulseState.pulseActive = false
-                    }
+                    pulseState.pendingPulse = false
+                    pulseState.pulseActive = false
                 }
+                throw throwable
             }
         }
     }
@@ -193,6 +232,7 @@ internal object McpXiaomiMagicDispatcher {
             synchronized(pulseState) {
                 pulseState.latest = null
                 pulseState.pulseActive = false
+                pulseState.pendingPulse = false
                 pulseState.generation.incrementAndGet()
             }
         }
@@ -359,5 +399,6 @@ internal object McpXiaomiMagicDispatcher {
         val generation = AtomicLong(0L)
         var latest: Notification? = null
         var pulseActive: Boolean = false
+        var pendingPulse: Boolean = false
     }
 }

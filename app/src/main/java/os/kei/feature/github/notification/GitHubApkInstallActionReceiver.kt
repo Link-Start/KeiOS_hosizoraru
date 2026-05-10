@@ -35,6 +35,7 @@ class GitHubApkInstallActionReceiver : BroadcastReceiver() {
                 tag = TAG
             ) {
                 when (action) {
+                    ACTION_PREPARE_INSTALL -> GitHubApkInstallFlowCoordinator.prepareInstall()
                     ACTION_CANCEL_INSTALL -> GitHubApkInstallFlowCoordinator.cancel(context)
                     ACTION_CONFIRM_INSTALL -> GitHubApkInstallFlowCoordinator.confirmInstall()
                     ACTION_LAUNCH_PENDING_USER_ACTION ->
@@ -49,6 +50,7 @@ class GitHubApkInstallActionReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_OPEN_INSTALL_SHEET = "os.kei.github.apk_install.action.OPEN_SHEET"
+        const val ACTION_PREPARE_INSTALL = "os.kei.github.apk_install.action.PREPARE"
         const val ACTION_CANCEL_INSTALL = "os.kei.github.apk_install.action.CANCEL"
         const val ACTION_CONFIRM_INSTALL = "os.kei.github.apk_install.action.CONFIRM"
         const val ACTION_LAUNCH_PENDING_USER_ACTION =
@@ -60,6 +62,7 @@ class GitHubApkInstallActionReceiver : BroadcastReceiver() {
 
         private val supportedActions = setOf(
             ACTION_OPEN_INSTALL_SHEET,
+            ACTION_PREPARE_INSTALL,
             ACTION_CANCEL_INSTALL,
             ACTION_CONFIRM_INSTALL,
             ACTION_LAUNCH_PENDING_USER_ACTION,

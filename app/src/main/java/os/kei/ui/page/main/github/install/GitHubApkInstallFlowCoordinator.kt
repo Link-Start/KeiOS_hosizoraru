@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -107,7 +108,7 @@ internal object GitHubApkInstallFlowCoordinator {
         updateState(
             GitHubApkInstallFlowState(
                 sessionId = sessionId,
-                phase = GitHubApkInstallPhase.RemoteReady,
+                phase = GitHubApkInstallPhase.RemoteResolving,
                 request = preparedRequest,
                 asset = asset,
                 selectedCandidateName = asset.name,
@@ -124,22 +125,15 @@ internal object GitHubApkInstallFlowCoordinator {
                 stageProgress = 0f,
                 progress = 0f,
                 overallProgress = installOverallProgress(
-                    phase = GitHubApkInstallPhase.RemoteReady,
+                    phase = GitHubApkInstallPhase.RemoteResolving,
                     stageProgress = 0f
                 ),
                 sheetVisible = !notificationFirst,
                 notificationFirst = notificationFirst,
-                message = appContext.getString(R.string.github_apk_install_remote_ready)
+                message = appContext.getString(R.string.github_apk_install_preparing_download)
             )
         )
-        activeJob = scope.launch {
-            launch(Dispatchers.IO) {
-                preheatInstalledInfo(work)
-            }
-            launch(Dispatchers.IO) {
-                preheatRemoteManifest(work)
-            }
-        }
+        activeJob = launchRemoteCheck(work)
         return sessionId
     }
 
@@ -160,7 +154,7 @@ internal object GitHubApkInstallFlowCoordinator {
             externalFileName = request.externalFileName.ifBlank { asset.name }
         )
         lastRequest = LastInstallRequest.Asset(appContext, lookupConfig, asset, preparedRequest)
-        activeWork = ActiveInstallWork(
+        val work = ActiveInstallWork(
             appContext = appContext,
             lookupConfig = lookupConfig,
             asset = asset,
@@ -168,6 +162,7 @@ internal object GitHubApkInstallFlowCoordinator {
             sessionId = sessionId,
             notificationFirst = notificationFirst
         )
+        activeWork = work
         updateState(
             GitHubApkInstallFlowState(
                 sessionId = sessionId,
@@ -192,6 +187,11 @@ internal object GitHubApkInstallFlowCoordinator {
                 message = appContext.getString(R.string.github_apk_install_preparing_download)
             )
         )
+        activeJob = scope.launch {
+            withContext(Dispatchers.IO) {
+                preheatInstalledInfo(work)
+            }
+        }
         return sessionId
     }
 
@@ -285,7 +285,7 @@ internal object GitHubApkInstallFlowCoordinator {
             lastRequest = LastInstallRequest.Asset(appContext, lookupConfig, asset, preparedRequest)
             updateState(
                 current.copy(
-                    phase = GitHubApkInstallPhase.RemoteReady,
+                    phase = GitHubApkInstallPhase.RemoteResolving,
                     request = preparedRequest,
                     asset = asset,
                     selectedCandidateName = fileName,
@@ -297,21 +297,14 @@ internal object GitHubApkInstallFlowCoordinator {
                         archiveInfo = current.localArchiveInfo
                     ),
                     overallProgress = installOverallProgress(
-                        phase = GitHubApkInstallPhase.RemoteReady,
+                        phase = GitHubApkInstallPhase.RemoteResolving,
                         stageProgress = 0f
                     ),
-                    message = appContext.getString(R.string.github_apk_install_remote_ready)
+                    message = appContext.getString(R.string.github_apk_install_preparing_download)
                 )
             )
             activeJob?.cancel()
-            activeJob = scope.launch {
-                launch(Dispatchers.IO) {
-                    preheatInstalledInfo(work)
-                }
-                launch(Dispatchers.IO) {
-                    preheatRemoteManifest(work)
-                }
-            }
+            activeJob = launchRemoteCheck(work)
             return
         }
         beginInstallAsset(
@@ -753,6 +746,33 @@ internal object GitHubApkInstallFlowCoordinator {
                     archiveInfo = current.localArchiveInfo
                 )
             )
+        }
+    }
+
+    private fun launchRemoteCheck(work: ActiveInstallWork): Job {
+        return scope.launch {
+            val installedInfoJob = async(Dispatchers.IO) {
+                preheatInstalledInfo(work)
+            }
+            val remoteManifestJob = async(Dispatchers.IO) {
+                preheatRemoteManifest(work)
+            }
+            installedInfoJob.await()
+            remoteManifestJob.await()
+            updateActiveState(work.sessionId) { current ->
+                if (current.phase != GitHubApkInstallPhase.RemoteResolving) {
+                    current
+                } else {
+                    current.copy(
+                        phase = GitHubApkInstallPhase.RemoteReady,
+                        overallProgress = installOverallProgress(
+                            phase = GitHubApkInstallPhase.RemoteReady,
+                            stageProgress = 0f
+                        ),
+                        message = work.appContext.getString(R.string.github_apk_install_remote_ready)
+                    )
+                }
+            }
         }
     }
 

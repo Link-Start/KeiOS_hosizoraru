@@ -32,6 +32,7 @@ internal object GitHubApkInstallNotificationHelper {
     private const val REQUEST_RETRY = 2404
     private const val REQUEST_CONFIRM_INSTALL = 2405
     private const val REQUEST_LAUNCH_PENDING_USER_ACTION = 2406
+    private const val REQUEST_PREPARE_INSTALL = 2407
 
     fun notify(context: Context, state: GitHubApkInstallFlowState): Boolean {
         if (!state.active) return false
@@ -51,7 +52,7 @@ internal object GitHubApkInstallNotificationHelper {
         val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
         val useMiIsland = preferSuperIsland && helper.isSupportMiIsland
         val notification = if (useMiIsland) {
-            buildMiIslandNotification(context, state)
+            buildFrameworkMiIslandNotification(context, state)
         } else {
             buildLiveUpdateNotification(context, state)
         }
@@ -85,7 +86,7 @@ internal object GitHubApkInstallNotificationHelper {
         }
     }
 
-    private fun buildMiIslandNotification(
+    internal fun buildFrameworkMiIslandNotification(
         context: Context,
         state: GitHubApkInstallFlowState
     ): Notification {
@@ -127,7 +128,8 @@ internal object GitHubApkInstallNotificationHelper {
                 overrideContent = content,
                 overrideOnlineText = onlineText,
                 overrideShortText = onlineText,
-                overrideProgressPercent = progressPercent
+                overrideProgressPercent = progressPercent,
+                focusAllowFloat = state.phase.focusAllowFloat
             ),
             settings = UserSettings(miIslandOuterGlow = miIsland),
             environment = EnvironmentContext(
@@ -175,6 +177,12 @@ internal object GitHubApkInstallNotificationHelper {
         openPendingIntent: PendingIntent
     ): PendingIntent {
         return when (state.phase) {
+            GitHubApkInstallPhase.RemoteReady -> buildReceiverPendingIntent(
+                context = context,
+                requestCode = REQUEST_PREPARE_INSTALL,
+                action = GitHubApkInstallActionReceiver.ACTION_PREPARE_INSTALL
+            )
+
             GitHubApkInstallPhase.ReadyToInstall -> buildReceiverPendingIntent(
                 context = context,
                 requestCode = REQUEST_CONFIRM_INSTALL,
@@ -231,6 +239,9 @@ internal object GitHubApkInstallNotificationHelper {
 
     private fun primaryActionLabel(context: Context, state: GitHubApkInstallFlowState): String {
         return when (state.phase) {
+            GitHubApkInstallPhase.RemoteReady ->
+                context.getString(R.string.github_apk_install_action_prepare_install)
+
             GitHubApkInstallPhase.ReadyToInstall ->
                 context.getString(R.string.github_apk_install_action_install)
 
@@ -348,6 +359,18 @@ private val GitHubApkInstallPhase.titleRes: Int
         GitHubApkInstallPhase.Cancelled -> R.string.github_apk_install_notify_title_cancelled
         GitHubApkInstallPhase.Idle -> R.string.github_apk_install_notify_title_installing
     }
+
+private val GitHubApkInstallPhase.focusAllowFloat: Boolean
+    get() = this in setOf(
+        GitHubApkInstallPhase.RemoteResolving,
+        GitHubApkInstallPhase.RemoteReady,
+        GitHubApkInstallPhase.SelectingApk,
+        GitHubApkInstallPhase.ReadyToInstall,
+        GitHubApkInstallPhase.PendingUserAction,
+        GitHubApkInstallPhase.Success,
+        GitHubApkInstallPhase.Failed,
+        GitHubApkInstallPhase.Cancelled
+    )
 
 private val GitHubApkInstallPhase.shortTextRes: Int
     get() = when (this) {

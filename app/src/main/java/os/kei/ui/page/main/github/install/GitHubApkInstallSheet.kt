@@ -292,7 +292,6 @@ private fun failedAtLine(
 private val installStepPhases = listOf(
     GitHubApkInstallPhase.RemoteReady,
     GitHubApkInstallPhase.Downloading,
-    GitHubApkInstallPhase.InspectingLocal,
     GitHubApkInstallPhase.ReadyToInstall,
     GitHubApkInstallPhase.Installing,
     GitHubApkInstallPhase.Success
@@ -305,16 +304,16 @@ private fun GitHubApkInstallFlowState.installStepIndex(): Int {
 
         GitHubApkInstallPhase.Downloading -> 1
         GitHubApkInstallPhase.SelectingApk,
-        GitHubApkInstallPhase.InspectingLocal -> 2
-        GitHubApkInstallPhase.ReadyToInstall -> 3
+        GitHubApkInstallPhase.InspectingLocal,
+        GitHubApkInstallPhase.ReadyToInstall -> 2
         GitHubApkInstallPhase.Installing,
-        GitHubApkInstallPhase.PendingUserAction -> 4
+        GitHubApkInstallPhase.PendingUserAction -> 3
 
         GitHubApkInstallPhase.Success -> installStepPhases.lastIndex
         GitHubApkInstallPhase.Failed,
         GitHubApkInstallPhase.Cancelled -> when {
-            localArchiveInfo != null || selectedCandidateName.isNotBlank() -> 4
-            candidates.isNotEmpty() -> 1
+            localArchiveInfo != null -> 3
+            bytesDone > 0L || candidates.isNotEmpty() -> 1
             else -> 0
         }
 

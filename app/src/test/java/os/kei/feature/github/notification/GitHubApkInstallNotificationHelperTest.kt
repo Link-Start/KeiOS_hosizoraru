@@ -12,6 +12,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.MainActivity
 import os.kei.R
+import os.kei.mcp.notification.McpNotificationDispatchMode
 import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
 import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
 import os.kei.ui.page.main.github.install.GitHubApkInstallProgressKind
@@ -113,6 +114,18 @@ class GitHubApkInstallNotificationHelperTest {
             context.getString(R.string.github_apk_install_notify_content_review, "demo.apk"),
             ready.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
+        assertEquals(
+            context.getString(R.string.github_apk_install_action_install),
+            ready.actions[0].title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CONFIRM_INSTALL,
+            shadowOf(ready.actions[0].actionIntent).savedIntent.action
+        )
+        assertEquals(
+            context.getString(R.string.common_cancel),
+            ready.actions[1].title.toString()
+        )
         assertFalse(ready.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
         assertEquals(0, ready.extras.getInt(Notification.EXTRA_PROGRESS_MAX))
         assertEquals(0, ready.extras.getInt(Notification.EXTRA_PROGRESS))
@@ -145,6 +158,66 @@ class GitHubApkInstallNotificationHelperTest {
         assertEquals(
             GitHubApkInstallActionReceiver.ACTION_RETRY_INSTALL,
             shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `pending user action notification opens system confirmation from primary action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.PendingUserAction,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+
+        assertEquals(2, notification.actions.size)
+        assertEquals(
+            context.getString(R.string.github_apk_install_action_open_system_confirm),
+            notification.actions[0].title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_LAUNCH_PENDING_USER_ACTION,
+            shadowOf(notification.actions[0].actionIntent).savedIntent.action
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `download progress update uses smooth dispatch after first pulse`() {
+        GitHubApkInstallNotificationHelper.resetDispatchStateForTest()
+        val first = GitHubApkInstallFlowState(
+            sessionId = 9L,
+            phase = GitHubApkInstallPhase.Downloading,
+            progressKind = GitHubApkInstallProgressKind.Download,
+            stageProgress = 0.12f
+        )
+        val second = first.copy(stageProgress = 0.48f, progress = 0.48f)
+
+        assertEquals(
+            McpNotificationDispatchMode.Pulse,
+            GitHubApkInstallNotificationHelper.resolveDispatchMode(
+                state = first,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Update,
+            GitHubApkInstallNotificationHelper.resolveDispatchMode(
+                state = second,
+                useXiaomiMagic = true
+            )
+        )
+        assertEquals(
+            McpNotificationDispatchMode.Plain,
+            GitHubApkInstallNotificationHelper.resolveDispatchMode(
+                state = second.copy(sessionId = 10L),
+                useXiaomiMagic = false
+            )
         )
     }
 

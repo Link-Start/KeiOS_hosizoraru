@@ -15,6 +15,7 @@ data class McpNotificationPayload(
     val openPendingIntent: PendingIntent,
     val stopPendingIntent: PendingIntent,
     val focusOpenPendingIntent: PendingIntent = openPendingIntent,
+    val primaryActionPendingIntent: PendingIntent = focusOpenPendingIntent,
     val primaryActionLabel: String? = null,
     val secondaryActionLabel: String? = null,
     val showSecondaryActionWhenStopped: Boolean = false,

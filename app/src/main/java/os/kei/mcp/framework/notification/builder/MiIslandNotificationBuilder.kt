@@ -84,9 +84,7 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
         val isGitHubApkInstall =
             McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
-        val isGitHubFlow = isGitHubShareImport || isGitHubApkInstall
-        val isGitHubProgressFlow = isGitHubShareImport ||
-                (isGitHubApkInstall && state.overrideProgressPercent != null)
+        val isGitHubSemantic = isGitHubShareImport || isGitHubApkInstall
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -97,7 +95,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit -> ISLAND_ICON_RES_ID_BA_CAFE_VISIT
             isBlueArchiveArenaRefresh -> ISLAND_ICON_RES_ID_BA_ARENA_REFRESH
             isBlueArchiveCalendarPool -> ISLAND_ICON_RES_ID_BA_CALENDAR_POOL
-            isGitHubFlow -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
+            isGitHubSemantic -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
             else -> ISLAND_ICON_RES_ID_DEFAULT
         }
         val shortCriticalText = resolveShortCriticalText(
@@ -106,7 +104,8 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubFlow = isGitHubFlow
+            isGitHubShareImport = isGitHubShareImport,
+            isGitHubApkInstall = isGitHubApkInstall
         )
         val presentation = resolvePresentation(
             state = state,
@@ -114,7 +113,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubFlow = isGitHubFlow,
+            isGitHubShareImport = isGitHubShareImport,
             isGitHubApkInstall = isGitHubApkInstall,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
@@ -127,8 +126,11 @@ class MiIslandNotificationBuilder(
                 when {
                     isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     isBlueArchiveCalendarPool && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isGitHubProgressFlow && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isGitHubFlow && state.running -> NotificationCompat.CATEGORY_STATUS
+                    isGitHubShareImport && state.running -> NotificationCompat.CATEGORY_PROGRESS
+                    isGitHubApkInstall && state.running &&
+                            state.overrideProgressPercent != null -> NotificationCompat.CATEGORY_PROGRESS
+
+                    isGitHubApkInstall && state.running -> NotificationCompat.CATEGORY_STATUS
                     !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
                     else -> NotificationCompat.CATEGORY_STATUS
                 }
@@ -150,10 +152,10 @@ class MiIslandNotificationBuilder(
         if (!isBlueArchiveNotification) {
             resolveIslandActions(
                 state = state,
-                isGitHubFlow = isGitHubFlow,
+                isGitHubFlow = isGitHubSemantic,
                 forFocusExtras = false
             ).forEach { action ->
-                val pendingIntent = if (action.key == "mcp_action_open") {
+                val pendingIntent = if (action.key == "mcp_action_open" && !isGitHubSemantic) {
                     state.openPendingIntent
                 } else {
                     action.pendingIntent
@@ -179,7 +181,7 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
         val isGitHubApkInstall =
             McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
-        val isGitHubFlow = isGitHubShareImport || isGitHubApkInstall
+        val isGitHubSemantic = isGitHubShareImport || isGitHubApkInstall
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -191,11 +193,11 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubFlow = isGitHubFlow,
+            isGitHubShareImport = isGitHubShareImport,
             isGitHubApkInstall = isGitHubApkInstall,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
-        val useSemanticIcon = isBlueArchiveNotification || isGitHubFlow
+        val useSemanticIcon = isBlueArchiveNotification || isGitHubSemantic
         val lightLogoIcon = if (useSemanticIcon) {
             Icon.createWithResource(context, islandIconResId)
         } else {
@@ -208,7 +210,7 @@ class MiIslandNotificationBuilder(
         }
         val actions = resolveIslandActions(
             state = state,
-            isGitHubFlow = isGitHubFlow,
+            isGitHubFlow = isGitHubSemantic,
             forFocusExtras = true
         )
         val displayIcon = payload.semanticIconBitmap?.let { bitmap ->
@@ -365,7 +367,7 @@ class MiIslandNotificationBuilder(
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubFlow: Boolean,
+        isGitHubShareImport: Boolean,
         isGitHubApkInstall: Boolean,
         miIslandProgressColorOverride: String? = null
     ): IslandPresentation {
@@ -441,15 +443,43 @@ class MiIslandNotificationBuilder(
                 notificationAccentColor = BA_EVENT_ACCENT_COLOR
             )
         }
-        if (isGitHubFlow && state.running) {
-            val hasProgress = !isGitHubApkInstall || state.overrideProgressPercent != null
+        if (isGitHubShareImport && state.running) {
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
             val isTerminal = state.clients <= 0 && progressPercent >= 100
-            val useProgressTemplate = hasProgress && !isTerminal
             return IslandPresentation(
-                allowFloat = if (isGitHubApkInstall) true else state.clients <= 0,
+                allowFloat = state.clients <= 0,
+                showTextButtons = true,
+                bigTemplateKind = if (isTerminal) {
+                    IslandBigTemplateKind.TEXT
+                } else {
+                    IslandBigTemplateKind.PROGRESS_TEXT
+                },
+                smallTemplateKind = if (isTerminal) {
+                    IslandSmallTemplateKind.ICON
+                } else {
+                    IslandSmallTemplateKind.PROGRESS_ICON
+                },
+                compactTitle = resolveCompactTitle(
+                    raw = state.onlineText(context),
+                    fallback = state.shortText
+                ),
+                notificationOngoing = state.ongoing,
+                requestPromotedOngoing = true,
+                focusUpdatable = true,
+                focusShowNotification = true,
+                showExpandedProgress = !isTerminal,
+                progressPercent = progressPercent,
+                progressColor = progressColor,
+                notificationAccentColor = progressColor
+            )
+        }
+        if (isGitHubApkInstall && state.running) {
+            val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100)
+            val useProgressTemplate = progressPercent != null
+            return IslandPresentation(
+                allowFloat = true,
                 showTextButtons = true,
                 bigTemplateKind = if (useProgressTemplate) {
                     IslandBigTemplateKind.PROGRESS_TEXT
@@ -476,9 +506,26 @@ class MiIslandNotificationBuilder(
                 focusUpdatable = true,
                 focusShowNotification = true,
                 showExpandedProgress = useProgressTemplate,
-                progressPercent = progressPercent,
-                progressColor = progressColor,
-                notificationAccentColor = progressColor
+                progressPercent = progressPercent ?: 0,
+                progressColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR,
+                notificationAccentColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR
+            )
+        }
+        if (isGitHubApkInstall) {
+            return IslandPresentation(
+                allowFloat = true,
+                showTextButtons = true,
+                compactTitle = resolveCompactTitle(
+                    raw = state.onlineText(context),
+                    fallback = state.shortText
+                ),
+                compactContent = state.content(context)
+                    .takeIf { it.isNotBlank() && it != state.onlineText(context) },
+                notificationOngoing = state.ongoing,
+                requestPromotedOngoing = state.ongoing,
+                focusUpdatable = true,
+                focusShowNotification = true,
+                notificationAccentColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR
             )
         }
         if (state.running) {
@@ -516,13 +563,15 @@ class MiIslandNotificationBuilder(
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubFlow: Boolean
+        isGitHubShareImport: Boolean,
+        isGitHubApkInstall: Boolean
     ): String? {
         return when {
+            isGitHubApkInstall -> state.onlineText(context)
             !state.running -> state.statusText(context)
             isBlueArchiveAp -> context.getString(R.string.ba_notification_ap_island_text)
             isBlueArchiveCalendarPool -> state.shortText
-            isGitHubFlow -> state.onlineText(context)
+            isGitHubShareImport -> state.onlineText(context)
             isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh -> state.onlineText(context)
             else -> state.onlineText(context)
         }.takeIf { it.isNotBlank() }

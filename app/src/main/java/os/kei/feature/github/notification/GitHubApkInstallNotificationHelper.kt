@@ -19,6 +19,7 @@ import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
 import os.kei.mcp.framework.notification.builder.NotificationPayload
 import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
 import os.kei.mcp.framework.notification.builder.UserSettings
+import os.kei.mcp.notification.McpNotificationDispatchMode
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
@@ -30,6 +31,11 @@ internal object GitHubApkInstallNotificationHelper {
     private const val REQUEST_CANCEL = 2402
     private const val REQUEST_MARK_READ = 2403
     private const val REQUEST_RETRY = 2404
+    private const val REQUEST_CONFIRM_INSTALL = 2405
+    private const val REQUEST_LAUNCH_PENDING_USER_ACTION = 2406
+
+    @Volatile
+    private var lastDispatchSnapshot: InstallNotificationDispatchSnapshot? = null
 
     fun notify(context: Context, state: GitHubApkInstallFlowState): Boolean {
         if (!state.active) return false
@@ -37,6 +43,7 @@ internal object GitHubApkInstallNotificationHelper {
     }
 
     fun cancel(context: Context) {
+        lastDispatchSnapshot = null
         McpNotificationHelper.cancelNotification(context, NOTIFICATION_ID)
     }
 
@@ -56,8 +63,11 @@ internal object GitHubApkInstallNotificationHelper {
             context = context,
             notificationId = NOTIFICATION_ID,
             notification = notification,
-            useXiaomiMagic = useMiIsland &&
-                    UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+            dispatchMode = resolveDispatchMode(
+                state = state,
+                useXiaomiMagic = useMiIsland &&
+                        UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+            )
         )
         return true
     }
@@ -98,6 +108,7 @@ internal object GitHubApkInstallNotificationHelper {
         miIsland: Boolean
     ): NotificationPayload {
         val openIntent = buildOpenPendingIntent(context)
+        val primaryIntent = buildPrimaryPendingIntent(context, state, openIntent)
         val running = state.phase.running
         val content = installContent(context, state)
         val progressPercent = state.downloadProgressPercentOrNull()
@@ -113,8 +124,9 @@ internal object GitHubApkInstallNotificationHelper {
                 onlyAlertOnce = true,
                 openPendingIntent = openIntent,
                 stopPendingIntent = buildSecondaryPendingIntent(context, state),
-                focusOpenPendingIntent = openIntent,
-                primaryActionLabel = context.getString(R.string.github_apk_install_notify_action_open_sheet),
+                focusOpenPendingIntent = primaryIntent,
+                primaryActionPendingIntent = primaryIntent,
+                primaryActionLabel = primaryActionLabel(context, state),
                 secondaryActionLabel = secondaryActionLabel(context, state),
                 showSecondaryActionWhenStopped = true,
                 overrideTitle = context.getString(state.phase.titleRes),
@@ -138,6 +150,34 @@ internal object GitHubApkInstallNotificationHelper {
         )
     }
 
+    internal fun resolveDispatchMode(
+        state: GitHubApkInstallFlowState,
+        useXiaomiMagic: Boolean
+    ): McpNotificationDispatchMode {
+        val snapshot = InstallNotificationDispatchSnapshot(
+            sessionId = state.sessionId,
+            phase = state.phase,
+            hasDownloadProgress = state.downloadProgressPercentOrNull() != null
+        )
+        val previous = lastDispatchSnapshot
+        lastDispatchSnapshot = snapshot
+        if (!useXiaomiMagic) return McpNotificationDispatchMode.Plain
+        return if (
+            snapshot.phase == GitHubApkInstallPhase.Downloading &&
+            previous?.sessionId == snapshot.sessionId &&
+            previous.phase == snapshot.phase &&
+            previous.hasDownloadProgress == snapshot.hasDownloadProgress
+        ) {
+            McpNotificationDispatchMode.Update
+        } else {
+            McpNotificationDispatchMode.Pulse
+        }
+    }
+
+    internal fun resetDispatchStateForTest() {
+        lastDispatchSnapshot = null
+    }
+
     private fun buildOpenPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             addFlags(
@@ -159,6 +199,28 @@ internal object GitHubApkInstallNotificationHelper {
         )
     }
 
+    private fun buildPrimaryPendingIntent(
+        context: Context,
+        state: GitHubApkInstallFlowState,
+        openPendingIntent: PendingIntent
+    ): PendingIntent {
+        return when (state.phase) {
+            GitHubApkInstallPhase.ReadyToInstall -> buildReceiverPendingIntent(
+                context = context,
+                requestCode = REQUEST_CONFIRM_INSTALL,
+                action = GitHubApkInstallActionReceiver.ACTION_CONFIRM_INSTALL
+            )
+
+            GitHubApkInstallPhase.PendingUserAction -> buildReceiverPendingIntent(
+                context = context,
+                requestCode = REQUEST_LAUNCH_PENDING_USER_ACTION,
+                action = GitHubApkInstallActionReceiver.ACTION_LAUNCH_PENDING_USER_ACTION
+            )
+
+            else -> openPendingIntent
+        }
+    }
+
     private fun buildSecondaryPendingIntent(
         context: Context,
         state: GitHubApkInstallFlowState
@@ -175,6 +237,18 @@ internal object GitHubApkInstallNotificationHelper {
             GitHubApkInstallActionReceiver.ACTION_MARK_READ_INSTALL -> REQUEST_MARK_READ
             else -> REQUEST_CANCEL
         }
+        return buildReceiverPendingIntent(
+            context = context,
+            requestCode = requestCode,
+            action = action
+        )
+    }
+
+    private fun buildReceiverPendingIntent(
+        context: Context,
+        requestCode: Int,
+        action: String
+    ): PendingIntent {
         return PendingIntent.getBroadcast(
             context,
             requestCode,
@@ -185,12 +259,25 @@ internal object GitHubApkInstallNotificationHelper {
         )
     }
 
+    private fun primaryActionLabel(context: Context, state: GitHubApkInstallFlowState): String {
+        return when (state.phase) {
+            GitHubApkInstallPhase.ReadyToInstall ->
+                context.getString(R.string.github_apk_install_action_install)
+
+            GitHubApkInstallPhase.PendingUserAction ->
+                context.getString(R.string.github_apk_install_action_open_system_confirm)
+
+            else -> context.getString(R.string.github_apk_install_notify_action_open_sheet)
+        }
+    }
+
     private fun secondaryActionLabel(context: Context, state: GitHubApkInstallFlowState): String {
         return when (state.phase) {
             GitHubApkInstallPhase.Failed -> context.getString(R.string.github_apk_install_action_retry)
             GitHubApkInstallPhase.Success,
             GitHubApkInstallPhase.Cancelled -> context.getString(R.string.common_mark_read)
 
+            GitHubApkInstallPhase.ReadyToInstall -> context.getString(R.string.common_cancel)
             else -> context.getString(R.string.common_stop)
         }
     }
@@ -251,6 +338,12 @@ internal object GitHubApkInstallNotificationHelper {
                 PackageManager.PERMISSION_GRANTED
     }
 }
+
+private data class InstallNotificationDispatchSnapshot(
+    val sessionId: Long,
+    val phase: GitHubApkInstallPhase,
+    val hasDownloadProgress: Boolean
+)
 
 private val GitHubApkInstallPhase.running: Boolean
     get() = this in setOf(

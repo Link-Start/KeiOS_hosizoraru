@@ -303,13 +303,18 @@ object GitHubShareImportNotificationHelper {
         state: GitHubShareImportNotificationState
     ): McpNotificationPayload {
         val liveUpdateActive = state.phase.ongoing || state.phase.promotedLiveUpdate
-        val openPendingIntent = buildOpenPendingIntent(context, state)
-        val primaryActionLabel = context.getString(primaryActionLabelRes(state))
-        val secondaryPendingIntent = buildSecondaryPendingIntent(
-            context = context,
-            state = state,
-            openPendingIntent = openPendingIntent
-        )
+        val openPendingIntent = buildPrimaryPendingIntent(context, state)
+        val cancelImportEnabled = state.phase.cancelActionEnabled
+        val primaryActionLabel = context.getString(state.primaryActionRes)
+        val secondaryPendingIntent = if (state.phase.ongoing) {
+            if (cancelImportEnabled) {
+                buildCancelImportPendingIntent(context)
+            } else {
+                openPendingIntent
+            }
+        } else {
+            buildMarkReadPendingIntent(context)
+        }
         val shortText = context.getString(state.phase.shortTextRes)
         val content = resolveContent(context, state)
         val islandTitle = state.compactIslandTitle(shortText)
@@ -325,7 +330,15 @@ object GitHubShareImportNotificationHelper {
             stopPendingIntent = secondaryPendingIntent,
             focusOpenPendingIntent = openPendingIntent,
             primaryActionLabel = primaryActionLabel,
-            secondaryActionLabel = secondaryActionLabel(context, state),
+            secondaryActionLabel = if (state.phase.ongoing) {
+                if (cancelImportEnabled) {
+                    context.getString(R.string.github_share_import_pending_action_cancel)
+                } else {
+                    ""
+                }
+            } else {
+                context.getString(R.string.common_mark_read)
+            },
             showSecondaryActionWhenStopped = true,
             overrideTitle = context.getString(state.phase.titleRes),
             overrideContent = content,
@@ -342,58 +355,18 @@ object GitHubShareImportNotificationHelper {
         .takeIf { it.isNotBlank() }
         ?.let { packageName -> AppIconCache.getOrLoad(context, packageName) }
 
-    private fun buildOpenPendingIntent(
+    private fun buildPrimaryPendingIntent(
         context: Context,
         state: GitHubShareImportNotificationState
     ): PendingIntent {
-        return if (state.phase.openGitHubPage) {
-            buildOpenGitHubPendingIntent(context)
-        } else {
-            buildOpenFlowPendingIntent(context)
-        }
-    }
-
-    private fun buildSecondaryPendingIntent(
-        context: Context,
-        state: GitHubShareImportNotificationState,
-        openPendingIntent: PendingIntent
-    ): PendingIntent {
-        if (!state.phase.ongoing) return buildMarkReadPendingIntent(context)
         return when {
             state.phase == GitHubShareImportNotificationPhase.AssetReady &&
                     state.sendInstallActionEnabled -> buildSendInstallPendingIntent(context)
 
             state.phase.refreshActionEnabled -> buildRefreshImportPendingIntent(context)
             state.phase.confirmActionEnabled -> buildConfirmImportPendingIntent(context)
-            state.phase.cancelActionEnabled -> buildCancelImportPendingIntent(context)
-            else -> openPendingIntent
-        }
-    }
-
-    @StringRes
-    private fun primaryActionLabelRes(state: GitHubShareImportNotificationState): Int {
-        if (state.phase.openGitHubPage) return state.primaryActionRes
-        return R.string.github_share_import_notify_action_open_flow
-    }
-
-    private fun secondaryActionLabel(
-        context: Context,
-        state: GitHubShareImportNotificationState
-    ): String {
-        if (!state.phase.ongoing) return context.getString(R.string.common_mark_read)
-        return when {
-            state.phase == GitHubShareImportNotificationPhase.AssetReady &&
-                    state.sendInstallActionEnabled ->
-                context.getString(R.string.github_share_import_notify_action_send_install)
-
-            state.phase.refreshActionEnabled -> context.getString(R.string.common_refresh)
-            state.phase.confirmActionEnabled ->
-                context.getString(R.string.github_share_import_notify_action_confirm_track)
-
-            state.phase.cancelActionEnabled ->
-                context.getString(R.string.github_share_import_pending_action_cancel)
-
-            else -> ""
+            state.phase.openGitHubPage -> buildOpenGitHubPendingIntent(context)
+            else -> buildOpenFlowPendingIntent(context)
         }
     }
 

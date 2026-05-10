@@ -64,7 +64,7 @@ class LegacyNotificationBuilder(
 
         val showSecondaryAction = state.stopPendingIntent != state.openPendingIntent &&
                 (state.running || state.showSecondaryActionWhenStopped)
-        builder.addAction(0, state.primaryActionTitle(context), state.openPendingIntent)
+        builder.addAction(0, state.primaryActionTitle(context), state.primaryActionPendingIntent)
         if (showSecondaryAction) {
             builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
         }

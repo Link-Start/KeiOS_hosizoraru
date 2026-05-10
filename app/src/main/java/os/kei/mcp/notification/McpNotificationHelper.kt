@@ -16,6 +16,16 @@ import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.SessionNotifierImpl
 import os.kei.mcp.service.McpKeepAliveService
 
+enum class McpNotificationDispatchMode {
+    Plain,
+    Pulse,
+    Update
+}
+
+private fun Boolean.toDispatchMode(): McpNotificationDispatchMode {
+    return if (this) McpNotificationDispatchMode.Pulse else McpNotificationDispatchMode.Plain
+}
+
 object McpNotificationHelper {
     const val CHANNEL_ID = "mcp_keepalive_channel_v2"
     const val LIVE_CHANNEL_ID = "mcp_live_update_channel_v1"
@@ -313,7 +323,7 @@ object McpNotificationHelper {
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            dispatchMode = buildResult.useXiaomiMagic.toDispatchMode()
         )
     }
 
@@ -355,7 +365,7 @@ object McpNotificationHelper {
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            dispatchMode = buildResult.useXiaomiMagic.toDispatchMode()
         )
     }
 
@@ -396,7 +406,7 @@ object McpNotificationHelper {
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            dispatchMode = buildResult.useXiaomiMagic.toDispatchMode()
         )
     }
 
@@ -433,7 +443,7 @@ object McpNotificationHelper {
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            dispatchMode = buildResult.useXiaomiMagic.toDispatchMode()
         )
     }
 
@@ -447,10 +457,18 @@ object McpNotificationHelper {
         context: Context,
         notificationId: Int,
         notification: Notification,
-        useXiaomiMagic: Boolean
+        dispatchMode: McpNotificationDispatchMode
     ) {
-        if (useXiaomiMagic) {
+        if (dispatchMode == McpNotificationDispatchMode.Pulse) {
             McpXiaomiMagicDispatcher.notify(
+                context = context,
+                notificationId = notificationId,
+                notification = notification
+            )
+            return
+        }
+        if (dispatchMode == McpNotificationDispatchMode.Update) {
+            McpXiaomiMagicDispatcher.update(
                 context = context,
                 notificationId = notificationId,
                 notification = notification
@@ -474,7 +492,25 @@ object McpNotificationHelper {
             context = context,
             notificationId = notificationId,
             notification = notification,
-            useXiaomiMagic = useXiaomiMagic
+            dispatchMode = if (useXiaomiMagic) {
+                McpNotificationDispatchMode.Pulse
+            } else {
+                McpNotificationDispatchMode.Plain
+            }
+        )
+    }
+
+    fun dispatchNotification(
+        context: Context,
+        notificationId: Int,
+        notification: Notification,
+        dispatchMode: McpNotificationDispatchMode
+    ) {
+        notifyWithResolvedDispatcher(
+            context = context,
+            notificationId = notificationId,
+            notification = notification,
+            dispatchMode = dispatchMode
         )
     }
 

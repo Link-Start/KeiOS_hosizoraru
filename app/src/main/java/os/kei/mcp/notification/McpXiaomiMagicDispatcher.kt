@@ -6,13 +6,11 @@ import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.system.ShizukuApiUtils
@@ -33,7 +31,7 @@ internal object McpXiaomiMagicDispatcher {
     private val shizukuApiUtils = ShizukuApiUtils()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val networkMutex = Mutex()
-    private val notificationSequences = ConcurrentHashMap<Int, AtomicLong>()
+    private val notificationStates = ConcurrentHashMap<Int, NotificationPulseState>()
 
     @Volatile
     private var commandSet: CommandSet? = null
@@ -53,14 +51,20 @@ internal object McpXiaomiMagicDispatcher {
         notificationId: Int,
         notification: Notification
     ) {
-        val notificationManager = NotificationManagerCompat.from(context)
-        val targetUid = resolveXmsfUid(context)
-        val sequence = nextNotificationSequence(notificationId)
+        val appContext = context.applicationContext
+        val notificationManager = NotificationManagerCompat.from(appContext)
+        val pulseState = notificationStates.computeIfAbsent(notificationId) {
+            NotificationPulseState()
+        }
+        synchronized(pulseState) {
+            pulseState.latest = notification
+        }
+        val targetUid = resolveXmsfUid(appContext)
         AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
         if (!shouldExecute(targetUid)) {
             AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
             if (canUseCommand()) {
-                restoreNetworkIfNeeded(context)
+                restoreNetworkIfNeeded(appContext)
             }
             notificationManager.notify(notificationId, notification)
             return
@@ -70,49 +74,64 @@ internal object McpXiaomiMagicDispatcher {
             notificationManager.notify(notificationId, notification)
             return
         }
-
-        if (isNetworkGuardActive()) {
-            notificationManager.notify(notificationId, notification)
+        val shouldLaunchPulse = synchronized(pulseState) {
+            if (pulseState.pulseActive) {
+                false
+            } else {
+                pulseState.pulseActive = true
+                true
+            }
         }
+        if (!shouldLaunchPulse) {
+            notificationManager.notify(notificationId, notification)
+            return
+        }
+        val pulseGeneration = pulseState.generation.get()
 
         scope.launch {
-            networkMutex.withLock {
-                if (!isLatestNotificationSequence(notificationId, sequence)) {
-                    AppLogger.i(
-                        TAG,
-                        "skip stale Xiaomi magic notification: notifId=$notificationId"
-                    )
-                    return@withLock
-                }
-                var notificationDispatched = false
-                var networkTouched = false
-                try {
-                    healXmsfNetworkingLocked(nonNullUid)
-                    AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
-                    blockXmsfNetworkingLocked(nonNullUid)
-                    networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
-                    if (!isLatestNotificationSequence(notificationId, sequence)) {
+            try {
+                networkMutex.withLock {
+                    if (pulseState.generation.get() != pulseGeneration) {
                         AppLogger.i(
                             TAG,
-                            "skip superseded Xiaomi magic notification: notifId=$notificationId"
+                            "skip cancelled Xiaomi magic pulse: notifId=$notificationId"
                         )
                         return@withLock
                     }
-                    notificationManager.notify(notificationId, notification)
-                    notificationDispatched = true
-                    delay(resolveBlockIntervalMs().milliseconds)
-                } catch (throwable: Throwable) {
-                    if (throwable is CancellationException) throw throwable
-                    AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
-                    if (!notificationDispatched) {
-                        runCatching {
-                            notificationManager.notify(notificationId, notification)
-                        }.onFailure {
-                            AppLogger.e(TAG, "Fallback notification dispatch failed", it)
+                    var notificationDispatched = false
+                    var networkTouched = false
+                    try {
+                        healXmsfNetworkingLocked(nonNullUid)
+                        AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
+                        blockXmsfNetworkingLocked(nonNullUid)
+                        networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
+                        if (pulseState.generation.get() != pulseGeneration) {
+                            AppLogger.i(
+                                TAG,
+                                "skip superseded Xiaomi magic pulse: notifId=$notificationId"
+                            )
+                            return@withLock
                         }
-                    }
-                } finally {
-                    withContext(NonCancellable) {
+                        val latestNotification = synchronized(pulseState) {
+                            pulseState.latest
+                        } ?: notification
+                        notificationManager.notify(notificationId, latestNotification)
+                        notificationDispatched = true
+                        delay(resolveBlockIntervalMs().milliseconds)
+                    } catch (throwable: Throwable) {
+                        if (throwable is CancellationException) throw throwable
+                        AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
+                        if (!notificationDispatched) {
+                            runCatching {
+                                val latestNotification = synchronized(pulseState) {
+                                    pulseState.latest
+                                } ?: notification
+                                notificationManager.notify(notificationId, latestNotification)
+                            }.onFailure {
+                                AppLogger.e(TAG, "Fallback notification dispatch failed", it)
+                            }
+                        }
+                    } finally {
                         if (networkTouched || isXmsfNetworkBlocked || isUidFirewallChainEnabled) {
                             AppLogger.i(TAG, "restoring xmsf network for uid=$nonNullUid")
                             runCatching {
@@ -128,12 +147,39 @@ internal object McpXiaomiMagicDispatcher {
                         }
                     }
                 }
+            } finally {
+                synchronized(pulseState) {
+                    if (pulseState.generation.get() == pulseGeneration) {
+                        pulseState.pulseActive = false
+                    }
+                }
             }
         }
     }
 
+    fun update(
+        context: Context,
+        notificationId: Int,
+        notification: Notification
+    ) {
+        val appContext = context.applicationContext
+        val pulseState = notificationStates.computeIfAbsent(notificationId) {
+            NotificationPulseState()
+        }
+        synchronized(pulseState) {
+            pulseState.latest = notification
+        }
+        NotificationManagerCompat.from(appContext).notify(notificationId, notification)
+    }
+
     fun invalidateNotification(notificationId: Int) {
-        nextNotificationSequence(notificationId)
+        notificationStates.remove(notificationId)?.let { pulseState ->
+            synchronized(pulseState) {
+                pulseState.latest = null
+                pulseState.pulseActive = false
+                pulseState.generation.incrementAndGet()
+            }
+        }
     }
 
     fun restoreNetworkIfNeeded(context: Context) {
@@ -289,21 +335,13 @@ internal object McpXiaomiMagicDispatcher {
         return success
     }
 
-    private fun nextNotificationSequence(notificationId: Int): Long {
-        return notificationSequences
-            .computeIfAbsent(notificationId) { AtomicLong(0L) }
-            .incrementAndGet()
-    }
-
-    private fun isLatestNotificationSequence(notificationId: Int, sequence: Long): Boolean {
-        return notificationSequences[notificationId]?.get() == sequence
-    }
-
-    private fun isNetworkGuardActive(): Boolean {
-        return isXmsfNetworkBlocked || isUidFirewallChainEnabled
-    }
-
     private fun resolveBlockIntervalMs(): Long {
         return UiPrefs.getSuperIslandRestoreDelayMs().toLong()
+    }
+
+    private class NotificationPulseState {
+        val generation = AtomicLong(0L)
+        var latest: Notification? = null
+        var pulseActive: Boolean = false
     }
 }

@@ -36,6 +36,10 @@ class GitHubApkInstallActionReceiver : BroadcastReceiver() {
             ) {
                 when (action) {
                     ACTION_CANCEL_INSTALL -> GitHubApkInstallFlowCoordinator.cancel(context)
+                    ACTION_CONFIRM_INSTALL -> GitHubApkInstallFlowCoordinator.confirmInstall()
+                    ACTION_LAUNCH_PENDING_USER_ACTION ->
+                        GitHubApkInstallFlowCoordinator.launchPendingUserAction(context)
+
                     ACTION_MARK_READ_INSTALL -> GitHubApkInstallFlowCoordinator.markRead(context)
                     ACTION_RETRY_INSTALL -> GitHubApkInstallFlowCoordinator.retry(context)
                 }
@@ -46,6 +50,9 @@ class GitHubApkInstallActionReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_OPEN_INSTALL_SHEET = "os.kei.github.apk_install.action.OPEN_SHEET"
         const val ACTION_CANCEL_INSTALL = "os.kei.github.apk_install.action.CANCEL"
+        const val ACTION_CONFIRM_INSTALL = "os.kei.github.apk_install.action.CONFIRM"
+        const val ACTION_LAUNCH_PENDING_USER_ACTION =
+            "os.kei.github.apk_install.action.LAUNCH_PENDING_USER_ACTION"
         const val ACTION_MARK_READ_INSTALL = "os.kei.github.apk_install.action.MARK_READ"
         const val ACTION_RETRY_INSTALL = "os.kei.github.apk_install.action.RETRY"
 
@@ -54,6 +61,8 @@ class GitHubApkInstallActionReceiver : BroadcastReceiver() {
         private val supportedActions = setOf(
             ACTION_OPEN_INSTALL_SHEET,
             ACTION_CANCEL_INSTALL,
+            ACTION_CONFIRM_INSTALL,
+            ACTION_LAUNCH_PENDING_USER_ACTION,
             ACTION_MARK_READ_INSTALL,
             ACTION_RETRY_INSTALL
         )

@@ -633,7 +633,7 @@ private fun GitHubHealthPreviewBlock(
             ) {
                 Text(
                     text = stringResource(R.string.github_item_label_health_score),
-                    color = MiuixTheme.colorScheme.onBackground,
+                    color = MiuixTheme.colorScheme.primary,
                     fontSize = AppTypographyTokens.Body.fontSize,
                     lineHeight = AppTypographyTokens.Body.lineHeight,
                     fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,

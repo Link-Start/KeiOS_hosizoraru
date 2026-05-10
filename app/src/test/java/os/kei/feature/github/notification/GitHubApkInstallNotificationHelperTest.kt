@@ -14,7 +14,9 @@ import os.kei.MainActivity
 import os.kei.R
 import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
 import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
+import os.kei.ui.page.main.github.install.GitHubApkInstallProgressKind
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -67,6 +69,56 @@ class GitHubApkInstallNotificationHelperTest {
         assertEquals(
             GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
             shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `ready notification replaces inspecting text with confirmation state`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val inspecting = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Inspecting,
+                progressKind = GitHubApkInstallProgressKind.Inspect,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+        val ready = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.ReadyToInstall,
+                progressKind = GitHubApkInstallProgressKind.Waiting,
+                selectedCandidateName = "demo.apk",
+                stageProgress = 1f,
+                progress = 1f,
+                overallProgress = 0.6f,
+                message = "Ready"
+            )
+        )
+
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_title_inspecting),
+            inspecting.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_content_inspecting, "demo.apk"),
+            inspecting.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertEquals(Notification.CATEGORY_STATUS, ready.category)
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_title_review),
+            ready.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_content_review, "demo.apk"),
+            ready.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertFalse(ready.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
+        assertEquals(0, ready.extras.getInt(Notification.EXTRA_PROGRESS_MAX))
+        assertEquals(0, ready.extras.getInt(Notification.EXTRA_PROGRESS))
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
+            shadowOf(ready.actions[1].actionIntent).savedIntent.action
         )
     }
 

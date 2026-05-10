@@ -16,6 +16,8 @@ import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.system.ShizukuApiUtils
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.milliseconds
 
 internal object McpXiaomiMagicDispatcher {
@@ -31,6 +33,7 @@ internal object McpXiaomiMagicDispatcher {
     private val shizukuApiUtils = ShizukuApiUtils()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val networkMutex = Mutex()
+    private val notificationSequences = ConcurrentHashMap<Int, AtomicLong>()
 
     @Volatile
     private var commandSet: CommandSet? = null
@@ -52,6 +55,7 @@ internal object McpXiaomiMagicDispatcher {
     ) {
         val notificationManager = NotificationManagerCompat.from(context)
         val targetUid = resolveXmsfUid(context)
+        val sequence = nextNotificationSequence(notificationId)
         AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
         if (!shouldExecute(targetUid)) {
             AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
@@ -67,8 +71,19 @@ internal object McpXiaomiMagicDispatcher {
             return
         }
 
+        if (isNetworkGuardActive()) {
+            notificationManager.notify(notificationId, notification)
+        }
+
         scope.launch {
             networkMutex.withLock {
+                if (!isLatestNotificationSequence(notificationId, sequence)) {
+                    AppLogger.i(
+                        TAG,
+                        "skip stale Xiaomi magic notification: notifId=$notificationId"
+                    )
+                    return@withLock
+                }
                 var notificationDispatched = false
                 var networkTouched = false
                 try {
@@ -76,6 +91,13 @@ internal object McpXiaomiMagicDispatcher {
                     AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
                     blockXmsfNetworkingLocked(nonNullUid)
                     networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
+                    if (!isLatestNotificationSequence(notificationId, sequence)) {
+                        AppLogger.i(
+                            TAG,
+                            "skip superseded Xiaomi magic notification: notifId=$notificationId"
+                        )
+                        return@withLock
+                    }
                     notificationManager.notify(notificationId, notification)
                     notificationDispatched = true
                     delay(resolveBlockIntervalMs().milliseconds)
@@ -108,6 +130,10 @@ internal object McpXiaomiMagicDispatcher {
                 }
             }
         }
+    }
+
+    fun invalidateNotification(notificationId: Int) {
+        nextNotificationSequence(notificationId)
     }
 
     fun restoreNetworkIfNeeded(context: Context) {
@@ -261,6 +287,20 @@ internal object McpXiaomiMagicDispatcher {
             AppLogger.w(TAG, "magic command failed: $command; output=$output")
         }
         return success
+    }
+
+    private fun nextNotificationSequence(notificationId: Int): Long {
+        return notificationSequences
+            .computeIfAbsent(notificationId) { AtomicLong(0L) }
+            .incrementAndGet()
+    }
+
+    private fun isLatestNotificationSequence(notificationId: Int, sequence: Long): Boolean {
+        return notificationSequences[notificationId]?.get() == sequence
+    }
+
+    private fun isNetworkGuardActive(): Boolean {
+        return isXmsfNetworkBlocked || isUidFirewallChainEnabled
     }
 
     private fun resolveBlockIntervalMs(): Long {

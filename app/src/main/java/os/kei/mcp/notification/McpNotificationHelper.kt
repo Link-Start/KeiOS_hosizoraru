@@ -483,6 +483,7 @@ object McpNotificationHelper {
         notificationId: Int
     ) {
         McpNotificationSnapshotStore.clear(notificationId)
+        McpXiaomiMagicDispatcher.invalidateNotification(notificationId)
         if (McpXiaomiMagicDispatcher.canUseCommand()) {
             restoreXiaomiNetworkIfNeeded(context)
         }

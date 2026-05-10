@@ -365,6 +365,60 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
+    fun `github apk install ready island uses confirmation status text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 841,
+            action = "os.kei.test.OPEN_GITHUB_APK_INSTALL_READY"
+        )
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            842,
+            Intent("os.kei.test.CANCEL_GITHUB_APK_INSTALL_READY").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = true,
+                port = 4,
+                path = "demo.apk 需要确认后安装",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = cancelPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                primaryActionLabel = "打开 Sheet",
+                secondaryActionLabel = "停止",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "等待确认安装",
+                overrideContent = "demo.apk 需要确认后安装",
+                overrideOnlineText = "确认",
+                overrideShortText = "确认",
+                overrideProgressPercent = null
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"确认\""))
+        assertTrue(focusParam.contains("demo.apk 需要确认后安装"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+    }
+
+    @Test
     fun `github share import success island uses compact completed text`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(

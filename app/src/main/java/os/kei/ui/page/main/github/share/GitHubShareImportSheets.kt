@@ -117,6 +117,7 @@ internal fun GitHubShareImportSheet(
         insideMargin = shareImportSheetInsideMargin,
         allowDismiss = !resolving
     ) {
+        GitHubShareImportWindowBlurEffect(useBlur = showSheet)
         if (resolving) {
             Column(
                 modifier = Modifier
@@ -298,6 +299,7 @@ internal fun GitHubShareImportDisabledSheet(
         onDismissRequest = onClose,
         insideMargin = shareImportSheetInsideMargin
     ) {
+        GitHubShareImportWindowBlurEffect(useBlur = show)
         Column(
             modifier = Modifier.shareImportSheetSafeArea(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -341,6 +343,7 @@ internal fun GitHubShareImportPendingSheet(
         insideMargin = shareImportSheetInsideMargin,
         allowDismiss = false
     ) {
+        GitHubShareImportWindowBlurEffect(useBlur = pending != null)
         val pendingTrack = pending ?: return@SnapshotWindowBottomSheet
         val remainingMinutes = shareImportRemainingMinutes(pendingTrack.armedAtMillis)
         Column(
@@ -431,6 +434,7 @@ internal fun GitHubShareImportAttachConfirmSheet(
         insideMargin = shareImportSheetInsideMargin,
         allowDismiss = allowDismiss
     ) {
+        GitHubShareImportWindowBlurEffect(useBlur = candidate != null)
         val attachCandidate = candidate ?: return@SnapshotWindowBottomSheet
         Column(
             modifier = Modifier.shareImportSheetSafeArea(),

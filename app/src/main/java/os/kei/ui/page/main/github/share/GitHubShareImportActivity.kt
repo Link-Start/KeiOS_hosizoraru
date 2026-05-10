@@ -3,11 +3,14 @@ package os.kei.ui.page.main.github.share
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +37,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import android.graphics.Color as AndroidColor
 
 class GitHubShareImportActivity : ComponentActivity() {
     private var incomingGitHubShareText by mutableStateOf<String?>(null)
@@ -49,6 +53,7 @@ class GitHubShareImportActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configureTransparentShareImportWindow()
         consumeIncomingShareIntent(intent)
         if (isFinishing) return
         requestNotificationPermissionIfNeededForActiveFlow()
@@ -88,54 +93,55 @@ class GitHubShareImportActivity : ComponentActivity() {
                                     flowActivityBackNeedsInterception,
                             onBack = { finishSafely() }
                         )
-                        Box(modifier = Modifier.fillMaxSize())
-                        when (displayState) {
-                            GitHubShareImportActivityDisplayState.Disabled -> {
-                                GitHubShareImportDisabledSheet(
-                                    show = true,
-                                    onClose = { finishSafely() },
-                                    onOpenGitHub = {
-                                        openGitHubPage()
-                                        finishSafely()
-                                    }
-                                )
-                            }
-
-                            GitHubShareImportActivityDisplayState.Sheet -> {
-                                GitHubShareImportWindowFlowHost(
-                                    incomingGitHubShareText = incomingGitHubShareText,
-                                    incomingGitHubShareToken = incomingGitHubShareToken,
-                                    resumeRequestToken = shareImportResumeToken,
-                                    onIncomingGitHubShareConsumed = {
-                                        incomingGitHubShareText = null
-                                    },
-                                    onNavigateToGitHubPage = {
-                                        val launched = openGitHubPage()
-                                        if (!launched) {
-                                            Toast.makeText(
-                                                this,
-                                                getString(R.string.common_open_link_failed),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            when (displayState) {
+                                GitHubShareImportActivityDisplayState.Disabled -> {
+                                    GitHubShareImportDisabledSheet(
+                                        show = true,
+                                        onClose = { finishSafely() },
+                                        onOpenGitHub = {
+                                            openGitHubPage()
+                                            finishSafely()
                                         }
-                                        finishSafely()
-                                    },
-                                    showPendingArmedSheet = true,
-                                    onNotificationOnlyResolveChanged = { notificationOnly ->
-                                        setShareImportWindowDim(enabled = !notificationOnly)
-                                    },
-                                    onActivityBackInterceptionChanged = { needsInterception ->
-                                        flowActivityBackNeedsInterception = needsInterception
-                                    },
-                                    onMinimizeActiveFlow = { finishSafely() },
-                                    onClosePendingArmedSheet = { finishSafely() },
-                                    onIdleWithNoPendingFlow = { finishSafely() }
-                                )
-                            }
+                                    )
+                                }
 
-                            GitHubShareImportActivityDisplayState.Hidden,
-                            GitHubShareImportActivityDisplayState.SendingInstall,
-                            GitHubShareImportActivityDisplayState.Finish -> Unit
+                                GitHubShareImportActivityDisplayState.Sheet -> {
+                                    GitHubShareImportWindowFlowHost(
+                                        incomingGitHubShareText = incomingGitHubShareText,
+                                        incomingGitHubShareToken = incomingGitHubShareToken,
+                                        resumeRequestToken = shareImportResumeToken,
+                                        onIncomingGitHubShareConsumed = {
+                                            incomingGitHubShareText = null
+                                        },
+                                        onNavigateToGitHubPage = {
+                                            val launched = openGitHubPage()
+                                            if (!launched) {
+                                                Toast.makeText(
+                                                    this@GitHubShareImportActivity,
+                                                    getString(R.string.common_open_link_failed),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                            finishSafely()
+                                        },
+                                        showPendingArmedSheet = true,
+                                        onNotificationOnlyResolveChanged = {
+                                            clearShareImportWindowDim()
+                                        },
+                                        onActivityBackInterceptionChanged = { needsInterception ->
+                                            flowActivityBackNeedsInterception = needsInterception
+                                        },
+                                        onMinimizeActiveFlow = { finishSafely() },
+                                        onClosePendingArmedSheet = { finishSafely() },
+                                        onIdleWithNoPendingFlow = { finishSafely() }
+                                    )
+                                }
+
+                                GitHubShareImportActivityDisplayState.Hidden,
+                                GitHubShareImportActivityDisplayState.SendingInstall,
+                                GitHubShareImportActivityDisplayState.Finish -> Unit
+                            }
                         }
                     }
                 }
@@ -230,10 +236,7 @@ class GitHubShareImportActivity : ComponentActivity() {
 
     private fun applyShareImportDisplayState(state: GitHubShareImportActivityDisplayState) {
         shareImportDisplayState = state
-        setShareImportWindowDim(
-            enabled = state == GitHubShareImportActivityDisplayState.Sheet ||
-                    state == GitHubShareImportActivityDisplayState.Disabled
-        )
+        clearShareImportWindowDim()
     }
 
     private fun launchSendInstallAndFinish() {
@@ -282,11 +285,19 @@ class GitHubShareImportActivity : ComponentActivity() {
         }
     }
 
-    private fun setShareImportWindowDim(enabled: Boolean) {
-        if (enabled) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+    private fun configureTransparentShareImportWindow() {
+        enableEdgeToEdge()
+        window.setBackgroundDrawable(ColorDrawable(AndroidColor.TRANSPARENT))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        clearShareImportWindowDim()
+    }
+
+    private fun clearShareImportWindowDim() {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        window.attributes = window.attributes.apply {
+            dimAmount = 0f
         }
     }
 

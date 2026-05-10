@@ -117,6 +117,10 @@ internal data class GitHubApkInstallFlowState(
     val stageProgressPercent: Int
         get() = (stageProgress.coerceIn(0f, 1f) * 100f).toInt().coerceIn(0, 100)
 
+    val showsDeterminateDownloadProgress: Boolean
+        get() = phase == GitHubApkInstallPhase.Downloading &&
+                progressKind == GitHubApkInstallProgressKind.Download
+
     val packageName: String
         get() = localArchiveInfo?.packageName.orEmpty()
             .ifBlank { remoteManifestInfo?.packageName.orEmpty() }

@@ -44,7 +44,7 @@ class ModernNotificationBuilder(
             .setCategory(spec.category)
             .setAutoCancel(false)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .setStyle(buildProgressStyle(spec))
+            .applyProgressStyle(spec)
             .applyDeadline(state.deadlineAtMs)
             .also { builder ->
                 if (state.running) {
@@ -58,6 +58,18 @@ class ModernNotificationBuilder(
                 }
             }
             .build()
+    }
+
+    private fun NotificationCompat.Builder.applyProgressStyle(
+        spec: ModernNotificationSpec
+    ): NotificationCompat.Builder {
+        return if (spec.showProgress) {
+            setStyle(buildProgressStyle(spec))
+                .setProgress(100, spec.progressPercent.coerceIn(0, 100), false)
+        } else {
+            setStyle(null)
+                .setProgress(0, 0, false)
+        }
     }
 
     private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {

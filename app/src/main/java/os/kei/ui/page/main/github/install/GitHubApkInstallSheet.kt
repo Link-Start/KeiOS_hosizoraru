@@ -1,26 +1,32 @@
 package os.kei.ui.page.main.github.install
 
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -102,9 +108,10 @@ private fun InstallMainCard(
         verticalSpacing = 8.dp
     ) {
         InstallHeader(state = state)
-        if (state.phase in progressPhases) {
+        InstallStepRail(state)
+        if (state.showsDeterminateDownloadProgress) {
             LiquidLinearProgressBar(
-                progress = { state.overallProgress.coerceIn(0f, 1f) },
+                progress = { state.stageProgress.coerceIn(0f, 1f) },
                 height = 5.dp,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -174,11 +181,11 @@ private fun InstallHeader(state: GitHubApkInstallFlowState) {
                 }
             }
         }
-        if (state.phase in progressPhases) {
+        if (state.showsDeterminateDownloadProgress) {
             Text(
                 text = stringResource(
                     R.string.github_apk_install_summary_progress,
-                    state.overallProgressPercent
+                    state.stageProgressPercent
                 ),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
@@ -199,6 +206,116 @@ private fun InstallHeader(state: GitHubApkInstallFlowState) {
         ?.let { message ->
             SheetDescriptionText(text = message)
         }
+}
+
+@Composable
+private fun InstallStepRail(state: GitHubApkInstallFlowState) {
+    val currentIndex = state.installStepIndex()
+    val failed = state.phase == GitHubApkInstallPhase.Failed ||
+            state.phase == GitHubApkInstallPhase.Cancelled
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            installStepPhases.forEachIndexed { index, phase ->
+                val nodeColor = state.stepNodeColor(index, currentIndex, failed)
+                Box(
+                    modifier = Modifier
+                        .size(if (index == currentIndex) 10.dp else 8.dp)
+                        .background(nodeColor, CircleShape)
+                )
+                if (index < installStepPhases.lastIndex) {
+                    val lineColor =
+                        if (index < currentIndex && !failedAtLine(index, currentIndex, failed)) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.22f)
+                        }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp)
+                            .height(2.dp)
+                            .background(lineColor, CircleShape)
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            installStepPhases.forEach { phase ->
+                Text(
+                    text = stringResource(phase.labelRes()),
+                    modifier = Modifier.weight(1f),
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Caption.fontSize,
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubApkInstallFlowState.stepNodeColor(
+    index: Int,
+    currentIndex: Int,
+    failed: Boolean
+): Color {
+    return when {
+        failed && index == currentIndex -> GitHubStatusPalette.Error
+        phase == GitHubApkInstallPhase.Success -> GitHubStatusPalette.Update
+        index < currentIndex -> MiuixTheme.colorScheme.primary
+        index == currentIndex -> phase.statusColor()
+        else -> MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.30f)
+    }
+}
+
+private fun failedAtLine(
+    index: Int,
+    currentIndex: Int,
+    failed: Boolean
+): Boolean {
+    return failed && index >= currentIndex
+}
+
+private val installStepPhases = listOf(
+    GitHubApkInstallPhase.Downloading,
+    GitHubApkInstallPhase.SelectingApk,
+    GitHubApkInstallPhase.Inspecting,
+    GitHubApkInstallPhase.ReadyToInstall,
+    GitHubApkInstallPhase.Installing,
+    GitHubApkInstallPhase.Success
+)
+
+private fun GitHubApkInstallFlowState.installStepIndex(): Int {
+    return when (phase) {
+        GitHubApkInstallPhase.Downloading -> 0
+        GitHubApkInstallPhase.SelectingApk -> 1
+        GitHubApkInstallPhase.Inspecting -> 2
+        GitHubApkInstallPhase.ReadyToInstall -> 3
+        GitHubApkInstallPhase.Installing,
+        GitHubApkInstallPhase.PendingUserAction -> 4
+
+        GitHubApkInstallPhase.Success -> installStepPhases.lastIndex
+        GitHubApkInstallPhase.Failed,
+        GitHubApkInstallPhase.Cancelled -> when {
+            localArchiveInfo != null || selectedCandidateName.isNotBlank() -> 4
+            candidates.isNotEmpty() -> 1
+            else -> 0
+        }
+
+        GitHubApkInstallPhase.Idle -> 0
+    }.coerceIn(0, installStepPhases.lastIndex)
 }
 
 @Composable
@@ -606,12 +723,6 @@ private fun InstallConfirmButtons(
         )
     }
 }
-
-private val progressPhases = setOf(
-    GitHubApkInstallPhase.Downloading,
-    GitHubApkInstallPhase.Inspecting,
-    GitHubApkInstallPhase.Installing
-)
 
 private val bottomResultPhases = setOf(
     GitHubApkInstallPhase.ReadyToInstall,

@@ -26,6 +26,7 @@ internal data class ModernNotificationSpec(
     val iconResId: Int,
     val expandedIconResId: Int?,
     val trackerIconResId: Int?,
+    val showProgress: Boolean,
     val progressPercent: Int,
     val progressColor: Int,
     val category: String,
@@ -56,14 +57,20 @@ internal object ModernNotificationSpecResolver {
     ): ModernNotificationSpec {
         val kind = resolveKind(state.serverName)
         val isRunning = state.running
+        val showProgress = resolveShowProgress(state = state, kind = kind)
         return ModernNotificationSpec(
             kind = kind,
             iconResId = resolveIcon(kind, preferOemLiveIconLayout),
             expandedIconResId = resolveExpandedIcon(kind),
             trackerIconResId = resolveTrackerIcon(kind),
-            progressPercent = resolveProgressPercent(state = state, kind = kind),
+            showProgress = showProgress,
+            progressPercent = if (showProgress) {
+                resolveProgressPercent(state = state, kind = kind)
+            } else {
+                0
+            },
             progressColor = if (isRunning) PROGRESS_ACTIVE_COLOR else PROGRESS_IDLE_COLOR,
-            category = if (isRunning) {
+            category = if (showProgress) {
                 NotificationCompat.CATEGORY_PROGRESS
             } else {
                 NotificationCompat.CATEGORY_STATUS
@@ -148,6 +155,17 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CALENDAR_POOL,
             ModernNotificationKind.GITHUB_SHARE_IMPORT,
             ModernNotificationKind.GITHUB_APK_INSTALL -> ModernShortCriticalMode.SHORT_TEXT
+        }
+    }
+
+    private fun resolveShowProgress(
+        state: McpNotificationPayload,
+        kind: ModernNotificationKind
+    ): Boolean {
+        if (!state.running) return false
+        return when (kind) {
+            ModernNotificationKind.GITHUB_APK_INSTALL -> state.overrideProgressPercent != null
+            else -> true
         }
     }
 

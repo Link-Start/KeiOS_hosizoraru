@@ -1,6 +1,7 @@
 package os.kei.mcp.framework.notification.builder
 
 import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
 import org.junit.Test
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationPayload
@@ -208,6 +209,7 @@ class ModernNotificationSpecResolverTest {
         )
 
         assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
+        assertEquals(true, spec.showProgress)
         assertEquals(72, spec.progressPercent)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.iconResId)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.expandedIconResId)
@@ -231,11 +233,33 @@ class ModernNotificationSpecResolverTest {
         )
 
         assertEquals(ModernNotificationKind.GITHUB_APK_INSTALL, spec.kind)
+        assertEquals(true, spec.showProgress)
         assertEquals(62, spec.progressPercent)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.iconResId)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.expandedIconResId)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+        assertEquals(true, spec.requestPromotedOngoing)
+    }
+
+    @Test
+    fun `github apk install installing state hides live progress`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = true,
+                port = 5,
+                clients = 1,
+                ongoing = true,
+                overrideProgressPercent = null
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.GITHUB_APK_INSTALL, spec.kind)
+        assertEquals(false, spec.showProgress)
+        assertEquals(0, spec.progressPercent)
+        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
         assertEquals(true, spec.requestPromotedOngoing)
     }
 

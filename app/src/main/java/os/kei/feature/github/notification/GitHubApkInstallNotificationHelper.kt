@@ -100,12 +100,13 @@ internal object GitHubApkInstallNotificationHelper {
         val openIntent = buildOpenPendingIntent(context)
         val running = state.phase.running
         val content = installContent(context, state)
-        val progressPercent = state.phase.progressPercent(state)
+        val progressPercent = state.downloadProgressPercentOrNull()
+        val onlineText = installOnlineText(context, state, progressPercent)
         return NotificationPayload(
             state = McpNotificationPayload(
                 serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
                 running = running,
-                port = progressPercent,
+                port = progressPercent ?: state.phase.stageOrdinal,
                 path = content,
                 clients = if (running) 1 else 0,
                 ongoing = running,
@@ -118,8 +119,8 @@ internal object GitHubApkInstallNotificationHelper {
                 showSecondaryActionWhenStopped = true,
                 overrideTitle = context.getString(state.phase.titleRes),
                 overrideContent = content,
-                overrideOnlineText = context.getString(state.phase.shortTextRes),
-                overrideShortText = context.getString(state.phase.shortTextRes),
+                overrideOnlineText = onlineText,
+                overrideShortText = onlineText,
                 overrideProgressPercent = progressPercent
             ),
             settings = UserSettings(miIslandOuterGlow = miIsland),
@@ -289,18 +290,37 @@ private val GitHubApkInstallPhase.shortTextRes: Int
         GitHubApkInstallPhase.Idle -> R.string.github_apk_install_notify_short_installing
     }
 
-private fun GitHubApkInstallPhase.progressPercent(state: GitHubApkInstallFlowState): Int {
-    return when (this) {
-        GitHubApkInstallPhase.Downloading,
-        GitHubApkInstallPhase.SelectingApk,
-        GitHubApkInstallPhase.Inspecting,
-        GitHubApkInstallPhase.ReadyToInstall,
-        GitHubApkInstallPhase.Installing,
-        GitHubApkInstallPhase.PendingUserAction -> state.overallProgressPercent.coerceIn(1, 99)
+private fun GitHubApkInstallFlowState.downloadProgressPercentOrNull(): Int? {
+    if (!showsDeterminateDownloadProgress) return null
+    return stageProgressPercent.coerceIn(0, 99)
+}
 
-        GitHubApkInstallPhase.Success -> 100
+private fun installOnlineText(
+    context: Context,
+    state: GitHubApkInstallFlowState,
+    progressPercent: Int?
+): String {
+    val phaseText = context.getString(state.phase.shortTextRes)
+    return progressPercent?.let { percent ->
+        context.getString(
+            R.string.github_apk_install_notify_short_with_progress,
+            phaseText,
+            percent
+        )
+    } ?: phaseText
+}
+
+private val GitHubApkInstallPhase.stageOrdinal: Int
+    get() = when (this) {
+        GitHubApkInstallPhase.Downloading -> 1
+        GitHubApkInstallPhase.SelectingApk -> 2
+        GitHubApkInstallPhase.Inspecting -> 3
+        GitHubApkInstallPhase.ReadyToInstall -> 4
+        GitHubApkInstallPhase.Installing,
+        GitHubApkInstallPhase.PendingUserAction -> 5
+
+        GitHubApkInstallPhase.Success -> 6
         GitHubApkInstallPhase.Failed,
         GitHubApkInstallPhase.Cancelled,
         GitHubApkInstallPhase.Idle -> 0
     }
-}

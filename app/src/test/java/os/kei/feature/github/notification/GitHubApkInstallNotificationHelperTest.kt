@@ -41,7 +41,7 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
-    fun `installing notification shows progress and cancel action`() {
+    fun `installing notification uses status category and cancel action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
             context = context,
@@ -53,7 +53,7 @@ class GitHubApkInstallNotificationHelperTest {
             )
         )
 
-        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
         assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertEquals(2, notification.actions.size)
         assertEquals(

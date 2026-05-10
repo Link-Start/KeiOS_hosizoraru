@@ -85,6 +85,8 @@ class MiIslandNotificationBuilder(
         val isGitHubApkInstall =
             McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
         val isGitHubFlow = isGitHubShareImport || isGitHubApkInstall
+        val isGitHubProgressFlow = isGitHubShareImport ||
+                (isGitHubApkInstall && state.overrideProgressPercent != null)
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -113,6 +115,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
             isGitHubFlow = isGitHubFlow,
+            isGitHubApkInstall = isGitHubApkInstall,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
@@ -124,7 +127,8 @@ class MiIslandNotificationBuilder(
                 when {
                     isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     isBlueArchiveCalendarPool && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isGitHubFlow && state.running -> NotificationCompat.CATEGORY_PROGRESS
+                    isGitHubProgressFlow && state.running -> NotificationCompat.CATEGORY_PROGRESS
+                    isGitHubFlow && state.running -> NotificationCompat.CATEGORY_STATUS
                     !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
                     else -> NotificationCompat.CATEGORY_STATUS
                 }
@@ -188,6 +192,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
             isGitHubFlow = isGitHubFlow,
+            isGitHubApkInstall = isGitHubApkInstall,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val useSemanticIcon = isBlueArchiveNotification || isGitHubFlow
@@ -361,6 +366,7 @@ class MiIslandNotificationBuilder(
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
         isGitHubFlow: Boolean,
+        isGitHubApkInstall: Boolean,
         miIslandProgressColorOverride: String? = null
     ): IslandPresentation {
         if (isBlueArchiveAp && state.running) {
@@ -436,32 +442,40 @@ class MiIslandNotificationBuilder(
             )
         }
         if (isGitHubFlow && state.running) {
+            val hasProgress = !isGitHubApkInstall || state.overrideProgressPercent != null
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
             val isTerminal = state.clients <= 0 && progressPercent >= 100
+            val useProgressTemplate = hasProgress && !isTerminal
             return IslandPresentation(
-                allowFloat = state.clients <= 0,
+                allowFloat = if (isGitHubApkInstall) true else state.clients <= 0,
                 showTextButtons = true,
-                bigTemplateKind = if (isTerminal) {
-                    IslandBigTemplateKind.TEXT
-                } else {
+                bigTemplateKind = if (useProgressTemplate) {
                     IslandBigTemplateKind.PROGRESS_TEXT
-                },
-                smallTemplateKind = if (isTerminal) {
-                    IslandSmallTemplateKind.ICON
                 } else {
+                    IslandBigTemplateKind.TEXT
+                },
+                smallTemplateKind = if (useProgressTemplate) {
                     IslandSmallTemplateKind.PROGRESS_ICON
+                } else {
+                    IslandSmallTemplateKind.ICON
                 },
                 compactTitle = resolveCompactTitle(
                     raw = state.onlineText(context),
                     fallback = state.shortText
                 ),
+                compactContent = if (useProgressTemplate) {
+                    null
+                } else {
+                    state.content(context)
+                        .takeIf { it.isNotBlank() && it != state.onlineText(context) }
+                },
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = !isTerminal,
+                showExpandedProgress = useProgressTemplate,
                 progressPercent = progressPercent,
                 progressColor = progressColor,
                 notificationAccentColor = progressColor

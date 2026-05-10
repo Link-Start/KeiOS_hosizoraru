@@ -249,7 +249,7 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
-    fun `github apk install island uses progress and stop action labels`() {
+    fun `github apk install download island uses progress template and stop action labels`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(
             context = context,
@@ -277,10 +277,10 @@ class MiIslandNotificationBuilderTest {
                 primaryActionLabel = "打开 Sheet",
                 secondaryActionLabel = "停止",
                 showSecondaryActionWhenStopped = true,
-                overrideTitle = "正在安装",
-                overrideContent = "正在安装 demo.app",
-                overrideOnlineText = "安装",
-                overrideShortText = "安装",
+                overrideTitle = "正在下载 APK",
+                overrideContent = "正在下载 demo.apk",
+                overrideOnlineText = "下载 62%",
+                overrideShortText = "下载 62%",
                 overrideProgressPercent = 62
             ),
             settings = UserSettings(miIslandOuterGlow = true),
@@ -302,7 +302,66 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":62"))
+        assertTrue(focusParam.contains("demo.apk"))
+    }
+
+    @Test
+    fun `github apk install installing island uses status template and stop action labels`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 831,
+            action = "os.kei.test.OPEN_GITHUB_APK_INSTALL_STATUS"
+        )
+        val cancelPendingIntent = PendingIntent.getBroadcast(
+            context,
+            832,
+            Intent("os.kei.test.CANCEL_GITHUB_APK_INSTALL_STATUS").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = true,
+                port = 5,
+                path = "正在安装 demo.app",
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = cancelPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                primaryActionLabel = "打开 Sheet",
+                secondaryActionLabel = "停止",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "正在安装",
+                overrideContent = "正在安装 demo.app",
+                overrideOnlineText = "安装",
+                overrideShortText = "安装",
+                overrideProgressPercent = null
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(notificationOpenPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(cancelPendingIntent, focusStopAction.actionIntent)
+        assertEquals("打开 Sheet", focusOpenAction.title.toString())
+        assertEquals("停止", focusStopAction.title.toString())
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
         assertTrue(focusParam.contains("demo.app"))
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
     }
 
     @Test

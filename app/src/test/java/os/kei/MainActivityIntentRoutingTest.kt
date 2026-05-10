@@ -19,6 +19,22 @@ class MainActivityIntentRoutingTest {
     }
 
     @Test
+    fun `valid github apk install sheet route is preserved`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            rawMcpServerAction = null,
+            rawShortcutAction = MainActivity.SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_GITHUB, route?.targetBottomPage)
+        assertEquals(
+            MainActivity.SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET,
+            route?.shortcutAction
+        )
+        assertNull(route?.mcpServerAction)
+    }
+
+    @Test
     fun `mismatched shortcut action is dropped`() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,

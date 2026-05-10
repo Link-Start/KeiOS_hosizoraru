@@ -37,6 +37,7 @@ import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
 import os.kei.ui.page.main.host.main.MainScreen
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
         const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
         const val SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED = "github_refresh_tracked"
+        const val SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET = "github_open_apk_install_sheet"
     }
 
     private var shizukuStatus = mutableStateOf("Shizuku status: initializing...")
@@ -280,6 +282,7 @@ class MainActivity : ComponentActivity() {
         applyPendingBaApIslandAction()
         applyPendingBaBgmPlaybackAction()
         applyPendingGitHubRefreshAction()
+        applyPendingGitHubApkInstallSheetAction()
         pendingShortcutAction = null
     }
 
@@ -333,6 +336,13 @@ class MainActivity : ComponentActivity() {
         if (action != SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED) return
         pendingShortcutAction = null
         requestedGitHubRefreshToken += 1
+    }
+
+    private fun applyPendingGitHubApkInstallSheetAction() {
+        val action = pendingShortcutAction ?: return
+        if (action != SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET) return
+        pendingShortcutAction = null
+        GitHubApkInstallFlowCoordinator.showSheet()
     }
 
     private fun applyPendingBaBgmPlaybackAction() {

@@ -1,6 +1,7 @@
 package os.kei.core.install
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
@@ -17,7 +18,8 @@ data class LocalApkArchiveInfo(
     val signatureSha256: List<String>,
     val debuggable: Boolean,
     val testOnly: Boolean,
-    val nativeAbis: List<String> = emptyList()
+    val nativeAbis: List<String> = emptyList(),
+    val appLabel: String = ""
 )
 
 class ApkArchiveInspector(
@@ -35,11 +37,14 @@ class ApkArchiveInspector(
             ?: error("APK package info unavailable")
         info.applicationInfo?.sourceDir = file.absolutePath
         info.applicationInfo?.publicSourceDir = file.absolutePath
-        info.toLocalApkArchiveInfo(file)
+        info.toLocalApkArchiveInfo(file, context.packageManager)
     }
 }
 
-private fun PackageInfo.toLocalApkArchiveInfo(file: File): LocalApkArchiveInfo {
+private fun PackageInfo.toLocalApkArchiveInfo(
+    file: File,
+    packageManager: PackageManager
+): LocalApkArchiveInfo {
     val appInfo = applicationInfo
     return LocalApkArchiveInfo(
         packageName = packageName.orEmpty(),
@@ -50,8 +55,16 @@ private fun PackageInfo.toLocalApkArchiveInfo(file: File): LocalApkArchiveInfo {
         signatureSha256 = signatureSha256List(),
         debuggable = appInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0,
         testOnly = appInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_TEST_ONLY) != 0,
-        nativeAbis = file.nativeAbis()
+        nativeAbis = file.nativeAbis(),
+        appLabel = appInfo.archiveLabel(packageManager)
     )
+}
+
+private fun ApplicationInfo?.archiveLabel(packageManager: PackageManager): String {
+    this ?: return ""
+    return runCatching { loadLabel(packageManager).toString() }
+        .getOrDefault("")
+        .trim()
 }
 
 private fun File.nativeAbis(): List<String> {

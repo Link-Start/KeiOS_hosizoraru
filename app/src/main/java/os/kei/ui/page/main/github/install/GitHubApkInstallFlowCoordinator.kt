@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +29,7 @@ import os.kei.core.install.ShizukuDualInstallBackend
 import os.kei.core.install.ShizukuSessionInstallBackend
 import os.kei.core.install.ShizukuShellInstallBackend
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -362,6 +364,9 @@ internal object GitHubApkInstallFlowCoordinator {
         }
         when (result) {
             is ApkInstallResult.Success -> {
+                val refreshedTrackIds = withContext(Dispatchers.IO) {
+                    refreshTrackedItemsAfterInstall(work, archiveInfo)
+                }
                 updateState(
                     _state.value.copy(
                         phase = GitHubApkInstallPhase.Success,
@@ -373,6 +378,12 @@ internal object GitHubApkInstallFlowCoordinator {
                 work.cleanup()
                 if (activeWork === work) {
                     activeWork = null
+                }
+                refreshedTrackIds.forEach { trackId ->
+                    GitHubTrackStoreSignals.requestTrackRefresh(
+                        trackId = trackId,
+                        notifyChangeSignal = false
+                    )
                 }
                 GitHubTrackStoreSignals.notifyChanged()
                 if (work.request.sourceKind == GitHubApkInstallSourceKind.ShareImport) {
@@ -598,6 +609,57 @@ internal object GitHubApkInstallFlowCoordinator {
         )
     }
 
+    private suspend fun refreshTrackedItemsAfterInstall(
+        work: ActiveInstallWork,
+        archiveInfo: LocalApkArchiveInfo
+    ): Set<String> {
+        val packageName = archiveInfo.packageName
+            .ifBlank { work.request.expectedPackageName }
+            .trim()
+        if (packageName.isBlank()) return emptySet()
+        val installedInfo = awaitInstalledPackageInfo(
+            context = work.appContext,
+            packageName = packageName
+        )
+        val appLabel = installedInfo?.appLabel.orEmpty().ifBlank { archiveInfo.appLabel }
+        val items = GitHubTrackStore.load()
+        val matchedIds = items
+            .filter { item -> item.packageName.equals(packageName, ignoreCase = true) }
+            .map { item -> item.id }
+            .toSet()
+        if (matchedIds.isEmpty()) return emptySet()
+        if (appLabel.isNotBlank()) {
+            val updated = items.map { item ->
+                if (
+                    item.id in matchedIds &&
+                    !item.appLabel.equals(appLabel, ignoreCase = false)
+                ) {
+                    item.copy(appLabel = appLabel)
+                } else {
+                    item
+                }
+            }
+            if (updated != items) {
+                GitHubTrackStore.save(updated)
+            }
+        }
+        return matchedIds
+    }
+
+    private suspend fun awaitInstalledPackageInfo(
+        context: Context,
+        packageName: String
+    ): GitHubInstalledPackageInfo? {
+        repeat(INSTALL_SUCCESS_PACKAGE_INFO_RETRY_COUNT) { index ->
+            val installed = loadInstalledPackageInfo(context, packageName)
+            if (installed != null) return installed
+            if (index < INSTALL_SUCCESS_PACKAGE_INFO_RETRY_COUNT - 1) {
+                delay(INSTALL_SUCCESS_PACKAGE_INFO_RETRY_DELAY_MS)
+            }
+        }
+        return null
+    }
+
     private fun android.content.pm.ApplicationInfo?.sourceApkSizeBytes(): Long {
         if (this == null) return 0L
         val files = buildList {
@@ -629,6 +691,9 @@ internal object GitHubApkInstallFlowCoordinator {
             .digest(this)
             .joinToString("") { byte -> "%02x".format(byte) }
     }
+
+    private const val INSTALL_SUCCESS_PACKAGE_INFO_RETRY_COUNT = 3
+    private const val INSTALL_SUCCESS_PACKAGE_INFO_RETRY_DELAY_MS = 250L
 
     private data class ActiveInstallWork(
         val appContext: Context,

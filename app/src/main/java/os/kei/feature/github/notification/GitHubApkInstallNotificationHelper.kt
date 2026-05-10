@@ -6,7 +6,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import os.kei.MainActivity
 import os.kei.R
+import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.mcp.framework.notification.NotificationHelper
@@ -128,10 +130,19 @@ internal object GitHubApkInstallNotificationHelper {
     }
 
     private fun buildOpenPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, GitHubApkInstallActionReceiver::class.java).apply {
-            action = GitHubApkInstallActionReceiver.ACTION_OPEN_INSTALL_SHEET
+        val intent = Intent(context, MainActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_GITHUB)
+            putExtra(
+                MainActivity.EXTRA_SHORTCUT_ACTION,
+                MainActivity.SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET
+            )
         }
-        return PendingIntent.getBroadcast(
+        return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,
             REQUEST_OPEN,
             intent,

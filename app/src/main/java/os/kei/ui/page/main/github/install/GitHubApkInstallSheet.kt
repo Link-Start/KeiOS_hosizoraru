@@ -25,10 +25,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkTrustReason
 import os.kei.feature.github.model.GitHubDecisionLevel
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
+import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -74,8 +74,9 @@ internal fun GitHubApkInstallSheet(
                 .navigationBarsPadding()
                 .imePadding()
                 .padding(bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            InstallIdentityHeader(state)
             InstallMainCard(state = state, context = context)
 
             when (state.phase) {
@@ -97,8 +98,8 @@ private fun InstallMainCard(
     context: android.content.Context
 ) {
     SheetSectionCard(
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-        verticalSpacing = 6.dp
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        verticalSpacing = 8.dp
     ) {
         InstallHeader(state = state)
         if (state.phase in progressPhases) {
@@ -113,16 +114,66 @@ private fun InstallMainCard(
 }
 
 @Composable
+private fun InstallIdentityHeader(state: GitHubApkInstallFlowState) {
+    val packageName = state.candidatePackageName()
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AppIcon(
+            packageName = packageName,
+            size = 58.dp,
+            localRefreshKey = state.sessionId
+        )
+        Text(
+            text = state.identityName(),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.SectionTitle.fontSize,
+            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        packageName.takeIf { it.isNotBlank() }?.let {
+            Text(
+                text = it,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
 private fun InstallHeader(state: GitHubApkInstallFlowState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        StatusPill(
-            label = stringResource(state.phase.labelRes()),
-            color = state.phase.statusColor()
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatusPill(
+                label = stringResource(state.phase.labelRes()),
+                color = state.phase.statusColor()
+            )
+            if (state.phase == GitHubApkInstallPhase.ReadyToInstall) {
+                state.versionVerdict()?.let { verdict ->
+                    StatusPill(
+                        label = verdict.label,
+                        color = verdict.color,
+                        size = AppStatusPillSize.Compact,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+        }
         if (state.phase in progressPhases) {
             Text(
                 text = stringResource(
@@ -137,10 +188,10 @@ private fun InstallHeader(state: GitHubApkInstallFlowState) {
     }
     Text(
         text = state.displayFileName(),
-        color = MiuixTheme.colorScheme.onBackground,
-        fontSize = AppTypographyTokens.Body.fontSize,
-        lineHeight = AppTypographyTokens.Body.lineHeight,
-        maxLines = 2,
+        color = MiuixTheme.colorScheme.onBackgroundVariant,
+        fontSize = AppTypographyTokens.Caption.fontSize,
+        lineHeight = AppTypographyTokens.Caption.lineHeight,
+        maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
     state.message
@@ -155,49 +206,170 @@ private fun InstallReferenceRows(
     state: GitHubApkInstallFlowState,
     context: android.content.Context
 ) {
-    val displaySize = state.selectedCandidateSizeBytes
+    val rows = state.installComparisonRows(context)
+    if (rows.isEmpty()) return
+    InstallComparisonTable(rows)
+}
+
+@Composable
+private fun GitHubApkInstallFlowState.installComparisonRows(
+    context: android.content.Context
+): List<InstallComparisonRowModel> {
+    val displaySize = selectedCandidateSizeBytes
         .takeIf { it > 0L }
-        ?: state.asset?.sizeBytes.orZero()
-    val localSize = state.installedPackageInfo?.sourceSizeBytes.orZero()
-    state.comparisonLabel(
-        local = state.installedPackageInfo?.packageName.orEmpty(),
-        candidate = state.candidatePackageName()
-    ).takeIf { it.isNotBlank() }?.let {
-        InfoRow(stringResource(R.string.github_apk_install_reference_package), it)
+        ?: asset?.sizeBytes.orZero()
+    val localSize = installedPackageInfo?.sourceSizeBytes.orZero()
+    val notInstalled = stringResource(R.string.github_apk_install_value_not_installed)
+    val unknown = stringResource(R.string.github_apk_install_value_unknown)
+    val installed = installedPackageInfo != null
+    fun local(value: String): String {
+        return when {
+            value.isNotBlank() -> value
+            installed -> unknown
+            else -> notInstalled
+        }
     }
-    state.comparisonLabel(
-        local = state.installedPackageInfo?.versionLabel().orEmpty(),
-        candidate = state.candidateVersionLabel()
-    ).takeIf { it.isNotBlank() }?.let {
-        InfoRow(stringResource(R.string.github_apk_install_reference_version_compare), it)
-    }
-    state.comparisonLabel(
-        local = state.installedPackageInfo?.sdkShortLabel().orEmpty(),
-        candidate = state.candidateSdkShortLabel()
-    ).takeIf { it.isNotBlank() }?.let {
-        InfoRow(stringResource(R.string.github_apk_install_reference_sdk), it)
-    }
-    if (displaySize > 0L) {
-        InfoRow(
-            stringResource(R.string.github_apk_install_reference_size),
-            state.comparisonLabel(
-                local = localSize.takeIf { it > 0L }?.let { formatAssetSize(it, context) }
-                    .orEmpty(),
-                candidate = formatAssetSize(displaySize, context)
+
+    fun candidate(value: String): String = value.ifBlank { unknown }
+    fun row(label: String, localValue: String, candidateValue: String): InstallComparisonRowModel {
+        return InstallComparisonRowModel(
+            label = label,
+            value = comparisonValue(
+                context = context,
+                localValue = localValue,
+                candidateValue = candidateValue
             )
         )
     }
-    state.comparisonLabel(
-        local = deviceAbiLabel(),
-        candidate = state.candidateAbiLabel()
-    ).takeIf { it.isNotBlank() }?.let {
-        InfoRow(stringResource(R.string.github_apk_install_reference_abi), it)
+    return buildList {
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_name),
+                localValue = local(installedPackageInfo?.appLabel.orEmpty()),
+                candidateValue = candidate(candidateAppLabel())
+            )
+        )
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_package),
+                localValue = local(installedPackageInfo?.packageName.orEmpty()),
+                candidateValue = candidate(candidatePackageName())
+            )
+        )
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_version_name),
+                localValue = local(installedPackageInfo?.versionName.orEmpty()),
+                candidateValue = candidate(candidateVersionName())
+            )
+        )
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_version_code),
+                localValue = local(installedPackageInfo?.versionCodeLabel().orEmpty()),
+                candidateValue = candidate(candidateVersionCodeLabel())
+            )
+        )
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_target_sdk),
+                localValue = local(installedPackageInfo?.targetSdk.sdkLabel()),
+                candidateValue = candidate(candidateTargetSdkLabel())
+            )
+        )
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_min_sdk),
+                localValue = local(installedPackageInfo?.minSdk.sdkLabel()),
+                candidateValue = candidate(candidateMinSdkLabel())
+            )
+        )
+        if (displaySize > 0L) {
+            addIfUseful(
+                row(
+                    label = stringResource(R.string.github_apk_install_reference_size),
+                    localValue = local(
+                        localSize
+                            .takeIf { it > 0L }
+                            ?.let { formatAssetSize(it, context) }
+                            .orEmpty()
+                    ),
+                    candidateValue = formatAssetSize(displaySize, context)
+                )
+            )
+        }
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_abi),
+                localValue = deviceAbiLabel().ifBlank { unknown },
+                candidateValue = candidate(candidateAbiLabel())
+            )
+        )
+        addIfUseful(
+            row(
+                label = stringResource(R.string.github_apk_install_reference_signature),
+                localValue = local(
+                    installedPackageInfo?.signatureSha256?.firstOrNull()?.shortSha().orEmpty()
+                ),
+                candidateValue = candidate(candidateSignatureShortLabel())
+            )
+        )
     }
-    state.comparisonLabel(
-        local = state.installedPackageInfo?.signatureSha256?.firstOrNull()?.shortSha().orEmpty(),
-        candidate = state.candidateSignatureShortLabel()
-    ).takeIf { it.isNotBlank() }?.let {
-        InfoRow(stringResource(R.string.github_apk_install_reference_signature), it)
+}
+
+private data class InstallComparisonRowModel(
+    val label: String,
+    val value: String
+)
+
+private data class InstallComparisonVerdictModel(
+    val label: String,
+    val color: Color
+)
+
+private fun MutableList<InstallComparisonRowModel>.addIfUseful(
+    row: InstallComparisonRowModel
+) {
+    if (row.value.isBlank()) return
+    add(row)
+}
+
+@Composable
+private fun InstallComparisonTable(rows: List<InstallComparisonRowModel>) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        rows.forEach { row -> InstallComparisonRow(row) }
+    }
+}
+
+@Composable
+private fun InstallComparisonRow(row: InstallComparisonRowModel) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = row.label,
+            modifier = Modifier.weight(0.30f),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.BodyEmphasis.fontSize,
+            lineHeight = AppTypographyTokens.BodyEmphasis.lineHeight,
+            fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = row.value,
+            modifier = Modifier.weight(0.70f),
+            color = MiuixTheme.colorScheme.primary,
+            fontSize = AppTypographyTokens.Body.fontSize,
+            lineHeight = AppTypographyTokens.Body.lineHeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -330,37 +502,6 @@ private fun ApkCandidateSection(
 }
 
 @Composable
-private fun InfoRow(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(0.28f),
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = value,
-            modifier = Modifier.weight(0.72f),
-            color = MiuixTheme.colorScheme.primary,
-            fontSize = AppTypographyTokens.Caption.fontSize,
-            lineHeight = AppTypographyTokens.Caption.lineHeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
 private fun InstallActionSection(
     state: GitHubApkInstallFlowState,
     context: android.content.Context,
@@ -369,7 +510,7 @@ private fun InstallActionSection(
     SheetSectionCard(verticalSpacing = 8.dp) {
         InstallBottomResult(state)
         when (state.phase) {
-            GitHubApkInstallPhase.ReadyToInstall -> InstallConfirmButtons(context, backdrop)
+            GitHubApkInstallPhase.ReadyToInstall -> InstallConfirmButtons(state, context, backdrop)
             GitHubApkInstallPhase.PendingUserAction -> AppLiquidTextButton(
                 backdrop = backdrop,
                 text = stringResource(R.string.github_apk_install_action_open_system_confirm),
@@ -429,6 +570,7 @@ private fun InstallActionSection(
 
 @Composable
 private fun InstallConfirmButtons(
+    state: GitHubApkInstallFlowState,
     context: android.content.Context,
     backdrop: LayerBackdrop
 ) {
@@ -438,14 +580,14 @@ private fun InstallConfirmButtons(
     ) {
         AppLiquidTextButton(
             backdrop = backdrop,
-            text = stringResource(R.string.common_cancel),
-            onClick = { GitHubApkInstallFlowCoordinator.cancel(context) },
+            text = stringResource(R.string.github_apk_install_action_more),
+            onClick = { GitHubApkInstallFlowCoordinator.openExternalCurrent(context) },
             modifier = Modifier.weight(1f),
             variant = GlassVariant.SheetAction
         )
         AppLiquidTextButton(
             backdrop = backdrop,
-            text = stringResource(R.string.github_apk_install_action_install),
+            text = stringResource(state.installPrimaryActionLabelRes()),
             onClick = GitHubApkInstallFlowCoordinator::confirmInstall,
             modifier = Modifier.weight(1f),
             variant = GlassVariant.SheetAction
@@ -503,19 +645,68 @@ private fun GitHubApkInstallFlowState.displayFileName(): String {
         .ifBlank { request.displayLabel }
 }
 
+private fun GitHubApkInstallFlowState.identityName(): String {
+    return candidateAppLabel()
+        .ifBlank { installedPackageInfo?.appLabel.orEmpty() }
+        .ifBlank { request.sourceLabel }
+        .ifBlank { request.displayLabel }
+}
+
+private fun GitHubApkInstallFlowState.candidateAppLabel(): String {
+    return localArchiveInfo?.appLabel.orEmpty()
+}
+
+private fun GitHubApkInstallFlowState.candidateVersionName(): String {
+    return localArchiveInfo
+        ?.versionName
+        .orEmpty()
+        .ifBlank {
+            (remoteManifestInfo ?: request.remoteManifestInfo)
+                ?.versionName
+                ?.trim()
+                .orEmpty()
+        }
+}
+
 @Composable
-private fun GitHubApkInstallFlowState.candidateVersionLabel(): String {
-    val unknownValue = stringResource(R.string.github_apk_install_value_unknown)
-    val archive = localArchiveInfo
-    if (archive != null && (archive.versionName.isNotBlank() || archive.versionCode >= 0L)) {
-        return stringResource(
-            R.string.github_apk_install_reference_version_value,
-            archive.versionName.ifBlank { unknownValue },
-            archive.versionCode
-        )
+private fun GitHubApkInstallFlowState.versionVerdict(): InstallComparisonVerdictModel? {
+    val candidateCode = candidateVersionCode() ?: return null
+    val localCode = installedPackageInfo?.versionCode?.takeIf { it >= 0L }
+    val (labelRes, color) = when {
+        localCode == null ->
+            R.string.github_apk_install_version_status_new to GitHubStatusPalette.Active
+
+        candidateCode > localCode ->
+            R.string.github_apk_install_version_status_upgrade to GitHubStatusPalette.Update
+
+        candidateCode < localCode ->
+            R.string.github_apk_install_version_status_downgrade to GitHubStatusPalette.Error
+
+        else ->
+            R.string.github_apk_install_version_status_same to GitHubStatusPalette.Cache
     }
-    val remote = remoteManifestInfo ?: request.remoteManifestInfo
-    return remote.versionLabel()
+    return InstallComparisonVerdictModel(
+        label = stringResource(labelRes),
+        color = color
+    )
+}
+
+private fun GitHubApkInstallFlowState.candidateVersionCode(): Long? {
+    return localArchiveInfo
+        ?.versionCode
+        ?.takeIf { it >= 0L }
+        ?: (remoteManifestInfo ?: request.remoteManifestInfo)
+            ?.versionCode
+            ?.trim()
+            ?.toLongOrNull()
+}
+
+private fun GitHubApkInstallFlowState.candidateVersionCodeLabel(): String {
+    return candidateVersionCode()?.toString().orEmpty()
+}
+
+private fun GitHubInstalledPackageInfo.versionCodeLabel(): String {
+    return versionCode.takeIf { it >= 0L }?.toString().orEmpty()
 }
 
 private fun GitHubApkInstallFlowState.candidatePackageName(): String {
@@ -525,59 +716,24 @@ private fun GitHubApkInstallFlowState.candidatePackageName(): String {
         .ifBlank { request.expectedPackageName }
 }
 
-private fun GitHubInstalledPackageInfo.versionLabel(): String {
-    return when {
-        versionName.isNotBlank() && versionCode >= 0L -> "$versionName ($versionCode)"
-        versionName.isNotBlank() -> versionName
-        versionCode >= 0L -> versionCode.toString()
-        else -> ""
-    }
+private fun GitHubApkInstallFlowState.candidateTargetSdkLabel(): String {
+    localArchiveInfo?.targetSdk?.takeIf { it >= 0 }?.let { return it.toString() }
+    return (remoteManifestInfo ?: request.remoteManifestInfo)
+        ?.targetSdk
+        ?.trim()
+        .orEmpty()
 }
 
-@Composable
-private fun GitHubApkInstallFlowState.comparisonLabel(
-    local: String,
-    candidate: String
-): String {
-    val localLabel = local.trim()
-    val candidateLabel = candidate.trim()
-    return when {
-        localLabel.isNotBlank() && candidateLabel.isNotBlank() && localLabel == candidateLabel ->
-            stringResource(
-                R.string.github_apk_install_reference_same_value,
-                candidateLabel
-            )
-
-        localLabel.isNotBlank() && candidateLabel.isNotBlank() -> stringResource(
-            R.string.github_apk_install_reference_compare_value,
-            localLabel,
-            candidateLabel
-        )
-
-        candidateLabel.isNotBlank() -> candidateLabel
-        localLabel.isNotBlank() -> localLabel
-        else -> ""
-    }
+private fun GitHubApkInstallFlowState.candidateMinSdkLabel(): String {
+    localArchiveInfo?.minSdk?.takeIf { it >= 0 }?.let { return it.toString() }
+    return (remoteManifestInfo ?: request.remoteManifestInfo)
+        ?.minSdk
+        ?.trim()
+        .orEmpty()
 }
 
-private fun GitHubInstalledPackageInfo.sdkShortLabel(): String {
-    return sdkShortLabel(minSdk, targetSdk)
-}
-
-private fun GitHubApkInstallFlowState.candidateSdkShortLabel(): String {
-    val archive = localArchiveInfo
-    if (archive != null && (archive.minSdk >= 0 || archive.targetSdk >= 0)) {
-        return sdkShortLabel(archive.minSdk, archive.targetSdk)
-    }
-    val remote = remoteManifestInfo ?: request.remoteManifestInfo
-    val minSdk = remote?.minSdk?.trim().orEmpty()
-    val targetSdk = remote?.targetSdk?.trim().orEmpty()
-    return when {
-        minSdk.isNotBlank() && targetSdk.isNotBlank() -> "$minSdk/$targetSdk"
-        minSdk.isNotBlank() -> "min $minSdk"
-        targetSdk.isNotBlank() -> "target $targetSdk"
-        else -> ""
-    }
+private fun Int?.sdkLabel(): String {
+    return this?.takeIf { it >= 0 }?.toString().orEmpty()
 }
 
 @Composable
@@ -610,12 +766,33 @@ private fun GitHubApkInstallFlowState.candidateSignatureShortLabel(): String {
     return ""
 }
 
-private fun sdkShortLabel(minSdk: Int, targetSdk: Int): String {
+private fun comparisonValue(
+    context: android.content.Context,
+    localValue: String,
+    candidateValue: String
+): String {
+    val local = localValue.trim()
+    val candidate = candidateValue.trim()
     return when {
-        minSdk >= 0 && targetSdk >= 0 -> "$minSdk/$targetSdk"
-        minSdk >= 0 -> "min $minSdk"
-        targetSdk >= 0 -> "target $targetSdk"
-        else -> ""
+        local.isNotBlank() && candidate.isNotBlank() && local != candidate ->
+            context.getString(R.string.github_apk_install_reference_compare_value, local, candidate)
+
+        candidate.isNotBlank() -> candidate
+        else -> local
+    }
+}
+
+private fun GitHubApkInstallFlowState.installPrimaryActionLabelRes(): Int {
+    val candidateCode = candidateVersionCode()
+    val localCode = installedPackageInfo?.versionCode?.takeIf { it >= 0L }
+    return when {
+        candidateCode != null && localCode != null && candidateCode > localCode ->
+            R.string.github_apk_install_action_upgrade
+
+        candidateCode != null && localCode != null && candidateCode < localCode ->
+            R.string.github_apk_install_action_downgrade
+
+        else -> R.string.github_apk_install_action_install
     }
 }
 
@@ -660,18 +837,6 @@ private fun String.shortSha(): String {
         .take(12)
         .takeIf { it.isNotBlank() }
         .orEmpty()
-}
-
-private fun GitHubApkManifestInfo?.versionLabel(): String {
-    if (this == null) return ""
-    val name = versionName.trim()
-    val code = versionCode.trim()
-    return when {
-        name.isNotBlank() && code.isNotBlank() -> "$name ($code)"
-        name.isNotBlank() -> name
-        code.isNotBlank() -> code
-        else -> ""
-    }
 }
 
 private fun GitHubApkInstallPhase.passiveActionLabelRes(): Int {

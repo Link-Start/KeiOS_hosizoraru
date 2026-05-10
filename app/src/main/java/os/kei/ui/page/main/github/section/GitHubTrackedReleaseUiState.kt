@@ -6,6 +6,7 @@ import org.json.JSONObject
 
 @Immutable
 internal data class GitHubTrackedReleaseExpansionState(
+    val localVersionExpanded: Map<String, Boolean> = emptyMap(),
     val stableVersionExpanded: Map<String, Boolean> = emptyMap(),
     val preReleaseVersionExpanded: Map<String, Boolean> = emptyMap()
 )
@@ -13,6 +14,7 @@ internal data class GitHubTrackedReleaseExpansionState(
 internal object GitHubTrackedReleaseUiStateStore {
     private const val KV_ID = "github_tracked_release_ui_state"
     private const val KEY_EXPANSION_STATE = "tracked_release_expansion_state"
+    private const val JSON_LOCAL = "local"
     private const val JSON_STABLE = "stable"
     private const val JSON_PRE_RELEASE = "preRelease"
 
@@ -27,6 +29,18 @@ internal object GitHubTrackedReleaseUiStateStore {
         save(
             current.copy(
                 stableVersionExpanded = current.stableVersionExpanded.withExpandedValue(
+                    itemId,
+                    value
+                )
+            )
+        )
+    }
+
+    fun setLocalVersionExpanded(itemId: String, value: Boolean) {
+        val current = load()
+        save(
+            current.copy(
+                localVersionExpanded = current.localVersionExpanded.withExpandedValue(
                     itemId,
                     value
                 )
@@ -50,6 +64,7 @@ internal object GitHubTrackedReleaseUiStateStore {
         val current = load()
         save(
             GitHubTrackedReleaseExpansionState(
+                localVersionExpanded = current.localVersionExpanded - itemId,
                 stableVersionExpanded = current.stableVersionExpanded - itemId,
                 preReleaseVersionExpanded = current.preReleaseVersionExpanded - itemId
             )
@@ -60,6 +75,7 @@ internal object GitHubTrackedReleaseUiStateStore {
         val current = load()
         save(
             GitHubTrackedReleaseExpansionState(
+                localVersionExpanded = current.localVersionExpanded.filterKeys { it in validItemIds },
                 stableVersionExpanded = current.stableVersionExpanded.filterKeys { it in validItemIds },
                 preReleaseVersionExpanded = current.preReleaseVersionExpanded.filterKeys { it in validItemIds }
             )
@@ -71,6 +87,7 @@ internal object GitHubTrackedReleaseUiStateStore {
         return runCatching {
             val root = JSONObject(raw)
             GitHubTrackedReleaseExpansionState(
+                localVersionExpanded = decodeExpandedMap(root.optJSONObject(JSON_LOCAL)),
                 stableVersionExpanded = decodeExpandedMap(root.optJSONObject(JSON_STABLE)),
                 preReleaseVersionExpanded = decodeExpandedMap(root.optJSONObject(JSON_PRE_RELEASE))
             )
@@ -79,6 +96,7 @@ internal object GitHubTrackedReleaseUiStateStore {
 
     internal fun encodeExpansionState(state: GitHubTrackedReleaseExpansionState): String {
         return JSONObject()
+            .put(JSON_LOCAL, encodeExpandedMap(state.localVersionExpanded))
             .put(JSON_STABLE, encodeExpandedMap(state.stableVersionExpanded))
             .put(JSON_PRE_RELEASE, encodeExpandedMap(state.preReleaseVersionExpanded))
             .toString()
@@ -86,6 +104,7 @@ internal object GitHubTrackedReleaseUiStateStore {
 
     private fun save(state: GitHubTrackedReleaseExpansionState) {
         val trimmed = GitHubTrackedReleaseExpansionState(
+            localVersionExpanded = state.localVersionExpanded.onlyExpanded(),
             stableVersionExpanded = state.stableVersionExpanded.onlyExpanded(),
             preReleaseVersionExpanded = state.preReleaseVersionExpanded.onlyExpanded()
         )

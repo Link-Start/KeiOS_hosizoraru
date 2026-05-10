@@ -184,6 +184,9 @@ internal class GitHubPageState(
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
+    val trackedLocalVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
+        putAll(trackedReleaseExpansionState.localVersionExpanded)
+    }
     val trackedStableVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
         putAll(trackedReleaseExpansionState.stableVersionExpanded)
     }
@@ -266,6 +269,7 @@ internal class GitHubPageState(
 
     fun retainTrackedUiState(validItemIds: Set<String>) {
         trackedCardExpanded.keys.retainAll(validItemIds)
+        trackedLocalVersionExpanded.keys.retainAll(validItemIds)
         trackedStableVersionExpanded.keys.retainAll(validItemIds)
         trackedPreReleaseVersionExpanded.keys.retainAll(validItemIds)
         apkAssetExpanded.keys.retainAll(validItemIds)

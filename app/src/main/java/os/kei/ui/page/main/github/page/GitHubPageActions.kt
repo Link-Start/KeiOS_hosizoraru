@@ -101,6 +101,11 @@ internal class GitHubPageActions(
         GitHubTrackedReleaseUiStateStore.setStableVersionExpanded(itemId, value)
     }
 
+    fun setTrackedLocalVersionExpanded(itemId: String, value: Boolean) {
+        env.state.trackedLocalVersionExpanded[itemId] = value
+        GitHubTrackedReleaseUiStateStore.setLocalVersionExpanded(itemId, value)
+    }
+
     fun setTrackedPreReleaseVersionExpanded(itemId: String, value: Boolean) {
         env.state.trackedPreReleaseVersionExpanded[itemId] = value
         GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)

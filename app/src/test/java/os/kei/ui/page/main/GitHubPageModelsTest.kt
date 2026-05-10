@@ -145,6 +145,7 @@ class GitHubPageModelsTest {
     fun `tracked release expansion codec persists expanded items only`() {
         val raw = GitHubTrackedReleaseUiStateStore.encodeExpansionState(
             GitHubTrackedReleaseExpansionState(
+                localVersionExpanded = mapOf("owner/local" to true),
                 stableVersionExpanded = mapOf("owner/app" to true, "owner/closed" to false),
                 preReleaseVersionExpanded = mapOf("owner/beta" to true)
             )
@@ -152,6 +153,7 @@ class GitHubPageModelsTest {
 
         val decoded = GitHubTrackedReleaseUiStateStore.decodeExpansionState(raw)
 
+        assertTrue(decoded.localVersionExpanded["owner/local"] == true)
         assertTrue(decoded.stableVersionExpanded["owner/app"] == true)
         assertFalse(decoded.stableVersionExpanded.containsKey("owner/closed"))
         assertTrue(decoded.preReleaseVersionExpanded["owner/beta"] == true)

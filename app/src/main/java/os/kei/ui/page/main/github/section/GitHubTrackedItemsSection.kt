@@ -49,7 +49,6 @@ import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubRepositoryHealth
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
 import os.kei.ui.page.main.github.formatApkVersionValue
@@ -119,6 +118,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     apkAssetErrors: SnapshotStateMap<String, String>,
     apkAssetExpanded: SnapshotStateMap<String, Boolean>,
     trackedCardExpanded: SnapshotStateMap<String, Boolean>,
+    trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
     trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
     trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>,
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
@@ -126,6 +126,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
     onClearApkAssetUiState: (String) -> Unit,
+    onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     onStableVersionExpandedChange: (String, Boolean) -> Unit,
     onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,
     onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
@@ -283,17 +284,46 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         item = item,
                         onOpenExternalUrl = onOpenExternalUrl
                     )
+                    val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
+                        appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L }
+                    ) ?: stringResource(R.string.common_unknown)
                     val localText = formatLocalVersionText(context, checkStates[item.id])
                     if (localText != null) {
-                        VersionValueRow(
+                        val localVersionColor = if (state.isLocalAppUninstalled()) {
+                            MiuixTheme.colorScheme.onBackgroundVariant
+                        } else {
+                            MiuixTheme.colorScheme.primary
+                        }
+                        val localVersionExpanded = trackedLocalVersionExpanded[item.id] == true
+                        GitHubReleaseVersionCard(
                             label = stringResource(R.string.github_item_label_local_version),
                             value = localText,
-                            valueColor = if (state.isLocalAppUninstalled()) {
-                                MiuixTheme.colorScheme.onBackgroundVariant
-                            } else {
-                                MiuixTheme.colorScheme.primary
+                            textColor = localVersionColor,
+                            expanded = localVersionExpanded,
+                            emphasized = !state.isLocalAppUninstalled(),
+                            onExpandedChange = { expanded ->
+                                onLocalVersionExpandedChange(item.id, expanded)
                             }
                         )
+                        AnimatedVisibility(
+                            visible = localVersionExpanded,
+                            enter = appExpandIn(),
+                            exit = appExpandOut()
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
+                            ) {
+                                GitHubLinkedInfoCard(
+                                    label = stringResource(R.string.github_item_label_updated_at),
+                                    value = appUpdatedAtLabel,
+                                    valueColor = GitHubStatusPalette.Active,
+                                    onClick = {
+                                        onLocalVersionExpandedChange(item.id, false)
+                                    }
+                                )
+                            }
+                        }
                     }
                     val showStableRelease = state.hasStableRelease &&
                         (state.latestStableName.isNotBlank() ||
@@ -402,14 +432,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             }
                         }
                     }
-                    val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
-                        appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L }
-                    ) ?: stringResource(R.string.common_unknown)
-                    VersionValueRow(
-                        label = stringResource(R.string.github_item_label_updated_at),
-                        value = appUpdatedAtLabel,
-                        valueColor = GitHubStatusPalette.Active
-                    )
                     if (state.releaseHint.isNotBlank()) {
                         AppSupportingBlock(
                             text = githubReleaseHintMessage(context, state.releaseHint),

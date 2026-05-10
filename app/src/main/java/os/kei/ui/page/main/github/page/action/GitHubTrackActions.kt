@@ -233,6 +233,7 @@ internal class GitHubTrackActions(
                 if (editing.id != newItem.id) {
                     state.checkStates.remove(editing.id)
                     state.trackedCardExpanded.remove(editing.id)
+                    state.trackedLocalVersionExpanded.remove(editing.id)
                     state.trackedStableVersionExpanded.remove(editing.id)
                     state.trackedPreReleaseVersionExpanded.remove(editing.id)
                     GitHubTrackedReleaseUiStateStore.remove(editing.id)
@@ -256,6 +257,7 @@ internal class GitHubTrackActions(
                 state.trackedItems.remove(deleting)
                 state.checkStates.remove(deleting.id)
                 state.trackedCardExpanded.remove(deleting.id)
+                state.trackedLocalVersionExpanded.remove(deleting.id)
                 state.trackedStableVersionExpanded.remove(deleting.id)
                 state.trackedPreReleaseVersionExpanded.remove(deleting.id)
                 GitHubTrackedReleaseUiStateStore.remove(deleting.id)

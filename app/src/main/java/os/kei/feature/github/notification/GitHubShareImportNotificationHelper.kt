@@ -386,8 +386,12 @@ object GitHubShareImportNotificationHelper {
         val content = resolveContent(context, state)
         val islandTitle = state.compactIslandTitle(shortText)
         val progressPercent = state.resolvedProgressPercent
-        val overrideProgressPercent = progressPercent
-            .takeIf { state.phase.progressTemplateEnabled }
+        val downloadProgressKnown =
+            state.phase != GitHubShareImportNotificationPhase.InstallDownloading ||
+                    state.totalBytes > 0L
+        val overrideProgressPercent = progressPercent.takeIf {
+            state.phase.progressTemplateEnabled && downloadProgressKnown
+        }
         return McpNotificationPayload(
             serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = liveUpdateActive,
@@ -814,7 +818,8 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 64,
         ongoing = true,
         openGitHubPage = false,
-        cancelActionEnabled = true
+        cancelActionEnabled = true,
+        progressTemplateEnabled = false
     ),
     InstallCommitting(
         titleRes = R.string.github_share_import_notify_title_install_committing,

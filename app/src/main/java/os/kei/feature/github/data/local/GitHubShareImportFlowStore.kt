@@ -42,6 +42,10 @@ data class GitHubPendingShareImportManagedInstallRecord(
     val packageName: String = "",
     val targetDisplayName: String = "",
     val sessionId: Int = -1,
+    val progressPhase: String = "",
+    val progressPercent: Int = 0,
+    val downloadedBytes: Long = 0L,
+    val totalBytes: Long = -1L,
     val startedAtMillis: Long = System.currentTimeMillis()
 )
 
@@ -357,6 +361,10 @@ object GitHubShareImportFlowStore {
             packageName = obj.optString("packageName").trim(),
             targetDisplayName = obj.optString("targetDisplayName").trim(),
             sessionId = obj.optInt("sessionId", -1),
+            progressPhase = obj.optString("progressPhase").trim(),
+            progressPercent = obj.optInt("progressPercent", 0),
+            downloadedBytes = obj.optLong("downloadedBytes", 0L),
+            totalBytes = obj.optLong("totalBytes", -1L),
             startedAtMillis = startedAtMillis
         )
     }
@@ -374,6 +382,10 @@ object GitHubShareImportFlowStore {
             .put("packageName", record.packageName)
             .put("targetDisplayName", record.targetDisplayName)
             .put("sessionId", record.sessionId)
+            .put("progressPhase", record.progressPhase)
+            .put("progressPercent", record.progressPercent)
+            .put("downloadedBytes", record.downloadedBytes)
+            .put("totalBytes", record.totalBytes)
             .put("startedAtMillis", record.startedAtMillis)
     }
 

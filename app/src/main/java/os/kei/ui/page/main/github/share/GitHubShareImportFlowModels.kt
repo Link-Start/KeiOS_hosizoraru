@@ -9,6 +9,7 @@ import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_ALREAD
 import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_CANCELLED
 import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_FAILED
 import os.kei.feature.github.data.local.GitHubPendingShareImportAttachCandidateRecord
+import os.kei.feature.github.data.local.GitHubPendingShareImportManagedInstallRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportResultRecord
@@ -62,6 +63,39 @@ internal data class GitHubPendingShareImportTrack(
     val targetDisplayName: String = "",
     val armedAtMillis: Long = System.currentTimeMillis()
 )
+
+@Immutable
+internal data class GitHubShareImportManagedInstallProgress(
+    val phase: GitHubShareImportPhase,
+    val assetName: String = "",
+    val packageName: String = "",
+    val progressPercent: Int = 0,
+    val downloadedBytes: Long = 0L,
+    val totalBytes: Long = -1L
+) {
+    val boundedProgressPercent: Int
+        get() = progressPercent.coerceIn(0, 100)
+
+    val hasKnownDownloadProgress: Boolean
+        get() = phase == GitHubShareImportPhase.InstallDownloading && totalBytes > 0L
+
+    val progressFraction: Float
+        get() = boundedProgressPercent.toFloat() / 100f
+}
+
+internal fun GitHubPendingShareImportManagedInstallRecord.toManagedInstallProgress(): GitHubShareImportManagedInstallProgress {
+    val phase = GitHubShareImportPhase.entries.firstOrNull { phase ->
+        phase.name == progressPhase
+    } ?: GitHubShareImportPhase.Installing
+    return GitHubShareImportManagedInstallProgress(
+        phase = phase,
+        assetName = assetName,
+        packageName = packageName,
+        progressPercent = progressPercent,
+        downloadedBytes = downloadedBytes,
+        totalBytes = totalBytes
+    )
+}
 
 internal fun GitHubPendingShareImportTrackRecord.toShareImportTrack(): GitHubPendingShareImportTrack {
     return GitHubPendingShareImportTrack(

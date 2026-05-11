@@ -237,14 +237,16 @@ internal object GitHubShareImportFlowCoordinator {
         preview: GitHubShareImportPreview,
         selectedAsset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,
-        launchInNewTask: Boolean = false
+        launchInNewTask: Boolean = false,
+        onManagedInstallProgress: suspend (GitHubShareImportManagedInstallProgress) -> Unit = {}
     ): ShareImportDeliveryCoordinatorResult = coroutineScope {
         if (lookupConfig.appManagedShareInstallEnabled) {
             return@coroutineScope GitHubShareImportManagedInstallCoordinator.start(
                 context = context,
                 preview = preview,
                 selectedAsset = selectedAsset,
-                lookupConfig = lookupConfig
+                lookupConfig = lookupConfig,
+                onProgressUpdate = onManagedInstallProgress
             )
         }
         GitHubShareImportNotificationHelper.notifyDelivering(

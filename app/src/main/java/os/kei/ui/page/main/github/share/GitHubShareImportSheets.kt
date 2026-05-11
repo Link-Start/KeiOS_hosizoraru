@@ -42,6 +42,7 @@ import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetLiquidChoiceIndicator
@@ -104,18 +105,24 @@ internal fun GitHubShareImportSheet(
     preview: GitHubShareImportPreview?,
     resolving: Boolean,
     phase: GitHubShareImportPhase,
+    managedInstallProgress: GitHubShareImportManagedInstallProgress? = null,
     onDismissRequest: () -> Unit,
     onCancel: () -> Unit,
     onConfirmImport: (GitHubReleaseAssetFile) -> Unit
 ) {
     val context = LocalContext.current
     val showSheet = resolving || preview != null
+    val managedInstallRunning = managedInstallProgress?.phase in setOf(
+        GitHubShareImportPhase.InstallDownloading,
+        GitHubShareImportPhase.Installing,
+        GitHubShareImportPhase.InstallCommitting
+    )
     SnapshotWindowBottomSheet(
         show = showSheet,
         title = stringResource(R.string.github_share_import_dialog_title),
         onDismissRequest = onDismissRequest,
         insideMargin = shareImportSheetInsideMargin,
-        allowDismiss = !resolving
+        allowDismiss = !resolving && !managedInstallRunning
     ) {
         GitHubShareImportWindowBlurEffect(useBlur = showSheet)
         if (resolving) {
@@ -178,6 +185,7 @@ internal fun GitHubShareImportSheet(
                     label = stringResource(phase.labelRes),
                     color = phase.color
                 )
+                ManagedInstallProgressBlock(managedInstallProgress)
                 ShareImportCompactInfoRow(
                     key = stringResource(R.string.github_share_import_dialog_label_project),
                     value = compactProjectValue(preview)
@@ -232,7 +240,9 @@ internal fun GitHubShareImportSheet(
                         SheetControlRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { selectedIndex = index },
+                                .clickable(enabled = !managedInstallRunning) {
+                                    selectedIndex = index
+                                },
                             label = asset.name,
                             summary = assetSummary
                         ) {
@@ -255,7 +265,9 @@ internal fun GitHubShareImportSheet(
                             }
                             SheetLiquidChoiceIndicator(
                                 selected = selected,
-                                onSelect = { selectedIndex = index },
+                                onSelect = {
+                                    if (!managedInstallRunning) selectedIndex = index
+                                },
                                 accentColor = GitHubStatusPalette.Active
                             )
                         }
@@ -276,17 +288,95 @@ internal fun GitHubShareImportSheet(
                 )
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.github_share_import_dialog_action_confirm),
+                    text = if (managedInstallRunning) {
+                        stringResource(R.string.common_processing)
+                    } else {
+                        stringResource(R.string.github_share_import_dialog_action_confirm)
+                    },
                     leadingIcon = appLucidePackageIcon(),
                     containerColor = GitHubStatusPalette.Active,
                     onClick = {
                         selectedAsset?.let(onConfirmImport)
                     },
-                    enabled = selectedAsset != null
+                    enabled = selectedAsset != null && !managedInstallRunning
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ManagedInstallProgressBlock(
+    progress: GitHubShareImportManagedInstallProgress?
+) {
+    progress ?: return
+    val context = LocalContext.current
+    Spacer(modifier = Modifier.height(4.dp))
+    if (progress.assetName.isNotBlank()) {
+        ShareImportCompactInfoRow(
+            key = stringResource(R.string.github_share_import_pending_label_asset),
+            value = progress.assetName
+        )
+    }
+    if (progress.packageName.isNotBlank()) {
+        ShareImportCompactInfoRow(
+            key = stringResource(R.string.github_share_import_attach_dialog_label_package),
+            value = progress.packageName
+        )
+    }
+    val showDownloadText =
+        progress.phase == GitHubShareImportPhase.InstallDownloading || progress.downloadedBytes > 0L
+    if (showDownloadText) {
+        val progressText = remember(
+            progress.downloadedBytes,
+            progress.totalBytes
+        ) {
+            formatManagedInstallDownloadProgress(context, progress)
+        }
+        if (progressText.isNotBlank()) {
+            ShareImportCompactInfoRow(
+                key = stringResource(R.string.github_share_import_dialog_label_download),
+                value = progressText
+            )
+        }
+    }
+    if (progress.hasKnownDownloadProgress) {
+        val percentText = stringResource(
+            R.string.github_refresh_progress_percent,
+            progress.boundedProgressPercent
+        )
+        LiquidLinearProgressBar(
+            progress = { progress.progressFraction },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            activeColor = progress.phase.color,
+            contentDescription = stringResource(
+                R.string.common_progress_with_value,
+                percentText
+            )
+        )
+    }
+}
+
+private fun formatManagedInstallDownloadProgress(
+    context: android.content.Context,
+    progress: GitHubShareImportManagedInstallProgress
+): String {
+    val downloadedBytes = progress.downloadedBytes.coerceAtLeast(0L)
+    if (downloadedBytes <= 0L && progress.totalBytes <= 0L) return ""
+    val downloaded = android.text.format.Formatter.formatFileSize(context, downloadedBytes)
+    if (progress.totalBytes > 0L) {
+        return context.getString(
+            R.string.github_share_import_notify_download_progress_known,
+            downloaded,
+            android.text.format.Formatter.formatFileSize(context, progress.totalBytes)
+        )
+    }
+    return context.getString(
+        R.string.github_share_import_notify_download_progress_unknown,
+        downloaded
+    )
 }
 
 @Composable

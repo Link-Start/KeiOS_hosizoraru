@@ -387,11 +387,13 @@ class GitHubShareImportNotificationHelperTest {
         )
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"Download\""))
+        assertTrue(focusParam.contains("5"))
+        assertTrue(focusParam.contains("10"))
         assertTrue(focusParam.contains("\"progress\":48"))
     }
 
     @Test
-    fun `managed staging mi island exposes live progress`() {
+    fun `managed staging mi island uses stable status template`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Installing,
@@ -406,9 +408,31 @@ class GitHubShareImportNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals("Open flow", notification.actions[0].title.toString())
-        assertTrue(focusParam.contains("progressTextInfo"))
-        assertTrue(focusParam.contains("\"title\":\"Staging\""))
-        assertTrue(focusParam.contains("\"progress\":48"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"title\":\"Prepare\""))
+    }
+
+    @Test
+    fun `managed downloading without known total uses status template with byte text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.InstallDownloading,
+            owner = "owner",
+            repo = "repo",
+            assetName = "demo.apk",
+            progressPercentOverride = 0,
+            downloadedBytes = 5_120L,
+            totalBytes = -1L
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("demo.apk"))
+        assertTrue(focusParam.contains("downloaded"))
     }
 
     @Test

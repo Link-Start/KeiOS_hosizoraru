@@ -3,6 +3,7 @@ package os.kei.feature.github.install
 import android.content.Context
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +18,10 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.minutes
+
+private const val APK_STREAM_BUFFER_SIZE = 1024 * 1024
+private const val DOWNLOAD_PROGRESS_MIN_INTERVAL_MS = 200L
+private const val UNKNOWN_TOTAL_PROGRESS_STEP_BYTES = 1024L * 1024L
 
 interface GitHubManagedApkInstaller {
     suspend fun install(
@@ -253,40 +258,49 @@ class GitHubShizukuPackageInstaller(
             }
             val fileName = assetName.trim().ifBlank { "base.apk" }
             var totalRead = 0L
-            onProgress(
-                GitHubApkInstallProgress(
-                    stage = GitHubApkInstallStage.Downloading,
-                    progressPercent = 8,
-                    totalBytes = totalBytes,
-                    sessionId = sessionId
+            var lastProgressPercent = -1
+            var lastProgressBytes = -1L
+            var lastProgressEmitAt = 0L
+            suspend fun emitDownloadProgress(force: Boolean = false) {
+                val progressPercent = downloadProgressPercent(totalRead, totalBytes)
+                val now = SystemClock.uptimeMillis()
+                val percentAdvanced = progressPercent > lastProgressPercent
+                val unknownTotalBytesAdvanced = totalBytes <= 0L &&
+                        totalRead - lastProgressBytes >= UNKNOWN_TOTAL_PROGRESS_STEP_BYTES
+                val timeReady = now - lastProgressEmitAt >= DOWNLOAD_PROGRESS_MIN_INTERVAL_MS
+                if (!force && !unknownTotalBytesAdvanced && (!percentAdvanced || !timeReady)) {
+                    return
+                }
+                lastProgressPercent = progressPercent
+                lastProgressBytes = totalRead
+                lastProgressEmitAt = now
+                onProgress(
+                    GitHubApkInstallProgress(
+                        stage = GitHubApkInstallStage.Downloading,
+                        progressPercent = progressPercent,
+                        downloadedBytes = totalRead,
+                        totalBytes = totalBytes,
+                        sessionId = sessionId
+                    )
                 )
-            )
+            }
+            emitDownloadProgress(force = true)
             body.byteStream().use { input ->
                 session.openWrite(fileName, 0, totalBytes).use { output ->
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    val buffer = ByteArray(APK_STREAM_BUFFER_SIZE)
                     while (true) {
                         currentCoroutineContext().ensureActive()
                         val read = input.read(buffer)
                         if (read == -1) break
                         output.write(buffer, 0, read)
                         totalRead += read.toLong()
-                        onProgress(
-                            GitHubApkInstallProgress(
-                                stage = GitHubApkInstallStage.Downloading,
-                                progressPercent = installWriteProgressPercent(
-                                    totalRead,
-                                    totalBytes
-                                ),
-                                downloadedBytes = totalRead,
-                                totalBytes = totalBytes,
-                                sessionId = sessionId
-                            )
-                        )
+                        emitDownloadProgress()
                     }
+                    emitDownloadProgress(force = true)
                     onProgress(
                         GitHubApkInstallProgress(
                             stage = GitHubApkInstallStage.Staging,
-                            progressPercent = 88,
+                            progressPercent = 100,
                             downloadedBytes = totalRead,
                             totalBytes = totalBytes,
                             sessionId = sessionId
@@ -299,10 +313,10 @@ class GitHubShizukuPackageInstaller(
         }
     }
 
-    private fun installWriteProgressPercent(downloadedBytes: Long, totalBytes: Long): Int {
-        if (totalBytes <= 0L) return 64
+    private fun downloadProgressPercent(downloadedBytes: Long, totalBytes: Long): Int {
+        if (totalBytes <= 0L) return 0
         val fraction = downloadedBytes.toDouble() / totalBytes.toDouble()
-        return (8 + fraction.coerceIn(0.0, 1.0) * 78.0).roundToInt().coerceIn(8, 86)
+        return (fraction.coerceIn(0.0, 1.0) * 100.0).roundToInt().coerceIn(0, 100)
     }
 
     private fun abandonSession(packageInstaller: PackageInstaller, sessionId: Int) {

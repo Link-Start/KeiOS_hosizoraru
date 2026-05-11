@@ -66,7 +66,8 @@ internal object GitHubShareImportManagedInstallCoordinator {
         context: Context,
         preview: GitHubShareImportPreview,
         selectedAsset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig
+        lookupConfig: GitHubLookupConfig,
+        onProgressUpdate: suspend (GitHubShareImportManagedInstallProgress) -> Unit = {}
     ): ShareImportDeliveryCoordinatorResult = coroutineScope {
         val targetDisplayName = preview.targetDisplayName.ifBlank {
             buildShareImportTargetDisplayName(
@@ -74,14 +75,39 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 assetName = selectedAsset.name
             )
         }
-        GitHubShareImportNotificationHelper.notifyInstallDownloading(
+        val initialProgress = GitHubShareImportManagedInstallProgress(
+            phase = GitHubShareImportPhase.Installing,
+            assetName = selectedAsset.name,
+            progressPercent = 0,
+            totalBytes = selectedAsset.sizeBytes
+        )
+        val requestId = GitHubApkInstallRequestIds.newId(context.packageName)
+        withContext(Dispatchers.IO) {
+            GitHubTrackStore.savePendingShareImportTrack(null)
+            GitHubShareImportFlowStore.saveActiveManagedInstall(
+                GitHubPendingShareImportManagedInstallRecord(
+                    requestId = requestId,
+                    projectUrl = preview.projectUrl,
+                    owner = preview.owner,
+                    repo = preview.repo,
+                    releaseTag = preview.releaseTag,
+                    assetName = selectedAsset.name,
+                    targetDisplayName = targetDisplayName,
+                    progressPhase = initialProgress.phase.name,
+                    progressPercent = initialProgress.boundedProgressPercent,
+                    downloadedBytes = initialProgress.downloadedBytes,
+                    totalBytes = initialProgress.totalBytes
+                )
+            )
+        }
+        GitHubTrackStoreSignals.notifyChanged()
+        onProgressUpdate(initialProgress)
+        GitHubShareImportNotificationHelper.notifyInstalling(
             context = context,
             owner = preview.owner,
             repo = preview.repo,
             assetName = selectedAsset.name,
             progressPercent = 4,
-            downloadedBytes = 0L,
-            totalBytes = selectedAsset.sizeBytes,
             targetDisplayName = targetDisplayName
         )
         val scannedPackageNameDeferred = async(Dispatchers.IO) {
@@ -91,6 +117,20 @@ internal object GitHubShareImportManagedInstallCoordinator {
             assetUrlResolver(lookupConfig, selectedAsset)
         }
         val scannedPackageName = scannedPackageNameDeferred.await()
+        val activeManagedInstall = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActiveManagedInstall()
+        }
+        if (activeManagedInstall?.requestId != requestId) {
+            resolvedUrlDeferred.cancel()
+            return@coroutineScope ShareImportDeliveryCoordinatorResult.Cancelled
+        }
+        val resolvedDownloadUrl = resolvedUrlDeferred.await()
+        val activeAfterResolve = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActiveManagedInstall()
+        }
+        if (activeAfterResolve?.requestId != requestId) {
+            return@coroutineScope ShareImportDeliveryCoordinatorResult.Cancelled
+        }
         val request = GitHubApkInstallRequest(
             owner = preview.owner,
             repo = preview.repo,
@@ -100,11 +140,10 @@ internal object GitHubShareImportManagedInstallCoordinator {
             lookupConfig = lookupConfig,
             targetDisplayName = targetDisplayName,
             scannedPackageName = scannedPackageName,
-            resolvedDownloadUrl = resolvedUrlDeferred.await(),
-            requestId = GitHubApkInstallRequestIds.newId(context.packageName)
+            resolvedDownloadUrl = resolvedDownloadUrl,
+            requestId = requestId
         )
         withContext(Dispatchers.IO) {
-            GitHubTrackStore.savePendingShareImportTrack(null)
             GitHubShareImportFlowStore.saveActiveManagedInstall(
                 request.toManagedInstallRecord(sessionId = -1)
             )
@@ -118,7 +157,8 @@ internal object GitHubShareImportManagedInstallCoordinator {
             handleProgress(
                 context = context,
                 request = request,
-                progress = progress
+                progress = progress,
+                onProgressUpdate = onProgressUpdate
             )
         }
         return@coroutineScope applyResult(
@@ -132,7 +172,8 @@ internal object GitHubShareImportManagedInstallCoordinator {
     private suspend fun handleProgress(
         context: Context,
         request: GitHubApkInstallRequest,
-        progress: GitHubApkInstallProgress
+        progress: GitHubApkInstallProgress,
+        onProgressUpdate: suspend (GitHubShareImportManagedInstallProgress) -> Unit
     ) {
         val activeRecord = withContext(Dispatchers.IO) {
             GitHubShareImportFlowStore.loadActiveManagedInstall()
@@ -140,13 +181,21 @@ internal object GitHubShareImportManagedInstallCoordinator {
         if (activeRecord?.requestId != request.requestId) {
             throw CancellationException("share import managed install cancelled")
         }
-        if (progress.sessionId > 0 && activeRecord.sessionId != progress.sessionId) {
+        val uiProgress = progress.toShareImportManagedInstallProgress(request)
+        val nextRecord = activeRecord.copy(
+            sessionId = if (progress.sessionId > 0) progress.sessionId else activeRecord.sessionId,
+            progressPhase = uiProgress.phase.name,
+            progressPercent = uiProgress.boundedProgressPercent,
+            downloadedBytes = uiProgress.downloadedBytes,
+            totalBytes = uiProgress.totalBytes
+        )
+        if (nextRecord != activeRecord) {
             withContext(Dispatchers.IO) {
-                GitHubShareImportFlowStore.saveActiveManagedInstall(
-                    activeRecord.copy(sessionId = progress.sessionId)
-                )
+                GitHubShareImportFlowStore.saveActiveManagedInstall(nextRecord)
             }
+            GitHubTrackStoreSignals.notifyChanged()
         }
+        onProgressUpdate(uiProgress)
         when (progress.stage) {
             GitHubApkInstallStage.Preparing,
             GitHubApkInstallStage.Staging -> {
@@ -190,6 +239,29 @@ internal object GitHubShareImportManagedInstallCoordinator {
             GitHubApkInstallStage.Failed,
             GitHubApkInstallStage.Cancelled -> Unit
         }
+    }
+
+    private fun GitHubApkInstallProgress.toShareImportManagedInstallProgress(
+        request: GitHubApkInstallRequest
+    ): GitHubShareImportManagedInstallProgress {
+        val phase = when (stage) {
+            GitHubApkInstallStage.Downloading -> GitHubShareImportPhase.InstallDownloading
+            GitHubApkInstallStage.Committing -> GitHubShareImportPhase.InstallCommitting
+            GitHubApkInstallStage.Preparing,
+            GitHubApkInstallStage.Staging -> GitHubShareImportPhase.Installing
+
+            GitHubApkInstallStage.Succeeded,
+            GitHubApkInstallStage.Failed,
+            GitHubApkInstallStage.Cancelled -> GitHubShareImportPhase.Idle
+        }
+        return GitHubShareImportManagedInstallProgress(
+            phase = phase,
+            assetName = request.asset.name,
+            packageName = request.scannedPackageName,
+            progressPercent = boundedProgressPercent,
+            downloadedBytes = downloadedBytes,
+            totalBytes = totalBytes
+        )
     }
 
     private suspend fun applyResult(
@@ -312,6 +384,10 @@ internal object GitHubShareImportManagedInstallCoordinator {
             packageName = scannedPackageName,
             targetDisplayName = targetDisplayName,
             sessionId = sessionId,
+            progressPhase = GitHubShareImportPhase.Installing.name,
+            progressPercent = 0,
+            downloadedBytes = 0L,
+            totalBytes = asset.sizeBytes,
             startedAtMillis = startedAtMillis
         )
     }

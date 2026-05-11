@@ -25,6 +25,10 @@ internal enum class GitHubShareImportPhase(
         labelRes = R.string.github_share_import_phase_delivering,
         color = GitHubStatusPalette.Active
     ),
+    InstallDownloading(
+        labelRes = R.string.github_share_import_phase_install_downloading,
+        color = GitHubStatusPalette.Active
+    ),
     Installing(
         labelRes = R.string.github_share_import_phase_installing,
         color = GitHubStatusPalette.Active

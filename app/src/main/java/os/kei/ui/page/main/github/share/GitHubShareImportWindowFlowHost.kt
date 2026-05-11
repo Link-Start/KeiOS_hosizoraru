@@ -62,6 +62,9 @@ internal fun GitHubShareImportWindowFlowHost(
     var incomingResolveRunning by remember { mutableStateOf(false) }
     var pendingTrack by remember { mutableStateOf<GitHubPendingShareImportTrackRecord?>(null) }
     var attachCandidate by remember { mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null) }
+    var managedInstallProgress by remember {
+        mutableStateOf<GitHubShareImportManagedInstallProgress?>(null)
+    }
     var attachDuplicateExists by remember { mutableStateOf(false) }
     var attachSubmitting by remember { mutableStateOf(false) }
     var attachSubmittingAndOpen by remember { mutableStateOf(false) }
@@ -75,18 +78,21 @@ internal fun GitHubShareImportWindowFlowHost(
                 pendingPreview = result.preview
                 pendingTrack = null
                 attachCandidate = null
+                managedInstallProgress = null
             }
 
             is ShareImportCoordinatorResult.Pending -> {
                 pendingTrack = result.pending
                 pendingPreview = null
                 attachCandidate = null
+                managedInstallProgress = null
             }
 
             is ShareImportCoordinatorResult.Detected -> {
                 pendingTrack = null
                 pendingPreview = null
                 attachCandidate = result.candidate
+                managedInstallProgress = null
             }
 
             is ShareImportCoordinatorResult.Added,
@@ -94,12 +100,14 @@ internal fun GitHubShareImportWindowFlowHost(
                 pendingTrack = null
                 pendingPreview = null
                 attachCandidate = null
+                managedInstallProgress = null
             }
 
             is ShareImportCoordinatorResult.Cancelled -> {
                 pendingTrack = null
                 pendingPreview = null
                 attachCandidate = null
+                managedInstallProgress = null
             }
 
             is ShareImportCoordinatorResult.Failed -> Unit
@@ -128,6 +136,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 pendingTrack = storedTrack
                 pendingPreview = null
                 attachCandidate = null
+                managedInstallProgress = null
                 phase = GitHubShareImportPhase.WaitingInstall
                 return@collect
             }
@@ -144,6 +153,16 @@ internal fun GitHubShareImportWindowFlowHost(
                 if (pendingPreview?.sourceUrl != storedPreview.sourceUrl) {
                     pendingPreview = storedPreview
                     attachCandidate = null
+                }
+                val storedManagedInstall = withContext(Dispatchers.IO) {
+                    GitHubShareImportFlowStore.loadActiveManagedInstall()
+                }
+                if (storedManagedInstall != null) {
+                    val progress = storedManagedInstall.toManagedInstallProgress()
+                    managedInstallProgress = progress
+                    phase = progress.phase
+                } else {
+                    managedInstallProgress = null
                     phase = GitHubShareImportPhase.AssetReady
                 }
             } else if (pendingPreview != null) {
@@ -161,6 +180,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 if (attachCandidate?.packageName != storedCandidate.packageName) {
                     pendingPreview = null
                     attachCandidate = storedCandidate
+                    managedInstallProgress = null
                     phase = GitHubShareImportPhase.InstallDetected
                 }
             } else if (attachCandidate != null) {
@@ -192,10 +212,20 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubShareImportFlowStore.loadActivePreview()
                 }?.toShareImportPreview()
                 if (restoredPreview != null) {
+                    val restoredManagedInstall = withContext(Dispatchers.IO) {
+                        GitHubShareImportFlowStore.loadActiveManagedInstall()
+                    }
                     pendingPreview = restoredPreview
                     attachCandidate = null
-                    phase = GitHubShareImportPhase.AssetReady
-                    notifyShareImportAssetReady(context, restoredPreview)
+                    if (restoredManagedInstall != null) {
+                        val progress = restoredManagedInstall.toManagedInstallProgress()
+                        managedInstallProgress = progress
+                        phase = progress.phase
+                    } else {
+                        managedInstallProgress = null
+                        phase = GitHubShareImportPhase.AssetReady
+                        notifyShareImportAssetReady(context, restoredPreview)
+                    }
                     return@LaunchedEffect
                 }
                 val restoredCandidate = withContext(Dispatchers.IO) {
@@ -282,6 +312,7 @@ internal fun GitHubShareImportWindowFlowHost(
         pendingPreview = null
         pendingTrack = null
         attachCandidate = null
+        managedInstallProgress = null
         attachDuplicateExists = false
         withContext(Dispatchers.IO) {
             GitHubShareImportFlowStore.clearActiveFlow()
@@ -371,6 +402,7 @@ internal fun GitHubShareImportWindowFlowHost(
         preview = pendingPreview,
         resolving = resolving && !notificationOnlyIncomingResolve,
         phase = phase,
+        managedInstallProgress = managedInstallProgress,
         onDismissRequest = {
             if (!resolving && pendingPreview != null) {
                 onMinimizeActiveFlow?.invoke()
@@ -383,6 +415,7 @@ internal fun GitHubShareImportWindowFlowHost(
                 )
             }
             pendingPreview = null
+            managedInstallProgress = null
             phase = GitHubShareImportPhase.Idle
         },
         onConfirmImport = { selectedAsset ->
@@ -394,21 +427,39 @@ internal fun GitHubShareImportWindowFlowHost(
                 } else {
                     GitHubShareImportPhase.Delivering
                 }
+                managedInstallProgress = if (lookupConfig.appManagedShareInstallEnabled) {
+                    GitHubShareImportManagedInstallProgress(
+                        phase = GitHubShareImportPhase.Installing,
+                        assetName = selectedAsset.name,
+                        progressPercent = 0,
+                        totalBytes = selectedAsset.sizeBytes
+                    )
+                } else {
+                    null
+                }
                 when (
                     val delivery = GitHubShareImportFlowCoordinator.startDelivery(
                         context = context,
                         preview = preview,
                         selectedAsset = selectedAsset,
-                        lookupConfig = lookupConfig
+                        lookupConfig = lookupConfig,
+                        onManagedInstallProgress = { progress ->
+                            withContext(Dispatchers.Main.immediate) {
+                                managedInstallProgress = progress
+                                phase = progress.phase
+                            }
+                        }
                     )
                 ) {
                     ShareImportDeliveryCoordinatorResult.Cancelled -> {
                         phase = GitHubShareImportPhase.Idle
+                        managedInstallProgress = null
                         return@launch
                     }
 
                     is ShareImportDeliveryCoordinatorResult.Failed -> {
                         phase = GitHubShareImportPhase.Failed
+                        managedInstallProgress = null
                         if (delivery.toastMessage.isBlank()) {
                             toast(context, delivery.toastResId)
                         } else {
@@ -421,6 +472,7 @@ internal fun GitHubShareImportWindowFlowHost(
                         pendingTrack = null
                         attachCandidate = delivery.candidate
                         pendingPreview = null
+                        managedInstallProgress = null
                         phase = GitHubShareImportPhase.InstallDetected
                     }
 
@@ -428,6 +480,7 @@ internal fun GitHubShareImportWindowFlowHost(
                         pendingTrack = delivery.pending
                         attachCandidate = null
                         pendingPreview = null
+                        managedInstallProgress = null
                         phase = GitHubShareImportPhase.WaitingInstall
                         toast(
                             context,

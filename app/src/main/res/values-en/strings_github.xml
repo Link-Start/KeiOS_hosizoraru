@@ -669,7 +669,8 @@
     <string name="github_share_import_phase_resolving">Parsing link</string>
     <string name="github_share_import_phase_asset_ready">Choose APK</string>
     <string name="github_share_import_phase_delivering">Sending install</string>
-    <string name="github_share_import_phase_installing">KeiOS installing</string>
+    <string name="github_share_import_phase_install_downloading">Downloading APK</string>
+    <string name="github_share_import_phase_installing">Preparing install</string>
     <string name="github_share_import_phase_install_committing">Committing install</string>
     <string name="github_share_import_phase_waiting_install">Waiting install</string>
     <string name="github_share_import_phase_install_detected">Install detected</string>
@@ -680,6 +681,7 @@
     <string name="github_share_import_dialog_label_project">Project</string>
     <string name="github_share_import_dialog_label_strategy">Fetch strategy</string>
     <string name="github_share_import_dialog_label_release">Release</string>
+    <string name="github_share_import_dialog_label_download">Download</string>
     <string name="github_share_import_dialog_label_assets">Available APKs</string>
     <string name="github_share_import_dialog_asset_summary">Size: %1$s · path: %2$s</string>
     <string name="github_share_import_dialog_asset_hint_device_recommended">Recommended for this device</string>
@@ -723,7 +725,7 @@
     <string name="github_share_import_notify_title_asset_ready">Installable APK found</string>
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>
     <string name="github_share_import_notify_title_install_downloading">Downloading APK</string>
-    <string name="github_share_import_notify_title_installing">Staging APK</string>
+    <string name="github_share_import_notify_title_installing">Preparing install</string>
     <string name="github_share_import_notify_title_install_committing">Committing install</string>
     <string name="github_share_import_notify_title_waiting_install">Waiting for install</string>
     <string name="github_share_import_notify_title_install_detected">Install detected</string>
@@ -751,7 +753,7 @@
     <string name="github_share_import_notify_short_asset_ready">Ready</string>
     <string name="github_share_import_notify_short_delivering">Sending</string>
     <string name="github_share_import_notify_short_install_downloading">Download</string>
-    <string name="github_share_import_notify_short_installing">Staging</string>
+    <string name="github_share_import_notify_short_installing">Prepare</string>
     <string name="github_share_import_notify_short_install_committing">Commit</string>
     <string name="github_share_import_notify_short_waiting_install">Install</string>
     <string name="github_share_import_notify_short_install_detected">Confirm</string>

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.sheet
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
@@ -323,6 +325,7 @@ private fun GitHubReleaseNotesDetailContent(
     onSelectReleaseNotesTarget: (GitHubReleaseNotesTarget) -> Unit,
     onOpenExternalUrl: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val lines = buildGitHubReleaseNotesDetailLines(
         item = item,
         state = state,
@@ -431,7 +434,48 @@ private fun GitHubReleaseNotesDetailContent(
                 alignment = PopupPositionProvider.Align.BottomStart
             )
         }
-        SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
+        val translateLabel = stringResource(R.string.github_release_notes_action_translate)
+        val translateFailed = stringResource(R.string.github_release_notes_translate_failed)
+        val translatePayload = releaseNotesTranslationPayload(
+            title = selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
+                ?: assetBundle?.releaseName.orEmpty(),
+            tag = selectedTarget?.tagName?.takeIf { it.isNotBlank() }
+                ?: assetBundle?.tagName.orEmpty(),
+            rawMarkdown = rawMarkdown,
+            fallbackLines = lines
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SheetSectionTitle(
+                text = stringResource(R.string.github_release_notes_detail_body_title),
+                modifier = Modifier.weight(1f)
+            )
+            AppLiquidTextButton(
+                backdrop = backdrop,
+                variant = GlassVariant.Bar,
+                text = translateLabel,
+                leadingIcon = appLucideShareIcon(),
+                enabled = translatePayload.isNotBlank(),
+                minHeight = 32.dp,
+                horizontalPadding = 10.dp,
+                verticalPadding = 4.dp,
+                textSize = AppTypographyTokens.Supporting.fontSize,
+                textLineHeight = AppTypographyTokens.Supporting.lineHeight,
+                onClick = {
+                    val launched = launchReleaseNotesTranslation(
+                        context = context,
+                        text = translatePayload,
+                        chooserTitle = translateLabel
+                    )
+                    if (!launched) {
+                        Toast.makeText(context, translateFailed, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
         SheetSectionCard(
             containerColor = releaseNotesBodyContainerColor(),
             borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.18f),
@@ -500,6 +544,64 @@ private fun releaseNotesSelectedApkVersionLabel(
         else -> null
     }
     return versionInfo?.versionLabel().orEmpty()
+}
+
+private fun releaseNotesTranslationPayload(
+    title: String,
+    tag: String,
+    rawMarkdown: String,
+    fallbackLines: List<String>
+): String {
+    val body = rawMarkdown.trim().ifBlank {
+        fallbackLines.joinToString("\n").trim()
+    }
+    if (body.isBlank()) return ""
+    val header = buildList {
+        title.trim().takeIf { it.isNotBlank() }?.let(::add)
+        tag.trim().takeIf { it.isNotBlank() && it != title.trim() }?.let(::add)
+    }.joinToString(" · ")
+    return listOf(header, body)
+        .filter { it.isNotBlank() }
+        .joinToString("\n\n")
+}
+
+private fun launchReleaseNotesTranslation(
+    context: Context,
+    text: String,
+    chooserTitle: String
+): Boolean {
+    val payload = text.trim()
+    if (payload.isBlank()) return false
+    val translateIntent = Intent(Intent.ACTION_TRANSLATE).apply {
+        putExtra(Intent.EXTRA_TEXT, payload)
+    }
+    if (startActivitySafely(context, translateIntent)) return true
+
+    val processTextIntent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_PROCESS_TEXT, payload)
+        putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+    }
+    if (startActivitySafely(context, processTextIntent)) return true
+
+    val shareIntent = Intent.createChooser(
+        SafeExternalIntents.textShareIntent(
+            text = payload,
+            subject = chooserTitle
+        ),
+        chooserTitle
+    )
+    return startActivitySafely(context, shareIntent)
+}
+
+private fun startActivitySafely(
+    context: Context,
+    intent: Intent
+): Boolean {
+    return runCatching {
+        context.startActivity(intent)
+        true
+    }.getOrDefault(false)
 }
 
 private fun releaseNotesTargetMatches(

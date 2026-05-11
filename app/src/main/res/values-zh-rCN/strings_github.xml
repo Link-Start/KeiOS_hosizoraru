@@ -911,6 +911,8 @@
     <string name="github_release_notes_source_atom">Atom：网页 Release 解析</string>
     <string name="github_release_notes_detail_target_latest">当前 Release</string>
     <string name="github_release_notes_detail_body_title">发行日志</string>
+    <string name="github_release_notes_action_translate">翻译</string>
+    <string name="github_release_notes_translate_failed">无法打开翻译</string>
     <string name="github_release_notes_detail_empty">当前 release 暂无可显示的发行日志</string>
     <string name="github_apk_trust_good">可信</string>
     <string name="github_apk_trust_review">需确认</string>

@@ -857,6 +857,8 @@
     <string name="github_release_notes_source_atom">Atom: release page parsing</string>
     <string name="github_release_notes_detail_target_latest">Current release</string>
     <string name="github_release_notes_detail_body_title">Release notes</string>
+    <string name="github_release_notes_action_translate">Translate</string>
+    <string name="github_release_notes_translate_failed">Unable to open translation</string>
     <string name="github_release_notes_detail_empty">This release has no displayable release notes.</string>
     <string name="github_apk_trust_good">Trusted</string>
     <string name="github_apk_trust_review">Review</string>

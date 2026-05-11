@@ -166,6 +166,53 @@ internal fun GitHubTrackImportDialog(
                     valueColor = GitHubStatusPalette.Stable
                 )
             }
+            if (preview.hasImportedProjectOptions) {
+                SheetSectionCard(
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    verticalSpacing = 6.dp
+                ) {
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_project_options),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.importedProjectOptionCount
+                        ),
+                        valueColor = GitHubStatusPalette.Cache
+                    )
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_pre_release_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.preferPreReleaseCount
+                        ),
+                        valueColor = GitHubStatusPalette.PreRelease
+                    )
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_actions_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.actionsUpdateCount
+                        ),
+                        valueColor = GitHubStatusPalette.Cache
+                    )
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_precise_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.preciseApkVersionOverrideCount
+                        ),
+                        valueColor = GitHubStatusPalette.Active
+                    )
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_download_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.latestReleaseDownloadCount
+                        ),
+                        valueColor = GitHubStatusPalette.Update
+                    )
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

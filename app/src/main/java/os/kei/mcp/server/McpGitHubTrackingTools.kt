@@ -149,7 +149,11 @@ internal class McpGitHubTrackingTools(
         val items = filterTrackedItems(GitHubTrackStore.load(), repoFilter).take(limit)
         if (items.isEmpty()) return "No tracked GitHub apps."
         return items.joinToString("\n") { item ->
-            "${item.owner}/${item.repo} | label=${item.appLabel} | package=${item.packageName} | preferPreRelease=${item.preferPreRelease}"
+            "${item.owner}/${item.repo} | label=${item.appLabel} | package=${item.packageName} | " +
+                    "preferPreRelease=${item.preferPreRelease} | " +
+                    "checkActionsUpdates=${item.checkActionsUpdates} | " +
+                    "preciseApkVersionMode=${item.preciseApkVersionMode.storageId} | " +
+                    "latestDownload=${item.alwaysShowLatestReleaseDownloadButton}"
         }
     }
 
@@ -162,6 +166,7 @@ internal class McpGitHubTrackingTools(
         val payload = GitHubTrackStore.parseTrackedItemsImport(rawJson)
         val existing = GitHubTrackStore.load()
         val preview = buildTrackedImportPreview(payload, existing)
+        val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(payload.items)
         if (apply && (preview.addedCount > 0 || preview.updatedCount > 0)) {
             val merged = mergeTrackedItems(payload, existing)
             GitHubTrackStore.save(merged)
@@ -169,10 +174,16 @@ internal class McpGitHubTrackingTools(
         }
         return buildString {
             appendLine("apply=$apply")
+            appendLine("format=${payload.format.ifBlank { "(legacy)" }}")
+            appendLine("schemaVersion=${payload.schemaVersion}")
             appendLine("sourceCount=${payload.sourceCount}")
             appendLine("validCount=${payload.items.size}")
             appendLine("invalidCount=${payload.invalidCount}")
             appendLine("duplicateCount=${payload.duplicateCount}")
+            appendLine("preferPreReleaseCount=${optionCounts.preferPreReleaseCount}")
+            appendLine("actionsUpdateCount=${optionCounts.actionsUpdateCount}")
+            appendLine("preciseApkVersionOverrideCount=${optionCounts.preciseApkVersionOverrideCount}")
+            appendLine("latestReleaseDownloadCount=${optionCounts.latestReleaseDownloadCount}")
             appendLine("newCount=${preview.addedCount}")
             appendLine("updatedCount=${preview.updatedCount}")
             appendLine("unchangedCount=${preview.unchangedCount}")

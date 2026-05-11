@@ -682,6 +682,11 @@
     <string name="github_import_dialog_label_updated_items">将更新</string>
     <string name="github_import_dialog_label_unchanged_items">保持不变</string>
     <string name="github_import_dialog_label_merged_items">导入后总数</string>
+    <string name="github_import_dialog_label_project_options">项目设置</string>
+    <string name="github_import_dialog_label_pre_release_items">预发行优先</string>
+    <string name="github_import_dialog_label_actions_items">Actions 检查</string>
+    <string name="github_import_dialog_label_precise_items">精准版本覆盖</string>
+    <string name="github_import_dialog_label_download_items">常显最新下载</string>
     <string name="github_import_dialog_action_confirm">确认导入</string>
     <string name="github_share_import_dialog_title">分享导入</string>
     <string name="github_share_import_dialog_summary_parsing">正在解析 GitHub 分享链接...</string>

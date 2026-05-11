@@ -37,6 +37,7 @@ internal data class ModernNotificationSpec(
 internal object ModernNotificationSpecResolver {
     private const val PROGRESS_ACTIVE_COLOR = 0xFF2E7D32.toInt()
     private const val PROGRESS_IDLE_COLOR = 0xFF64748B.toInt()
+    private const val PROGRESS_GITHUB_SHARE_IMPORT_COLOR = 0xFF2563EB.toInt()
     private val ICON_DEFAULT = R.drawable.ic_kei_notification_small
     private val ICON_DEFAULT_OEM = R.drawable.ic_kei_logo_live_update
     private val ICON_BA_AP = R.drawable.ic_ba_ap_island_notification
@@ -62,7 +63,7 @@ internal object ModernNotificationSpecResolver {
             expandedIconResId = resolveExpandedIcon(kind),
             trackerIconResId = resolveTrackerIcon(kind),
             progressPercent = resolveProgressPercent(state = state, kind = kind),
-            progressColor = if (isRunning) PROGRESS_ACTIVE_COLOR else PROGRESS_IDLE_COLOR,
+            progressColor = resolveProgressColor(kind = kind, isRunning = isRunning),
             category = if (isRunning) {
                 NotificationCompat.CATEGORY_PROGRESS
             } else {
@@ -72,6 +73,17 @@ internal object ModernNotificationSpecResolver {
             ongoing = isRunning || state.ongoing,
             requestPromotedOngoing = isRunning || state.ongoing
         )
+    }
+
+    private fun resolveProgressColor(
+        kind: ModernNotificationKind,
+        isRunning: Boolean
+    ): Int {
+        if (!isRunning) return PROGRESS_IDLE_COLOR
+        return when (kind) {
+            ModernNotificationKind.GITHUB_SHARE_IMPORT -> PROGRESS_GITHUB_SHARE_IMPORT_COLOR
+            else -> PROGRESS_ACTIVE_COLOR
+        }
     }
 
     private fun resolveKind(serverName: String): ModernNotificationKind {
@@ -160,9 +172,14 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH -> 100
 
-            ModernNotificationKind.BA_CALENDAR_POOL,
-            ModernNotificationKind.GITHUB_SHARE_IMPORT -> {
+            ModernNotificationKind.BA_CALENDAR_POOL -> {
                 state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
+            }
+
+            ModernNotificationKind.GITHUB_SHARE_IMPORT -> {
+                state.overrideProgressPercent
+                    ?.coerceIn(0, 100)
+                    ?: state.port.coerceIn(0, 100)
             }
 
             ModernNotificationKind.BA_AP,

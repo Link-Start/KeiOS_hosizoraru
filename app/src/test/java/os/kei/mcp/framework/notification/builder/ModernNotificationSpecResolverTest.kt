@@ -214,6 +214,25 @@ class ModernNotificationSpecResolverTest {
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
         assertEquals(true, spec.requestPromotedOngoing)
+        assertEquals(0xFF2563EB.toInt(), spec.progressColor)
+    }
+
+    @Test
+    fun `github share import falls back to phase progress when override is absent`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
+                running = true,
+                port = 88,
+                clients = 1,
+                ongoing = true
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
+        assertEquals(88, spec.progressPercent)
+        assertEquals(0xFF2563EB.toInt(), spec.progressColor)
     }
 
     @Test

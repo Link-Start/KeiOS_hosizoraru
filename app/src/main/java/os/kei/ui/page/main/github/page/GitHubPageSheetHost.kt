@@ -85,7 +85,6 @@ internal fun GitHubPageSheetHost(
         lookupConfig = state.lookupConfig,
         trackedCount = contentDerivedState.trackedUi.overviewMetrics.trackedCount,
         refreshIntervalHours = state.refreshIntervalHours,
-        refreshIntervalHoursInput = state.refreshIntervalHoursInput,
         checkAllTrackedPreReleasesInput = state.checkAllTrackedPreReleasesInput,
         aggressiveApkFilteringInput = state.aggressiveApkFilteringInput,
         preciseApkVersionEnabledInput = state.preciseApkVersionEnabledInput,
@@ -99,11 +98,9 @@ internal fun GitHubPageSheetHost(
         repositoryHealthCardEnabledInput = state.repositoryHealthCardEnabledInput,
         apkTrustCheckEnabledInput = state.apkTrustCheckEnabledInput,
         installedOnlineShareTargets = installedOnlineShareTargets,
-        showCheckLogicIntervalPopup = state.showCheckLogicIntervalPopup,
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
         showShareImportFlowModePopup = state.showShareImportFlowModePopup,
-        checkLogicIntervalPopupAnchorBounds = state.checkLogicIntervalPopupAnchorBounds,
         downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
         onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
         shareImportFlowModePopupAnchorBounds = state.shareImportFlowModePopupAnchorBounds,
@@ -118,7 +115,6 @@ internal fun GitHubPageSheetHost(
         onImportTrackedItems = onImportTrackedItems,
         onOpenStarImport = onOpenStarImport,
         onSendDebugActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
-        onRefreshIntervalHoursInputChange = { state.refreshIntervalHoursInput = it },
         onCheckAllTrackedPreReleasesInputChange = { state.checkAllTrackedPreReleasesInput = it },
         onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },
         onPreciseApkVersionEnabledInputChange = { state.preciseApkVersionEnabledInput = it },
@@ -133,13 +129,9 @@ internal fun GitHubPageSheetHost(
         onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },
         onRepositoryHealthCardEnabledInputChange = { state.repositoryHealthCardEnabledInput = it },
         onApkTrustCheckEnabledInputChange = { state.apkTrustCheckEnabledInput = it },
-        onShowCheckLogicIntervalPopupChange = { state.showCheckLogicIntervalPopup = it },
         onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
         onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
         onShowShareImportFlowModePopupChange = { state.showShareImportFlowModePopup = it },
-        onCheckLogicIntervalPopupAnchorBoundsChange = {
-            state.checkLogicIntervalPopupAnchorBounds = it
-        },
         onDownloaderPopupAnchorBoundsChange = { state.downloaderPopupAnchorBounds = it },
         onOnlineShareTargetPopupAnchorBoundsChange = {
             state.onlineShareTargetPopupAnchorBounds = it

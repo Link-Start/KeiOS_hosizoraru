@@ -52,7 +52,6 @@ internal fun GitHubCheckLogicSheet(
     lookupConfig: GitHubLookupConfig,
     trackedCount: Int,
     refreshIntervalHours: Int,
-    refreshIntervalHoursInput: Int,
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
@@ -66,11 +65,9 @@ internal fun GitHubCheckLogicSheet(
     repositoryHealthCardEnabledInput: Boolean,
     apkTrustCheckEnabledInput: Boolean,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
-    showCheckLogicIntervalPopup: Boolean,
     showDownloaderPopup: Boolean,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
-    checkLogicIntervalPopupAnchorBounds: IntRect?,
     downloaderPopupAnchorBounds: IntRect?,
     onlineShareTargetPopupAnchorBounds: IntRect?,
     shareImportFlowModePopupAnchorBounds: IntRect?,
@@ -85,7 +82,6 @@ internal fun GitHubCheckLogicSheet(
     onImportTrackedItems: () -> Unit,
     onOpenStarImport: () -> Unit,
     onSendDebugActionsUpdateNotification: () -> Unit,
-    onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
@@ -98,11 +94,9 @@ internal fun GitHubCheckLogicSheet(
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
     onRepositoryHealthCardEnabledInputChange: (Boolean) -> Unit,
     onApkTrustCheckEnabledInputChange: (Boolean) -> Unit,
-    onShowCheckLogicIntervalPopupChange: (Boolean) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
-    onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
@@ -131,7 +125,7 @@ internal fun GitHubCheckLogicSheet(
             )
         }
     ) {
-        val selectedRefreshOption = RefreshIntervalOption.fromHours(refreshIntervalHoursInput)
+        val selectedRefreshOption = RefreshIntervalOption.fromHours(refreshIntervalHours)
         val allDownloaderOptions = remember(downloaderOptions) {
             listOf(systemDefaultDownloaderOption(context), systemDownloadManagerOption(context)) + downloaderOptions
         }
@@ -144,7 +138,7 @@ internal fun GitHubCheckLogicSheet(
         val selectedOnlineShareTargetLabel = onlineShareTargetOptions.firstOrNull {
             it.packageName == onlineShareTargetPackageInput
         }?.label ?: noOnlineShareTargetOption(context).label
-        val logicChanged = refreshIntervalHoursInput != refreshIntervalHours ||
+        val logicChanged =
             checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
                 preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
@@ -170,21 +164,14 @@ internal fun GitHubCheckLogicSheet(
                 shareImportLinkageEnabled = shareImportLinkageEnabledInput
             )
             GitHubCheckStrategySection(
-                backdrop = backdrop,
-                selectedRefreshOption = selectedRefreshOption,
-                showCheckLogicIntervalPopup = showCheckLogicIntervalPopup,
-                checkLogicIntervalPopupAnchorBounds = checkLogicIntervalPopupAnchorBounds,
                 checkAllTrackedPreReleasesInput = checkAllTrackedPreReleasesInput,
                 aggressiveApkFilteringInput = aggressiveApkFilteringInput,
                 preciseApkVersionEnabledInput = preciseApkVersionEnabledInput,
                 profileDepthInput = profileDepthInput,
-                onRefreshIntervalHoursInputChange = onRefreshIntervalHoursInputChange,
                 onCheckAllTrackedPreReleasesInputChange = onCheckAllTrackedPreReleasesInputChange,
                 onAggressiveApkFilteringInputChange = onAggressiveApkFilteringInputChange,
                 onPreciseApkVersionEnabledInputChange = onPreciseApkVersionEnabledInputChange,
-                onProfileDepthInputChange = onProfileDepthInputChange,
-                onShowCheckLogicIntervalPopupChange = onShowCheckLogicIntervalPopupChange,
-                onCheckLogicIntervalPopupAnchorBoundsChange = onCheckLogicIntervalPopupAnchorBoundsChange
+                onProfileDepthInputChange = onProfileDepthInputChange
             )
             GitHubCheckTransferSection(
                 backdrop = backdrop,
@@ -367,46 +354,17 @@ private fun GitHubCheckMetricRow(
 
 @Composable
 private fun GitHubCheckStrategySection(
-    backdrop: LayerBackdrop,
-    selectedRefreshOption: RefreshIntervalOption,
-    showCheckLogicIntervalPopup: Boolean,
-    checkLogicIntervalPopupAnchorBounds: IntRect?,
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
     profileDepthInput: GitHubProfileDepth,
-    onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
-    onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
-    onShowCheckLogicIntervalPopupChange: (Boolean) -> Unit,
-    onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit
+    onProfileDepthInputChange: (GitHubProfileDepth) -> Unit
 ) {
-    val context = LocalContext.current
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_checks))
     SheetSectionCard {
-        SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_refresh_interval),
-            summary = stringResource(R.string.github_check_sheet_summary_refresh_interval)
-        ) {
-            AppDropdownSelector(
-                selectedText = stringResource(selectedRefreshOption.labelRes),
-                options = RefreshIntervalOption.entries.map { option ->
-                    context.getString(option.labelRes)
-                },
-                selectedIndex = RefreshIntervalOption.entries.indexOf(selectedRefreshOption),
-                expanded = showCheckLogicIntervalPopup,
-                anchorBounds = checkLogicIntervalPopupAnchorBounds,
-                onExpandedChange = onShowCheckLogicIntervalPopupChange,
-                onSelectedIndexChange = { selectedIndex ->
-                    onRefreshIntervalHoursInputChange(RefreshIntervalOption.entries[selectedIndex].hours)
-                },
-                onAnchorBoundsChange = onCheckLogicIntervalPopupAnchorBoundsChange,
-                backdrop = backdrop,
-                variant = GlassVariant.SheetAction
-            )
-        }
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_prerelease_check),
             summary = stringResource(R.string.github_check_sheet_summary_prerelease_check)

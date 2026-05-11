@@ -563,7 +563,6 @@ internal class GitHubRefreshActions(
         state.onlineShareTargetPackageInput = trackSnapshot.lookupConfig.onlineShareTargetPackage
         state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage
         state.refreshIntervalHours = trackSnapshot.refreshIntervalHours
-        state.refreshIntervalHoursInput = trackSnapshot.refreshIntervalHours
         when {
             assetSignatureChanged -> {
                 assetActions.clearAllApkAssetStateAndCacheNow()

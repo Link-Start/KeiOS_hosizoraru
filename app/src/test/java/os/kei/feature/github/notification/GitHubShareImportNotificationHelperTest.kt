@@ -44,7 +44,7 @@ class GitHubShareImportNotificationHelperTest {
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
         )
         assertEquals(
-            "owner/repo · app-arm64.apk · 12 min left",
+            "app-arm64.apk · 12 min",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, notification.actions.size)
@@ -67,7 +67,7 @@ class GitHubShareImportNotificationHelperTest {
         val notification = buildModern(context, state)
 
         assertEquals(
-            "owner/repo · demo.app · exact match · 12 min left",
+            "demo.app · 12 min",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
     }
@@ -286,6 +286,9 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Refresh", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"progress\":72"))
         assertTrue(focusParam.contains("\"title\":\"Install\""))
+        assertTrue(focusParam.contains("\"actionBgColor\":\"#E5E7EB\""))
+        assertTrue(focusParam.contains("\"actionBgColorDark\":\"#334155\""))
+        assertTrue(focusParam.contains("\"actionTitleColor\":\"#475569\""))
         assertTrue(focusParam.contains("demo.app"))
     }
 
@@ -387,7 +390,9 @@ class GitHubShareImportNotificationHelperTest {
         )
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"48%\""))
-        assertTrue(focusParam.contains("\"content\":\"Download\""))
+        assertTrue(focusParam.contains("\"content\":\"demo.apk"))
+        assertTrue(focusParam.contains("\"colorTitle\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"colorContent\":\"#475569\""))
         assertTrue(focusParam.contains("5"))
         assertTrue(focusParam.contains("10"))
         assertTrue(focusParam.contains("\"progress\":48"))
@@ -433,6 +438,7 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":0"))
+        assertTrue(focusParam.contains("\"content\":\"demo.apk"))
         assertTrue(focusParam.contains("demo.apk"))
         assertTrue(focusParam.contains("downloaded"))
     }
@@ -479,7 +485,7 @@ class GitHubShareImportNotificationHelperTest {
             modern.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
         )
         assertEquals(
-            "owner/repo · demo.app downloaded, confirm to install",
+            "demo.app · ready to install",
             modern.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, modern.actions.size)
@@ -558,6 +564,8 @@ class GitHubShareImportNotificationHelperTest {
             assertFalse(focusParam.contains("combinePicInfo"))
             assertTrue(focusParam.contains("mcp_action_open"))
             assertTrue(focusParam.contains("mcp_action_stop"))
+            assertFalse(focusParam.contains("\"actionTitle\":\"Mark read\",\"actionBgColor\""))
+            assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
             if (state.phase == GitHubShareImportNotificationPhase.Added ||
                 state.phase == GitHubShareImportNotificationPhase.AlreadyTracked
             ) {

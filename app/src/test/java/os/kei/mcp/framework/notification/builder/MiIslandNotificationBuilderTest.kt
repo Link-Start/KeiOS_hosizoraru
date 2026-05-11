@@ -244,6 +244,8 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
         assertTrue(focusParam.contains("\"actionBgColorDark\":\"#FF6B7C\""))
+        assertTrue(focusParam.contains("\"title\":\"Install\""))
+        assertTrue(focusParam.contains("\"content\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
         assertFalse(focusParam.contains("\"content\":\"demo.app\""))
         assertTrue(focusParam.contains("\"progress\":72"))
@@ -255,7 +257,7 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
-    fun `github share import direct install action stays plain secondary button`() {
+    fun `github share import direct install action uses light blue secondary button`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(
             context = context,
@@ -303,6 +305,10 @@ class MiIslandNotificationBuilderTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"actionBgColor\":\"#DBEAFE\""))
+        assertTrue(focusParam.contains("\"actionBgColorDark\":\"#1E3A8A\""))
+        assertTrue(focusParam.contains("\"actionTitleColor\":\"#1D4ED8\""))
+        assertTrue(focusParam.contains("\"actionTitleColorDark\":\"#DBEAFE\""))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
     }
 
@@ -357,7 +363,8 @@ class MiIslandNotificationBuilderTest {
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertEquals("#22C55E".toColorInt(), notification.color)
-        assertTrue(focusParam.contains("\"actionBgColor\":\"#22C55E\""))
+        assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
+        assertFalse(focusParam.contains("\"actionTitle\":\"Mark read\",\"actionBgColor\""))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
         assertTrue(focusParam.contains("mcp_action_open"))
         assertTrue(focusParam.contains("mcp_action_stop"))

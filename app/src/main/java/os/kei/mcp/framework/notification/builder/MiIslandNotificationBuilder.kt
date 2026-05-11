@@ -27,6 +27,12 @@ class MiIslandNotificationBuilder(
     private sealed interface IslandActionStyle {
         data object Plain : IslandActionStyle
         data class Primary(val backgroundColor: String) : IslandActionStyle
+        data class Tonal(
+            val backgroundColor: String,
+            val backgroundColorDark: String,
+            val titleColor: String,
+            val titleColorDark: String
+        ) : IslandActionStyle
         data object Danger : IslandActionStyle
     }
 
@@ -73,6 +79,15 @@ class MiIslandNotificationBuilder(
         private const val BA_AP_PROGRESS_TRACK_COLOR = "#374151"
         private const val BA_EVENT_ACCENT_COLOR = "#4DA3FF"
         private const val GITHUB_SHARE_IMPORT_ACCENT_COLOR = "#2563EB"
+        private const val GITHUB_SHARE_IMPORT_ACTION_PRIMARY_COLOR = "#2563EB"
+        private const val GITHUB_SHARE_IMPORT_ACTION_SECONDARY_BG_COLOR = "#DBEAFE"
+        private const val GITHUB_SHARE_IMPORT_ACTION_SECONDARY_BG_COLOR_DARK = "#1E3A8A"
+        private const val GITHUB_SHARE_IMPORT_ACTION_SECONDARY_TITLE_COLOR = "#1D4ED8"
+        private const val GITHUB_SHARE_IMPORT_ACTION_SECONDARY_TITLE_COLOR_DARK = "#DBEAFE"
+        private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_BG_COLOR = "#E5E7EB"
+        private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_BG_COLOR_DARK = "#334155"
+        private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR = "#475569"
+        private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR_DARK = "#CBD5E1"
         private val ISLAND_ICON_RES_ID_DEFAULT = R.drawable.ic_kei_logo_island
         private val ISLAND_ICON_RES_ID_AP = R.drawable.ic_ba_ap_island_notification
         private val ISLAND_ICON_RES_ID_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
@@ -324,6 +339,18 @@ class MiIslandNotificationBuilder(
                 multiProgressInfo {
                     progress = presentation.progressPercent.coerceIn(0, 100)
                     color = presentation.progressColor
+                    title = presentation.compactTitle
+                    content = resolveExpandedProgressContent(
+                        state = state,
+                        presentation = presentation,
+                        isGitHubShareImport = isGitHubShareImport
+                    )
+                    if (isGitHubShareImport) {
+                        colorTitle = presentation.progressColor
+                        colorTitleDark = presentation.progressColor
+                        colorContent = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR
+                        colorContentDark = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR_DARK
+                    }
                 }
             }
 
@@ -476,7 +503,7 @@ class MiIslandNotificationBuilder(
                 progressPercent = progressPercent,
                 progressColor = progressColor,
                 notificationAccentColor = progressColor,
-                primaryActionColor = progressColor
+                primaryActionColor = GITHUB_SHARE_IMPORT_ACTION_PRIMARY_COLOR
             )
         }
         if (state.running) {
@@ -579,6 +606,13 @@ class MiIslandNotificationBuilder(
                 actionTitleColorDark = HIGHLIGHT_TITLE_COLOR
             }
 
+            is IslandActionStyle.Tonal -> {
+                actionBgColor = style.backgroundColor
+                actionBgColorDark = style.backgroundColorDark
+                actionTitleColor = style.titleColor
+                actionTitleColorDark = style.titleColorDark
+            }
+
             IslandActionStyle.Danger -> {
                 actionBgColor = DANGER_BG_COLOR
                 actionBgColorDark = DANGER_BG_COLOR_DARK
@@ -596,11 +630,30 @@ class MiIslandNotificationBuilder(
         val cancelLinkageLabel = context.getString(
             R.string.github_share_import_pending_action_cancel
         )
-        return if (isGitHubShareImport && secondaryActionLabel == cancelLinkageLabel) {
-            IslandActionStyle.Danger
-        } else {
-            IslandActionStyle.Plain
+        if (!isGitHubShareImport) return IslandActionStyle.Plain
+        if (secondaryActionLabel == cancelLinkageLabel) return IslandActionStyle.Danger
+        val installActionLabels = setOf(
+            context.getString(R.string.github_share_import_notify_action_send_install),
+            context.getString(R.string.github_share_import_notify_action_continue_install),
+            context.getString(R.string.github_share_import_notify_action_confirm_track)
+        )
+        if (secondaryActionLabel in installActionLabels) {
+            return IslandActionStyle.Tonal(
+                backgroundColor = GITHUB_SHARE_IMPORT_ACTION_SECONDARY_BG_COLOR,
+                backgroundColorDark = GITHUB_SHARE_IMPORT_ACTION_SECONDARY_BG_COLOR_DARK,
+                titleColor = GITHUB_SHARE_IMPORT_ACTION_SECONDARY_TITLE_COLOR,
+                titleColorDark = GITHUB_SHARE_IMPORT_ACTION_SECONDARY_TITLE_COLOR_DARK
+            )
         }
+        if (secondaryActionLabel == context.getString(R.string.common_refresh)) {
+            return IslandActionStyle.Tonal(
+                backgroundColor = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_BG_COLOR,
+                backgroundColorDark = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_BG_COLOR_DARK,
+                titleColor = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR,
+                titleColorDark = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR_DARK
+            )
+        }
+        return IslandActionStyle.Plain
     }
 
     private fun resolveDefaultEndpointSummary(state: McpNotificationPayload): String? {
@@ -612,6 +665,21 @@ class MiIslandNotificationBuilder(
         } else {
             port.toString()
         }
+    }
+
+    private fun resolveExpandedProgressContent(
+        state: McpNotificationPayload,
+        presentation: IslandPresentation,
+        isGitHubShareImport: Boolean
+    ): String {
+        val fullContent = state.content(context).trim()
+        val isDownloadProgress =
+            isGitHubShareImport &&
+                    presentation.showExpandedProgress &&
+                    fullContent.contains(" · ") &&
+                    (presentation.compactTitle.endsWith("%") || presentation.progressPercent == 0)
+        if (isDownloadProgress) return fullContent
+        return presentation.compactContent ?: state.shortText
     }
 
     private fun resolveApProgressPercent(state: McpNotificationPayload): Int {

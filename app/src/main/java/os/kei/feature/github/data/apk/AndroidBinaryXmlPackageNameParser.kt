@@ -27,6 +27,7 @@ internal object AndroidBinaryXmlPackageNameParser {
         val buffer = ByteBuffer.wrap(manifestBytes).order(ByteOrder.LITTLE_ENDIAN)
         val strings = readStringPool(buffer)
         var packageName = ""
+        var appLabel = ""
         var versionName = ""
         var versionCode = ""
         var minSdk = ""
@@ -58,6 +59,12 @@ internal object AndroidBinaryXmlPackageNameParser {
                         targetSdk = element.attr("targetSdkVersion")
                     }
 
+                    "application" -> {
+                        appLabel = element.attr("label").takeIf { label ->
+                            label.isLiteralManifestLabel()
+                        }.orEmpty()
+                    }
+
                     "uses-permission" -> {
                         element.attr("name").takeIf { it.isNotBlank() }?.let(permissions::add)
                     }
@@ -81,6 +88,7 @@ internal object AndroidBinaryXmlPackageNameParser {
         }
         GitHubApkManifestInfo(
             assetName = "",
+            appLabel = appLabel,
             packageName = packageName,
             versionName = versionName,
             versionCode = versionCode,
@@ -173,6 +181,14 @@ internal object AndroidBinaryXmlPackageNameParser {
 
     private fun String.removeAndroidNamespace(): String {
         return substringAfter(':')
+    }
+
+    private fun String.isLiteralManifestLabel(): Boolean {
+        val label = trim()
+        return label.isNotBlank() &&
+                !label.startsWith("@") &&
+                !label.startsWith("?") &&
+                label.toIntOrNull() == null
     }
 
     private fun nextChunkStep(

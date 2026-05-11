@@ -30,10 +30,10 @@ internal object GitHubShareImportManagedInstallCoordinator {
             suspend (GitHubReleaseAssetFile, GitHubLookupConfig) -> GitHubApkManifestInfo =
         { asset, config ->
             scanShareImportAssetManifestInfo(
-            asset = asset,
-            lookupConfig = config
+                asset = asset,
+                lookupConfig = config
             ).getOrDefault(GitHubApkManifestInfo(assetName = asset.name))
-    }
+        }
     private var assetUrlResolver:
             suspend (GitHubLookupConfig, GitHubReleaseAssetFile) -> String = { config, asset ->
         resolvePreferredAssetUrl(config, asset)
@@ -85,6 +85,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
         val initialProgress = GitHubShareImportManagedInstallProgress(
             phase = GitHubShareImportPhase.Installing,
             assetName = selectedAsset.name,
+            targetDisplayName = targetDisplayName,
             progressPercent = 0,
             totalBytes = selectedAsset.sizeBytes
         )
@@ -126,7 +127,14 @@ internal object GitHubShareImportManagedInstallCoordinator {
         }
         val scannedManifestInfo = scannedManifestInfoDeferred.await()
         val scannedPackageName = scannedManifestInfo.packageName.trim()
+        val scannedAppLabel = scannedManifestInfo.appLabel.trim()
         val scannedVersionName = scannedManifestInfo.versionName.trim()
+        val scannedVersionCode = scannedManifestInfo.versionCode.trim()
+        val scannedMinSdk = scannedManifestInfo.minSdk.trim()
+        val scannedTargetSdk = scannedManifestInfo.targetSdk.trim()
+        val scannedNativeAbis = scannedManifestInfo.nativeAbis
+            .map { abi -> abi.trim() }
+            .filter { abi -> abi.isNotBlank() }
         val activeManagedInstall = withContext(Dispatchers.IO) {
             GitHubShareImportFlowStore.loadActiveManagedInstall()
         }
@@ -149,8 +157,13 @@ internal object GitHubShareImportManagedInstallCoordinator {
             asset = selectedAsset,
             lookupConfig = lookupConfig,
             targetDisplayName = targetDisplayName,
+            scannedAppLabel = scannedAppLabel,
             scannedPackageName = scannedPackageName,
             scannedVersionName = scannedVersionName,
+            scannedVersionCode = scannedVersionCode,
+            scannedMinSdk = scannedMinSdk,
+            scannedTargetSdk = scannedTargetSdk,
+            scannedNativeAbis = scannedNativeAbis,
             resolvedDownloadUrl = resolvedDownloadUrl,
             requestId = requestId
         )
@@ -208,8 +221,13 @@ internal object GitHubShareImportManagedInstallCoordinator {
             asset = asset,
             lookupConfig = lookupConfig,
             targetDisplayName = activeRecord.targetDisplayName.ifBlank { preview.targetDisplayName },
+            scannedAppLabel = activeRecord.appLabel,
             scannedPackageName = activeRecord.packageName,
             scannedVersionName = activeRecord.versionName,
+            scannedVersionCode = activeRecord.versionCode,
+            scannedMinSdk = activeRecord.minSdk,
+            scannedTargetSdk = activeRecord.targetSdk,
+            scannedNativeAbis = activeRecord.nativeAbis,
             requestId = activeRecord.requestId,
             startedAtMillis = activeRecord.startedAtMillis
         )
@@ -260,6 +278,14 @@ internal object GitHubShareImportManagedInstallCoordinator {
         val uiProgress = progress.toShareImportManagedInstallProgress(request)
         val nextRecord = activeRecord.copy(
             sessionId = if (progress.sessionId > 0) progress.sessionId else activeRecord.sessionId,
+            appLabel = uiProgress.appLabel.ifBlank { activeRecord.appLabel },
+            packageName = uiProgress.packageName.ifBlank { activeRecord.packageName },
+            versionName = uiProgress.versionName.ifBlank { activeRecord.versionName },
+            versionCode = uiProgress.versionCode.ifBlank { activeRecord.versionCode },
+            minSdk = uiProgress.minSdk.ifBlank { activeRecord.minSdk },
+            targetSdk = uiProgress.targetSdk.ifBlank { activeRecord.targetSdk },
+            nativeAbis = uiProgress.nativeAbis.ifEmpty { activeRecord.nativeAbis },
+            targetDisplayName = uiProgress.targetDisplayName.ifBlank { activeRecord.targetDisplayName },
             progressPhase = uiProgress.phase.name,
             progressPercent = uiProgress.boundedProgressPercent,
             downloadedBytes = uiProgress.downloadedBytes,
@@ -353,8 +379,14 @@ internal object GitHubShareImportManagedInstallCoordinator {
         return GitHubShareImportManagedInstallProgress(
             phase = phase,
             assetName = request.asset.name,
+            appLabel = request.scannedAppLabel,
             packageName = request.scannedPackageName,
             versionName = request.scannedVersionName,
+            versionCode = request.scannedVersionCode,
+            minSdk = request.scannedMinSdk,
+            targetSdk = request.scannedTargetSdk,
+            nativeAbis = request.scannedNativeAbis,
+            targetDisplayName = request.targetDisplayName,
             progressPercent = boundedProgressPercent,
             downloadedBytes = downloadedBytes,
             totalBytes = totalBytes
@@ -426,8 +458,13 @@ internal object GitHubShareImportManagedInstallCoordinator {
         }
         val nextRecord = activeRecord.copy(
             sessionId = result.sessionId,
+            appLabel = request.scannedAppLabel.ifBlank { activeRecord.appLabel },
             packageName = result.packageName.ifBlank { activeRecord.packageName },
             versionName = request.scannedVersionName.ifBlank { activeRecord.versionName },
+            versionCode = request.scannedVersionCode.ifBlank { activeRecord.versionCode },
+            minSdk = request.scannedMinSdk.ifBlank { activeRecord.minSdk },
+            targetSdk = request.scannedTargetSdk.ifBlank { activeRecord.targetSdk },
+            nativeAbis = request.scannedNativeAbis.ifEmpty { activeRecord.nativeAbis },
             progressPhase = GitHubShareImportPhase.InstallReady.name,
             progressPercent = 100,
             downloadedBytes = result.downloadedBytes,
@@ -482,6 +519,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             appLabel = snapshot?.appLabel
                 .orEmpty()
                 .ifBlank { result.appLabel }
+                .ifBlank { request.scannedAppLabel }
                 .ifBlank { request.targetDisplayName }
                 .ifBlank { packageName },
             versionName = snapshot?.versionName
@@ -530,8 +568,13 @@ internal object GitHubShareImportManagedInstallCoordinator {
             repo = repo,
             releaseTag = releaseTag,
             assetName = asset.name,
+            appLabel = scannedAppLabel,
             packageName = scannedPackageName,
             versionName = scannedVersionName,
+            versionCode = scannedVersionCode,
+            minSdk = scannedMinSdk,
+            targetSdk = scannedTargetSdk,
+            nativeAbis = scannedNativeAbis,
             targetDisplayName = targetDisplayName,
             sessionId = sessionId,
             progressPhase = GitHubShareImportPhase.Installing.name,

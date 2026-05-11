@@ -40,8 +40,13 @@ data class GitHubPendingShareImportManagedInstallRecord(
     val repo: String,
     val releaseTag: String = "",
     val assetName: String = "",
+    val appLabel: String = "",
     val packageName: String = "",
     val versionName: String = "",
+    val versionCode: String = "",
+    val minSdk: String = "",
+    val targetSdk: String = "",
+    val nativeAbis: List<String> = emptyList(),
     val targetDisplayName: String = "",
     val sessionId: Int = -1,
     val progressPhase: String = "",
@@ -269,6 +274,24 @@ object GitHubShareImportFlowStore {
         }
     }
 
+    private fun parseStringArray(array: JSONArray): List<String> {
+        return buildList {
+            for (index in 0 until array.length()) {
+                val value = array.optString(index).trim()
+                if (value.isNotBlank()) add(value)
+            }
+        }
+    }
+
+    private fun List<String>.toJsonArray(): JSONArray {
+        return JSONArray().apply {
+            this@toJsonArray.forEach { value ->
+                val normalized = value.trim()
+                if (normalized.isNotBlank()) put(normalized)
+            }
+        }
+    }
+
     private fun previewToJson(record: GitHubPendingShareImportPreviewRecord): JSONObject {
         return JSONObject()
             .put("sourceUrl", record.sourceUrl)
@@ -363,8 +386,13 @@ object GitHubShareImportFlowStore {
             repo = repo,
             releaseTag = obj.optString("releaseTag").trim(),
             assetName = assetName,
+            appLabel = obj.optString("appLabel").trim(),
             packageName = obj.optString("packageName").trim(),
             versionName = obj.optString("versionName").trim(),
+            versionCode = obj.optString("versionCode").trim(),
+            minSdk = obj.optString("minSdk").trim(),
+            targetSdk = obj.optString("targetSdk").trim(),
+            nativeAbis = obj.optJSONArray("nativeAbis")?.let(::parseStringArray).orEmpty(),
             targetDisplayName = obj.optString("targetDisplayName").trim(),
             sessionId = obj.optInt("sessionId", -1),
             progressPhase = obj.optString("progressPhase").trim(),
@@ -385,8 +413,13 @@ object GitHubShareImportFlowStore {
             .put("repo", record.repo)
             .put("releaseTag", record.releaseTag)
             .put("assetName", record.assetName)
+            .put("appLabel", record.appLabel)
             .put("packageName", record.packageName)
             .put("versionName", record.versionName)
+            .put("versionCode", record.versionCode)
+            .put("minSdk", record.minSdk)
+            .put("targetSdk", record.targetSdk)
+            .put("nativeAbis", record.nativeAbis.toJsonArray())
             .put("targetDisplayName", record.targetDisplayName)
             .put("sessionId", record.sessionId)
             .put("progressPhase", record.progressPhase)

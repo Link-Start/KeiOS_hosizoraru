@@ -706,6 +706,14 @@
     <string name="github_share_import_dialog_label_strategy">Fetch strategy</string>
     <string name="github_share_import_dialog_label_release">Release</string>
     <string name="github_share_import_dialog_label_download">Download</string>
+    <string name="github_share_import_dialog_label_version">Version</string>
+    <string name="github_share_import_dialog_label_abi">ABI</string>
+    <string name="github_share_import_dialog_label_sdk">SDK</string>
+    <string name="github_share_import_dialog_version_value">%1$s (%2$s)</string>
+    <string name="github_share_import_dialog_abi_universal">Universal</string>
+    <string name="github_share_import_dialog_sdk_value">Target %1$s · Min %2$s</string>
+    <string name="github_share_import_dialog_sdk_target_value">Target %1$s</string>
+    <string name="github_share_import_dialog_sdk_min_value">Min %1$s</string>
     <string name="github_share_import_dialog_label_assets">Available APKs</string>
     <string name="github_share_import_dialog_asset_summary">Size: %1$s · path: %2$s</string>
     <string name="github_share_import_dialog_asset_hint_device_recommended">Recommended for this device</string>

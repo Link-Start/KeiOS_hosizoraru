@@ -322,10 +322,42 @@ private fun ManagedInstallProgressBlock(
             value = progress.assetName
         )
     }
+    val appDisplayName = progress.appDisplayName
+    if (
+        appDisplayName.isNotBlank() &&
+        !appDisplayName.equals(progress.packageName, ignoreCase = true) &&
+        !appDisplayName.equals(progress.assetName, ignoreCase = true)
+    ) {
+        ShareImportCompactInfoRow(
+            key = stringResource(R.string.github_share_import_attach_dialog_label_app),
+            value = appDisplayName
+        )
+    }
     if (progress.packageName.isNotBlank()) {
         ShareImportCompactInfoRow(
             key = stringResource(R.string.github_share_import_attach_dialog_label_package),
             value = progress.packageName
+        )
+    }
+    val versionLabel = managedInstallVersionLabel(progress)
+    if (versionLabel.isNotBlank()) {
+        ShareImportCompactInfoRow(
+            key = stringResource(R.string.github_share_import_dialog_label_version),
+            value = versionLabel
+        )
+    }
+    val abiLabel = managedInstallAbiLabel(progress)
+    if (abiLabel.isNotBlank()) {
+        ShareImportCompactInfoRow(
+            key = stringResource(R.string.github_share_import_dialog_label_abi),
+            value = abiLabel
+        )
+    }
+    val sdkLabel = managedInstallSdkLabel(progress)
+    if (sdkLabel.isNotBlank()) {
+        ShareImportCompactInfoRow(
+            key = stringResource(R.string.github_share_import_dialog_label_sdk),
+            value = sdkLabel
         )
     }
     val showDownloadText =
@@ -360,6 +392,73 @@ private fun ManagedInstallProgressBlock(
                 percentText
             )
         )
+    }
+}
+
+@Composable
+private fun managedInstallVersionLabel(
+    progress: GitHubShareImportManagedInstallProgress
+): String {
+    val versionName = progress.versionName.trim()
+    val versionCode = progress.versionCode.trim()
+    return when {
+        versionName.isNotBlank() && versionCode.isNotBlank() -> stringResource(
+            R.string.github_share_import_dialog_version_value,
+            versionName,
+            versionCode
+        )
+
+        versionName.isNotBlank() -> versionName
+        versionCode.isNotBlank() -> versionCode
+        else -> ""
+    }
+}
+
+@Composable
+private fun managedInstallAbiLabel(
+    progress: GitHubShareImportManagedInstallProgress
+): String {
+    val abis = progress.nativeAbis
+        .map { abi -> abi.trim() }
+        .filter { abi -> abi.isNotBlank() }
+        .distinct()
+    if (abis.isNotEmpty()) return abis.joinToString(", ")
+    val inspectionReady = progress.packageName.isNotBlank() &&
+            progress.phase in setOf(
+        GitHubShareImportPhase.InstallReady,
+        GitHubShareImportPhase.InstallCommitting
+    )
+    return if (inspectionReady) {
+        stringResource(R.string.github_share_import_dialog_abi_universal)
+    } else {
+        ""
+    }
+}
+
+@Composable
+private fun managedInstallSdkLabel(
+    progress: GitHubShareImportManagedInstallProgress
+): String {
+    val targetSdk = progress.targetSdk.trim()
+    val minSdk = progress.minSdk.trim()
+    return when {
+        targetSdk.isNotBlank() && minSdk.isNotBlank() -> stringResource(
+            R.string.github_share_import_dialog_sdk_value,
+            targetSdk,
+            minSdk
+        )
+
+        targetSdk.isNotBlank() -> stringResource(
+            R.string.github_share_import_dialog_sdk_target_value,
+            targetSdk
+        )
+
+        minSdk.isNotBlank() -> stringResource(
+            R.string.github_share_import_dialog_sdk_min_value,
+            minSdk
+        )
+
+        else -> ""
     }
 }
 

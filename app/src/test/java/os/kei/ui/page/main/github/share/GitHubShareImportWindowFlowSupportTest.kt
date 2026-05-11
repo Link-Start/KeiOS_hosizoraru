@@ -4,6 +4,7 @@ import android.content.Intent
 import org.junit.Test
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED
+import os.kei.feature.github.data.local.GitHubPendingShareImportManagedInstallRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportPreviewRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportResultRecord
@@ -99,6 +100,42 @@ class GitHubShareImportWindowFlowSupportTest {
         assertEquals("MicYou", roundTrip.targetDisplayName)
         assertEquals("MicYou.apk", roundTrip.selectedAssetName)
         assertEquals(true, roundTrip.sendInstallActionEnabled)
+    }
+
+    @Test
+    fun `managed install record keeps parsed apk metadata through ui progress mapper`() {
+        val record = GitHubPendingShareImportManagedInstallRecord(
+            requestId = "request-1",
+            projectUrl = "https://github.com/owner/MicYou",
+            owner = "owner",
+            repo = "MicYou",
+            releaseTag = "v2",
+            assetName = "MicYou-arm64.apk",
+            appLabel = "MicYou",
+            packageName = "os.kei.micyou",
+            versionName = "2.0.0",
+            versionCode = "200",
+            minSdk = "35",
+            targetSdk = "36",
+            nativeAbis = listOf("arm64-v8a"),
+            targetDisplayName = "MicYou",
+            progressPhase = GitHubShareImportPhase.InstallReady.name,
+            progressPercent = 100,
+            downloadedBytes = 1024L,
+            totalBytes = 1024L,
+            startedAtMillis = 10_000L
+        )
+
+        val progress = record.toManagedInstallProgress()
+
+        assertEquals(GitHubShareImportPhase.InstallReady, progress.phase)
+        assertEquals("MicYou", progress.appDisplayName)
+        assertEquals("os.kei.micyou", progress.packageName)
+        assertEquals("2.0.0", progress.versionName)
+        assertEquals("200", progress.versionCode)
+        assertEquals("35", progress.minSdk)
+        assertEquals("36", progress.targetSdk)
+        assertEquals(listOf("arm64-v8a"), progress.nativeAbis)
     }
 
     @Test

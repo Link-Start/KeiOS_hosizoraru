@@ -445,6 +445,7 @@ internal fun GitHubShareImportWindowFlowHost(
                     managedInstallProgress = GitHubShareImportManagedInstallProgress(
                         phase = GitHubShareImportPhase.Installing,
                         assetName = selectedAsset.name,
+                        targetDisplayName = selectedPreview.targetDisplayName,
                         progressPercent = 0,
                         totalBytes = selectedAsset.sizeBytes
                     )
@@ -492,6 +493,7 @@ internal fun GitHubShareImportWindowFlowHost(
                         managedInstallProgress = GitHubShareImportManagedInstallProgress(
                             phase = GitHubShareImportPhase.InstallReady,
                             assetName = delivery.assetName,
+                            targetDisplayName = preview.targetDisplayName,
                             progressPercent = 100,
                             totalBytes = selectedAsset.sizeBytes
                         )

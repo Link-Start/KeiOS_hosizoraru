@@ -15,6 +15,7 @@ import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
@@ -175,10 +176,17 @@ internal suspend fun scanShareImportAssetPackageName(
 internal suspend fun scanShareImportAssetManifestInfo(
     asset: GitHubReleaseAssetFile,
     lookupConfig: GitHubLookupConfig,
+    apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository(),
     scanner: GitHubApkPackageNameScanner = GitHubApkPackageNameScanner(
         GitHubApkPackageNameScanRepository()
     )
 ): Result<GitHubApkManifestInfo> {
+    apkInfoRepository.inspectAsync(
+        asset = asset,
+        lookupConfig = lookupConfig
+    ).getOrNull()?.let { info ->
+        return Result.success(info)
+    }
     return withContext(Dispatchers.IO) {
         scanner.scanAssetManifestInfo(
             asset = asset,

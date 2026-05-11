@@ -69,8 +69,14 @@ internal data class GitHubPendingShareImportTrack(
 internal data class GitHubShareImportManagedInstallProgress(
     val phase: GitHubShareImportPhase,
     val assetName: String = "",
+    val appLabel: String = "",
     val packageName: String = "",
     val versionName: String = "",
+    val versionCode: String = "",
+    val minSdk: String = "",
+    val targetSdk: String = "",
+    val nativeAbis: List<String> = emptyList(),
+    val targetDisplayName: String = "",
     val progressPercent: Int = 0,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long = -1L
@@ -83,6 +89,12 @@ internal data class GitHubShareImportManagedInstallProgress(
 
     val progressFraction: Float
         get() = boundedProgressPercent.toFloat() / 100f
+
+    val appDisplayName: String
+        get() = appLabel.trim()
+            .ifBlank { targetDisplayName.trim() }
+            .ifBlank { cleanShareImportAssetName(assetName) }
+            .ifBlank { packageName.trim() }
 }
 
 internal fun GitHubPendingShareImportManagedInstallRecord.toManagedInstallProgress(): GitHubShareImportManagedInstallProgress {
@@ -92,8 +104,14 @@ internal fun GitHubPendingShareImportManagedInstallRecord.toManagedInstallProgre
     return GitHubShareImportManagedInstallProgress(
         phase = phase,
         assetName = assetName,
+        appLabel = appLabel,
         packageName = packageName,
         versionName = versionName,
+        versionCode = versionCode,
+        minSdk = minSdk,
+        targetSdk = targetSdk,
+        nativeAbis = nativeAbis,
+        targetDisplayName = targetDisplayName,
         progressPercent = progressPercent,
         downloadedBytes = downloadedBytes,
         totalBytes = totalBytes

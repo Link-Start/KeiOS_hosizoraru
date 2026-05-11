@@ -22,6 +22,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsBranchOption
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.feature.github.model.GitHubActionsRunTrackingPlan
 import os.kei.feature.github.model.GitHubActionsWorkflow
@@ -199,6 +200,8 @@ internal class GitHubPageState(
     val apkInfoInstalledResults = mutableStateMapOf<String, GitHubInstalledPackageInfo?>()
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
+    val actionsRecommendedRunSnapshots =
+        mutableStateMapOf<String, GitHubActionsRecommendedRunSnapshot>()
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
     val trackedLocalVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
         putAll(trackedReleaseExpansionState.localVersionExpanded)
@@ -324,6 +327,7 @@ internal class GitHubPageState(
         apkAssetExpanded.keys.retainAll(validItemIds)
         apkAssetIncludeAll.keys.retainAll(validItemIds)
         itemRefreshLoading.keys.retainAll(validItemIds)
+        actionsRecommendedRunSnapshots.keys.retainAll(validItemIds)
         apkAssetLoading.keys.retainAll(validItemIds)
         apkAssetErrors.keys.retainAll(validItemIds)
         apkAssetBundles.keys.retainAll(validItemIds)

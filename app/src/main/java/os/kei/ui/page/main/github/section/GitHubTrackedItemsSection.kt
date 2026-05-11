@@ -42,6 +42,7 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
@@ -118,6 +119,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     apkAssetLoading: SnapshotStateMap<String, Boolean>,
     apkAssetErrors: SnapshotStateMap<String, String>,
     apkAssetExpanded: SnapshotStateMap<String, Boolean>,
+    actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
     trackedCardExpanded: SnapshotStateMap<String, Boolean>,
     trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
     trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
@@ -286,6 +288,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
                         appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L }
                     ) ?: stringResource(R.string.common_unknown)
+                    val actionsRunSnapshot = actionsRecommendedRunSnapshots[item.id]
                     val localText = formatLocalVersionText(context, checkStates[item.id])
                     if (localText != null) {
                         val localVersionColor = if (state.isLocalAppUninstalled()) {
@@ -322,6 +325,17 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                         onLocalVersionExpandedChange(item.id, false)
                                     }
                                 )
+                                if (item.checkActionsUpdates) {
+                                    GitHubLinkedInfoCard(
+                                        label = stringResource(R.string.github_item_label_actions_run),
+                                        value = formatActionsRunSnapshotValue(actionsRunSnapshot),
+                                        valueColor = GitHubStatusPalette.Cache,
+                                        valueMaxLines = 2,
+                                        onClick = {
+                                            onOpenActionsSheet(item)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -519,6 +533,22 @@ private fun GitHubReleaseVersionCard(
         trailingIcon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
         trailingIconColor = textColor,
         onClick = { onExpandedChange(!expanded) }
+    )
+}
+
+@Composable
+private fun formatActionsRunSnapshotValue(
+    snapshot: GitHubActionsRecommendedRunSnapshot?
+): String {
+    if (snapshot == null) {
+        return stringResource(R.string.github_item_actions_run_not_recorded)
+    }
+    val checkedAt = formatReleaseUpdatedAtCompact(snapshot.checkedAtMillis)
+        ?: stringResource(R.string.common_unknown)
+    return stringResource(
+        R.string.github_item_actions_run_value,
+        snapshot.runLabel,
+        checkedAt
     )
 }
 

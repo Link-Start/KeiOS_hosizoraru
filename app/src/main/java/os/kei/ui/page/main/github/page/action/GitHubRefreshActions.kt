@@ -9,13 +9,16 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import os.kei.R
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubCheckSourceSignature
+import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -328,6 +331,7 @@ internal class GitHubRefreshActions(
         }
         state.checkStates[item.id] = itemState
         persistCheckCacheNow()
+        refreshActionsRunSnapshotForItem(item)
         onUpdated?.invoke(itemState)
     }
 
@@ -393,6 +397,9 @@ internal class GitHubRefreshActions(
                                     message = throwable.message ?: throwable.javaClass.simpleName
                                 )
                             }
+                        }
+                        if (item.checkActionsUpdates) {
+                            refreshActionsRunSnapshotForItem(item)
                         }
                         var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
                         var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
@@ -587,6 +594,12 @@ internal class GitHubRefreshActions(
         state.trackedAddedAtById.clear()
         state.trackedAddedAtById.putAll(trackSnapshot.trackedAddedAtById)
         state.retainTrackedAddedAtByTrackedItems()
+        state.actionsRecommendedRunSnapshots.clear()
+        trackSnapshot.items.filter { it.checkActionsUpdates }.forEach { item ->
+            GitHubActionsRecommendedRunStore.load(item.id)?.let { snapshot ->
+                state.actionsRecommendedRunSnapshots[item.id] = snapshot
+            }
+        }
         state.pendingShareImportTrack = trackSnapshot.pendingShareImportTrack?.toShareImportTrack()
         state.pendingShareImportPreview = GitHubShareImportFlowStore
             .loadActivePreview()
@@ -624,6 +637,28 @@ internal class GitHubRefreshActions(
             trackSnapshot.lastRefreshMs
         } else {
             0L
+        }
+    }
+
+    private suspend fun refreshActionsRunSnapshotForItem(item: GitHubTrackedApp) {
+        if (!item.checkActionsUpdates) {
+            GitHubActionsRecommendedRunStore.remove(item.id)
+            state.actionsRecommendedRunSnapshots.remove(item.id)
+            return
+        }
+        val previous = GitHubActionsRecommendedRunStore.load(item.id)
+        val current = GitHubActionsUpdateCheckService().fetchRecommendedRunSnapshot(
+            item = item,
+            lookupConfig = state.lookupConfig,
+            previousWorkflowId = previous?.workflowId
+        ).getOrNull() ?: return
+        GitHubActionsRecommendedRunStore.save(current)
+        state.actionsRecommendedRunSnapshots[item.id] = current
+        if (previous != null && current.isNewerThan(previous)) {
+            GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
+                context = context,
+                snapshot = current
+            )
         }
     }
 }

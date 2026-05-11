@@ -225,6 +225,7 @@ fun GitHubPage(
             apkAssetLoading = state.apkAssetLoading,
             apkAssetErrors = state.apkAssetErrors,
             apkAssetExpanded = state.apkAssetExpanded,
+            actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
             trackedCardExpanded = state.trackedCardExpanded,
             trackedLocalVersionExpanded = state.trackedLocalVersionExpanded,
             trackedStableVersionExpanded = state.trackedStableVersionExpanded,

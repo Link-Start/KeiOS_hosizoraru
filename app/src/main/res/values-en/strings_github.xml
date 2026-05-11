@@ -638,6 +638,9 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
     <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
+    <string name="github_item_label_actions_run">Actions Run</string>
+    <string name="github_item_actions_run_value">%1$s · recorded at %2$s</string>
+    <string name="github_item_actions_run_not_recorded">Not recorded yet</string>
     <string name="github_track_sheet_label_precise_apk_version">More precise version logic</string>
     <string name="github_track_sheet_summary_precise_apk_version">Controls whether this project reads real versionName and versionCode from the remote APK Manifest. It can follow global settings or override them.</string>
     <string name="github_track_sheet_summary_precise_apk_version_follow_global">Following global: global is currently %1$s</string>

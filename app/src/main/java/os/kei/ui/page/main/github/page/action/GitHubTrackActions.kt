@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
@@ -218,6 +219,10 @@ internal class GitHubTrackActions(
                 }
                 state.trackedItems.add(newItem)
                 state.recordTrackedAddedAt(newItem.id, nowMillis)
+                if (!newItem.checkActionsUpdates) {
+                    GitHubActionsRecommendedRunStore.remove(newItem.id)
+                    state.actionsRecommendedRunSnapshots.remove(newItem.id)
+                }
                 state.requestTrackCardFocus(newItem.id)
                 env.saveTrackedItems(refreshTrackIds = setOf(newItem.id))
                 env.toast(R.string.github_toast_track_added)
@@ -254,6 +259,12 @@ internal class GitHubTrackActions(
                     state.trackedPreReleaseVersionExpanded.remove(editing.id)
                     GitHubTrackedReleaseUiStateStore.remove(editing.id)
                     state.trackedAddedAtById.remove(editing.id)
+                    GitHubActionsRecommendedRunStore.remove(editing.id)
+                    state.actionsRecommendedRunSnapshots.remove(editing.id)
+                }
+                if (!newItem.checkActionsUpdates) {
+                    GitHubActionsRecommendedRunStore.remove(newItem.id)
+                    state.actionsRecommendedRunSnapshots.remove(newItem.id)
                 }
                 state.recordTrackedAddedAt(newItem.id, existingAddedAt)
                 state.requestTrackCardFocus(newItem.id)
@@ -283,6 +294,8 @@ internal class GitHubTrackActions(
                 state.trackedPreReleaseVersionExpanded.remove(deleting.id)
                 GitHubTrackedReleaseUiStateStore.remove(deleting.id)
                 state.trackedAddedAtById.remove(deleting.id)
+                GitHubActionsRecommendedRunStore.remove(deleting.id)
+                state.actionsRecommendedRunSnapshots.remove(deleting.id)
                 env.saveTrackedItems()
                 refreshActions.persistCheckCache()
                 env.toast(R.string.github_toast_track_deleted, deleting.appLabel)

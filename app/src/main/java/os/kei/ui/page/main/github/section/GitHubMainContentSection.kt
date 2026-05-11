@@ -21,6 +21,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubSortMode
@@ -82,6 +83,7 @@ internal fun GitHubMainContent(
     apkAssetLoading: SnapshotStateMap<String, Boolean>,
     apkAssetErrors: SnapshotStateMap<String, String>,
     apkAssetExpanded: SnapshotStateMap<String, Boolean>,
+    actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
     trackedCardExpanded: SnapshotStateMap<String, Boolean>,
     trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
     trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
@@ -268,6 +270,7 @@ internal fun GitHubMainContent(
                         apkAssetLoading = apkAssetLoading,
                         apkAssetErrors = apkAssetErrors,
                         apkAssetExpanded = apkAssetExpanded,
+                        actionsRecommendedRunSnapshots = actionsRecommendedRunSnapshots,
                         trackedCardExpanded = trackedCardExpanded,
                         trackedLocalVersionExpanded = trackedLocalVersionExpanded,
                         trackedStableVersionExpanded = trackedStableVersionExpanded,

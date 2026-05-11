@@ -687,32 +687,32 @@ internal class GitHubActionsActions(
         val match = runMatches.firstOrNull() ?: return
         val run = match.runArtifacts.run
         if (run.id <= 0L) return
-        GitHubActionsRecommendedRunStore.save(
-            GitHubActionsRecommendedRunSnapshot(
-                trackId = item.id,
-                owner = item.owner,
-                repo = item.repo,
-                appLabel = item.appLabel,
-                workflowId = workflow.id,
-                workflowName = workflow.displayName,
-                workflowPath = workflow.path,
-                runId = run.id,
-                runNumber = run.runNumber,
-                runAttempt = run.runAttempt,
-                runDisplayName = run.displayName,
-                headBranch = run.headBranch,
-                headSha = run.headSha,
-                event = run.event,
-                status = run.status,
-                conclusion = run.conclusion,
-                htmlUrl = run.htmlUrl,
-                artifactCount = match.runArtifacts.artifacts.count { !it.expired },
-                androidArtifactCount = match.artifactMatches.count { it.traits.androidLike },
-                createdAtMillis = run.createdAtMillis ?: 0L,
-                updatedAtMillis = run.updatedAtMillis ?: 0L,
-                checkedAtMillis = System.currentTimeMillis()
-            )
+        val snapshot = GitHubActionsRecommendedRunSnapshot(
+            trackId = item.id,
+            owner = item.owner,
+            repo = item.repo,
+            appLabel = item.appLabel,
+            workflowId = workflow.id,
+            workflowName = workflow.displayName,
+            workflowPath = workflow.path,
+            runId = run.id,
+            runNumber = run.runNumber,
+            runAttempt = run.runAttempt,
+            runDisplayName = run.displayName,
+            headBranch = run.headBranch,
+            headSha = run.headSha,
+            event = run.event,
+            status = run.status,
+            conclusion = run.conclusion,
+            htmlUrl = run.htmlUrl,
+            artifactCount = match.runArtifacts.artifacts.count { !it.expired },
+            androidArtifactCount = match.artifactMatches.count { it.traits.androidLike },
+            createdAtMillis = run.createdAtMillis ?: 0L,
+            updatedAtMillis = run.updatedAtMillis ?: 0L,
+            checkedAtMillis = System.currentTimeMillis()
         )
+        GitHubActionsRecommendedRunStore.save(snapshot)
+        state.actionsRecommendedRunSnapshots[item.id] = snapshot
     }
 
     private fun scheduleSelectedRunWatch() {

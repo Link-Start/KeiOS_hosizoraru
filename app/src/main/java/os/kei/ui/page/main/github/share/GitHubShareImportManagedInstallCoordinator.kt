@@ -525,6 +525,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
             versionName = snapshot?.versionName
                 .orEmpty()
                 .ifBlank { request.scannedVersionName },
+            versionCode = snapshot?.versionCode
+                .orEmpty()
+                .ifBlank { request.scannedVersionCode },
             eventAction = managedInstallAction(context),
             detectedAtMillis = System.currentTimeMillis(),
             firstInstallTimeMs = snapshot?.firstInstallTimeMs ?: result.firstInstallTimeMs

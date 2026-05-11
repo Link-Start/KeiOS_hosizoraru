@@ -145,6 +145,7 @@ class GitHubShareImportWindowFlowSupportTest {
             packageSnapshot = installedPackage(
                 packageName = "new.package",
                 appLabel = "",
+                versionCode = "120",
                 lastUpdateTimeMs = 12_000L,
                 firstInstallTimeMs = 11_500L
             ),
@@ -157,6 +158,7 @@ class GitHubShareImportWindowFlowSupportTest {
         assertEquals("pixiv-viewer-app", candidate.repo)
         assertEquals("new.package", candidate.packageName)
         assertEquals("new.package", candidate.appLabel)
+        assertEquals("120", candidate.versionCode)
         assertEquals("duplicate", candidate.eventAction)
         assertEquals(12_100L, candidate.detectedAtMillis)
         assertEquals(11_500L, candidate.firstInstallTimeMs)
@@ -377,10 +379,12 @@ class GitHubShareImportWindowFlowSupportTest {
         packageName: String,
         lastUpdateTimeMs: Long,
         appLabel: String = packageName,
+        versionCode: String = "",
         firstInstallTimeMs: Long = lastUpdateTimeMs
     ) = ShareImportInstalledPackageSnapshot(
         packageName = packageName,
         appLabel = appLabel,
+        versionCode = versionCode,
         lastUpdateTimeMs = lastUpdateTimeMs,
         firstInstallTimeMs = firstInstallTimeMs
     )

@@ -43,6 +43,7 @@ internal data class ShareImportInstalledPackageSnapshot(
     val packageName: String,
     val appLabel: String,
     val versionName: String = "",
+    val versionCode: String = "",
     val lastUpdateTimeMs: Long,
     val firstInstallTimeMs: Long
 )
@@ -59,6 +60,7 @@ internal fun GitHubPendingShareImportTrackRecord.toAttachCandidate(
         packageName = packageSnapshot.packageName,
         appLabel = packageSnapshot.appLabel.ifBlank { packageSnapshot.packageName },
         versionName = packageSnapshot.versionName,
+        versionCode = packageSnapshot.versionCode,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
         firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
@@ -318,6 +320,7 @@ private fun loadInstalledPackageSnapshotBlocking(
         packageName = normalizedPackageName,
         appLabel = label,
         versionName = info.versionName?.trim().orEmpty(),
+        versionCode = info.longVersionCode.takeIf { it > 0L }?.toString().orEmpty(),
         lastUpdateTimeMs = info.lastUpdateTime,
         firstInstallTimeMs = info.firstInstallTime
     )
@@ -375,6 +378,7 @@ internal fun findRecentInstalledCandidateForPendingTrack(
             ShareImportInstalledPackageSnapshot(
                 packageName = packageName,
                 appLabel = appLabel,
+                versionCode = info.longVersionCode.takeIf { it > 0L }?.toString().orEmpty(),
                 lastUpdateTimeMs = updateTime,
                 firstInstallTimeMs = info.firstInstallTime
             )

@@ -399,17 +399,28 @@ private fun ManagedInstallProgressBlock(
 private fun managedInstallVersionLabel(
     progress: GitHubShareImportManagedInstallProgress
 ): String {
-    val versionName = progress.versionName.trim()
-    val versionCode = progress.versionCode.trim()
+    return shareImportVersionLabel(
+        versionName = progress.versionName,
+        versionCode = progress.versionCode
+    )
+}
+
+@Composable
+private fun shareImportVersionLabel(
+    versionName: String,
+    versionCode: String
+): String {
+    val normalizedVersionName = versionName.trim()
+    val normalizedVersionCode = versionCode.trim()
     return when {
-        versionName.isNotBlank() && versionCode.isNotBlank() -> stringResource(
+        normalizedVersionName.isNotBlank() && normalizedVersionCode.isNotBlank() -> stringResource(
             R.string.github_share_import_dialog_version_value,
-            versionName,
-            versionCode
+            normalizedVersionName,
+            normalizedVersionCode
         )
 
-        versionName.isNotBlank() -> versionName
-        versionCode.isNotBlank() -> versionCode
+        normalizedVersionName.isNotBlank() -> normalizedVersionName
+        normalizedVersionCode.isNotBlank() -> normalizedVersionCode
         else -> ""
     }
 }
@@ -652,6 +663,16 @@ internal fun GitHubShareImportAttachConfirmSheet(
                     key = stringResource(R.string.github_share_import_attach_dialog_label_package),
                     value = attachCandidate.packageName
                 )
+                val versionLabel = shareImportVersionLabel(
+                    versionName = attachCandidate.versionName,
+                    versionCode = attachCandidate.versionCode
+                )
+                if (versionLabel.isNotBlank()) {
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_share_import_dialog_label_version),
+                        value = versionLabel
+                    )
+                }
             }
             if (duplicateExists) {
                 SheetDescriptionText(

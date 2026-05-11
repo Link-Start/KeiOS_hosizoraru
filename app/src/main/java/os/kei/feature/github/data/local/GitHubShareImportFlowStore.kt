@@ -28,6 +28,7 @@ data class GitHubPendingShareImportAttachCandidateRecord(
     val packageName: String,
     val appLabel: String,
     val versionName: String = "",
+    val versionCode: String = "",
     val eventAction: String,
     val detectedAtMillis: Long = System.currentTimeMillis(),
     val firstInstallTimeMs: Long = -1L
@@ -343,6 +344,7 @@ object GitHubShareImportFlowStore {
             packageName = packageName,
             appLabel = appLabel,
             versionName = obj.optString("versionName").trim(),
+            versionCode = obj.optString("versionCode").trim(),
             eventAction = obj.optString("eventAction").trim(),
             detectedAtMillis = obj.optLong("detectedAtMillis", 0L),
             firstInstallTimeMs = obj.optLong("firstInstallTimeMs", -1L)
@@ -357,6 +359,7 @@ object GitHubShareImportFlowStore {
             .put("packageName", record.packageName)
             .put("appLabel", record.appLabel)
             .put("versionName", record.versionName)
+            .put("versionCode", record.versionCode)
             .put("eventAction", record.eventAction)
             .put("detectedAtMillis", record.detectedAtMillis)
             .put("firstInstallTimeMs", record.firstInstallTimeMs)

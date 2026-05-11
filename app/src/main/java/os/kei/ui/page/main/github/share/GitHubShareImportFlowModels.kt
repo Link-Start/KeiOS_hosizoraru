@@ -356,6 +356,7 @@ internal data class GitHubPendingShareImportAttachCandidate(
     val packageName: String,
     val appLabel: String,
     val versionName: String = "",
+    val versionCode: String = "",
     val eventAction: String,
     val detectedAtMillis: Long = System.currentTimeMillis(),
     val firstInstallTimeMs: Long = -1L
@@ -406,6 +407,7 @@ internal fun GitHubPendingShareImportAttachCandidate.toPendingAttachCandidateRec
         packageName = packageName,
         appLabel = appLabel,
         versionName = versionName,
+        versionCode = versionCode,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
         firstInstallTimeMs = firstInstallTimeMs
@@ -420,6 +422,7 @@ internal fun GitHubPendingShareImportAttachCandidateRecord.toShareImportAttachCa
         packageName = packageName,
         appLabel = appLabel,
         versionName = versionName,
+        versionCode = versionCode,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
         firstInstallTimeMs = firstInstallTimeMs

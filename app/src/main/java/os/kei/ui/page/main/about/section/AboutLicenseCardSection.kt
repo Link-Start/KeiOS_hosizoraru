@@ -112,6 +112,15 @@ fun AboutLicenseCardSection(
             icon = appLucideLockIcon()
         ),
         AboutLicenseEntry(
+            titleRes = R.string.about_license_row_hiddenapi_bypass,
+            value = stringResource(
+                R.string.about_license_value_hiddenapi_bypass,
+                BuildConfig.HIDDENAPI_BYPASS_VERSION
+            ),
+            sourceUrl = stringResource(R.string.about_license_url_hiddenapi_bypass),
+            icon = appLucideLockIcon()
+        ),
+        AboutLicenseEntry(
             titleRes = R.string.about_license_row_mmkv,
             value = stringResource(R.string.about_license_value_mmkv, BuildConfig.MMKV_VERSION),
             sourceUrl = stringResource(R.string.about_license_url_mmkv),

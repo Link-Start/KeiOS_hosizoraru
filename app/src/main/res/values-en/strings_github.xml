@@ -54,6 +54,11 @@
     <string name="github_share_import_error_no_release">This repository has no usable release</string>
     <string name="github_share_import_error_missing_release_tag">The shared link is missing a release tag</string>
     <string name="github_share_import_error_no_stable_release">This repository has no stable release</string>
+    <string name="github_share_import_error_shizuku_unavailable">Shizuku is not running, so KeiOS cannot manage this install</string>
+    <string name="github_share_import_error_shizuku_permission_missing">KeiOS has no Shizuku permission, so it cannot manage this install</string>
+    <string name="github_share_import_error_shizuku_install_permission_missing">The Shizuku remote process has no INSTALL_PACKAGES capability</string>
+    <string name="github_share_import_error_app_managed_install_failed">KeiOS managed install failed</string>
+    <string name="github_share_import_error_app_managed_package_missing">Install reported success without a package name</string>
     <string name="github_actions_menu">Actions</string>
     <string name="github_actions_sheet_title">Actions</string>
     <string name="github_actions_sheet_cd_refresh">Refresh Actions</string>
@@ -421,6 +426,8 @@
     <string name="github_check_sheet_summary_share_import_flow_mode">Choose a sheet-led flow or a quieter live notification / island flow.</string>
     <string name="github_share_import_flow_mode_sheet">Sheet assisted</string>
     <string name="github_share_import_flow_mode_notification">Notification first</string>
+    <string name="github_check_sheet_label_app_managed_share_install">KeiOS managed install</string>
+    <string name="github_check_sheet_summary_app_managed_share_install">When enabled, single-APK share-import linkage downloads and installs through KeiOS with Shizuku.</string>
     <string name="github_check_sheet_label_share_to_installer">Share to installer</string>
     <string name="github_check_sheet_summary_share_available">Share actions can be sent directly to installers that support download-while-install.</string>
     <string name="github_check_sheet_summary_share_unavailable">No supported installer detected, so linkage stays disabled by default.</string>
@@ -662,6 +669,8 @@
     <string name="github_share_import_phase_resolving">Parsing link</string>
     <string name="github_share_import_phase_asset_ready">Choose APK</string>
     <string name="github_share_import_phase_delivering">Sending install</string>
+    <string name="github_share_import_phase_installing">KeiOS installing</string>
+    <string name="github_share_import_phase_install_committing">Committing install</string>
     <string name="github_share_import_phase_waiting_install">Waiting install</string>
     <string name="github_share_import_phase_install_detected">Install detected</string>
     <string name="github_share_import_phase_adding_track">Adding tracking</string>
@@ -713,6 +722,8 @@
     <string name="github_share_import_notify_title_resolving">Preparing share import</string>
     <string name="github_share_import_notify_title_asset_ready">Installable APK found</string>
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>
+    <string name="github_share_import_notify_title_installing">KeiOS is installing</string>
+    <string name="github_share_import_notify_title_install_committing">Committing install</string>
     <string name="github_share_import_notify_title_waiting_install">Waiting for install</string>
     <string name="github_share_import_notify_title_install_detected">Install detected</string>
     <string name="github_share_import_notify_title_adding_track">Adding GitHub tracking</string>
@@ -723,6 +734,8 @@
     <string name="github_share_import_notify_content_resolving">Parsing %1$s</string>
     <string name="github_share_import_notify_content_asset_ready">%1$s · %2$s · %3$d APKs available</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_installing">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_install_committing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · %3$d min left</string>
     <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · exact match · %3$d min left</string>
     <string name="github_share_import_notify_content_install_detected">%1$s · %2$s</string>
@@ -733,6 +746,8 @@
     <string name="github_share_import_notify_short_resolving">Parse</string>
     <string name="github_share_import_notify_short_asset_ready">Ready</string>
     <string name="github_share_import_notify_short_delivering">Sending</string>
+    <string name="github_share_import_notify_short_installing">Installing</string>
+    <string name="github_share_import_notify_short_install_committing">Commit</string>
     <string name="github_share_import_notify_short_waiting_install">Install</string>
     <string name="github_share_import_notify_short_install_detected">Confirm</string>
     <string name="github_share_import_notify_short_adding_track">Tracking</string>

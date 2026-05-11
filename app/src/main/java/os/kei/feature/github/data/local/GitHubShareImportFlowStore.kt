@@ -32,6 +32,19 @@ data class GitHubPendingShareImportAttachCandidateRecord(
     val firstInstallTimeMs: Long = -1L
 )
 
+data class GitHubPendingShareImportManagedInstallRecord(
+    val requestId: String,
+    val projectUrl: String,
+    val owner: String,
+    val repo: String,
+    val releaseTag: String = "",
+    val assetName: String = "",
+    val packageName: String = "",
+    val targetDisplayName: String = "",
+    val sessionId: Int = -1,
+    val startedAtMillis: Long = System.currentTimeMillis()
+)
+
 const val GITHUB_SHARE_IMPORT_RESULT_STATUS_ADDED = "added"
 const val GITHUB_SHARE_IMPORT_RESULT_STATUS_ALREADY_TRACKED = "already_tracked"
 const val GITHUB_SHARE_IMPORT_RESULT_STATUS_FAILED = "failed"
@@ -66,6 +79,7 @@ object GitHubShareImportFlowStore {
     private const val KV_ID = "github_share_import_preview_store"
     private const val KEY_ACTIVE_PREVIEW = "github_active_share_import_preview"
     private const val KEY_ACTIVE_ATTACH_CANDIDATE = "github_active_share_import_attach_candidate"
+    private const val KEY_ACTIVE_MANAGED_INSTALL = "github_active_share_import_managed_install"
     private const val KEY_ACTIVE_RESULT = "github_active_share_import_result"
 
     private val store: MMKV by lazy {
@@ -124,6 +138,33 @@ object GitHubShareImportFlowStore {
         store.removeValueForKey(KEY_ACTIVE_ATTACH_CANDIDATE)
     }
 
+    fun loadActiveManagedInstall(
+        nowMillis: Long = System.currentTimeMillis()
+    ): GitHubPendingShareImportManagedInstallRecord? {
+        val raw = store.decodeString(KEY_ACTIVE_MANAGED_INSTALL).orEmpty()
+        if (raw.isBlank()) return null
+        val record = runCatching {
+            parseManagedInstall(JSONObject(raw))
+        }.getOrNull()
+        if (record == null || record.isExpired(nowMillis)) {
+            clearActiveManagedInstall()
+            return null
+        }
+        return record
+    }
+
+    fun saveActiveManagedInstall(record: GitHubPendingShareImportManagedInstallRecord?) {
+        if (record == null) {
+            clearActiveManagedInstall()
+            return
+        }
+        store.encode(KEY_ACTIVE_MANAGED_INSTALL, managedInstallToJson(record).toString())
+    }
+
+    fun clearActiveManagedInstall() {
+        store.removeValueForKey(KEY_ACTIVE_MANAGED_INSTALL)
+    }
+
     fun loadActiveResult(nowMillis: Long = System.currentTimeMillis()): GitHubShareImportResultRecord? {
         val raw = store.decodeString(KEY_ACTIVE_RESULT).orEmpty()
         if (raw.isBlank()) return null
@@ -152,6 +193,7 @@ object GitHubShareImportFlowStore {
     fun clearActiveFlow() {
         clearActivePreview()
         clearActiveAttachCandidate()
+        clearActiveManagedInstall()
         clearActiveResult()
     }
 
@@ -161,6 +203,10 @@ object GitHubShareImportFlowStore {
 
     private fun GitHubPendingShareImportAttachCandidateRecord.isExpired(nowMillis: Long): Boolean {
         return isGitHubShareImportPreviewExpired(detectedAtMillis, nowMillis)
+    }
+
+    private fun GitHubPendingShareImportManagedInstallRecord.isExpired(nowMillis: Long): Boolean {
+        return isGitHubShareImportPreviewExpired(startedAtMillis, nowMillis)
     }
 
     private fun GitHubShareImportResultRecord.isExpired(nowMillis: Long): Boolean {
@@ -282,6 +328,53 @@ object GitHubShareImportFlowStore {
             .put("eventAction", record.eventAction)
             .put("detectedAtMillis", record.detectedAtMillis)
             .put("firstInstallTimeMs", record.firstInstallTimeMs)
+    }
+
+    private fun parseManagedInstall(obj: JSONObject): GitHubPendingShareImportManagedInstallRecord? {
+        val requestId = obj.optString("requestId").trim()
+        val projectUrl = obj.optString("projectUrl").trim()
+        val owner = obj.optString("owner").trim()
+        val repo = obj.optString("repo").trim()
+        val assetName = obj.optString("assetName").trim()
+        val startedAtMillis = obj.optLong("startedAtMillis", 0L)
+        if (
+            requestId.isBlank() ||
+            projectUrl.isBlank() ||
+            owner.isBlank() ||
+            repo.isBlank() ||
+            assetName.isBlank() ||
+            startedAtMillis <= 0L
+        ) {
+            return null
+        }
+        return GitHubPendingShareImportManagedInstallRecord(
+            requestId = requestId,
+            projectUrl = projectUrl,
+            owner = owner,
+            repo = repo,
+            releaseTag = obj.optString("releaseTag").trim(),
+            assetName = assetName,
+            packageName = obj.optString("packageName").trim(),
+            targetDisplayName = obj.optString("targetDisplayName").trim(),
+            sessionId = obj.optInt("sessionId", -1),
+            startedAtMillis = startedAtMillis
+        )
+    }
+
+    private fun managedInstallToJson(
+        record: GitHubPendingShareImportManagedInstallRecord
+    ): JSONObject {
+        return JSONObject()
+            .put("requestId", record.requestId)
+            .put("projectUrl", record.projectUrl)
+            .put("owner", record.owner)
+            .put("repo", record.repo)
+            .put("releaseTag", record.releaseTag)
+            .put("assetName", record.assetName)
+            .put("packageName", record.packageName)
+            .put("targetDisplayName", record.targetDisplayName)
+            .put("sessionId", record.sessionId)
+            .put("startedAtMillis", record.startedAtMillis)
     }
 
     private fun parseResult(obj: JSONObject): GitHubShareImportResultRecord? {

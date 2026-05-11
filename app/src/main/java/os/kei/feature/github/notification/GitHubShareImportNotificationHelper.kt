@@ -88,6 +88,50 @@ object GitHubShareImportNotificationHelper {
         )
     }
 
+    fun notifyInstalling(
+        context: Context,
+        owner: String,
+        repo: String,
+        assetName: String,
+        progressPercent: Int,
+        packageName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.Installing,
+                owner = owner,
+                repo = repo,
+                assetName = assetName,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName,
+                progressPercentOverride = progressPercent.coerceIn(0, 100)
+            )
+        )
+    }
+
+    fun notifyInstallCommitting(
+        context: Context,
+        owner: String,
+        repo: String,
+        assetName: String,
+        packageName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.InstallCommitting,
+                owner = owner,
+                repo = repo,
+                assetName = assetName,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName
+            )
+        )
+    }
+
     fun notifyWaitingInstall(
         context: Context,
         owner: String,
@@ -313,10 +357,13 @@ object GitHubShareImportNotificationHelper {
         val shortText = context.getString(state.phase.shortTextRes)
         val content = resolveContent(context, state)
         val islandTitle = state.compactIslandTitle(shortText)
+        val progressPercent = state.resolvedProgressPercent
+        val overrideProgressPercent = progressPercent
+            .takeIf { state.phase.progressTemplateEnabled }
         return McpNotificationPayload(
             serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = liveUpdateActive,
-            port = state.phase.progressPercent,
+            port = progressPercent,
             path = content,
             clients = if (state.phase.ongoing) 1 else 0,
             ongoing = liveUpdateActive,
@@ -331,7 +378,7 @@ object GitHubShareImportNotificationHelper {
             overrideContent = content,
             overrideOnlineText = islandTitle.ifBlank { shortText },
             overrideShortText = shortText,
-            overrideProgressPercent = state.phase.progressPercent
+            overrideProgressPercent = overrideProgressPercent
         )
     }
 
@@ -419,6 +466,22 @@ object GitHubShareImportNotificationHelper {
                 R.string.github_share_import_notify_content_delivering,
                 projectLabel,
                 state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) }
+            )
+
+            GitHubShareImportNotificationPhase.Installing -> context.getString(
+                R.string.github_share_import_notify_content_installing,
+                projectLabel,
+                state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) }
+            )
+
+            GitHubShareImportNotificationPhase.InstallCommitting -> context.getString(
+                R.string.github_share_import_notify_content_install_committing,
+                projectLabel,
+                state.packageName.ifBlank {
+                    state.assetName.ifBlank {
+                        context.getString(R.string.github_share_import_pending_label_asset)
+                    }
+                }
             )
 
             GitHubShareImportNotificationPhase.WaitingInstall -> context.getString(
@@ -584,7 +647,8 @@ internal data class GitHubShareImportNotificationState(
     val targetDisplayName: String = "",
     val primaryLabel: String = "",
     val count: Int = 0,
-    val sendInstallActionEnabled: Boolean = false
+    val sendInstallActionEnabled: Boolean = false,
+    val progressPercentOverride: Int? = null
 ) {
     val projectLabel: String
         get() {
@@ -624,6 +688,9 @@ internal data class GitHubShareImportNotificationState(
         return shortText
     }
 
+    val resolvedProgressPercent: Int
+        get() = progressPercentOverride?.coerceIn(0, 100) ?: phase.progressPercent
+
     val primaryActionRes: Int
         get() {
             if (
@@ -647,7 +714,8 @@ internal enum class GitHubShareImportNotificationPhase(
     val refreshActionEnabled: Boolean = false,
     val confirmActionEnabled: Boolean = false,
     val promotedLiveUpdate: Boolean = false,
-    val miIslandProgressColor: String? = null
+    val miIslandProgressColor: String? = null,
+    val progressTemplateEnabled: Boolean = true
 ) {
     Resolving(
         titleRes = R.string.github_share_import_notify_title_resolving,
@@ -673,6 +741,24 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 52,
         ongoing = true,
         openGitHubPage = false
+    ),
+    Installing(
+        titleRes = R.string.github_share_import_notify_title_installing,
+        shortTextRes = R.string.github_share_import_notify_short_installing,
+        primaryActionRes = R.string.github_share_import_notify_action_view_progress,
+        progressPercent = 64,
+        ongoing = true,
+        openGitHubPage = false,
+        cancelActionEnabled = true
+    ),
+    InstallCommitting(
+        titleRes = R.string.github_share_import_notify_title_install_committing,
+        shortTextRes = R.string.github_share_import_notify_short_install_committing,
+        primaryActionRes = R.string.github_share_import_notify_action_view_status,
+        progressPercent = 92,
+        ongoing = true,
+        openGitHubPage = false,
+        progressTemplateEnabled = false
     ),
     WaitingInstall(
         titleRes = R.string.github_share_import_notify_title_waiting_install,
@@ -710,7 +796,8 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
+        progressTemplateEnabled = false
     ),
     AlreadyTracked(
         titleRes = R.string.github_share_import_notify_title_already_tracked,
@@ -720,7 +807,8 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
+        progressTemplateEnabled = false
     ),
     Failed(
         titleRes = R.string.github_share_import_notify_title_failed,
@@ -730,7 +818,8 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR,
+        progressTemplateEnabled = false
     ),
     Cancelled(
         titleRes = R.string.github_share_import_notify_title_cancelled,
@@ -740,6 +829,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR,
+        progressTemplateEnabled = false
     )
 }

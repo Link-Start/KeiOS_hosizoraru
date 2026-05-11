@@ -91,6 +91,7 @@ internal fun GitHubPageSheetHost(
         profileDepthInput = state.profileDepthInput,
         shareImportLinkageEnabledInput = state.shareImportLinkageEnabledInput,
         shareImportFlowModeInput = state.shareImportFlowModeInput,
+        appManagedShareInstallEnabledInput = state.appManagedShareInstallEnabledInput,
         onlineShareTargetPackageInput = state.onlineShareTargetPackageInput,
         preferredDownloaderPackageInput = state.preferredDownloaderPackageInput,
         decisionAssistEnabledInput = state.decisionAssistEnabledInput,
@@ -122,6 +123,9 @@ internal fun GitHubPageSheetHost(
         onProfileDepthInputChange = { state.profileDepthInput = it },
         onShareImportLinkageEnabledInputChange = { state.shareImportLinkageEnabledInput = it },
         onShareImportFlowModeInputChange = { state.shareImportFlowModeInput = it },
+        onAppManagedShareInstallEnabledInputChange = {
+            state.appManagedShareInstallEnabledInput = it
+        },
         onPreferredDownloaderPackageInputChange = { state.preferredDownloaderPackageInput = it },
         onOnlineShareTargetPackageInputChange = { state.onlineShareTargetPackageInput = it },
         onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },

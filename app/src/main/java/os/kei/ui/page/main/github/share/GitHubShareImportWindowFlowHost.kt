@@ -389,7 +389,11 @@ internal fun GitHubShareImportWindowFlowHost(
             scope.launch {
                 val preview = pendingPreview ?: return@launch
                 val lookupConfig = withContext(Dispatchers.IO) { GitHubTrackStore.loadLookupConfig() }
-                phase = GitHubShareImportPhase.Delivering
+                phase = if (lookupConfig.appManagedShareInstallEnabled) {
+                    GitHubShareImportPhase.Installing
+                } else {
+                    GitHubShareImportPhase.Delivering
+                }
                 when (
                     val delivery = GitHubShareImportFlowCoordinator.startDelivery(
                         context = context,
@@ -398,10 +402,26 @@ internal fun GitHubShareImportWindowFlowHost(
                         lookupConfig = lookupConfig
                     )
                 ) {
+                    ShareImportDeliveryCoordinatorResult.Cancelled -> {
+                        phase = GitHubShareImportPhase.Idle
+                        return@launch
+                    }
+
                     is ShareImportDeliveryCoordinatorResult.Failed -> {
                         phase = GitHubShareImportPhase.Failed
-                        toast(context, delivery.toastResId)
+                        if (delivery.toastMessage.isBlank()) {
+                            toast(context, delivery.toastResId)
+                        } else {
+                            toast(context, delivery.toastResId, delivery.toastMessage)
+                        }
                         return@launch
+                    }
+
+                    is ShareImportDeliveryCoordinatorResult.InstallDetected -> {
+                        pendingTrack = null
+                        attachCandidate = delivery.candidate
+                        pendingPreview = null
+                        phase = GitHubShareImportPhase.InstallDetected
                     }
 
                     is ShareImportDeliveryCoordinatorResult.WaitingInstall -> {

@@ -239,6 +239,14 @@ internal object GitHubShareImportFlowCoordinator {
         lookupConfig: GitHubLookupConfig,
         launchInNewTask: Boolean = false
     ): ShareImportDeliveryCoordinatorResult = coroutineScope {
+        if (lookupConfig.appManagedShareInstallEnabled) {
+            return@coroutineScope GitHubShareImportManagedInstallCoordinator.start(
+                context = context,
+                preview = preview,
+                selectedAsset = selectedAsset,
+                lookupConfig = lookupConfig
+            )
+        }
         GitHubShareImportNotificationHelper.notifyDelivering(
             context = context,
             owner = preview.owner,
@@ -610,9 +618,17 @@ internal sealed interface ShareImportDeliveryCoordinatorResult {
         val assetName: String
     ) : ShareImportDeliveryCoordinatorResult
 
-    data class Failed(
-        val toastResId: Int
+    data class InstallDetected(
+        val candidate: GitHubPendingShareImportAttachCandidate,
+        val assetName: String
     ) : ShareImportDeliveryCoordinatorResult
+
+    data class Failed(
+        val toastResId: Int,
+        val toastMessage: String = ""
+    ) : ShareImportDeliveryCoordinatorResult
+
+    data object Cancelled : ShareImportDeliveryCoordinatorResult
 }
 
 internal sealed interface ShareImportCoordinatorResult {

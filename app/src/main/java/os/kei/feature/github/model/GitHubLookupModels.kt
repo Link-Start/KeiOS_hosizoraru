@@ -90,6 +90,7 @@ data class GitHubLookupConfig(
     val profileDepth: GitHubProfileDepth = GitHubProfileDepth.Basic,
     val shareImportLinkageEnabled: Boolean = false,
     val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
+    val appManagedShareInstallEnabled: Boolean = false,
     val onlineShareTargetPackage: String = "",
     val preferredDownloaderPackage: String = "",
     val decisionAssistEnabled: Boolean = false,

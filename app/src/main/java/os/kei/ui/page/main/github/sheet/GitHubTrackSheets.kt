@@ -59,6 +59,7 @@ internal fun GitHubCheckLogicSheet(
     profileDepthInput: GitHubProfileDepth,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
+    appManagedShareInstallEnabledInput: Boolean,
     onlineShareTargetPackageInput: String,
     preferredDownloaderPackageInput: String,
     decisionAssistEnabledInput: Boolean,
@@ -90,6 +91,7 @@ internal fun GitHubCheckLogicSheet(
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
+    onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
@@ -148,6 +150,8 @@ internal fun GitHubCheckLogicSheet(
                 profileDepthInput != lookupConfig.profileDepth ||
             shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
                 shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
+                appManagedShareInstallEnabledInput !=
+                lookupConfig.appManagedShareInstallEnabled ||
             onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
                 preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
                 decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
@@ -190,6 +194,7 @@ internal fun GitHubCheckLogicSheet(
                 downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
                 shareImportLinkageEnabledInput = shareImportLinkageEnabledInput,
                 shareImportFlowModeInput = shareImportFlowModeInput,
+                appManagedShareInstallEnabledInput = appManagedShareInstallEnabledInput,
                 selectedOnlineShareTargetLabel = selectedOnlineShareTargetLabel,
                 onlineShareTargetOptions = onlineShareTargetOptions,
                 installedOnlineShareTargets = installedOnlineShareTargets,
@@ -201,6 +206,8 @@ internal fun GitHubCheckLogicSheet(
                 onPreferredDownloaderPackageInputChange = onPreferredDownloaderPackageInputChange,
                 onShareImportLinkageEnabledInputChange = onShareImportLinkageEnabledInputChange,
                 onShareImportFlowModeInputChange = onShareImportFlowModeInputChange,
+                onAppManagedShareInstallEnabledInputChange =
+                    onAppManagedShareInstallEnabledInputChange,
                 onOnlineShareTargetPackageInputChange = onOnlineShareTargetPackageInputChange,
                 onShowDownloaderPopupChange = onShowDownloaderPopupChange,
                 onShowOnlineShareTargetPopupChange = onShowOnlineShareTargetPopupChange,
@@ -448,6 +455,7 @@ private fun GitHubCheckTransferSection(
     downloaderPopupAnchorBounds: IntRect?,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
+    appManagedShareInstallEnabledInput: Boolean,
     selectedOnlineShareTargetLabel: String,
     onlineShareTargetOptions: List<OnlineShareTargetOption>,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
@@ -459,6 +467,7 @@ private fun GitHubCheckTransferSection(
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
+    onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
@@ -531,6 +540,18 @@ private fun GitHubCheckTransferSection(
                 onAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange,
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_app_managed_share_install),
+            summary = stringResource(
+                R.string.github_check_sheet_summary_app_managed_share_install
+            )
+        ) {
+            AppSwitch(
+                checked = appManagedShareInstallEnabledInput,
+                onCheckedChange = onAppManagedShareInstallEnabledInputChange,
+                enabled = shareImportLinkageEnabledInput
             )
         }
         SheetControlRow(

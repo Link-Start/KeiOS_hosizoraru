@@ -356,6 +356,47 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `managed installing mi island exposes live progress`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.Installing,
+            owner = "owner",
+            repo = "repo",
+            assetName = "demo.apk",
+            targetDisplayName = "Demo",
+            progressPercentOverride = 48
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("\"title\":\"Installing\""))
+        assertTrue(focusParam.contains("\"progress\":48"))
+    }
+
+    @Test
+    fun `managed install committing mi island uses stable status template`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.InstallCommitting,
+            owner = "owner",
+            repo = "repo",
+            assetName = "demo.apk",
+            packageName = "demo.app"
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals("Open flow", notification.actions[0].title.toString())
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"title\":\"Commit\""))
+    }
+
+    @Test
     fun `install detected mi island compact title uses phase label`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(

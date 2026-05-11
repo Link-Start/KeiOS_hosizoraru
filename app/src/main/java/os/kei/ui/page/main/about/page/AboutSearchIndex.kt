@@ -241,6 +241,7 @@ internal fun rememberAboutSearchTargets(
                 stringResource(R.string.about_license_row_capsule),
                 stringResource(R.string.about_license_row_shapes),
                 stringResource(R.string.about_license_row_shizuku),
+                stringResource(R.string.about_license_row_hiddenapi_bypass),
                 stringResource(R.string.about_license_row_mmkv),
                 stringResource(R.string.about_license_row_mcp),
                 stringResource(R.string.about_license_row_network_stack),

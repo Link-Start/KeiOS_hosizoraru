@@ -444,19 +444,19 @@ class MiIslandNotificationBuilder(
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
-            val isTerminal = state.clients <= 0 && progressPercent >= 100
+            val useProgressTemplate = state.clients > 0 && state.overrideProgressPercent != null
             return IslandPresentation(
                 allowFloat = state.clients <= 0,
                 showTextButtons = true,
-                bigTemplateKind = if (isTerminal) {
-                    IslandBigTemplateKind.TEXT
-                } else {
+                bigTemplateKind = if (useProgressTemplate) {
                     IslandBigTemplateKind.PROGRESS_TEXT
-                },
-                smallTemplateKind = if (isTerminal) {
-                    IslandSmallTemplateKind.ICON
                 } else {
+                    IslandBigTemplateKind.TEXT
+                },
+                smallTemplateKind = if (useProgressTemplate) {
                     IslandSmallTemplateKind.PROGRESS_ICON
+                } else {
+                    IslandSmallTemplateKind.ICON
                 },
                 compactTitle = resolveCompactTitle(
                     raw = state.onlineText(context),
@@ -466,7 +466,7 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = !isTerminal,
+                showExpandedProgress = useProgressTemplate,
                 progressPercent = progressPercent,
                 progressColor = progressColor,
                 notificationAccentColor = progressColor,

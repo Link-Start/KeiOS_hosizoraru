@@ -59,6 +59,7 @@ internal class GitHubConfigActions(
             state.profileDepthInput = config.profileDepth
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
+            state.appManagedShareInstallEnabledInput = config.appManagedShareInstallEnabled
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
             state.decisionAssistEnabledInput = config.decisionAssistEnabled
@@ -103,6 +104,7 @@ internal class GitHubConfigActions(
                 profileDepth = previousConfig.profileDepth,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
                 shareImportFlowMode = previousConfig.shareImportFlowMode,
+                appManagedShareInstallEnabled = previousConfig.appManagedShareInstallEnabled,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
                 preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
                 decisionAssistEnabled = previousConfig.decisionAssistEnabled,
@@ -187,6 +189,7 @@ internal class GitHubConfigActions(
                 profileDepth = state.profileDepthInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
                 shareImportFlowMode = state.shareImportFlowModeInput,
+                appManagedShareInstallEnabled = state.appManagedShareInstallEnabledInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
                     installedOnlineShareTargets.any { it.packageName == selected }
                 }.orEmpty(),
@@ -212,7 +215,9 @@ internal class GitHubConfigActions(
                     newConfig.defaultRepositoryProfilePurpose()
             val shareImportChanged =
                 previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled ||
-                        previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode
+                        previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode ||
+                        previousConfig.appManagedShareInstallEnabled !=
+                        newConfig.appManagedShareInstallEnabled
             val onlineShareTargetChanged =
                 previousConfig.onlineShareTargetPackage != newConfig.onlineShareTargetPackage
             val downloaderChanged =

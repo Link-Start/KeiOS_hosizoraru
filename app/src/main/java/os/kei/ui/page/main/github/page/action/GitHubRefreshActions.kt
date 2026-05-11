@@ -542,6 +542,8 @@ internal class GitHubRefreshActions(
         state.profileDepthInput = trackSnapshot.lookupConfig.profileDepth
         state.shareImportLinkageEnabledInput = trackSnapshot.lookupConfig.shareImportLinkageEnabled
         state.shareImportFlowModeInput = trackSnapshot.lookupConfig.shareImportFlowMode
+        state.appManagedShareInstallEnabledInput =
+            trackSnapshot.lookupConfig.appManagedShareInstallEnabled
         state.onlineShareTargetPackageInput = trackSnapshot.lookupConfig.onlineShareTargetPackage
         state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage
         state.refreshIntervalHours = trackSnapshot.refreshIntervalHours

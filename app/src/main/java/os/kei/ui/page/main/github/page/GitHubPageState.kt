@@ -144,6 +144,7 @@ internal class GitHubPageState(
     var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
+    var appManagedShareInstallEnabledInput by mutableStateOf(false)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
     var decisionAssistEnabledInput by mutableStateOf(false)

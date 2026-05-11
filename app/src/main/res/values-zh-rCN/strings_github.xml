@@ -54,6 +54,11 @@
     <string name="github_share_import_error_no_release">该仓库暂无可用 release</string>
     <string name="github_share_import_error_missing_release_tag">分享链接缺少 release tag</string>
     <string name="github_share_import_error_no_stable_release">该仓库暂无稳定版 release</string>
+    <string name="github_share_import_error_shizuku_unavailable">Shizuku 当前未启动，无法由 KeiOS 接管安装</string>
+    <string name="github_share_import_error_shizuku_permission_missing">KeiOS 尚未获得 Shizuku 授权，无法接管安装</string>
+    <string name="github_share_import_error_shizuku_install_permission_missing">Shizuku 远端缺少 INSTALL_PACKAGES 能力，无法接管安装</string>
+    <string name="github_share_import_error_app_managed_install_failed">本 App 接管安装失败</string>
+    <string name="github_share_import_error_app_managed_package_missing">安装已返回成功，但未拿到包名</string>
     <string name="github_actions_menu">Actions</string>
     <string name="github_actions_sheet_title">Actions</string>
     <string name="github_actions_sheet_cd_refresh">刷新 Actions</string>
@@ -413,6 +418,8 @@
     <string name="github_check_sheet_summary_share_import_flow_mode">选择以 sheet 为主，或尽量用实时通知/超级岛完成流程</string>
     <string name="github_share_import_flow_mode_sheet">Sheet 辅助</string>
     <string name="github_share_import_flow_mode_notification">通知优先</string>
+    <string name="github_check_sheet_label_app_managed_share_install">本 App 接管安装</string>
+    <string name="github_check_sheet_summary_app_managed_share_install">开启后，分享导入联动中的单 APK 会由 KeiOS 通过 Shizuku 下载并安装</string>
     <string name="github_check_sheet_label_share_to_installer">分享到安装器</string>
     <string name="github_check_sheet_summary_share_available">分享时可直接发送到支持直接边下载边安装的安装器</string>
     <string name="github_check_sheet_summary_share_unavailable">未检测到支持的安装器，默认不联动</string>
@@ -654,6 +661,8 @@
     <string name="github_share_import_phase_resolving">解析链接</string>
     <string name="github_share_import_phase_asset_ready">选择 APK</string>
     <string name="github_share_import_phase_delivering">发送安装</string>
+    <string name="github_share_import_phase_installing">本 App 安装</string>
+    <string name="github_share_import_phase_install_committing">提交安装</string>
     <string name="github_share_import_phase_waiting_install">等待安装</string>
     <string name="github_share_import_phase_install_detected">检测到安装</string>
     <string name="github_share_import_phase_adding_track">新增跟踪</string>
@@ -705,6 +714,8 @@
     <string name="github_share_import_notify_title_resolving">正在准备分享导入</string>
     <string name="github_share_import_notify_title_asset_ready">已找到可安装 APK</string>
     <string name="github_share_import_notify_title_delivering">正在交给安装器</string>
+    <string name="github_share_import_notify_title_installing">正在由 KeiOS 安装</string>
+    <string name="github_share_import_notify_title_install_committing">正在提交安装</string>
     <string name="github_share_import_notify_title_waiting_install">等待安装完成</string>
     <string name="github_share_import_notify_title_install_detected">已检测到安装</string>
     <string name="github_share_import_notify_title_adding_track">正在新增 GitHub 跟踪</string>
@@ -715,6 +726,8 @@
     <string name="github_share_import_notify_content_resolving">正在解析 %1$s</string>
     <string name="github_share_import_notify_content_asset_ready">%1$s · %2$s · %3$d 个 APK 可选</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_installing">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_install_committing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · 剩余 %3$d 分钟</string>
     <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · 精确匹配 · 剩余 %3$d 分钟</string>
     <string name="github_share_import_notify_content_install_detected">%1$s · %2$s</string>
@@ -725,6 +738,8 @@
     <string name="github_share_import_notify_short_resolving">解析</string>
     <string name="github_share_import_notify_short_asset_ready">可安装</string>
     <string name="github_share_import_notify_short_delivering">发送中</string>
+    <string name="github_share_import_notify_short_installing">安装中</string>
+    <string name="github_share_import_notify_short_install_committing">提交中</string>
     <string name="github_share_import_notify_short_waiting_install">待安装</string>
     <string name="github_share_import_notify_short_install_detected">待确认</string>
     <string name="github_share_import_notify_short_adding_track">追踪中</string>

@@ -1,9 +1,9 @@
 package os.kei.ui.page.main.github.share
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.Color
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubStatusPalette
-import androidx.compose.ui.graphics.Color
 
 internal enum class GitHubShareImportPhase(
     @param:StringRes val labelRes: Int,
@@ -23,6 +23,14 @@ internal enum class GitHubShareImportPhase(
     ),
     Delivering(
         labelRes = R.string.github_share_import_phase_delivering,
+        color = GitHubStatusPalette.Active
+    ),
+    Installing(
+        labelRes = R.string.github_share_import_phase_installing,
+        color = GitHubStatusPalette.Active
+    ),
+    InstallCommitting(
+        labelRes = R.string.github_share_import_phase_install_committing,
         color = GitHubStatusPalette.Active
     ),
     WaitingInstall(

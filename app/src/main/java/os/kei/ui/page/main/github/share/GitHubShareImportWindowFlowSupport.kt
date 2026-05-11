@@ -20,6 +20,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
 import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -40,6 +41,7 @@ internal val shareImportAttachActions = setOf(
 internal data class ShareImportInstalledPackageSnapshot(
     val packageName: String,
     val appLabel: String,
+    val versionName: String = "",
     val lastUpdateTimeMs: Long,
     val firstInstallTimeMs: Long
 )
@@ -55,6 +57,7 @@ internal fun GitHubPendingShareImportTrackRecord.toAttachCandidate(
         repo = repo,
         packageName = packageSnapshot.packageName,
         appLabel = packageSnapshot.appLabel.ifBlank { packageSnapshot.packageName },
+        versionName = packageSnapshot.versionName,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
         firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
@@ -160,13 +163,27 @@ internal suspend fun scanShareImportAssetPackageName(
         GitHubApkPackageNameScanRepository()
     )
 ): Result<String> {
+    return scanShareImportAssetManifestInfo(
+        asset = asset,
+        lookupConfig = lookupConfig,
+        scanner = scanner
+    ).map { info ->
+        info.packageName.trim()
+    }
+}
+
+internal suspend fun scanShareImportAssetManifestInfo(
+    asset: GitHubReleaseAssetFile,
+    lookupConfig: GitHubLookupConfig,
+    scanner: GitHubApkPackageNameScanner = GitHubApkPackageNameScanner(
+        GitHubApkPackageNameScanRepository()
+    )
+): Result<GitHubApkManifestInfo> {
     return withContext(Dispatchers.IO) {
-        scanner.scanAssetPackageName(
+        scanner.scanAssetManifestInfo(
             asset = asset,
             lookupConfig = lookupConfig
-        ).map { packageName ->
-            packageName.trim()
-        }
+        )
     }
 }
 
@@ -292,6 +309,7 @@ private fun loadInstalledPackageSnapshotBlocking(
     return ShareImportInstalledPackageSnapshot(
         packageName = normalizedPackageName,
         appLabel = label,
+        versionName = info.versionName?.trim().orEmpty(),
         lastUpdateTimeMs = info.lastUpdateTime,
         firstInstallTimeMs = info.firstInstallTime
     )

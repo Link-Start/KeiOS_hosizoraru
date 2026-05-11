@@ -44,7 +44,7 @@ class GitHubShareImportNotificationHelperTest {
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
         )
         assertEquals(
-            "app-arm64.apk · 12 min",
+            "repo · 12 min",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, notification.actions.size)
@@ -67,7 +67,7 @@ class GitHubShareImportNotificationHelperTest {
         val notification = buildModern(context, state)
 
         assertEquals(
-            "demo.app · 12 min",
+            "repo · 12 min",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
     }
@@ -285,11 +285,12 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Refresh", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"progress\":72"))
-        assertTrue(focusParam.contains("\"title\":\"Install\""))
+        assertTrue(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("\"content\":\"Install\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E5E7EB\""))
         assertTrue(focusParam.contains("\"actionBgColorDark\":\"#334155\""))
         assertTrue(focusParam.contains("\"actionTitleColor\":\"#475569\""))
-        assertTrue(focusParam.contains("demo.app"))
+        assertFalse(focusParam.contains("demo.app"))
     }
 
     @Test
@@ -314,7 +315,9 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Send install", notification.actions[1].title.toString())
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Send install", focusCancelAction.title.toString())
-        assertTrue(focusParam.contains("\"title\":\"Ready\""))
+        assertTrue(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("\"content\":\"Ready\""))
+        assertTrue(focusParam.contains("v1.2.3"))
         assertTrue(focusParam.contains("\"progress\":32"))
     }
 
@@ -334,10 +337,11 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("mcp_action_open"))
         assertFalse(focusParam.contains("mcp_action_stop"))
         assertTrue(focusParam.contains("\"progress\":12"))
+        assertTrue(focusParam.contains("\"title\":\"repo\""))
     }
 
     @Test
-    fun `delivering mi island compact text says sending`() {
+    fun `delivering mi island compact text uses readable target name`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Delivering,
@@ -354,8 +358,8 @@ class GitHubShareImportNotificationHelperTest {
             "Sending",
             context.getString(GitHubShareImportNotificationPhase.Delivering.shortTextRes)
         )
-        assertTrue(focusParam.contains("\"title\":\"Sending\""))
-        assertFalse(focusParam.contains("\"content\":\"Demo\""))
+        assertTrue(focusParam.contains("\"title\":\"Demo\""))
+        assertTrue(focusParam.contains("\"content\":\"Sending\""))
     }
 
     @Test
@@ -365,6 +369,7 @@ class GitHubShareImportNotificationHelperTest {
             phase = GitHubShareImportNotificationPhase.InstallDownloading,
             owner = "owner",
             repo = "repo",
+            releaseTag = "v1.2.3",
             assetName = "demo.apk",
             targetDisplayName = "Demo",
             progressPercentOverride = 48,
@@ -386,11 +391,12 @@ class GitHubShareImportNotificationHelperTest {
             notification.extras
                 .getCharSequence(Notification.EXTRA_TEXT)
                 .toString()
-                .contains("demo.apk")
+                .contains("Demo · v1.2.3")
         )
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"48%\""))
-        assertTrue(focusParam.contains("\"content\":\"demo.apk"))
+        assertTrue(focusParam.contains("\"content\":\"Demo"))
+        assertTrue(focusParam.contains("v1.2.3"))
         assertTrue(focusParam.contains("\"colorTitle\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"colorContent\":\"#475569\""))
         assertTrue(focusParam.contains("5"))
@@ -416,7 +422,55 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Open flow", notification.actions[0].title.toString())
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("\"title\":\"Prepare\""))
+        assertTrue(focusParam.contains("\"title\":\"Demo\""))
+        assertTrue(focusParam.contains("\"content\":\"Prepare\""))
+    }
+
+    @Test
+    fun `managed install content falls back to release tag before manifest version arrives`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.Installing,
+            owner = "owner",
+            repo = "repo",
+            releaseTag = "v1.2.3",
+            assetName = "demo.apk",
+            progressPercentOverride = 36
+        )
+
+        val modern = buildModern(context, state)
+        val focusParam = buildMiIsland(context, state)
+            .extras
+            .getString("miui.focus.param")
+            .orEmpty()
+
+        assertEquals(
+            "repo · v1.2.3 · preparing",
+            modern.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertTrue(focusParam.contains("repo · v1.2.3"))
+    }
+
+    @Test
+    fun `managed install content prefers manifest version name over release tag`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.Installing,
+            owner = "owner",
+            repo = "repo",
+            releaseTag = "v1.2.3",
+            assetName = "demo.apk",
+            targetDisplayName = "Demo",
+            versionName = "2.0.0",
+            progressPercentOverride = 36
+        )
+
+        val notification = buildModern(context, state)
+
+        assertEquals(
+            "Demo · 2.0.0 · preparing",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
     }
 
     @Test
@@ -438,8 +492,8 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":0"))
-        assertTrue(focusParam.contains("\"content\":\"demo.apk"))
-        assertTrue(focusParam.contains("demo.apk"))
+        assertTrue(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("\"content\":\"repo"))
         assertTrue(focusParam.contains("downloaded"))
     }
 
@@ -460,7 +514,9 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Open flow", notification.actions[0].title.toString())
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("\"title\":\"Commit\""))
+        assertTrue(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("\"content\":\"Commit\""))
+        assertFalse(focusParam.contains("demo.app"))
     }
 
     @Test
@@ -485,7 +541,7 @@ class GitHubShareImportNotificationHelperTest {
             modern.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
         )
         assertEquals(
-            "demo.app · ready to install",
+            "repo · ready to install",
             modern.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
         assertEquals(2, modern.actions.size)
@@ -493,14 +549,15 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Continue install", modern.actions[1].title.toString())
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Continue install", focusContinueAction.title.toString())
-        assertTrue(focusParam.contains("\"title\":\"Ready\""))
+        assertTrue(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("\"content\":\"Ready\""))
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
     }
 
     @Test
-    fun `install detected mi island compact title uses phase label`() {
+    fun `install detected mi island compact title uses app label`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.InstallDetected,
@@ -513,15 +570,14 @@ class GitHubShareImportNotificationHelperTest {
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertTrue(focusParam.contains("\"title\":\"Confirm\""))
-        assertFalse(focusParam.contains("\"title\":\"Demo\""))
-        assertFalse(focusParam.contains("\"content\":\"Demo\""))
+        assertTrue(focusParam.contains("\"title\":\"Demo\""))
+        assertTrue(focusParam.contains("\"content\":\"Confirm\""))
         assertEquals(
             "Install detected",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
         )
         assertEquals(
-            "Demo · demo.app",
+            "Demo · repo",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
     }
@@ -569,12 +625,13 @@ class GitHubShareImportNotificationHelperTest {
             if (state.phase == GitHubShareImportNotificationPhase.Added ||
                 state.phase == GitHubShareImportNotificationPhase.AlreadyTracked
             ) {
-                val expectedTitle = if (state.phase == GitHubShareImportNotificationPhase.Added) {
+                assertTrue(focusParam.contains("\"title\":\"Demo\""))
+                val expectedContent = if (state.phase == GitHubShareImportNotificationPhase.Added) {
                     "Tracked"
                 } else {
                     "Exists"
                 }
-                assertTrue(focusParam.contains("\"title\":\"$expectedTitle\""))
+                assertTrue(focusParam.contains("\"content\":\"$expectedContent\""))
             }
         }
     }

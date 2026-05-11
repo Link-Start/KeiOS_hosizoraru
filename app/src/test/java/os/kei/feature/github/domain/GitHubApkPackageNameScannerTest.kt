@@ -91,6 +91,39 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
+    fun `scanner extracts manifest version info from selected apk asset`() {
+        val source = FakeScanSource(
+            manifestBytes = BinaryManifestFixture.build(
+                packageName = "os.kei.selected",
+                versionName = "2.0.0",
+                versionCode = 42L
+            )
+        )
+        val scanner = GitHubApkPackageNameScanner(source)
+        val asset = GitHubReleaseAssetFile(
+            name = "KeiOS-selected.apk",
+            downloadUrl = "https://github.com/hosizoraru/KeiOS/releases/download/v2.0.0/KeiOS-selected.apk",
+            apiAssetUrl = "https://api.github.com/repos/hosizoraru/KeiOS/releases/assets/42",
+            sizeBytes = 2048L,
+            downloadCount = 1
+        )
+
+        val info = scanner.scanAssetManifestInfo(
+            asset = asset,
+            lookupConfig = GitHubLookupConfig(
+                selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
+                apiToken = "token-123"
+            )
+        ).getOrThrow()
+
+        assertEquals("KeiOS-selected.apk", info.assetName)
+        assertEquals("os.kei.selected", info.packageName)
+        assertEquals("2.0.0", info.versionName)
+        assertEquals("42", info.versionCode)
+        assertEquals(asset.downloadUrl, source.scannedDownloadUrl)
+    }
+
+    @Test
     fun `scanner falls back across apk assets when one manifest cannot be parsed`() {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.fallback"),

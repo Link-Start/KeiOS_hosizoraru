@@ -614,7 +614,7 @@
     <string name="github_track_badge_current_app">本应用</string>
     <string name="github_track_sheet_section_check_option">检查选项</string>
     <string name="github_track_sheet_label_prefer_prerelease">优先预发行版本</string>
-    <string name="github_track_sheet_summary_prefer_prerelease">仅影响这个项目的推荐更新目标，不影响全局是否检查预发行</string>
+    <string name="github_track_sheet_summary_prefer_prerelease">为此项目单独检查预发行版本，并在有可用预发行更新时优先推荐；不改变全局开关。</string>
     <string name="github_track_sheet_label_always_show_latest_release_download">始终显示最新发布下载</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
     <string name="github_track_sheet_section_app_candidates">App 候选</string>

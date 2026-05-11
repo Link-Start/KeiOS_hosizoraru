@@ -4,6 +4,7 @@ import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -97,11 +98,23 @@ internal class GitHubApkPackageNameScanner(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<String> {
+        return scanAssetManifestInfo(
+            asset = asset,
+            lookupConfig = lookupConfig
+        ).map { info ->
+            info.packageName
+        }
+    }
+
+    fun scanAssetManifestInfo(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): Result<GitHubApkManifestInfo> {
         return scanApkAsset(
             asset = asset,
             lookupConfig = lookupConfig
         ).map { scannedAsset ->
-            scannedAsset.packageName
+            scannedAsset.manifestInfo
         }
     }
 
@@ -139,21 +152,26 @@ internal class GitHubApkPackageNameScanner(
             asset = asset,
             lookupConfig = lookupConfig
         ).getOrThrow()
-        val packageName =
-            AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes).getOrThrow()
+        val manifestInfo = AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifestBytes)
+            .getOrThrow()
+            .copy(assetName = asset.name)
+        val packageName = manifestInfo.packageName
         check(GitHubPackageNameValidator.isValid(packageName)) {
             "Scanned package name is invalid: $packageName"
         }
         ScannedApkAsset(
             asset = asset,
-            packageName = packageName
+            manifestInfo = manifestInfo
         )
     }
 
     private data class ScannedApkAsset(
         val asset: GitHubReleaseAssetFile,
+        val manifestInfo: GitHubApkManifestInfo
+    ) {
         val packageName: String
-    )
+            get() = manifestInfo.packageName
+    }
 
     companion object {
         private const val MAX_APK_ASSET_SCAN_CANDIDATES = 6

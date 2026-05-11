@@ -79,6 +79,51 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `tracked prefer pre release enables pre release lookup for that item`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example"
+        )
+        val globalDisabled = GitHubLookupConfig(checkAllTrackedPreReleases = false)
+
+        assertEquals(
+            true,
+            globalDisabled
+                .forTrackedItem(item.copy(preferPreRelease = true))
+                .checkAllTrackedPreReleases
+        )
+        assertEquals(
+            false,
+            globalDisabled
+                .forTrackedItem(item.copy(preferPreRelease = false))
+                .checkAllTrackedPreReleases
+        )
+    }
+
+    @Test
+    fun `tracked item lookup resolves precise apk and pre release together`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example",
+            preferPreRelease = true,
+            preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled
+        )
+        val resolved = GitHubLookupConfig(
+            checkAllTrackedPreReleases = false,
+            preciseApkVersionEnabled = false
+        ).forTrackedItem(item)
+
+        assertEquals(true, resolved.checkAllTrackedPreReleases)
+        assertEquals(true, resolved.preciseApkVersionEnabled)
+    }
+
+    @Test
     fun `profile source signature follows purpose capability set`() {
         val config = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
         val fast =

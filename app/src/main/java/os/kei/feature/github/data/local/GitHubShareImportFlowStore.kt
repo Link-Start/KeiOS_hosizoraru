@@ -27,6 +27,7 @@ data class GitHubPendingShareImportAttachCandidateRecord(
     val repo: String,
     val packageName: String,
     val appLabel: String,
+    val versionName: String = "",
     val eventAction: String,
     val detectedAtMillis: Long = System.currentTimeMillis(),
     val firstInstallTimeMs: Long = -1L
@@ -40,6 +41,7 @@ data class GitHubPendingShareImportManagedInstallRecord(
     val releaseTag: String = "",
     val assetName: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val targetDisplayName: String = "",
     val sessionId: Int = -1,
     val progressPhase: String = "",
@@ -74,6 +76,7 @@ data class GitHubShareImportResultRecord(
     val repo: String = "",
     val appLabel: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val targetDisplayName: String = "",
     val message: String = "",
     val completedAtMillis: Long = System.currentTimeMillis()
@@ -316,6 +319,7 @@ object GitHubShareImportFlowStore {
             repo = repo,
             packageName = packageName,
             appLabel = appLabel,
+            versionName = obj.optString("versionName").trim(),
             eventAction = obj.optString("eventAction").trim(),
             detectedAtMillis = obj.optLong("detectedAtMillis", 0L),
             firstInstallTimeMs = obj.optLong("firstInstallTimeMs", -1L)
@@ -329,6 +333,7 @@ object GitHubShareImportFlowStore {
             .put("repo", record.repo)
             .put("packageName", record.packageName)
             .put("appLabel", record.appLabel)
+            .put("versionName", record.versionName)
             .put("eventAction", record.eventAction)
             .put("detectedAtMillis", record.detectedAtMillis)
             .put("firstInstallTimeMs", record.firstInstallTimeMs)
@@ -359,6 +364,7 @@ object GitHubShareImportFlowStore {
             releaseTag = obj.optString("releaseTag").trim(),
             assetName = assetName,
             packageName = obj.optString("packageName").trim(),
+            versionName = obj.optString("versionName").trim(),
             targetDisplayName = obj.optString("targetDisplayName").trim(),
             sessionId = obj.optInt("sessionId", -1),
             progressPhase = obj.optString("progressPhase").trim(),
@@ -380,6 +386,7 @@ object GitHubShareImportFlowStore {
             .put("releaseTag", record.releaseTag)
             .put("assetName", record.assetName)
             .put("packageName", record.packageName)
+            .put("versionName", record.versionName)
             .put("targetDisplayName", record.targetDisplayName)
             .put("sessionId", record.sessionId)
             .put("progressPhase", record.progressPhase)
@@ -398,6 +405,7 @@ object GitHubShareImportFlowStore {
         val repo = obj.optString("repo").trim()
         val appLabel = obj.optString("appLabel").trim()
         val packageName = obj.optString("packageName").trim()
+        val versionName = obj.optString("versionName").trim()
         val targetDisplayName = obj.optString("targetDisplayName").trim()
         val message = obj.optString("message").trim()
         if (
@@ -417,6 +425,7 @@ object GitHubShareImportFlowStore {
             repo = repo,
             appLabel = appLabel,
             packageName = packageName,
+            versionName = versionName,
             targetDisplayName = targetDisplayName,
             message = message,
             completedAtMillis = completedAtMillis
@@ -431,6 +440,7 @@ object GitHubShareImportFlowStore {
             .put("repo", record.repo)
             .put("appLabel", record.appLabel)
             .put("packageName", record.packageName)
+            .put("versionName", record.versionName)
             .put("targetDisplayName", record.targetDisplayName)
             .put("message", record.message)
             .put("completedAtMillis", record.completedAtMillis)

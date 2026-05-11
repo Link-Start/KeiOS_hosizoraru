@@ -12,6 +12,7 @@ data class GitHubApkInstallRequest(
     val lookupConfig: GitHubLookupConfig,
     val targetDisplayName: String = "",
     val scannedPackageName: String = "",
+    val scannedVersionName: String = "",
     val resolvedDownloadUrl: String = "",
     val requestId: String = GitHubApkInstallRequestIds.newId(),
     val startedAtMillis: Long = System.currentTimeMillis()

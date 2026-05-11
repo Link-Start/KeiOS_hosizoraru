@@ -59,10 +59,15 @@ internal fun GitHubTrackedApp.isKeiOsSelfTrack(): Boolean {
 }
 
 fun GitHubLookupConfig.forTrackedItem(item: GitHubTrackedApp): GitHubLookupConfig {
-    return when (item.preciseApkVersionMode) {
+    val preciseResolved = when (item.preciseApkVersionMode) {
         GitHubTrackedPreciseApkVersionMode.FollowGlobal -> this
         GitHubTrackedPreciseApkVersionMode.Enabled -> copy(preciseApkVersionEnabled = true)
         GitHubTrackedPreciseApkVersionMode.Disabled -> copy(preciseApkVersionEnabled = false)
+    }
+    return if (item.preferPreRelease) {
+        preciseResolved.copy(checkAllTrackedPreReleases = true)
+    } else {
+        preciseResolved
     }
 }
 

@@ -20,17 +20,19 @@ import os.kei.feature.github.install.GitHubApkInstallResult
 import os.kei.feature.github.install.GitHubApkInstallStage
 import os.kei.feature.github.install.GitHubManagedApkInstaller
 import os.kei.feature.github.install.GitHubShizukuPackageInstaller
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 
 internal object GitHubShareImportManagedInstallCoordinator {
     private var managedApkInstaller: GitHubManagedApkInstaller = GitHubShizukuPackageInstaller()
-    private var packageNameScanner:
-            suspend (GitHubReleaseAssetFile, GitHubLookupConfig) -> String = { asset, config ->
-        scanShareImportAssetPackageName(
+    private var manifestInfoScanner:
+            suspend (GitHubReleaseAssetFile, GitHubLookupConfig) -> GitHubApkManifestInfo =
+        { asset, config ->
+            scanShareImportAssetManifestInfo(
             asset = asset,
             lookupConfig = config
-        ).getOrDefault("")
+            ).getOrDefault(GitHubApkManifestInfo(assetName = asset.name))
     }
     private var assetUrlResolver:
             suspend (GitHubLookupConfig, GitHubReleaseAssetFile) -> String = { config, asset ->
@@ -45,17 +47,22 @@ internal object GitHubShareImportManagedInstallCoordinator {
         packageNameScanner: suspend (GitHubReleaseAssetFile, GitHubLookupConfig) -> String,
         assetUrlResolver: suspend (GitHubLookupConfig, GitHubReleaseAssetFile) -> String
     ) {
-        this.packageNameScanner = packageNameScanner
+        this.manifestInfoScanner = { asset, config ->
+            GitHubApkManifestInfo(
+                assetName = asset.name,
+                packageName = packageNameScanner(asset, config).trim()
+            )
+        }
         this.assetUrlResolver = assetUrlResolver
     }
 
     fun resetTestHooks() {
         managedApkInstaller = GitHubShizukuPackageInstaller()
-        packageNameScanner = { asset, config ->
-            scanShareImportAssetPackageName(
+        manifestInfoScanner = { asset, config ->
+            scanShareImportAssetManifestInfo(
                 asset = asset,
                 lookupConfig = config
-            ).getOrDefault("")
+            ).getOrDefault(GitHubApkManifestInfo(assetName = asset.name))
         }
         assetUrlResolver = { config, asset ->
             resolvePreferredAssetUrl(config, asset)
@@ -106,17 +113,20 @@ internal object GitHubShareImportManagedInstallCoordinator {
             context = context,
             owner = preview.owner,
             repo = preview.repo,
+            releaseTag = preview.releaseTag,
             assetName = selectedAsset.name,
             progressPercent = 4,
             targetDisplayName = targetDisplayName
         )
-        val scannedPackageNameDeferred = async(Dispatchers.IO) {
-            packageNameScanner(selectedAsset, lookupConfig)
+        val scannedManifestInfoDeferred = async(Dispatchers.IO) {
+            manifestInfoScanner(selectedAsset, lookupConfig)
         }
         val resolvedUrlDeferred = async(Dispatchers.IO) {
             assetUrlResolver(lookupConfig, selectedAsset)
         }
-        val scannedPackageName = scannedPackageNameDeferred.await()
+        val scannedManifestInfo = scannedManifestInfoDeferred.await()
+        val scannedPackageName = scannedManifestInfo.packageName.trim()
+        val scannedVersionName = scannedManifestInfo.versionName.trim()
         val activeManagedInstall = withContext(Dispatchers.IO) {
             GitHubShareImportFlowStore.loadActiveManagedInstall()
         }
@@ -140,6 +150,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             lookupConfig = lookupConfig,
             targetDisplayName = targetDisplayName,
             scannedPackageName = scannedPackageName,
+            scannedVersionName = scannedVersionName,
             resolvedDownloadUrl = resolvedDownloadUrl,
             requestId = requestId
         )
@@ -198,6 +209,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             lookupConfig = lookupConfig,
             targetDisplayName = activeRecord.targetDisplayName.ifBlank { preview.targetDisplayName },
             scannedPackageName = activeRecord.packageName,
+            scannedVersionName = activeRecord.versionName,
             requestId = activeRecord.requestId,
             startedAtMillis = activeRecord.startedAtMillis
         )
@@ -267,9 +279,11 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
+                    releaseTag = request.releaseTag,
                     assetName = request.asset.name,
                     progressPercent = progress.boundedProgressPercent,
                     packageName = request.scannedPackageName,
+                    versionName = request.scannedVersionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -279,11 +293,13 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
+                    releaseTag = request.releaseTag,
                     assetName = request.asset.name,
                     progressPercent = progress.boundedProgressPercent,
                     downloadedBytes = progress.downloadedBytes,
                     totalBytes = progress.totalBytes,
                     packageName = request.scannedPackageName,
+                    versionName = request.scannedVersionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -293,8 +309,10 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
+                    releaseTag = request.releaseTag,
                     assetName = request.asset.name,
                     packageName = request.scannedPackageName,
+                    versionName = request.scannedVersionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -304,8 +322,10 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
+                    releaseTag = request.releaseTag,
                     assetName = request.asset.name,
                     packageName = request.scannedPackageName,
+                    versionName = request.scannedVersionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -334,6 +354,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             phase = phase,
             assetName = request.asset.name,
             packageName = request.scannedPackageName,
+            versionName = request.scannedVersionName,
             progressPercent = boundedProgressPercent,
             downloadedBytes = downloadedBytes,
             totalBytes = totalBytes
@@ -406,6 +427,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
         val nextRecord = activeRecord.copy(
             sessionId = result.sessionId,
             packageName = result.packageName.ifBlank { activeRecord.packageName },
+            versionName = request.scannedVersionName.ifBlank { activeRecord.versionName },
             progressPhase = GitHubShareImportPhase.InstallReady.name,
             progressPercent = 100,
             downloadedBytes = result.downloadedBytes,
@@ -419,8 +441,10 @@ internal object GitHubShareImportManagedInstallCoordinator {
             context = context,
             owner = request.owner,
             repo = request.repo,
+            releaseTag = request.releaseTag,
             assetName = request.asset.name,
             packageName = nextRecord.packageName,
+            versionName = nextRecord.versionName,
             targetDisplayName = request.targetDisplayName
         )
         return ShareImportDeliveryCoordinatorResult.InstallReady(
@@ -460,6 +484,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 .ifBlank { result.appLabel }
                 .ifBlank { request.targetDisplayName }
                 .ifBlank { packageName },
+            versionName = snapshot?.versionName
+                .orEmpty()
+                .ifBlank { request.scannedVersionName },
             eventAction = managedInstallAction(context),
             detectedAtMillis = System.currentTimeMillis(),
             firstInstallTimeMs = snapshot?.firstInstallTimeMs ?: result.firstInstallTimeMs
@@ -480,6 +507,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             repo = candidate.repo,
             appLabel = candidate.appLabel,
             packageName = candidate.packageName,
+            versionName = candidate.versionName,
             targetDisplayName = buildShareImportTargetDisplayName(
                 appLabel = candidate.appLabel,
                 repo = candidate.repo,
@@ -503,6 +531,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             releaseTag = releaseTag,
             assetName = asset.name,
             packageName = scannedPackageName,
+            versionName = scannedVersionName,
             targetDisplayName = targetDisplayName,
             sessionId = sessionId,
             progressPhase = GitHubShareImportPhase.Installing.name,

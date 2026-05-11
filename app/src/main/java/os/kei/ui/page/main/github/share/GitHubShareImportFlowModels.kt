@@ -60,6 +60,7 @@ internal data class GitHubPendingShareImportTrack(
     val releaseTag: String = "",
     val assetName: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val targetDisplayName: String = "",
     val armedAtMillis: Long = System.currentTimeMillis()
 )
@@ -69,6 +70,7 @@ internal data class GitHubShareImportManagedInstallProgress(
     val phase: GitHubShareImportPhase,
     val assetName: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val progressPercent: Int = 0,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long = -1L
@@ -91,6 +93,7 @@ internal fun GitHubPendingShareImportManagedInstallRecord.toManagedInstallProgre
         phase = phase,
         assetName = assetName,
         packageName = packageName,
+        versionName = versionName,
         progressPercent = progressPercent,
         downloadedBytes = downloadedBytes,
         totalBytes = totalBytes
@@ -105,6 +108,7 @@ internal fun GitHubPendingShareImportTrackRecord.toShareImportTrack(): GitHubPen
         releaseTag = releaseTag,
         assetName = assetName,
         packageName = packageName,
+        versionName = versionName,
         targetDisplayName = targetDisplayName,
         armedAtMillis = armedAtMillis
     )
@@ -189,6 +193,7 @@ internal data class GitHubShareImportResult(
     val repo: String = "",
     val appLabel: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val targetDisplayName: String = "",
     val message: String = "",
     val completedAtMillis: Long = System.currentTimeMillis()
@@ -228,6 +233,7 @@ internal fun GitHubShareImportResultRecord.toShareImportResult(): GitHubShareImp
         repo = repo,
         appLabel = appLabel,
         packageName = packageName,
+        versionName = versionName,
         targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
@@ -242,6 +248,7 @@ internal fun GitHubShareImportResult.toRecord(): GitHubShareImportResultRecord {
         repo = repo,
         appLabel = appLabel,
         packageName = packageName,
+        versionName = versionName,
         targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
@@ -261,6 +268,7 @@ internal fun GitHubPendingShareImportAttachCandidate.toShareImportResult(
         repo = repo,
         appLabel = appLabelOverride.ifBlank { appLabel },
         packageName = packageName,
+        versionName = versionName,
         targetDisplayName = buildShareImportTargetDisplayName(
             appLabel = appLabelOverride.ifBlank { appLabel },
             repo = repo,
@@ -298,6 +306,7 @@ internal fun GitHubPendingShareImportTrackRecord.toShareImportResult(
         owner = owner,
         repo = repo,
         packageName = packageName,
+        versionName = versionName,
         targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
@@ -315,6 +324,7 @@ internal fun GitHubPendingShareImportTrack.toShareImportResult(
         owner = owner,
         repo = repo,
         packageName = packageName,
+        versionName = versionName,
         targetDisplayName = targetDisplayName,
         message = message,
         completedAtMillis = completedAtMillis
@@ -327,6 +337,7 @@ internal data class GitHubPendingShareImportAttachCandidate(
     val repo: String,
     val packageName: String,
     val appLabel: String,
+    val versionName: String = "",
     val eventAction: String,
     val detectedAtMillis: Long = System.currentTimeMillis(),
     val firstInstallTimeMs: Long = -1L
@@ -376,6 +387,7 @@ internal fun GitHubPendingShareImportAttachCandidate.toPendingAttachCandidateRec
         repo = repo,
         packageName = packageName,
         appLabel = appLabel,
+        versionName = versionName,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
         firstInstallTimeMs = firstInstallTimeMs
@@ -389,6 +401,7 @@ internal fun GitHubPendingShareImportAttachCandidateRecord.toShareImportAttachCa
         repo = repo,
         packageName = packageName,
         appLabel = appLabel,
+        versionName = versionName,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
         firstInstallTimeMs = firstInstallTimeMs

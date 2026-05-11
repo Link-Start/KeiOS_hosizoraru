@@ -74,7 +74,9 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
+        releaseTag: String = "",
         assetName: String,
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -83,7 +85,9 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.Delivering,
                 owner = owner,
                 repo = repo,
+                releaseTag = releaseTag,
                 assetName = assetName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -93,9 +97,11 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
+        releaseTag: String = "",
         assetName: String,
         progressPercent: Int,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -104,8 +110,10 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.Installing,
                 owner = owner,
                 repo = repo,
+                releaseTag = releaseTag,
                 assetName = assetName,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName,
                 progressPercentOverride = progressPercent.coerceIn(0, 100)
             )
@@ -116,11 +124,13 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
+        releaseTag: String = "",
         assetName: String,
         progressPercent: Int,
         downloadedBytes: Long,
         totalBytes: Long,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -129,8 +139,10 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.InstallDownloading,
                 owner = owner,
                 repo = repo,
+                releaseTag = releaseTag,
                 assetName = assetName,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName,
                 progressPercentOverride = progressPercent.coerceIn(0, 100),
                 downloadedBytes = downloadedBytes.coerceAtLeast(0L),
@@ -143,8 +155,10 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
+        releaseTag: String = "",
         assetName: String,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -153,8 +167,10 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.InstallCommitting,
                 owner = owner,
                 repo = repo,
+                releaseTag = releaseTag,
                 assetName = assetName,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -164,8 +180,10 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         owner: String,
         repo: String,
+        releaseTag: String = "",
         assetName: String,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -174,8 +192,10 @@ object GitHubShareImportNotificationHelper {
                 phase = GitHubShareImportNotificationPhase.InstallReady,
                 owner = owner,
                 repo = repo,
+                releaseTag = releaseTag,
                 assetName = assetName,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -188,6 +208,7 @@ object GitHubShareImportNotificationHelper {
         releaseTag: String,
         assetName: String,
         packageName: String,
+        versionName: String = "",
         remainingMinutes: Int,
         targetDisplayName: String = ""
     ) {
@@ -200,6 +221,7 @@ object GitHubShareImportNotificationHelper {
                 releaseTag = releaseTag,
                 assetName = assetName,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName,
                 count = remainingMinutes.coerceAtLeast(0)
             )
@@ -212,6 +234,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         appLabel: String,
         packageName: String,
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -222,6 +245,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 appLabel = appLabel,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -233,6 +257,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         appLabel: String,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -243,6 +268,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 appLabel = appLabel,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -254,6 +280,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         appLabel: String,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -264,6 +291,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 appLabel = appLabel,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -275,6 +303,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         appLabel: String,
         packageName: String = "",
+        versionName: String = "",
         targetDisplayName: String = ""
     ) {
         notifyState(
@@ -285,6 +314,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 appLabel = appLabel,
                 packageName = packageName,
+                versionName = versionName,
                 targetDisplayName = targetDisplayName
             )
         )
@@ -406,6 +436,7 @@ object GitHubShareImportNotificationHelper {
         val shortText = context.getString(state.phase.shortTextRes)
         val content = resolveContent(context, state)
         val islandTitle = state.compactIslandTitle(shortText)
+        val islandSubtitle = state.compactIslandSubtitle(shortText, islandTitle)
         val progressPercent = state.resolvedProgressPercent
         val overrideProgressPercent = progressPercent.takeIf {
             state.phase.progressTemplateEnabled
@@ -427,7 +458,7 @@ object GitHubShareImportNotificationHelper {
             overrideTitle = context.getString(state.phase.titleRes),
             overrideContent = content,
             overrideOnlineText = islandTitle.ifBlank { shortText },
-            overrideShortText = shortText,
+            overrideShortText = islandSubtitle.ifBlank { shortText },
             overrideProgressPercent = overrideProgressPercent
         )
     }
@@ -505,56 +536,50 @@ object GitHubShareImportNotificationHelper {
         state: GitHubShareImportNotificationState
     ): String {
         val projectLabel = state.projectLabel
+        val projectDisplayLabel = state.projectDisplayLabel
+        val targetLabel = state.targetWithVersionLabel
         return when (state.phase) {
             GitHubShareImportNotificationPhase.Resolving -> context.getString(
                 R.string.github_share_import_notify_content_resolving,
-                state.primaryLabel.ifBlank { projectLabel }
+                state.primaryLabel.ifBlank { projectDisplayLabel }
             )
 
             GitHubShareImportNotificationPhase.AssetReady -> context.getString(
                 R.string.github_share_import_notify_content_asset_ready,
-                projectLabel,
+                projectDisplayLabel,
                 state.releaseTag.ifBlank { context.getString(R.string.github_asset_target_latest) },
                 state.count.coerceAtLeast(0)
             )
 
             GitHubShareImportNotificationPhase.Delivering -> context.getString(
                 R.string.github_share_import_notify_content_delivering,
-                projectLabel,
-                state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) }
+                projectDisplayLabel,
+                targetLabel
             )
 
             GitHubShareImportNotificationPhase.InstallDownloading -> context.getString(
                 R.string.github_share_import_notify_content_install_downloading,
-                projectLabel,
-                state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) },
+                projectDisplayLabel,
+                targetLabel,
                 formatDownloadProgress(context, state.downloadedBytes, state.totalBytes)
             )
 
             GitHubShareImportNotificationPhase.Installing -> context.getString(
                 R.string.github_share_import_notify_content_installing,
-                projectLabel,
-                state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) }
+                projectDisplayLabel,
+                targetLabel
             )
 
             GitHubShareImportNotificationPhase.InstallReady -> context.getString(
                 R.string.github_share_import_notify_content_install_ready,
-                projectLabel,
-                state.packageName.ifBlank {
-                    state.assetName.ifBlank {
-                        context.getString(R.string.github_share_import_pending_label_asset)
-                    }
-                }
+                projectDisplayLabel,
+                targetLabel
             )
 
             GitHubShareImportNotificationPhase.InstallCommitting -> context.getString(
                 R.string.github_share_import_notify_content_install_committing,
-                projectLabel,
-                state.packageName.ifBlank {
-                    state.assetName.ifBlank {
-                        context.getString(R.string.github_share_import_pending_label_asset)
-                    }
-                }
+                projectDisplayLabel,
+                targetLabel
             )
 
             GitHubShareImportNotificationPhase.WaitingInstall -> context.getString(
@@ -563,19 +588,15 @@ object GitHubShareImportNotificationHelper {
                 } else {
                     R.string.github_share_import_notify_content_waiting_install
                 },
-                projectLabel,
-                state.packageName.ifBlank {
-                    state.assetName.ifBlank {
-                        context.getString(R.string.github_share_import_pending_label_asset)
-                    }
-                },
+                projectDisplayLabel,
+                targetLabel,
                 state.count.coerceAtLeast(0)
             )
 
             GitHubShareImportNotificationPhase.InstallDetected -> context.getString(
                 R.string.github_share_import_notify_content_install_detected,
                 state.appDisplayLabel,
-                state.packageName.ifBlank { projectLabel }
+                projectDisplayLabel
             )
 
             GitHubShareImportNotificationPhase.AddingTrack -> context.getString(
@@ -736,6 +757,7 @@ internal data class GitHubShareImportNotificationState(
     val assetName: String = "",
     val appLabel: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val targetDisplayName: String = "",
     val primaryLabel: String = "",
     val count: Int = 0,
@@ -759,24 +781,46 @@ internal data class GitHubShareImportNotificationState(
             }
         }
 
+    val projectDisplayLabel: String
+        get() = repo.trim()
+            .ifBlank { owner.trim() }
+            .ifBlank { githubProjectDisplayName(primaryLabel) }
+            .ifBlank { "GitHub" }
+
     val appDisplayLabel: String
         get() = appLabel
             .ifBlank { targetDisplayName }
+            .ifBlank { projectDisplayLabel }
             .ifBlank { packageName }
             .ifBlank { projectLabel }
 
-    val compactMetaLabel: String
-        get() = appLabel
-            .ifBlank { targetDisplayName }
-            .ifBlank { packageName }
+    private val versionDisplayLabel: String
+        get() = versionName.trim()
             .ifBlank {
-                when {
-                    owner.isNotBlank() || repo.isNotBlank() -> projectLabel
-                    assetName.isNotBlank() -> assetName
-                    releaseTag.isNotBlank() -> releaseTag
-                    else -> primaryLabel
-                }
+                releaseTag
+                    .trim()
+                    .takeIf { it.isNotBlank() && !it.equals("latest", ignoreCase = true) }
+                    .orEmpty()
             }
+
+    private val readableTargetLabel: String
+        get() = appLabel.trim()
+            .ifBlank { targetDisplayName.trim().takeUnless(::looksLikePackageName).orEmpty() }
+            .ifBlank { projectDisplayLabel }
+            .ifBlank { cleanNotificationAssetName(assetName) }
+            .ifBlank { packageName.trim() }
+            .ifBlank { projectLabel }
+
+    val targetWithVersionLabel: String
+        get() {
+            val target = readableTargetLabel
+            val version = versionDisplayLabel
+            return when {
+                version.isBlank() -> target
+                target.equals(version, ignoreCase = true) -> target
+                else -> "$target · $version"
+            }
+        }
 
     fun compactIslandTitle(shortText: String): String {
         if (phase == GitHubShareImportNotificationPhase.InstallDownloading &&
@@ -785,7 +829,17 @@ internal data class GitHubShareImportNotificationState(
         ) {
             return "${resolvedProgressPercent}%"
         }
-        return shortText
+        return readableTargetLabel.ifBlank { shortText }
+    }
+
+    fun compactIslandSubtitle(shortText: String, islandTitle: String): String {
+        if (phase == GitHubShareImportNotificationPhase.InstallDownloading &&
+            totalBytes > 0L &&
+            resolvedProgressPercent in 1..99
+        ) {
+            return readableTargetLabel.ifBlank { shortText }
+        }
+        return shortText.takeIf { it.isNotBlank() && it != islandTitle }.orEmpty()
     }
 
     val resolvedProgressPercent: Int
@@ -802,6 +856,44 @@ internal data class GitHubShareImportNotificationState(
             return phase.primaryActionRes
         }
 }
+
+private fun looksLikePackageName(value: String): Boolean {
+    val normalized = value.trim()
+    if (normalized.isBlank() || normalized.any(Char::isWhitespace)) return false
+    return packageNameDisplayRegex.matches(normalized)
+}
+
+private fun githubProjectDisplayName(value: String): String {
+    val path = value.trim()
+        .substringAfter("://", value.trim())
+        .removePrefix("github.com/")
+        .removePrefix("www.github.com/")
+        .substringBefore('?')
+        .substringBefore('#')
+        .trim('/')
+    val segments = path.split('/').map { it.trim() }.filter { it.isNotBlank() }
+    return when {
+        segments.size >= 2 -> segments[1]
+        segments.size == 1 -> segments[0]
+        else -> ""
+    }
+}
+
+private fun cleanNotificationAssetName(assetName: String): String {
+    val fileName = assetName.trim()
+        .substringAfterLast('/')
+        .substringAfterLast('\\')
+    return fileName
+        .replace(apkFileSuffixRegex, "")
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .replace(notificationWhitespaceRegex, " ")
+        .trim()
+}
+
+private val packageNameDisplayRegex = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
+private val apkFileSuffixRegex = Regex("""\.apk$""", RegexOption.IGNORE_CASE)
+private val notificationWhitespaceRegex = Regex("""\s+""")
 
 internal enum class GitHubShareImportNotificationPhase(
     @param:StringRes val titleRes: Int,

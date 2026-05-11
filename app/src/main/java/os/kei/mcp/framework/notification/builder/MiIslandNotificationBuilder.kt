@@ -489,12 +489,12 @@ class MiIslandNotificationBuilder(
                 },
                 compactTitle = resolveCompactTitle(
                     raw = state.onlineText(context),
-                    fallback = state.shortText
+                    fallback = state.shortText,
+                    maxTextLength = 10
                 ),
                 compactContent = state.shortText
                     .takeIf {
-                        useProgressTemplate &&
-                                it.isNotBlank() &&
+                        it.isNotBlank() &&
                                 it != state.onlineText(context)
                     },
                 notificationOngoing = state.ongoing,
@@ -691,14 +691,18 @@ class MiIslandNotificationBuilder(
         return ((current.toFloat() / limit.toFloat()) * 100f).roundToInt().coerceIn(0, 100)
     }
 
-    private fun resolveCompactTitle(raw: String, fallback: String): String {
+    private fun resolveCompactTitle(
+        raw: String,
+        fallback: String,
+        maxTextLength: Int = 4
+    ): String {
         val trimmed = raw.trim()
         val fallbackTrimmed = fallback.trim()
         if (trimmed.isBlank()) return fallbackTrimmed
         val isNumeric = trimmed.all(Char::isDigit)
         if (isNumeric && trimmed.length <= 3) return trimmed
         if (isNumeric) return fallbackTrimmed
-        if (trimmed.length <= 4) return trimmed
+        if (trimmed.length <= maxTextLength) return trimmed
         return fallbackTrimmed.ifBlank { trimmed }
     }
 

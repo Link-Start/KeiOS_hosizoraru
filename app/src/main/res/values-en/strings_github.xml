@@ -621,7 +621,7 @@
     <string name="github_track_badge_current_app">This app</string>
     <string name="github_track_sheet_section_check_option">Check options</string>
     <string name="github_track_sheet_label_prefer_prerelease">Prefer pre-release version</string>
-    <string name="github_track_sheet_summary_prefer_prerelease">Only affects this project’s recommended update target. Global pre-release checking remains separate.</string>
+    <string name="github_track_sheet_summary_prefer_prerelease">Checks pre-release versions for this project and prefers them when available. The global switch remains unchanged.</string>
     <string name="github_track_sheet_label_always_show_latest_release_download">Always show latest release download</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_precise_apk_version">More precise version logic</string>

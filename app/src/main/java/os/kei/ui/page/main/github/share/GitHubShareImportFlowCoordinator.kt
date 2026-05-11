@@ -263,6 +263,7 @@ internal object GitHubShareImportFlowCoordinator {
             context = context,
             owner = preview.owner,
             repo = preview.repo,
+            releaseTag = preview.releaseTag,
             assetName = selectedAsset.name,
             targetDisplayName = preview.targetDisplayName.ifBlank {
                 buildShareImportTargetDisplayName(
@@ -271,11 +272,11 @@ internal object GitHubShareImportFlowCoordinator {
                 )
             }
         )
-        val scannedPackageNameDeferred = async(Dispatchers.IO) {
-            scanShareImportAssetPackageName(
+        val scannedManifestInfoDeferred = async(Dispatchers.IO) {
+            scanShareImportAssetManifestInfo(
                 asset = selectedAsset,
                 lookupConfig = lookupConfig
-            ).getOrDefault("")
+            ).getOrNull()
         }
         val deliveryResult = sendAssetToConfiguredChannel(
             context = context,
@@ -285,7 +286,7 @@ internal object GitHubShareImportFlowCoordinator {
         )
         when (deliveryResult) {
             is ShareImportDeliveryResult.Failure -> {
-                scannedPackageNameDeferred.cancel()
+                scannedManifestInfoDeferred.cancel()
                 GitHubShareImportNotificationHelper.notifyFailed(
                     context = context,
                     reason = context.getString(deliveryResult.toastResId)
@@ -294,7 +295,9 @@ internal object GitHubShareImportFlowCoordinator {
             }
 
             is ShareImportDeliveryResult.Success -> {
-                val scannedPackageName = scannedPackageNameDeferred.await()
+                val scannedManifestInfo = scannedManifestInfoDeferred.await()
+                val scannedPackageName = scannedManifestInfo?.packageName.orEmpty()
+                val scannedVersionName = scannedManifestInfo?.versionName.orEmpty()
                 val pending = GitHubPendingShareImportTrackRecord(
                     projectUrl = preview.projectUrl,
                     owner = preview.owner,
@@ -302,6 +305,7 @@ internal object GitHubShareImportFlowCoordinator {
                     releaseTag = preview.releaseTag,
                     assetName = selectedAsset.name,
                     packageName = scannedPackageName,
+                    versionName = scannedVersionName,
                     targetDisplayName = buildShareImportTargetDisplayName(
                         repo = preview.repo,
                         assetName = selectedAsset.name,
@@ -321,6 +325,7 @@ internal object GitHubShareImportFlowCoordinator {
                     releaseTag = pending.releaseTag,
                     assetName = pending.assetName,
                     packageName = pending.packageName,
+                    versionName = pending.versionName,
                     remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis),
                     targetDisplayName = pending.targetDisplayName
                 )
@@ -386,6 +391,7 @@ internal object GitHubShareImportFlowCoordinator {
             repo = candidate.repo,
             appLabel = candidate.appLabel,
             packageName = candidate.packageName,
+            versionName = candidate.versionName,
             targetDisplayName = buildShareImportTargetDisplayName(
                 appLabel = candidate.appLabel,
                 repo = candidate.repo,
@@ -414,6 +420,7 @@ internal object GitHubShareImportFlowCoordinator {
                     repo = candidate.repo,
                     appLabel = candidate.appLabel,
                     packageName = candidate.packageName,
+                    versionName = candidate.versionName,
                     targetDisplayName = buildShareImportTargetDisplayName(
                         appLabel = candidate.appLabel,
                         repo = candidate.repo,
@@ -454,6 +461,7 @@ internal object GitHubShareImportFlowCoordinator {
                     repo = candidate.repo,
                     appLabel = result.appLabel.ifBlank { candidate.appLabel },
                     packageName = candidate.packageName,
+                    versionName = candidate.versionName,
                     targetDisplayName = buildShareImportTargetDisplayName(
                         appLabel = result.appLabel.ifBlank { candidate.appLabel },
                         repo = candidate.repo,
@@ -509,6 +517,7 @@ internal object GitHubShareImportFlowCoordinator {
                     releaseTag = pending.releaseTag,
                     assetName = pending.assetName,
                     packageName = pending.packageName,
+                    versionName = pending.versionName,
                     remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis),
                     targetDisplayName = pending.targetDisplayName
                 )
@@ -540,6 +549,7 @@ internal object GitHubShareImportFlowCoordinator {
                     repo = candidate.repo,
                     appLabel = candidate.appLabel,
                     packageName = candidate.packageName,
+                    versionName = candidate.versionName,
                     targetDisplayName = buildShareImportTargetDisplayName(
                         appLabel = candidate.appLabel,
                         repo = candidate.repo,
@@ -566,6 +576,7 @@ internal object GitHubShareImportFlowCoordinator {
                     repo = candidate.repo,
                     appLabel = candidate.appLabel,
                     packageName = candidate.packageName,
+                    versionName = candidate.versionName,
                     targetDisplayName = buildShareImportTargetDisplayName(
                         appLabel = candidate.appLabel,
                         repo = candidate.repo,

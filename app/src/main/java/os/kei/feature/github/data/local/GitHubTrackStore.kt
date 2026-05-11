@@ -45,6 +45,7 @@ data class GitHubPendingShareImportTrackRecord(
     val releaseTag: String = "",
     val assetName: String = "",
     val packageName: String = "",
+    val versionName: String = "",
     val targetDisplayName: String = "",
     val armedAtMillis: Long
 )
@@ -148,6 +149,7 @@ object GitHubTrackStore {
                 releaseTag = obj.optString("releaseTag").trim(),
                 assetName = obj.optString("assetName").trim(),
                 packageName = obj.optString("packageName").trim(),
+                versionName = obj.optString("versionName").trim(),
                 targetDisplayName = obj.optString("targetDisplayName").trim(),
                 armedAtMillis = armedAtMillis
             )
@@ -166,6 +168,7 @@ object GitHubTrackStore {
             .put("releaseTag", record.releaseTag)
             .put("assetName", record.assetName)
             .put("packageName", record.packageName)
+            .put("versionName", record.versionName)
             .put("targetDisplayName", record.targetDisplayName)
             .put("armedAtMillis", record.armedAtMillis)
         kv().encode(KEY_PENDING_SHARE_IMPORT_TRACK, payload.toString())

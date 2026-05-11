@@ -44,6 +44,7 @@ internal fun notifyShareImportDelivering(
         context = context,
         owner = preview.owner,
         repo = preview.repo,
+        releaseTag = preview.releaseTag,
         assetName = assetName,
         targetDisplayName = preview.targetDisplayName.ifBlank {
             buildShareImportTargetDisplayName(
@@ -65,6 +66,7 @@ internal fun notifyShareImportWaitingInstall(
         releaseTag = pending.releaseTag,
         assetName = pending.assetName,
         packageName = pending.packageName,
+        versionName = pending.versionName,
         remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis),
         targetDisplayName = pending.targetDisplayName
     )
@@ -80,6 +82,7 @@ internal fun notifyShareImportInstallDetected(
         repo = candidate.repo,
         appLabel = candidate.appLabel,
         packageName = candidate.packageName,
+        versionName = candidate.versionName,
         targetDisplayName = buildShareImportTargetDisplayName(
             appLabel = candidate.appLabel,
             repo = candidate.repo,
@@ -98,6 +101,7 @@ internal fun notifyShareImportAddingTrack(
         repo = candidate.repo,
         appLabel = candidate.appLabel,
         packageName = candidate.packageName,
+        versionName = candidate.versionName,
         targetDisplayName = buildShareImportTargetDisplayName(
             appLabel = candidate.appLabel,
             repo = candidate.repo,
@@ -117,6 +121,7 @@ internal fun notifyShareImportAdded(
         repo = candidate.repo,
         appLabel = appLabel.ifBlank { candidate.appLabel },
         packageName = candidate.packageName,
+        versionName = candidate.versionName,
         targetDisplayName = buildShareImportTargetDisplayName(
             appLabel = appLabel.ifBlank { candidate.appLabel },
             repo = candidate.repo,
@@ -135,6 +140,7 @@ internal fun notifyShareImportAlreadyTracked(
         repo = candidate.repo,
         appLabel = candidate.appLabel,
         packageName = candidate.packageName,
+        versionName = candidate.versionName,
         targetDisplayName = buildShareImportTargetDisplayName(
             appLabel = candidate.appLabel,
             repo = candidate.repo,

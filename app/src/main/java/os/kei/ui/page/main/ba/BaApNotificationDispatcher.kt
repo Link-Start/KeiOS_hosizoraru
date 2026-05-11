@@ -29,4 +29,30 @@ internal object BaApNotificationDispatcher {
             )
         }.isSuccess
     }
+
+    fun refreshIfActive(
+        context: Context,
+        currentDisplay: Int,
+        limitDisplay: Int,
+        thresholdDisplay: Int,
+    ): Boolean {
+        val notificationsGranted =
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
+        if (!notificationsGranted) return false
+
+        return runCatching {
+            McpNotificationHelper.refreshStandaloneEventIfActive(
+                context = context,
+                notificationId = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
+                serverName = McpNotificationPayload.BA_AP_SERVER_NAME,
+                running = true,
+                port = currentDisplay,
+                path = thresholdDisplay.toString(),
+                clients = limitDisplay,
+                ongoing = true,
+                onlyAlertOnce = true
+            )
+        }.getOrDefault(false)
+    }
 }

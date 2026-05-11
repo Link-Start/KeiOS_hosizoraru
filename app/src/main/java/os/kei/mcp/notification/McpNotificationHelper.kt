@@ -317,6 +317,53 @@ object McpNotificationHelper {
         )
     }
 
+    fun refreshStandaloneEventIfActive(
+        context: Context,
+        notificationId: Int,
+        serverName: String,
+        running: Boolean,
+        port: Int,
+        path: String,
+        clients: Int,
+        ongoing: Boolean = running,
+        onlyAlertOnce: Boolean = true
+    ): Boolean {
+        ensureChannel(context)
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        if (!isNotificationActive(manager, notificationId)) return false
+        val buildResult = buildForegroundNotificationResult(
+            context = context,
+            serverName = serverName,
+            running = running,
+            port = port,
+            path = path,
+            clients = clients,
+            ongoing = ongoing,
+            onlyAlertOnce = onlyAlertOnce,
+            secondaryActionMode = SecondaryActionMode.MARK_READ,
+            notificationId = notificationId
+        )
+        val snapshot = McpNotificationSnapshot(
+            serverName = serverName,
+            running = running,
+            port = port,
+            path = path,
+            clients = clients,
+            ongoing = ongoing,
+            onlyAlertOnce = onlyAlertOnce,
+            style = buildResult.style,
+            useXiaomiMagic = buildResult.useXiaomiMagic
+        )
+        McpNotificationSnapshotStore.put(notificationId, snapshot)
+        notifyWithResolvedDispatcher(
+            context = context,
+            notificationId = notificationId,
+            notification = buildResult.notification,
+            useXiaomiMagic = buildResult.useXiaomiMagic
+        )
+        return true
+    }
+
     fun refreshForegroundAsIsland(
         context: Context,
         notificationId: Int = KEEPALIVE_NOTIFICATION_ID,
@@ -420,6 +467,7 @@ object McpNotificationHelper {
             clients = snapshot.clients,
             ongoing = snapshot.ongoing,
             onlyAlertOnce = snapshot.onlyAlertOnce,
+            secondaryActionMode = secondaryActionModeFor(notificationId),
             notificationId = notificationId
         )
         McpNotificationSnapshotStore.put(
@@ -441,6 +489,16 @@ object McpNotificationHelper {
         return runCatching {
             manager.activeNotifications.any { it.id == notificationId }
         }.getOrDefault(false)
+    }
+
+    private fun secondaryActionModeFor(notificationId: Int): SecondaryActionMode {
+        return when (notificationId) {
+            BA_AP_NOTIFICATION_ID,
+            BA_CAFE_VISIT_NOTIFICATION_ID,
+            BA_ARENA_REFRESH_NOTIFICATION_ID -> SecondaryActionMode.MARK_READ
+
+            else -> SecondaryActionMode.DEFAULT
+        }
     }
 
     private fun notifyWithResolvedDispatcher(

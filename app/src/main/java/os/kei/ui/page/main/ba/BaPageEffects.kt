@@ -10,7 +10,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
+import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
+import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_TICK_MS
+import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
 import os.kei.ui.page.main.widget.chrome.isPageSettledAtTop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -132,7 +135,23 @@ internal fun BaPageCommonEffects(
         onServerChanged()
     }
 
-    LaunchedEffect(office.apCurrent, office.apNotifyEnabled, office.apNotifyThreshold) {
-        office.tryApThresholdNotification(context)
+    val apDisplay = displayAp(office.apCurrent)
+    val apLimitDisplay = office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX)
+    val apThresholdDisplay = office.apNotifyThreshold.coerceIn(0, BA_AP_MAX)
+    LaunchedEffect(
+        apDisplay,
+        apLimitDisplay,
+        apThresholdDisplay,
+        office.apNotifyEnabled
+    ) {
+        val thresholdNotificationSent = office.tryApThresholdNotification(context)
+        if (!thresholdNotificationSent) {
+            BaApNotificationDispatcher.refreshIfActive(
+                context = context,
+                currentDisplay = apDisplay,
+                limitDisplay = apLimitDisplay,
+                thresholdDisplay = apThresholdDisplay
+            )
+        }
     }
 }

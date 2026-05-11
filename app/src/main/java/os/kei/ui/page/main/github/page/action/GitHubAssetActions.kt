@@ -321,6 +321,7 @@ internal class GitHubAssetActions(
         if (
             toggleOnlyWhenCached &&
             cachedBundle != null &&
+            isRuntimeCacheFresh(state.apkAssetBundleLoadedAtMs[item.id]) &&
             state.matchesAssetSourceSignature(cachedBundle, lookupConfig) &&
             cachedBundle.tagName.equals(target.rawTag, ignoreCase = true) &&
             cachedBundle.showingAllAssets == includeAllAssets &&
@@ -367,6 +368,7 @@ internal class GitHubAssetActions(
             ) {
                 loadingState[item.id] = false
                 state.apkAssetBundles[item.id] = persistedBundle
+                state.apkAssetBundleLoadedAtMs[item.id] = System.currentTimeMillis()
                 if (expandPanelOnLoad) {
                     state.apkAssetErrors[item.id] = buildEmptyAssetMessage(
                         label = target.label,
@@ -394,6 +396,7 @@ internal class GitHubAssetActions(
                     sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig)
                 )
                 state.apkAssetBundles[item.id] = persistedBundle
+                state.apkAssetBundleLoadedAtMs[item.id] = System.currentTimeMillis()
                 scope.launch {
                     repository.saveAssetBundle(
                         cacheKey = assetCacheKey,
@@ -450,7 +453,12 @@ internal class GitHubAssetActions(
     ) {
         val cachedTargets = state.releaseNotesTargets[item.id].orEmpty()
         val cachedSelected = state.releaseNotesSelectedTargets[item.id]
-        if (!forceRefresh && cachedTargets.isNotEmpty() && cachedSelected != null) {
+        if (
+            !forceRefresh &&
+            cachedTargets.isNotEmpty() &&
+            cachedSelected != null &&
+            isRuntimeCacheFresh(state.releaseNotesTargetsLoadedAtMs[item.id])
+        ) {
             loadReleaseNotesBundle(item = item, target = cachedSelected, clearCache = false)
             return
         }
@@ -482,8 +490,10 @@ internal class GitHubAssetActions(
                 return@launch
             }
             state.releaseNotesTargets[item.id] = remoteTargets
+            state.releaseNotesTargetsLoadedAtMs[item.id] = System.currentTimeMillis()
             state.releaseNotesSelectedTargets[item.id] = selectedTarget
             state.releaseNotesBundles.remove(item.id)
+            state.releaseNotesBundleLoadedAtMs.remove(item.id)
             if (forceRefresh) {
                 state.releaseNotesApkVersions.keys.removeAll { key -> key.startsWith("${item.id}|") }
             }
@@ -515,6 +525,7 @@ internal class GitHubAssetActions(
         if (
             !clearCache &&
             cachedBundle != null &&
+            isRuntimeCacheFresh(state.releaseNotesBundleLoadedAtMs[item.id]) &&
             state.matchesAssetSourceSignature(cachedBundle, lookupConfig) &&
             cachedBundle.tagName.equals(target.tagName, ignoreCase = true) &&
             cachedBundle.releaseNotesBody.isNotBlank()
@@ -561,6 +572,7 @@ internal class GitHubAssetActions(
             ) {
                 state.releaseNotesLoading[item.id] = false
                 state.releaseNotesBundles[item.id] = persistedBundle
+                state.releaseNotesBundleLoadedAtMs[item.id] = System.currentTimeMillis()
                 resolveReleaseNotesApkVersionIfNeeded(
                     item = item,
                     target = target,
@@ -588,13 +600,14 @@ internal class GitHubAssetActions(
                 )
                 state.releaseNotesLoading[item.id] = false
                 state.releaseNotesBundles[item.id] = persisted
+                state.releaseNotesBundleLoadedAtMs[item.id] = System.currentTimeMillis()
                 repository.saveAssetBundle(cacheKey, persisted)
                 resolveReleaseNotesApkVersionIfNeeded(
                     item = item,
                     target = target,
                     bundle = persisted,
                     lookupConfig = lookupConfig,
-                    forceRefresh = clearCache
+                    forceRefresh = true
                 )
             }.onFailure { error ->
                 if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
@@ -603,6 +616,16 @@ internal class GitHubAssetActions(
                     ?: context.getString(R.string.github_error_load_apk_assets_failed)
             }
         }
+    }
+
+    private fun isRuntimeCacheFresh(
+        loadedAtMs: Long?,
+        nowMs: Long = System.currentTimeMillis()
+    ): Boolean {
+        val loadedAt = loadedAtMs ?: return false
+        if (loadedAt <= 0L) return false
+        val intervalMs = state.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
+        return (nowMs - loadedAt).coerceAtLeast(0L) < intervalMs
     }
 
     private fun fallbackReleaseNotesTargets(

@@ -189,6 +189,9 @@ internal class GitHubPageState(
     val releaseNotesSelectedTargets = mutableStateMapOf<String, GitHubReleaseNotesTarget>()
     val releaseNotesBundles = mutableStateMapOf<String, GitHubReleaseAssetBundle>()
     val releaseNotesApkVersions = mutableStateMapOf<String, GitHubRemoteApkVersionInfo>()
+    val apkAssetBundleLoadedAtMs = mutableStateMapOf<String, Long>()
+    val releaseNotesTargetsLoadedAtMs = mutableStateMapOf<String, Long>()
+    val releaseNotesBundleLoadedAtMs = mutableStateMapOf<String, Long>()
     val apkInfoLoading = mutableStateMapOf<String, Boolean>()
     val apkInfoErrors = mutableStateMapOf<String, String>()
     val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
@@ -282,6 +285,9 @@ internal class GitHubPageState(
         releaseNotesSelectedTargets.clear()
         releaseNotesBundles.clear()
         releaseNotesApkVersions.clear()
+        apkAssetBundleLoadedAtMs.clear()
+        releaseNotesTargetsLoadedAtMs.clear()
+        releaseNotesBundleLoadedAtMs.clear()
         apkInfoLoading.clear()
         apkInfoErrors.clear()
         apkInfoResults.clear()
@@ -299,6 +305,9 @@ internal class GitHubPageState(
         releaseNotesSelectedTargets.remove(itemId)
         releaseNotesBundles.remove(itemId)
         releaseNotesApkVersions.keys.removeAll { key -> key.startsWith("$itemId|") }
+        apkAssetBundleLoadedAtMs.remove(itemId)
+        releaseNotesTargetsLoadedAtMs.remove(itemId)
+        releaseNotesBundleLoadedAtMs.remove(itemId)
     }
 
     fun clearAssetUiState(itemId: String) {
@@ -322,6 +331,9 @@ internal class GitHubPageState(
         releaseNotesTargets.keys.retainAll(validItemIds)
         releaseNotesSelectedTargets.keys.retainAll(validItemIds)
         releaseNotesBundles.keys.retainAll(validItemIds)
+        apkAssetBundleLoadedAtMs.keys.retainAll(validItemIds)
+        releaseNotesTargetsLoadedAtMs.keys.retainAll(validItemIds)
+        releaseNotesBundleLoadedAtMs.keys.retainAll(validItemIds)
         releaseNotesApkVersions.keys.removeAll { key ->
             validItemIds.none { itemId -> key.startsWith("$itemId|") }
         }

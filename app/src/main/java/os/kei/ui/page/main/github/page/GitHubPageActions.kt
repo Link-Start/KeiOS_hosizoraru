@@ -309,6 +309,8 @@ internal class GitHubPageActions(
     fun applyCheckLogicSheet(installedOnlineShareTargets: List<OnlineShareTargetOption>) =
         configActions.applyCheckLogicSheet(installedOnlineShareTargets)
 
+    fun selectRefreshIntervalHours(hours: Int) = configActions.selectRefreshIntervalHours(hours)
+
     suspend fun previewTrackedItemsImport(raw: String) = configActions.previewTrackedItemsImport(raw)
 
     suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview) =

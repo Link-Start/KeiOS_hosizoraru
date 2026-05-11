@@ -175,6 +175,10 @@ internal fun appLucideBackIcon(): ImageVector = osLucideVector(LucideR.drawable.
 internal fun appLucideChevronLeftIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_chevron_left)
 
 @Composable
+internal fun appLucideChevronRightIcon(): ImageVector =
+    osLucideVector(LucideR.drawable.lucide_ic_chevron_right)
+
+@Composable
 internal fun appLucideTimeIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_clock_3)
 
 @Composable

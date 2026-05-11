@@ -203,8 +203,9 @@ fun GitHubPage(
             searchExpanded = enableSearchBar && searchExpanded,
             trackedSearch = state.trackedSearch,
             sortMode = state.sortMode,
+            refreshIntervalHours = state.refreshIntervalHours,
             showFailedOnly = state.showFailedOnly,
-            showSortPopup = state.showSortPopup,
+            showActionMenuPopup = state.showActionMenuPopup,
             floatingDockSide = runtime.floatingDockSide,
             deleteInProgress = state.deleteInProgress,
             isDark = isDark,
@@ -240,8 +241,9 @@ fun GitHubPage(
             onSearchExpandedChange = { expanded ->
                 searchExpanded = enableSearchBar && expanded
             },
-            onShowSortPopupChange = { state.showSortPopup = it },
+            onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
             onSortModeChange = { state.sortMode = it },
+            onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
             onOpenStrategySheet = actions::openStrategySheet,
             onOpenCheckLogicSheet = actions::openCheckLogicSheet,
             onOverviewExpandedChange = actions::setOverviewExpanded,

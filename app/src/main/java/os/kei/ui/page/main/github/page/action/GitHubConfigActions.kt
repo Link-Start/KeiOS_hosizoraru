@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.ui.page.main.github.OverviewRefreshState
+import os.kei.ui.page.main.github.RefreshIntervalOption
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
@@ -72,6 +73,17 @@ internal class GitHubConfigActions(
 
     fun closeCheckLogicSheet() {
         state.dismissCheckLogicSheet()
+    }
+
+    fun selectRefreshIntervalHours(hours: Int) {
+        val normalizedHours = RefreshIntervalOption.fromHours(hours).hours
+        scope.launch {
+            repository.saveRefreshIntervalHours(normalizedHours)
+            state.refreshIntervalHours = normalizedHours
+            state.refreshIntervalHoursInput = normalizedHours
+            repository.scheduleGitHubRefresh(context)
+            env.toast(R.string.github_toast_refresh_interval_saved)
+        }
     }
 
     suspend fun previewTrackedItemsImport(raw: String): GitHubTrackImportPreview {

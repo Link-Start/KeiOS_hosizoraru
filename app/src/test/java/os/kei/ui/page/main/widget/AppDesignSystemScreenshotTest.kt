@@ -36,6 +36,13 @@ import os.kei.ui.page.main.github.importer.StarImportConflictStrategy
 import os.kei.ui.page.main.github.importer.StarImportListControlCard
 import os.kei.ui.page.main.github.importer.StarImportViewFilter
 import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
+import os.kei.ui.page.main.os.appLucideChevronRightIcon
+import os.kei.ui.page.main.os.appLucideConfigIcon
+import os.kei.ui.page.main.os.appLucideEditIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideSortIcon
+import os.kei.ui.page.main.os.appLucideTimeIcon
+import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -52,6 +59,11 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceList
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -579,6 +591,119 @@ class AppDesignSystemScreenshotTest {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun liquidGlassActionMenuLight() {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/liquid_glass_action_menu_light.png") {
+            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFF3F4F6))
+                            .padding(16.dp)
+                    ) {
+                        val editIcon = appLucideEditIcon()
+                        val configIcon = appLucideConfigIcon()
+                        val refreshIcon = appLucideRefreshIcon()
+                        val sortIcon = appLucideSortIcon()
+                        val intervalIcon = appLucideTimeIcon()
+                        LiquidGlassActionMenu(
+                            quickActions = listOf(
+                                LiquidGlassActionMenuQuickAction(
+                                    id = "scan",
+                                    icon = editIcon,
+                                    label = "扫描",
+                                    onClick = {}
+                                ),
+                                LiquidGlassActionMenuQuickAction(
+                                    id = "pin",
+                                    icon = configIcon,
+                                    label = "置顶",
+                                    onClick = {}
+                                ),
+                                LiquidGlassActionMenuQuickAction(
+                                    id = "refresh",
+                                    icon = refreshIcon,
+                                    label = "刷新",
+                                    onClick = {}
+                                )
+                            ),
+                            items = listOf(
+                                LiquidGlassActionMenuSubmenuRow(
+                                    id = "sort",
+                                    text = "排序",
+                                    subtitle = "更新优先",
+                                    leadingIcon = sortIcon,
+                                    trailingIcon = appLucideChevronRightIcon(),
+                                    submenuItems = listOf(
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = "update",
+                                            text = "更新优先",
+                                            selected = true,
+                                            leadingIcon = sortIcon,
+                                            onClick = {}
+                                        ),
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = "name",
+                                            text = "名称 A-Z",
+                                            selected = false,
+                                            leadingIcon = sortIcon,
+                                            onClick = {}
+                                        ),
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = "pre",
+                                            text = "预发行优先",
+                                            selected = false,
+                                            leadingIcon = sortIcon,
+                                            onClick = {}
+                                        )
+                                    )
+                                ),
+                                LiquidGlassActionMenuSubmenuRow(
+                                    id = "interval",
+                                    text = "更新间隔",
+                                    subtitle = "3 小时",
+                                    leadingIcon = intervalIcon,
+                                    trailingIcon = appLucideChevronRightIcon(),
+                                    submenuItems = listOf(
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = "1h",
+                                            text = "1 小时",
+                                            selected = false,
+                                            leadingIcon = intervalIcon,
+                                            onClick = {}
+                                        ),
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = "3h",
+                                            text = "3 小时",
+                                            selected = true,
+                                            leadingIcon = intervalIcon,
+                                            onClick = {}
+                                        ),
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = "6h",
+                                            text = "6 小时",
+                                            selected = false,
+                                            leadingIcon = intervalIcon,
+                                            onClick = {}
+                                        )
+                                    )
+                                ),
+                                LiquidGlassActionMenuActionRow(
+                                    id = "danger",
+                                    text = "移除规则",
+                                    leadingIcon = appLucideTrashIcon(),
+                                    variant = GlassVariant.SheetDangerAction,
+                                    onClick = {}
+                                )
+                            ),
+                            initialExpandedSubmenuId = "sort"
+                        )
                     }
                 }
             }

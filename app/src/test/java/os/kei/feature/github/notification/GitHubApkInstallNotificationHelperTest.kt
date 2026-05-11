@@ -114,6 +114,31 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
+    fun `remote resolving notification uses status category for checking`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.RemoteResolving,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertEquals(0, notification.extras.getInt(Notification.EXTRA_PROGRESS_MAX))
+        assertEquals(0, notification.extras.getInt(Notification.EXTRA_PROGRESS))
+        assertFalse(notification.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            notification.actions[0].title.toString()
+        )
+        assertEquals(
+            context.getString(R.string.common_cancel),
+            notification.actions[1].title.toString()
+        )
+    }
+
+    @Test
     fun `ready notification replaces inspecting text with confirmation state`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val inspecting = GitHubApkInstallNotificationHelper.buildFrameworkLiveUpdateNotification(
@@ -210,7 +235,7 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
-    fun `remote resolving mi island floats checking state without progress template`() {
+    fun `remote resolving mi island uses status template for checking state`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notification = GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
             context = context,
@@ -225,7 +250,8 @@ class GitHubApkInstallNotificationHelperTest {
 
         assertEquals(Notification.CATEGORY_STATUS, notification.category)
         assertTrue(focusParam.contains("imageTextInfoRight"))
-        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertFalse(focusParam.contains("\"progress\":"))
@@ -288,6 +314,35 @@ class GitHubApkInstallNotificationHelperTest {
         assertEquals(
             GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
             shadowOf(notification.actions[1].actionIntent).savedIntent.action
+        )
+    }
+
+    @Test
+    fun `success mi island floats completion with mark read action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notification = GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
+            context = context,
+            state = GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Success,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertEquals(
+            context.getString(R.string.github_apk_install_notify_action_open_sheet),
+            focusOpenAction.title.toString()
+        )
+        assertEquals(
+            GitHubApkInstallActionReceiver.ACTION_MARK_READ_INSTALL,
+            shadowOf(focusStopAction.actionIntent).savedIntent.action
         )
     }
 
@@ -392,7 +447,7 @@ class GitHubApkInstallNotificationHelperTest {
     }
 
     @Test
-    fun `first non zero download progress pulses before smooth updates`() {
+    fun `download percentage changes use smooth update after phase pulse`() {
         GitHubApkInstallNotificationHelper.resetDispatchStateForTest()
         val zero = GitHubApkInstallFlowState(
             sessionId = 12L,
@@ -411,7 +466,7 @@ class GitHubApkInstallNotificationHelperTest {
             )
         )
         assertEquals(
-            McpNotificationDispatchMode.Pulse,
+            McpNotificationDispatchMode.Update,
             GitHubApkInstallNotificationBridge.resolveDispatchMode(
                 state = firstProgress,
                 useXiaomiMagic = true

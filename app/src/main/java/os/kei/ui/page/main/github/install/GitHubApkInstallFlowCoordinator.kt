@@ -65,7 +65,8 @@ internal object GitHubApkInstallFlowCoordinator {
         lookupConfig: GitHubLookupConfig,
         asset: GitHubReleaseAssetFile,
         request: GitHubApkInstallRequestContext,
-        initialInstalledInfo: GitHubInstalledPackageInfo? = null
+        initialInstalledInfo: GitHubInstalledPackageInfo? = null,
+        autoStartDownload: Boolean = request.sourceKind.defaultAutoStartDownload()
     ): Long {
         val appContext = context.applicationContext
         val notificationFirst =
@@ -74,32 +75,50 @@ internal object GitHubApkInstallFlowCoordinator {
             externalFileName = request.externalFileName.ifBlank { asset.name }
         )
         val current = _state.value
+        val currentActiveWork = activeWork
         if (
-            activeWork != null &&
+            currentActiveWork != null &&
             current.active &&
             !current.phase.isTerminalForAsyncUpdates() &&
             current.sameInstallTarget(asset, preparedRequest)
         ) {
+            val updatedWork = currentActiveWork.copy(
+                notificationFirst = notificationFirst,
+                autoStartDownload = currentActiveWork.autoStartDownload || autoStartDownload
+            )
+            activeWork = updatedWork
             updateState(
                 current.copy(
                     sheetVisible = current.sheetVisible || !notificationFirst,
-                    notificationFirst = notificationFirst
+                    notificationFirst = notificationFirst,
+                    autoStartDownload = updatedWork.autoStartDownload
                 )
             )
+            if (current.phase == GitHubApkInstallPhase.RemoteReady && updatedWork.autoStartDownload) {
+                activeJob?.cancel()
+                activeJob = launchDownloadAndPrepare(updatedWork)
+            }
             return current.sessionId
         }
         activeJob?.cancel()
         activeWork?.cleanup()
         activeWork = null
         val sessionId = sessionIds.incrementAndGet()
-        lastRequest = LastInstallRequest.Asset(appContext, lookupConfig, asset, preparedRequest)
+        lastRequest = LastInstallRequest.Asset(
+            appContext,
+            lookupConfig,
+            asset,
+            preparedRequest,
+            autoStartDownload
+        )
         val work = ActiveInstallWork(
             appContext = appContext,
             lookupConfig = lookupConfig,
             asset = asset,
             request = preparedRequest,
             sessionId = sessionId,
-            notificationFirst = notificationFirst
+            notificationFirst = notificationFirst,
+            autoStartDownload = autoStartDownload
         )
         activeWork = work
         if (request.sourceKind == GitHubApkInstallSourceKind.ShareImport) {
@@ -130,6 +149,7 @@ internal object GitHubApkInstallFlowCoordinator {
                 ),
                 sheetVisible = !notificationFirst,
                 notificationFirst = notificationFirst,
+                autoStartDownload = autoStartDownload,
                 message = appContext.getString(R.string.github_apk_install_preparing_download)
             )
         )
@@ -141,7 +161,8 @@ internal object GitHubApkInstallFlowCoordinator {
         context: Context,
         lookupConfig: GitHubLookupConfig,
         asset: GitHubReleaseAssetFile,
-        request: GitHubApkInstallRequestContext
+        request: GitHubApkInstallRequestContext,
+        autoStartDownload: Boolean = request.sourceKind.defaultAutoStartDownload()
     ): Long {
         val appContext = context.applicationContext
         activeJob?.cancel()
@@ -153,14 +174,21 @@ internal object GitHubApkInstallFlowCoordinator {
         val preparedRequest = request.copy(
             externalFileName = request.externalFileName.ifBlank { asset.name }
         )
-        lastRequest = LastInstallRequest.Asset(appContext, lookupConfig, asset, preparedRequest)
+        lastRequest = LastInstallRequest.Asset(
+            appContext,
+            lookupConfig,
+            asset,
+            preparedRequest,
+            autoStartDownload
+        )
         val work = ActiveInstallWork(
             appContext = appContext,
             lookupConfig = lookupConfig,
             asset = asset,
             request = preparedRequest,
             sessionId = sessionId,
-            notificationFirst = notificationFirst
+            notificationFirst = notificationFirst,
+            autoStartDownload = autoStartDownload
         )
         activeWork = work
         updateState(
@@ -184,6 +212,7 @@ internal object GitHubApkInstallFlowCoordinator {
                 overallProgress = 0.02f,
                 sheetVisible = !notificationFirst,
                 notificationFirst = notificationFirst,
+                autoStartDownload = autoStartDownload,
                 message = appContext.getString(R.string.github_apk_install_preparing_download)
             )
         )
@@ -256,7 +285,8 @@ internal object GitHubApkInstallFlowCoordinator {
         resolvedUrl: String,
         fileName: String,
         sizeBytes: Long,
-        request: GitHubApkInstallRequestContext
+        request: GitHubApkInstallRequestContext,
+        autoStartDownload: Boolean = request.sourceKind.defaultAutoStartDownload()
     ) {
         val asset = GitHubReleaseAssetFile(
             name = fileName,
@@ -279,10 +309,17 @@ internal object GitHubApkInstallFlowCoordinator {
         ) {
             val work = currentWork.copy(
                 asset = asset,
-                request = preparedRequest
+                request = preparedRequest,
+                autoStartDownload = currentWork.autoStartDownload || autoStartDownload
             )
             activeWork = work
-            lastRequest = LastInstallRequest.Asset(appContext, lookupConfig, asset, preparedRequest)
+            lastRequest = LastInstallRequest.Asset(
+                appContext,
+                lookupConfig,
+                asset,
+                preparedRequest,
+                work.autoStartDownload
+            )
             updateState(
                 current.copy(
                     phase = GitHubApkInstallPhase.RemoteResolving,
@@ -300,6 +337,7 @@ internal object GitHubApkInstallFlowCoordinator {
                         phase = GitHubApkInstallPhase.RemoteResolving,
                         stageProgress = 0f
                     ),
+                    autoStartDownload = work.autoStartDownload,
                     message = appContext.getString(R.string.github_apk_install_preparing_download)
                 )
             )
@@ -311,7 +349,8 @@ internal object GitHubApkInstallFlowCoordinator {
             context = context,
             lookupConfig = lookupConfig,
             asset = asset,
-            request = preparedRequest
+            request = preparedRequest,
+            autoStartDownload = autoStartDownload
         )
     }
 
@@ -386,7 +425,8 @@ internal object GitHubApkInstallFlowCoordinator {
                 context = context,
                 lookupConfig = request.lookupConfig,
                 asset = request.asset,
-                request = request.request
+                request = request.request,
+                autoStartDownload = request.autoStartDownload
             )
 
             null -> Unit
@@ -751,27 +791,63 @@ internal object GitHubApkInstallFlowCoordinator {
 
     private fun launchRemoteCheck(work: ActiveInstallWork): Job {
         return scope.launch {
-            val installedInfoJob = async(Dispatchers.IO) {
-                preheatInstalledInfo(work)
-            }
-            val remoteManifestJob = async(Dispatchers.IO) {
-                preheatRemoteManifest(work)
-            }
-            installedInfoJob.await()
-            remoteManifestJob.await()
-            updateActiveState(work.sessionId) { current ->
-                if (current.phase != GitHubApkInstallPhase.RemoteResolving) {
-                    current
-                } else {
-                    current.copy(
-                        phase = GitHubApkInstallPhase.RemoteReady,
-                        overallProgress = installOverallProgress(
-                            phase = GitHubApkInstallPhase.RemoteReady,
-                            stageProgress = 0f
-                        ),
-                        message = work.appContext.getString(R.string.github_apk_install_remote_ready)
-                    )
+            try {
+                val installedInfoJob = async(Dispatchers.IO) {
+                    preheatInstalledInfo(work)
                 }
+                val remoteManifestJob = async(Dispatchers.IO) {
+                    preheatRemoteManifest(work)
+                }
+                installedInfoJob.await()
+                remoteManifestJob.await()
+                val current = _state.value
+                if (
+                    current.sessionId != work.sessionId ||
+                    current.phase != GitHubApkInstallPhase.RemoteResolving ||
+                    current.phase.isTerminalForAsyncUpdates()
+                ) {
+                    return@launch
+                }
+                if (work.autoStartDownload) {
+                    downloadAndPrepare(work)
+                } else {
+                    updateActiveState(work.sessionId) { active ->
+                        active.copy(
+                            phase = GitHubApkInstallPhase.RemoteReady,
+                            overallProgress = installOverallProgress(
+                                phase = GitHubApkInstallPhase.RemoteReady,
+                                stageProgress = 0f
+                            ),
+                            message = work.appContext.getString(R.string.github_apk_install_remote_ready)
+                        )
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                failActive(
+                    context = work.appContext,
+                    sessionId = work.sessionId,
+                    message = error.localizedInstallMessage(work.appContext),
+                    rawMessage = error.message.orEmpty()
+                )
+            }
+        }
+    }
+
+    private fun launchDownloadAndPrepare(work: ActiveInstallWork): Job {
+        return scope.launch {
+            try {
+                downloadAndPrepare(work)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                failActive(
+                    context = work.appContext,
+                    sessionId = work.sessionId,
+                    message = error.localizedInstallMessage(work.appContext),
+                    rawMessage = error.message.orEmpty()
+                )
             }
         }
     }
@@ -889,7 +965,14 @@ internal object GitHubApkInstallFlowCoordinator {
     private fun updateState(next: GitHubApkInstallFlowState) {
         _state.value = next
         if (next.phase != GitHubApkInstallPhase.Idle) {
-            GitHubApkInstallNotificationHelper.notify(next.requestContext(), next)
+            val notificationShown = GitHubApkInstallNotificationHelper.notify(
+                context = next.requestContext(),
+                state = next
+            )
+            val visibleState = next.visibleAfterNotificationResult(notificationShown)
+            if (visibleState != next) {
+                _state.value = visibleState
+            }
         }
     }
 
@@ -1111,6 +1194,7 @@ internal object GitHubApkInstallFlowCoordinator {
         val request: GitHubApkInstallRequestContext,
         val sessionId: Long,
         val notificationFirst: Boolean,
+        val autoStartDownload: Boolean,
         val downloadedFiles: MutableList<GitHubApkInstallDownloadedFile> = mutableListOf(),
         var candidates: List<GitHubApkInstallDownloadedFile> = emptyList(),
         var selectedCandidate: GitHubApkInstallDownloadedFile? = null,
@@ -1124,7 +1208,8 @@ internal object GitHubApkInstallFlowCoordinator {
             override val context: Context,
             val lookupConfig: GitHubLookupConfig,
             val asset: GitHubReleaseAssetFile,
-            val request: GitHubApkInstallRequestContext
+            val request: GitHubApkInstallRequestContext,
+            val autoStartDownload: Boolean
         ) : LastInstallRequest
     }
 }

@@ -36,6 +36,7 @@ class MiIslandNotificationBuilder(
     }
 
     private data class IslandPresentation(
+        val islandFirstFloat: Boolean = true,
         val allowFloat: Boolean,
         val showTextButtons: Boolean,
         val bigTemplateKind: IslandBigTemplateKind = IslandBigTemplateKind.TEXT,
@@ -223,7 +224,7 @@ class MiIslandNotificationBuilder(
             val darkLogoKey = createPicture("key_logo_dark", darkLogoIcon)
             val displayIconKey = createPicture("key_logo_display", displayIcon)
 
-            islandFirstFloat = true
+            islandFirstFloat = presentation.islandFirstFloat
             enableFloat = presentation.allowFloat
             updatable = presentation.focusUpdatable
             focusShowNotification(presentation.focusShowNotification)
@@ -479,6 +480,11 @@ class MiIslandNotificationBuilder(
             val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100)
             val useProgressTemplate = progressPercent != null
             return IslandPresentation(
+                islandFirstFloat = if (useProgressTemplate) {
+                    false
+                } else {
+                    state.focusAllowFloat ?: false
+                },
                 allowFloat = state.focusAllowFloat ?: false,
                 showTextButtons = true,
                 bigTemplateKind = if (useProgressTemplate) {

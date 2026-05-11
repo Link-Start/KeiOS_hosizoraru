@@ -302,6 +302,7 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":62"))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertTrue(focusParam.contains("demo.apk"))
     }
@@ -419,6 +420,7 @@ class MiIslandNotificationBuilderTest {
         assertEquals("停止", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"检查\""))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
@@ -544,6 +546,67 @@ class MiIslandNotificationBuilderTest {
         assertEquals("停止", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"确认\""))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("\"progress\":"))
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+    }
+
+    @Test
+    fun `github apk install success island floats completion actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val openPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 847,
+            action = "os.kei.test.OPEN_GITHUB_APK_INSTALL_SUCCESS"
+        )
+        val markReadPendingIntent = PendingIntent.getBroadcast(
+            context,
+            848,
+            Intent("os.kei.test.MARK_GITHUB_APK_INSTALL_SUCCESS").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
+                running = false,
+                port = 0,
+                path = "demo.app installed",
+                clients = 0,
+                ongoing = false,
+                onlyAlertOnce = false,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = markReadPendingIntent,
+                focusOpenPendingIntent = openPendingIntent,
+                primaryActionLabel = "打开 Sheet",
+                secondaryActionLabel = "标为已读",
+                showSecondaryActionWhenStopped = true,
+                overrideTitle = "已安装",
+                overrideContent = "demo.app installed",
+                overrideOnlineText = "完成",
+                overrideShortText = "完成",
+                overrideProgressPercent = null,
+                focusAllowFloat = true
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusOpenAction = notification.focusAction("mcp_action_open")
+        val focusStopAction = notification.focusAction("mcp_action_stop")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(openPendingIntent, focusOpenAction.actionIntent)
+        assertEquals(markReadPendingIntent, focusStopAction.actionIntent)
+        assertEquals("打开 Sheet", focusOpenAction.title.toString())
+        assertEquals("标为已读", focusStopAction.title.toString())
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"完成\""))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))

@@ -6,9 +6,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.core.app.NotificationManagerCompat
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
+import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.mcp.framework.notification.NotificationHelper
@@ -25,6 +27,7 @@ import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
 import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
 
 internal object GitHubApkInstallNotificationHelper {
+    private const val TAG = "GitHubApkInstallNotify"
     const val NOTIFICATION_ID = 38992
     private const val REQUEST_OPEN = 2401
     private const val REQUEST_CANCEL = 2402
@@ -36,7 +39,12 @@ internal object GitHubApkInstallNotificationHelper {
 
     fun notify(context: Context, state: GitHubApkInstallFlowState): Boolean {
         if (!state.active) return false
-        return notifyState(context.applicationContext, state)
+        return runCatching {
+            notifyState(context.applicationContext, state)
+        }.getOrElse { error ->
+            AppLogger.e(TAG, "Dispatch APK install notification failed", error)
+            false
+        }
     }
 
     fun cancel(context: Context) {
@@ -106,7 +114,7 @@ internal object GitHubApkInstallNotificationHelper {
         val primaryIntent = buildPrimaryPendingIntent(context, state, openIntent)
         val running = state.phase.running
         val content = installContent(context, state)
-        val progressPercent = state.downloadProgressPercentOrNull()
+        val progressPercent = state.installNotificationProgressPercentOrNull()
         val onlineText = installOnlineText(context, state, progressPercent)
         return NotificationPayload(
             state = McpNotificationPayload(
@@ -328,7 +336,8 @@ internal object GitHubApkInstallNotificationHelper {
 
     private fun notificationsGranted(context: Context): Boolean {
         return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
+                PackageManager.PERMISSION_GRANTED &&
+                NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 }
 
@@ -362,7 +371,6 @@ private val GitHubApkInstallPhase.titleRes: Int
 
 private val GitHubApkInstallPhase.focusAllowFloat: Boolean
     get() = this in setOf(
-        GitHubApkInstallPhase.RemoteResolving,
         GitHubApkInstallPhase.RemoteReady,
         GitHubApkInstallPhase.SelectingApk,
         GitHubApkInstallPhase.ReadyToInstall,
@@ -387,11 +395,6 @@ private val GitHubApkInstallPhase.shortTextRes: Int
         GitHubApkInstallPhase.Cancelled -> R.string.github_apk_install_notify_short_cancelled
         GitHubApkInstallPhase.Idle -> R.string.github_apk_install_notify_short_installing
     }
-
-private fun GitHubApkInstallFlowState.downloadProgressPercentOrNull(): Int? {
-    if (!showsDeterminateDownloadProgress) return null
-    return stageProgressPercent.coerceIn(0, 99)
-}
 
 private fun installOnlineText(
     context: Context,

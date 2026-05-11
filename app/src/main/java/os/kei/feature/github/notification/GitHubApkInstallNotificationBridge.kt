@@ -36,7 +36,7 @@ internal object GitHubApkInstallNotificationBridge {
         val snapshot = InstallNotificationDispatchSnapshot(
             sessionId = state.sessionId,
             phase = state.phase,
-            progressPercent = state.downloadProgressPercentForDispatch()
+            progressPercent = state.installNotificationProgressPercentOrNull()
         )
         val previous = lastDispatchSnapshot
         lastDispatchSnapshot = snapshot
@@ -65,15 +65,11 @@ private data class InstallNotificationDispatchSnapshot(
         if (sessionId != next.sessionId) return true
         if (phase != next.phase) return true
         if (usesProgressTemplate != next.usesProgressTemplate) return true
-        return phase == GitHubApkInstallPhase.Downloading &&
-                progressPercent.orZero() <= 0 &&
-                next.progressPercent.orZero() > 0
+        return false
     }
 }
 
-private fun GitHubApkInstallFlowState.downloadProgressPercentForDispatch(): Int? {
+internal fun GitHubApkInstallFlowState.installNotificationProgressPercentOrNull(): Int? {
     if (!showsDeterminateDownloadProgress) return null
     return stageProgressPercent.coerceIn(0, 99)
 }
-
-private fun Int?.orZero(): Int = this ?: 0

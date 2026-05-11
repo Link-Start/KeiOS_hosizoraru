@@ -93,7 +93,8 @@ internal data class GitHubApkInstallFlowState(
     val message: String = "",
     val rawMessage: String = "",
     val sheetVisible: Boolean = false,
-    val notificationFirst: Boolean = false
+    val notificationFirst: Boolean = false,
+    val autoStartDownload: Boolean = true
 ) {
     val active: Boolean
         get() = phase != GitHubApkInstallPhase.Idle
@@ -134,4 +135,23 @@ internal data class GitHubApkInstallFlowState(
 
     val trustLevel: GitHubDecisionLevel?
         get() = trustSignal?.level
+}
+
+internal fun GitHubApkInstallSourceKind.defaultAutoStartDownload(): Boolean {
+    return when (this) {
+        GitHubApkInstallSourceKind.TrackedReleaseAsset,
+        GitHubApkInstallSourceKind.ReleaseAsset,
+        GitHubApkInstallSourceKind.ShareImport,
+        GitHubApkInstallSourceKind.ActionsArtifact -> true
+    }
+}
+
+internal fun GitHubApkInstallFlowState.visibleAfterNotificationResult(
+    notificationShown: Boolean
+): GitHubApkInstallFlowState {
+    if (notificationShown || sheetVisible || !notificationFirst || !active) return this
+    return copy(
+        sheetVisible = true,
+        notificationFirst = false
+    )
 }

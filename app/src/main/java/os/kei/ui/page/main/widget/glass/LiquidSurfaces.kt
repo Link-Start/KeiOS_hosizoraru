@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
@@ -68,6 +69,7 @@ fun LiquidSurface(
     exportedBackdrop: LayerBackdrop? = null,
     interactionSource: MutableInteractionSource? = null,
     consumeDragChanges: Boolean = false,
+    clipContent: Boolean = true,
     contentAlignment: Alignment = Alignment.TopStart,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {}
@@ -92,85 +94,120 @@ fun LiquidSurface(
         Modifier
     }
 
-    Box(
-        modifier = modifier
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { shape },
-                effects = {
-                    vibrancy()
-                    blur(blurRadius.toPx())
-                    lens(
-                        lensRadius.toPx(),
-                        lensRadius.toPx(),
-                        chromaticAberration = chromaticAberration,
-                        depthEffect = depthEffect
-                    )
-                },
-                highlight = {
-                    Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
-                },
-                shadow = {
-                    if (shadow) {
-                        Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
-                    } else {
-                        Shadow(alpha = 0f)
-                    }
-                },
-                innerShadow = {
-                    val progress =
-                        if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
-                    InnerShadow(radius = 6.dp * progress, alpha = progress)
-                },
-                layerBlock = if (isInteractive && enabled) {
-                    {
-                        val progress = interactiveHighlight.pressProgress
-                        val scale = lerp(1f, 1f + 4.dp.toPx() / size.height, progress)
-                        val maxOffset = size.minDimension
-                        val offset = interactiveHighlight.offset
-                        val initialDerivative = 0.05f
-                        translationX = maxOffset * tanh(initialDerivative * offset.x / maxOffset)
-                        translationY = maxOffset * tanh(initialDerivative * offset.y / maxOffset)
-
-                        val maxDragScale = 4.dp.toPx() / size.height
-                        val offsetAngle = atan2(offset.y, offset.x)
-                        scaleX = scale +
-                                maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
-                                (size.width / size.height).fastCoerceAtMost(1f)
-                        scaleY = scale +
-                                maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
-                                (size.height / size.width).fastCoerceAtMost(1f)
-                    }
-                } else {
-                    null
-                },
-                exportedBackdrop = exportedBackdrop,
-                onDrawSurface = {
-                    if (tint.isSpecified) {
-                        drawRect(tint, blendMode = BlendMode.Hue)
-                        drawRect(tint.copy(alpha = tint.alpha * 0.70f))
-                    }
-                    if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
-                        drawRect(surfaceColor)
-                    }
-                }
+    val interactiveLayerBlock: (GraphicsLayerScope.() -> Unit)? =
+        if (isInteractive && enabled) {
+            { applyLiquidSurfaceInteractiveTransform(interactiveHighlight) }
+        } else {
+            null
+        }
+    val interactionModifier = if (isInteractive && enabled) {
+        Modifier
+            .then(interactiveHighlight.modifier)
+            .then(interactiveHighlight.gestureModifier)
+    } else {
+        Modifier
+    }
+    val surfaceModifier = Modifier.drawBackdrop(
+        backdrop = backdrop,
+        shape = { shape },
+        effects = {
+            vibrancy()
+            blur(blurRadius.toPx())
+            lens(
+                lensRadius.toPx(),
+                lensRadius.toPx(),
+                chromaticAberration = chromaticAberration,
+                depthEffect = depthEffect
             )
-            .then(clickableModifier)
-            .then(
-                if (isInteractive && enabled) {
-                    Modifier
-                        .then(interactiveHighlight.modifier)
-                        .then(interactiveHighlight.gestureModifier)
-                } else {
-                    Modifier
-                }
-            )
-            .graphicsLayer {
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-            },
-        contentAlignment = contentAlignment,
-        content = content
+        },
+        highlight = {
+            Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
+        },
+        shadow = {
+            if (shadow) {
+                Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
+            } else {
+                Shadow(alpha = 0f)
+            }
+        },
+        innerShadow = {
+            val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
+            InnerShadow(radius = 6.dp * progress, alpha = progress)
+        },
+        layerBlock = interactiveLayerBlock,
+        exportedBackdrop = exportedBackdrop,
+        onDrawSurface = {
+            if (tint.isSpecified) {
+                drawRect(tint, blendMode = BlendMode.Hue)
+                drawRect(tint.copy(alpha = tint.alpha * 0.70f))
+            }
+            if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
+                drawRect(surfaceColor)
+            }
+        }
     )
+
+    if (clipContent) {
+        Box(
+            modifier = modifier
+                .then(surfaceModifier)
+                .then(clickableModifier)
+                .then(interactionModifier)
+                .graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                    clip = false
+                },
+            contentAlignment = contentAlignment,
+            content = content
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .then(clickableModifier)
+                .then(interactionModifier)
+                .graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                    clip = false
+                },
+            contentAlignment = contentAlignment
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .then(surfaceModifier)
+                    .graphicsLayer { clip = false }
+            )
+            Box(
+                modifier = Modifier.graphicsLayer {
+                    interactiveLayerBlock?.invoke(this)
+                    clip = false
+                },
+                contentAlignment = contentAlignment,
+                content = content
+            )
+        }
+    }
+}
+
+private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(
+    interactiveHighlight: InteractiveHighlight
+) {
+    val progress = interactiveHighlight.pressProgress
+    val scale = lerp(1f, 1f + 4.dp.toPx() / size.height, progress)
+    val maxOffset = size.minDimension
+    val offset = interactiveHighlight.offset
+    val initialDerivative = 0.05f
+    translationX = maxOffset * tanh(initialDerivative * offset.x / maxOffset)
+    translationY = maxOffset * tanh(initialDerivative * offset.y / maxOffset)
+
+    val maxDragScale = 4.dp.toPx() / size.height
+    val offsetAngle = atan2(offset.y, offset.x)
+    scaleX = scale +
+            maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
+            (size.width / size.height).fastCoerceAtMost(1f)
+    scaleY = scale +
+            maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
+            (size.height / size.width).fastCoerceAtMost(1f)
 }
 
 @Composable

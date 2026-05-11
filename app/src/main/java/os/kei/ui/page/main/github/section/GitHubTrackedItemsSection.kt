@@ -192,6 +192,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     }
                 },
                 onHeaderLongClick = { onOpenTrackSheetForEdit(item) },
+                clipContent = false,
                 headerActions = {
                     val isItemRefreshLoading = itemRefreshLoading[item.id] == true
                     val alwaysLatestReleaseDownload = item.alwaysShowLatestReleaseDownloadButton

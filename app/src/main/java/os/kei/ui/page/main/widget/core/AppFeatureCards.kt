@@ -46,6 +46,7 @@ fun AppSurfaceCard(
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
     showIndication: Boolean = true,
     captureLocalBackdrop: Boolean = true,
+    clipContent: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
@@ -117,6 +118,7 @@ fun AppSurfaceCard(
             blurRadius = blurRadius,
             lensRadius = lensRadius,
             interactionSource = interactionSource,
+            clipContent = clipContent,
             onClick = if (useLiquidClick) onClick else null
         ) {
             Column(

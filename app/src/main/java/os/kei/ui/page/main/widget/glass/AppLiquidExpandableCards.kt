@@ -27,6 +27,7 @@ fun AppLiquidAccordionCard(
     headerActions: (@Composable () -> Unit)? = null,
     onHeaderLongClick: (() -> Unit)? = null,
     containerColor: Color? = null,
+    clipContent: Boolean = true,
     contentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,
     verticalSpacing: Dp = CardLayoutRhythm.sectionGap,
     content: @Composable () -> Unit
@@ -42,6 +43,7 @@ fun AppLiquidAccordionCard(
         headerActions = headerActions,
         onHeaderLongClick = onHeaderLongClick,
         containerColor = containerColor,
+        clipContent = clipContent,
         contentPadding = contentPadding,
         verticalSpacing = verticalSpacing,
         content = content
@@ -59,6 +61,7 @@ fun AppLiquidExpandableSection(
     headerActions: (@Composable () -> Unit)? = null,
     onHeaderLongClick: (() -> Unit)? = null,
     containerColor: Color? = null,
+    clipContent: Boolean = true,
     content: @Composable () -> Unit
 ) {
     AppLiquidExpandableCardFrame(
@@ -71,6 +74,7 @@ fun AppLiquidExpandableSection(
         headerActions = headerActions,
         onHeaderLongClick = onHeaderLongClick,
         containerColor = containerColor,
+        clipContent = clipContent,
         contentPadding = PaddingValues(
             start = CardLayoutRhythm.cardHorizontalPadding,
             end = CardLayoutRhythm.cardHorizontalPadding,
@@ -93,6 +97,7 @@ private fun AppLiquidExpandableCardFrame(
     headerActions: (@Composable () -> Unit)?,
     onHeaderLongClick: (() -> Unit)?,
     containerColor: Color?,
+    clipContent: Boolean,
     contentPadding: PaddingValues,
     verticalSpacing: Dp,
     content: @Composable () -> Unit
@@ -103,7 +108,8 @@ private fun AppLiquidExpandableCardFrame(
         backdrop = backdrop,
         containerColor = sectionSurface,
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
-        showIndication = false
+        showIndication = false,
+        clipContent = clipContent
     ) {
         AppCardHeader(
             title = title,

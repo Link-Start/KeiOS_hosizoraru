@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import os.kei.core.background.BackgroundAsyncReceiverRunner
+import os.kei.ui.page.main.github.share.GitHubShareImportDeliveryRunner
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 
 class GitHubShareImportActionReceiver : BroadcastReceiver() {
@@ -30,7 +31,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
 
                 ACTION_SEND_INSTALL_SHARE_IMPORT,
                 actionSendInstallShareImport(appContext) ->
-                    GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(appContext)
+                    GitHubShareImportDeliveryRunner.launchActivePreviewDelivery(appContext)
 
                 ACTION_CONFIRM_SHARE_IMPORT,
                 actionConfirmShareImport(appContext) ->

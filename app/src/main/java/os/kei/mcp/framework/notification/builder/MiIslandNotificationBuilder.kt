@@ -462,8 +462,12 @@ class MiIslandNotificationBuilder(
                     raw = state.onlineText(context),
                     fallback = state.shortText
                 ),
-                compactContent = state.content(context)
-                    .takeIf { useProgressTemplate && it.isNotBlank() },
+                compactContent = state.shortText
+                    .takeIf {
+                        useProgressTemplate &&
+                                it.isNotBlank() &&
+                                it != state.onlineText(context)
+                    },
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = true,
                 focusUpdatable = true,

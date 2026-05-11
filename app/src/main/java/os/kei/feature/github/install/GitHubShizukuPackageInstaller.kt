@@ -13,12 +13,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.minutes
 
+private const val GITHUB_SHIZUKU_INSTALLER_TAG = "GitHubShizukuInstaller"
 private const val APK_STREAM_BUFFER_SIZE = 1024 * 1024
 private const val DOWNLOAD_PROGRESS_MIN_INTERVAL_MS = 200L
 private const val UNKNOWN_TOTAL_PROGRESS_STEP_BYTES = 1024L * 1024L
@@ -61,7 +63,20 @@ class GitHubShizukuPackageInstaller(
                 )
             }
 
-            packageInstaller = bridge.packageInstaller(appContext)
+            packageInstaller = runCatching {
+                bridge.packageInstaller(appContext)
+            }.getOrElse { error ->
+                AppLogger.e(
+                    GITHUB_SHIZUKU_INSTALLER_TAG,
+                    "Create PackageInstaller bridge failed: request=${request.requestId}, " +
+                            "package=${appContext.packageName}, error=${error.installMessage("bridge failed")}",
+                    error
+                )
+                return@withContext GitHubApkInstallResult.Failed(
+                    reason = GitHubApkInstallFailureReason.SessionCreateFailed,
+                    message = error.installMessage("Create PackageInstaller bridge failed")
+                )
+            }
             val params = PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL
             )
@@ -72,6 +87,12 @@ class GitHubShizukuPackageInstaller(
             )
             sessionId = runCatching { packageInstaller.createSession(params) }
                 .getOrElse { error ->
+                    AppLogger.e(
+                        GITHUB_SHIZUKU_INSTALLER_TAG,
+                        "Create install session failed: request=${request.requestId}, " +
+                                "package=${appContext.packageName}, error=${error.installMessage("session failed")}",
+                        error
+                    )
                     return@withContext GitHubApkInstallResult.Failed(
                         reason = GitHubApkInstallFailureReason.SessionCreateFailed,
                         message = error.installMessage("Create install session failed")
@@ -81,6 +102,12 @@ class GitHubShizukuPackageInstaller(
             val session = runCatching {
                 bridge.wrapSession(packageInstaller.openSession(sessionId))
             }.getOrElse { error ->
+                AppLogger.e(
+                    GITHUB_SHIZUKU_INSTALLER_TAG,
+                    "Open install session failed: request=${request.requestId}, session=$sessionId, " +
+                            "error=${error.installMessage("open failed")}",
+                    error
+                )
                 abandonSession(packageInstaller, sessionId)
                 return@withContext GitHubApkInstallResult.Failed(
                     reason = GitHubApkInstallFailureReason.SessionOpenFailed,
@@ -107,6 +134,12 @@ class GitHubShizukuPackageInstaller(
                         sessionId
                     )
                 }
+                AppLogger.e(
+                    GITHUB_SHIZUKU_INSTALLER_TAG,
+                    "Stage APK failed: request=${request.requestId}, session=$sessionId, " +
+                            "error=${error.installMessage("stage failed")}",
+                    error
+                )
                 return@withContext GitHubApkInstallResult.Failed(
                     reason = if (error is IOException) {
                         GitHubApkInstallFailureReason.DownloadFailed
@@ -136,6 +169,12 @@ class GitHubShizukuPackageInstaller(
             runCatching {
                 session.commit(sender)
             }.onFailure { error ->
+                AppLogger.e(
+                    GITHUB_SHIZUKU_INSTALLER_TAG,
+                    "Commit install session failed: request=${request.requestId}, session=$sessionId, " +
+                            "error=${error.installMessage("commit failed")}",
+                    error
+                )
                 GitHubShizukuInstallCommitRegistry.unregister(request.requestId)
                 session.closeQuietly()
                 abandonSession(packageInstaller, sessionId)
@@ -166,6 +205,12 @@ class GitHubShizukuPackageInstaller(
             }
 
             if (commitResult.statusCode != PackageInstaller.STATUS_SUCCESS) {
+                AppLogger.e(
+                    GITHUB_SHIZUKU_INSTALLER_TAG,
+                    "PackageInstaller commit result failed: request=${request.requestId}, " +
+                            "session=$sessionId, status=${commitResult.statusCode}, " +
+                            "legacy=${commitResult.legacyStatus}, message=${commitResult.message}"
+                )
                 return@withContext GitHubApkInstallResult.Failed(
                     reason = GitHubApkInstallFailureReason.CommitFailed,
                     message = commitResult.message.ifBlank { "PackageInstaller commit failed" },
@@ -209,6 +254,12 @@ class GitHubShizukuPackageInstaller(
             packageInstaller?.let { abandonSession(it, sessionId) }
             GitHubApkInstallResult.Cancelled(request.requestId, sessionId)
         } catch (error: Throwable) {
+            AppLogger.e(
+                GITHUB_SHIZUKU_INSTALLER_TAG,
+                "Managed install failed: request=${request.requestId}, session=$sessionId, " +
+                        "error=${error.installMessage("install failed")}",
+                error
+            )
             packageInstaller?.let { abandonSession(it, sessionId) }
             GitHubApkInstallResult.Failed(
                 reason = GitHubApkInstallFailureReason.Unknown,

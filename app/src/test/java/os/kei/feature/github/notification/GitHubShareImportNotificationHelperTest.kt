@@ -386,7 +386,8 @@ class GitHubShareImportNotificationHelperTest {
                 .contains("demo.apk")
         )
         assertTrue(focusParam.contains("progressTextInfo"))
-        assertTrue(focusParam.contains("\"title\":\"Download\""))
+        assertTrue(focusParam.contains("\"title\":\"48%\""))
+        assertTrue(focusParam.contains("\"content\":\"Download\""))
         assertTrue(focusParam.contains("5"))
         assertTrue(focusParam.contains("10"))
         assertTrue(focusParam.contains("\"progress\":48"))
@@ -429,8 +430,9 @@ class GitHubShareImportNotificationHelperTest {
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertFalse(focusParam.contains("progressTextInfo"))
-        assertFalse(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"progress\":0"))
         assertTrue(focusParam.contains("demo.apk"))
         assertTrue(focusParam.contains("downloaded"))
     }

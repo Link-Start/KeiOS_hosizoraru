@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.IInterface
+import android.os.Process
 import org.lsposed.hiddenapibypass.LSPass
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
@@ -54,7 +56,21 @@ open class ShizukuPackageInstallerBridge {
 
     open fun packageInstaller(context: Context): PackageInstaller {
         enableHiddenApiAccess()
-        return context.packageManager.packageInstaller.also(::wrapPackageInstaller)
+        val packageBinder = systemServiceBinder("package")
+        val packageManager = asInterface(
+            stubClassName = "android.content.pm.IPackageManager\$Stub",
+            binder = ShizukuBinderWrapper(packageBinder)
+        )
+        val packageInstaller = invokeNoArg(packageManager, "getPackageInstaller")
+        val wrappedPackageInstaller = asInterface(
+            stubClassName = "android.content.pm.IPackageInstaller\$Stub",
+            binder = ShizukuBinderWrapper(packageInstaller.asBinderCompat())
+        )
+        return newPackageInstaller(
+            packageInstaller = wrappedPackageInstaller,
+            installerPackageName = context.packageName,
+            userId = currentUserId()
+        )
     }
 
     open fun wrapSession(session: PackageInstaller.Session): PackageInstaller.Session {
@@ -87,14 +103,6 @@ open class ShizukuPackageInstallerBridge {
         applyInstallFlags(params)
     }
 
-    private fun wrapPackageInstaller(installer: PackageInstaller) {
-        wrapBinderBackedField(
-            target = installer,
-            fieldName = "mInstaller",
-            stubClassName = "android.content.pm.IPackageInstaller\$Stub"
-        )
-    }
-
     private fun wrapBinderBackedField(
         target: Any,
         fieldName: String,
@@ -103,18 +111,70 @@ open class ShizukuPackageInstallerBridge {
         val field = target.javaClass.findDeclaredField(fieldName)
         field.isAccessible = true
         val current = field.get(target) ?: return
-        val binder = current.javaClass.methods
+        val binder = current.asBinderCompat()
+        val wrappedBinder = ShizukuBinderWrapper(binder)
+        val wrappedInterface = asInterface(stubClassName, wrappedBinder)
+        field.set(target, wrappedInterface)
+    }
+
+    private fun systemServiceBinder(name: String): IBinder {
+        return Class.forName("android.os.ServiceManager")
+            .getDeclaredMethod("getService", String::class.java)
+            .invoke(null, name) as? IBinder
+            ?: error("System service '$name' is unavailable")
+    }
+
+    private fun asInterface(stubClassName: String, binder: IBinder): IInterface {
+        return Class.forName(stubClassName)
+            .getDeclaredMethod("asInterface", IBinder::class.java)
+            .invoke(null, binder) as? IInterface
+            ?: error("Failed to create interface for $stubClassName")
+    }
+
+    private fun invokeNoArg(target: Any, methodName: String): IInterface {
+        return target.javaClass.methods
+            .firstOrNull { method ->
+                method.name == methodName && method.parameterTypes.isEmpty()
+            }
+            ?.invoke(target) as? IInterface
+            ?: error("Failed to call ${target.javaClass.name}.$methodName")
+    }
+
+    private fun Any.asBinderCompat(): IBinder {
+        if (this is IInterface) return asBinder()
+        return javaClass.methods
             .firstOrNull { method ->
                 method.name == "asBinder" &&
                         method.parameterTypes.isEmpty() &&
                         IBinder::class.java.isAssignableFrom(method.returnType)
             }
-            ?.invoke(current) as? IBinder ?: return
-        val wrappedBinder = ShizukuBinderWrapper(binder)
-        val wrappedInterface = Class.forName(stubClassName)
-            .getDeclaredMethod("asInterface", IBinder::class.java)
-            .invoke(null, wrappedBinder)
-        field.set(target, wrappedInterface)
+            ?.invoke(this) as? IBinder
+            ?: error("${javaClass.name} does not expose asBinder()")
+    }
+
+    private fun newPackageInstaller(
+        packageInstaller: IInterface,
+        installerPackageName: String,
+        userId: Int
+    ): PackageInstaller {
+        val packageInstallerClass = Class.forName("android.content.pm.IPackageInstaller")
+        val constructor = PackageInstaller::class.java.getDeclaredConstructor(
+            packageInstallerClass,
+            String::class.java,
+            String::class.java,
+            Int::class.javaPrimitiveType
+        )
+        constructor.isAccessible = true
+        return constructor.newInstance(
+            packageInstaller,
+            installerPackageName,
+            null,
+            userId
+        ) as PackageInstaller
+    }
+
+    internal fun currentUserId(): Int {
+        return Process.myUid() / 100000
     }
 
     private fun applyInstallFlags(params: PackageInstaller.SessionParams) {

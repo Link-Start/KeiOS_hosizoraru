@@ -386,11 +386,8 @@ object GitHubShareImportNotificationHelper {
         val content = resolveContent(context, state)
         val islandTitle = state.compactIslandTitle(shortText)
         val progressPercent = state.resolvedProgressPercent
-        val downloadProgressKnown =
-            state.phase != GitHubShareImportNotificationPhase.InstallDownloading ||
-                    state.totalBytes > 0L
         val overrideProgressPercent = progressPercent.takeIf {
-            state.phase.progressTemplateEnabled && downloadProgressKnown
+            state.phase.progressTemplateEnabled
         }
         return McpNotificationPayload(
             serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
@@ -745,6 +742,12 @@ internal data class GitHubShareImportNotificationState(
             }
 
     fun compactIslandTitle(shortText: String): String {
+        if (phase == GitHubShareImportNotificationPhase.InstallDownloading &&
+            totalBytes > 0L &&
+            resolvedProgressPercent in 1..99
+        ) {
+            return "${resolvedProgressPercent}%"
+        }
         return shortText
     }
 

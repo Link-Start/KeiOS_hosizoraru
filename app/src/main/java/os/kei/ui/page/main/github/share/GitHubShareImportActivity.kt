@@ -243,10 +243,8 @@ class GitHubShareImportActivity : ComponentActivity() {
         if (sendInstallInProgress) return
         sendInstallInProgress = true
         applyShareImportDisplayState(GitHubShareImportActivityDisplayState.SendingInstall)
-        lifecycleScope.launch {
-            GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(this@GitHubShareImportActivity)
-            finishSafely()
-        }
+        GitHubShareImportDeliveryRunner.launchActivePreviewDelivery(this)
+        finishSafely()
     }
 
     private fun openGitHubPage(): Boolean {

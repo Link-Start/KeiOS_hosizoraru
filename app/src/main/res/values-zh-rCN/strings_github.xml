@@ -340,7 +340,7 @@
     <string name="github_strategy_desc_atom_note">Atom 方案无需 Token，适合公开仓库和轻量检查；若你更看重稳定性、资源读取或 private 仓库支持，可切到 API。</string>
     <string name="github_strategy_section_local_benchmark">本地对比</string>
     <string name="github_strategy_benchmark_desc_no_target">会用当前已追踪仓库做对比，最多抽 6 个样本；当前还没有可用样本。</string>
-    <string name="github_strategy_benchmark_desc_with_target">会对比 Release 快照、Release Assets、Release Notes、APK Manifest、缓存复测、APK 包名扫描和包名反扫仓库，展示 Atom 与 API 的耗时、命中率和能力差异。</string>
+    <string name="github_strategy_benchmark_desc_with_target">会对比 Release 快照、Release Assets、发行日志、APK Manifest、缓存复测、APK 包名扫描和包名反扫仓库，展示 Atom 与 API 的耗时、命中率和能力差异。</string>
     <string name="github_strategy_benchmark_btn_running">对比中...</string>
     <string name="github_strategy_benchmark_btn_run">运行双策略对比</string>
     <string name="github_strategy_benchmark_error">对比测试失败：%1$s</string>
@@ -373,7 +373,7 @@
     <string name="github_strategy_metric_failed">失败</string>
     <string name="github_strategy_metric_release_snapshot">Release</string>
     <string name="github_strategy_metric_release_assets">Assets</string>
-    <string name="github_strategy_metric_release_notes">Notes</string>
+    <string name="github_strategy_metric_release_notes">发行日志</string>
     <string name="github_strategy_metric_apk_manifest">Manifest</string>
     <string name="github_strategy_metric_package_scan">扫包名</string>
     <string name="github_strategy_metric_repo_scan">反扫仓库</string>
@@ -434,7 +434,7 @@
     <string name="github_check_sheet_summary_share_unavailable">未检测到支持的安装器，默认不联动</string>
     <string name="github_check_sheet_section_enhancements">增强信息</string>
     <string name="github_check_sheet_label_decision_assist">决策辅助</string>
-    <string name="github_check_sheet_summary_decision_assist">开启后在跟踪卡里显示健康评分、APK 可信检查，并在更多菜单提供完整 Release Notes</string>
+    <string name="github_check_sheet_summary_decision_assist">开启后在跟踪卡里显示健康评分、APK 可信检查，并在更多菜单提供完整发行日志</string>
     <string name="github_check_sheet_label_repository_health">仓库健康评分</string>
     <string name="github_check_sheet_summary_repository_health">用本地检查结果评估项目是否需要关注</string>
     <string name="github_check_sheet_label_apk_trust">APK 安装可信检查</string>
@@ -787,7 +787,7 @@
     <string name="github_share_import_notify_short_cancelled">已取消</string>
     <string name="github_asset_badge_recommended">推荐本机</string>
     <string name="github_asset_badge_incompatible">可能不兼容</string>
-    <string name="github_release_notes_title">Release Notes</string>
+    <string name="github_release_notes_title">发行日志</string>
     <string name="github_health_score_value">健康评分 %1$d</string>
     <string name="github_health_reason_repository_archived">仓库已归档</string>
     <string name="github_health_reason_repository_disabled">仓库已停用</string>
@@ -903,15 +903,15 @@
     <string name="github_profile_source_elapsed">%1$s ms</string>
     <string name="github_profile_source_from_cache">缓存</string>
     <string name="github_profile_source_required">必需</string>
-    <string name="github_release_notes_detail_title">Release Notes</string>
-    <string name="github_release_notes_detail_refreshing">正在刷新 release assets 和 release notes</string>
+    <string name="github_release_notes_detail_title">发行日志</string>
+    <string name="github_release_notes_detail_refreshing">正在刷新 Release 资源和发行日志</string>
     <string name="github_release_notes_detail_repo">仓库</string>
     <string name="github_release_notes_detail_source">来源</string>
     <string name="github_release_notes_source_api">API：结构化 Release 数据</string>
     <string name="github_release_notes_source_atom">Atom：网页 Release 解析</string>
     <string name="github_release_notes_detail_target_latest">当前 Release</string>
-    <string name="github_release_notes_detail_body_title">发布说明</string>
-    <string name="github_release_notes_detail_empty">当前 release 暂无可显示的发布说明</string>
+    <string name="github_release_notes_detail_body_title">发行日志</string>
+    <string name="github_release_notes_detail_empty">当前 release 暂无可显示的发行日志</string>
     <string name="github_apk_trust_good">可信</string>
     <string name="github_apk_trust_review">需确认</string>
     <string name="github_apk_trust_risk">高风险</string>

@@ -250,12 +250,17 @@ class GitHubShareImportNotificationHelperTest {
             owner = "owner",
             repo = "repo",
             appLabel = "Demo",
-            packageName = "demo.app"
+            packageName = "demo.app",
+            versionName = "2.0.0"
         )
 
         val notification = buildModern(context, state)
 
         assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+        assertEquals(
+            "Demo · repo · 2.0.0",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
         assertEquals(2, notification.actions.size)
         assertEquals("Open flow", notification.actions[0].title.toString())
         assertEquals("Confirm tracking", notification.actions[1].title.toString())
@@ -568,20 +573,21 @@ class GitHubShareImportNotificationHelperTest {
             owner = "owner",
             repo = "repo",
             appLabel = "Demo",
-            packageName = "demo.app"
+            packageName = "demo.app",
+            versionName = "2.0.0"
         )
 
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertTrue(focusParam.contains("\"title\":\"Confirm\""))
-        assertTrue(focusParam.contains("Demo · repo"))
+        assertTrue(focusParam.contains("Demo · repo · 2.0.0"))
         assertEquals(
             "Install detected",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
         )
         assertEquals(
-            "Demo · repo",
+            "Demo · repo · 2.0.0",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
     }

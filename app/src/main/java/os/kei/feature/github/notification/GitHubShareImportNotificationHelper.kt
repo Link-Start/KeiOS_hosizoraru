@@ -596,7 +596,7 @@ object GitHubShareImportNotificationHelper {
             GitHubShareImportNotificationPhase.InstallDetected -> context.getString(
                 R.string.github_share_import_notify_content_install_detected,
                 state.appDisplayLabel,
-                projectDisplayLabel
+                state.installDetectedProjectLabel
             )
 
             GitHubShareImportNotificationPhase.AddingTrack -> context.getString(
@@ -793,6 +793,17 @@ internal data class GitHubShareImportNotificationState(
             .ifBlank { projectDisplayLabel }
             .ifBlank { packageName }
             .ifBlank { projectLabel }
+
+    val installDetectedProjectLabel: String
+        get() {
+            val project = projectDisplayLabel
+            val version = versionName.trim()
+            return when {
+                version.isBlank() -> project
+                project.equals(version, ignoreCase = true) -> project
+                else -> "$project · $version"
+            }
+        }
 
     private val versionDisplayLabel: String
         get() = versionName.trim()

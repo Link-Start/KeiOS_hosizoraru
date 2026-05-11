@@ -73,6 +73,7 @@ internal class GitHubTrackActions(
         }
         state.trackedItems.add(newItem)
         state.recordTrackedAddedAt(newItem.id, System.currentTimeMillis())
+        state.requestTrackCardFocus(newItem.id)
         env.saveTrackedItems(refreshTrackIds = setOf(newItem.id))
         env.toast(R.string.github_toast_track_current_app_added)
     }
@@ -215,6 +216,7 @@ internal class GitHubTrackActions(
                 }
                 state.trackedItems.add(newItem)
                 state.recordTrackedAddedAt(newItem.id, nowMillis)
+                state.requestTrackCardFocus(newItem.id)
                 env.saveTrackedItems(refreshTrackIds = setOf(newItem.id))
                 env.toast(R.string.github_toast_track_added)
             } else {
@@ -252,6 +254,7 @@ internal class GitHubTrackActions(
                     state.trackedAddedAtById.remove(editing.id)
                 }
                 state.recordTrackedAddedAt(newItem.id, existingAddedAt)
+                state.requestTrackCardFocus(newItem.id)
                 env.saveTrackedItems(refreshTrackIds = setOf(newItem.id))
                 env.toast(R.string.github_toast_track_updated)
             }

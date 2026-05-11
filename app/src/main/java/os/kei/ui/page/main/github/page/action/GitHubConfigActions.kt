@@ -407,6 +407,7 @@ internal class GitHubConfigActions(
         }
         state.trackedItems.clear()
         state.trackedItems.addAll(mergedItems)
+        touchedItems.firstOrNull()?.let { state.requestTrackCardFocus(it.id) }
         env.saveTrackedItems()
         refreshActions.persistCheckCache()
 

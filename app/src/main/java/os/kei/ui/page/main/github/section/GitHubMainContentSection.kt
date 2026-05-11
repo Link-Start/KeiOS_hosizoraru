@@ -176,7 +176,10 @@ internal fun GitHubMainContent(
                     bottomExtra = appPageBottomPaddingWithFloatingOverlay(contentBottomPadding),
                     sectionSpacing = CardLayoutRhythm.denseSectionGap
                 ) {
-                    item {
+                    item(
+                        key = "github_overview_card",
+                        contentType = "github_overview"
+                    ) {
                         GitHubOverviewCard(
                             backdrop = contentBackdrop,
                             isDark = isDark,
@@ -195,7 +198,10 @@ internal fun GitHubMainContent(
                         )
                     }
                     if (showPendingShareImportCard && pendingShareImportTrack != null) {
-                        item {
+                        item(
+                            key = "github_pending_share_import_track",
+                            contentType = "github_share_import"
+                        ) {
                             GitHubPendingShareImportCard(
                                 pending = pendingShareImportTrack,
                                 repoOverlapCount = pendingShareImportRepoOverlapCount,
@@ -205,7 +211,10 @@ internal fun GitHubMainContent(
                         }
                     }
                     pendingShareImportAttachCandidate?.let { candidate ->
-                        item {
+                        item(
+                            key = "github_pending_share_import_attach",
+                            contentType = "github_share_import"
+                        ) {
                             GitHubShareImportAttachCandidateCard(
                                 candidate = candidate,
                                 onOpen = onOpenShareImportFlow,
@@ -215,7 +224,10 @@ internal fun GitHubMainContent(
                     }
                     if (pendingShareImportTrack == null && pendingShareImportAttachCandidate == null) {
                         pendingShareImportPreview?.let { preview ->
-                            item {
+                            item(
+                                key = "github_share_import_preview",
+                                contentType = "github_share_import"
+                            ) {
                                 GitHubShareImportPreviewCard(
                                     preview = preview,
                                     onOpen = onOpenShareImportFlow,
@@ -230,7 +242,10 @@ internal fun GitHubMainContent(
                         pendingShareImportAttachCandidate == null
                     ) {
                         pendingShareImportResult?.let { result ->
-                            item {
+                            item(
+                                key = "github_share_import_result",
+                                contentType = "github_share_import"
+                            ) {
                                 GitHubShareImportResultCard(
                                     result = result,
                                     onOpen = onOpenShareImportResult,

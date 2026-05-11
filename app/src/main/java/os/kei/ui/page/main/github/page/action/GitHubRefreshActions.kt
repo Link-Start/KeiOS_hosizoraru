@@ -203,11 +203,18 @@ internal class GitHubRefreshActions(
             consumeRequestedRefreshes = false
         )
         val trackedById = state.trackedItems.associateBy { it.id }
+        val focusTrackId = affectedTrackIds
+            .asSequence()
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() && it in trackedById }
         val immediateIds = selectImmediateTrackMutationRefreshIds(
             affectedTrackIds = affectedTrackIds,
             validTrackIds = trackedById.keys
         )
-        if (immediateIds.isEmpty()) return
+        if (immediateIds.isEmpty()) {
+            focusTrackId?.let(state::requestTrackCardFocus)
+            return
+        }
         repository.consumeTrackRefreshRequests(immediateIds.toSet())
         val semaphore = Semaphore(GITHUB_TRACK_MUTATION_REFRESH_PARALLELISM)
         supervisorScope {
@@ -232,6 +239,7 @@ internal class GitHubRefreshActions(
         } else {
             OverviewRefreshState.Idle
         }
+        focusTrackId?.let(state::requestTrackCardFocus)
     }
 
     suspend fun syncLocalAppStateWithInstalledApps(forceRefreshApps: Boolean = true) {

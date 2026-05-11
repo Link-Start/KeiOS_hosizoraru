@@ -3,7 +3,9 @@ package os.kei.ui.page.main.github.page
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -16,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,6 +34,7 @@ import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import kotlin.math.abs
 
 @Composable
 fun GitHubPage(
@@ -162,6 +166,23 @@ fun GitHubPage(
         installedOnlineShareTargets = installedOnlineShareTargets,
         onLaunchAppListPermission = launchAppListPermission,
         onActionBarInteractingChanged = onActionBarInteractingChanged
+    )
+
+    BindGitHubTrackCardFocusCoordinator(
+        listState = listState,
+        request = state.trackCardFocusRequest,
+        sortedTracked = contentDerivedState.trackedUi.sortedTracked,
+        pendingTrackVisible = contentDerivedState.showPendingShareImportCard &&
+                state.pendingShareImportTrack != null,
+        attachCandidateVisible = state.pendingShareImportAttachCandidate != null,
+        previewVisible = state.pendingShareImportTrack == null &&
+                state.pendingShareImportAttachCandidate == null &&
+                state.pendingShareImportPreview != null,
+        resultVisible = state.pendingShareImportPreview == null &&
+                state.pendingShareImportTrack == null &&
+                state.pendingShareImportAttachCandidate == null &&
+                state.pendingShareImportResult != null,
+        onConsumed = state::consumeTrackCardFocus
     )
 
     val hasKeiOsSelfTrack by remember {
@@ -314,4 +335,54 @@ fun GitHubPage(
         )
     }
 
+}
+
+@Composable
+private fun BindGitHubTrackCardFocusCoordinator(
+    listState: LazyListState,
+    request: GitHubTrackCardFocusRequest?,
+    sortedTracked: List<os.kei.feature.github.model.GitHubTrackedApp>,
+    pendingTrackVisible: Boolean,
+    attachCandidateVisible: Boolean,
+    previewVisible: Boolean,
+    resultVisible: Boolean,
+    onConsumed: (GitHubTrackCardFocusRequest) -> Unit
+) {
+    val sortedTrackIds = remember(sortedTracked) { sortedTracked.map { it.id } }
+    LaunchedEffect(
+        request?.version,
+        sortedTrackIds,
+        pendingTrackVisible,
+        attachCandidateVisible,
+        previewVisible,
+        resultVisible
+    ) {
+        val focusRequest = request ?: return@LaunchedEffect
+        val leadingItemCount = githubTrackedListLeadingItemCount(
+            pendingTrackVisible = pendingTrackVisible,
+            attachCandidateVisible = attachCandidateVisible,
+            previewVisible = previewVisible,
+            resultVisible = resultVisible
+        )
+        val targetIndex = githubTrackedLazyListIndex(
+            targetTrackId = focusRequest.trackId,
+            sortedTracked = sortedTracked,
+            leadingItemCount = leadingItemCount
+        ) ?: return@LaunchedEffect
+        listState.animateItemToViewportCenter(targetIndex)
+        onConsumed(focusRequest)
+    }
+}
+
+private suspend fun LazyListState.animateItemToViewportCenter(index: Int) {
+    animateScrollToItem(index)
+    withFrameNanos { }
+    val layoutInfo = layoutInfo
+    val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return
+    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+    val itemCenter = itemInfo.offset + itemInfo.size / 2
+    val deltaPx = itemCenter - viewportCenter
+    if (abs(deltaPx) > 2) {
+        animateScrollBy(deltaPx.toFloat())
+    }
 }

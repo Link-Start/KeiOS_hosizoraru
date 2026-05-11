@@ -250,6 +250,7 @@ internal class GitHubPageActions(
                     } else {
                         assetActions.clearApkAssetRuntimeState(item.id)
                     }
+                    env.state.requestTrackCardFocus(item.id)
                 }
             } finally {
                 env.state.itemRefreshLoading.remove(item.id)

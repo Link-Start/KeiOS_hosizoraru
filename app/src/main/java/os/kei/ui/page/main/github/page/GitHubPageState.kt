@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -125,6 +126,8 @@ internal class GitHubPageState(
     var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
     var pendingShareImportAttachCandidate by mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null)
     var pendingShareImportResult by mutableStateOf<GitHubShareImportResult?>(null)
+    var trackCardFocusRequest by mutableStateOf<GitHubTrackCardFocusRequest?>(null)
+    private var nextTrackCardFocusRequestVersion by mutableIntStateOf(0)
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
     var apkInfoDetailRequest by mutableStateOf<GitHubReleaseAssetFile?>(null)
@@ -233,6 +236,22 @@ internal class GitHubPageState(
         }
         pendingShowSearchBar = null
         searchBarVisibilityController.reset()
+    }
+
+    fun requestTrackCardFocus(trackId: String) {
+        val normalizedTrackId = trackId.trim()
+        if (normalizedTrackId.isBlank()) return
+        nextTrackCardFocusRequestVersion += 1
+        trackCardFocusRequest = GitHubTrackCardFocusRequest(
+            trackId = normalizedTrackId,
+            version = nextTrackCardFocusRequestVersion
+        )
+    }
+
+    fun consumeTrackCardFocus(request: GitHubTrackCardFocusRequest) {
+        if (trackCardFocusRequest?.version == request.version) {
+            trackCardFocusRequest = null
+        }
     }
 
     fun activeStrategyId(): String = lookupConfig.selectedStrategy.storageId

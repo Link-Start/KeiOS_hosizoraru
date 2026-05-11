@@ -285,8 +285,8 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Refresh", focusCancelAction.title.toString())
         assertTrue(focusParam.contains("\"progress\":72"))
-        assertTrue(focusParam.contains("\"title\":\"repo\""))
-        assertTrue(focusParam.contains("\"content\":\"Install\""))
+        assertTrue(focusParam.contains("\"title\":\"Install\""))
+        assertFalse(focusParam.contains("\"title\":\"repo\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E5E7EB\""))
         assertTrue(focusParam.contains("\"actionBgColorDark\":\"#334155\""))
         assertTrue(focusParam.contains("\"actionTitleColor\":\"#475569\""))
@@ -315,8 +315,7 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Send install", notification.actions[1].title.toString())
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Send install", focusCancelAction.title.toString())
-        assertTrue(focusParam.contains("\"title\":\"repo\""))
-        assertTrue(focusParam.contains("\"content\":\"Ready\""))
+        assertTrue(focusParam.contains("\"title\":\"Ready\""))
         assertTrue(focusParam.contains("v1.2.3"))
         assertTrue(focusParam.contains("\"progress\":32"))
     }
@@ -337,11 +336,11 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("mcp_action_open"))
         assertFalse(focusParam.contains("mcp_action_stop"))
         assertTrue(focusParam.contains("\"progress\":12"))
-        assertTrue(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("\"title\":\"Parse\""))
     }
 
     @Test
-    fun `delivering mi island compact text uses readable target name`() {
+    fun `delivering mi island compact text uses phase label`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Delivering,
@@ -358,8 +357,8 @@ class GitHubShareImportNotificationHelperTest {
             "Sending",
             context.getString(GitHubShareImportNotificationPhase.Delivering.shortTextRes)
         )
-        assertTrue(focusParam.contains("\"title\":\"Demo\""))
-        assertTrue(focusParam.contains("\"content\":\"Sending\""))
+        assertTrue(focusParam.contains("\"title\":\"Sending\""))
+        assertTrue(focusParam.contains("Demo"))
     }
 
     @Test
@@ -395,8 +394,9 @@ class GitHubShareImportNotificationHelperTest {
         )
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"48%\""))
-        assertTrue(focusParam.contains("\"content\":\"Demo"))
+        assertTrue(focusParam.contains("\"content\":\"Download\""))
         assertTrue(focusParam.contains("v1.2.3"))
+        assertTrue(focusParam.contains("Demo · v1.2.3"))
         assertTrue(focusParam.contains("\"colorTitle\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"colorContent\":\"#475569\""))
         assertTrue(focusParam.contains("5"))
@@ -405,7 +405,7 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `managed staging mi island uses stable status template`() {
+    fun `managed staging mi island uses phase title with progress ring`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Installing,
@@ -420,10 +420,11 @@ class GitHubShareImportNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals("Open flow", notification.actions[0].title.toString())
-        assertFalse(focusParam.contains("progressTextInfo"))
-        assertFalse(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("\"title\":\"Demo\""))
-        assertTrue(focusParam.contains("\"content\":\"Prepare\""))
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"progress\":48"))
+        assertTrue(focusParam.contains("\"title\":\"Prepare\""))
+        assertTrue(focusParam.contains("Demo"))
     }
 
     @Test
@@ -448,6 +449,7 @@ class GitHubShareImportNotificationHelperTest {
             "repo · v1.2.3 · preparing",
             modern.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
+        assertTrue(focusParam.contains("\"title\":\"Prepare\""))
         assertTrue(focusParam.contains("repo · v1.2.3"))
     }
 
@@ -492,13 +494,14 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":0"))
-        assertTrue(focusParam.contains("\"title\":\"repo\""))
-        assertTrue(focusParam.contains("\"content\":\"repo"))
+        assertTrue(focusParam.contains("\"title\":\"Download\""))
+        assertFalse(focusParam.contains("\"title\":\"repo\""))
+        assertTrue(focusParam.contains("repo"))
         assertTrue(focusParam.contains("downloaded"))
     }
 
     @Test
-    fun `managed install committing mi island uses stable status template`() {
+    fun `managed install committing mi island uses phase title with progress ring`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.InstallCommitting,
@@ -512,10 +515,10 @@ class GitHubShareImportNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals("Open flow", notification.actions[0].title.toString())
-        assertFalse(focusParam.contains("progressTextInfo"))
-        assertFalse(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("\"title\":\"repo\""))
-        assertTrue(focusParam.contains("\"content\":\"Commit\""))
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"progress\":92"))
+        assertTrue(focusParam.contains("\"title\":\"Commit\""))
         assertFalse(focusParam.contains("demo.app"))
     }
 
@@ -549,15 +552,16 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Continue install", modern.actions[1].title.toString())
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Continue install", focusContinueAction.title.toString())
-        assertTrue(focusParam.contains("\"title\":\"repo\""))
-        assertTrue(focusParam.contains("\"content\":\"Ready\""))
+        assertTrue(focusParam.contains("\"title\":\"Ready\""))
+        assertFalse(focusParam.contains("\"title\":\"repo\""))
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
-        assertFalse(focusParam.contains("progressTextInfo"))
-        assertFalse(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"progress\":88"))
     }
 
     @Test
-    fun `install detected mi island compact title uses app label`() {
+    fun `install detected mi island compact title uses phase label`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.InstallDetected,
@@ -570,8 +574,8 @@ class GitHubShareImportNotificationHelperTest {
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertTrue(focusParam.contains("\"title\":\"Demo\""))
-        assertTrue(focusParam.contains("\"content\":\"Confirm\""))
+        assertTrue(focusParam.contains("\"title\":\"Confirm\""))
+        assertTrue(focusParam.contains("Demo · repo"))
         assertEquals(
             "Install detected",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
@@ -625,13 +629,18 @@ class GitHubShareImportNotificationHelperTest {
             if (state.phase == GitHubShareImportNotificationPhase.Added ||
                 state.phase == GitHubShareImportNotificationPhase.AlreadyTracked
             ) {
-                assertTrue(focusParam.contains("\"title\":\"Demo\""))
-                val expectedContent = if (state.phase == GitHubShareImportNotificationPhase.Added) {
+                val expectedTitle = if (state.phase == GitHubShareImportNotificationPhase.Added) {
                     "Tracked"
                 } else {
                     "Exists"
                 }
-                assertTrue(focusParam.contains("\"content\":\"$expectedContent\""))
+                assertTrue(focusParam.contains("\"title\":\"$expectedTitle\""))
+                val expectedContent = if (state.phase == GitHubShareImportNotificationPhase.Added) {
+                    "Demo was added"
+                } else {
+                    "Demo is already tracked"
+                }
+                assertTrue(focusParam.contains(expectedContent))
             }
         }
     }

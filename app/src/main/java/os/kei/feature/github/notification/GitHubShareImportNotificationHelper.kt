@@ -829,7 +829,7 @@ internal data class GitHubShareImportNotificationState(
         ) {
             return "${resolvedProgressPercent}%"
         }
-        return readableTargetLabel.ifBlank { shortText }
+        return shortText.ifBlank { readableTargetLabel }
     }
 
     fun compactIslandSubtitle(shortText: String, islandTitle: String): String {
@@ -837,9 +837,9 @@ internal data class GitHubShareImportNotificationState(
             totalBytes > 0L &&
             resolvedProgressPercent in 1..99
         ) {
-            return readableTargetLabel.ifBlank { shortText }
+            return shortText.takeIf { it.isNotBlank() && it != islandTitle }.orEmpty()
         }
-        return shortText.takeIf { it.isNotBlank() && it != islandTitle }.orEmpty()
+        return ""
     }
 
     val resolvedProgressPercent: Int

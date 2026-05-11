@@ -470,10 +470,12 @@ class MiIslandNotificationBuilder(
             )
         }
         if (isGitHubShareImport && state.running) {
-            val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
+            val progressPercent = state.overrideProgressPercent
+                ?.coerceIn(0, 100)
+                ?: state.port.coerceIn(0, 100)
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
-            val useProgressTemplate = state.clients > 0 && state.overrideProgressPercent != null
+            val useProgressTemplate = state.clients > 0
             return IslandPresentation(
                 allowFloat = state.clients <= 0,
                 showTextButtons = true,
@@ -675,12 +677,9 @@ class MiIslandNotificationBuilder(
         isGitHubShareImport: Boolean
     ): String {
         val fullContent = state.content(context).trim()
-        val isDownloadProgress =
-            isGitHubShareImport &&
-                    presentation.showExpandedProgress &&
-                    fullContent.contains(" · ") &&
-                    (presentation.compactTitle.endsWith("%") || presentation.progressPercent == 0)
-        if (isDownloadProgress) return fullContent
+        if (isGitHubShareImport && presentation.showExpandedProgress && fullContent.isNotBlank()) {
+            return fullContent
+        }
         return presentation.compactContent ?: state.shortText
     }
 

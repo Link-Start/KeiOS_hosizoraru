@@ -245,7 +245,6 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
         assertTrue(focusParam.contains("\"actionBgColorDark\":\"#FF6B7C\""))
         assertTrue(focusParam.contains("\"title\":\"Install\""))
-        assertTrue(focusParam.contains("\"content\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
         assertFalse(focusParam.contains("\"content\":\"demo.app\""))
         assertTrue(focusParam.contains("\"progress\":72"))

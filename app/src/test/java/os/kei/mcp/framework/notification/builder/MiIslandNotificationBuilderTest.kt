@@ -325,7 +325,7 @@ class MiIslandNotificationBuilderTest {
             state = McpNotificationPayload(
                 serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
                 running = true,
-                port = 5,
+                port = 7,
                 path = "正在安装 demo.app",
                 clients = 1,
                 ongoing = true,
@@ -359,6 +359,7 @@ class MiIslandNotificationBuilderTest {
         assertEquals("打开 Sheet", focusOpenAction.title.toString())
         assertEquals("停止", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("iconTextInfo"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertFalse(focusParam.contains("\"progress\":"))
@@ -447,7 +448,7 @@ class MiIslandNotificationBuilderTest {
             state = McpNotificationPayload(
                 serverName = McpNotificationPayload.GITHUB_APK_INSTALL_SERVER_NAME,
                 running = true,
-                port = 4,
+                port = 6,
                 path = "demo.apk 需要确认后安装",
                 clients = 1,
                 ongoing = true,
@@ -482,6 +483,7 @@ class MiIslandNotificationBuilderTest {
         assertEquals("安装", focusOpenAction.title.toString())
         assertEquals("取消", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("iconTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"确认\""))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertTrue(focusParam.contains("demo.apk 需要确认后安装"))
@@ -545,6 +547,7 @@ class MiIslandNotificationBuilderTest {
         assertEquals("打开系统确认", focusOpenAction.title.toString())
         assertEquals("停止", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("iconTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"确认\""))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))
@@ -606,6 +609,7 @@ class MiIslandNotificationBuilderTest {
         assertEquals("打开 Sheet", focusOpenAction.title.toString())
         assertEquals("标为已读", focusStopAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("iconTextInfo"))
         assertTrue(focusParam.contains("\"title\":\"完成\""))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))

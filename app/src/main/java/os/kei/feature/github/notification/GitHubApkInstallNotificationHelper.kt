@@ -37,6 +37,12 @@ internal object GitHubApkInstallNotificationHelper {
     private const val REQUEST_LAUNCH_PENDING_USER_ACTION = 2406
     private const val REQUEST_PREPARE_INSTALL = 2407
 
+    internal data class NotificationBuildResult(
+        val notification: Notification,
+        val style: NotificationRenderStyle,
+        val useXiaomiMagic: Boolean
+    )
+
     fun notify(context: Context, state: GitHubApkInstallFlowState): Boolean {
         if (!state.active) return false
         return runCatching {
@@ -56,30 +62,61 @@ internal object GitHubApkInstallNotificationHelper {
     internal fun notifyState(context: Context, state: GitHubApkInstallFlowState): Boolean {
         if (!notificationsGranted(context)) return false
         McpNotificationHelper.ensureChannel(context)
-        val helper = NotificationHelper(context)
-        val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
-        val useMiIsland = preferSuperIsland && helper.isSupportMiIsland
-        val notification = if (useMiIsland) {
-            buildFrameworkMiIslandNotification(context, state)
-        } else {
-            buildLiveUpdateNotification(context, state)
-        }
+        val buildResult = buildNotificationResult(context, state) ?: return false
         GitHubApkInstallNotificationBridge.dispatch(
             context = context,
             notificationId = NOTIFICATION_ID,
-            notification = notification,
+            notification = buildResult.notification,
             state = state,
-            useXiaomiMagic = useMiIsland &&
-                    UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+            useXiaomiMagic = buildResult.useXiaomiMagic
         )
         return true
     }
 
-    private fun buildLiveUpdateNotification(
+    internal fun buildNotificationResult(
         context: Context,
         state: GitHubApkInstallFlowState
-    ): Notification {
-        return buildFrameworkLiveUpdateNotification(context, state)
+    ): NotificationBuildResult? {
+        val helper = NotificationHelper(context)
+        val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
+        val style = if (preferSuperIsland && helper.isSupportMiIsland) {
+            NotificationRenderStyle.MI_ISLAND
+        } else if (helper.isModernLiveUpdateEligible) {
+            NotificationRenderStyle.LIVE_UPDATE
+        } else {
+            NotificationRenderStyle.LEGACY
+        }
+        AppLogger.i(
+            TAG,
+            "buildNotificationResult preferSuperIsland=$preferSuperIsland " +
+                    "supportMiIsland=${helper.isSupportMiIsland} " +
+                    "focusPermission=${helper.hasMiIslandPermission} style=$style"
+        )
+        val miIsland = style == NotificationRenderStyle.MI_ISLAND
+        val payload = buildPayload(
+            context = context,
+            state = state,
+            helper = helper,
+            miIsland = miIsland
+        )
+        val notification = when (style) {
+            NotificationRenderStyle.MI_ISLAND -> MiIslandNotificationBuilder(context).build(payload)
+            NotificationRenderStyle.LIVE_UPDATE -> ModernNotificationBuilder(context).build(payload)
+            NotificationRenderStyle.LEGACY -> LegacyNotificationBuilder(context).build(payload)
+        }
+        if (miIsland && !notification.hasGitHubApkInstallFocusContract()) {
+            AppLogger.e(
+                TAG,
+                "GitHub APK install MiIsland notification missing Focus extras; phase=${state.phase}"
+            )
+            return null
+        }
+        return NotificationBuildResult(
+            notification = notification,
+            style = style,
+            useXiaomiMagic = miIsland &&
+                    UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+        )
     }
 
     internal fun buildFrameworkLiveUpdateNotification(
@@ -338,6 +375,11 @@ internal object GitHubApkInstallNotificationHelper {
         return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED &&
                 NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+
+    private fun Notification.hasGitHubApkInstallFocusContract(): Boolean {
+        return extras.getString("miui.focus.param").orEmpty().isNotBlank() &&
+                extras.getBundle("miui.focus.actions") != null
     }
 }
 

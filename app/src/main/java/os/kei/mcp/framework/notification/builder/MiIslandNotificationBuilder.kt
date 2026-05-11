@@ -48,6 +48,7 @@ class MiIslandNotificationBuilder(
         val requestPromotedOngoing: Boolean,
         val focusUpdatable: Boolean,
         val focusShowNotification: Boolean? = null,
+        val showExpandedIconText: Boolean = false,
         val showExpandedProgress: Boolean = false,
         val progressPercent: Int = 0,
         val progressColor: String = BA_AP_PROGRESS_COLOR,
@@ -167,7 +168,11 @@ class MiIslandNotificationBuilder(
         if (presentation.showExpandedProgress) {
             builder.setProgress(100, presentation.progressPercent.coerceIn(0, 100), false)
         }
-        buildFocusExtras(payload, islandIconResId)?.let(builder::addExtras)
+        val focusExtras = buildFocusExtras(payload, islandIconResId)
+        if (isGitHubApkInstall && !focusExtras.hasGitHubApkInstallFocusContract()) {
+            error("GitHub APK install FocusNotification extras missing")
+        }
+        focusExtras?.let(builder::addExtras)
         return builder.build()
     }
 
@@ -316,16 +321,27 @@ class MiIslandNotificationBuilder(
                 }
             }
 
-            baseInfo {
-                type = 2
-                title = state.title(context)
-                content = state.content(context).ifBlank { " " }
-            }
+            if (presentation.showExpandedIconText) {
+                iconTextInfo {
+                    title = state.title(context)
+                    content = state.content(context).ifBlank { " " }
+                    animIconInfo {
+                        type = 0
+                        src = displayIconKey
+                    }
+                }
+            } else {
+                baseInfo {
+                    type = 2
+                    title = state.title(context)
+                    content = state.content(context).ifBlank { " " }
+                }
 
-            if (presentation.showExpandedProgress) {
-                multiProgressInfo {
-                    progress = presentation.progressPercent.coerceIn(0, 100)
-                    color = presentation.progressColor
+                if (presentation.showExpandedProgress) {
+                    multiProgressInfo {
+                        progress = presentation.progressPercent.coerceIn(0, 100)
+                        color = presentation.progressColor
+                    }
                 }
             }
 
@@ -360,7 +376,15 @@ class MiIslandNotificationBuilder(
         }
     }.onFailure {
         AppLogger.e(TAG, "Build FocusNotification extras failed", it)
-    }.getOrNull()
+    }.getOrElse { error ->
+        if (McpNotificationPayload.isGitHubApkInstallServerName(payload.state.serverName)) {
+            throw IllegalStateException(
+                "GitHub APK install FocusNotification extras failed",
+                error
+            )
+        }
+        null
+    }
 
     private fun resolvePresentation(
         state: McpNotificationPayload,
@@ -511,6 +535,7 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
                 focusShowNotification = true,
+                showExpandedIconText = !useProgressTemplate && state.port >= 6,
                 showExpandedProgress = useProgressTemplate,
                 progressPercent = progressPercent ?: 0,
                 progressColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR,
@@ -531,6 +556,7 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
+                showExpandedIconText = true,
                 notificationAccentColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR
             )
         }
@@ -664,5 +690,11 @@ class MiIslandNotificationBuilder(
         if (show != null) {
             isShowNotification = show
         }
+    }
+
+    private fun android.os.Bundle?.hasGitHubApkInstallFocusContract(): Boolean {
+        return this != null &&
+                getString("miui.focus.param").orEmpty().isNotBlank() &&
+                getBundle("miui.focus.actions") != null
     }
 }

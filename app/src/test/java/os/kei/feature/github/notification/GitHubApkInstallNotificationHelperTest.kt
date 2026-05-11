@@ -14,6 +14,7 @@ import org.robolectric.annotation.Config
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationDispatchMode
+import os.kei.ui.page.main.github.install.GitHubApkInstallCandidate
 import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
 import os.kei.ui.page.main.github.install.GitHubApkInstallPhase
 import os.kei.ui.page.main.github.install.GitHubApkInstallProgressKind
@@ -410,6 +411,79 @@ class GitHubApkInstallNotificationHelperTest {
             GitHubApkInstallActionReceiver.ACTION_CANCEL_INSTALL,
             shadowOf(focusStopAction.actionIntent).savedIntent.action
         )
+    }
+
+    @Test
+    fun `mi island install phases always carry focus payload and actions`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val states = listOf(
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.RemoteResolving,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.RemoteReady,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Downloading,
+                progressKind = GitHubApkInstallProgressKind.Download,
+                selectedCandidateName = "demo.apk",
+                stageProgress = 0.42f
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.SelectingApk,
+                selectedCandidateName = "demo.apk",
+                candidates = listOf(GitHubApkInstallCandidate(0, "demo.apk", 128L))
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.InspectingLocal,
+                progressKind = GitHubApkInstallProgressKind.Inspect,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.ReadyToInstall,
+                progressKind = GitHubApkInstallProgressKind.Waiting,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Installing,
+                progressKind = GitHubApkInstallProgressKind.Staging,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.PendingUserAction,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Success,
+                selectedCandidateName = "demo.apk"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Failed,
+                selectedCandidateName = "demo.apk",
+                message = "failed"
+            ),
+            GitHubApkInstallFlowState(
+                phase = GitHubApkInstallPhase.Cancelled,
+                selectedCandidateName = "demo.apk"
+            )
+        )
+
+        states.forEach { state ->
+            val notification =
+                GitHubApkInstallNotificationHelper.buildFrameworkMiIslandNotification(
+                    context = context,
+                    state = state
+                )
+            val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+            assertTrue(focusParam.isNotBlank(), "Missing Focus payload for ${state.phase}")
+            assertNotNull(
+                notification.extras.getBundle("miui.focus.actions"),
+                "Missing Focus actions for ${state.phase}"
+            )
+        }
     }
 
     @Test

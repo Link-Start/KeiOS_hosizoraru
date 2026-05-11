@@ -270,6 +270,8 @@ internal fun GitHubShareImportSheet(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.common_cancel),
                     leadingIcon = appLucideCloseIcon(),
+                    containerColor = GitHubShareImportActionStyle.cancelContainerColor,
+                    variant = GitHubShareImportActionStyle.cancelVariant,
                     onClick = onCancel
                 )
                 AppLiquidDialogActionButton(
@@ -407,7 +409,8 @@ internal fun GitHubShareImportPendingSheet(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.github_share_import_pending_action_cancel),
                     leadingIcon = appLucideCloseIcon(),
-                    containerColor = GitHubStatusPalette.PreRelease,
+                    containerColor = GitHubShareImportActionStyle.cancelContainerColor,
+                    variant = GitHubShareImportActionStyle.cancelVariant,
                     onClick = onCancel
                 )
             }
@@ -503,6 +506,8 @@ internal fun GitHubShareImportAttachConfirmSheet(
                         modifier = Modifier.weight(1f),
                         text = stringResource(R.string.common_cancel),
                         leadingIcon = appLucideCloseIcon(),
+                        containerColor = GitHubShareImportActionStyle.cancelContainerColor,
+                        variant = GitHubShareImportActionStyle.cancelVariant,
                         onClick = onCancel,
                         enabled = !submitting
                     )

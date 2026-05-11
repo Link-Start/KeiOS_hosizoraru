@@ -16,6 +16,7 @@ import os.kei.ui.page.main.github.GitHubCompactInfoRow
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
+import os.kei.ui.page.main.github.share.GitHubShareImportActionStyle
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.github.share.shareImportRemainingMinutes
@@ -27,6 +28,7 @@ import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -139,6 +141,8 @@ internal fun GitHubPendingShareImportCard(
                     modifier = Modifier.weight(1f),
                     text = stringResource(R.string.github_share_import_pending_action_cancel),
                     leadingIcon = appLucideCloseIcon(),
+                    containerColor = GitHubShareImportActionStyle.cancelContainerColor,
+                    variant = GitHubShareImportActionStyle.cancelVariant,
                     onClick = onCancel
                 )
             }
@@ -275,12 +279,23 @@ private fun GitHubShareImportFlowCard(
     primaryColor: androidx.compose.ui.graphics.Color = statusColor,
     secondaryText: String? = null,
     secondaryIcon: ImageVector? = null,
+    secondaryDanger: Boolean = secondaryText == null,
     onOpen: () -> Unit,
     onCancel: () -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val resolvedPrimaryIcon = primaryIcon ?: appLucideExternalLinkIcon()
     val resolvedSecondaryIcon = secondaryIcon ?: appLucideCloseIcon()
+    val secondaryContainerColor = if (secondaryDanger) {
+        GitHubShareImportActionStyle.cancelContainerColor
+    } else {
+        null
+    }
+    val secondaryVariant = if (secondaryDanger) {
+        GitHubShareImportActionStyle.cancelVariant
+    } else {
+        GlassVariant.SheetAction
+    }
     AppSurfaceCard(
         containerColor = GitHubStatusPalette.tonedSurface(
             statusColor,
@@ -334,6 +349,8 @@ private fun GitHubShareImportFlowCard(
                     text = secondaryText
                         ?: stringResource(R.string.github_share_import_pending_action_cancel),
                     leadingIcon = resolvedSecondaryIcon,
+                    containerColor = secondaryContainerColor,
+                    variant = secondaryVariant,
                     onClick = onCancel
                 )
             }

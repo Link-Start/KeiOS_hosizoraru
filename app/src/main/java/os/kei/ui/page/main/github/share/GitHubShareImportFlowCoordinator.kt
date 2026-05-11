@@ -232,6 +232,16 @@ internal object GitHubShareImportFlowCoordinator {
         )
     }
 
+    suspend fun continueActiveManagedInstall(
+        context: Context,
+        onManagedInstallProgress: suspend (GitHubShareImportManagedInstallProgress) -> Unit = {}
+    ): ShareImportDeliveryCoordinatorResult {
+        return GitHubShareImportManagedInstallCoordinator.commitActive(
+            context = context,
+            onProgressUpdate = onManagedInstallProgress
+        )
+    }
+
     suspend fun startDelivery(
         context: Context,
         preview: GitHubShareImportPreview,
@@ -457,6 +467,7 @@ internal object GitHubShareImportFlowCoordinator {
 
     suspend fun cancelActiveFlow(context: Context): ShareImportCoordinatorResult {
         val appContext = context.applicationContext
+        GitHubShareImportManagedInstallCoordinator.cancelActive(appContext)
         val result = buildCancelledResult(appContext)
         withContext(Dispatchers.IO) {
             GitHubShareImportFlowStore.clearActiveFlow()
@@ -614,6 +625,11 @@ internal object GitHubShareImportFlowCoordinator {
 }
 
 internal sealed interface ShareImportDeliveryCoordinatorResult {
+    data class InstallReady(
+        val requestId: String,
+        val assetName: String
+    ) : ShareImportDeliveryCoordinatorResult
+
     data class WaitingInstall(
         val pending: GitHubPendingShareImportTrackRecord,
         val toastResId: Int,

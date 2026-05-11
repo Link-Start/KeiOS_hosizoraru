@@ -160,6 +160,27 @@ object GitHubShareImportNotificationHelper {
         )
     }
 
+    fun notifyInstallReady(
+        context: Context,
+        owner: String,
+        repo: String,
+        assetName: String,
+        packageName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.InstallReady,
+                owner = owner,
+                repo = repo,
+                assetName = assetName,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName
+            )
+        )
+    }
+
     fun notifyWaitingInstall(
         context: Context,
         owner: String,
@@ -439,6 +460,9 @@ object GitHubShareImportNotificationHelper {
             state.phase == GitHubShareImportNotificationPhase.AssetReady &&
                     state.sendInstallActionEnabled -> buildSendInstallPendingIntent(context)
 
+            state.phase == GitHubShareImportNotificationPhase.InstallReady ->
+                buildSendInstallPendingIntent(context)
+
             state.phase.refreshActionEnabled -> buildRefreshImportPendingIntent(context)
             state.phase.confirmActionEnabled -> buildConfirmImportPendingIntent(context)
             state.phase.cancelActionEnabled -> buildCancelImportPendingIntent(context)
@@ -461,6 +485,9 @@ object GitHubShareImportNotificationHelper {
             state.phase == GitHubShareImportNotificationPhase.AssetReady &&
                     state.sendInstallActionEnabled ->
                 context.getString(R.string.github_share_import_notify_action_send_install)
+
+            state.phase == GitHubShareImportNotificationPhase.InstallReady ->
+                context.getString(R.string.github_share_import_notify_action_continue_install)
 
             state.phase.refreshActionEnabled -> context.getString(R.string.common_refresh)
             state.phase.confirmActionEnabled ->
@@ -508,6 +535,16 @@ object GitHubShareImportNotificationHelper {
                 R.string.github_share_import_notify_content_installing,
                 projectLabel,
                 state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) }
+            )
+
+            GitHubShareImportNotificationPhase.InstallReady -> context.getString(
+                R.string.github_share_import_notify_content_install_ready,
+                projectLabel,
+                state.packageName.ifBlank {
+                    state.assetName.ifBlank {
+                        context.getString(R.string.github_share_import_pending_label_asset)
+                    }
+                }
             )
 
             GitHubShareImportNotificationPhase.InstallCommitting -> context.getString(
@@ -819,6 +856,16 @@ internal enum class GitHubShareImportNotificationPhase(
         shortTextRes = R.string.github_share_import_notify_short_installing,
         primaryActionRes = R.string.github_share_import_notify_action_view_progress,
         progressPercent = 64,
+        ongoing = true,
+        openGitHubPage = false,
+        cancelActionEnabled = true,
+        progressTemplateEnabled = false
+    ),
+    InstallReady(
+        titleRes = R.string.github_share_import_notify_title_install_ready,
+        shortTextRes = R.string.github_share_import_notify_short_install_ready,
+        primaryActionRes = R.string.github_share_import_notify_action_view_status,
+        progressPercent = 88,
         ongoing = true,
         openGitHubPage = false,
         cancelActionEnabled = true,

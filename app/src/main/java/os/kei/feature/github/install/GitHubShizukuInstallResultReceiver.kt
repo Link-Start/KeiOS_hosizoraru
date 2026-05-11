@@ -49,6 +49,14 @@ internal object GitHubShizukuInstallCommitRegistry {
         requestId: String,
         sessionId: Int
     ): android.content.IntentSender {
+        return buildPendingIntent(context, requestId, sessionId).intentSender
+    }
+
+    internal fun buildPendingIntent(
+        context: Context,
+        requestId: String,
+        sessionId: Int
+    ): PendingIntent {
         val packageName = context.packageName
         val intent = Intent(context, GitHubShizukuInstallResultReceiver::class.java).apply {
             action = installResultAction(packageName)
@@ -60,8 +68,8 @@ internal object GitHubShizukuInstallCommitRegistry {
             context,
             requestId.hashCode(),
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        ).intentSender
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
     }
 
     fun complete(context: Context, intent: Intent?): Boolean {

@@ -1,6 +1,7 @@
 package os.kei.feature.github.install
 
 import android.app.Application
+import android.app.PendingIntent
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -8,11 +9,13 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = GitHubShizukuPackageInstallerTestApp::class, sdk = [35])
@@ -90,6 +93,20 @@ class GitHubShizukuPackageInstallerTest {
             "os.kei.benchmark.github.install.action.SHIZUKU_INSTALL_RESULT",
             GitHubShizukuInstallCommitRegistry.installResultAction("os.kei.benchmark")
         )
+    }
+
+    @Test
+    fun `commit result pending intent is mutable for package installer fill in result`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val pendingIntent = GitHubShizukuInstallCommitRegistry.buildPendingIntent(
+            context = context,
+            requestId = "request-1",
+            sessionId = 42
+        )
+        val shadow = shadowOf(pendingIntent)
+
+        assertTrue(shadow.flags and PendingIntent.FLAG_MUTABLE != 0)
+        assertTrue(shadow.flags and PendingIntent.FLAG_UPDATE_CURRENT != 0)
     }
 
     private fun request(

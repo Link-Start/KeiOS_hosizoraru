@@ -243,7 +243,7 @@ class GitHubShareImportActivity : ComponentActivity() {
         if (sendInstallInProgress) return
         sendInstallInProgress = true
         applyShareImportDisplayState(GitHubShareImportActivityDisplayState.SendingInstall)
-        GitHubShareImportDeliveryRunner.launchActivePreviewDelivery(this)
+        GitHubShareImportDeliveryRunner.launchCurrentDeliveryAction(this)
         finishSafely()
     }
 

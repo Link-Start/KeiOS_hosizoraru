@@ -428,6 +428,15 @@ internal fun GitHubShareImportWindowFlowHost(
                     GitHubShareImportPhase.Delivering
                 }
                 if (lookupConfig.appManagedShareInstallEnabled) {
+                    if (managedInstallProgress?.phase == GitHubShareImportPhase.InstallReady) {
+                        phase = GitHubShareImportPhase.InstallCommitting
+                        managedInstallProgress = managedInstallProgress?.copy(
+                            phase = GitHubShareImportPhase.InstallCommitting,
+                            progressPercent = 92
+                        )
+                        GitHubShareImportDeliveryRunner.launchCurrentDeliveryAction(context)
+                        return@launch
+                    }
                     val selectedPreview = preview.copy(
                         selectedAssetName = selectedAsset.name,
                         sendInstallActionEnabled = true
@@ -476,6 +485,16 @@ internal fun GitHubShareImportWindowFlowHost(
                             toast(context, delivery.toastResId, delivery.toastMessage)
                         }
                         return@launch
+                    }
+
+                    is ShareImportDeliveryCoordinatorResult.InstallReady -> {
+                        phase = GitHubShareImportPhase.InstallReady
+                        managedInstallProgress = GitHubShareImportManagedInstallProgress(
+                            phase = GitHubShareImportPhase.InstallReady,
+                            assetName = delivery.assetName,
+                            progressPercent = 100,
+                            totalBytes = selectedAsset.sizeBytes
+                        )
                     }
 
                     is ShareImportDeliveryCoordinatorResult.InstallDetected -> {

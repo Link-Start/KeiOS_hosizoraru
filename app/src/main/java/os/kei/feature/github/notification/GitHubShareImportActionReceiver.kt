@@ -31,7 +31,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
 
                 ACTION_SEND_INSTALL_SHARE_IMPORT,
                 actionSendInstallShareImport(appContext) ->
-                    GitHubShareImportDeliveryRunner.launchActivePreviewDelivery(appContext)
+                    GitHubShareImportDeliveryRunner.launchCurrentDeliveryAction(appContext)
 
                 ACTION_CONFIRM_SHARE_IMPORT,
                 actionConfirmShareImport(appContext) ->

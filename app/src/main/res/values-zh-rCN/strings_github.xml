@@ -663,6 +663,7 @@
     <string name="github_share_import_phase_delivering">发送安装</string>
     <string name="github_share_import_phase_install_downloading">下载 APK</string>
     <string name="github_share_import_phase_installing">准备安装</string>
+    <string name="github_share_import_phase_install_ready">等待安装确认</string>
     <string name="github_share_import_phase_install_committing">提交安装</string>
     <string name="github_share_import_phase_waiting_install">等待安装</string>
     <string name="github_share_import_phase_install_detected">检测到安装</string>
@@ -708,6 +709,7 @@
     <string name="github_share_import_notify_action_open_flow">查看处理</string>
     <string name="github_share_import_notify_action_select_apk">选择 APK</string>
     <string name="github_share_import_notify_action_send_install">发送安装</string>
+    <string name="github_share_import_notify_action_continue_install">继续安装</string>
     <string name="github_share_import_notify_action_view_progress">查看进度</string>
     <string name="github_share_import_notify_action_view_status">检测安装</string>
     <string name="github_share_import_notify_action_confirm_track">确认跟踪</string>
@@ -718,6 +720,7 @@
     <string name="github_share_import_notify_title_delivering">正在交给安装器</string>
     <string name="github_share_import_notify_title_install_downloading">正在下载 APK</string>
     <string name="github_share_import_notify_title_installing">正在准备安装</string>
+    <string name="github_share_import_notify_title_install_ready">等待安装确认</string>
     <string name="github_share_import_notify_title_install_committing">正在提交安装</string>
     <string name="github_share_import_notify_title_waiting_install">等待安装完成</string>
     <string name="github_share_import_notify_title_install_detected">已检测到安装</string>
@@ -731,6 +734,7 @@
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s · %3$s</string>
     <string name="github_share_import_notify_content_installing">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_install_ready">%1$s · %2$s 已下载，确认后安装</string>
     <string name="github_share_import_notify_content_install_committing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · 剩余 %3$d 分钟</string>
     <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · 精确匹配 · 剩余 %3$d 分钟</string>
@@ -746,6 +750,7 @@
     <string name="github_share_import_notify_short_delivering">发送中</string>
     <string name="github_share_import_notify_short_install_downloading">下载中</string>
     <string name="github_share_import_notify_short_installing">准备中</string>
+    <string name="github_share_import_notify_short_install_ready">待安装</string>
     <string name="github_share_import_notify_short_install_committing">提交中</string>
     <string name="github_share_import_notify_short_waiting_install">待安装</string>
     <string name="github_share_import_notify_short_install_detected">待确认</string>

@@ -21,6 +21,7 @@ enum class GitHubApkInstallStage {
     Preparing,
     Downloading,
     Staging,
+    ReadyToCommit,
     Committing,
     Succeeded,
     Failed,
@@ -39,6 +40,14 @@ data class GitHubApkInstallProgress(
 }
 
 sealed interface GitHubApkInstallResult {
+    data class Staged(
+        val requestId: String,
+        val sessionId: Int,
+        val packageName: String = "",
+        val downloadedBytes: Long = 0L,
+        val totalBytes: Long = -1L
+    ) : GitHubApkInstallResult
+
     data class Succeeded(
         val requestId: String,
         val sessionId: Int,

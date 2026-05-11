@@ -117,6 +117,8 @@ internal fun GitHubShareImportSheet(
         GitHubShareImportPhase.Installing,
         GitHubShareImportPhase.InstallCommitting
     )
+    val managedInstallSessionActive = managedInstallRunning ||
+            managedInstallProgress?.phase == GitHubShareImportPhase.InstallReady
     SnapshotWindowBottomSheet(
         show = showSheet,
         title = stringResource(R.string.github_share_import_dialog_title),
@@ -240,7 +242,7 @@ internal fun GitHubShareImportSheet(
                         SheetControlRow(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable(enabled = !managedInstallRunning) {
+                                .clickable(enabled = !managedInstallSessionActive) {
                                     selectedIndex = index
                                 },
                             label = asset.name,
@@ -266,7 +268,7 @@ internal fun GitHubShareImportSheet(
                             SheetLiquidChoiceIndicator(
                                 selected = selected,
                                 onSelect = {
-                                    if (!managedInstallRunning) selectedIndex = index
+                                    if (!managedInstallSessionActive) selectedIndex = index
                                 },
                                 accentColor = GitHubStatusPalette.Active
                             )
@@ -290,6 +292,8 @@ internal fun GitHubShareImportSheet(
                     modifier = Modifier.weight(1f),
                     text = if (managedInstallRunning) {
                         stringResource(R.string.common_processing)
+                    } else if (managedInstallProgress?.phase == GitHubShareImportPhase.InstallReady) {
+                        stringResource(R.string.github_share_import_notify_action_continue_install)
                     } else {
                         stringResource(R.string.github_share_import_dialog_action_confirm)
                     },

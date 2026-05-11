@@ -671,6 +671,7 @@
     <string name="github_share_import_phase_delivering">Sending install</string>
     <string name="github_share_import_phase_install_downloading">Downloading APK</string>
     <string name="github_share_import_phase_installing">Preparing install</string>
+    <string name="github_share_import_phase_install_ready">Waiting to install</string>
     <string name="github_share_import_phase_install_committing">Committing install</string>
     <string name="github_share_import_phase_waiting_install">Waiting install</string>
     <string name="github_share_import_phase_install_detected">Install detected</string>
@@ -716,6 +717,7 @@
     <string name="github_share_import_notify_action_open_flow">Open flow</string>
     <string name="github_share_import_notify_action_select_apk">Choose APK</string>
     <string name="github_share_import_notify_action_send_install">Send install</string>
+    <string name="github_share_import_notify_action_continue_install">Continue install</string>
     <string name="github_share_import_notify_action_view_progress">View progress</string>
     <string name="github_share_import_notify_action_view_status">Check install</string>
     <string name="github_share_import_notify_action_confirm_track">Confirm tracking</string>
@@ -726,6 +728,7 @@
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>
     <string name="github_share_import_notify_title_install_downloading">Downloading APK</string>
     <string name="github_share_import_notify_title_installing">Preparing install</string>
+    <string name="github_share_import_notify_title_install_ready">Waiting to install</string>
     <string name="github_share_import_notify_title_install_committing">Committing install</string>
     <string name="github_share_import_notify_title_waiting_install">Waiting for install</string>
     <string name="github_share_import_notify_title_install_detected">Install detected</string>
@@ -739,6 +742,7 @@
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s · %3$s</string>
     <string name="github_share_import_notify_content_installing">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_install_ready">%1$s · %2$s downloaded, confirm to install</string>
     <string name="github_share_import_notify_content_install_committing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · %3$d min left</string>
     <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · exact match · %3$d min left</string>
@@ -754,6 +758,7 @@
     <string name="github_share_import_notify_short_delivering">Sending</string>
     <string name="github_share_import_notify_short_install_downloading">Download</string>
     <string name="github_share_import_notify_short_installing">Prepare</string>
+    <string name="github_share_import_notify_short_install_ready">Ready</string>
     <string name="github_share_import_notify_short_install_committing">Commit</string>
     <string name="github_share_import_notify_short_waiting_install">Install</string>
     <string name="github_share_import_notify_short_install_detected">Confirm</string>

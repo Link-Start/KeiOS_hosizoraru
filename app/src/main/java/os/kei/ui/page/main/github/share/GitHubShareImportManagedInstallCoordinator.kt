@@ -150,7 +150,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
         }
         GitHubTrackStoreSignals.notifyChanged()
 
-        val installResult = managedApkInstaller.install(
+        val installResult = managedApkInstaller.stage(
             context = context,
             request = request
         ) { progress ->
@@ -167,6 +167,70 @@ internal object GitHubShareImportManagedInstallCoordinator {
             request = request,
             result = installResult
         )
+    }
+
+    suspend fun commitActive(
+        context: Context,
+        onProgressUpdate: suspend (GitHubShareImportManagedInstallProgress) -> Unit = {}
+    ): ShareImportDeliveryCoordinatorResult {
+        val appContext = context.applicationContext
+        val activeRecord = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActiveManagedInstall()
+        } ?: return ShareImportDeliveryCoordinatorResult.Cancelled
+        if (activeRecord.sessionId <= 0) {
+            return ShareImportDeliveryCoordinatorResult.Cancelled
+        }
+        val preview = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActivePreview()?.toShareImportPreview()
+        } ?: return ShareImportDeliveryCoordinatorResult.Cancelled
+        val asset = preview.assets.firstOrNull { asset ->
+            asset.name.equals(activeRecord.assetName, ignoreCase = true)
+        } ?: preview.selectedAssetForSend ?: return ShareImportDeliveryCoordinatorResult.Cancelled
+        val lookupConfig = withContext(Dispatchers.IO) {
+            GitHubTrackStore.loadLookupConfig()
+        }
+        val request = GitHubApkInstallRequest(
+            owner = activeRecord.owner,
+            repo = activeRecord.repo,
+            releaseTag = activeRecord.releaseTag,
+            projectUrl = activeRecord.projectUrl,
+            asset = asset,
+            lookupConfig = lookupConfig,
+            targetDisplayName = activeRecord.targetDisplayName.ifBlank { preview.targetDisplayName },
+            scannedPackageName = activeRecord.packageName,
+            requestId = activeRecord.requestId,
+            startedAtMillis = activeRecord.startedAtMillis
+        )
+        val result = managedApkInstaller.commit(
+            context = appContext,
+            request = request,
+            sessionId = activeRecord.sessionId,
+            downloadedBytes = activeRecord.downloadedBytes,
+            totalBytes = activeRecord.totalBytes,
+            onProgress = { progress ->
+                handleProgress(
+                    context = appContext,
+                    request = request,
+                    progress = progress,
+                    onProgressUpdate = onProgressUpdate
+                )
+            }
+        )
+        return applyResult(
+            context = appContext,
+            preview = preview,
+            request = request,
+            result = result
+        )
+    }
+
+    suspend fun cancelActive(context: Context) {
+        val activeRecord = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActiveManagedInstall()
+        } ?: return
+        if (activeRecord.sessionId > 0) {
+            managedApkInstaller.cancel(context.applicationContext, activeRecord.sessionId)
+        }
     }
 
     private suspend fun handleProgress(
@@ -235,6 +299,17 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 )
             }
 
+            GitHubApkInstallStage.ReadyToCommit -> {
+                GitHubShareImportNotificationHelper.notifyInstallReady(
+                    context = context,
+                    owner = request.owner,
+                    repo = request.repo,
+                    assetName = request.asset.name,
+                    packageName = request.scannedPackageName,
+                    targetDisplayName = request.targetDisplayName
+                )
+            }
+
             GitHubApkInstallStage.Succeeded,
             GitHubApkInstallStage.Failed,
             GitHubApkInstallStage.Cancelled -> Unit
@@ -246,6 +321,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
     ): GitHubShareImportManagedInstallProgress {
         val phase = when (stage) {
             GitHubApkInstallStage.Downloading -> GitHubShareImportPhase.InstallDownloading
+            GitHubApkInstallStage.ReadyToCommit -> GitHubShareImportPhase.InstallReady
             GitHubApkInstallStage.Committing -> GitHubShareImportPhase.InstallCommitting
             GitHubApkInstallStage.Preparing,
             GitHubApkInstallStage.Staging -> GitHubShareImportPhase.Installing
@@ -277,6 +353,14 @@ internal object GitHubShareImportManagedInstallCoordinator {
             return ShareImportDeliveryCoordinatorResult.Cancelled
         }
         return when (result) {
+            is GitHubApkInstallResult.Staged -> {
+                applyStaged(
+                    context = context,
+                    request = request,
+                    result = result
+                )
+            }
+
             is GitHubApkInstallResult.Cancelled -> {
                 withContext(Dispatchers.IO) {
                     GitHubShareImportFlowStore.clearActiveManagedInstall()
@@ -306,6 +390,43 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 )
             }
         }
+    }
+
+    private suspend fun applyStaged(
+        context: Context,
+        request: GitHubApkInstallRequest,
+        result: GitHubApkInstallResult.Staged
+    ): ShareImportDeliveryCoordinatorResult {
+        val activeRecord = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActiveManagedInstall()
+        }
+        if (activeRecord?.requestId != request.requestId) {
+            return ShareImportDeliveryCoordinatorResult.Cancelled
+        }
+        val nextRecord = activeRecord.copy(
+            sessionId = result.sessionId,
+            packageName = result.packageName.ifBlank { activeRecord.packageName },
+            progressPhase = GitHubShareImportPhase.InstallReady.name,
+            progressPercent = 100,
+            downloadedBytes = result.downloadedBytes,
+            totalBytes = result.totalBytes
+        )
+        withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.saveActiveManagedInstall(nextRecord)
+        }
+        GitHubTrackStoreSignals.notifyChanged()
+        GitHubShareImportNotificationHelper.notifyInstallReady(
+            context = context,
+            owner = request.owner,
+            repo = request.repo,
+            assetName = request.asset.name,
+            packageName = nextRecord.packageName,
+            targetDisplayName = request.targetDisplayName
+        )
+        return ShareImportDeliveryCoordinatorResult.InstallReady(
+            requestId = request.requestId,
+            assetName = request.asset.name
+        )
     }
 
     private suspend fun applySuccess(

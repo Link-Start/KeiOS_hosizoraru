@@ -458,6 +458,42 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `managed install ready waits for explicit continue action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.InstallReady,
+            owner = "owner",
+            repo = "repo",
+            assetName = "demo.apk",
+            packageName = "demo.app"
+        )
+
+        val modern = buildModern(context, state)
+        val miIsland = buildMiIsland(context, state)
+        val focusParam = miIsland.extras.getString("miui.focus.param").orEmpty()
+        val focusOpenAction = miIsland.focusAction("mcp_action_open")
+        val focusContinueAction = miIsland.focusAction("mcp_action_stop")
+
+        assertEquals(
+            "Waiting to install",
+            modern.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            "owner/repo · demo.app downloaded, confirm to install",
+            modern.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertEquals(2, modern.actions.size)
+        assertEquals("Open flow", modern.actions[0].title.toString())
+        assertEquals("Continue install", modern.actions[1].title.toString())
+        assertEquals("Open flow", focusOpenAction.title.toString())
+        assertEquals("Continue install", focusContinueAction.title.toString())
+        assertTrue(focusParam.contains("\"title\":\"Ready\""))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+    }
+
+    @Test
     fun `install detected mi island compact title uses phase label`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(

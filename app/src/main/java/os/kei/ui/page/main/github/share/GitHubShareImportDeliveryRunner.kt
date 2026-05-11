@@ -26,6 +26,10 @@ internal object GitHubShareImportDeliveryRunner {
         return launchDelivery(context = context)
     }
 
+    fun launchCurrentDeliveryAction(context: Context): Boolean {
+        return launchDelivery(context = context, preferManagedCommit = true)
+    }
+
     fun launchSelectedPreviewDelivery(
         context: Context,
         preview: GitHubShareImportPreview,
@@ -41,7 +45,8 @@ internal object GitHubShareImportDeliveryRunner {
     private fun launchDelivery(
         context: Context,
         selectedPreview: GitHubShareImportPreview? = null,
-        selectedAsset: GitHubReleaseAssetFile? = null
+        selectedAsset: GitHubReleaseAssetFile? = null,
+        preferManagedCommit: Boolean = false
     ): Boolean {
         val appContext = context.applicationContext
         synchronized(lock) {
@@ -52,7 +57,13 @@ internal object GitHubShareImportDeliveryRunner {
             val job = scope.launch {
                 try {
                     persistSelectedPreview(selectedPreview, selectedAsset)
-                    GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(appContext)
+                    if (preferManagedCommit && shouldCommitActiveManagedInstall()) {
+                        GitHubShareImportFlowCoordinator.continueActiveManagedInstall(appContext)
+                    } else {
+                        GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(
+                            appContext
+                        )
+                    }
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: Throwable) {
@@ -80,6 +91,14 @@ internal object GitHubShareImportDeliveryRunner {
             }
             return true
         }
+    }
+
+    private suspend fun shouldCommitActiveManagedInstall(): Boolean {
+        val activeManagedInstall = withContext(Dispatchers.IO) {
+            GitHubShareImportFlowStore.loadActiveManagedInstall()
+        } ?: return false
+        return activeManagedInstall.sessionId > 0 &&
+                activeManagedInstall.progressPhase == GitHubShareImportPhase.InstallReady.name
     }
 
     private suspend fun persistSelectedPreview(

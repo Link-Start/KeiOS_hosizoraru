@@ -13,6 +13,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.page.githubApkInfoKey
@@ -244,8 +245,9 @@ internal class GitHubAssetActions(
             "${target.rawTag.trim()}|${target.releaseUrl.trim()}"
         }
         if (targets.isEmpty()) return emptyList()
-        val preferHtml = state.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
-        val hasApiToken = state.lookupConfig.apiToken.isNotBlank()
+        val lookupConfig = state.lookupConfig.forTrackedItem(item)
+        val preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
+        val hasApiToken = lookupConfig.apiToken.isNotBlank()
         return targets
             .flatMap { target ->
                 listOf(false, true).map { includeAllAssets ->
@@ -255,7 +257,7 @@ internal class GitHubAssetActions(
                         rawTag = target.rawTag,
                         releaseUrl = target.releaseUrl,
                         preferHtml = preferHtml,
-                        aggressiveFiltering = state.lookupConfig.aggressiveApkFiltering,
+                        aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
                         includeAllAssets = includeAllAssets,
                         hasApiToken = hasApiToken
                     )
@@ -303,6 +305,7 @@ internal class GitHubAssetActions(
         }
 
         state.apkAssetIncludeAll[item.id] = includeAllAssets
+        val lookupConfig = state.lookupConfig.forTrackedItem(item)
         val loadingState =
             if (showAssetPanelLoading) state.apkAssetLoading else state.releaseNotesLoading
         val errorState =
@@ -312,7 +315,7 @@ internal class GitHubAssetActions(
         if (
             toggleOnlyWhenCached &&
             cachedBundle != null &&
-            state.matchesAssetSourceSignature(cachedBundle) &&
+            state.matchesAssetSourceSignature(cachedBundle, lookupConfig) &&
             cachedBundle.tagName.equals(target.rawTag, ignoreCase = true) &&
             cachedBundle.showingAllAssets == includeAllAssets &&
             (!requireReleaseNotesBody || cachedBundle.releaseNotesBody.isNotBlank())
@@ -331,7 +334,7 @@ internal class GitHubAssetActions(
         loadingState[item.id] = true
         errorState.remove(item.id)
         scope.launch {
-            val preferHtml = state.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
+            val preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
             val refreshIntervalHours = repository.loadRefreshIntervalHours()
             val assetCacheKey = repository.buildAssetCacheKey(
                 owner = item.owner,
@@ -339,9 +342,9 @@ internal class GitHubAssetActions(
                 rawTag = target.rawTag,
                 releaseUrl = target.releaseUrl,
                 preferHtml = preferHtml,
-                aggressiveFiltering = state.lookupConfig.aggressiveApkFiltering,
+                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
                 includeAllAssets = includeAllAssets,
-                hasApiToken = state.lookupConfig.apiToken.isNotBlank()
+                hasApiToken = lookupConfig.apiToken.isNotBlank()
             )
             val persistedBundle = if (bypassPersistedCache) {
                 null
@@ -353,7 +356,7 @@ internal class GitHubAssetActions(
             }
             if (
                 persistedBundle != null &&
-                state.matchesAssetSourceSignature(persistedBundle) &&
+                state.matchesAssetSourceSignature(persistedBundle, lookupConfig) &&
                 (!requireReleaseNotesBody || persistedBundle.releaseNotesBody.isNotBlank())
             ) {
                 loadingState[item.id] = false
@@ -375,14 +378,14 @@ internal class GitHubAssetActions(
                 rawTag = target.rawTag,
                 releaseUrl = target.releaseUrl,
                 preferHtml = preferHtml,
-                aggressiveFiltering = state.lookupConfig.aggressiveApkFiltering,
+                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
                 includeAllAssets = includeAllAssets,
-                apiToken = state.lookupConfig.apiToken
+                apiToken = lookupConfig.apiToken
             )
             loadingState[item.id] = false
             result.onSuccess { bundle ->
                 val persistedBundle = bundle.copy(
-                    sourceConfigSignature = state.buildAssetSourceSignature()
+                    sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig)
                 )
                 state.apkAssetBundles[item.id] = persistedBundle
                 scope.launch {

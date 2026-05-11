@@ -44,6 +44,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.DownloaderOption
@@ -67,6 +68,7 @@ internal data class GitHubTrackEditorDraft(
     val packageName: String,
     val preferPreRelease: Boolean,
     val alwaysShowLatestReleaseDownloadButton: Boolean,
+    val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,
     val appList: List<InstalledAppItem>
 )
 
@@ -461,7 +463,8 @@ internal class GitHubPageRepository(
                     packageName = resolvedPackageName,
                     appLabel = resolvedAppLabel,
                     preferPreRelease = draft.preferPreRelease,
-                    alwaysShowLatestReleaseDownloadButton = draft.alwaysShowLatestReleaseDownloadButton
+                    alwaysShowLatestReleaseDownloadButton = draft.alwaysShowLatestReleaseDownloadButton,
+                    preciseApkVersionMode = draft.preciseApkVersionMode
                 )
             )
         }

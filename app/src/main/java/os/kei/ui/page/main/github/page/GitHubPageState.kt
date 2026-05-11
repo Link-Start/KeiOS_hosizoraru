@@ -35,6 +35,7 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.GitHubSortMode
@@ -100,6 +101,7 @@ internal class GitHubPageState(
     var actionsRunWatchJob by mutableStateOf<Job?>(null)
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
+    var preciseApkVersionModeInput by mutableStateOf(GitHubTrackedPreciseApkVersionMode.FollowGlobal)
     var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
     var selectedApp by mutableStateOf<InstalledAppItem?>(null)
@@ -235,9 +237,12 @@ internal class GitHubPageState(
         return config.githubAssetSourceSignature()
     }
 
-    fun matchesAssetSourceSignature(bundle: GitHubReleaseAssetBundle): Boolean {
+    fun matchesAssetSourceSignature(
+        bundle: GitHubReleaseAssetBundle,
+        config: GitHubLookupConfig = lookupConfig
+    ): Boolean {
         return bundle.sourceConfigSignature.isNotBlank() &&
-            bundle.sourceConfigSignature == buildAssetSourceSignature()
+            bundle.sourceConfigSignature == buildAssetSourceSignature(config)
     }
 
     fun clearAllAssetUiState() {
@@ -389,6 +394,7 @@ internal class GitHubPageState(
         pickerExpanded = false
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
+        preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
         repoUrlScanRunning = false
         packageNameScanRunning = false
     }

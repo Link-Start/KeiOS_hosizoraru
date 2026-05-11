@@ -22,6 +22,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
+import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubCheckSourceSignature
 import java.io.IOException
 
@@ -89,7 +90,7 @@ object GitHubReleaseCheckService {
         profilePurposeOverride: GitHubRepositoryProfilePurpose?,
         forceRefresh: Boolean
     ): GitHubTrackedReleaseCheck {
-        val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig()
+        val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig().forTrackedItem(item)
         val sourceConfigSignature = lookupConfig.githubCheckSourceSignature()
         val localVersionInfo = runCatching {
             GitHubVersionUtils.localVersionInfoOrNull(context, item.packageName)

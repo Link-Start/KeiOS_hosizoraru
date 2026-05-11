@@ -624,6 +624,11 @@
     <string name="github_track_sheet_summary_prefer_prerelease">仅影响这个项目的推荐更新目标，不影响全局是否检查预发行</string>
     <string name="github_track_sheet_label_always_show_latest_release_download">始终显示最新发布下载</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
+    <string name="github_track_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
+    <string name="github_track_sheet_summary_precise_apk_version">控制这个项目是否读取远端 APK Manifest 中的真实 versionName 与 versionCode，可跟随全局或单独覆盖。</string>
+    <string name="github_track_sheet_precise_apk_version_follow_global">跟随全局</string>
+    <string name="github_track_sheet_precise_apk_version_enabled">仅此项目开启</string>
+    <string name="github_track_sheet_precise_apk_version_disabled">仅此项目关闭</string>
     <string name="github_track_sheet_section_app_candidates">App 候选</string>
     <string name="github_track_sheet_label_app_list">App 列表</string>
     <string name="github_track_sheet_app_result_count_format">显示 %1$d / %2$d 个</string>

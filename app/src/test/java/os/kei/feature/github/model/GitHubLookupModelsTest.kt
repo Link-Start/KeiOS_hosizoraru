@@ -41,6 +41,44 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `tracked precise apk version mode overrides global config`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example"
+        )
+
+        assertEquals(
+            true,
+            GitHubLookupConfig(preciseApkVersionEnabled = false)
+                .forTrackedItem(
+                    item.copy(
+                        preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled
+                    )
+                )
+                .preciseApkVersionEnabled
+        )
+        assertEquals(
+            false,
+            GitHubLookupConfig(preciseApkVersionEnabled = true)
+                .forTrackedItem(
+                    item.copy(
+                        preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled
+                    )
+                )
+                .preciseApkVersionEnabled
+        )
+        assertEquals(
+            true,
+            GitHubLookupConfig(preciseApkVersionEnabled = true)
+                .forTrackedItem(item)
+                .preciseApkVersionEnabled
+        )
+    }
+
+    @Test
     fun `profile source signature follows purpose capability set`() {
         val config = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
         val fast =

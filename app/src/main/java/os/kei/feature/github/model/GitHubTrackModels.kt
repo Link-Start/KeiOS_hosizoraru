@@ -15,11 +15,31 @@ data class GitHubTrackedApp(
     val appLabel: String,
     val preferPreRelease: Boolean = false,
     val alwaysShowLatestReleaseDownloadButton: Boolean = false,
+    val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
+        GitHubTrackedPreciseApkVersionMode.FollowGlobal,
     val repositoryArchived: Boolean = false,
     val repositoryFork: Boolean = false
 ) {
     val id: String
         get() = "$owner/$repo|$packageName"
+}
+
+enum class GitHubTrackedPreciseApkVersionMode(val storageId: String) {
+    FollowGlobal("follow_global"),
+    Enabled("enabled"),
+    Disabled("disabled");
+
+    companion object {
+        fun fromStorageId(value: String?): GitHubTrackedPreciseApkVersionMode {
+            val normalized = value.orEmpty().trim()
+            return entries.firstOrNull { it.storageId.equals(normalized, ignoreCase = true) }
+                ?: FollowGlobal
+        }
+
+        fun fromLegacyEnabled(value: Boolean): GitHubTrackedPreciseApkVersionMode {
+            return if (value) Enabled else FollowGlobal
+        }
+    }
 }
 
 internal fun defaultKeiOsTrackedApp(): GitHubTrackedApp {
@@ -36,6 +56,14 @@ internal fun GitHubTrackedApp.isKeiOsSelfTrack(): Boolean {
     return owner.equals(keiOsTrackOwner, ignoreCase = true) &&
         repo.equals(keiOsTrackRepo, ignoreCase = true) &&
         packageName.equals(BuildConfig.APPLICATION_ID, ignoreCase = true)
+}
+
+fun GitHubLookupConfig.forTrackedItem(item: GitHubTrackedApp): GitHubLookupConfig {
+    return when (item.preciseApkVersionMode) {
+        GitHubTrackedPreciseApkVersionMode.FollowGlobal -> this
+        GitHubTrackedPreciseApkVersionMode.Enabled -> copy(preciseApkVersionEnabled = true)
+        GitHubTrackedPreciseApkVersionMode.Disabled -> copy(preciseApkVersionEnabled = false)
+    }
 }
 
 data class InstalledAppItem(

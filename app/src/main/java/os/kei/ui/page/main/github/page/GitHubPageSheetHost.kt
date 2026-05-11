@@ -263,6 +263,7 @@ internal fun GitHubPageSheetHost(
         appListRefreshing = state.appListRefreshing,
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
+        preciseApkVersionModeInput = state.preciseApkVersionModeInput,
         onDismissRequest = actions::dismissTrackSheet,
         onApply = actions::applyTrackSheet,
         onRepoUrlInputChange = {
@@ -298,6 +299,9 @@ internal fun GitHubPageSheetHost(
         onPreferPreReleaseInputChange = { state.preferPreReleaseInput = it },
         onAlwaysShowLatestReleaseDownloadButtonInputChange = {
             state.alwaysShowLatestReleaseDownloadButtonInput = it
+        },
+        onPreciseApkVersionModeInputChange = {
+            state.preciseApkVersionModeInput = it
         }
     )
 

@@ -44,6 +44,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubRepositoryHealth
@@ -161,6 +162,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
         ) { item ->
             val expanded = trackedCardExpanded[item.id] == true
             val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
+            val itemLookupConfig = lookupConfig.forTrackedItem(item)
             val displayTitle = item.githubTrackedDisplayTitle(state)
             val displaySubtitle = item.githubTrackedDisplaySubtitle(state, displayTitle)
             AppLiquidAccordionCard(
@@ -337,7 +339,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         )
                         val stableReleaseMeta = formatReleaseMetaValue(
                             preciseInfo = state.latestStableApkVersion.takeIf {
-                                lookupConfig.preciseApkVersionEnabled
+                                itemLookupConfig.preciseApkVersionEnabled
                             },
                             releaseName = state.latestStableName.ifBlank { state.latestTag },
                             rawTag = state.latestStableRawTag
@@ -347,7 +349,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             label = stringResource(R.string.github_item_label_stable_version),
                             value = formatApkVersionValue(
                                 preciseInfo = state.latestStableApkVersion.takeIf {
-                                    lookupConfig.preciseApkVersionEnabled
+                                    itemLookupConfig.preciseApkVersionEnabled
                                 },
                                 releaseName = state.latestStableName.ifBlank { state.latestTag },
                                 rawTag = state.latestStableRawTag
@@ -387,7 +389,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         val preReleaseCardTextColor = gitHubPreReleaseCardTextColor()
                         val preReleaseMeta = formatReleaseMetaValue(
                             preciseInfo = state.latestPreApkVersion.takeIf {
-                                lookupConfig.preciseApkVersionEnabled
+                                itemLookupConfig.preciseApkVersionEnabled
                             },
                             releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
                             rawTag = state.latestPreRawTag
@@ -397,7 +399,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             label = stringResource(R.string.github_item_label_prerelease_version),
                             value = formatApkVersionValue(
                                 preciseInfo = state.latestPreApkVersion.takeIf {
-                                    lookupConfig.preciseApkVersionEnabled
+                                    itemLookupConfig.preciseApkVersionEnabled
                                 },
                                 releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
                                 rawTag = state.latestPreRawTag
@@ -462,7 +464,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     GitHubTrackedItemAssetPanel(
                         item = item,
                         state = state,
-                        lookupConfig = lookupConfig,
+                        lookupConfig = itemLookupConfig,
                         isDark = isDark,
                         contentBackdrop = contentBackdrop,
                         assetBundle = assetBundle,

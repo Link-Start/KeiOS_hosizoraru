@@ -43,6 +43,7 @@ import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
@@ -87,6 +88,7 @@ internal fun GitHubTrackEditSheet(
     appListRefreshing: Boolean,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
+    preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     onDismissRequest: () -> Unit,
     onApply: () -> Unit,
     onRepoUrlInputChange: (String) -> Unit,
@@ -99,7 +101,8 @@ internal fun GitHubTrackEditSheet(
     onRefreshAppList: () -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
-    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
+    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
+    onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -177,6 +180,7 @@ internal fun GitHubTrackEditSheet(
                     selectedApp = selectedApp,
                     preferPreReleaseInput = preferPreReleaseInput,
                     alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
+                    preciseApkVersionModeInput = preciseApkVersionModeInput,
                     onRepoUrlInputChange = onRepoUrlInputChange,
                     onPackageNameInputChange = onPackageNameInputChange,
                     onScanRepoUrl = onScanRepoUrl,
@@ -184,7 +188,9 @@ internal fun GitHubTrackEditSheet(
                     onRepoScanCandidateSelected = onRepoScanCandidateSelected,
                     onPickerExpandedChange = onPickerExpandedChange,
                     onPreferPreReleaseInputChange = onPreferPreReleaseInputChange,
-                    onAlwaysShowLatestReleaseDownloadButtonInputChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
+                    onAlwaysShowLatestReleaseDownloadButtonInputChange =
+                        onAlwaysShowLatestReleaseDownloadButtonInputChange,
+                    onPreciseApkVersionModeInputChange = onPreciseApkVersionModeInputChange
                 )
             }
         }
@@ -375,6 +381,7 @@ private fun GitHubTrackEditFormContent(
     selectedApp: InstalledAppItem?,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
+    preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     onRepoUrlInputChange: (String) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
     onScanRepoUrl: () -> Unit,
@@ -382,8 +389,14 @@ private fun GitHubTrackEditFormContent(
     onRepoScanCandidateSelected: (GitHubPackageRepositoryScanCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
-    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit
+    onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
+    onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
+    var preciseModeExpanded by remember { mutableStateOf(false) }
+    var preciseModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val preciseModes = GitHubTrackedPreciseApkVersionMode.entries
+    val preciseModeOptions = preciseModes.map { mode -> preciseApkVersionModeLabel(mode) }
+    val preciseModeIndex = preciseModes.indexOf(preciseApkVersionModeInput).coerceAtLeast(0)
     val canScanRepoUrl = !repoUrlScanRunning &&
             !packageNameScanRunning &&
             (packageNameInput.isNotBlank() || selectedApp != null)
@@ -511,7 +524,39 @@ private fun GitHubTrackEditFormContent(
                     onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
                 )
             }
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_precise_apk_version),
+                summary = stringResource(R.string.github_track_sheet_summary_precise_apk_version)
+            ) {
+                AppDropdownSelector(
+                    selectedText = preciseModeOptions.getOrElse(preciseModeIndex) {
+                        stringResource(R.string.github_track_sheet_precise_apk_version_follow_global)
+                    },
+                    options = preciseModeOptions,
+                    selectedIndex = preciseModeIndex,
+                    expanded = preciseModeExpanded,
+                    anchorBounds = preciseModeAnchorBounds,
+                    onExpandedChange = { preciseModeExpanded = it },
+                    onSelectedIndexChange = { index ->
+                        preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
+                    },
+                    onAnchorBoundsChange = { preciseModeAnchorBounds = it },
+                    backdrop = backdrop
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun preciseApkVersionModeLabel(mode: GitHubTrackedPreciseApkVersionMode): String {
+    return when (mode) {
+        GitHubTrackedPreciseApkVersionMode.FollowGlobal ->
+            stringResource(R.string.github_track_sheet_precise_apk_version_follow_global)
+        GitHubTrackedPreciseApkVersionMode.Enabled ->
+            stringResource(R.string.github_track_sheet_precise_apk_version_enabled)
+        GitHubTrackedPreciseApkVersionMode.Disabled ->
+            stringResource(R.string.github_track_sheet_precise_apk_version_disabled)
     }
 }
 

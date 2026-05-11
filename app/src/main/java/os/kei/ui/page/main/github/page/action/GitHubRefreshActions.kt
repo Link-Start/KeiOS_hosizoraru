@@ -14,6 +14,7 @@ import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubCheckSourceSignature
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -590,9 +591,10 @@ internal class GitHubRefreshActions(
             ?.toShareImportResult()
 
         val cachedStates = trackSnapshot.checkCache
-        val activeCheckSignature = trackSnapshot.lookupConfig.githubCheckSourceSignature()
         state.checkStates.clear()
         trackSnapshot.items.forEach { item ->
+            val itemLookupConfig = trackSnapshot.lookupConfig.forTrackedItem(item)
+            val activeCheckSignature = itemLookupConfig.githubCheckSourceSignature()
             cachedStates[item.id]
                 ?.takeIf { cache ->
                     val sourceId = cache.sourceStrategyId.ifBlank {
@@ -602,7 +604,7 @@ internal class GitHubRefreshActions(
                         cache.sourceConfigSignature.isNotBlank() ->
                             cache.sourceConfigSignature == activeCheckSignature
 
-                        trackSnapshot.lookupConfig.preciseApkVersionEnabled -> false
+                        itemLookupConfig.preciseApkVersionEnabled -> false
                         else -> sourceId == activeStrategyId
                     }
                 }

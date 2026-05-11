@@ -13,6 +13,7 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
@@ -680,9 +681,29 @@ object GitHubTrackStore {
                     obj.optBoolean("alwaysShowLatestReleaseDownload", false)
                 else -> false
             },
+            preciseApkVersionMode = parsePreciseApkVersionMode(obj),
             repositoryArchived = obj.optBoolean("repositoryArchived", false),
             repositoryFork = obj.optBoolean("repositoryFork", false)
         )
+    }
+
+    private fun parsePreciseApkVersionMode(obj: JSONObject): GitHubTrackedPreciseApkVersionMode {
+        if (obj.has("preciseApkVersionMode")) {
+            return GitHubTrackedPreciseApkVersionMode.fromStorageId(
+                obj.optString("preciseApkVersionMode")
+            )
+        }
+        return when {
+            obj.has("preciseApkVersionEnabled") ->
+                GitHubTrackedPreciseApkVersionMode.fromLegacyEnabled(
+                    obj.optBoolean("preciseApkVersionEnabled", false)
+                )
+            obj.has("preciseApkVersion") ->
+                GitHubTrackedPreciseApkVersionMode.fromLegacyEnabled(
+                    obj.optBoolean("preciseApkVersion", false)
+                )
+            else -> GitHubTrackedPreciseApkVersionMode.FollowGlobal
+        }
     }
 
     private fun trackedItemToJson(item: GitHubTrackedApp): JSONObject {
@@ -696,6 +717,7 @@ object GitHubTrackStore {
             .put("checkPreRelease", item.preferPreRelease)
             .put("alwaysShowLatestReleaseDownloadButton", item.alwaysShowLatestReleaseDownloadButton)
             .put("alwaysShowLatestReleaseDownload", item.alwaysShowLatestReleaseDownloadButton)
+            .put("preciseApkVersionMode", item.preciseApkVersionMode.storageId)
             .put("repositoryArchived", item.repositoryArchived)
             .put("repositoryFork", item.repositoryFork)
     }

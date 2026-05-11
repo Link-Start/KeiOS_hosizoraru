@@ -193,6 +193,7 @@ fun SheetControlRow(
     label: String,
     modifier: Modifier = Modifier,
     summary: String? = null,
+    summaryColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
     labelColor: Color = MiuixTheme.colorScheme.onBackground,
     minHeight: Dp = AppInteractiveTokens.compactControlRowMinHeight,
     trailing: @Composable RowScope.() -> Unit,
@@ -202,6 +203,7 @@ fun SheetControlRow(
         modifier = modifier,
         summary = summary,
         titleColor = labelColor,
+        summaryColor = summaryColor,
         minHeight = minHeight,
         trailing = trailing
     )
@@ -211,6 +213,7 @@ fun SheetControlRow(
 fun SheetControlRow(
     modifier: Modifier = Modifier,
     summary: String? = null,
+    summaryColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
     minHeight: Dp = AppInteractiveTokens.compactControlRowMinHeight,
     labelContent: @Composable ColumnScope.() -> Unit,
     trailing: @Composable RowScope.() -> Unit,
@@ -218,6 +221,7 @@ fun SheetControlRow(
     AppControlRow(
         modifier = modifier,
         summary = summary,
+        summaryColor = summaryColor,
         minHeight = minHeight,
         titleContent = labelContent,
         trailing = trailing

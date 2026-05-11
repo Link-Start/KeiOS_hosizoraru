@@ -408,6 +408,7 @@
     <string name="github_check_sheet_summary_aggressive_filter">忽略 `armeabi-v7a`、`armeabi`、`x86_64`、`x86`；若有 arm64-v8a 也忽略 universal</string>
     <string name="github_check_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
     <string name="github_check_sheet_summary_precise_apk_version">从远端 APK Manifest 读取真实 versionName 与 versionCode；追踪项目较多时会增加少量解析耗时</string>
+    <string name="github_track_sheet_summary_precise_apk_version_follow_global">跟随全局：当前全局为 %1$s</string>
     <string name="github_check_sheet_label_deep_profile">深度仓库画像</string>
     <string name="github_check_sheet_summary_deep_profile">默认关闭。开启后会额外读取流量、Fork 同步与安全扫描端点，适合手动复查重点仓库；Token 下信息更完整，请求量也更高。</string>
     <string name="github_check_sheet_label_downloader">下载器</string>

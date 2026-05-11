@@ -67,6 +67,7 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -89,6 +90,7 @@ internal fun GitHubTrackEditSheet(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    globalPreciseApkVersionEnabled: Boolean,
     onDismissRequest: () -> Unit,
     onApply: () -> Unit,
     onRepoUrlInputChange: (String) -> Unit,
@@ -181,6 +183,7 @@ internal fun GitHubTrackEditSheet(
                     preferPreReleaseInput = preferPreReleaseInput,
                     alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
+                    globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
                     onPackageNameInputChange = onPackageNameInputChange,
                     onScanRepoUrl = onScanRepoUrl,
@@ -382,6 +385,7 @@ private fun GitHubTrackEditFormContent(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
     onScanRepoUrl: () -> Unit,
@@ -397,6 +401,27 @@ private fun GitHubTrackEditFormContent(
     val preciseModes = GitHubTrackedPreciseApkVersionMode.entries
     val preciseModeOptions = preciseModes.map { mode -> preciseApkVersionModeLabel(mode) }
     val preciseModeIndex = preciseModes.indexOf(preciseApkVersionModeInput).coerceAtLeast(0)
+    val preciseModeFollowsGlobal =
+        preciseApkVersionModeInput == GitHubTrackedPreciseApkVersionMode.FollowGlobal
+    val preciseModeSummary = if (preciseModeFollowsGlobal) {
+        stringResource(
+            R.string.github_track_sheet_summary_precise_apk_version_follow_global,
+            stringResource(
+                if (globalPreciseApkVersionEnabled) {
+                    R.string.github_check_sheet_value_enabled
+                } else {
+                    R.string.github_check_sheet_value_disabled
+                }
+            )
+        )
+    } else {
+        stringResource(R.string.github_track_sheet_summary_precise_apk_version)
+    }
+    val preciseModeSummaryColor = if (preciseModeFollowsGlobal) {
+        if (globalPreciseApkVersionEnabled) AppStatusColors.Fresh else AppStatusColors.Failed
+    } else {
+        MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
+    }
     val canScanRepoUrl = !repoUrlScanRunning &&
             !packageNameScanRunning &&
             (packageNameInput.isNotBlank() || selectedApp != null)
@@ -526,7 +551,8 @@ private fun GitHubTrackEditFormContent(
             }
             SheetControlRow(
                 label = stringResource(R.string.github_track_sheet_label_precise_apk_version),
-                summary = stringResource(R.string.github_track_sheet_summary_precise_apk_version)
+                summary = preciseModeSummary,
+                summaryColor = preciseModeSummaryColor
             ) {
                 AppDropdownSelector(
                     selectedText = preciseModeOptions.getOrElse(preciseModeIndex) {

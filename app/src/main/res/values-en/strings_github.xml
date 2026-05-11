@@ -626,6 +626,7 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_precise_apk_version">More precise version logic</string>
     <string name="github_track_sheet_summary_precise_apk_version">Controls whether this project reads real versionName and versionCode from the remote APK Manifest. It can follow global settings or override them.</string>
+    <string name="github_track_sheet_summary_precise_apk_version_follow_global">Following global: global is currently %1$s</string>
     <string name="github_track_sheet_precise_apk_version_follow_global">Follow global</string>
     <string name="github_track_sheet_precise_apk_version_enabled">Enable for this project</string>
     <string name="github_track_sheet_precise_apk_version_disabled">Disable for this project</string>

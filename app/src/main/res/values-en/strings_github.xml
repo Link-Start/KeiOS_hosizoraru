@@ -12,6 +12,14 @@
     <string name="github_refresh_island_cancelled">Cancelled</string>
     <string name="github_refresh_island_completed">Completed</string>
     <string name="github_refresh_failed_short_with_count">Failed %1$d</string>
+    <string name="github_actions_update_notification_title">New GitHub Actions build</string>
+    <string name="github_actions_update_notification_content">%1$s recommended run updated to %2$s · %3$s</string>
+    <string name="github_actions_update_island_content">Actions</string>
+    <string name="github_actions_update_debug_app_label">Actions notification test</string>
+    <string name="github_actions_update_debug_workflow">Android build</string>
+    <string name="github_actions_update_debug_run_name">Debug Run #1424</string>
+    <string name="github_actions_update_debug_toast_sent">Actions update test notification sent</string>
+    <string name="github_actions_update_debug_toast_failed">Notification permission is off, so the test notification was skipped</string>
     <string name="github_check_failed_prefix">Check failed</string>
     <string name="github_page_title">GitHub</string>
     <string name="github_toast_no_checkable_item">No checkable items</string>
@@ -454,6 +462,10 @@
     <string name="github_check_sheet_action_exporting">Exporting</string>
     <string name="github_check_sheet_action_importing">Importing</string>
     <string name="github_check_sheet_action_import_stars">Import Star List</string>
+    <string name="github_check_sheet_section_debug">Debug</string>
+    <string name="github_check_sheet_label_debug_actions_update_notification">Actions update notification</string>
+    <string name="github_check_sheet_summary_debug_actions_update_notification">Sends a simulated #1424 live notification / island to test styling, permission, and actions.</string>
+    <string name="github_check_sheet_action_debug_actions_update_notification">Send test notification</string>
     <string name="github_check_sheet_section_notes">Notes</string>
     <string name="github_check_sheet_note_transfer">Import shows a preview first, then smart-merges by “owner/repo + package name”: same IDs are overwritten, new items are appended, and existing items missing from the import file are kept.</string>
     <string name="github_check_sheet_note_1">Global pre-release checks only discover versions; each item’s “Prefer pre-release version” decides the recommended target.</string>
@@ -624,6 +636,8 @@
     <string name="github_track_sheet_summary_prefer_prerelease">Checks pre-release versions for this project and prefers them when available. The global switch remains unchanged.</string>
     <string name="github_track_sheet_label_always_show_latest_release_download">Always show latest release download</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
+    <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
+    <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
     <string name="github_track_sheet_label_precise_apk_version">More precise version logic</string>
     <string name="github_track_sheet_summary_precise_apk_version">Controls whether this project reads real versionName and versionCode from the remote APK Manifest. It can follow global settings or override them.</string>
     <string name="github_track_sheet_summary_precise_apk_version_follow_global">Following global: global is currently %1$s</string>

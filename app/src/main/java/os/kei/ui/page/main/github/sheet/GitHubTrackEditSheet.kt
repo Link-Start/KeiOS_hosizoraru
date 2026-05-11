@@ -89,6 +89,7 @@ internal fun GitHubTrackEditSheet(
     appListRefreshing: Boolean,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
+    checkActionsUpdatesInput: Boolean,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     globalPreciseApkVersionEnabled: Boolean,
     onDismissRequest: () -> Unit,
@@ -104,6 +105,7 @@ internal fun GitHubTrackEditSheet(
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
+    onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
     SnapshotWindowBottomSheet(
@@ -182,6 +184,7 @@ internal fun GitHubTrackEditSheet(
                     selectedApp = selectedApp,
                     preferPreReleaseInput = preferPreReleaseInput,
                     alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
+                    checkActionsUpdatesInput = checkActionsUpdatesInput,
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
                     globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
@@ -193,6 +196,7 @@ internal fun GitHubTrackEditSheet(
                     onPreferPreReleaseInputChange = onPreferPreReleaseInputChange,
                     onAlwaysShowLatestReleaseDownloadButtonInputChange =
                         onAlwaysShowLatestReleaseDownloadButtonInputChange,
+                    onCheckActionsUpdatesInputChange = onCheckActionsUpdatesInputChange,
                     onPreciseApkVersionModeInputChange = onPreciseApkVersionModeInputChange
                 )
             }
@@ -384,6 +388,7 @@ private fun GitHubTrackEditFormContent(
     selectedApp: InstalledAppItem?,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
+    checkActionsUpdatesInput: Boolean,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
@@ -394,6 +399,7 @@ private fun GitHubTrackEditFormContent(
     onPickerExpandedChange: (Boolean) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
+    onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
     var preciseModeExpanded by remember { mutableStateOf(false) }
@@ -547,6 +553,15 @@ private fun GitHubTrackEditFormContent(
                 AppSwitch(
                     checked = alwaysShowLatestReleaseDownloadButtonInput,
                     onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
+                )
+            }
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_check_actions_updates),
+                summary = stringResource(R.string.github_track_sheet_summary_check_actions_updates)
+            ) {
+                AppSwitch(
+                    checked = checkActionsUpdatesInput,
+                    onCheckedChange = onCheckActionsUpdatesInputChange
                 )
             }
             SheetControlRow(

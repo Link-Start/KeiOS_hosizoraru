@@ -6,10 +6,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.domain.GitHubActionsBranchSelector
 import os.kei.feature.github.domain.GitHubActionsWorkflowSelector
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubActionsRunArtifacts
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.feature.github.model.GitHubActionsRunSelectionOptions
@@ -415,6 +417,11 @@ internal class GitHubActionsActions(
                 snapshot = snapshot,
                 history = state.actionsDownloadHistory
             )
+            recordRecommendedRunSnapshot(
+                item = item,
+                workflow = workflow,
+                runMatches = runMatches
+            )
             state.actionsAuthMode = snapshotTrace.authMode ?: state.actionsAuthMode
             state.actionsSnapshot = snapshot
             state.actionsRuns = runMatches
@@ -670,6 +677,42 @@ internal class GitHubActionsActions(
             val run = match.runArtifacts.run
             run.id to actionsRepository.buildGitHubActionsRunTrackingPlan(run)
         }
+    }
+
+    private fun recordRecommendedRunSnapshot(
+        item: GitHubTrackedApp,
+        workflow: GitHubActionsWorkflow,
+        runMatches: List<GitHubActionsRunMatch>
+    ) {
+        val match = runMatches.firstOrNull() ?: return
+        val run = match.runArtifacts.run
+        if (run.id <= 0L) return
+        GitHubActionsRecommendedRunStore.save(
+            GitHubActionsRecommendedRunSnapshot(
+                trackId = item.id,
+                owner = item.owner,
+                repo = item.repo,
+                appLabel = item.appLabel,
+                workflowId = workflow.id,
+                workflowName = workflow.displayName,
+                workflowPath = workflow.path,
+                runId = run.id,
+                runNumber = run.runNumber,
+                runAttempt = run.runAttempt,
+                runDisplayName = run.displayName,
+                headBranch = run.headBranch,
+                headSha = run.headSha,
+                event = run.event,
+                status = run.status,
+                conclusion = run.conclusion,
+                htmlUrl = run.htmlUrl,
+                artifactCount = match.runArtifacts.artifacts.count { !it.expired },
+                androidArtifactCount = match.artifactMatches.count { it.traits.androidLike },
+                createdAtMillis = run.createdAtMillis ?: 0L,
+                updatedAtMillis = run.updatedAtMillis ?: 0L,
+                checkedAtMillis = System.currentTimeMillis()
+            )
+        )
     }
 
     private fun scheduleSelectedRunWatch() {

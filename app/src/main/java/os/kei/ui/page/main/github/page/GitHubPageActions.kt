@@ -11,6 +11,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
@@ -71,6 +72,17 @@ internal class GitHubPageActions(
     fun openCheckLogicSheet() = configActions.openCheckLogicSheet()
 
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
+
+    fun sendDebugActionsUpdateNotification() {
+        val sent = GitHubActionsUpdateNotificationHelper.notifyDebug(env.context)
+        env.toast(
+            if (sent) {
+                R.string.github_actions_update_debug_toast_sent
+            } else {
+                R.string.github_actions_update_debug_toast_failed
+            }
+        )
+    }
 
     fun openActionsSheet(item: GitHubTrackedApp) = actionsActions.openActionsSheet(item)
 

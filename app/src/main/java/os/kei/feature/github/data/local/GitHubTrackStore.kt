@@ -684,6 +684,7 @@ object GitHubTrackStore {
                     obj.optBoolean("alwaysShowLatestReleaseDownload", false)
                 else -> false
             },
+            checkActionsUpdates = obj.optBoolean("checkActionsUpdates", false),
             preciseApkVersionMode = parsePreciseApkVersionMode(obj),
             repositoryArchived = obj.optBoolean("repositoryArchived", false),
             repositoryFork = obj.optBoolean("repositoryFork", false)
@@ -720,6 +721,7 @@ object GitHubTrackStore {
             .put("checkPreRelease", item.preferPreRelease)
             .put("alwaysShowLatestReleaseDownloadButton", item.alwaysShowLatestReleaseDownloadButton)
             .put("alwaysShowLatestReleaseDownload", item.alwaysShowLatestReleaseDownloadButton)
+            .put("checkActionsUpdates", item.checkActionsUpdates)
             .put("preciseApkVersionMode", item.preciseApkVersionMode.storageId)
             .put("repositoryArchived", item.repositoryArchived)
             .put("repositoryFork", item.repositoryFork)

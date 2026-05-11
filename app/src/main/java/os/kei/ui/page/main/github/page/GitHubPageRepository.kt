@@ -69,6 +69,7 @@ internal data class GitHubTrackEditorDraft(
     val packageName: String,
     val preferPreRelease: Boolean,
     val alwaysShowLatestReleaseDownloadButton: Boolean,
+    val checkActionsUpdates: Boolean,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,
     val appList: List<InstalledAppItem>
 )
@@ -465,6 +466,7 @@ internal class GitHubPageRepository(
                     appLabel = resolvedAppLabel,
                     preferPreRelease = draft.preferPreRelease,
                     alwaysShowLatestReleaseDownloadButton = draft.alwaysShowLatestReleaseDownloadButton,
+                    checkActionsUpdates = draft.checkActionsUpdates,
                     preciseApkVersionMode = draft.preciseApkVersionMode
                 )
             )

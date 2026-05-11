@@ -6,9 +6,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
+import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
+import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
+import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
 import os.kei.ui.page.main.ba.BaApReminderPlan
@@ -55,6 +60,11 @@ object AppForegroundInfoHandler {
             withContext(Dispatchers.IO) {
                 GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)
             }
+            handleGitHubActionsUpdates(
+                context = context,
+                snapshot = snapshot,
+                nowMs = nowMs
+            )
             if (result.hasNotifiableOutcome) {
                 GitHubRefreshNotificationHelper.notifyCompleted(
                     context = context,
@@ -64,6 +74,58 @@ object AppForegroundInfoHandler {
                     failedCount = result.failedCount
                 )
             }
+        }
+    }
+
+    private suspend fun handleGitHubActionsUpdates(
+        context: Context,
+        snapshot: GitHubTrackSnapshot,
+        nowMs: Long
+    ) {
+        val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
+        withContext(Dispatchers.IO) {
+            GitHubActionsRecommendedRunStore.retain(enabledItems.map { it.id }.toSet())
+        }
+        if (enabledItems.isEmpty()) return
+
+        val service = GitHubActionsUpdateCheckService()
+        val notifiedCount = GitHubExecution.mapOrderedBounded(
+            items = enabledItems,
+            maxConcurrency = 2
+        ) { item ->
+            val previous = withContext(Dispatchers.IO) {
+                GitHubActionsRecommendedRunStore.load(item.id)
+            }
+            val current = service.fetchRecommendedRunSnapshot(
+                item = item,
+                lookupConfig = snapshot.lookupConfig,
+                previousWorkflowId = previous?.workflowId,
+                nowMs = nowMs
+            ).getOrElse { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "github actions update check failed item=${item.id}: ${error.message}"
+                )
+                return@mapOrderedBounded false
+            }
+            withContext(Dispatchers.IO) {
+                GitHubActionsRecommendedRunStore.save(current)
+            }
+            if (previous != null && current.isNewerThan(previous)) {
+                GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
+                    context = context,
+                    snapshot = current
+                )
+            } else {
+                false
+            }
+        }.count { it }
+
+        if (notifiedCount > 0) {
+            AppLogger.i(
+                "AppForegroundInfoHandler",
+                "github actions update check notified=$notifiedCount total=${enabledItems.size}"
+            )
         }
     }
 

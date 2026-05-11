@@ -41,6 +41,7 @@ internal class GitHubTrackActions(
         state.repoScanCandidates = emptyList()
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
+        state.checkActionsUpdatesInput = item.checkActionsUpdates
         state.preciseApkVersionModeInput = item.preciseApkVersionMode
         state.showAddSheet = true
         refreshAppListForTrackSheet()
@@ -192,6 +193,7 @@ internal class GitHubTrackActions(
             packageName = state.packageNameInput,
             preferPreRelease = state.preferPreReleaseInput,
             alwaysShowLatestReleaseDownloadButton = state.alwaysShowLatestReleaseDownloadButtonInput,
+            checkActionsUpdates = state.checkActionsUpdatesInput,
             preciseApkVersionMode = state.preciseApkVersionModeInput,
             appList = state.appList
         )

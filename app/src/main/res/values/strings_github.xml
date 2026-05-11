@@ -12,6 +12,14 @@
     <string name="github_refresh_island_cancelled">已取消</string>
     <string name="github_refresh_island_completed">已完成</string>
     <string name="github_refresh_failed_short_with_count">失败 %1$d</string>
+    <string name="github_actions_update_notification_title">GitHub Actions 有新构建</string>
+    <string name="github_actions_update_notification_content">%1$s 推荐 Run 更新到 %2$s · %3$s</string>
+    <string name="github_actions_update_island_content">Actions</string>
+    <string name="github_actions_update_debug_app_label">Actions 通知测试</string>
+    <string name="github_actions_update_debug_workflow">Android 构建</string>
+    <string name="github_actions_update_debug_run_name">Debug Run #1424</string>
+    <string name="github_actions_update_debug_toast_sent">已发送 Actions 更新测试通知</string>
+    <string name="github_actions_update_debug_toast_failed">通知权限未开启，测试通知未发送</string>
     <string name="github_check_failed_prefix">检查失败</string>
     <string name="github_page_title">GitHub</string>
     <string name="github_toast_no_checkable_item">暂无可检查条目</string>
@@ -454,6 +462,10 @@
     <string name="github_check_sheet_action_exporting">导出中</string>
     <string name="github_check_sheet_action_importing">导入中</string>
     <string name="github_check_sheet_action_import_stars">导入 Star List</string>
+    <string name="github_check_sheet_section_debug">调试</string>
+    <string name="github_check_sheet_label_debug_actions_update_notification">Actions 更新通知</string>
+    <string name="github_check_sheet_summary_debug_actions_update_notification">发送一条模拟 #1424 的实时通知/超级岛，用于检查样式、权限和通知动作。</string>
+    <string name="github_check_sheet_action_debug_actions_update_notification">发送测试通知</string>
     <string name="github_check_sheet_section_notes">说明</string>
     <string name="github_check_sheet_note_transfer">导入会先显示预览，再按“owner/repo + 包名”识别同一条目：同 ID 会覆盖更新，新条目会追加，现有未出现在导入文件里的项目会保留。</string>
     <string name="github_check_sheet_note_1">全局预发检查只负责发现版本；单条目的“优先预发行版本”才决定推荐目标。</string>
@@ -624,6 +636,8 @@
     <string name="github_track_sheet_summary_prefer_prerelease">为此项目单独检查预发行版本，并在有可用预发行更新时优先推荐；不改变全局开关。</string>
     <string name="github_track_sheet_label_always_show_latest_release_download">始终显示最新发布下载</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
+    <string name="github_track_sheet_label_check_actions_updates">检查 Actions 更新</string>
+    <string name="github_track_sheet_summary_check_actions_updates">按“更新间隔”自动检查此项目推荐的 Actions Run；发现新 Run 时发送实时通知/超级岛。</string>
     <string name="github_track_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
     <string name="github_track_sheet_summary_precise_apk_version">控制这个项目是否读取远端 APK Manifest 中的真实 versionName 与 versionCode，可跟随全局或单独覆盖。</string>
     <string name="github_track_sheet_summary_precise_apk_version_follow_global">跟随全局：当前全局为 %1$s</string>

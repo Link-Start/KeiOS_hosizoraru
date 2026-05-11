@@ -117,6 +117,7 @@ internal fun GitHubPageSheetHost(
         onExportTrackedItems = onExportTrackedItems,
         onImportTrackedItems = onImportTrackedItems,
         onOpenStarImport = onOpenStarImport,
+        onSendDebugActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
         onRefreshIntervalHoursInputChange = { state.refreshIntervalHoursInput = it },
         onCheckAllTrackedPreReleasesInputChange = { state.checkAllTrackedPreReleasesInput = it },
         onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },
@@ -293,6 +294,7 @@ internal fun GitHubPageSheetHost(
         appListRefreshing = state.appListRefreshing,
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
+        checkActionsUpdatesInput = state.checkActionsUpdatesInput,
         preciseApkVersionModeInput = state.preciseApkVersionModeInput,
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
@@ -330,6 +332,9 @@ internal fun GitHubPageSheetHost(
         onPreferPreReleaseInputChange = { state.preferPreReleaseInput = it },
         onAlwaysShowLatestReleaseDownloadButtonInputChange = {
             state.alwaysShowLatestReleaseDownloadButtonInput = it
+        },
+        onCheckActionsUpdatesInputChange = {
+            state.checkActionsUpdatesInput = it
         },
         onPreciseApkVersionModeInputChange = {
             state.preciseApkVersionModeInput = it

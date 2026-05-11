@@ -104,6 +104,7 @@ internal class GitHubPageState(
     var actionsRunWatchJob by mutableStateOf<Job?>(null)
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
+    var checkActionsUpdatesInput by mutableStateOf(false)
     var preciseApkVersionModeInput by mutableStateOf(GitHubTrackedPreciseApkVersionMode.FollowGlobal)
     var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
@@ -445,6 +446,7 @@ internal class GitHubPageState(
         pickerExpanded = false
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
+        checkActionsUpdatesInput = false
         preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
         repoUrlScanRunning = false
         packageNameScanRunning = false

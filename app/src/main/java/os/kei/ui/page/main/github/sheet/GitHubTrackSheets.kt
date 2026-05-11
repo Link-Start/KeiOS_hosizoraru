@@ -84,6 +84,7 @@ internal fun GitHubCheckLogicSheet(
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
     onOpenStarImport: () -> Unit,
+    onSendDebugActionsUpdateNotification: () -> Unit,
     onRefreshIntervalHoursInputChange: (Int) -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
@@ -233,6 +234,10 @@ internal fun GitHubCheckLogicSheet(
                 onExportTrackedItems = onExportTrackedItems,
                 onImportTrackedItems = onImportTrackedItems,
                 onOpenStarImport = onOpenStarImport
+            )
+            GitHubCheckDebugSection(
+                backdrop = backdrop,
+                onSendDebugActionsUpdateNotification = onSendDebugActionsUpdateNotification
             )
             GitHubCheckNotesSection()
         }
@@ -710,6 +715,27 @@ private fun GitHubCheckTracksSection(
                     variant = GlassVariant.SheetAction
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun GitHubCheckDebugSection(
+    backdrop: LayerBackdrop,
+    onSendDebugActionsUpdateNotification: () -> Unit
+) {
+    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_debug))
+    SheetSectionCard {
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_debug_actions_update_notification),
+            summary = stringResource(R.string.github_check_sheet_summary_debug_actions_update_notification)
+        ) {
+            AppLiquidTextButton(
+                backdrop = backdrop,
+                text = stringResource(R.string.github_check_sheet_action_debug_actions_update_notification),
+                onClick = onSendDebugActionsUpdateNotification,
+                variant = GlassVariant.SheetAction
+            )
         }
     }
 }

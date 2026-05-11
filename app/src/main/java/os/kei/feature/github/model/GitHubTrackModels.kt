@@ -15,6 +15,7 @@ data class GitHubTrackedApp(
     val appLabel: String,
     val preferPreRelease: Boolean = false,
     val alwaysShowLatestReleaseDownloadButton: Boolean = false,
+    val checkActionsUpdates: Boolean = false,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
         GitHubTrackedPreciseApkVersionMode.FollowGlobal,
     val repositoryArchived: Boolean = false,

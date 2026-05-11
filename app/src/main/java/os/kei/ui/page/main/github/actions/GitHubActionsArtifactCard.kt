@@ -68,7 +68,6 @@ internal fun GitHubActionsArtifactCard(
     val artifactSizeLabel = artifact.sizeBytes.takeIf { it > 0L }
         ?.let { formatAssetSize(it, context) }
         ?: stringResource(R.string.common_download)
-    val readyActionLabel = artifactSizeLabel
     GitHubActionsSelectableCard(
         selected = false,
         isDark = isDark,
@@ -213,7 +212,7 @@ internal fun GitHubActionsArtifactCard(
                     completed = runMatch.traits.completed,
                     expired = artifact.expired,
                     downloading = downloading,
-                    readyLabel = readyActionLabel
+                    readyLabel = artifactSizeLabel
                 ),
                 leadingIcon = appLucideDownloadIcon(),
                 enabled = canDownload,

@@ -1,29 +1,41 @@
 package os.kei.ui.page.main.github
 
-import os.kei.core.install.LocalApkArchiveInfo
+import androidx.compose.runtime.Immutable
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.domain.ApkTrustEvaluationInput
-import os.kei.feature.github.domain.ApkTrustEvaluator
 import os.kei.feature.github.domain.GitHubRepositoryHealthEvaluator
-import os.kei.feature.github.model.GitHubApkManifestInfo
-import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubRepositoryHealthInput
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.asset.assetDisplayName
+import os.kei.ui.page.main.github.asset.assetFileExtensionLabel
+import os.kei.ui.page.main.github.asset.assetIsPreferredForDevice
+import os.kei.ui.page.main.github.asset.assetLikelyCompatibleWithDevice
 import os.kei.ui.page.main.widget.markdown.AppMarkdownBlock
 import os.kei.ui.page.main.widget.markdown.parseAppMarkdownBlocks
-import os.kei.feature.github.model.GitHubApkTrustReason as ModelGitHubApkTrustReason
-import os.kei.feature.github.model.GitHubApkTrustSignal as ModelGitHubApkTrustSignal
 import os.kei.feature.github.model.GitHubDecisionLevel as ModelGitHubDecisionLevel
 import os.kei.feature.github.model.GitHubRepositoryHealth as ModelGitHubRepositoryHealth
 import os.kei.feature.github.model.GitHubRepositoryHealthReason as ModelGitHubRepositoryHealthReason
 
 internal typealias GitHubDecisionLevel = ModelGitHubDecisionLevel
-internal typealias GitHubApkTrustReason = ModelGitHubApkTrustReason
-internal typealias GitHubApkTrustSignal = ModelGitHubApkTrustSignal
 internal typealias GitHubRepositoryHealth = ModelGitHubRepositoryHealth
 internal typealias GitHubRepositoryHealthReason = ModelGitHubRepositoryHealthReason
+
+internal enum class GitHubApkTrustReason {
+    PreferredAbi,
+    UniversalAsset,
+    IncompatibleAbi,
+    DebugBuild,
+    UnsignedBuild,
+    SourceArchive,
+    ApkLike,
+    UnknownFormat
+}
+
+@Immutable
+internal data class GitHubApkTrustSignal(
+    val level: GitHubDecisionLevel,
+    val reasons: List<GitHubApkTrustReason>
+)
 
 internal fun buildGitHubRepositoryHealth(
     item: GitHubTrackedApp,
@@ -56,21 +68,50 @@ internal fun buildGitHubRepositoryHealth(
 
 internal fun buildGitHubApkTrustSignal(
     asset: GitHubReleaseAssetFile,
-    supportedAbis: List<String>,
-    manifestInfo: GitHubApkManifestInfo? = null,
-    installedInfo: GitHubInstalledPackageInfo? = null,
-    expectedPackageName: String = "",
-    localArchiveInfo: LocalApkArchiveInfo? = null
+    supportedAbis: List<String>
 ): GitHubApkTrustSignal {
-    return ApkTrustEvaluator.evaluate(
-        ApkTrustEvaluationInput(
-            asset = asset,
-            supportedAbis = supportedAbis,
-            manifestInfo = manifestInfo,
-            installedInfo = installedInfo,
-            expectedPackageName = expectedPackageName,
-            localArchiveInfo = localArchiveInfo
-        )
+    val lowerName = asset.name.lowercase()
+    val extension = assetFileExtensionLabel(asset.name).orEmpty()
+    val reasons = mutableListOf<GitHubApkTrustReason>()
+    var level = GitHubDecisionLevel.Good
+
+    when {
+        extension in setOf("zip", "tar", "gz", "tgz") || "source" in lowerName -> {
+            level = GitHubDecisionLevel.Risk
+            reasons += GitHubApkTrustReason.SourceArchive
+        }
+
+        extension != "apk" && extension != "apks" && extension != "xapk" -> {
+            level = GitHubDecisionLevel.Review
+            reasons += GitHubApkTrustReason.UnknownFormat
+        }
+
+        else -> reasons += GitHubApkTrustReason.ApkLike
+    }
+
+    if (!assetLikelyCompatibleWithDevice(asset.name, supportedAbis)) {
+        level = GitHubDecisionLevel.Risk
+        reasons += GitHubApkTrustReason.IncompatibleAbi
+    } else if (assetIsPreferredForDevice(asset.name, supportedAbis)) {
+        reasons += GitHubApkTrustReason.PreferredAbi
+    } else if ("universal" in lowerName || "fat" in lowerName) {
+        reasons += GitHubApkTrustReason.UniversalAsset
+    }
+
+    if ("unsigned" in lowerName) {
+        level = GitHubDecisionLevel.Risk
+        reasons += GitHubApkTrustReason.UnsignedBuild
+    }
+    if (listOf("debug", "snapshot", "dev", "canary").any { it in lowerName }) {
+        if (level == GitHubDecisionLevel.Good) {
+            level = GitHubDecisionLevel.Review
+        }
+        reasons += GitHubApkTrustReason.DebugBuild
+    }
+
+    return GitHubApkTrustSignal(
+        level = level,
+        reasons = reasons.distinct().sortedBy { it.priority }.take(3)
     )
 }
 
@@ -201,3 +242,15 @@ private fun String.toReleaseNotesPreviewLines(): List<String> {
 private val markdownLinkRegex = Regex("""\[(.+?)]\((.+?)\)""")
 private val markdownMarkerRegex = Regex("""[`*_>]+""")
 private val whitespaceRegex = Regex("""\s+""")
+
+private val GitHubApkTrustReason.priority: Int
+    get() = when (this) {
+        GitHubApkTrustReason.IncompatibleAbi -> 0
+        GitHubApkTrustReason.UnsignedBuild -> 1
+        GitHubApkTrustReason.DebugBuild -> 2
+        GitHubApkTrustReason.SourceArchive -> 3
+        GitHubApkTrustReason.UnknownFormat -> 4
+        GitHubApkTrustReason.PreferredAbi -> 5
+        GitHubApkTrustReason.UniversalAsset -> 6
+        GitHubApkTrustReason.ApkLike -> 7
+    }

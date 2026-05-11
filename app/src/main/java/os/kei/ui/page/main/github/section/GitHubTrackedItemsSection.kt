@@ -134,7 +134,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
-    onOpenTrackedApkInDownloader: (GitHubTrackedApp, VersionCheckUi, GitHubReleaseAssetFile) -> Unit,
+    onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     context: Context,
     supportedAbis: List<String>
@@ -470,7 +470,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         onOpenExternalUrl = onOpenExternalUrl,
                         onLoadApkAssets = onLoadApkAssets,
                         onOpenApkInfo = onOpenApkInfo,
-                        onOpenTrackedApkInDownloader = onOpenTrackedApkInDownloader,
+                        onOpenApkInDownloader = onOpenApkInDownloader,
                         onShareApkLink = onShareApkLink,
                         context = context,
                         supportedAbis = supportedAbis

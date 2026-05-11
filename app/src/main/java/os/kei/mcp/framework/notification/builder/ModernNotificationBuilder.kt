@@ -44,7 +44,7 @@ class ModernNotificationBuilder(
             .setCategory(spec.category)
             .setAutoCancel(false)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .applyProgressStyle(spec)
+            .setStyle(buildProgressStyle(spec))
             .applyDeadline(state.deadlineAtMs)
             .also { builder ->
                 if (state.running) {
@@ -52,28 +52,12 @@ class ModernNotificationBuilder(
                 }
                 val showSecondaryAction = state.stopPendingIntent != state.openPendingIntent &&
                         (state.running || state.showSecondaryActionWhenStopped)
-                builder.addAction(
-                    0,
-                    state.primaryActionTitle(context),
-                    state.primaryActionPendingIntent
-                )
+                builder.addAction(0, state.primaryActionTitle(context), state.openPendingIntent)
                 if (showSecondaryAction) {
                     builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
                 }
             }
             .build()
-    }
-
-    private fun NotificationCompat.Builder.applyProgressStyle(
-        spec: ModernNotificationSpec
-    ): NotificationCompat.Builder {
-        return if (spec.showProgress) {
-            setStyle(buildProgressStyle(spec))
-                .setProgress(100, spec.progressPercent.coerceIn(0, 100), false)
-        } else {
-            setStyle(null)
-                .setProgress(0, 0, false)
-        }
     }
 
     private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {

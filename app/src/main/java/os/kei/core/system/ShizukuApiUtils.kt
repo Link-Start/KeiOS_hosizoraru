@@ -12,49 +12,49 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-enum class ShizukuCommandIdentity(val label: String) {
-    ROOT("root"),
-    SHELL("shell"),
-    UNSUPPORTED("unsupported");
-
-    val canRunCommand: Boolean
-        get() = this == ROOT || this == SHELL
-
-    companion object {
-        fun fromUid(uid: Int?): ShizukuCommandIdentity = when (uid) {
-            0 -> ROOT
-            2000 -> SHELL
-            else -> UNSUPPORTED
-        }
-    }
-}
-
-data class ShizukuRuntimeState(
-    val binderAlive: Boolean,
-    val preV11: Boolean,
-    val permissionGranted: Boolean,
-    val serviceUid: Int?,
-    val commandIdentity: ShizukuCommandIdentity
-) {
-    val commandReady: Boolean =
-        binderAlive && !preV11 && permissionGranted && commandIdentity.canRunCommand
-
-    val statusText: String
-        get() = when {
-            !binderAlive -> "Shizuku service unavailable (start Shizuku app first)"
-            preV11 -> "Shizuku pre-v11 is unsupported"
-            !permissionGranted -> "Shizuku permission: not granted"
-            commandIdentity.canRunCommand -> "Shizuku permission: granted (${commandIdentity.label})"
-            else -> {
-                val uidText = serviceUid?.toString() ?: "unknown"
-                "Shizuku command unavailable: unsupported service uid $uidText"
-            }
-        }
-}
-
 class ShizukuApiUtils(
     private val requestCode: Int = DEFAULT_REQUEST_CODE
 ) {
+    private enum class CommandIdentity(val label: String) {
+        ROOT("root"),
+        SHELL("shell"),
+        UNSUPPORTED("unsupported");
+
+        val canRunCommand: Boolean
+            get() = this == ROOT || this == SHELL
+
+        companion object {
+            fun fromUid(uid: Int?): CommandIdentity = when (uid) {
+                0 -> ROOT
+                2000 -> SHELL
+                else -> UNSUPPORTED
+            }
+        }
+    }
+
+    private data class RuntimeState(
+        val binderAlive: Boolean,
+        val preV11: Boolean,
+        val permissionGranted: Boolean,
+        val serviceUid: Int?,
+        val commandIdentity: CommandIdentity
+    ) {
+        val commandReady: Boolean =
+            binderAlive && !preV11 && permissionGranted && commandIdentity.canRunCommand
+
+        val statusText: String
+            get() = when {
+                !binderAlive -> "Shizuku service unavailable (start Shizuku app first)"
+                preV11 -> "Shizuku pre-v11 is unsupported"
+                !permissionGranted -> "Shizuku permission: not granted"
+                commandIdentity.canRunCommand -> "Shizuku permission: granted (${commandIdentity.label})"
+                else -> {
+                    val uidText = serviceUid?.toString() ?: "unknown"
+                    "Shizuku command unavailable: unsupported service uid $uidText"
+                }
+            }
+    }
+
     private data class InteractiveCommandRewriteResult(
         val command: String,
         val adaptedTopOnce: Boolean = false
@@ -133,15 +133,11 @@ class ShizukuApiUtils(
     }
 
     fun currentStatus(): String {
-        return runtimeState().statusText
+        return resolveRuntimeState().statusText
     }
 
     fun canUseCommand(): Boolean {
-        return runtimeState().commandReady
-    }
-
-    fun runtimeState(): ShizukuRuntimeState {
-        return resolveRuntimeState()
+        return resolveRuntimeState().commandReady
     }
 
     fun execCommandResult(command: String, timeoutMs: Long = 2000L): AppCommandResult {
@@ -256,12 +252,6 @@ class ShizukuApiUtils(
         val result = execCommandCancellableResult(command = command, timeoutMs = timeoutMs)
         if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
         return result.combinedOutput().ifBlank { null }
-    }
-
-    fun openShellCommandProcess(command: String): Process? {
-        val normalizedCommand = command.trim()
-        if (normalizedCommand.isBlank() || !canUseCommand()) return null
-        return createShellProcess(normalizedCommand)
     }
 
     private fun createShellProcess(command: String): Process? {
@@ -459,7 +449,7 @@ class ShizukuApiUtils(
 
     fun detailedRows(): List<Pair<String, String>> {
         val rows = mutableListOf<Pair<String, String>>()
-        val state = runtimeState()
+        val state = resolveRuntimeState()
 
         rows += "Shizuku Binder Alive" to state.binderAlive.toString()
         rows += "Shizuku Permission Granted" to state.permissionGranted.toString()
@@ -485,26 +475,26 @@ class ShizukuApiUtils(
         return rows.filter { it.first.isNotBlank() && it.second.isNotBlank() }
     }
 
-    private fun resolveRuntimeState(): ShizukuRuntimeState {
+    private fun resolveRuntimeState(): RuntimeState {
         val binderAlive = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
         if (!binderAlive) {
-            return ShizukuRuntimeState(
+            return RuntimeState(
                 binderAlive = false,
                 preV11 = false,
                 permissionGranted = false,
                 serviceUid = null,
-                commandIdentity = ShizukuCommandIdentity.UNSUPPORTED
+                commandIdentity = CommandIdentity.UNSUPPORTED
             )
         }
 
         val preV11 = runCatching { Shizuku.isPreV11() }.getOrDefault(true)
         if (preV11) {
-            return ShizukuRuntimeState(
+            return RuntimeState(
                 binderAlive = true,
                 preV11 = true,
                 permissionGranted = false,
                 serviceUid = null,
-                commandIdentity = ShizukuCommandIdentity.UNSUPPORTED
+                commandIdentity = CommandIdentity.UNSUPPORTED
             )
         }
 
@@ -520,9 +510,9 @@ class ShizukuApiUtils(
         } else {
             null
         }
-        val identity = ShizukuCommandIdentity.fromUid(serviceUid)
+        val identity = CommandIdentity.fromUid(serviceUid)
 
-        return ShizukuRuntimeState(
+        return RuntimeState(
             binderAlive = true,
             preV11 = false,
             permissionGranted = permissionGranted,

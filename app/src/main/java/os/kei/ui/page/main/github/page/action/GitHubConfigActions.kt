@@ -11,7 +11,6 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 
 internal class GitHubConfigActions(
     private val env: GitHubPageActionEnvironment,
@@ -44,13 +43,11 @@ internal class GitHubConfigActions(
         state.dismissStrategySheet()
     }
 
-    fun openCheckLogicSheet(category: GitHubCheckSheetCategory = GitHubCheckSheetCategory.UpdateChecks) {
-        state.showCheckLogicMenuPopup = false
+    fun openCheckLogicSheet() {
         state.showCheckLogicIntervalPopup = false
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
         state.showShareImportFlowModePopup = false
-        state.checkLogicSheetCategory = category
         scope.launch {
             val config = repository.loadLookupConfig()
             state.lookupConfig = config

@@ -25,7 +25,6 @@ internal data class ModernNotificationSpec(
     val iconResId: Int,
     val expandedIconResId: Int?,
     val trackerIconResId: Int?,
-    val showProgress: Boolean,
     val progressPercent: Int,
     val progressColor: Int,
     val category: String,
@@ -56,20 +55,14 @@ internal object ModernNotificationSpecResolver {
     ): ModernNotificationSpec {
         val kind = resolveKind(state.serverName)
         val isRunning = state.running
-        val showProgress = resolveShowProgress(state = state, kind = kind)
         return ModernNotificationSpec(
             kind = kind,
             iconResId = resolveIcon(kind, preferOemLiveIconLayout),
             expandedIconResId = resolveExpandedIcon(kind),
             trackerIconResId = resolveTrackerIcon(kind),
-            showProgress = showProgress,
-            progressPercent = if (showProgress) {
-                resolveProgressPercent(state = state, kind = kind)
-            } else {
-                0
-            },
+            progressPercent = resolveProgressPercent(state = state, kind = kind),
             progressColor = if (isRunning) PROGRESS_ACTIVE_COLOR else PROGRESS_IDLE_COLOR,
-            category = if (showProgress) {
+            category = if (isRunning) {
                 NotificationCompat.CATEGORY_PROGRESS
             } else {
                 NotificationCompat.CATEGORY_STATUS
@@ -150,14 +143,6 @@ internal object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CALENDAR_POOL,
             ModernNotificationKind.GITHUB_SHARE_IMPORT -> ModernShortCriticalMode.SHORT_TEXT
         }
-    }
-
-    private fun resolveShowProgress(
-        state: McpNotificationPayload,
-        kind: ModernNotificationKind
-    ): Boolean {
-        if (!state.running) return false
-        return true
     }
 
     private fun resolveProgressPercent(

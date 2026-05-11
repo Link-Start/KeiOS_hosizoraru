@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
-import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,8 +17,6 @@ import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.statusActionUrl
-import java.io.File
-import java.security.MessageDigest
 
 internal class GitHubAssetActions(
     private val env: GitHubPageActionEnvironment
@@ -49,20 +46,6 @@ internal class GitHubAssetActions(
     fun openApkInDownloader(asset: GitHubReleaseAssetFile) {
         scope.launch {
             openApkInDownloaderInternal(asset)
-        }
-    }
-
-    fun openTrackedApkInDownloader(
-        item: GitHubTrackedApp,
-        itemState: VersionCheckUi,
-        asset: GitHubReleaseAssetFile
-    ) {
-        scope.launch {
-            openApkInDownloaderInternal(
-                asset = asset,
-                trackedItem = item,
-                trackedItemState = itemState
-            )
         }
     }
 
@@ -114,6 +97,9 @@ internal class GitHubAssetActions(
                 normalizedPackageName,
                 PackageManager.PackageInfoFlags.of(0)
             )
+        }.recoverCatching {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(normalizedPackageName, 0)
         }.getOrNull() ?: return null
         val applicationInfo = packageInfo.applicationInfo
         return GitHubInstalledPackageInfo(
@@ -122,9 +108,7 @@ internal class GitHubAssetActions(
             versionName = packageInfo.versionName?.trim().orEmpty(),
             versionCode = packageInfo.longVersionCode,
             minSdk = applicationInfo?.minSdkVersion ?: -1,
-            targetSdk = applicationInfo?.targetSdkVersion ?: -1,
-            signatureSha256 = packageInfo.signatureSha256List(),
-            sourceSizeBytes = applicationInfo.sourceApkSizeBytes()
+            targetSdk = applicationInfo?.targetSdkVersion ?: -1
         )
     }
 
@@ -401,11 +385,7 @@ internal class GitHubAssetActions(
         }
     }
 
-    private suspend fun openApkInDownloaderInternal(
-        asset: GitHubReleaseAssetFile,
-        trackedItem: GitHubTrackedApp? = null,
-        trackedItemState: VersionCheckUi? = null
-    ): Boolean {
+    private suspend fun openApkInDownloaderInternal(asset: GitHubReleaseAssetFile): Boolean {
         val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolvePreferredAssetUrl(asset))
             ?: run {
                 env.toast(R.string.github_toast_open_downloader_failed)
@@ -468,31 +448,4 @@ internal class GitHubAssetActions(
             )
         }
     }
-}
-
-private fun PackageInfo.signatureSha256List(): List<String> {
-    val signing = signingInfo ?: return emptyList()
-    val signatures = if (signing.hasMultipleSigners()) {
-        signing.apkContentsSigners
-    } else {
-        signing.signingCertificateHistory
-    } ?: return emptyList()
-    return signatures
-        .map { signature -> signature.toByteArray().sha256Hex() }
-        .distinct()
-}
-
-private fun android.content.pm.ApplicationInfo?.sourceApkSizeBytes(): Long {
-    if (this == null) return 0L
-    val files = buildList {
-        sourceDir?.let { add(it) }
-        splitSourceDirs.orEmpty().forEach(::add)
-    }
-    return files.sumOf { path -> File(path).takeIf { it.isFile }?.length() ?: 0L }
-}
-
-private fun ByteArray.sha256Hex(): String {
-    return MessageDigest.getInstance("SHA-256")
-        .digest(this)
-        .joinToString("") { byte -> "%02x".format(byte) }
 }

@@ -12,8 +12,7 @@ class LegacyNotificationBuilder(
 
     private data class LiveProgressState(
         val current: Int,
-        val indeterminate: Boolean,
-        val visible: Boolean
+        val indeterminate: Boolean
     )
 
     override fun build(payload: NotificationPayload): android.app.Notification {
@@ -57,12 +56,12 @@ class LegacyNotificationBuilder(
             .setAutoCancel(false)
             .setSilent(state.onlyAlertOnce)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .applyProgress(progressState)
+            .setProgress(100, progressState.current, progressState.indeterminate)
             .applyDeadline(state.deadlineAtMs)
 
         val showSecondaryAction = state.stopPendingIntent != state.openPendingIntent &&
                 (state.running || state.showSecondaryActionWhenStopped)
-        builder.addAction(0, state.primaryActionTitle(context), state.primaryActionPendingIntent)
+        builder.addAction(0, state.primaryActionTitle(context), state.openPendingIntent)
         if (showSecondaryAction) {
             builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
         }
@@ -76,20 +75,19 @@ class LegacyNotificationBuilder(
         isGitHubShareImport: Boolean
     ): LiveProgressState {
         if (!state.running) {
-            return LiveProgressState(current = 0, indeterminate = false, visible = false)
+            return LiveProgressState(current = 0, indeterminate = false)
         }
         if (isBlueArchiveCalendarPool || isGitHubShareImport) {
             return LiveProgressState(
                 current = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100,
-                indeterminate = false,
-                visible = true
+                indeterminate = false
             )
         }
         if (
             McpNotificationPayload.isBaCafeVisitServerName(state.serverName) ||
             McpNotificationPayload.isBaArenaRefreshServerName(state.serverName)
         ) {
-            return LiveProgressState(current = 100, indeterminate = false, visible = true)
+            return LiveProgressState(current = 100, indeterminate = false)
         }
         if (isBlueArchiveAp) {
             val apLimit = state.clients.coerceAtLeast(1)
@@ -97,26 +95,12 @@ class LegacyNotificationBuilder(
             val normalized = ((apCurrent.toFloat() / apLimit.toFloat()) * 100f)
                 .roundToInt()
                 .coerceIn(0, 100)
-            return LiveProgressState(current = normalized, indeterminate = false, visible = true)
+            return LiveProgressState(current = normalized, indeterminate = false)
         }
         val onlineClients = state.clients.coerceAtLeast(0)
         val indeterminate = onlineClients <= 0
         val normalized = (onlineClients * 24).coerceIn(8, 100)
-        return LiveProgressState(
-            current = normalized,
-            indeterminate = indeterminate,
-            visible = true
-        )
-    }
-
-    private fun NotificationCompat.Builder.applyProgress(
-        state: LiveProgressState
-    ): NotificationCompat.Builder {
-        return if (state.visible) {
-            setProgress(100, state.current.coerceIn(0, 100), state.indeterminate)
-        } else {
-            setProgress(0, 0, false)
-        }
+        return LiveProgressState(current = normalized, indeterminate = indeterminate)
     }
 
     private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {

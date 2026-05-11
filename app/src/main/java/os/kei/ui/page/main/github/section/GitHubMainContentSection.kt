@@ -31,7 +31,6 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
-import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -63,7 +62,6 @@ internal fun GitHubMainContent(
     sortMode: GitHubSortMode,
     showFailedOnly: Boolean,
     showSortPopup: Boolean,
-    showCheckLogicMenuPopup: Boolean,
     floatingDockSide: AppFloatingDockSide,
     deleteInProgress: Boolean,
     isDark: Boolean,
@@ -97,10 +95,9 @@ internal fun GitHubMainContent(
     onTrackedSearchChange: (String) -> Unit,
     onSearchExpandedChange: (Boolean) -> Unit,
     onShowSortPopupChange: (Boolean) -> Unit,
-    onShowCheckLogicMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
     onOpenStrategySheet: () -> Unit,
-    onOpenCheckLogicSheet: (GitHubCheckSheetCategory) -> Unit,
+    onOpenCheckLogicSheet: () -> Unit,
     onOverviewExpandedChange: (Boolean) -> Unit,
     onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     onStableVersionExpandedChange: (String, Boolean) -> Unit,
@@ -120,7 +117,7 @@ internal fun GitHubMainContent(
     onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
-    onOpenTrackedApkInDownloader: (GitHubTrackedApp, VersionCheckUi, GitHubReleaseAssetFile) -> Unit,
+    onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     onOpenShareImportFlow: () -> Unit,
     onOpenShareImportResult: () -> Unit,
@@ -273,7 +270,7 @@ internal fun GitHubMainContent(
                         onOpenDecisionAssistDetail = onOpenDecisionAssistDetail,
                         onOpenExternalUrl = onOpenExternalUrl,
                         onOpenApkInfo = onOpenApkInfo,
-                        onOpenTrackedApkInDownloader = onOpenTrackedApkInDownloader,
+                        onOpenApkInDownloader = onOpenApkInDownloader,
                         onShareApkLink = onShareApkLink,
                         context = context,
                         supportedAbis = supportedAbis
@@ -316,11 +313,9 @@ internal fun GitHubMainContent(
                 liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 sortMode = sortMode,
                 showSortPopup = showSortPopup,
-                showCheckLogicMenuPopup = showCheckLogicMenuPopup,
                 deleteInProgress = deleteInProgress,
                 onOpenStrategySheet = onOpenStrategySheet,
                 onOpenCheckLogicSheet = onOpenCheckLogicSheet,
-                onShowCheckLogicMenuPopupChange = onShowCheckLogicMenuPopupChange,
                 onShowSortPopupChange = onShowSortPopupChange,
                 onSortModeChange = onSortModeChange,
                 onRefreshAllTracked = onRefreshAllTracked,

@@ -36,7 +36,6 @@ class MiIslandNotificationBuilder(
     }
 
     private data class IslandPresentation(
-        val islandFirstFloat: Boolean = true,
         val allowFloat: Boolean,
         val showTextButtons: Boolean,
         val bigTemplateKind: IslandBigTemplateKind = IslandBigTemplateKind.TEXT,
@@ -48,7 +47,6 @@ class MiIslandNotificationBuilder(
         val requestPromotedOngoing: Boolean,
         val focusUpdatable: Boolean,
         val focusShowNotification: Boolean? = null,
-        val showExpandedIconText: Boolean = false,
         val showExpandedProgress: Boolean = false,
         val progressPercent: Int = 0,
         val progressColor: String = BA_AP_PROGRESS_COLOR,
@@ -84,7 +82,6 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
-        val isGitHubSemantic = isGitHubShareImport
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -95,7 +92,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit -> ISLAND_ICON_RES_ID_BA_CAFE_VISIT
             isBlueArchiveArenaRefresh -> ISLAND_ICON_RES_ID_BA_ARENA_REFRESH
             isBlueArchiveCalendarPool -> ISLAND_ICON_RES_ID_BA_CALENDAR_POOL
-            isGitHubSemantic -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
+            isGitHubShareImport -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
             else -> ISLAND_ICON_RES_ID_DEFAULT
         }
         val shortCriticalText = resolveShortCriticalText(
@@ -146,10 +143,10 @@ class MiIslandNotificationBuilder(
         if (!isBlueArchiveNotification) {
             resolveIslandActions(
                 state = state,
-                isGitHubFlow = isGitHubSemantic,
+                isGitHubShareImport = isGitHubShareImport,
                 forFocusExtras = false
             ).forEach { action ->
-                val pendingIntent = if (action.key == "mcp_action_open" && !isGitHubSemantic) {
+                val pendingIntent = if (action.key == "mcp_action_open") {
                     state.openPendingIntent
                 } else {
                     action.pendingIntent
@@ -160,8 +157,7 @@ class MiIslandNotificationBuilder(
         if (presentation.showExpandedProgress) {
             builder.setProgress(100, presentation.progressPercent.coerceIn(0, 100), false)
         }
-        val focusExtras = buildFocusExtras(payload, islandIconResId)
-        focusExtras?.let(builder::addExtras)
+        buildFocusExtras(payload, islandIconResId)?.let(builder::addExtras)
         return builder.build()
     }
 
@@ -174,7 +170,6 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
-        val isGitHubSemantic = isGitHubShareImport
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -189,7 +184,7 @@ class MiIslandNotificationBuilder(
             isGitHubShareImport = isGitHubShareImport,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
-        val useSemanticIcon = isBlueArchiveNotification || isGitHubSemantic
+        val useSemanticIcon = isBlueArchiveNotification || isGitHubShareImport
         val lightLogoIcon = if (useSemanticIcon) {
             Icon.createWithResource(context, islandIconResId)
         } else {
@@ -202,7 +197,7 @@ class MiIslandNotificationBuilder(
         }
         val actions = resolveIslandActions(
             state = state,
-            isGitHubFlow = isGitHubSemantic,
+            isGitHubShareImport = isGitHubShareImport,
             forFocusExtras = true
         )
         val displayIcon = payload.semanticIconBitmap?.let { bitmap ->
@@ -215,7 +210,7 @@ class MiIslandNotificationBuilder(
             val darkLogoKey = createPicture("key_logo_dark", darkLogoIcon)
             val displayIconKey = createPicture("key_logo_display", displayIcon)
 
-            islandFirstFloat = presentation.islandFirstFloat
+            islandFirstFloat = true
             enableFloat = presentation.allowFloat
             updatable = presentation.focusUpdatable
             focusShowNotification(presentation.focusShowNotification)
@@ -307,27 +302,16 @@ class MiIslandNotificationBuilder(
                 }
             }
 
-            if (presentation.showExpandedIconText) {
-                iconTextInfo {
-                    title = state.title(context)
-                    content = state.content(context).ifBlank { " " }
-                    animIconInfo {
-                        type = 0
-                        src = displayIconKey
-                    }
-                }
-            } else {
-                baseInfo {
-                    type = 2
-                    title = state.title(context)
-                    content = state.content(context).ifBlank { " " }
-                }
+            baseInfo {
+                type = 2
+                title = state.title(context)
+                content = state.content(context).ifBlank { " " }
+            }
 
-                if (presentation.showExpandedProgress) {
-                    multiProgressInfo {
-                        progress = presentation.progressPercent.coerceIn(0, 100)
-                        color = presentation.progressColor
-                    }
+            if (presentation.showExpandedProgress) {
+                multiProgressInfo {
+                    progress = presentation.progressPercent.coerceIn(0, 100)
+                    color = presentation.progressColor
                 }
             }
 
@@ -362,7 +346,7 @@ class MiIslandNotificationBuilder(
         }
     }.onFailure {
         AppLogger.e(TAG, "Build FocusNotification extras failed", it)
-    }.getOrElse { null }
+    }.getOrNull()
 
     private fun resolvePresentation(
         state: McpNotificationPayload,
@@ -526,13 +510,13 @@ class MiIslandNotificationBuilder(
 
     private fun resolveIslandActions(
         state: McpNotificationPayload,
-        isGitHubFlow: Boolean,
+        isGitHubShareImport: Boolean,
         forFocusExtras: Boolean
     ): List<IslandAction> {
         val actions = mutableListOf(
             IslandAction(
                 key = "mcp_action_open",
-                title = if (isGitHubFlow) {
+                title = if (isGitHubShareImport) {
                     state.primaryActionTitle(context)
                 } else {
                     context.getString(R.string.common_open)
@@ -542,7 +526,7 @@ class MiIslandNotificationBuilder(
             )
         )
         val showSecondaryAction = when {
-            isGitHubFlow ->
+            isGitHubShareImport ->
                 state.stopPendingIntent != state.openPendingIntent &&
                         (state.running || state.showSecondaryActionWhenStopped)
 
@@ -606,5 +590,4 @@ class MiIslandNotificationBuilder(
             isShowNotification = show
         }
     }
-
 }

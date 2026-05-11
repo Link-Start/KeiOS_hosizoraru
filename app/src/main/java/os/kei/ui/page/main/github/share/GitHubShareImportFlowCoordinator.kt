@@ -275,10 +275,19 @@ internal object GitHubShareImportFlowCoordinator {
 
             is ShareImportDeliveryResult.Success -> {
                 val scannedPackageName = scannedPackageNameDeferred.await()
-                val pending = buildPendingShareImportTrackRecord(
-                    preview = preview,
-                    selectedAsset = selectedAsset,
-                    scannedPackageName = scannedPackageName
+                val pending = GitHubPendingShareImportTrackRecord(
+                    projectUrl = preview.projectUrl,
+                    owner = preview.owner,
+                    repo = preview.repo,
+                    releaseTag = preview.releaseTag,
+                    assetName = selectedAsset.name,
+                    packageName = scannedPackageName,
+                    targetDisplayName = buildShareImportTargetDisplayName(
+                        repo = preview.repo,
+                        assetName = selectedAsset.name,
+                        packageName = scannedPackageName
+                    ).ifBlank { preview.targetDisplayName },
+                    armedAtMillis = System.currentTimeMillis()
                 )
                 withContext(Dispatchers.IO) {
                     GitHubTrackStore.savePendingShareImportTrack(pending)
@@ -303,27 +312,6 @@ internal object GitHubShareImportFlowCoordinator {
                 )
             }
         }
-    }
-
-    private fun buildPendingShareImportTrackRecord(
-        preview: GitHubShareImportPreview,
-        selectedAsset: GitHubReleaseAssetFile,
-        scannedPackageName: String
-    ): GitHubPendingShareImportTrackRecord {
-        return GitHubPendingShareImportTrackRecord(
-            projectUrl = preview.projectUrl,
-            owner = preview.owner,
-            repo = preview.repo,
-            releaseTag = preview.releaseTag,
-            assetName = selectedAsset.name,
-            packageName = scannedPackageName,
-            targetDisplayName = buildShareImportTargetDisplayName(
-                repo = preview.repo,
-                assetName = selectedAsset.name,
-                packageName = scannedPackageName
-            ).ifBlank { preview.targetDisplayName },
-            armedAtMillis = System.currentTimeMillis()
-        )
     }
 
     suspend fun refreshPendingInstall(

@@ -47,7 +47,6 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
-import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 @Stable
@@ -67,8 +66,6 @@ internal class GitHubPageState(
     var showAddSheet by mutableStateOf(false)
     var showStrategySheet by mutableStateOf(false)
     var showCheckLogicSheet by mutableStateOf(false)
-    var showCheckLogicMenuPopup by mutableStateOf(false)
-    var checkLogicSheetCategory by mutableStateOf(GitHubCheckSheetCategory.UpdateChecks)
     var showActionsSheet by mutableStateOf(false)
     var showOverviewEntrySheet by mutableStateOf(false)
     var showDownloaderPopup by mutableStateOf(false)
@@ -329,7 +326,6 @@ internal class GitHubPageState(
     }
 
     fun dismissCheckLogicSheet() {
-        showCheckLogicMenuPopup = false
         showCheckLogicIntervalPopup = false
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false

@@ -80,7 +80,6 @@ internal fun GitHubPageSheetHost(
 
     GitHubCheckLogicSheet(
         show = state.showCheckLogicSheet,
-        category = state.checkLogicSheetCategory,
         backdrop = backdrops.sheet,
         lookupConfig = state.lookupConfig,
         trackedCount = contentDerivedState.trackedUi.overviewMetrics.trackedCount,
@@ -112,7 +111,6 @@ internal fun GitHubPageSheetHost(
         importInProgress = tracksImporting,
         onDismissRequest = actions::closeCheckLogicSheet,
         onApply = { actions.applyCheckLogicSheet(installedOnlineShareTargets) },
-        onCategoryChange = { state.checkLogicSheetCategory = it },
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
         onExportTrackedItems = onExportTrackedItems,
         onImportTrackedItems = onImportTrackedItems,
@@ -335,4 +333,5 @@ internal fun GitHubPageSheetHost(
             onConfirmTrackImport()
         }
     )
+
 }

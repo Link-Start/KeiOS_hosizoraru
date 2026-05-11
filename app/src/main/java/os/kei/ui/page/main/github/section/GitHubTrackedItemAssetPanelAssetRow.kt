@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -52,7 +51,6 @@ internal fun GitHubTrackedItemAssetRow(
     contentBackdrop: LayerBackdrop,
     supportedAbis: List<String>,
     showApkTrustCheck: Boolean,
-    lookupConfig: GitHubLookupConfig,
     context: Context,
     onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
     onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
@@ -69,7 +67,6 @@ internal fun GitHubTrackedItemAssetRow(
     val isApkAsset = asset.name.endsWith(".apk", ignoreCase = true)
     val displayName = assetDisplayName(asset.name)
     val sizeLabel = formatAssetSize(asset.sizeBytes, context)
-    val downloadActionLabel = sizeLabel
     val relativeTimeLabel = assetRelativeTimeLabel(asset.updatedAtMillis, context)
     val preferredForDevice = assetIsPreferredForDevice(
         fileName = asset.name,
@@ -126,7 +123,7 @@ internal fun GitHubTrackedItemAssetRow(
                 }
                 AppCompactIconAction(
                     icon = appLucideDownloadIcon(),
-                    contentDescription = downloadActionLabel,
+                    contentDescription = sizeLabel,
                     tint = actionButtonColor,
                     onClick = { onOpenApkInDownloader(asset) },
                     minSize = 34.dp
@@ -247,16 +244,5 @@ private fun GitHubApkTrustReason.labelRes(): Int {
         GitHubApkTrustReason.SourceArchive -> R.string.github_apk_trust_reason_source
         GitHubApkTrustReason.ApkLike -> R.string.github_apk_trust_reason_apk
         GitHubApkTrustReason.UnknownFormat -> R.string.github_apk_trust_reason_unknown_format
-        GitHubApkTrustReason.PackageMatched -> R.string.github_apk_trust_reason_package_matched
-        GitHubApkTrustReason.PackageMismatch -> R.string.github_apk_trust_reason_package_mismatch
-        GitHubApkTrustReason.SignatureMatched -> R.string.github_apk_trust_reason_signature_matched
-        GitHubApkTrustReason.SignatureMismatch -> R.string.github_apk_trust_reason_signature_mismatch
-        GitHubApkTrustReason.SignatureUnknown -> R.string.github_apk_trust_reason_signature_unknown
-        GitHubApkTrustReason.VersionUpgrade -> R.string.github_apk_trust_reason_version_upgrade
-        GitHubApkTrustReason.VersionDowngrade -> R.string.github_apk_trust_reason_version_downgrade
-        GitHubApkTrustReason.MinSdkTooHigh -> R.string.github_apk_trust_reason_min_sdk_high
-        GitHubApkTrustReason.TestOnly -> R.string.github_apk_trust_reason_test_only
-        GitHubApkTrustReason.SensitivePermission -> R.string.github_apk_trust_reason_sensitive_permission
-        GitHubApkTrustReason.ExportedComponent -> R.string.github_apk_trust_reason_exported_component
     }
 }

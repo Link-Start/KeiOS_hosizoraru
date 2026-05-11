@@ -36,7 +36,7 @@ internal fun GitHubTrackedItemAssetPanel(
     onOpenExternalUrl: (String) -> Unit,
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
     onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
-    onOpenTrackedApkInDownloader: (GitHubTrackedApp, VersionCheckUi, GitHubReleaseAssetFile) -> Unit,
+    onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     context: Context,
     supportedAbis: List<String>
@@ -115,12 +115,9 @@ internal fun GitHubTrackedItemAssetPanel(
                             supportedAbis = supportedAbis,
                             showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
                                     lookupConfig.apkTrustCheckEnabled,
-                            lookupConfig = lookupConfig,
                             context = context,
                             onOpenApkInfo = onOpenApkInfo,
-                            onOpenApkInDownloader = { selectedAsset ->
-                                onOpenTrackedApkInDownloader(item, state, selectedAsset)
-                            },
+                            onOpenApkInDownloader = onOpenApkInDownloader,
                             onShareApkLink = onShareApkLink
                         )
                     }

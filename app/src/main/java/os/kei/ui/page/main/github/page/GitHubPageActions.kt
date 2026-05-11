@@ -29,7 +29,6 @@ import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.github.share.GitHubShareImportResultKind
 import os.kei.ui.page.main.github.share.toShareImportResult
-import os.kei.ui.page.main.github.sheet.GitHubCheckSheetCategory
 
 internal class GitHubPageActions(
     context: Context,
@@ -68,8 +67,7 @@ internal class GitHubPageActions(
 
     fun closeStrategySheet() = configActions.closeStrategySheet()
 
-    fun openCheckLogicSheet(category: GitHubCheckSheetCategory = GitHubCheckSheetCategory.UpdateChecks) =
-        configActions.openCheckLogicSheet(category)
+    fun openCheckLogicSheet() = configActions.openCheckLogicSheet()
 
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
 
@@ -377,12 +375,6 @@ internal class GitHubPageActions(
     fun shareApkLink(asset: GitHubReleaseAssetFile) = assetActions.shareApkLink(asset)
 
     fun openApkInDownloader(asset: GitHubReleaseAssetFile) = assetActions.openApkInDownloader(asset)
-
-    fun openTrackedApkInDownloader(
-        item: GitHubTrackedApp,
-        itemState: VersionCheckUi,
-        asset: GitHubReleaseAssetFile
-    ) = assetActions.openTrackedApkInDownloader(item, itemState, asset)
 
     fun openApkInfo(asset: GitHubReleaseAssetFile) = assetActions.openApkInfo(asset)
 

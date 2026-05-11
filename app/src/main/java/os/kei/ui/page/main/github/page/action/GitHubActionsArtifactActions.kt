@@ -53,7 +53,6 @@ internal class GitHubActionsArtifactActions(
         scope.launch {
             state.actionsArtifactDownloadLoadingId = artifact.id
             try {
-                val fileName = artifactArchiveFileName(artifact)
                 val resolution = actionsRepository.resolveGitHubActionsArtifactDownloadUrl(
                     artifact = artifact,
                     owner = item.owner,
@@ -63,6 +62,7 @@ internal class GitHubActionsArtifactActions(
                 ).getOrThrow()
                 val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolution.downloadUrl)
                     ?: error(context.getString(R.string.github_actions_error_download_url_invalid))
+                val fileName = artifactArchiveFileName(artifact)
                 val artifactPackageNameDeferred = if (artifactMatch.traits.androidLike) {
                     async {
                         actionsRepository.probeGitHubActionsArtifactPackageName(

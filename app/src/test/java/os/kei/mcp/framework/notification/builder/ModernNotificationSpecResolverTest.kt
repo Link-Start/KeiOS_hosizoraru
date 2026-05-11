@@ -208,7 +208,6 @@ class ModernNotificationSpecResolverTest {
         )
 
         assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
-        assertEquals(true, spec.showProgress)
         assertEquals(72, spec.progressPercent)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.iconResId)
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.expandedIconResId)

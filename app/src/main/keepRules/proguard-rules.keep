@@ -32,22 +32,6 @@
     private static *** newProcess(java.lang.String[],java.lang.String[],java.lang.String);
 }
 
-# HiddenApiBypass and Shizuku install path.
-# HiddenApiBypass reflects ART internals through Helper nested types; keep those members stable.
-# BinderContainer mirrors Shizuku provider consumer rules and keeps the Parcelable bridge intact.
-# ShizukuProvider is declared in the manifest and should keep a readable class name in release.
--dontwarn dalvik.system.VMRuntime
--if class org.lsposed.hiddenapibypass.HiddenApiBypass
--keepclassmembers class org.lsposed.hiddenapibypass.Helper$* { *; }
--assumenosideeffects class android.util.Property {
-    public static *** of(...);
-}
--keepnames class moe.shizuku.api.BinderContainer
--keepclassmembers class moe.shizuku.api.BinderContainer {
-    public static final android.os.Parcelable$Creator CREATOR;
-}
--keepnames class rikka.shizuku.ShizukuProvider
-
 # Keep annotation/signature metadata used by Kotlin + library runtime features.
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
 

@@ -3,7 +3,6 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
-import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -51,7 +50,6 @@ internal class GitHubConfigActions(
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
         state.showShareImportFlowModePopup = false
-        state.showApkInstallUiModePopup = false
         state.checkLogicSheetCategory = category
         scope.launch {
             val config = repository.loadLookupConfig()
@@ -62,7 +60,6 @@ internal class GitHubConfigActions(
             state.profileDepthInput = config.profileDepth
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
-            state.apkInstallUiModeInput = config.apkInstallUiMode
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
             state.decisionAssistEnabledInput = config.decisionAssistEnabled
@@ -107,8 +104,6 @@ internal class GitHubConfigActions(
                 profileDepth = previousConfig.profileDepth,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
                 shareImportFlowMode = previousConfig.shareImportFlowMode,
-                apkInstallDeliveryMode = previousConfig.apkInstallDeliveryMode,
-                apkInstallUiMode = previousConfig.apkInstallUiMode,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
                 preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
                 decisionAssistEnabled = previousConfig.decisionAssistEnabled,
@@ -194,8 +189,6 @@ internal class GitHubConfigActions(
                 profileDepth = state.profileDepthInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
                 shareImportFlowMode = state.shareImportFlowModeInput,
-                apkInstallDeliveryMode = GitHubApkInstallDeliveryMode.AppShizuku,
-                apkInstallUiMode = state.apkInstallUiModeInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
                     installedOnlineShareTargets.any { it.packageName == selected }
                 }.orEmpty(),
@@ -222,9 +215,6 @@ internal class GitHubConfigActions(
             val shareImportChanged =
                 previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled ||
                         previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode
-            val apkInstallChanged =
-                previousConfig.apkInstallDeliveryMode != newConfig.apkInstallDeliveryMode ||
-                        previousConfig.apkInstallUiMode != newConfig.apkInstallUiMode
             val onlineShareTargetChanged =
                 previousConfig.onlineShareTargetPackage != newConfig.onlineShareTargetPackage
             val downloaderChanged =
@@ -236,7 +226,6 @@ internal class GitHubConfigActions(
             val intervalChanged = previousRefreshIntervalHours != state.refreshIntervalHoursInput
             val preferenceChangedCount = listOf(
                 shareImportChanged,
-                apkInstallChanged,
                 onlineShareTargetChanged,
                 downloaderChanged,
                 decisionAssistChanged,

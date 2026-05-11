@@ -84,9 +84,7 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
-        val isGitHubApkInstall =
-            McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
-        val isGitHubSemantic = isGitHubShareImport || isGitHubApkInstall
+        val isGitHubSemantic = isGitHubShareImport
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -106,8 +104,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubShareImport = isGitHubShareImport,
-            isGitHubApkInstall = isGitHubApkInstall
+            isGitHubShareImport = isGitHubShareImport
         )
         val presentation = resolvePresentation(
             state = state,
@@ -116,7 +113,6 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
             isGitHubShareImport = isGitHubShareImport,
-            isGitHubApkInstall = isGitHubApkInstall,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
@@ -129,10 +125,6 @@ class MiIslandNotificationBuilder(
                     isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     isBlueArchiveCalendarPool && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     isGitHubShareImport && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isGitHubApkInstall && state.running &&
-                            state.overrideProgressPercent != null -> NotificationCompat.CATEGORY_PROGRESS
-
-                    isGitHubApkInstall && state.running -> NotificationCompat.CATEGORY_STATUS
                     !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
                     else -> NotificationCompat.CATEGORY_STATUS
                 }
@@ -169,9 +161,6 @@ class MiIslandNotificationBuilder(
             builder.setProgress(100, presentation.progressPercent.coerceIn(0, 100), false)
         }
         val focusExtras = buildFocusExtras(payload, islandIconResId)
-        if (isGitHubApkInstall && !focusExtras.hasGitHubApkInstallFocusContract()) {
-            error("GitHub APK install FocusNotification extras missing")
-        }
         focusExtras?.let(builder::addExtras)
         return builder.build()
     }
@@ -185,9 +174,7 @@ class MiIslandNotificationBuilder(
             McpNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             McpNotificationPayload.isGitHubShareImportServerName(state.serverName)
-        val isGitHubApkInstall =
-            McpNotificationPayload.isGitHubApkInstallServerName(state.serverName)
-        val isGitHubSemantic = isGitHubShareImport || isGitHubApkInstall
+        val isGitHubSemantic = isGitHubShareImport
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -200,7 +187,6 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
             isGitHubShareImport = isGitHubShareImport,
-            isGitHubApkInstall = isGitHubApkInstall,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val useSemanticIcon = isBlueArchiveNotification || isGitHubSemantic
@@ -376,15 +362,7 @@ class MiIslandNotificationBuilder(
         }
     }.onFailure {
         AppLogger.e(TAG, "Build FocusNotification extras failed", it)
-    }.getOrElse { error ->
-        if (McpNotificationPayload.isGitHubApkInstallServerName(payload.state.serverName)) {
-            throw IllegalStateException(
-                "GitHub APK install FocusNotification extras failed",
-                error
-            )
-        }
-        null
-    }
+    }.getOrElse { null }
 
     private fun resolvePresentation(
         state: McpNotificationPayload,
@@ -393,7 +371,6 @@ class MiIslandNotificationBuilder(
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
         isGitHubShareImport: Boolean,
-        isGitHubApkInstall: Boolean,
         miIslandProgressColorOverride: String? = null
     ): IslandPresentation {
         if (isBlueArchiveAp && state.running) {
@@ -500,66 +477,6 @@ class MiIslandNotificationBuilder(
                 notificationAccentColor = progressColor
             )
         }
-        if (isGitHubApkInstall && state.running) {
-            val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100)
-            val useProgressTemplate = progressPercent != null
-            return IslandPresentation(
-                islandFirstFloat = if (useProgressTemplate) {
-                    false
-                } else {
-                    state.focusAllowFloat ?: false
-                },
-                allowFloat = state.focusAllowFloat ?: false,
-                showTextButtons = true,
-                bigTemplateKind = if (useProgressTemplate) {
-                    IslandBigTemplateKind.PROGRESS_TEXT
-                } else {
-                    IslandBigTemplateKind.TEXT
-                },
-                smallTemplateKind = if (useProgressTemplate) {
-                    IslandSmallTemplateKind.PROGRESS_ICON
-                } else {
-                    IslandSmallTemplateKind.ICON
-                },
-                compactTitle = resolveCompactTitle(
-                    raw = state.onlineText(context),
-                    fallback = state.shortText
-                ),
-                compactContent = if (useProgressTemplate) {
-                    null
-                } else {
-                    state.content(context)
-                        .takeIf { it.isNotBlank() && it != state.onlineText(context) }
-                },
-                notificationOngoing = state.ongoing,
-                requestPromotedOngoing = true,
-                focusUpdatable = true,
-                focusShowNotification = true,
-                showExpandedIconText = !useProgressTemplate && state.port >= 6,
-                showExpandedProgress = useProgressTemplate,
-                progressPercent = progressPercent ?: 0,
-                progressColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR,
-                notificationAccentColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR
-            )
-        }
-        if (isGitHubApkInstall) {
-            return IslandPresentation(
-                allowFloat = state.focusAllowFloat ?: true,
-                showTextButtons = true,
-                compactTitle = resolveCompactTitle(
-                    raw = state.onlineText(context),
-                    fallback = state.shortText
-                ),
-                compactContent = state.content(context)
-                    .takeIf { it.isNotBlank() && it != state.onlineText(context) },
-                notificationOngoing = state.ongoing,
-                requestPromotedOngoing = state.ongoing,
-                focusUpdatable = true,
-                focusShowNotification = true,
-                showExpandedIconText = true,
-                notificationAccentColor = GITHUB_SHARE_IMPORT_ACCENT_COLOR
-            )
-        }
         if (state.running) {
             return IslandPresentation(
                 allowFloat = false,
@@ -595,11 +512,9 @@ class MiIslandNotificationBuilder(
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubShareImport: Boolean,
-        isGitHubApkInstall: Boolean
+        isGitHubShareImport: Boolean
     ): String? {
         return when {
-            isGitHubApkInstall -> state.onlineText(context)
             !state.running -> state.statusText(context)
             isBlueArchiveAp -> context.getString(R.string.ba_notification_ap_island_text)
             isBlueArchiveCalendarPool -> state.shortText
@@ -692,9 +607,4 @@ class MiIslandNotificationBuilder(
         }
     }
 
-    private fun android.os.Bundle?.hasGitHubApkInstallFocusContract(): Boolean {
-        return this != null &&
-                getString("miui.focus.param").orEmpty().isNotBlank() &&
-                getBundle("miui.focus.actions") != null
-    }
 }

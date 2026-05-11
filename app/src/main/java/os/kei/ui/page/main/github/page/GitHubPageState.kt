@@ -28,7 +28,6 @@ import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
-import os.kei.feature.github.model.GitHubApkInstallUiMode
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -117,12 +116,10 @@ internal class GitHubPageState(
     var showSortPopup by mutableStateOf(false)
     var showCheckLogicIntervalPopup by mutableStateOf(false)
     var showOnlineShareTargetPopup by mutableStateOf(false)
-    var showApkInstallUiModePopup by mutableStateOf(false)
     var checkLogicIntervalPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var apkInstallUiModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var pendingTrackImportPreview by mutableStateOf<GitHubTrackImportPreview?>(null)
     var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
     var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
@@ -150,7 +147,6 @@ internal class GitHubPageState(
     var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
-    var apkInstallUiModeInput by mutableStateOf(GitHubApkInstallUiMode.SheetFirst)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
     var decisionAssistEnabledInput by mutableStateOf(false)
@@ -338,7 +334,6 @@ internal class GitHubPageState(
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false
         showShareImportFlowModePopup = false
-        showApkInstallUiModePopup = false
         pendingTrackImportPreview = null
         showCheckLogicSheet = false
     }

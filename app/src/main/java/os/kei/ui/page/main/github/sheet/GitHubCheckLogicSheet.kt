@@ -17,8 +17,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.core.install.ShizukuRuntimeCapabilities
-import os.kei.feature.github.model.GitHubApkInstallUiMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubShareImportFlowMode
@@ -58,7 +56,6 @@ internal fun GitHubCheckLogicSheet(
     profileDepthInput: GitHubProfileDepth,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
-    apkInstallUiModeInput: GitHubApkInstallUiMode,
     onlineShareTargetPackageInput: String,
     preferredDownloaderPackageInput: String,
     decisionAssistEnabledInput: Boolean,
@@ -69,12 +66,10 @@ internal fun GitHubCheckLogicSheet(
     showDownloaderPopup: Boolean,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
-    showApkInstallUiModePopup: Boolean,
     checkLogicIntervalPopupAnchorBounds: IntRect?,
     downloaderPopupAnchorBounds: IntRect?,
     onlineShareTargetPopupAnchorBounds: IntRect?,
     shareImportFlowModePopupAnchorBounds: IntRect?,
-    apkInstallUiModePopupAnchorBounds: IntRect?,
     downloaderOptions: List<DownloaderOption>,
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
@@ -93,7 +88,6 @@ internal fun GitHubCheckLogicSheet(
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
-    onApkInstallUiModeInputChange: (GitHubApkInstallUiMode) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
@@ -103,12 +97,10 @@ internal fun GitHubCheckLogicSheet(
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
-    onShowApkInstallUiModePopupChange: (Boolean) -> Unit,
     onCheckLogicIntervalPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onApkInstallUiModePopupAnchorBoundsChange: (IntRect?) -> Unit
+    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     val context = LocalContext.current
     SnapshotWindowBottomSheet(
@@ -150,11 +142,7 @@ internal fun GitHubCheckLogicSheet(
         val selectedOnlineShareTargetLabel = onlineShareTargetOptions.firstOrNull {
             it.packageName == onlineShareTargetPackageInput
         }?.label ?: noOnlineShareTargetOption(context).label
-        val installUiLabel = context.getString(apkInstallUiModeInput.labelRes())
         val shareImportFlowModeLabel = context.getString(shareImportFlowModeInput.labelRes())
-        val shizukuInstallCapability = remember(showApkInstallUiModePopup, category) {
-            ShizukuRuntimeCapabilities().current()
-        }
         val logicChanged = refreshIntervalHoursInput != refreshIntervalHours ||
                 checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
                 aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
@@ -162,7 +150,6 @@ internal fun GitHubCheckLogicSheet(
                 profileDepthInput != lookupConfig.profileDepth ||
                 shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
                 shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
-                apkInstallUiModeInput != lookupConfig.apkInstallUiMode ||
                 onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
                 preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
                 decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
@@ -183,8 +170,6 @@ internal fun GitHubCheckLogicSheet(
                 profileDepthInput = profileDepthInput,
                 selectedDownloaderPackage = preferredDownloaderPackageInput,
                 selectedDownloaderLabel = selectedDownloaderLabel,
-                installUiLabel = installUiLabel,
-                shizukuInstallCapability = shizukuInstallCapability,
                 shareImportLinkageEnabled = shareImportLinkageEnabledInput,
                 shareImportFlowModeLabel = shareImportFlowModeLabel,
                 selectedOnlineShareTargetLabel = selectedOnlineShareTargetLabel,
@@ -214,23 +199,16 @@ internal fun GitHubCheckLogicSheet(
                     onCheckLogicIntervalPopupAnchorBoundsChange = onCheckLogicIntervalPopupAnchorBoundsChange
                 )
 
-                GitHubCheckSheetCategory.InstallFlow -> GitHubCheckDownloadInstallSection(
+                GitHubCheckSheetCategory.DownloadFlow -> GitHubCheckDownloadFlowSection(
                     backdrop = backdrop,
                     selectedDownloaderLabel = selectedDownloaderLabel,
                     allDownloaderOptions = allDownloaderOptions,
                     preferredDownloaderPackageInput = preferredDownloaderPackageInput,
                     showDownloaderPopup = showDownloaderPopup,
                     downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
-                    apkInstallUiModeInput = apkInstallUiModeInput,
-                    showApkInstallUiModePopup = showApkInstallUiModePopup,
-                    apkInstallUiModePopupAnchorBounds = apkInstallUiModePopupAnchorBounds,
                     onPreferredDownloaderPackageInputChange = onPreferredDownloaderPackageInputChange,
-                    onApkInstallUiModeInputChange = onApkInstallUiModeInputChange,
                     onShowDownloaderPopupChange = onShowDownloaderPopupChange,
-                    onShowApkInstallUiModePopupChange = onShowApkInstallUiModePopupChange,
-                    onDownloaderPopupAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
-                    onApkInstallUiModePopupAnchorBoundsChange = onApkInstallUiModePopupAnchorBoundsChange,
-                    shizukuInstallCapability = shizukuInstallCapability
+                    onDownloaderPopupAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange
                 )
 
                 GitHubCheckSheetCategory.ShareImport -> GitHubCheckShareImportSection(
@@ -296,8 +274,6 @@ private fun GitHubCheckCategoryHeader(
     profileDepthInput: GitHubProfileDepth,
     selectedDownloaderPackage: String,
     selectedDownloaderLabel: String,
-    installUiLabel: String,
-    shizukuInstallCapability: os.kei.core.install.ShizukuInstallCapability,
     shareImportLinkageEnabled: Boolean,
     shareImportFlowModeLabel: String,
     selectedOnlineShareTargetLabel: String,
@@ -369,8 +345,6 @@ private fun GitHubCheckCategoryHeader(
             profileDepthInput = profileDepthInput,
             selectedDownloaderPackage = selectedDownloaderPackage,
             selectedDownloaderLabel = selectedDownloaderLabel,
-            installUiLabel = installUiLabel,
-            shizukuInstallCapability = shizukuInstallCapability,
             shareImportLinkageEnabled = shareImportLinkageEnabled,
             shareImportFlowModeLabel = shareImportFlowModeLabel,
             selectedOnlineShareTargetLabel = selectedOnlineShareTargetLabel,
@@ -397,8 +371,6 @@ private fun GitHubCheckCategoryMetrics(
     profileDepthInput: GitHubProfileDepth,
     selectedDownloaderPackage: String,
     selectedDownloaderLabel: String,
-    installUiLabel: String,
-    shizukuInstallCapability: os.kei.core.install.ShizukuInstallCapability,
     shareImportLinkageEnabled: Boolean,
     shareImportFlowModeLabel: String,
     selectedOnlineShareTargetLabel: String,
@@ -448,7 +420,7 @@ private fun GitHubCheckCategoryMetrics(
             }
         }
 
-        GitHubCheckSheetCategory.InstallFlow -> {
+        GitHubCheckSheetCategory.DownloadFlow -> {
             GitHubCheckMetricRow {
                 GitHubCheckMetric(
                     label = stringResource(R.string.github_check_sheet_metric_downloader_compact),
@@ -457,30 +429,6 @@ private fun GitHubCheckCategoryMetrics(
                         fallbackLabel = selectedDownloaderLabel
                     ),
                     modifier = Modifier.weight(1f),
-                    backdrop = backdrop
-                )
-                GitHubCheckMetric(
-                    label = stringResource(R.string.github_check_sheet_metric_install_ui_compact),
-                    value = installUiLabel,
-                    modifier = Modifier.weight(1f),
-                    valueColor = MiuixTheme.colorScheme.primary,
-                    backdrop = backdrop
-                )
-            }
-            GitHubCheckMetricRow {
-                GitHubCheckMetric(
-                    label = stringResource(R.string.github_check_sheet_metric_shizuku_compact),
-                    value = if (shizukuInstallCapability.sessionReady) {
-                        stringResource(R.string.github_check_sheet_value_ready)
-                    } else {
-                        stringResource(R.string.github_check_sheet_value_attention)
-                    },
-                    modifier = Modifier.weight(1f),
-                    valueColor = if (shizukuInstallCapability.sessionReady) {
-                        GitHubStatusPalette.Update
-                    } else {
-                        GitHubStatusPalette.Cache
-                    },
                     backdrop = backdrop
                 )
                 GitHubCheckMetric(
@@ -530,10 +478,13 @@ private fun GitHubCheckCategoryMetrics(
                     backdrop = backdrop
                 )
                 GitHubCheckMetric(
-                    label = stringResource(R.string.github_check_sheet_metric_install_ui_compact),
-                    value = installUiLabel,
+                    label = stringResource(R.string.github_check_sheet_metric_track_count_compact),
+                    value = stringResource(
+                        R.string.github_check_sheet_value_track_count_compact,
+                        trackedCount
+                    ),
                     modifier = Modifier.weight(1f),
-                    valueColor = MiuixTheme.colorScheme.primary,
+                    valueColor = trackedCountColor(trackedCount),
                     backdrop = backdrop
                 )
             }

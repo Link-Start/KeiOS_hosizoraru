@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
@@ -33,7 +32,6 @@ import os.kei.ui.page.main.github.asset.prefersApiAssetTransport
 import os.kei.ui.page.main.github.buildGitHubApkTrustSignal
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
-import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -71,12 +69,7 @@ internal fun GitHubTrackedItemAssetRow(
     val isApkAsset = asset.name.endsWith(".apk", ignoreCase = true)
     val displayName = assetDisplayName(asset.name)
     val sizeLabel = formatAssetSize(asset.sizeBytes, context)
-    val installMode = lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku
-    val downloadActionLabel = if (installMode) {
-        stringResource(R.string.github_apk_install_action_install)
-    } else {
-        sizeLabel
-    }
+    val downloadActionLabel = sizeLabel
     val relativeTimeLabel = assetRelativeTimeLabel(asset.updatedAtMillis, context)
     val preferredForDevice = assetIsPreferredForDevice(
         fileName = asset.name,
@@ -132,7 +125,7 @@ internal fun GitHubTrackedItemAssetRow(
                     )
                 }
                 AppCompactIconAction(
-                    icon = if (installMode) appLucidePackageIcon() else appLucideDownloadIcon(),
+                    icon = appLucideDownloadIcon(),
                     contentDescription = downloadActionLabel,
                     tint = actionButtonColor,
                     onClick = { onOpenApkInDownloader(asset) },

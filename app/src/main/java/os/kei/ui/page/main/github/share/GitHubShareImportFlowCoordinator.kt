@@ -22,14 +22,10 @@ import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubShareImportResolver
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
-import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.notification.GitHubShareImportActionReceiver
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
-import os.kei.ui.page.main.github.install.GitHubApkInstallFlowCoordinator
-import os.kei.ui.page.main.github.install.GitHubApkInstallRequestContext
-import os.kei.ui.page.main.github.install.GitHubApkInstallSourceKind
 import os.kei.ui.page.main.github.localizedGitHubShareImportErrorMessage
 
 internal object GitHubShareImportFlowCoordinator {
@@ -260,53 +256,6 @@ internal object GitHubShareImportFlowCoordinator {
                 asset = selectedAsset,
                 lookupConfig = lookupConfig
             ).getOrDefault("")
-        }
-        if (lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku) {
-            GitHubShareImportNotificationHelper.cancel(context)
-            val installSessionId = GitHubApkInstallFlowCoordinator.beginInstallAsset(
-                context = context,
-                lookupConfig = lookupConfig,
-                asset = selectedAsset,
-                request = GitHubApkInstallRequestContext(
-                    sourceKind = GitHubApkInstallSourceKind.ShareImport,
-                    owner = preview.owner,
-                    repo = preview.repo,
-                    releaseTag = preview.releaseTag,
-                    sourceLabel = preview.targetDisplayName.ifBlank {
-                        buildShareImportTargetDisplayName(
-                            repo = preview.repo,
-                            assetName = selectedAsset.name
-                        )
-                    },
-                    externalFileName = selectedAsset.name
-                )
-            )
-            val scannedPackageName = scannedPackageNameDeferred.await()
-            if (!GitHubApkInstallFlowCoordinator.isActiveSession(installSessionId)) {
-                return@coroutineScope ShareImportDeliveryCoordinatorResult.Failed(
-                    R.string.github_apk_install_cancelled
-                )
-            }
-            GitHubApkInstallFlowCoordinator.updateExpectedPackageName(
-                sessionId = installSessionId,
-                packageName = scannedPackageName
-            )
-            val pending = buildPendingShareImportTrackRecord(
-                preview = preview,
-                selectedAsset = selectedAsset,
-                scannedPackageName = scannedPackageName
-            )
-            withContext(Dispatchers.IO) {
-                GitHubTrackStore.savePendingShareImportTrack(pending)
-                GitHubShareImportFlowStore.clearActiveFlow()
-            }
-            GitHubTrackStoreSignals.notifyChanged()
-            GitHubShareImportPendingScheduler.cancel(context)
-            return@coroutineScope ShareImportDeliveryCoordinatorResult.WaitingInstall(
-                pending = pending,
-                toastResId = R.string.github_toast_share_import_wait_install,
-                assetName = selectedAsset.name
-            )
         }
         val deliveryResult = sendAssetToConfiguredChannel(
             context = context,

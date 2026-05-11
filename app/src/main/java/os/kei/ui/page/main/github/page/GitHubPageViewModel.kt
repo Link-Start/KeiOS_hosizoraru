@@ -115,7 +115,7 @@ internal class GitHubPageViewModel : ViewModel() {
             downloaderOptionsJob = viewModelScope.launch {
                 snapshotFlowManager.snapshotFlow {
                     state.showCheckLogicSheet &&
-                            state.checkLogicSheetCategory == GitHubCheckSheetCategory.InstallFlow
+                            state.checkLogicSheetCategory == GitHubCheckSheetCategory.DownloadFlow
                 }.collectLatest { shouldResolve ->
                     _checkLogicDownloaderOptions.value = if (shouldResolve) {
                         repository.queryDownloaders(appContext)

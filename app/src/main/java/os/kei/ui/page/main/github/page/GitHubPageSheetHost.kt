@@ -2,11 +2,8 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
-import os.kei.ui.page.main.github.install.GitHubApkInstallFlowState
-import os.kei.ui.page.main.github.install.GitHubApkInstallSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.sheet.GitHubActionsArtifactDetailSheet
@@ -25,7 +22,6 @@ internal fun GitHubPageSheetHost(
     context: Context,
     backdrops: MainPageBackdropSet,
     state: GitHubPageState,
-    apkInstallFlowState: GitHubApkInstallFlowState,
     actions: GitHubPageActions,
     contentDerivedState: GitHubPageContentDerivedState,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
@@ -96,7 +92,6 @@ internal fun GitHubPageSheetHost(
         profileDepthInput = state.profileDepthInput,
         shareImportLinkageEnabledInput = state.shareImportLinkageEnabledInput,
         shareImportFlowModeInput = state.shareImportFlowModeInput,
-        apkInstallUiModeInput = state.apkInstallUiModeInput,
         onlineShareTargetPackageInput = state.onlineShareTargetPackageInput,
         preferredDownloaderPackageInput = state.preferredDownloaderPackageInput,
         decisionAssistEnabledInput = state.decisionAssistEnabledInput,
@@ -107,12 +102,10 @@ internal fun GitHubPageSheetHost(
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
         showShareImportFlowModePopup = state.showShareImportFlowModePopup,
-        showApkInstallUiModePopup = state.showApkInstallUiModePopup,
         checkLogicIntervalPopupAnchorBounds = state.checkLogicIntervalPopupAnchorBounds,
         downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
         onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
         shareImportFlowModePopupAnchorBounds = state.shareImportFlowModePopupAnchorBounds,
-        apkInstallUiModePopupAnchorBounds = state.apkInstallUiModePopupAnchorBounds,
         downloaderOptions = checkLogicDownloaderOptions,
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
         exportInProgress = tracksExporting,
@@ -131,7 +124,6 @@ internal fun GitHubPageSheetHost(
         onProfileDepthInputChange = { state.profileDepthInput = it },
         onShareImportLinkageEnabledInputChange = { state.shareImportLinkageEnabledInput = it },
         onShareImportFlowModeInputChange = { state.shareImportFlowModeInput = it },
-        onApkInstallUiModeInputChange = { state.apkInstallUiModeInput = it },
         onPreferredDownloaderPackageInputChange = { state.preferredDownloaderPackageInput = it },
         onOnlineShareTargetPackageInputChange = { state.onlineShareTargetPackageInput = it },
         onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },
@@ -141,7 +133,6 @@ internal fun GitHubPageSheetHost(
         onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
         onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
         onShowShareImportFlowModePopupChange = { state.showShareImportFlowModePopup = it },
-        onShowApkInstallUiModePopupChange = { state.showApkInstallUiModePopup = it },
         onCheckLogicIntervalPopupAnchorBoundsChange = {
             state.checkLogicIntervalPopupAnchorBounds = it
         },
@@ -151,9 +142,6 @@ internal fun GitHubPageSheetHost(
         },
         onShareImportFlowModePopupAnchorBoundsChange = {
             state.shareImportFlowModePopupAnchorBounds = it
-        },
-        onApkInstallUiModePopupAnchorBoundsChange = {
-            state.apkInstallUiModePopupAnchorBounds = it
         }
     )
 
@@ -231,7 +219,6 @@ internal fun GitHubPageSheetHost(
         request = state.actionsArtifactDetailRequest,
         backdrop = backdrops.sheet,
         hasToken = state.lookupConfig.actionsArtifactDownloadsAvailable,
-        installMode = state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku,
         downloading = state.actionsArtifactDetailRequest?.artifactMatch?.artifact?.id
             ?.let { state.actionsArtifactDownloadLoadingId == it } == true,
         sharing = state.actionsArtifactDetailRequest?.artifactMatch?.artifact?.id
@@ -250,7 +237,6 @@ internal fun GitHubPageSheetHost(
         installedInfo = state.apkInfoInstalledResults[apkInfoKey],
         loading = state.apkInfoLoading[apkInfoKey] == true,
         error = state.apkInfoErrors[apkInfoKey].orEmpty(),
-        installMode = state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku,
         backdrop = backdrops.sheet,
         onRefresh = { apkInfoAsset?.let(actions::refreshApkInfo) },
         onDownload = { apkInfoAsset?.let(actions::openApkInDownloader) },
@@ -348,10 +334,5 @@ internal fun GitHubPageSheetHost(
             if (tracksImporting) return@GitHubTrackImportDialog
             onConfirmTrackImport()
         }
-    )
-
-    GitHubApkInstallSheet(
-        state = apkInstallFlowState,
-        backdrop = backdrops.sheet
     )
 }

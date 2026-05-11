@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -14,8 +13,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.core.system.ShizukuApiUtils
-import os.kei.feature.github.model.GitHubApkInstallUiMode
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.ui.page.main.github.RefreshIntervalOption
@@ -102,34 +99,17 @@ internal fun GitHubCheckStrategySection(
 }
 
 @Composable
-internal fun GitHubCheckDownloadInstallSection(
+internal fun GitHubCheckDownloadFlowSection(
     backdrop: LayerBackdrop,
     selectedDownloaderLabel: String,
     allDownloaderOptions: List<DownloaderOption>,
     preferredDownloaderPackageInput: String,
     showDownloaderPopup: Boolean,
     downloaderPopupAnchorBounds: IntRect?,
-    apkInstallUiModeInput: GitHubApkInstallUiMode,
-    showApkInstallUiModePopup: Boolean,
-    apkInstallUiModePopupAnchorBounds: IntRect?,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
-    onApkInstallUiModeInputChange: (GitHubApkInstallUiMode) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
-    onShowApkInstallUiModePopupChange: (Boolean) -> Unit,
-    onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onApkInstallUiModePopupAnchorBoundsChange: (IntRect?) -> Unit,
-    shizukuInstallCapability: os.kei.core.install.ShizukuInstallCapability
+    onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
-    val context = LocalContext.current
-    val installUiOptions = GitHubApkInstallUiMode.entries
-    val installUiLabels = installUiOptions.map { mode ->
-        context.getString(mode.labelRes())
-    }
-    val selectedInstallUiIndex = installUiOptions
-        .indexOf(apkInstallUiModeInput)
-        .coerceAtLeast(0)
-    val shizukuStatusSummary = shizukuInstallCapabilitySummary(shizukuInstallCapability)
-    val shizukuApiUtils = remember { ShizukuApiUtils() }
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_transfer))
     SheetDescriptionText(
         text = stringResource(R.string.github_check_sheet_section_transfer_summary)
@@ -156,39 +136,6 @@ internal fun GitHubCheckDownloadInstallSection(
                 onAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction
-            )
-        }
-        SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_install_ui),
-            summary = stringResource(R.string.github_check_sheet_summary_install_ui)
-        ) {
-            AppDropdownSelector(
-                selectedText = installUiLabels.getOrElse(selectedInstallUiIndex) {
-                    installUiLabels.firstOrNull().orEmpty()
-                },
-                options = installUiLabels,
-                selectedIndex = selectedInstallUiIndex,
-                expanded = showApkInstallUiModePopup,
-                anchorBounds = apkInstallUiModePopupAnchorBounds,
-                onExpandedChange = onShowApkInstallUiModePopupChange,
-                onSelectedIndexChange = { selectedIndex ->
-                    onApkInstallUiModeInputChange(installUiOptions[selectedIndex])
-                },
-                onAnchorBoundsChange = onApkInstallUiModePopupAnchorBoundsChange,
-                backdrop = backdrop,
-                variant = GlassVariant.SheetAction
-            )
-        }
-        SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_shizuku_install_status),
-            summary = shizukuStatusSummary
-        ) {
-            AppLiquidTextButton(
-                backdrop = backdrop,
-                variant = GlassVariant.SheetAction,
-                text = stringResource(R.string.github_check_sheet_action_request_shizuku),
-                enabled = !shizukuInstallCapability.sessionReady,
-                onClick = { shizukuApiUtils.requestPermissionIfNeeded() }
             )
         }
     }
@@ -440,46 +387,6 @@ internal fun GitHubShareImportFlowMode.labelRes(): Int {
     return when (this) {
         GitHubShareImportFlowMode.SheetAssisted -> R.string.github_share_import_flow_mode_sheet
         GitHubShareImportFlowMode.NotificationFirst -> R.string.github_share_import_flow_mode_notification
-    }
-}
-
-internal fun GitHubApkInstallUiMode.labelRes(): Int {
-    return when (this) {
-        GitHubApkInstallUiMode.SheetFirst -> R.string.github_apk_install_ui_sheet
-        GitHubApkInstallUiMode.NotificationFirst -> R.string.github_apk_install_ui_notification
-    }
-}
-
-@Composable
-private fun shizukuInstallCapabilitySummary(
-    capability: os.kei.core.install.ShizukuInstallCapability
-): String {
-    val runtimeState = capability.runtimeState
-    return when {
-        !runtimeState.binderAlive -> stringResource(
-            R.string.github_check_sheet_summary_app_install_shizuku_unavailable
-        )
-
-        runtimeState.preV11 -> stringResource(
-            R.string.github_check_sheet_summary_app_install_shizuku_pre_v11
-        )
-
-        !runtimeState.permissionGranted -> stringResource(
-            R.string.github_check_sheet_summary_app_install_permission_missing
-        )
-
-        capability.sessionReady -> stringResource(
-            R.string.github_check_sheet_summary_app_install_ready
-        )
-
-        !capability.remoteInstallPermissionGranted -> stringResource(
-            R.string.github_check_sheet_summary_app_install_remote_permission_missing
-        )
-
-        else -> stringResource(
-            R.string.github_check_sheet_summary_app_install_unsupported_uid,
-            runtimeState.serviceUid?.toString() ?: stringResource(R.string.common_unknown)
-        )
     }
 }
 

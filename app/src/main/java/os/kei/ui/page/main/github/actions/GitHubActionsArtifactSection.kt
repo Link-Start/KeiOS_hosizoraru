@@ -14,7 +14,6 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunMatch
-import os.kei.feature.github.model.GitHubApkInstallDeliveryMode
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactFilter
 import os.kei.ui.page.main.github.page.GitHubPageState
@@ -37,8 +36,6 @@ internal fun GitHubActionsArtifactsSection(
     context: Context
 ) {
     val nightlyLink = state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink
-    val installMode =
-        state.lookupConfig.apkInstallDeliveryMode == GitHubApkInstallDeliveryMode.AppShizuku
     val emptyArtifactsText = if (nightlyLink) {
         stringResource(R.string.github_actions_empty_artifacts_nightly)
     } else {
@@ -116,7 +113,6 @@ internal fun GitHubActionsArtifactsSection(
                         artifactMatch = artifactMatch,
                         recommended = index == 0,
                         hasToken = canResolveArtifacts,
-                        installMode = installMode,
                         downloading = state.actionsArtifactDownloadLoadingId == artifactMatch.artifact.id,
                         sharing = state.actionsArtifactShareLoadingId == artifactMatch.artifact.id,
                         context = context,

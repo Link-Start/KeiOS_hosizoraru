@@ -183,7 +183,7 @@ internal fun GitHubTopBarActions(
 @Composable
 private fun GitHubCheckSheetCategory.icon() = when (this) {
     GitHubCheckSheetCategory.UpdateChecks -> appLucideConfigIcon()
-    GitHubCheckSheetCategory.InstallFlow -> appLucideDownloadIcon()
+    GitHubCheckSheetCategory.DownloadFlow -> appLucideDownloadIcon()
     GitHubCheckSheetCategory.ShareImport -> appLucideShareIcon()
     GitHubCheckSheetCategory.Insights -> appLucideInfoIcon()
     GitHubCheckSheetCategory.TrackData -> appLucideListIcon()

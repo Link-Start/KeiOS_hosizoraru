@@ -71,12 +71,6 @@ internal object MainActivityIntentRouting {
                 } else {
                     null
                 }
-            MainActivity.SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET ->
-                if (targetBottomPage == MainActivity.TARGET_BOTTOM_PAGE_GITHUB) {
-                    MainActivity.SHORTCUT_ACTION_GITHUB_OPEN_APK_INSTALL_SHEET
-                } else {
-                    null
-                }
             else -> null
         }
     }

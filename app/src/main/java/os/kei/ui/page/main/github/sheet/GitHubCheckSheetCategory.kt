@@ -13,8 +13,8 @@ internal enum class GitHubCheckSheetCategory(
         menuLabelRes = R.string.github_check_sheet_section_checks,
         summaryRes = R.string.github_check_sheet_section_checks_summary
     ),
-    InstallFlow(
-        titleRes = R.string.github_check_sheet_title_download_install,
+    DownloadFlow(
+        titleRes = R.string.github_check_sheet_title_download_flow,
         menuLabelRes = R.string.github_check_sheet_section_transfer,
         summaryRes = R.string.github_check_sheet_section_transfer_summary
     ),

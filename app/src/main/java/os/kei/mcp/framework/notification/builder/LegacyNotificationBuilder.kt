@@ -27,13 +27,11 @@ class LegacyNotificationBuilder(
         val isBlueArchiveArenaRefresh = spec.kind == ModernNotificationKind.BA_ARENA_REFRESH
         val isBlueArchiveCalendarPool = spec.kind == ModernNotificationKind.BA_CALENDAR_POOL
         val isGitHubShareImport = spec.kind == ModernNotificationKind.GITHUB_SHARE_IMPORT
-        val isGitHubApkInstall = spec.kind == ModernNotificationKind.GITHUB_APK_INSTALL
         val progressState = computeProgressState(
             state = state,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubShareImport = isGitHubShareImport,
-            isGitHubApkInstall = isGitHubApkInstall
+            isGitHubShareImport = isGitHubShareImport
         )
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(spec.iconResId)
@@ -75,8 +73,7 @@ class LegacyNotificationBuilder(
         state: McpNotificationPayload,
         isBlueArchiveAp: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubShareImport: Boolean,
-        isGitHubApkInstall: Boolean
+        isGitHubShareImport: Boolean
     ): LiveProgressState {
         if (!state.running) {
             return LiveProgressState(current = 0, indeterminate = false, visible = false)
@@ -86,14 +83,6 @@ class LegacyNotificationBuilder(
                 current = state.overrideProgressPercent?.coerceIn(0, 100) ?: 100,
                 indeterminate = false,
                 visible = true
-            )
-        }
-        if (isGitHubApkInstall) {
-            val progressPercent = state.overrideProgressPercent?.coerceIn(0, 100)
-            return LiveProgressState(
-                current = progressPercent ?: 0,
-                indeterminate = false,
-                visible = progressPercent != null
             )
         }
         if (

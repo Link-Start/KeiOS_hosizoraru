@@ -8,6 +8,7 @@ import kotlin.math.roundToInt
 internal enum class ModernNotificationKind {
     DEFAULT,
     BA_AP,
+    BA_CAFE_AP,
     BA_CAFE_VISIT,
     BA_ARENA_REFRESH,
     BA_CALENDAR_POOL,
@@ -76,6 +77,7 @@ internal object ModernNotificationSpecResolver {
     private fun resolveKind(serverName: String): ModernNotificationKind {
         return when {
             McpNotificationPayload.isBaApServerName(serverName) -> ModernNotificationKind.BA_AP
+            McpNotificationPayload.isBaCafeApServerName(serverName) -> ModernNotificationKind.BA_CAFE_AP
             McpNotificationPayload.isBaCafeVisitServerName(serverName) -> ModernNotificationKind.BA_CAFE_VISIT
             McpNotificationPayload.isBaArenaRefreshServerName(serverName) -> ModernNotificationKind.BA_ARENA_REFRESH
             McpNotificationPayload.isBaCalendarPoolServerName(serverName) -> ModernNotificationKind.BA_CALENDAR_POOL
@@ -96,6 +98,7 @@ internal object ModernNotificationSpecResolver {
             }
 
             ModernNotificationKind.BA_AP,
+            ModernNotificationKind.BA_CAFE_AP,
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH,
             ModernNotificationKind.BA_CALENDAR_POOL,
@@ -106,6 +109,7 @@ internal object ModernNotificationSpecResolver {
     private fun resolveSemanticCompactIcon(kind: ModernNotificationKind): Int {
         return when (kind) {
             ModernNotificationKind.BA_AP -> ICON_BA_AP
+            ModernNotificationKind.BA_CAFE_AP -> ICON_BA_AP
             ModernNotificationKind.BA_CAFE_VISIT -> ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> ICON_BA_CALENDAR_POOL
@@ -126,6 +130,7 @@ internal object ModernNotificationSpecResolver {
         return when (kind) {
             ModernNotificationKind.DEFAULT -> null
             ModernNotificationKind.BA_AP -> CONTENT_ICON_AP
+            ModernNotificationKind.BA_CAFE_AP -> CONTENT_ICON_AP
             ModernNotificationKind.BA_CAFE_VISIT -> CONTENT_ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> CONTENT_ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> CONTENT_ICON_BA_CALENDAR_POOL
@@ -140,6 +145,7 @@ internal object ModernNotificationSpecResolver {
 
             ModernNotificationKind.DEFAULT,
             ModernNotificationKind.BA_AP,
+            ModernNotificationKind.BA_CAFE_AP,
             ModernNotificationKind.BA_CALENDAR_POOL,
             ModernNotificationKind.GITHUB_SHARE_IMPORT -> ModernShortCriticalMode.SHORT_TEXT
         }
@@ -159,7 +165,8 @@ internal object ModernNotificationSpecResolver {
                 state.overrideProgressPercent?.coerceIn(0, 100) ?: 100
             }
 
-            ModernNotificationKind.BA_AP -> {
+            ModernNotificationKind.BA_AP,
+            ModernNotificationKind.BA_CAFE_AP -> {
                 val apLimit = state.clients.coerceAtLeast(1)
                 val apCurrent = state.port.coerceAtLeast(0).coerceAtMost(apLimit)
                 ((apCurrent.toFloat() / apLimit.toFloat()) * 100f)

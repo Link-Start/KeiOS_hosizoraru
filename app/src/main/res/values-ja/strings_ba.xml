@@ -92,6 +92,8 @@
     <string name="ba_settings_card_media_title">メディア設定</string>
     <string name="ba_settings_summary_refresh_interval">イベントと募集を自動更新します。</string>
     <string name="ba_settings_label_ap_notify">AP 通知</string>
+    <string name="ba_settings_label_cafe_ap_notify">カフェ AP 通知</string>
+    <string name="ba_settings_summary_cafe_ap_notify">カフェの保存 AP がしきい値に達したら通知します。</string>
     <string name="ba_settings_label_cafe_visit_notify">カフェ生徒訪問通知</string>
     <string name="ba_settings_summary_cafe_visit_notify">選択したサーバー時刻の 04:00 と 16:00 に通知します。</string>
     <string name="ba_settings_label_arena_refresh_notify">戦術対抗戦リセット通知</string>
@@ -110,6 +112,8 @@
     <string name="ba_settings_summary_calendar_pool_change_notify">更新で新規項目や時刻変更を検出した時に通知します。</string>
     <string name="ba_settings_label_ap_threshold">AP 通知しきい値</string>
     <string name="ba_settings_summary_ap_threshold">推奨: 0-%1$d</string>
+    <string name="ba_settings_label_cafe_ap_threshold">カフェ AP しきい値</string>
+    <string name="ba_settings_summary_cafe_ap_threshold">保存 AP がこの値に達したら通知します。上限はカフェレベルに連動します。</string>
     <string name="ba_settings_label_media_adaptive_rotation">メディアの自動回転</string>
     <string name="ba_settings_summary_media_adaptive_rotation">オン: 現在の生徒情報メディア回転挙動を使います。オフ: システム回転ロック中は固定し、許可時は画面向きに従います。</string>
     <string name="ba_settings_label_media_save_custom">メディア保存先を指定</string>
@@ -130,6 +134,7 @@
     <string name="ba_toast_cafe_claimed_ap">%1$d AP を受け取りました。</string>
     <string name="ba_toast_cafe_debug_added">カフェ AP +3h を追加しました（+%1$d）。</string>
     <string name="ba_debug_action_ap_notification">AP</string>
+    <string name="ba_debug_action_cafe_ap_notification">カフェ AP</string>
     <string name="ba_debug_title">デバッグ</string>
     <string name="ba_debug_section_daily">日常通知テスト</string>
     <string name="ba_debug_section_calendar_pool">イベントと募集通知テスト</string>
@@ -149,11 +154,15 @@
     <string name="ba_toast_notification_permission_required">先に通知権限を許可してください。</string>
     <string name="ba_toast_ap_threshold_notification_sent">AP しきい値通知を送信しました。</string>
     <string name="ba_toast_ap_notification_sent">AP 通知を送信しました。</string>
+    <string name="ba_toast_cafe_ap_notification_sent">カフェ AP 通知を送信しました。</string>
     <string name="ba_toast_cafe_visit_notification_sent">カフェ生徒訪問通知を送信しました。</string>
     <string name="ba_toast_arena_refresh_notification_sent">戦術対抗戦リセット通知を送信しました。</string>
     <string name="ba_toast_calendar_pool_notification_sent">イベントと募集通知を送信しました。</string>
     <string name="ba_toast_calendar_pool_real_data_missing">このサーバーにはテスト可能な実イベントまたは募集データがありません。先に更新してください。</string>
     <string name="ba_notification_ap_island_text">AP</string>
+    <string name="ba_cafe_ap_notification_title">カフェ AP を受け取れます</string>
+    <string name="ba_cafe_ap_notification_content">現在 %1$d AP、しきい値 %2$s、上限 %3$d</string>
+    <string name="ba_cafe_ap_notification_island_text">カフェ AP</string>
     <string name="ba_cafe_visit_notification_title">カフェに生徒訪問があります</string>
     <string name="ba_cafe_visit_notification_content">カフェに生徒訪問があります</string>
     <string name="ba_cafe_visit_notification_content_detail">%1$s %2$d:00 に生徒訪問があります</string>

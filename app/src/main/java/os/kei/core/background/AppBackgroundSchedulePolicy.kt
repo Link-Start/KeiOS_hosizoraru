@@ -3,10 +3,14 @@ package os.kei.core.background
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.ba.support.cafeHourlyGain
+import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.displayAp
+import os.kei.ui.page.main.ba.support.floorToHourMs
 import os.kei.ui.page.main.ba.support.nextArenaRefreshMs
 import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
 import os.kei.ui.page.main.ba.support.normalizeAp
@@ -54,6 +58,9 @@ internal object AppBackgroundSchedulePolicy {
         val candidates = buildList {
             if (snapshot.apNotifyEnabled) {
                 nextBaApSchedule(snapshot = snapshot, nowMs = nowMs)?.let(::add)
+            }
+            if (snapshot.cafeApNotifyEnabled) {
+                nextCafeApSchedule(snapshot = snapshot, nowMs = nowMs)?.let(::add)
             }
             if (snapshot.cafeVisitNotifyEnabled) {
                 add(nextCafeVisitSchedule(snapshot = snapshot, nowMs = nowMs))
@@ -109,6 +116,34 @@ internal object AppBackgroundSchedulePolicy {
             nowMs = nowMs
         ) ?: return null
         val thresholdAtMs = nextPointAtMs + (pointsNeeded - 1L) * BA_AP_REGEN_INTERVAL_MS
+        return userReminderWindow(thresholdAtMs)
+    }
+
+    private fun nextCafeApSchedule(
+        snapshot: BaPageSnapshot,
+        nowMs: Long,
+    ): BackgroundAlarmSchedule? {
+        val cap = cafeStorageCap(snapshot.cafeLevel).toInt().coerceIn(0, BA_AP_MAX)
+        val threshold = snapshot.cafeApNotifyThreshold.coerceIn(0, cap)
+        if (cap <= 0) return null
+
+        val projected = projectCafeStorage(snapshot = snapshot, nowMs = nowMs, cap = cap)
+        val currentDisplay = displayAp(projected.storedAp)
+        if (currentDisplay >= threshold) {
+            if (currentDisplay != snapshot.cafeApLastNotifiedLevel) {
+                return promptUserReminder(nowMs)
+            }
+            if (currentDisplay >= cap) return null
+            return userReminderWindow(nextCafeStorageHourAtMs(nowMs))
+        }
+
+        val hourlyGain = cafeHourlyGain(snapshot.cafeLevel)
+        if (hourlyGain <= 0.0) return null
+        val hoursNeeded = ceil((threshold.toDouble() - projected.storedAp) / hourlyGain)
+            .toLong()
+            .coerceAtLeast(1L)
+        val thresholdAtMs = nextCafeStorageHourAtMs(nowMs) +
+                (hoursNeeded - 1L) * BA_CAFE_HOURLY_INTERVAL_MS
         return userReminderWindow(thresholdAtMs)
     }
 
@@ -198,6 +233,35 @@ internal object AppBackgroundSchedulePolicy {
         return ProjectedBaAp(currentAp = nextAp, apRegenBaseMs = nextBaseMs)
     }
 
+    private fun projectCafeStorage(
+        snapshot: BaPageSnapshot,
+        nowMs: Long,
+        cap: Int,
+    ): ProjectedCafeStorage {
+        val currentHourMs = floorToHourMs(nowMs)
+        val baseHourMs = snapshot.cafeLastHourMs
+            .takeIf { it > 0L && it <= currentHourMs }
+            ?: currentHourMs
+        val current = normalizeAp(snapshot.cafeStoredAp.coerceIn(0.0, cap.toDouble()))
+        if (current >= cap.toDouble()) {
+            return ProjectedCafeStorage(storedAp = current, cafeLastHourMs = currentHourMs)
+        }
+        val hoursPassed = ((currentHourMs - baseHourMs) / BA_CAFE_HOURLY_INTERVAL_MS)
+            .coerceAtLeast(0L)
+        if (hoursPassed <= 0L) {
+            return ProjectedCafeStorage(storedAp = current, cafeLastHourMs = baseHourMs)
+        }
+        val next = normalizeAp(
+            (current + hoursPassed * cafeHourlyGain(snapshot.cafeLevel))
+                .coerceAtMost(cap.toDouble())
+        )
+        return ProjectedCafeStorage(storedAp = next, cafeLastHourMs = currentHourMs)
+    }
+
+    private fun nextCafeStorageHourAtMs(nowMs: Long): Long {
+        return floorToHourMs(nowMs) + BA_CAFE_HOURLY_INTERVAL_MS
+    }
+
     private fun nextApPointAtMs(
         currentAp: Double,
         apRegenBaseMs: Long,
@@ -219,6 +283,11 @@ internal object AppBackgroundSchedulePolicy {
     private data class ProjectedBaAp(
         val currentAp: Double,
         val apRegenBaseMs: Long,
+    )
+
+    private data class ProjectedCafeStorage(
+        val storedAp: Double,
+        val cafeLastHourMs: Long,
     )
 }
 

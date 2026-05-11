@@ -28,6 +28,7 @@ data class McpNotificationPayload(
 ) {
     companion object {
         const val BA_AP_SERVER_NAME = "BlueArchive AP"
+        const val BA_CAFE_AP_SERVER_NAME = "BlueArchive Cafe AP"
         const val BA_CAFE_VISIT_SERVER_NAME = "BlueArchive Cafe Visit"
         const val BA_ARENA_REFRESH_SERVER_NAME = "BlueArchive Arena Refresh"
         const val BA_CALENDAR_POOL_SERVER_NAME = "BlueArchive Calendar Pool"
@@ -37,6 +38,10 @@ data class McpNotificationPayload(
 
         fun isBaApServerName(serverName: String): Boolean {
             return serverName.trim() == BA_AP_SERVER_NAME
+        }
+
+        fun isBaCafeApServerName(serverName: String): Boolean {
+            return serverName.trim() == BA_CAFE_AP_SERVER_NAME
         }
 
         fun isBaCafeVisitServerName(serverName: String): Boolean {
@@ -57,6 +62,7 @@ data class McpNotificationPayload(
 
         fun isBaNotificationServerName(serverName: String): Boolean {
             return isBaApServerName(serverName) ||
+                isBaCafeApServerName(serverName) ||
                 isBaCafeVisitServerName(serverName) ||
                     isBaArenaRefreshServerName(serverName) ||
                     isBaCalendarPoolServerName(serverName)
@@ -72,13 +78,18 @@ data class McpNotificationPayload(
     private val isBlueArchiveCafeVisit: Boolean
         get() = isBaCafeVisitServerName(normalizedServerName)
 
+    private val isBlueArchiveCafeAp: Boolean
+        get() = isBaCafeApServerName(normalizedServerName)
+
     private val isBlueArchiveArenaRefresh: Boolean
         get() = isBaArenaRefreshServerName(normalizedServerName)
 
     fun title(context: Context): String {
         overrideTitle?.takeIf { it.isNotBlank() }?.let { return it }
         return if (running) {
-            if (isBlueArchiveCafeVisit) {
+            if (isBlueArchiveCafeAp) {
+                context.getString(R.string.ba_cafe_ap_notification_title)
+            } else if (isBlueArchiveCafeVisit) {
                 context.getString(R.string.ba_cafe_visit_notification_title)
             } else if (isBlueArchiveArenaRefresh) {
                 context.getString(R.string.ba_arena_refresh_notification_title)
@@ -93,7 +104,9 @@ data class McpNotificationPayload(
     fun content(context: Context): String {
         overrideContent?.takeIf { it.isNotBlank() }?.let { return it }
         return if (running) {
-            if (isBlueArchiveCafeVisit) {
+            if (isBlueArchiveCafeAp) {
+                context.getString(R.string.ba_cafe_ap_notification_content, port, path, clients)
+            } else if (isBlueArchiveCafeVisit) {
                 if (path.isBlank() || path == BA_CAFE_VISIT_PATH) {
                     context.getString(R.string.ba_cafe_visit_notification_content)
                 } else {
@@ -125,7 +138,9 @@ data class McpNotificationPayload(
 
     fun onlineText(context: Context): String {
         overrideOnlineText?.takeIf { it.isNotBlank() }?.let { return it }
-        return if (isBlueArchiveCafeVisit) {
+        return if (isBlueArchiveCafeAp) {
+            context.getString(R.string.ba_cafe_ap_notification_island_text)
+        } else if (isBlueArchiveCafeVisit) {
             context.getString(R.string.ba_cafe_visit_notification_island_text)
         } else if (isBlueArchiveArenaRefresh) {
             context.getString(R.string.ba_arena_refresh_notification_island_text)
@@ -138,7 +153,7 @@ data class McpNotificationPayload(
 
     val shortText: String
         get() = overrideShortText?.takeIf { it.isNotBlank() } ?: if (running) {
-            if (isBlueArchiveAp) {
+            if (isBlueArchiveAp || isBlueArchiveCafeAp) {
                 "${port.coerceAtLeast(0)}/${clients.coerceAtLeast(0)}"
             } else {
                 "${statusDot} $clients"
@@ -156,7 +171,11 @@ data class McpNotificationPayload(
 
     fun stopActionTitle(context: Context): String {
         secondaryActionLabel?.takeIf { it.isNotBlank() }?.let { return it }
-        return if (isBlueArchiveAp || isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh) {
+        return if (isBlueArchiveAp ||
+            isBlueArchiveCafeAp ||
+            isBlueArchiveCafeVisit ||
+            isBlueArchiveArenaRefresh
+        ) {
             context.getString(R.string.common_mark_read)
         } else {
             context.getString(R.string.mcp_action_toggle_service)
@@ -174,7 +193,9 @@ data class McpNotificationPayload(
     fun expandedContent(context: Context): String {
         overrideContent?.takeIf { it.isNotBlank() }?.let { return it }
         return if (running) {
-            if (isBlueArchiveCafeVisit) {
+            if (isBlueArchiveCafeAp) {
+                context.getString(R.string.ba_cafe_ap_notification_content, port, path, clients)
+            } else if (isBlueArchiveCafeVisit) {
                 if (path.isBlank() || path == BA_CAFE_VISIT_PATH) {
                     context.getString(R.string.ba_cafe_visit_notification_content)
                 } else {

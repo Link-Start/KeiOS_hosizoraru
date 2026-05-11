@@ -4,6 +4,7 @@ import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.BaPoolEntry
+import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.displayAp
@@ -49,6 +50,52 @@ internal object BaReminderCoordinator {
             notification = BaApReminderNotification(
                 currentDisplay = currentDisplay,
                 limitDisplay = snapshot.apLimit.coerceIn(0, BA_AP_MAX),
+                thresholdDisplay = threshold
+            )
+        )
+    }
+
+    fun evaluateCafeApThreshold(
+        snapshot: BaPageSnapshot,
+        nowMs: Long
+    ): BaCafeApReminderPlan {
+        if (!snapshot.cafeApNotifyEnabled) {
+            return BaCafeApReminderPlan(resetLastNotifiedLevel = true)
+        }
+
+        val (nextStoredAp, nextHourMs) = applyBaCafeStorageTick(
+            cafeStoredAp = snapshot.cafeStoredAp,
+            cafeLevel = snapshot.cafeLevel,
+            cafeLastHourMs = snapshot.cafeLastHourMs,
+            nowMs = nowMs
+        )
+        val capDisplay = displayAp(cafeStorageCap(snapshot.cafeLevel))
+        val currentDisplay = displayAp(nextStoredAp)
+        val threshold = snapshot.cafeApNotifyThreshold.coerceIn(0, capDisplay)
+        val shouldSaveCafe = nextStoredAp != snapshot.cafeStoredAp || nextHourMs != snapshot.cafeLastHourMs
+        if (currentDisplay < threshold) {
+            return BaCafeApReminderPlan(
+                nextStoredAp = nextStoredAp,
+                nextCafeLastHourMs = nextHourMs,
+                shouldSaveCafe = shouldSaveCafe,
+                resetLastNotifiedLevel = true
+            )
+        }
+        if (currentDisplay == snapshot.cafeApLastNotifiedLevel) {
+            return BaCafeApReminderPlan(
+                nextStoredAp = nextStoredAp,
+                nextCafeLastHourMs = nextHourMs,
+                shouldSaveCafe = shouldSaveCafe
+            )
+        }
+
+        return BaCafeApReminderPlan(
+            nextStoredAp = nextStoredAp,
+            nextCafeLastHourMs = nextHourMs,
+            shouldSaveCafe = shouldSaveCafe,
+            notification = BaCafeApReminderNotification(
+                currentDisplay = currentDisplay,
+                limitDisplay = capDisplay,
                 thresholdDisplay = threshold
             )
         )
@@ -297,6 +344,20 @@ internal data class BaApReminderPlan(
 )
 
 internal data class BaApReminderNotification(
+    val currentDisplay: Int,
+    val limitDisplay: Int,
+    val thresholdDisplay: Int
+)
+
+internal data class BaCafeApReminderPlan(
+    val nextStoredAp: Double = 0.0,
+    val nextCafeLastHourMs: Long = 0L,
+    val shouldSaveCafe: Boolean = false,
+    val resetLastNotifiedLevel: Boolean = false,
+    val notification: BaCafeApReminderNotification? = null
+)
+
+internal data class BaCafeApReminderNotification(
     val currentDisplay: Int,
     val limitDisplay: Int,
     val thresholdDisplay: Int

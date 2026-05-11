@@ -30,6 +30,9 @@ internal data class BaOfficeState(
     val cafeLevel: Int,
     val cafeStoredAp: Double,
     val cafeLastHourMs: Long,
+    val cafeApNotifyEnabled: Boolean,
+    val cafeApNotifyThreshold: Int,
+    val cafeApLastNotifiedLevel: Int,
     val idNickname: String,
     val idFriendCode: String,
     val apLimit: Int,
@@ -59,6 +62,9 @@ internal class BaOfficeController(
     var cafeLevel by mutableIntStateOf(snapshot.cafeLevel)
     var cafeStoredAp by mutableStateOf(snapshot.cafeStoredAp)
     var cafeLastHourMs by mutableLongStateOf(snapshot.cafeLastHourMs)
+    var cafeApNotifyEnabled by mutableStateOf(snapshot.cafeApNotifyEnabled)
+    var cafeApNotifyThreshold by mutableIntStateOf(snapshot.cafeApNotifyThreshold)
+    var cafeApLastNotifiedLevel by mutableIntStateOf(snapshot.cafeApLastNotifiedLevel)
     var idNickname by mutableStateOf(snapshot.idNickname)
     var idFriendCode by mutableStateOf(snapshot.idFriendCode)
     var idIndependentByServer by mutableStateOf(snapshot.idIndependentByServer)
@@ -89,6 +95,9 @@ internal class BaOfficeController(
             cafeLevel = cafeLevel,
             cafeStoredAp = cafeStoredAp,
             cafeLastHourMs = cafeLastHourMs,
+            cafeApNotifyEnabled = cafeApNotifyEnabled,
+            cafeApNotifyThreshold = cafeApNotifyThreshold,
+            cafeApLastNotifiedLevel = cafeApLastNotifiedLevel,
             idNickname = idNickname,
             idFriendCode = idFriendCode,
             apLimit = apLimit,
@@ -268,7 +277,9 @@ internal class BaOfficeController(
         }
         addCurrentAp(claim, markSync = true)
         cafeStoredAp = 0.0
+        cafeApLastNotifiedLevel = -1
         BASettingsStore.saveCafeStoredAp(0.0)
+        BASettingsStore.saveCafeApLastNotifiedLevel(-1)
         Toast.makeText(
             context,
             context.getString(R.string.ba_toast_cafe_claimed_ap, claim.roundToInt()),
@@ -367,6 +378,40 @@ internal class BaOfficeController(
                 }
             )
             Toast.makeText(context, notifyText, Toast.LENGTH_SHORT).show()
+        }
+        return true
+    }
+
+    fun sendCafeApTestNotification(
+        context: Context,
+        showToast: Boolean = true,
+    ): Boolean {
+        applyCafeStorage()
+        val currentDisplay = displayAp(cafeStoredAp)
+        val limitDisplay = displayAp(cafeStorageCap(cafeLevel))
+        val thresholdDisplay = cafeApNotifyThreshold.coerceIn(0, limitDisplay)
+        val sent = BaCafeApNotificationDispatcher.send(
+            context = context,
+            currentDisplay = currentDisplay,
+            limitDisplay = limitDisplay,
+            thresholdDisplay = thresholdDisplay
+        )
+        if (!sent) {
+            if (showToast) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.ba_toast_notification_permission_required),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            return false
+        }
+        if (showToast) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.ba_toast_cafe_ap_notification_sent),
+                Toast.LENGTH_SHORT
+            ).show()
         }
         return true
     }

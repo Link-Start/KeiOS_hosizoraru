@@ -372,6 +372,7 @@ fun BAPage(
             backdrop = backdrops.sheet,
             state = notificationSettingsSheetState,
             onApNotifyEnabledChange = { ui.sheetApNotifyEnabled = it },
+            onCafeApNotifyEnabledChange = { ui.sheetCafeApNotifyEnabled = it },
             onArenaRefreshNotifyEnabledChange = { ui.sheetArenaRefreshNotifyEnabled = it },
             onCafeVisitNotifyEnabledChange = { ui.sheetCafeVisitNotifyEnabled = it },
             onCalendarUpcomingNotifyEnabledChange = { ui.sheetCalendarUpcomingNotifyEnabled = it },
@@ -388,6 +389,12 @@ fun BAPage(
                     ui.sheetApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
                 ui.sheetApNotifyThresholdText = normalized.toString()
             },
+            onCafeApNotifyThresholdTextChange = { ui.sheetCafeApNotifyThresholdText = it },
+            onCafeApNotifyThresholdDone = {
+                val normalized =
+                    ui.sheetCafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
+                ui.sheetCafeApNotifyThresholdText = normalized.toString()
+            },
             onDismissRequest = ::closeNotificationSettingsSheet,
             onSaveRequest = ::saveNotificationSettings,
         )
@@ -396,6 +403,9 @@ fun BAPage(
             backdrop = backdrops.sheet,
             onSendApTestNotification = {
                 office.sendApTestNotification(context = context, showToast = true)
+            },
+            onSendCafeApTestNotification = {
+                office.sendCafeApTestNotification(context = context, showToast = true)
             },
             onSendCafeVisitTestNotification = {
                 office.sendCafeVisitTestNotification(

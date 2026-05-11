@@ -92,6 +92,8 @@
     <string name="ba_settings_card_media_title">媒体设置</string>
     <string name="ba_settings_summary_refresh_interval">活动与卡池自动刷新</string>
     <string name="ba_settings_label_ap_notify">AP 通知</string>
+    <string name="ba_settings_label_cafe_ap_notify">咖啡厅 AP 通知</string>
+    <string name="ba_settings_summary_cafe_ap_notify">咖啡厅库存 AP 达到阈值后提醒</string>
     <string name="ba_settings_label_cafe_visit_notify">咖啡厅学生来访通知</string>
     <string name="ba_settings_summary_cafe_visit_notify">按当前服务器时区在 04:00 / 16:00 各提醒一次</string>
     <string name="ba_settings_label_arena_refresh_notify">竞技场刷新通知</string>
@@ -110,6 +112,8 @@
     <string name="ba_settings_summary_calendar_pool_change_notify">刷新抓取到新增或时间变动时提醒</string>
     <string name="ba_settings_label_ap_threshold">AP 提醒阈值</string>
     <string name="ba_settings_summary_ap_threshold">建议 0-%1$d</string>
+    <string name="ba_settings_label_cafe_ap_threshold">咖啡厅 AP 阈值</string>
+    <string name="ba_settings_summary_cafe_ap_threshold">达到该库存 AP 后发送提醒；上限随咖啡厅等级变化</string>
     <string name="ba_settings_label_media_adaptive_rotation">媒体自适应旋转</string>
     <string name="ba_settings_summary_media_adaptive_rotation">开启：沿用当前图鉴媒体旋转逻辑；关闭：系统锁定旋转时保持不旋转，系统允许旋转时跟随屏幕方向。</string>
     <string name="ba_settings_label_media_save_custom">自定义媒体保存位置</string>
@@ -130,6 +134,7 @@
     <string name="ba_toast_cafe_claimed_ap">已领取 %1$d 体力</string>
     <string name="ba_toast_cafe_debug_added">已增加 +3h 咖啡厅体力（+%1$d）</string>
     <string name="ba_debug_action_ap_notification">AP</string>
+    <string name="ba_debug_action_cafe_ap_notification">咖啡厅 AP</string>
     <string name="ba_debug_title">Debug</string>
     <string name="ba_debug_section_daily">日常通知测试</string>
     <string name="ba_debug_section_calendar_pool">活动与卡池提醒测试</string>
@@ -149,11 +154,15 @@
     <string name="ba_toast_notification_permission_required">请先授予通知权限</string>
     <string name="ba_toast_ap_threshold_notification_sent">已发送 AP 阈值提醒</string>
     <string name="ba_toast_ap_notification_sent">已发送 AP 通知</string>
+    <string name="ba_toast_cafe_ap_notification_sent">已发送咖啡厅 AP 通知</string>
     <string name="ba_toast_cafe_visit_notification_sent">已发送咖啡厅学生访问通知</string>
     <string name="ba_toast_arena_refresh_notification_sent">已发送竞技场刷新通知</string>
     <string name="ba_toast_calendar_pool_notification_sent">已发送活动与卡池提醒</string>
     <string name="ba_toast_calendar_pool_real_data_missing">当前服务器暂无可用于测试的真实活动或卡池数据，请先刷新</string>
     <string name="ba_notification_ap_island_text">AP</string>
+    <string name="ba_cafe_ap_notification_title">咖啡厅 AP 可领取</string>
+    <string name="ba_cafe_ap_notification_content">当前 %1$d AP，阈值 %2$s，上限 %3$d</string>
+    <string name="ba_cafe_ap_notification_island_text">咖啡厅 AP</string>
     <string name="ba_cafe_visit_notification_title">咖啡厅学生来访问啦</string>
     <string name="ba_cafe_visit_notification_content">咖啡厅学生来访问啦</string>
     <string name="ba_cafe_visit_notification_content_detail">%1$s %2$d:00 学生来访问啦</string>

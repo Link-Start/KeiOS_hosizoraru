@@ -25,6 +25,9 @@ internal object McpNotificationSnapshotStore {
     private var baCafeVisitSnapshot: McpNotificationSnapshot? = null
 
     @Volatile
+    private var baCafeApSnapshot: McpNotificationSnapshot? = null
+
+    @Volatile
     private var baArenaRefreshSnapshot: McpNotificationSnapshot? = null
 
     fun get(notificationId: Int): McpNotificationSnapshot? {
@@ -32,6 +35,7 @@ internal object McpNotificationSnapshotStore {
             McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot
             McpNotificationHelper.BA_AP_NOTIFICATION_ID -> baApSnapshot
             McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot
+            McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID -> baCafeApSnapshot
             McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot
             else -> null
         }
@@ -42,6 +46,7 @@ internal object McpNotificationSnapshotStore {
             McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = snapshot
             McpNotificationHelper.BA_AP_NOTIFICATION_ID -> baApSnapshot = snapshot
             McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot = snapshot
+            McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID -> baCafeApSnapshot = snapshot
             McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot =
                 snapshot
         }
@@ -52,6 +57,7 @@ internal object McpNotificationSnapshotStore {
             McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = null
             McpNotificationHelper.BA_AP_NOTIFICATION_ID -> baApSnapshot = null
             McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot = null
+            McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID -> baCafeApSnapshot = null
             McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot = null
         }
     }

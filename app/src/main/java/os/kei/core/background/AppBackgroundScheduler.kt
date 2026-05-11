@@ -38,11 +38,15 @@ object AppBackgroundScheduler {
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
         val pending = AppBackgroundTickReceiver.baApTickPendingIntent(appContext)
         val needsBaBackgroundTick =
-            snapshot.apNotifyEnabled || snapshot.cafeVisitNotifyEnabled || snapshot.arenaRefreshNotifyEnabled
+            snapshot.apNotifyEnabled ||
+                    snapshot.cafeApNotifyEnabled ||
+                    snapshot.cafeVisitNotifyEnabled ||
+                    snapshot.arenaRefreshNotifyEnabled
         if (!needsBaBackgroundTick) {
             alarmManager.cancel(pending)
             pending.cancel()
             BASettingsStore.saveApLastNotifiedLevel(-1)
+            BASettingsStore.saveCafeApLastNotifiedLevel(-1)
             BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
             BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
             return

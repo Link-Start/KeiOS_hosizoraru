@@ -13,6 +13,8 @@ import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
 import os.kei.ui.page.main.ba.BaApReminderPlan
 import os.kei.ui.page.main.ba.BaArenaRefreshNotificationDispatcher
+import os.kei.ui.page.main.ba.BaCafeApNotificationDispatcher
+import os.kei.ui.page.main.ba.BaCafeApReminderPlan
 import os.kei.ui.page.main.ba.BaCafeVisitNotificationDispatcher
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import os.kei.ui.page.main.ba.BaSlotReminderPlan
@@ -69,11 +71,17 @@ object AppForegroundInfoHandler {
         baApTickMutex.withLock {
             val snapshot = withContext(Dispatchers.IO) { BASettingsStore.loadSnapshot() }
             val shouldHandleApNotify = snapshot.apNotifyEnabled
+            val shouldHandleCafeApNotify = snapshot.cafeApNotifyEnabled
             val shouldHandleArenaRefreshNotify = snapshot.arenaRefreshNotifyEnabled
             val shouldHandleCafeVisitNotify = snapshot.cafeVisitNotifyEnabled
-            if (!shouldHandleApNotify && !shouldHandleArenaRefreshNotify && !shouldHandleCafeVisitNotify) {
+            if (!shouldHandleApNotify &&
+                !shouldHandleCafeApNotify &&
+                !shouldHandleArenaRefreshNotify &&
+                !shouldHandleCafeVisitNotify
+            ) {
                 withContext(Dispatchers.IO) {
                     BASettingsStore.saveApLastNotifiedLevel(-1)
+                    BASettingsStore.saveCafeApLastNotifiedLevel(-1)
                     BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
                     BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
                 }
@@ -86,6 +94,14 @@ object AppForegroundInfoHandler {
             } else {
                 withContext(Dispatchers.IO) {
                     BASettingsStore.saveApLastNotifiedLevel(-1)
+                }
+            }
+
+            if (shouldHandleCafeApNotify) {
+                handleBaCafeApThresholdTick(context = context, snapshot = snapshot, nowMs = nowMs)
+            } else {
+                withContext(Dispatchers.IO) {
+                    BASettingsStore.saveCafeApLastNotifiedLevel(-1)
                 }
             }
 
@@ -103,6 +119,41 @@ object AppForegroundInfoHandler {
                 withContext(Dispatchers.IO) {
                     BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
                 }
+            }
+        }
+    }
+
+    private suspend fun handleBaCafeApThresholdTick(
+        context: Context,
+        snapshot: BaPageSnapshot,
+        nowMs: Long,
+    ) {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(snapshot = snapshot, nowMs = nowMs)
+        persistBaCafeApReminderPlan(plan)
+        val notification = plan.notification ?: return
+        val sent = BaCafeApNotificationDispatcher.send(
+            context = context,
+            currentDisplay = notification.currentDisplay,
+            limitDisplay = notification.limitDisplay,
+            thresholdDisplay = notification.thresholdDisplay
+        )
+        if (sent) {
+            withContext(Dispatchers.IO) {
+                BASettingsStore.saveCafeApLastNotifiedLevel(notification.currentDisplay)
+            }
+        }
+    }
+
+    private suspend fun persistBaCafeApReminderPlan(plan: BaCafeApReminderPlan) {
+        if (plan.shouldSaveCafe) {
+            withContext(Dispatchers.IO) {
+                BASettingsStore.saveCafeStoredAp(plan.nextStoredAp)
+                BASettingsStore.saveCafeLastHourMs(plan.nextCafeLastHourMs)
+            }
+        }
+        if (plan.resetLastNotifiedLevel) {
+            withContext(Dispatchers.IO) {
+                BASettingsStore.saveCafeApLastNotifiedLevel(-1)
             }
         }
     }

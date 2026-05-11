@@ -38,6 +38,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class BaNotificationSettingsSheetState(
     val apNotifyEnabled: Boolean,
+    val cafeApNotifyEnabled: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
@@ -47,6 +48,7 @@ internal data class BaNotificationSettingsSheetState(
     val calendarPoolChangeNotifyEnabled: Boolean,
     val calendarPoolNotifyLeadHours: Int,
     val apNotifyThresholdText: String,
+    val cafeApNotifyThresholdText: String,
 )
 
 @Composable
@@ -55,6 +57,7 @@ internal fun BaNotificationSettingsSheet(
     backdrop: Backdrop?,
     state: BaNotificationSettingsSheetState,
     onApNotifyEnabledChange: (Boolean) -> Unit,
+    onCafeApNotifyEnabledChange: (Boolean) -> Unit,
     onArenaRefreshNotifyEnabledChange: (Boolean) -> Unit,
     onCafeVisitNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarUpcomingNotifyEnabledChange: (Boolean) -> Unit,
@@ -65,6 +68,8 @@ internal fun BaNotificationSettingsSheet(
     onCalendarPoolNotifyLeadHoursSelected: (Int) -> Unit,
     onApNotifyThresholdTextChange: (String) -> Unit,
     onApNotifyThresholdDone: () -> Unit,
+    onCafeApNotifyThresholdTextChange: (String) -> Unit,
+    onCafeApNotifyThresholdDone: () -> Unit,
     onDismissRequest: () -> Unit,
     onSaveRequest: () -> Unit,
 ) {
@@ -122,6 +127,37 @@ internal fun BaNotificationSettingsSheet(
                                 onApNotifyThresholdTextChange(normalizeBaApThresholdInput(input))
                             },
                             onImeActionDone = onApNotifyThresholdDone,
+                            label = "120",
+                            backdrop = backdrop,
+                            variant = GlassVariant.SheetInput,
+                            singleLine = true,
+                            textAlign = TextAlign.Center,
+                            fontSize = 18.sp,
+                            textColor = Color(0xFF22C55E),
+                        )
+                    }
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.ba_settings_label_cafe_ap_notify),
+                    summary = stringResource(R.string.ba_settings_summary_cafe_ap_notify),
+                ) {
+                    AppSwitch(
+                        checked = state.cafeApNotifyEnabled,
+                        onCheckedChange = onCafeApNotifyEnabledChange,
+                    )
+                }
+                if (state.cafeApNotifyEnabled) {
+                    SheetControlRow(
+                        label = stringResource(R.string.ba_settings_label_cafe_ap_threshold),
+                        summary = stringResource(R.string.ba_settings_summary_cafe_ap_threshold),
+                    ) {
+                        AppLiquidSearchField(
+                            modifier = Modifier.width(70.dp),
+                            value = state.cafeApNotifyThresholdText,
+                            onValueChange = { input ->
+                                onCafeApNotifyThresholdTextChange(normalizeBaApThresholdInput(input))
+                            },
+                            onImeActionDone = onCafeApNotifyThresholdDone,
                             label = "120",
                             backdrop = backdrop,
                             variant = GlassVariant.SheetInput,

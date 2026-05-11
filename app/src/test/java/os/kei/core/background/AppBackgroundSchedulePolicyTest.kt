@@ -1,9 +1,11 @@
 package os.kei.core.background
 
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
+import os.kei.ui.page.main.ba.support.floorToHourMs
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -20,6 +22,48 @@ class AppBackgroundSchedulePolicyTest {
         )
 
         assertNull(schedule)
+    }
+
+    @Test
+    fun `ba cafe ap threshold schedules hourly threshold crossing event`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 60.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = -1,
+                cafeLevel = 10
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(
+            floorToHourMs(NOW_MS) + 2L * BA_CAFE_HOURLY_INTERVAL_MS,
+            schedule.triggerAtMillis
+        )
+        assertEquals(BackgroundAlarmWorkload.UserReminder, schedule.workload)
+        assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
+    }
+
+    @Test
+    fun `ba cafe ap above threshold prompts when level has not been notified`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = 120,
+                cafeLevel = 10
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmPrecision.Prompt, schedule.precision)
     }
 
     @Test

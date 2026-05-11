@@ -21,7 +21,8 @@ class LegacyNotificationBuilder(
             state = state,
             preferOemLiveIconLayout = payload.environment.preferOemLiveIconLayout
         )
-        val isBlueArchiveAp = spec.kind == ModernNotificationKind.BA_AP
+        val isBlueArchiveAp = spec.kind == ModernNotificationKind.BA_AP ||
+                spec.kind == ModernNotificationKind.BA_CAFE_AP
         val isBlueArchiveCafeVisit = spec.kind == ModernNotificationKind.BA_CAFE_VISIT
         val isBlueArchiveArenaRefresh = spec.kind == ModernNotificationKind.BA_ARENA_REFRESH
         val isBlueArchiveCalendarPool = spec.kind == ModernNotificationKind.BA_CALENDAR_POOL

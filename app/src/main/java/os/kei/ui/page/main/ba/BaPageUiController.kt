@@ -37,6 +37,7 @@ internal data class BaPageSettingsDraftState(
 @Stable
 internal data class BaPageNotificationDraftState(
     val apNotifyEnabled: Boolean,
+    val cafeApNotifyEnabled: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
@@ -46,6 +47,7 @@ internal data class BaPageNotificationDraftState(
     val calendarPoolChangeNotifyEnabled: Boolean,
     val calendarPoolNotifyLeadHours: Int,
     val apNotifyThresholdText: String,
+    val cafeApNotifyThresholdText: String,
 )
 
 @Stable
@@ -102,6 +104,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var poolHydrationReady by mutableStateOf(false)
     var sheetCafeLevel by mutableIntStateOf(snapshot.cafeLevel)
     var sheetApNotifyEnabled by mutableStateOf(snapshot.apNotifyEnabled)
+    var sheetCafeApNotifyEnabled by mutableStateOf(snapshot.cafeApNotifyEnabled)
     var sheetArenaRefreshNotifyEnabled by mutableStateOf(snapshot.arenaRefreshNotifyEnabled)
     var sheetCafeVisitNotifyEnabled by mutableStateOf(snapshot.cafeVisitNotifyEnabled)
     var sheetCalendarUpcomingNotifyEnabled by mutableStateOf(snapshot.calendarUpcomingNotifyEnabled)
@@ -112,6 +115,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var sheetCalendarPoolNotifyLeadHours by mutableIntStateOf(snapshot.calendarPoolNotifyLeadHours)
     var debugUseRealCalendarPoolData by mutableStateOf(true)
     var sheetApNotifyThresholdText by mutableStateOf(snapshot.apNotifyThreshold.toString())
+    var sheetCafeApNotifyThresholdText by mutableStateOf(snapshot.cafeApNotifyThreshold.toString())
     var sheetMediaAdaptiveRotationEnabled by mutableStateOf(snapshot.mediaAdaptiveRotationEnabled)
     var sheetMediaSaveCustomEnabled by mutableStateOf(snapshot.mediaSaveCustomEnabled)
     var sheetMediaSaveFixedTreeUri by mutableStateOf(snapshot.mediaSaveFixedTreeUri)
@@ -179,6 +183,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     fun notificationDraftState(): BaPageNotificationDraftState {
         return BaPageNotificationDraftState(
             apNotifyEnabled = sheetApNotifyEnabled,
+            cafeApNotifyEnabled = sheetCafeApNotifyEnabled,
             arenaRefreshNotifyEnabled = sheetArenaRefreshNotifyEnabled,
             cafeVisitNotifyEnabled = sheetCafeVisitNotifyEnabled,
             calendarUpcomingNotifyEnabled = sheetCalendarUpcomingNotifyEnabled,
@@ -188,6 +193,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             calendarPoolChangeNotifyEnabled = sheetCalendarPoolChangeNotifyEnabled,
             calendarPoolNotifyLeadHours = sheetCalendarPoolNotifyLeadHours,
             apNotifyThresholdText = sheetApNotifyThresholdText,
+            cafeApNotifyThresholdText = sheetCafeApNotifyThresholdText,
         )
     }
 
@@ -250,6 +256,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
 
     private fun loadNotificationDraft(office: BaOfficeController) {
         sheetApNotifyEnabled = office.apNotifyEnabled
+        sheetCafeApNotifyEnabled = office.cafeApNotifyEnabled
         sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
         sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
         sheetCalendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled()
@@ -259,6 +266,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
         sheetCalendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled()
         sheetCalendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
         sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
+        sheetCafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString()
     }
 }
 

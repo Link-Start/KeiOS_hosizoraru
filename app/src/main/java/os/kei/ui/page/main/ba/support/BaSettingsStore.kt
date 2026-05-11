@@ -9,6 +9,9 @@ internal object BASettingsStore {
     private const val KEY_CAFE_LEVEL = "cafe_level"
     private const val KEY_CAFE_STORED_AP = "cafe_stored_ap"
     private const val KEY_CAFE_LAST_HOUR_MS = "cafe_last_hour_ms"
+    private const val KEY_CAFE_AP_NOTIFY_ENABLED = "cafe_ap_notify_enabled"
+    private const val KEY_CAFE_AP_NOTIFY_THRESHOLD = "cafe_ap_notify_threshold"
+    private const val KEY_CAFE_AP_LAST_NOTIFIED_LEVEL = "cafe_ap_last_notified_level"
     private const val KEY_AP_LIMIT = "ap_limit"
     private const val KEY_AP_NOTIFY_ENABLED = "ap_notify_enabled"
     private const val KEY_AP_NOTIFY_THRESHOLD = "ap_notify_threshold"
@@ -44,6 +47,7 @@ internal object BASettingsStore {
     private const val DEFAULT_SERVER_INDEX = 2
     private const val DEFAULT_CAFE_LEVEL = 10
     private const val DEFAULT_CAFE_STORED_AP = 0.0
+    private const val DEFAULT_CAFE_AP_NOTIFY_THRESHOLD = 120
     private const val DEFAULT_AP_LIMIT = BA_AP_LIMIT_MAX
     private const val DEFAULT_AP_NOTIFY_THRESHOLD = 120
     private const val DEFAULT_AP_CURRENT = 0.0
@@ -221,6 +225,15 @@ internal object BASettingsStore {
             cafeLevel = cafeLevel,
             cafeStoredAp = normalizeAp(cafeStoredAp),
             cafeLastHourMs = store.decodeLong(KEY_CAFE_LAST_HOUR_MS, 0L),
+            cafeApNotifyEnabled = store.decodeBool(KEY_CAFE_AP_NOTIFY_ENABLED, false),
+            cafeApNotifyThreshold = store.decodeInt(
+                KEY_CAFE_AP_NOTIFY_THRESHOLD,
+                DEFAULT_CAFE_AP_NOTIFY_THRESHOLD
+            ).coerceIn(0, BA_AP_MAX),
+            cafeApLastNotifiedLevel = store.decodeInt(
+                KEY_CAFE_AP_LAST_NOTIFIED_LEVEL,
+                -1
+            ).coerceIn(-1, BA_AP_MAX),
             idNickname = idNickname,
             idFriendCode = idFriendCode,
             idIndependentByServer = idIndependentByServer,
@@ -327,6 +340,29 @@ internal object BASettingsStore {
     fun loadCafeLastHourMs(): Long = kv().decodeLong(KEY_CAFE_LAST_HOUR_MS, 0L)
     fun saveCafeLastHourMs(epochMs: Long) {
         kv().encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
+        notifyChanged()
+    }
+
+    fun loadCafeApNotifyEnabled(): Boolean = kv().decodeBool(KEY_CAFE_AP_NOTIFY_ENABLED, false)
+    fun saveCafeApNotifyEnabled(enabled: Boolean) {
+        kv().encode(KEY_CAFE_AP_NOTIFY_ENABLED, enabled)
+        notifyChanged()
+    }
+
+    fun loadCafeApNotifyThreshold(): Int =
+        kv().decodeInt(KEY_CAFE_AP_NOTIFY_THRESHOLD, DEFAULT_CAFE_AP_NOTIFY_THRESHOLD)
+            .coerceIn(0, BA_AP_MAX)
+
+    fun saveCafeApNotifyThreshold(threshold: Int) {
+        kv().encode(KEY_CAFE_AP_NOTIFY_THRESHOLD, threshold.coerceIn(0, BA_AP_MAX))
+        notifyChanged()
+    }
+
+    fun loadCafeApLastNotifiedLevel(): Int =
+        kv().decodeInt(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, -1).coerceIn(-1, BA_AP_MAX)
+
+    fun saveCafeApLastNotifiedLevel(level: Int) {
+        kv().encode(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
         notifyChanged()
     }
 

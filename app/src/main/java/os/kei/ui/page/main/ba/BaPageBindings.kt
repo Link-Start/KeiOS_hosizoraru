@@ -30,6 +30,7 @@ internal fun buildBaNotificationSettingsSheetState(
 ): BaNotificationSettingsSheetState {
     return BaNotificationSettingsSheetState(
         apNotifyEnabled = draft.apNotifyEnabled,
+        cafeApNotifyEnabled = draft.cafeApNotifyEnabled,
         arenaRefreshNotifyEnabled = draft.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = draft.cafeVisitNotifyEnabled,
         calendarUpcomingNotifyEnabled = draft.calendarUpcomingNotifyEnabled,
@@ -39,6 +40,7 @@ internal fun buildBaNotificationSettingsSheetState(
         calendarPoolChangeNotifyEnabled = draft.calendarPoolChangeNotifyEnabled,
         calendarPoolNotifyLeadHours = draft.calendarPoolNotifyLeadHours,
         apNotifyThresholdText = draft.apNotifyThresholdText,
+        cafeApNotifyThresholdText = draft.cafeApNotifyThresholdText,
     )
 }
 
@@ -131,14 +133,28 @@ internal fun saveBaNotificationSettings(
     ui: BaPageUiController,
     notificationSettingsSheetState: BaNotificationSettingsSheetState,
 ) {
+    office.applyCafeStorage()
+    val previousCafeApNotifyEnabled = office.cafeApNotifyEnabled
+    val previousCafeApNotifyThreshold = office.cafeApNotifyThreshold
     val previousArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
     val previousCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
     val persisted = persistBaNotificationSettingsDraft(notificationSettingsSheetState)
 
     office.apNotifyEnabled = notificationSettingsSheetState.apNotifyEnabled
+    office.cafeApNotifyEnabled = persisted.cafeApNotifyEnabled
     office.arenaRefreshNotifyEnabled = persisted.arenaRefreshNotifyEnabled
     office.cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled
     office.apNotifyThreshold = persisted.savedThreshold
+    office.cafeApNotifyThreshold = persisted.savedCafeApThreshold
+    if (!office.cafeApNotifyEnabled) {
+        office.cafeApLastNotifiedLevel = -1
+        BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+    } else if (!previousCafeApNotifyEnabled ||
+        previousCafeApNotifyThreshold != office.cafeApNotifyThreshold
+    ) {
+        office.cafeApLastNotifiedLevel = -1
+        BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+    }
     if (!office.arenaRefreshNotifyEnabled) {
         office.arenaRefreshLastNotifiedSlotMs = 0L
         BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)

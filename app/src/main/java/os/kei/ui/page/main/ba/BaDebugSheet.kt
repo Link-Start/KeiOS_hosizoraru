@@ -27,6 +27,7 @@ internal fun BaDebugSheet(
     show: Boolean,
     backdrop: Backdrop?,
     onSendApTestNotification: () -> Unit,
+    onSendCafeApTestNotification: () -> Unit,
     onSendCafeVisitTestNotification: () -> Unit,
     onSendArenaRefreshTestNotification: () -> Unit,
     onSendCalendarUpcomingTestNotification: () -> Unit,
@@ -60,6 +61,7 @@ internal fun BaDebugSheet(
                     backdrop = backdrop,
                     actions = listOf(
                         stringResource(R.string.ba_debug_action_ap_notification) to onSendApTestNotification,
+                        stringResource(R.string.ba_debug_action_cafe_ap_notification) to onSendCafeApTestNotification,
                         stringResource(R.string.ba_debug_action_arena_refresh_notification) to onSendArenaRefreshTestNotification,
                         stringResource(R.string.ba_debug_action_cafe_visit_notification) to onSendCafeVisitTestNotification,
                         stringResource(R.string.ba_debug_action_cafe_plus_3h_ap) to onTestCafePlus3Hours,

@@ -2,11 +2,13 @@ package os.kei.ui.page.main.ba
 
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
+import os.kei.ui.page.main.ba.support.floorToHourMs
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -35,6 +37,46 @@ class BaReminderCoordinatorTest {
         assertEquals(120, notification.currentDisplay)
         assertEquals(240, notification.limitDisplay)
         assertEquals(120, notification.thresholdDisplay)
+    }
+
+    @Test
+    fun `cafe ap threshold plan emits notification when stored AP crosses threshold`() {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 70.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS) - 2L * BA_CAFE_HOURLY_INTERVAL_MS,
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = -1,
+                cafeLevel = 10
+            ),
+            nowMs = NOW_MS
+        )
+
+        val notification = assertNotNull(plan.notification)
+        assertTrue(plan.shouldSaveCafe)
+        assertFalse(plan.resetLastNotifiedLevel)
+        assertEquals(131, notification.currentDisplay)
+        assertEquals(740, notification.limitDisplay)
+        assertEquals(120, notification.thresholdDisplay)
+    }
+
+    @Test
+    fun `cafe ap threshold plan resets duplicate guard below threshold`() {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 80.0,
+                cafeLastHourMs = NOW_MS,
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = 120,
+                cafeLevel = 10
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertTrue(plan.resetLastNotifiedLevel)
     }
 
     @Test

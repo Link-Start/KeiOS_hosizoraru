@@ -115,6 +115,8 @@ internal fun persistBaSettingsDraft(
 
 internal data class BaNotificationSettingsPersistenceResult(
     val savedThreshold: Int,
+    val savedCafeApThreshold: Int,
+    val cafeApNotifyEnabled: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
@@ -130,8 +132,12 @@ internal fun persistBaNotificationSettingsDraft(
 ): BaNotificationSettingsPersistenceResult {
     val savedThreshold =
         sheetState.apNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
+    val savedCafeApThreshold =
+        sheetState.cafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
 
     BASettingsStore.saveApNotifyEnabled(sheetState.apNotifyEnabled)
+    BASettingsStore.saveCafeApNotifyEnabled(sheetState.cafeApNotifyEnabled)
+    BASettingsStore.saveCafeApNotifyThreshold(savedCafeApThreshold)
     BASettingsStore.saveArenaRefreshNotifyEnabled(sheetState.arenaRefreshNotifyEnabled)
     BASettingsStore.saveCafeVisitNotifyEnabled(sheetState.cafeVisitNotifyEnabled)
     BASettingsStore.saveCalendarUpcomingNotifyEnabled(sheetState.calendarUpcomingNotifyEnabled)
@@ -153,6 +159,8 @@ internal fun persistBaNotificationSettingsDraft(
 
     return BaNotificationSettingsPersistenceResult(
         savedThreshold = savedThreshold,
+        savedCafeApThreshold = savedCafeApThreshold,
+        cafeApNotifyEnabled = sheetState.cafeApNotifyEnabled,
         arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
         calendarUpcomingNotifyEnabled = sheetState.calendarUpcomingNotifyEnabled,

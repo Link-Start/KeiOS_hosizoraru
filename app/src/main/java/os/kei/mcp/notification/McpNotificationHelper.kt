@@ -25,6 +25,7 @@ object McpNotificationHelper {
     const val BA_AP_NOTIFICATION_ID = 38889
     const val BA_CAFE_VISIT_NOTIFICATION_ID = 38890
     const val BA_ARENA_REFRESH_NOTIFICATION_ID = 38891
+    const val BA_CAFE_AP_NOTIFICATION_ID = 38892
     private const val TEST_NOTIFICATION_ID = KEEPALIVE_NOTIFICATION_ID
     private const val ACTION_DISMISS = "os.kei.mcp.keepalive.DISMISS"
     private const val EXTRA_NOTIFICATION_ID = "notification_id"
@@ -57,6 +58,12 @@ object McpNotificationHelper {
             manager = manager,
             notificationId = BA_CAFE_VISIT_NOTIFICATION_ID,
             snapshot = McpNotificationSnapshotStore.get(BA_CAFE_VISIT_NOTIFICATION_ID)
+        )
+        refreshCachedNotificationIfActive(
+            context = context,
+            manager = manager,
+            notificationId = BA_CAFE_AP_NOTIFICATION_ID,
+            snapshot = McpNotificationSnapshotStore.get(BA_CAFE_AP_NOTIFICATION_ID)
         )
         refreshCachedNotificationIfActive(
             context = context,
@@ -249,13 +256,16 @@ object McpNotificationHelper {
         clients: Int
     ) {
         val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(serverName)
+        val isBlueArchiveCafeAp = McpNotificationPayload.isBaCafeApServerName(serverName)
         val isBlueArchiveCafeVisit = McpNotificationPayload.isBaCafeVisitServerName(serverName)
         val isBlueArchiveArenaRefresh =
             McpNotificationPayload.isBaArenaRefreshServerName(serverName)
-        val isBlueArchiveNotification = isBlueArchiveAp || isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh
+        val isBlueArchiveNotification =
+            isBlueArchiveAp || isBlueArchiveCafeAp || isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh
         val runningForNotification = if (isBlueArchiveNotification) running else true
         val baNotificationId = when {
             isBlueArchiveAp -> BA_AP_NOTIFICATION_ID
+            isBlueArchiveCafeAp -> BA_CAFE_AP_NOTIFICATION_ID
             isBlueArchiveCafeVisit -> BA_CAFE_VISIT_NOTIFICATION_ID
             isBlueArchiveArenaRefresh -> BA_ARENA_REFRESH_NOTIFICATION_ID
             else -> TEST_NOTIFICATION_ID
@@ -494,6 +504,7 @@ object McpNotificationHelper {
     private fun secondaryActionModeFor(notificationId: Int): SecondaryActionMode {
         return when (notificationId) {
             BA_AP_NOTIFICATION_ID,
+            BA_CAFE_AP_NOTIFICATION_ID,
             BA_CAFE_VISIT_NOTIFICATION_ID,
             BA_ARENA_REFRESH_NOTIFICATION_ID -> SecondaryActionMode.MARK_READ
 

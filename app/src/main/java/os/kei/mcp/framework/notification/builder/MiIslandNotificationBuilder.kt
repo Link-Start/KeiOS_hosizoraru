@@ -100,7 +100,8 @@ class MiIslandNotificationBuilder(
 
     override fun build(payload: NotificationPayload): Notification {
         val state = payload.state
-        val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(state.serverName)
+        val isBlueArchiveCafeAp = McpNotificationPayload.isBaCafeApServerName(state.serverName)
+        val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(state.serverName) || isBlueArchiveCafeAp
         val isBlueArchiveCafeVisit = McpNotificationPayload.isBaCafeVisitServerName(state.serverName)
         val isBlueArchiveArenaRefresh = McpNotificationPayload.isBaArenaRefreshServerName(state.serverName)
         val isBlueArchiveCalendarPool =
@@ -189,7 +190,8 @@ class MiIslandNotificationBuilder(
 
     private fun buildFocusExtras(payload: NotificationPayload, islandIconResId: Int) = runCatching {
         val state = payload.state
-        val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(state.serverName)
+        val isBlueArchiveCafeAp = McpNotificationPayload.isBaCafeApServerName(state.serverName)
+        val isBlueArchiveAp = McpNotificationPayload.isBaApServerName(state.serverName) || isBlueArchiveCafeAp
         val isBlueArchiveCafeVisit = McpNotificationPayload.isBaCafeVisitServerName(state.serverName)
         val isBlueArchiveArenaRefresh = McpNotificationPayload.isBaArenaRefreshServerName(state.serverName)
         val isBlueArchiveCalendarPool =

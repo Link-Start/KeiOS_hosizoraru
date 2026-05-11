@@ -112,8 +112,10 @@
     <string name="ba_settings_summary_calendar_pool_change_notify">刷新抓取到新增或时间变动时提醒</string>
     <string name="ba_settings_label_ap_threshold">AP 提醒阈值</string>
     <string name="ba_settings_summary_ap_threshold">建议 0-%1$d</string>
+    <string name="ba_settings_cd_ap_threshold_slider">快速调整 AP 提醒阈值</string>
     <string name="ba_settings_label_cafe_ap_threshold">咖啡厅 AP 阈值</string>
     <string name="ba_settings_summary_cafe_ap_threshold">达到该库存 AP 后发送提醒；上限随咖啡厅等级变化</string>
+    <string name="ba_settings_cd_cafe_ap_threshold_slider">快速调整咖啡厅 AP 阈值</string>
     <string name="ba_settings_label_media_adaptive_rotation">媒体自适应旋转</string>
     <string name="ba_settings_summary_media_adaptive_rotation">开启：沿用当前图鉴媒体旋转逻辑；关闭：系统锁定旋转时保持不旋转，系统允许旋转时跟随屏幕方向。</string>
     <string name="ba_settings_label_media_save_custom">自定义媒体保存位置</string>

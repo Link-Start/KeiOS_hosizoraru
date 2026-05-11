@@ -31,6 +31,7 @@ import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
+import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.os.appLucideCalendarIcon
@@ -371,6 +372,8 @@ fun BAPage(
             show = ui.showNotificationSettingsSheet,
             backdrop = backdrops.sheet,
             state = notificationSettingsSheetState,
+            apThresholdMax = (office.apLimit + 200).coerceIn(0, BA_AP_MAX),
+            cafeApThresholdMax = cafeDailyCapacity(office.cafeLevel),
             onApNotifyEnabledChange = { ui.sheetApNotifyEnabled = it },
             onCafeApNotifyEnabledChange = { ui.sheetCafeApNotifyEnabled = it },
             onArenaRefreshNotifyEnabledChange = { ui.sheetArenaRefreshNotifyEnabled = it },

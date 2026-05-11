@@ -112,8 +112,10 @@
     <string name="ba_settings_summary_calendar_pool_change_notify">更新で新規項目や時刻変更を検出した時に通知します。</string>
     <string name="ba_settings_label_ap_threshold">AP 通知しきい値</string>
     <string name="ba_settings_summary_ap_threshold">推奨: 0-%1$d</string>
+    <string name="ba_settings_cd_ap_threshold_slider">AP 通知しきい値を素早く調整</string>
     <string name="ba_settings_label_cafe_ap_threshold">カフェ AP しきい値</string>
     <string name="ba_settings_summary_cafe_ap_threshold">保存 AP がこの値に達したら通知します。上限はカフェレベルに連動します。</string>
+    <string name="ba_settings_cd_cafe_ap_threshold_slider">カフェ AP しきい値を素早く調整</string>
     <string name="ba_settings_label_media_adaptive_rotation">メディアの自動回転</string>
     <string name="ba_settings_summary_media_adaptive_rotation">オン: 現在の生徒情報メディア回転挙動を使います。オフ: システム回転ロック中は固定し、許可時は画面向きに従います。</string>
     <string name="ba_settings_label_media_save_custom">メディア保存先を指定</string>

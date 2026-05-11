@@ -21,8 +21,14 @@ class MiIslandNotificationBuilder(
         val key: String,
         val title: String,
         val pendingIntent: PendingIntent,
-        val isHighlighted: Boolean = false
+        val style: IslandActionStyle = IslandActionStyle.Plain
     )
+
+    private sealed interface IslandActionStyle {
+        data object Plain : IslandActionStyle
+        data class Primary(val backgroundColor: String) : IslandActionStyle
+        data object Danger : IslandActionStyle
+    }
 
     private enum class IslandBigTemplateKind {
         TEXT,
@@ -51,13 +57,17 @@ class MiIslandNotificationBuilder(
         val progressPercent: Int = 0,
         val progressColor: String = BA_AP_PROGRESS_COLOR,
         val progressTrackColor: String = BA_AP_PROGRESS_TRACK_COLOR,
-        val notificationAccentColor: String? = null
+        val notificationAccentColor: String? = null,
+        val primaryActionColor: String = HIGHLIGHT_BG_COLOR
     )
 
     private companion object {
         private const val TAG = "McpMiIslandBuilder"
         private const val HIGHLIGHT_BG_COLOR = "#006EFF"
         private const val HIGHLIGHT_TITLE_COLOR = "#FFFFFF"
+        private const val DANGER_BG_COLOR = "#E25B6A"
+        private const val DANGER_BG_COLOR_DARK = "#FF6B7C"
+        private const val DANGER_TITLE_COLOR = "#FFFFFF"
         private const val MCP_RUNNING_ACCENT_COLOR = "#1A73E8"
         private const val BA_AP_PROGRESS_COLOR = "#4DA3FF"
         private const val BA_AP_PROGRESS_TRACK_COLOR = "#374151"
@@ -144,7 +154,8 @@ class MiIslandNotificationBuilder(
             resolveIslandActions(
                 state = state,
                 isGitHubShareImport = isGitHubShareImport,
-                forFocusExtras = false
+                forFocusExtras = false,
+                primaryActionColor = presentation.primaryActionColor
             ).forEach { action ->
                 val pendingIntent = if (action.key == "mcp_action_open") {
                     state.openPendingIntent
@@ -198,7 +209,8 @@ class MiIslandNotificationBuilder(
         val actions = resolveIslandActions(
             state = state,
             isGitHubShareImport = isGitHubShareImport,
-            forFocusExtras = true
+            forFocusExtras = true,
+            primaryActionColor = presentation.primaryActionColor
         )
         val displayIcon = payload.semanticIconBitmap?.let { bitmap ->
             Icon.createWithBitmap(bitmap)
@@ -333,12 +345,7 @@ class MiIslandNotificationBuilder(
                             ).build()
                             action = createAction(actionItem.key, nativeAction)
                             actionTitle = actionItem.title
-                            if (actionItem.isHighlighted) {
-                                actionBgColor = HIGHLIGHT_BG_COLOR
-                                actionBgColorDark = HIGHLIGHT_BG_COLOR
-                                actionTitleColor = HIGHLIGHT_TITLE_COLOR
-                                actionTitleColorDark = HIGHLIGHT_TITLE_COLOR
-                            }
+                            applyIslandActionStyle(actionItem.style)
                         }
                     }
                 }
@@ -374,7 +381,8 @@ class MiIslandNotificationBuilder(
                 focusShowNotification = true,
                 showExpandedProgress = true,
                 progressPercent = resolveApProgressPercent(state),
-                notificationAccentColor = BA_AP_PROGRESS_COLOR
+                notificationAccentColor = BA_AP_PROGRESS_COLOR,
+                primaryActionColor = BA_AP_PROGRESS_COLOR
             )
         }
         if (isBlueArchiveCafeVisit && state.running) {
@@ -386,7 +394,8 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = false,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                notificationAccentColor = BA_EVENT_ACCENT_COLOR
+                notificationAccentColor = BA_EVENT_ACCENT_COLOR,
+                primaryActionColor = BA_EVENT_ACCENT_COLOR
             )
         }
         if (isBlueArchiveArenaRefresh && state.running) {
@@ -398,7 +407,8 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = false,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                notificationAccentColor = BA_EVENT_ACCENT_COLOR
+                notificationAccentColor = BA_EVENT_ACCENT_COLOR,
+                primaryActionColor = BA_EVENT_ACCENT_COLOR
             )
         }
         if (isBlueArchiveCalendarPool && state.running) {
@@ -426,7 +436,8 @@ class MiIslandNotificationBuilder(
                 showExpandedProgress = true,
                 progressPercent = progressPercent,
                 progressColor = BA_EVENT_ACCENT_COLOR,
-                notificationAccentColor = BA_EVENT_ACCENT_COLOR
+                notificationAccentColor = BA_EVENT_ACCENT_COLOR,
+                primaryActionColor = BA_EVENT_ACCENT_COLOR
             )
         }
         if (isGitHubShareImport && state.running) {
@@ -458,7 +469,8 @@ class MiIslandNotificationBuilder(
                 showExpandedProgress = !isTerminal,
                 progressPercent = progressPercent,
                 progressColor = progressColor,
-                notificationAccentColor = progressColor
+                notificationAccentColor = progressColor,
+                primaryActionColor = progressColor
             )
         }
         if (state.running) {
@@ -511,7 +523,8 @@ class MiIslandNotificationBuilder(
     private fun resolveIslandActions(
         state: McpNotificationPayload,
         isGitHubShareImport: Boolean,
-        forFocusExtras: Boolean
+        forFocusExtras: Boolean,
+        primaryActionColor: String
     ): List<IslandAction> {
         val actions = mutableListOf(
             IslandAction(
@@ -522,7 +535,7 @@ class MiIslandNotificationBuilder(
                     context.getString(R.string.common_open)
                 },
                 pendingIntent = state.focusOpenPendingIntent,
-                isHighlighted = true
+                style = IslandActionStyle.Primary(primaryActionColor)
             )
         )
         val showSecondaryAction = when {
@@ -537,10 +550,51 @@ class MiIslandNotificationBuilder(
             actions += IslandAction(
                 key = "mcp_action_stop",
                 title = state.stopActionTitle(context),
-                pendingIntent = state.stopPendingIntent
+                pendingIntent = state.stopPendingIntent,
+                style = resolveSecondaryActionStyle(
+                    state = state,
+                    isGitHubShareImport = isGitHubShareImport
+                )
             )
         }
         return actions
+    }
+
+    private fun com.xzakota.hyper.notification.focus.model.ActionInfo.applyIslandActionStyle(
+        style: IslandActionStyle
+    ) {
+        when (style) {
+            IslandActionStyle.Plain -> Unit
+
+            is IslandActionStyle.Primary -> {
+                actionBgColor = style.backgroundColor
+                actionBgColorDark = style.backgroundColor
+                actionTitleColor = HIGHLIGHT_TITLE_COLOR
+                actionTitleColorDark = HIGHLIGHT_TITLE_COLOR
+            }
+
+            IslandActionStyle.Danger -> {
+                actionBgColor = DANGER_BG_COLOR
+                actionBgColorDark = DANGER_BG_COLOR_DARK
+                actionTitleColor = DANGER_TITLE_COLOR
+                actionTitleColorDark = DANGER_TITLE_COLOR
+            }
+        }
+    }
+
+    private fun resolveSecondaryActionStyle(
+        state: McpNotificationPayload,
+        isGitHubShareImport: Boolean
+    ): IslandActionStyle {
+        val secondaryActionLabel = state.secondaryActionLabel?.trim().orEmpty()
+        val cancelLinkageLabel = context.getString(
+            R.string.github_share_import_pending_action_cancel
+        )
+        return if (isGitHubShareImport && secondaryActionLabel == cancelLinkageLabel) {
+            IslandActionStyle.Danger
+        } else {
+            IslandActionStyle.Plain
+        }
     }
 
     private fun resolveDefaultEndpointSummary(state: McpNotificationPayload): String? {

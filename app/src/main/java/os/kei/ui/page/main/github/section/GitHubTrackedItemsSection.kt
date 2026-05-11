@@ -297,6 +297,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             textColor = localVersionColor,
                             expanded = localVersionExpanded,
                             emphasized = !state.isLocalAppUninstalled(),
+                            valueMaxLines = 2,
                             onExpandedChange = { expanded ->
                                 onLocalVersionExpandedChange(item.id, expanded)
                             }
@@ -353,6 +354,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             textColor = latestColor,
                             expanded = stableExpanded,
                             emphasized = state.hasUpdate == true && !state.recommendsPreRelease,
+                            valueMaxLines = 2,
                             onExpandedChange = { expanded ->
                                 onStableVersionExpandedChange(item.id, expanded)
                             }
@@ -498,6 +500,7 @@ private fun GitHubReleaseVersionCard(
     textColor: Color,
     expanded: Boolean,
     emphasized: Boolean,
+    valueMaxLines: Int = 1,
     onExpandedChange: (Boolean) -> Unit
 ) {
     GitHubLinkedInfoCard(
@@ -506,6 +509,7 @@ private fun GitHubReleaseVersionCard(
         labelColor = textColor,
         valueColor = textColor,
         valueEmphasized = emphasized,
+        valueMaxLines = valueMaxLines,
         trailingIcon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
         trailingIconColor = textColor,
         onClick = { onExpandedChange(!expanded) }
@@ -519,6 +523,7 @@ private fun GitHubLinkedInfoCard(
     labelColor: Color = MiuixTheme.colorScheme.primary,
     valueColor: Color,
     valueEmphasized: Boolean = false,
+    valueMaxLines: Int = 1,
     trailingIcon: ImageVector? = null,
     trailingIconColor: Color = labelColor,
     onClick: () -> Unit
@@ -566,7 +571,7 @@ private fun GitHubLinkedInfoCard(
                 } else {
                     AppTypographyTokens.Body.fontWeight
                 },
-                maxLines = 1,
+                maxLines = valueMaxLines.coerceAtLeast(1),
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.End

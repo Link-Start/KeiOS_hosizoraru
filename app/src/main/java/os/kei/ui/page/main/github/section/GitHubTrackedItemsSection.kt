@@ -125,7 +125,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
     onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
-    onClearApkAssetUiState: (String) -> Unit,
+    onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     onStableVersionExpandedChange: (String, Boolean) -> Unit,
     onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,
@@ -172,11 +172,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     trackedCardExpanded[item.id] = it
                     if (!it) {
                         val collapseState = checkStates[item.id] ?: VersionCheckUi()
-                        if (apkAssetExpanded[item.id] == true) {
-                            onCollapseApkAssetPanel(item, collapseState)
-                        } else {
-                            onClearApkAssetUiState(item.id)
-                        }
+                        onCollapseTrackedCard(item, collapseState)
                     }
                 },
                 headerStartAction = {

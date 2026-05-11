@@ -43,7 +43,8 @@ private data class GitHubRefreshProgressSnapshot(
 )
 
 internal class GitHubRefreshActions(
-    private val env: GitHubPageActionEnvironment
+    private val env: GitHubPageActionEnvironment,
+    private val assetActions: GitHubAssetActions
 ) {
     private val context get() = env.context
     private val scope get() = env.scope
@@ -176,11 +177,25 @@ internal class GitHubRefreshActions(
         affectedTrackIds: Set<String>,
         removedTrackIds: Set<String>
     ) {
+        val previousItemsById = state.trackedItems.associateBy { it.id }
+        val previousCheckStatesById = state.checkStates.toMap()
+        val staleAssetTrackIds = (affectedTrackIds + removedTrackIds)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+        val staleAssetTargets = staleAssetTrackIds.mapNotNull { trackId ->
+            previousItemsById[trackId]?.let { item ->
+                item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+            }
+        }
+        assetActions.clearApkAssetStatesAndCachesNow(
+            targets = staleAssetTargets,
+            clearItemIds = staleAssetTrackIds
+        )
         removedTrackIds.forEach { trackId ->
             state.checkStates.remove(trackId)
             state.trackedCardExpanded.remove(trackId)
             state.trackedAddedAtById.remove(trackId)
-            state.clearAssetUiState(trackId)
         }
         syncSnapshotFromStore(
             forceRefreshApps = true,
@@ -279,6 +294,11 @@ internal class GitHubRefreshActions(
         onUpdated: ((VersionCheckUi) -> Unit)? = null
     ) {
         val previousState = state.checkStates[item.id] ?: VersionCheckUi()
+        assetActions.clearApkAssetCacheNow(
+            item = item,
+            itemState = previousState,
+            allowLatestReleaseFallback = true
+        )
         val checkingMessage = context.getString(R.string.github_msg_checking)
         state.checkStates[item.id] = if (keepCurrentVisualWhileRefreshing) {
             previousState.copy(message = checkingMessage)
@@ -318,6 +338,13 @@ internal class GitHubRefreshActions(
         }
         state.refreshAllJob?.cancel()
         state.refreshAllJob = scope.launch {
+            val previousCheckStatesById = state.checkStates.toMap()
+            assetActions.clearApkAssetCachesForTargetsNow(
+                targets = snapshot.map { item ->
+                    item to (previousCheckStatesById[item.id] ?: VersionCheckUi())
+                },
+                allowLatestReleaseFallback = true
+            )
             repository.clearCheckCache()
             state.lastRefreshMs = 0L
             state.overviewRefreshState = OverviewRefreshState.Refreshing
@@ -487,9 +514,24 @@ internal class GitHubRefreshActions(
         )
     }
 
-    private fun applyTrackSnapshot(trackSnapshot: GitHubTrackSnapshot) {
+    private suspend fun applyTrackSnapshot(trackSnapshot: GitHubTrackSnapshot) {
+        val previousItemsById = state.trackedItems.associateBy { it.id }
+        val previousCheckStatesById = state.checkStates.toMap()
         val activeStrategyId = trackSnapshot.lookupConfig.selectedStrategy.storageId
         val snapshotAssetSourceSignature = state.buildAssetSourceSignature(trackSnapshot.lookupConfig)
+        val incomingItemsById = trackSnapshot.items.associateBy { it.id }
+        val changedAssetTrackIds =
+            (previousItemsById.keys - incomingItemsById.keys) +
+                    incomingItemsById
+                        .filter { (trackId, incomingItem) ->
+                            previousItemsById[trackId]?.let { previousItem ->
+                                previousItem != incomingItem
+                            } == true
+                        }
+                        .keys
+        val assetSignatureChanged =
+            state.assetSourceSignature.isNotBlank() &&
+                    state.assetSourceSignature != snapshotAssetSourceSignature
         state.lookupConfig = trackSnapshot.lookupConfig
         state.selectedStrategyInput = trackSnapshot.lookupConfig.selectedStrategy
         state.selectedActionsStrategyInput = trackSnapshot.lookupConfig.actionsStrategy
@@ -504,11 +546,22 @@ internal class GitHubRefreshActions(
         state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage
         state.refreshIntervalHours = trackSnapshot.refreshIntervalHours
         state.refreshIntervalHoursInput = trackSnapshot.refreshIntervalHours
-        if (
-            state.assetSourceSignature.isNotBlank() &&
-            state.assetSourceSignature != snapshotAssetSourceSignature
-        ) {
-            state.clearAllAssetUiState()
+        when {
+            assetSignatureChanged -> {
+                assetActions.clearAllApkAssetStateAndCacheNow()
+            }
+
+            changedAssetTrackIds.isNotEmpty() -> {
+                val staleAssetTargets = changedAssetTrackIds.mapNotNull { trackId ->
+                    previousItemsById[trackId]?.let { item ->
+                        item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+                    }
+                }
+                assetActions.clearApkAssetStatesAndCachesNow(
+                    targets = staleAssetTargets,
+                    clearItemIds = changedAssetTrackIds
+                )
+            }
         }
         state.assetSourceSignature = snapshotAssetSourceSignature
 

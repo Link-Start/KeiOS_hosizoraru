@@ -235,11 +235,8 @@ fun GitHubPage(
             onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
             onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
             onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
-            onClearApkAssetUiState = actions::clearApkAssetUiState,
-            onCollapseApkAssetPanel = { item, itemState ->
-                actions.clearApkAssetUiState(item.id)
-                actions.clearApkAssetCache(item, itemState)
-            },
+            onCollapseTrackedCard = actions::collapseTrackedCard,
+            onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
             onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets ->
                 actions.loadApkAssets(
                     item = item,

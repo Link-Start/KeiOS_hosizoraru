@@ -133,42 +133,135 @@ internal class GitHubAssetActions(
         itemState: VersionCheckUi,
         allowLatestReleaseFallback: Boolean = false
     ) {
-        val target = itemState.apkAssetTarget(
-            owner = item.owner,
-            repo = item.repo,
-            context = context,
-            alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton,
+        val cacheKeys = buildApkAssetCacheKeys(
+            item = item,
+            itemState = itemState,
             allowLatestReleaseFallback = allowLatestReleaseFallback
-        ) ?: return
+        )
+        if (cacheKeys.isEmpty()) return
+        scope.launch {
+            repository.clearAssetCaches(cacheKeys)
+        }
+    }
+
+    suspend fun clearApkAssetCacheNow(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        allowLatestReleaseFallback: Boolean = false
+    ) {
+        val cacheKeys = buildApkAssetCacheKeys(
+            item = item,
+            itemState = itemState,
+            allowLatestReleaseFallback = allowLatestReleaseFallback
+        )
+        if (cacheKeys.isEmpty()) return
+        repository.clearAssetCaches(cacheKeys)
+    }
+
+    suspend fun clearApkAssetCachesForTargetsNow(
+        targets: List<Pair<GitHubTrackedApp, VersionCheckUi>>,
+        allowLatestReleaseFallback: Boolean = false
+    ) {
+        val cacheKeys = targets
+            .flatMap { (item, itemState) ->
+                buildApkAssetCacheKeys(
+                    item = item,
+                    itemState = itemState,
+                    allowLatestReleaseFallback = allowLatestReleaseFallback
+                )
+            }
+            .distinct()
+        if (cacheKeys.isEmpty()) return
+        repository.clearAssetCaches(cacheKeys)
+    }
+
+    fun clearApkAssetStateAndCache(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        allowLatestReleaseFallback: Boolean = true
+    ) {
+        state.clearAssetUiState(item.id)
+        clearApkAssetCache(
+            item = item,
+            itemState = itemState,
+            allowLatestReleaseFallback = allowLatestReleaseFallback
+        )
+    }
+
+    suspend fun clearApkAssetStateAndCacheNow(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        allowLatestReleaseFallback: Boolean = true
+    ) {
+        state.clearAssetUiState(item.id)
+        clearApkAssetCacheNow(
+            item = item,
+            itemState = itemState,
+            allowLatestReleaseFallback = allowLatestReleaseFallback
+        )
+    }
+
+    suspend fun clearAllApkAssetStateAndCacheNow() {
+        state.clearAllAssetUiState()
+        repository.clearAllAssetCache()
+    }
+
+    suspend fun clearApkAssetStatesAndCachesNow(
+        targets: List<Pair<GitHubTrackedApp, VersionCheckUi>>,
+        clearItemIds: Set<String> = targets.map { (item, _) -> item.id }.toSet(),
+        allowLatestReleaseFallback: Boolean = true
+    ) {
+        clearItemIds.forEach(state::clearAssetUiState)
+        clearApkAssetCachesForTargetsNow(
+            targets = targets,
+            allowLatestReleaseFallback = allowLatestReleaseFallback
+        )
+    }
+
+    private fun buildApkAssetCacheKeys(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        allowLatestReleaseFallback: Boolean
+    ): List<String> {
+        val targets = buildList {
+            itemState.apkAssetTarget(
+                owner = item.owner,
+                repo = item.repo,
+                context = context,
+                alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton,
+                allowLatestReleaseFallback = false
+            )?.let(::add)
+            if (allowLatestReleaseFallback) {
+                itemState.apkAssetTarget(
+                    owner = item.owner,
+                    repo = item.repo,
+                    context = context,
+                    alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton,
+                    allowLatestReleaseFallback = true
+                )?.let(::add)
+            }
+        }.distinctBy { target ->
+            "${target.rawTag.trim()}|${target.releaseUrl.trim()}"
+        }
+        if (targets.isEmpty()) return emptyList()
         val preferHtml = state.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
         val hasApiToken = state.lookupConfig.apiToken.isNotBlank()
-        val releaseUrl = target.releaseUrl
-        val normalizedRawTag = target.rawTag
-        val cacheKeyDefault = repository.buildAssetCacheKey(
-            owner = item.owner,
-            repo = item.repo,
-            rawTag = normalizedRawTag,
-            releaseUrl = releaseUrl,
-            preferHtml = preferHtml,
-            aggressiveFiltering = state.lookupConfig.aggressiveApkFiltering,
-            includeAllAssets = false,
-            hasApiToken = hasApiToken
-        )
-        val cacheKeyAllAssets = repository.buildAssetCacheKey(
-            owner = item.owner,
-            repo = item.repo,
-            rawTag = normalizedRawTag,
-            releaseUrl = releaseUrl,
-            preferHtml = preferHtml,
-            aggressiveFiltering = state.lookupConfig.aggressiveApkFiltering,
-            includeAllAssets = true,
-            hasApiToken = hasApiToken
-        )
-        scope.launch {
-            repository.clearAssetCaches(
-                listOf(cacheKeyDefault, cacheKeyAllAssets)
-            )
-        }
+        return targets
+            .flatMap { target ->
+                listOf(false, true).map { includeAllAssets ->
+                    repository.buildAssetCacheKey(
+                        owner = item.owner,
+                        repo = item.repo,
+                        rawTag = target.rawTag,
+                        releaseUrl = target.releaseUrl,
+                        preferHtml = preferHtml,
+                        aggressiveFiltering = state.lookupConfig.aggressiveApkFiltering,
+                        includeAllAssets = includeAllAssets,
+                        hasApiToken = hasApiToken
+                    )
+                }
+            }
+            .distinct()
     }
 
     fun loadApkAssets(

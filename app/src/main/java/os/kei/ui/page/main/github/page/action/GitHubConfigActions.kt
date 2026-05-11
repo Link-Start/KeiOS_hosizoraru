@@ -8,13 +8,15 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.ui.page.main.github.OverviewRefreshState
+import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 
 internal class GitHubConfigActions(
     private val env: GitHubPageActionEnvironment,
-    private val refreshActions: GitHubRefreshActions
+    private val refreshActions: GitHubRefreshActions,
+    private val assetActions: GitHubAssetActions
 ) {
     private val context get() = env.context
     private val scope get() = env.scope
@@ -79,7 +81,7 @@ internal class GitHubConfigActions(
         )
     }
 
-    fun applyTrackedItemsImport(preview: GitHubTrackImportPreview): GitHubTrackImportApplyResult {
+    suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview): GitHubTrackImportApplyResult {
         return applyImportedTrackedItems(preview.payload)
     }
 
@@ -127,9 +129,8 @@ internal class GitHubConfigActions(
                 releaseLookupChanged -> {
                     repository.clearReleaseStrategyCaches()
                     repository.clearCheckCache()
-                    repository.clearAllAssetCache()
                     state.checkStates.clear()
-                    state.clearAllAssetUiState()
+                    assetActions.clearAllApkAssetStateAndCacheNow()
                     state.assetSourceSignature = state.buildAssetSourceSignature(newConfig)
                     state.lastRefreshMs = 0L
                     state.refreshProgress = 0f
@@ -236,7 +237,7 @@ internal class GitHubConfigActions(
                         profilePurposeChanged -> {
                     repository.clearCheckCache()
                     state.checkStates.clear()
-                    state.clearAllAssetUiState()
+                    assetActions.clearAllApkAssetStateAndCacheNow()
                     state.assetSourceSignature = state.buildAssetSourceSignature(newConfig)
                     state.lastRefreshMs = 0L
                     state.refreshProgress = 0f
@@ -340,7 +341,7 @@ internal class GitHubConfigActions(
         }
     }
 
-    private fun applyImportedTrackedItems(
+    private suspend fun applyImportedTrackedItems(
         payload: GitHubTrackedItemsImportPayload
     ): GitHubTrackImportApplyResult {
         val nowMillis = System.currentTimeMillis()
@@ -373,9 +374,14 @@ internal class GitHubConfigActions(
                 }
 
                 mergedItems[existingIndex] != item -> {
+                    val existingItem = mergedItems[existingIndex]
+                    val existingState = state.checkStates[item.id] ?: VersionCheckUi()
+                    assetActions.clearApkAssetStateAndCacheNow(
+                        item = existingItem,
+                        itemState = existingState
+                    )
                     mergedItems[existingIndex] = item
                     state.checkStates.remove(item.id)
-                    state.clearAssetUiState(item.id)
                     touchedItems += item
                     updatedCount += 1
                 }

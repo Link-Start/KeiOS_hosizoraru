@@ -2,6 +2,7 @@ package os.kei.feature.github.domain
 
 import android.content.Context
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
@@ -22,6 +23,7 @@ internal object GitHubStarImportApplier {
         val result = merge.result
         if (!result.hasChanges) return result
         GitHubTrackStore.save(merge.items)
+        GitHubReleaseAssetCacheStore.clearAll()
         updateTrackedAddedAt(result)
         result.affectedTrackIds.take(STAR_IMPORT_IMMEDIATE_REFRESH_REQUEST_LIMIT)
             .forEach { trackId ->

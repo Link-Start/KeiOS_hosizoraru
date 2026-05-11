@@ -8,13 +8,15 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
+import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
 import os.kei.ui.page.main.github.page.GitHubTrackEditorResult
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 
 internal class GitHubTrackActions(
     private val env: GitHubPageActionEnvironment,
-    private val refreshActions: GitHubRefreshActions
+    private val refreshActions: GitHubRefreshActions,
+    private val assetActions: GitHubAssetActions
 ) {
     private var appListRefreshJob: Job? = null
     private val state get() = env.state
@@ -219,6 +221,8 @@ internal class GitHubTrackActions(
                     env.toast(R.string.github_toast_track_exists)
                     return@launch
                 }
+                val editingState = state.checkStates[editing.id] ?: VersionCheckUi()
+                val itemChanged = editing != newItem
                 val existingAddedAt = state.trackedAddedAtById[editing.id]
                     ?.takeIf { it > 0L }
                     ?: state.trackedAddedAtById[newItem.id]
@@ -230,6 +234,12 @@ internal class GitHubTrackActions(
                 } else {
                     state.trackedItems.add(newItem)
                 }
+                if (itemChanged) {
+                    assetActions.clearApkAssetStateAndCacheNow(
+                        item = editing,
+                        itemState = editingState
+                    )
+                }
                 if (editing.id != newItem.id) {
                     state.checkStates.remove(editing.id)
                     state.trackedCardExpanded.remove(editing.id)
@@ -237,7 +247,6 @@ internal class GitHubTrackActions(
                     state.trackedStableVersionExpanded.remove(editing.id)
                     state.trackedPreReleaseVersionExpanded.remove(editing.id)
                     GitHubTrackedReleaseUiStateStore.remove(editing.id)
-                    state.clearAssetUiState(editing.id)
                     state.trackedAddedAtById.remove(editing.id)
                 }
                 state.recordTrackedAddedAt(newItem.id, existingAddedAt)
@@ -253,7 +262,12 @@ internal class GitHubTrackActions(
         state.pendingDeleteItem?.let { deleting ->
             state.deleteInProgress = true
             try {
+                val deletingState = state.checkStates[deleting.id] ?: VersionCheckUi()
                 refreshActions.cancelRefreshAll()
+                assetActions.clearApkAssetStateAndCache(
+                    item = deleting,
+                    itemState = deletingState
+                )
                 state.trackedItems.remove(deleting)
                 state.checkStates.remove(deleting.id)
                 state.trackedCardExpanded.remove(deleting.id)
@@ -262,7 +276,6 @@ internal class GitHubTrackActions(
                 state.trackedPreReleaseVersionExpanded.remove(deleting.id)
                 GitHubTrackedReleaseUiStateStore.remove(deleting.id)
                 state.trackedAddedAtById.remove(deleting.id)
-                state.clearAssetUiState(deleting.id)
                 env.saveTrackedItems()
                 refreshActions.persistCheckCache()
                 env.toast(R.string.github_toast_track_deleted, deleting.appLabel)

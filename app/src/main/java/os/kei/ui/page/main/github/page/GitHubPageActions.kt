@@ -46,11 +46,11 @@ internal class GitHubPageActions(
         systemDmOption = systemDmOption,
         openLinkFailureMessage = openLinkFailureMessage
     )
-    private val refreshActions = GitHubRefreshActions(env)
     private val assetActions = GitHubAssetActions(env)
+    private val refreshActions = GitHubRefreshActions(env, assetActions)
     private val actionsActions = GitHubActionsActions(env)
-    private val configActions = GitHubConfigActions(env, refreshActions)
-    private val trackActions = GitHubTrackActions(env, refreshActions)
+    private val configActions = GitHubConfigActions(env, refreshActions, assetActions)
+    private val trackActions = GitHubTrackActions(env, refreshActions, assetActions)
 
     private val minHandleIntervalMs = 1200L
     private val pendingShareImportTrackMaxAgeMs = 25 * 60 * 1000L
@@ -297,7 +297,7 @@ internal class GitHubPageActions(
 
     suspend fun previewTrackedItemsImport(raw: String) = configActions.previewTrackedItemsImport(raw)
 
-    fun applyTrackedItemsImport(preview: GitHubTrackImportPreview) =
+    suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview) =
         configActions.applyTrackedItemsImport(preview)
 
     suspend fun importTrackedItemsJson(raw: String) = configActions.importTrackedItemsJson(raw)
@@ -385,6 +385,12 @@ internal class GitHubPageActions(
 
     fun clearApkAssetCache(item: GitHubTrackedApp, itemState: VersionCheckUi) =
         assetActions.clearApkAssetCache(item, itemState)
+
+    fun collapseApkAssetPanel(item: GitHubTrackedApp, itemState: VersionCheckUi) =
+        assetActions.clearApkAssetStateAndCache(item, itemState)
+
+    fun collapseTrackedCard(item: GitHubTrackedApp, itemState: VersionCheckUi) =
+        assetActions.clearApkAssetStateAndCache(item, itemState)
 
     fun loadApkAssets(
         item: GitHubTrackedApp,

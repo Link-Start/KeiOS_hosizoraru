@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
@@ -571,14 +572,10 @@ private fun GitHubLinkedInfoCard(
     } else {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
     }
-    LiquidSurface(
+    GitHubInlineLiquidSurface(
         backdrop = backdrop,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
         tint = MiuixTheme.colorScheme.primary.copy(alpha = if (isDark) 0.18f else 0.10f),
         surfaceColor = surfaceColor,
-        blurRadius = UiPerformanceBudget.backdropBlur,
-        lensRadius = UiPerformanceBudget.backdropLens,
         onClick = onClick
     ) {
         Row(
@@ -625,6 +622,35 @@ private fun GitHubLinkedInfoCard(
 }
 
 @Composable
+private fun GitHubInlineLiquidSurface(
+    backdrop: LayerBackdrop,
+    tint: Color,
+    surfaceColor: Color,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    onClick: () -> Unit,
+    content: @Composable BoxScope.() -> Unit
+) {
+    Box(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .layerBackdrop(backdrop)
+        )
+        LiquidSurface(
+            backdrop = backdrop,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            tint = tint,
+            surfaceColor = surfaceColor,
+            blurRadius = UiPerformanceBudget.backdropBlur,
+            lensRadius = UiPerformanceBudget.backdropLens,
+            onClick = onClick,
+            content = content
+        )
+    }
+}
+
+@Composable
 private fun gitHubPreReleaseCardTextColor(): Color {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     return if (isDark) {
@@ -647,14 +673,10 @@ private fun GitHubHealthPreviewBlock(
     } else {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
     }
-    LiquidSurface(
+    GitHubInlineLiquidSurface(
         backdrop = backdrop,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
         tint = color.copy(alpha = if (isDark) 0.16f else 0.10f),
         surfaceColor = surfaceColor,
-        blurRadius = UiPerformanceBudget.backdropBlur,
-        lensRadius = UiPerformanceBudget.backdropLens,
         onClick = onClick
     ) {
         Column(

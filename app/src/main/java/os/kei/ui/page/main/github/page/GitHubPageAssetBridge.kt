@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 
@@ -91,6 +92,20 @@ internal class GitHubPageAssetBridge(
                 preferHtml = preferHtml,
                 aggressiveFiltering = aggressiveFiltering,
                 includeAllAssets = includeAllAssets,
+                apiToken = apiToken
+            )
+        }
+    }
+
+    suspend fun fetchReleaseNotesTargets(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<List<GitHubReleaseNotesTarget>> {
+        return withContext(ioDispatcher) {
+            GitHubReleaseAssetRepository.fetchReleaseNotesTargetsAsync(
+                owner = owner,
+                repo = repo,
                 apiToken = apiToken
             )
         }

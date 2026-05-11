@@ -821,8 +821,12 @@
     <string name="github_health_detail_rule_scope">Deep-mode traffic and security are lightweight signals. The score drives overview priority and reminders; APK file trust comes from the asset card and APK detail view.</string>
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">Refreshing release assets and release notes</string>
+    <string name="github_release_notes_detail_release">Release</string>
     <string name="github_release_notes_detail_repo">Repo</string>
     <string name="github_release_notes_detail_source">Source</string>
+    <string name="github_release_notes_marker_stable">Stable</string>
+    <string name="github_release_notes_marker_prerelease">Pre-release</string>
+    <string name="github_release_notes_marker_latest">Latest</string>
     <string name="github_release_notes_source_api">API: structured release data</string>
     <string name="github_release_notes_source_atom">Atom: release page parsing</string>
     <string name="github_release_notes_detail_target_latest">Current release</string>

@@ -20,6 +20,7 @@ import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
@@ -589,6 +590,18 @@ internal class GitHubPageRepository(
             preferHtml = preferHtml,
             aggressiveFiltering = aggressiveFiltering,
             includeAllAssets = includeAllAssets,
+            apiToken = apiToken
+        )
+    }
+
+    suspend fun fetchReleaseNotesTargets(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<List<GitHubReleaseNotesTarget>> {
+        return assetBridge.fetchReleaseNotesTargets(
+            owner = owner,
+            repo = repo,
             apiToken = apiToken
         )
     }

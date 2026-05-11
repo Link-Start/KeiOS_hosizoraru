@@ -11,17 +11,23 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
@@ -40,6 +46,7 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -52,6 +59,7 @@ import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -60,12 +68,15 @@ internal fun GitHubDecisionAssistDetailSheet(
     backdrop: LayerBackdrop,
     versionState: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
+    releaseNotesTargets: List<GitHubReleaseNotesTarget> = emptyList(),
+    selectedReleaseNotesTarget: GitHubReleaseNotesTarget? = null,
     assetLoading: Boolean,
     assetError: String,
     healthRefreshing: Boolean = false,
     onDismissRequest: () -> Unit,
     onRefreshHealth: (GitHubTrackedApp) -> Unit,
     onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit,
+    onSelectReleaseNotesTarget: (GitHubTrackedApp, GitHubReleaseNotesTarget) -> Unit,
     onOpenExternalUrl: (String) -> Unit
 ) {
     val detail = request ?: return
@@ -87,8 +98,10 @@ internal fun GitHubDecisionAssistDetailSheet(
             )
         },
         endAction = {
-            val refreshing = detail.type == GitHubDecisionAssistDetailType.RepositoryHealth &&
-                    healthRefreshing
+            val refreshing = when (detail.type) {
+                GitHubDecisionAssistDetailType.RepositoryHealth -> healthRefreshing
+                GitHubDecisionAssistDetailType.ReleaseNotes -> assetLoading
+            }
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
@@ -118,11 +131,17 @@ internal fun GitHubDecisionAssistDetailSheet(
             )
 
             GitHubDecisionAssistDetailType.ReleaseNotes -> GitHubReleaseNotesDetailContent(
+                backdrop = backdrop,
                 item = detail.item,
                 state = versionState,
                 assetBundle = assetBundle,
+                releaseNotesTargets = releaseNotesTargets,
+                selectedReleaseNotesTarget = selectedReleaseNotesTarget,
                 assetLoading = assetLoading,
                 assetError = assetError,
+                onSelectReleaseNotesTarget = { target ->
+                    onSelectReleaseNotesTarget(detail.item, target)
+                },
                 onOpenExternalUrl = onOpenExternalUrl
             )
         }
@@ -286,11 +305,15 @@ internal fun GitHubActionsArtifactDetailSheet(
 
 @Composable
 private fun GitHubReleaseNotesDetailContent(
+    backdrop: LayerBackdrop,
     item: GitHubTrackedApp,
     state: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
+    releaseNotesTargets: List<GitHubReleaseNotesTarget>,
+    selectedReleaseNotesTarget: GitHubReleaseNotesTarget?,
     assetLoading: Boolean,
     assetError: String,
+    onSelectReleaseNotesTarget: (GitHubReleaseNotesTarget) -> Unit,
     onOpenExternalUrl: (String) -> Unit
 ) {
     val lines = buildGitHubReleaseNotesDetailLines(
@@ -300,14 +323,45 @@ private fun GitHubReleaseNotesDetailContent(
     )
     val rawMarkdown = assetBundle?.releaseNotesBody.orEmpty()
     val markdownSourceKey = releaseNotesMarkdownSourceKey(item, assetBundle, rawMarkdown)
+    var releaseDropdownExpanded by remember { mutableStateOf(false) }
+    var releaseDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val selectedTarget = selectedReleaseNotesTarget
+        ?: releaseNotesTargets.firstOrNull()
+    val selectedIndex = releaseNotesTargets.indexOfFirst { it.id == selectedTarget?.id }
+        .coerceAtLeast(0)
+    val stableMarker = stringResource(R.string.github_release_notes_marker_stable)
+    val prereleaseMarker = stringResource(R.string.github_release_notes_marker_prerelease)
+    val latestMarker = stringResource(R.string.github_release_notes_marker_latest)
+    val releaseOptions = releaseNotesTargets.map { target ->
+        releaseNotesTargetDropdownLabel(
+            target = target,
+            stableMarker = stableMarker,
+            prereleaseMarker = prereleaseMarker,
+            latestMarker = latestMarker
+        )
+    }
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSummaryCard(
-            title = assetBundle?.releaseName?.takeIf { it.isNotBlank() }
+            title = selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
+                ?: assetBundle?.releaseName?.takeIf { it.isNotBlank() }
                 ?: state.latestStableName.ifBlank { state.latestPreName.ifBlank { item.repo } },
             badgeLabel = assetBundle?.tagName?.takeIf { it.isNotBlank() }
+                ?: selectedTarget?.tagName?.takeIf { it.isNotBlank() }
                 ?: state.latestStableRawTag.ifBlank { state.latestPreRawTag.ifBlank { null } },
             badgeColor = GitHubStatusPalette.Active
         ) {
+            DetailInfoRow(
+                label = stringResource(R.string.github_release_notes_detail_release),
+                value = selectedTarget?.let {
+                    releaseNotesTargetSheetLabel(
+                        target = it,
+                        stableMarker = stableMarker,
+                        prereleaseMarker = prereleaseMarker,
+                        latestMarker = latestMarker
+                    )
+                }
+                    ?: stringResource(R.string.github_release_notes_detail_target_latest)
+            )
             DetailInfoRow(
                 label = stringResource(R.string.github_release_notes_detail_repo),
                 value = "${item.owner}/${item.repo}"
@@ -322,6 +376,24 @@ private fun GitHubReleaseNotesDetailContent(
                     stringResource(R.string.github_release_notes_detail_refreshing)
                 )
             }
+        }
+        if (releaseNotesTargets.isNotEmpty()) {
+            AppDropdownSelector(
+                selectedText = releaseOptions.getOrElse(selectedIndex) {
+                    stringResource(R.string.github_release_notes_detail_target_latest)
+                },
+                options = releaseOptions,
+                selectedIndex = selectedIndex,
+                expanded = releaseDropdownExpanded,
+                anchorBounds = releaseDropdownAnchorBounds,
+                onExpandedChange = { releaseDropdownExpanded = it },
+                onSelectedIndexChange = { index ->
+                    releaseNotesTargets.getOrNull(index)?.let(onSelectReleaseNotesTarget)
+                },
+                onAnchorBoundsChange = { releaseDropdownAnchorBounds = it },
+                backdrop = backdrop,
+                alignment = PopupPositionProvider.Align.BottomStart
+            )
         }
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
         SheetSectionCard(verticalSpacing = 10.dp) {
@@ -353,6 +425,64 @@ private fun GitHubReleaseNotesDetailContent(
             }
         }
     }
+}
+
+private fun releaseNotesTargetDropdownLabel(
+    target: GitHubReleaseNotesTarget,
+    stableMarker: String,
+    prereleaseMarker: String,
+    latestMarker: String
+): String {
+    val markers = releaseNotesTargetMarkers(
+        target = target,
+        stableMarker = stableMarker,
+        prereleaseMarker = prereleaseMarker,
+        latestMarker = latestMarker
+    )
+    val name = target.releaseName.ifBlank { target.tagName }
+    return if (markers.isBlank()) {
+        name
+    } else {
+        "$name · $markers"
+    }
+}
+
+private fun releaseNotesTargetSheetLabel(
+    target: GitHubReleaseNotesTarget,
+    stableMarker: String,
+    prereleaseMarker: String,
+    latestMarker: String
+): String {
+    val markers = releaseNotesTargetMarkers(
+        target = target,
+        stableMarker = stableMarker,
+        prereleaseMarker = prereleaseMarker,
+        latestMarker = latestMarker
+    )
+    return buildList {
+        add(target.tagName)
+        markers.takeIf { it.isNotBlank() }?.let(::add)
+    }.joinToString(" · ")
+}
+
+private fun releaseNotesTargetMarkers(
+    target: GitHubReleaseNotesTarget,
+    stableMarker: String,
+    prereleaseMarker: String,
+    latestMarker: String
+): String {
+    return buildList {
+        add(
+            if (target.prerelease) {
+                prereleaseMarker
+            } else {
+                stableMarker
+            }
+        )
+        if (target.latestInChannel) {
+            add(latestMarker)
+        }
+    }.joinToString(" · ")
 }
 
 private fun buildArtifactCopyPayload(

@@ -39,6 +39,18 @@ data class GitHubReleaseAssetBundle(
     val sourceConfigSignature: String = ""
 )
 
+data class GitHubReleaseNotesTarget(
+    val releaseName: String,
+    val tagName: String,
+    val htmlUrl: String,
+    val prerelease: Boolean,
+    val latestInChannel: Boolean,
+    val updatedAtMillis: Long? = null
+) {
+    val id: String
+        get() = "${tagName.trim()}|${htmlUrl.trim()}"
+}
+
 object GitHubReleaseAssetFetchSources {
     const val HTML = "html"
     const val API = "api"
@@ -269,6 +281,22 @@ object GitHubReleaseAssetRepository {
         }
     }
 
+    suspend fun fetchReleaseNotesTargetsAsync(
+        owner: String,
+        repo: String,
+        apiToken: String = "",
+        stableLimit: Int = 2,
+        prereleaseLimit: Int = 2
+    ): Result<List<GitHubReleaseNotesTarget>> {
+        return withReleaseList(owner, repo, apiToken) { releases ->
+            buildReleaseNotesTargets(
+                releases = releases,
+                stableLimit = stableLimit,
+                prereleaseLimit = prereleaseLimit
+            )
+        }
+    }
+
     fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,
         useApiAssetUrl: Boolean,
@@ -393,6 +421,55 @@ object GitHubReleaseAssetRepository {
                 )
         }
         return fallback.takeIf { it.isSuccess } ?: byTag
+    }
+
+    private fun <T> withReleaseList(
+        owner: String,
+        repo: String,
+        apiToken: String,
+        block: (JSONArray) -> T
+    ): Result<T> = runCatching {
+        val releases = apiClient.fetchReleaseList(owner, repo, apiToken).getOrThrow()
+        block(releases)
+    }
+
+    private fun buildReleaseNotesTargets(
+        releases: JSONArray,
+        stableLimit: Int,
+        prereleaseLimit: Int
+    ): List<GitHubReleaseNotesTarget> {
+        val targets = buildList {
+            for (index in 0 until releases.length()) {
+                val release = releases.optJSONObject(index) ?: continue
+                if (release.optBoolean("draft", false)) continue
+                val tagName = release.optString("tag_name").trim()
+                val htmlUrl = release.optString("html_url").trim()
+                if (tagName.isBlank() || htmlUrl.isBlank()) continue
+                add(
+                    GitHubReleaseNotesTarget(
+                        releaseName = release.optString("name").trim().ifBlank { tagName },
+                        tagName = tagName,
+                        htmlUrl = htmlUrl,
+                        prerelease = release.optBoolean("prerelease", false),
+                        latestInChannel = false,
+                        updatedAtMillis = release.optString("published_at").trim()
+                            .parseIsoInstantOrNull()
+                            ?: release.optString("created_at").trim().parseIsoInstantOrNull()
+                    )
+                )
+            }
+        }
+        val stable = targets
+            .filter { !it.prerelease }
+            .take(stableLimit.coerceAtLeast(0))
+            .mapIndexed { index, target -> target.copy(latestInChannel = index == 0) }
+        val prerelease = targets
+            .filter { it.prerelease }
+            .take(prereleaseLimit.coerceAtLeast(0))
+            .mapIndexed { index, target -> target.copy(latestInChannel = index == 0) }
+        return (stable + prerelease)
+            .distinctBy { it.id.lowercase(Locale.ROOT) }
+            .sortedByDescending { it.updatedAtMillis ?: 0L }
     }
 
     private fun fetchReleaseFromHtml(

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsBranchOption
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
@@ -180,6 +181,9 @@ internal class GitHubPageState(
     val apkAssetIncludeAll = mutableStateMapOf<String, Boolean>()
     val releaseNotesLoading = mutableStateMapOf<String, Boolean>()
     val releaseNotesErrors = mutableStateMapOf<String, String>()
+    val releaseNotesTargets = mutableStateMapOf<String, List<GitHubReleaseNotesTarget>>()
+    val releaseNotesSelectedTargets = mutableStateMapOf<String, GitHubReleaseNotesTarget>()
+    val releaseNotesBundles = mutableStateMapOf<String, GitHubReleaseAssetBundle>()
     val apkInfoLoading = mutableStateMapOf<String, Boolean>()
     val apkInfoErrors = mutableStateMapOf<String, String>()
     val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
@@ -253,6 +257,9 @@ internal class GitHubPageState(
         apkAssetIncludeAll.clear()
         releaseNotesLoading.clear()
         releaseNotesErrors.clear()
+        releaseNotesTargets.clear()
+        releaseNotesSelectedTargets.clear()
+        releaseNotesBundles.clear()
         apkInfoLoading.clear()
         apkInfoErrors.clear()
         apkInfoResults.clear()
@@ -266,6 +273,9 @@ internal class GitHubPageState(
         apkAssetBundles.remove(itemId)
         releaseNotesLoading.remove(itemId)
         releaseNotesErrors.remove(itemId)
+        releaseNotesTargets.remove(itemId)
+        releaseNotesSelectedTargets.remove(itemId)
+        releaseNotesBundles.remove(itemId)
     }
 
     fun clearAssetUiState(itemId: String) {
@@ -286,6 +296,9 @@ internal class GitHubPageState(
         apkAssetBundles.keys.retainAll(validItemIds)
         releaseNotesLoading.keys.retainAll(validItemIds)
         releaseNotesErrors.keys.retainAll(validItemIds)
+        releaseNotesTargets.keys.retainAll(validItemIds)
+        releaseNotesSelectedTargets.keys.retainAll(validItemIds)
+        releaseNotesBundles.keys.retainAll(validItemIds)
     }
 
     fun recordTrackedFirstInstallAt(packageName: String, firstInstallAtMillis: Long) {

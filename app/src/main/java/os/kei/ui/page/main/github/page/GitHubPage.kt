@@ -246,18 +246,16 @@ fun GitHubPage(
                 )
             },
             onOpenDecisionAssistDetail = { type, item ->
+                val itemState = state.checkStates[item.id] ?: VersionCheckUi()
                 state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
                     type = type,
                     item = item
                 )
-                if (
-                    type == GitHubDecisionAssistDetailType.ReleaseNotes &&
-                    state.apkAssetBundles[item.id]?.releaseNotesBody.isNullOrBlank()
-                ) {
-                    actions.loadReleaseNotes(
+                if (type == GitHubDecisionAssistDetailType.ReleaseNotes) {
+                    actions.loadReleaseNotesTargets(
                         item = item,
-                        itemState = state.checkStates[item.id] ?: VersionCheckUi(),
-                        clearCache = false
+                        itemState = itemState,
+                        forceRefresh = false
                     )
                 }
             },

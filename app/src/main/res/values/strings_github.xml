@@ -892,8 +892,12 @@
     <string name="github_profile_source_required">必需</string>
     <string name="github_release_notes_detail_title">Release Notes</string>
     <string name="github_release_notes_detail_refreshing">正在刷新 release assets 和 release notes</string>
+    <string name="github_release_notes_detail_release">Release</string>
     <string name="github_release_notes_detail_repo">仓库</string>
     <string name="github_release_notes_detail_source">来源</string>
+    <string name="github_release_notes_marker_stable">稳定版</string>
+    <string name="github_release_notes_marker_prerelease">预发布</string>
+    <string name="github_release_notes_marker_latest">Latest</string>
     <string name="github_release_notes_source_api">API：结构化 Release 数据</string>
     <string name="github_release_notes_source_atom">Atom：网页 Release 解析</string>
     <string name="github_release_notes_detail_target_latest">当前 Release</string>

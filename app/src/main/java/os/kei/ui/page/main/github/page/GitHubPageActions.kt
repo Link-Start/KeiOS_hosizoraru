@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -412,6 +413,24 @@ internal class GitHubPageActions(
         item = item,
         itemState = itemState,
         clearCache = clearCache
+    )
+
+    fun loadReleaseNotesTargets(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+        forceRefresh: Boolean = false
+    ) = assetActions.loadReleaseNotesTargets(
+        item = item,
+        itemState = itemState,
+        forceRefresh = forceRefresh
+    )
+
+    fun selectReleaseNotesTarget(
+        item: GitHubTrackedApp,
+        target: GitHubReleaseNotesTarget
+    ) = assetActions.selectReleaseNotesTarget(
+        item = item,
+        target = target
     )
 
     fun openTrackSheetForAdd() = trackActions.openTrackSheetForAdd()

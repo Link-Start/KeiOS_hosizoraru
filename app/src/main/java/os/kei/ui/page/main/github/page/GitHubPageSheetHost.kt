@@ -180,8 +180,22 @@ internal fun GitHubPageSheetHost(
         versionState = state.decisionAssistDetailRequest?.item?.id
             ?.let { state.checkStates[it] }
             ?: os.kei.ui.page.main.github.VersionCheckUi(),
-        assetBundle = state.decisionAssistDetailRequest?.item?.id
-            ?.let { state.apkAssetBundles[it] },
+        assetBundle = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.id
+            ?.let { state.releaseNotesBundles[it] },
+        releaseNotesTargets = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.id
+            ?.let { state.releaseNotesTargets[it] }
+            .orEmpty(),
+        selectedReleaseNotesTarget = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.id
+            ?.let { state.releaseNotesSelectedTargets[it] },
         assetLoading = state.decisionAssistDetailRequest
             ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
             ?.item
@@ -213,6 +227,9 @@ internal fun GitHubPageSheetHost(
                 itemState = itemState,
                 clearCache = true
             )
+        },
+        onSelectReleaseNotesTarget = { item, target ->
+            actions.selectReleaseNotesTarget(item, target)
         },
         onOpenExternalUrl = actions::openExternalUrl
     )

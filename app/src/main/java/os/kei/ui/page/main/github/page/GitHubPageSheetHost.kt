@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import androidx.compose.runtime.Composable
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -196,6 +197,18 @@ internal fun GitHubPageSheetHost(
             ?.item
             ?.id
             ?.let { state.releaseNotesSelectedTargets[it] },
+        releaseNotesApkVersion = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.let { item ->
+                state.releaseNotesSelectedTargets[item.id]?.let { target ->
+                    state.releaseNotesApkVersions[releaseNotesApkVersionKey(item.id, target)]
+                }
+            },
+        preciseApkVersionEnabled = state.decisionAssistDetailRequest
+            ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
+            ?.item
+            ?.let { state.lookupConfig.forTrackedItem(it).preciseApkVersionEnabled } == true,
         assetLoading = state.decisionAssistDetailRequest
             ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
             ?.item

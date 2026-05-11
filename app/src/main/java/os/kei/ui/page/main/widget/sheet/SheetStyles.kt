@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -281,6 +282,10 @@ fun SheetSummaryCard(
     containerColor: Color? = null,
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
     verticalSpacing: Dp = 8.dp,
+    titleMaxLines: Int = 1,
+    titleOverflow: TextOverflow = TextOverflow.Ellipsis,
+    titleFontSize: TextUnit = AppTypographyTokens.CardHeader.fontSize,
+    titleLineHeight: TextUnit = AppTypographyTokens.CardHeader.lineHeight,
     headerTrailing: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -299,10 +304,10 @@ fun SheetSummaryCard(
                     text = title,
                     color = accentColor,
                     fontWeight = AppTypographyTokens.CardHeader.fontWeight,
-                    fontSize = AppTypographyTokens.CardHeader.fontSize,
-                    lineHeight = AppTypographyTokens.CardHeader.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    fontSize = titleFontSize,
+                    lineHeight = titleLineHeight,
+                    maxLines = titleMaxLines,
+                    overflow = titleOverflow,
                     modifier = Modifier.weight(1f)
                 )
                 badgeLabel?.let { label ->

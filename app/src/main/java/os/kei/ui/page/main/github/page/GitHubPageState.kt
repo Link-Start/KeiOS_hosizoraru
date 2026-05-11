@@ -35,6 +35,7 @@ import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubProfileDepth
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -187,6 +188,7 @@ internal class GitHubPageState(
     val releaseNotesTargets = mutableStateMapOf<String, List<GitHubReleaseNotesTarget>>()
     val releaseNotesSelectedTargets = mutableStateMapOf<String, GitHubReleaseNotesTarget>()
     val releaseNotesBundles = mutableStateMapOf<String, GitHubReleaseAssetBundle>()
+    val releaseNotesApkVersions = mutableStateMapOf<String, GitHubRemoteApkVersionInfo>()
     val apkInfoLoading = mutableStateMapOf<String, Boolean>()
     val apkInfoErrors = mutableStateMapOf<String, String>()
     val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
@@ -279,6 +281,7 @@ internal class GitHubPageState(
         releaseNotesTargets.clear()
         releaseNotesSelectedTargets.clear()
         releaseNotesBundles.clear()
+        releaseNotesApkVersions.clear()
         apkInfoLoading.clear()
         apkInfoErrors.clear()
         apkInfoResults.clear()
@@ -295,6 +298,7 @@ internal class GitHubPageState(
         releaseNotesTargets.remove(itemId)
         releaseNotesSelectedTargets.remove(itemId)
         releaseNotesBundles.remove(itemId)
+        releaseNotesApkVersions.keys.removeAll { key -> key.startsWith("$itemId|") }
     }
 
     fun clearAssetUiState(itemId: String) {
@@ -318,6 +322,9 @@ internal class GitHubPageState(
         releaseNotesTargets.keys.retainAll(validItemIds)
         releaseNotesSelectedTargets.keys.retainAll(validItemIds)
         releaseNotesBundles.keys.retainAll(validItemIds)
+        releaseNotesApkVersions.keys.removeAll { key ->
+            validItemIds.none { itemId -> key.startsWith("$itemId|") }
+        }
     }
 
     fun recordTrackedFirstInstallAt(packageName: String, firstInstallAtMillis: Long) {
@@ -461,6 +468,14 @@ internal data class GitHubActionsArtifactDetailRequest(
 
 internal fun GitHubReleaseAssetFile.githubApkInfoKey(): String {
     return listOf(name, downloadUrl, apiAssetUrl, sizeBytes.toString()).joinToString("|")
+}
+
+internal fun releaseNotesApkVersionKey(itemId: String, target: GitHubReleaseNotesTarget): String {
+    return listOf(
+        itemId.trim(),
+        target.tagName.trim(),
+        target.htmlUrl.trim()
+    ).joinToString("|")
 }
 
 @Composable

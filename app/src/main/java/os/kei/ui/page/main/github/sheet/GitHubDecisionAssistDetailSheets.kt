@@ -28,6 +28,7 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
@@ -70,6 +71,8 @@ internal fun GitHubDecisionAssistDetailSheet(
     assetBundle: GitHubReleaseAssetBundle?,
     releaseNotesTargets: List<GitHubReleaseNotesTarget> = emptyList(),
     selectedReleaseNotesTarget: GitHubReleaseNotesTarget? = null,
+    releaseNotesApkVersion: GitHubRemoteApkVersionInfo? = null,
+    preciseApkVersionEnabled: Boolean = false,
     assetLoading: Boolean,
     assetError: String,
     healthRefreshing: Boolean = false,
@@ -137,6 +140,8 @@ internal fun GitHubDecisionAssistDetailSheet(
                 assetBundle = assetBundle,
                 releaseNotesTargets = releaseNotesTargets,
                 selectedReleaseNotesTarget = selectedReleaseNotesTarget,
+                releaseNotesApkVersion = releaseNotesApkVersion,
+                preciseApkVersionEnabled = preciseApkVersionEnabled,
                 assetLoading = assetLoading,
                 assetError = assetError,
                 onSelectReleaseNotesTarget = { target ->
@@ -311,6 +316,8 @@ private fun GitHubReleaseNotesDetailContent(
     assetBundle: GitHubReleaseAssetBundle?,
     releaseNotesTargets: List<GitHubReleaseNotesTarget>,
     selectedReleaseNotesTarget: GitHubReleaseNotesTarget?,
+    releaseNotesApkVersion: GitHubRemoteApkVersionInfo?,
+    preciseApkVersionEnabled: Boolean,
     assetLoading: Boolean,
     assetError: String,
     onSelectReleaseNotesTarget: (GitHubReleaseNotesTarget) -> Unit,
@@ -327,6 +334,13 @@ private fun GitHubReleaseNotesDetailContent(
     var releaseDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val selectedTarget = selectedReleaseNotesTarget
         ?: releaseNotesTargets.firstOrNull()
+    val selectedApkVersionLabel = releaseNotesSelectedApkVersionLabel(
+        state = state,
+        assetBundle = assetBundle,
+        selectedTarget = selectedTarget,
+        releaseNotesApkVersion = releaseNotesApkVersion,
+        preciseApkVersionEnabled = preciseApkVersionEnabled
+    )
     val selectedIndex = releaseNotesTargets.indexOfFirst { it.id == selectedTarget?.id }
         .coerceAtLeast(0)
     val stableMarker = stringResource(R.string.github_release_notes_marker_stable)
@@ -348,7 +362,11 @@ private fun GitHubReleaseNotesDetailContent(
             badgeLabel = assetBundle?.tagName?.takeIf { it.isNotBlank() }
                 ?: selectedTarget?.tagName?.takeIf { it.isNotBlank() }
                 ?: state.latestStableRawTag.ifBlank { state.latestPreRawTag.ifBlank { null } },
-            badgeColor = GitHubStatusPalette.Active
+            badgeColor = GitHubStatusPalette.Active,
+            titleMaxLines = 2,
+            titleOverflow = TextOverflow.Clip,
+            titleFontSize = AppTypographyTokens.Body.fontSize,
+            titleLineHeight = AppTypographyTokens.Body.lineHeight
         ) {
             DetailInfoRow(
                 label = stringResource(R.string.github_release_notes_detail_release),
@@ -360,8 +378,16 @@ private fun GitHubReleaseNotesDetailContent(
                         latestMarker = latestMarker
                     )
                 }
-                    ?: stringResource(R.string.github_release_notes_detail_target_latest)
+                    ?: stringResource(R.string.github_release_notes_detail_target_latest),
+                valueMaxLines = Int.MAX_VALUE
             )
+            if (selectedApkVersionLabel.isNotBlank()) {
+                DetailInfoRow(
+                    label = stringResource(R.string.github_apk_info_label_version),
+                    value = selectedApkVersionLabel,
+                    valueMaxLines = Int.MAX_VALUE
+                )
+            }
             DetailInfoRow(
                 label = stringResource(R.string.github_release_notes_detail_repo),
                 value = "${item.owner}/${item.repo}"
@@ -392,6 +418,16 @@ private fun GitHubReleaseNotesDetailContent(
                 },
                 onAnchorBoundsChange = { releaseDropdownAnchorBounds = it },
                 backdrop = backdrop,
+                modifier = Modifier.fillMaxWidth(),
+                anchorFillMaxWidth = true,
+                anchorTextMaxLines = 3,
+                anchorTextOverflow = TextOverflow.Clip,
+                anchorTextSoftWrap = true,
+                anchorTextSize = AppTypographyTokens.Supporting.fontSize,
+                anchorTextLineHeight = AppTypographyTokens.Supporting.lineHeight,
+                dropdownItemTextMaxLines = 4,
+                popupMaxWidth = null,
+                popupMatchAnchorWidth = true,
                 alignment = PopupPositionProvider.Align.BottomStart
             )
         }
@@ -431,6 +467,59 @@ private fun GitHubReleaseNotesDetailContent(
     }
 }
 
+private fun releaseNotesSelectedApkVersionLabel(
+    state: VersionCheckUi,
+    assetBundle: GitHubReleaseAssetBundle?,
+    selectedTarget: GitHubReleaseNotesTarget?,
+    releaseNotesApkVersion: GitHubRemoteApkVersionInfo?,
+    preciseApkVersionEnabled: Boolean
+): String {
+    if (!preciseApkVersionEnabled) return ""
+    releaseNotesApkVersion?.versionLabel()?.takeIf { it.isNotBlank() }?.let { return it }
+    val selectedTag = selectedTarget?.tagName?.trim().orEmpty()
+        .ifBlank { assetBundle?.tagName?.trim().orEmpty() }
+    val selectedUrl = selectedTarget?.htmlUrl?.trim().orEmpty()
+        .ifBlank { assetBundle?.htmlUrl?.trim().orEmpty() }
+    val selectedIsPreRelease = selectedTarget?.prerelease
+        ?: selectedTag.equals(state.latestPreRawTag, ignoreCase = true)
+    val versionInfo = when {
+        selectedIsPreRelease && releaseNotesTargetMatches(
+            selectedTag = selectedTag,
+            selectedUrl = selectedUrl,
+            rawTag = state.latestPreRawTag,
+            releaseUrl = state.latestPreUrl
+        ) -> state.latestPreApkVersion
+
+        !selectedIsPreRelease && releaseNotesTargetMatches(
+            selectedTag = selectedTag,
+            selectedUrl = selectedUrl,
+            rawTag = state.latestStableRawTag.ifBlank { state.latestTag },
+            releaseUrl = state.latestStableUrl
+        ) -> state.latestStableApkVersion
+
+        else -> null
+    }
+    return versionInfo?.versionLabel().orEmpty()
+}
+
+private fun releaseNotesTargetMatches(
+    selectedTag: String,
+    selectedUrl: String,
+    rawTag: String,
+    releaseUrl: String
+): Boolean {
+    val tag = rawTag.trim()
+    val url = releaseUrl.trim()
+    return (selectedTag.isNotBlank() && tag.isNotBlank() && selectedTag.equals(
+        tag,
+        ignoreCase = true
+    )) ||
+            (selectedUrl.isNotBlank() && url.isNotBlank() && selectedUrl.equals(
+                url,
+                ignoreCase = true
+            ))
+}
+
 @Composable
 private fun releaseNotesBodyContainerColor(): Color {
     return MiuixTheme.colorScheme.surface.copy(alpha = 0.96f)
@@ -449,10 +538,14 @@ private fun releaseNotesTargetDropdownLabel(
         latestMarker = latestMarker
     )
     val name = target.releaseName.ifBlank { target.tagName }
-    return if (markers.isBlank()) {
+    val tagLine = buildList {
+        target.tagName.takeIf { it.isNotBlank() && it != name }?.let(::add)
+        markers.takeIf { it.isNotBlank() }?.let(::add)
+    }.joinToString(" · ")
+    return if (tagLine.isBlank()) {
         name
     } else {
-        "$name · $markers"
+        "$name\n$tagLine"
     }
 }
 
@@ -512,7 +605,8 @@ private fun buildArtifactCopyPayload(
 @Composable
 private fun DetailInfoRow(
     label: String,
-    value: String
+    value: String,
+    valueMaxLines: Int = 2
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -534,7 +628,7 @@ private fun DetailInfoRow(
             color = MiuixTheme.colorScheme.onBackground,
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 2,
+            maxLines = valueMaxLines,
             overflow = TextOverflow.Ellipsis
         )
     }

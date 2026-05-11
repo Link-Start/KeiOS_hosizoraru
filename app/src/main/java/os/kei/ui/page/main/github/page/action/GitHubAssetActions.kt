@@ -8,16 +8,21 @@ import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
+import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.page.githubApkInfoKey
+import os.kei.ui.page.main.github.page.releaseNotesApkVersionKey
 import os.kei.ui.page.main.github.statusActionUrl
 
 internal class GitHubAssetActions(
@@ -414,6 +419,14 @@ internal class GitHubAssetActions(
         itemState: VersionCheckUi,
         clearCache: Boolean
     ) {
+        if (clearCache) {
+            loadReleaseNotesTargets(
+                item = item,
+                itemState = itemState,
+                forceRefresh = true
+            )
+            return
+        }
         val selectedTarget = state.releaseNotesSelectedTargets[item.id]
         if (selectedTarget == null) {
             loadReleaseNotesTargets(
@@ -457,7 +470,8 @@ internal class GitHubAssetActions(
                     return@launch
                 }
             }
-            val selectedTarget = selectDefaultReleaseNotesTarget(
+            val selectedTarget = selectRefreshedReleaseNotesTarget(
+                previousTarget = cachedSelected,
                 targets = remoteTargets,
                 preferPreRelease = item.preferPreRelease
             )
@@ -470,6 +484,9 @@ internal class GitHubAssetActions(
             state.releaseNotesTargets[item.id] = remoteTargets
             state.releaseNotesSelectedTargets[item.id] = selectedTarget
             state.releaseNotesBundles.remove(item.id)
+            if (forceRefresh) {
+                state.releaseNotesApkVersions.keys.removeAll { key -> key.startsWith("${item.id}|") }
+            }
             loadReleaseNotesBundle(
                 item = item,
                 target = selectedTarget,
@@ -504,6 +521,13 @@ internal class GitHubAssetActions(
         ) {
             state.releaseNotesLoading[item.id] = false
             state.releaseNotesErrors.remove(item.id)
+            resolveReleaseNotesApkVersionIfNeeded(
+                item = item,
+                target = target,
+                bundle = cachedBundle,
+                lookupConfig = lookupConfig,
+                forceRefresh = false
+            )
             return
         }
         state.releaseNotesLoading[item.id] = true
@@ -537,6 +561,13 @@ internal class GitHubAssetActions(
             ) {
                 state.releaseNotesLoading[item.id] = false
                 state.releaseNotesBundles[item.id] = persistedBundle
+                resolveReleaseNotesApkVersionIfNeeded(
+                    item = item,
+                    target = target,
+                    bundle = persistedBundle,
+                    lookupConfig = lookupConfig,
+                    forceRefresh = false
+                )
                 return@launch
             } else if (persistedBundle != null) {
                 repository.clearAssetCache(cacheKey)
@@ -558,6 +589,13 @@ internal class GitHubAssetActions(
                 state.releaseNotesLoading[item.id] = false
                 state.releaseNotesBundles[item.id] = persisted
                 repository.saveAssetBundle(cacheKey, persisted)
+                resolveReleaseNotesApkVersionIfNeeded(
+                    item = item,
+                    target = target,
+                    bundle = persisted,
+                    lookupConfig = lookupConfig,
+                    forceRefresh = clearCache
+                )
             }.onFailure { error ->
                 if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
                 state.releaseNotesLoading[item.id] = false
@@ -605,6 +643,84 @@ internal class GitHubAssetActions(
         }.distinctBy { it.id.lowercase() }
     }
 
+    private fun resolveReleaseNotesApkVersionIfNeeded(
+        item: GitHubTrackedApp,
+        target: GitHubReleaseNotesTarget,
+        bundle: GitHubReleaseAssetBundle,
+        lookupConfig: GitHubLookupConfig,
+        forceRefresh: Boolean
+    ) {
+        if (!lookupConfig.preciseApkVersionEnabled) return
+        val key = releaseNotesApkVersionKey(item.id, target)
+        if (!forceRefresh && state.releaseNotesApkVersions[key]?.hasVersion() == true) return
+        val apkAssets = bundle.assets
+            .filter { asset -> asset.name.endsWith(".apk", ignoreCase = true) }
+            .take(MAX_RELEASE_NOTES_APK_VERSION_CANDIDATES)
+        if (apkAssets.isEmpty()) return
+        scope.launch {
+            val resolved = resolveReleaseNotesApkVersion(
+                item = item,
+                target = target,
+                bundle = bundle,
+                apkAssets = apkAssets,
+                lookupConfig = lookupConfig,
+                forceRefresh = forceRefresh
+            )
+            if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@launch
+            resolved?.takeIf { it.hasVersion() }?.let { state.releaseNotesApkVersions[key] = it }
+        }
+    }
+
+    private suspend fun resolveReleaseNotesApkVersion(
+        item: GitHubTrackedApp,
+        target: GitHubReleaseNotesTarget,
+        bundle: GitHubReleaseAssetBundle,
+        apkAssets: List<GitHubReleaseAssetFile>,
+        lookupConfig: GitHubLookupConfig,
+        forceRefresh: Boolean
+    ): GitHubRemoteApkVersionInfo? {
+        val inspected = GitHubExecution.mapOrderedBounded(
+            items = apkAssets,
+            maxConcurrency = MAX_RELEASE_NOTES_APK_VERSION_PARALLEL
+        ) { asset ->
+            asset to apkInfoRepository.inspectAsync(
+                asset = asset,
+                lookupConfig = lookupConfig,
+                forceRefresh = forceRefresh
+            )
+        }
+        val requestedPackageName = item.packageName.trim()
+        val matched = inspected.firstNotNullOfOrNull { (asset, result) ->
+            result.getOrNull()
+                ?.takeIf { info ->
+                    info.versionName.isNotBlank() || info.versionCode.isNotBlank()
+                }
+                ?.takeIf { info ->
+                    requestedPackageName.isBlank() ||
+                            info.packageName.equals(requestedPackageName, ignoreCase = true)
+                }
+                ?.let { info -> asset to info }
+        }
+        val fallback = inspected.firstNotNullOfOrNull { (asset, result) ->
+            result.getOrNull()
+                ?.takeIf { info ->
+                    info.versionName.isNotBlank() || info.versionCode.isNotBlank()
+                }
+                ?.let { info -> asset to info }
+        }
+        val (asset, info) = matched ?: fallback ?: return null
+        return GitHubRemoteApkVersionInfo(
+            releaseName = bundle.releaseName.ifBlank { target.releaseName },
+            releaseTag = bundle.tagName.ifBlank { target.tagName },
+            releaseUrl = bundle.htmlUrl.ifBlank { target.htmlUrl },
+            assetName = asset.name,
+            packageName = info.packageName,
+            versionName = info.versionName,
+            versionCode = info.versionCode,
+            fetchSource = info.fetchSource.ifBlank { bundle.fetchSource }
+        )
+    }
+
     private fun selectDefaultReleaseNotesTarget(
         targets: List<GitHubReleaseNotesTarget>,
         preferPreRelease: Boolean
@@ -617,6 +733,27 @@ internal class GitHubAssetActions(
                 ?: targets.firstOrNull { !it.prerelease }
         }
         return preferred ?: targets.firstOrNull()
+    }
+
+    private fun selectRefreshedReleaseNotesTarget(
+        previousTarget: GitHubReleaseNotesTarget?,
+        targets: List<GitHubReleaseNotesTarget>,
+        preferPreRelease: Boolean
+    ): GitHubReleaseNotesTarget? {
+        previousTarget?.let { previous ->
+            targets.firstOrNull { it.id.equals(previous.id, ignoreCase = true) }?.let { return it }
+            targets.firstOrNull {
+                it.tagName.equals(previous.tagName, ignoreCase = true) &&
+                        it.htmlUrl.equals(previous.htmlUrl, ignoreCase = true)
+            }?.let { return it }
+            targets.firstOrNull {
+                it.tagName.equals(previous.tagName, ignoreCase = true)
+            }?.let { return it }
+        }
+        return selectDefaultReleaseNotesTarget(
+            targets = targets,
+            preferPreRelease = preferPreRelease
+        )
     }
 
     private suspend fun resolvePreferredAssetUrl(asset: GitHubReleaseAssetFile): String {
@@ -728,5 +865,10 @@ internal class GitHubAssetActions(
                 label
             )
         }
+    }
+
+    private companion object {
+        const val MAX_RELEASE_NOTES_APK_VERSION_CANDIDATES = 4
+        const val MAX_RELEASE_NOTES_APK_VERSION_PARALLEL = 2
     }
 }

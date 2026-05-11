@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -219,7 +220,8 @@ fun LiquidGlassDropdownItem(
     enabled: Boolean = true,
     highlighted: Boolean = selected,
     showCheck: Boolean = selected,
-    highlightContent: Boolean = selected && showCheck
+    highlightContent: Boolean = selected && showCheck,
+    textMaxLines: Int = 1
 ) {
     if (LocalLiquidGlassDropdownSizingPass.current) {
         LiquidGlassDropdownMeasureItem(
@@ -234,7 +236,8 @@ fun LiquidGlassDropdownItem(
             variant = variant,
             highlighted = highlighted,
             showCheck = showCheck,
-            highlightContent = highlightContent
+            highlightContent = highlightContent,
+            textMaxLines = textMaxLines
         )
         return
     }
@@ -296,7 +299,8 @@ fun LiquidGlassDropdownItem(
                 showCheck = showCheck,
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
-                modifier = Modifier.matchParentSize()
+                modifier = if (textMaxLines == 1) Modifier.matchParentSize() else Modifier.fillMaxWidth(),
+                textMaxLines = textMaxLines
             )
         }
     } else {
@@ -368,7 +372,8 @@ fun LiquidGlassDropdownItem(
                 showCheck = showCheck,
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
-                modifier = Modifier.matchParentSize()
+                modifier = if (textMaxLines == 1) Modifier.matchParentSize() else Modifier.fillMaxWidth(),
+                textMaxLines = textMaxLines
             )
             if (pressedAlpha > 0f) {
                 Box(
@@ -397,7 +402,8 @@ private fun LiquidGlassDropdownMeasureItem(
     variant: GlassVariant = GlassVariant.SheetAction,
     highlighted: Boolean = selected,
     showCheck: Boolean = selected,
-    highlightContent: Boolean = selected && showCheck
+    highlightContent: Boolean = selected && showCheck,
+    textMaxLines: Int = 1
 ) {
     val isDark = isSystemInDarkTheme()
     val itemAccent = liquidGlassDropdownItemAccent(
@@ -432,7 +438,8 @@ private fun LiquidGlassDropdownMeasureItem(
             showCheck = showCheck,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
-            modifier = Modifier.matchParentSize()
+            modifier = if (textMaxLines == 1) Modifier.matchParentSize() else Modifier.fillMaxWidth(),
+            textMaxLines = textMaxLines
         )
     }
 }
@@ -446,8 +453,14 @@ private fun LiquidGlassDropdownRowContent(
     showCheck: Boolean,
     leadingIcon: ImageVector?,
     trailingIcon: ImageVector?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textMaxLines: Int = 1
 ) {
+    val textTypography = if (textMaxLines == 1) {
+        AppTypographyTokens.Body
+    } else {
+        AppTypographyTokens.Supporting
+    }
     Row(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -464,11 +477,11 @@ private fun LiquidGlassDropdownRowContent(
         Text(
             text = text,
             color = textColor,
-            fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight,
+            fontSize = textTypography.fontSize,
+            lineHeight = textTypography.lineHeight,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = textMaxLines,
+            overflow = if (textMaxLines == 1) TextOverflow.Ellipsis else TextOverflow.Clip,
             modifier = Modifier.weight(1f)
         )
         if (trailingIcon != null) {
@@ -502,7 +515,8 @@ fun LiquidGlassDropdownSingleChoiceItem(
     trailingIcon: ImageVector? = null,
     accentColor: Color = MiuixTheme.colorScheme.primary,
     variant: GlassVariant = GlassVariant.SheetAction,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    textMaxLines: Int = 1
 ) {
     LiquidGlassDropdownItem(
         text = text,
@@ -518,7 +532,8 @@ fun LiquidGlassDropdownSingleChoiceItem(
         enabled = enabled,
         highlighted = isSelected,
         showCheck = isSelected,
-        highlightContent = isSelected
+        highlightContent = isSelected,
+        textMaxLines = textMaxLines
     )
 }
 
@@ -532,7 +547,8 @@ fun LiquidGlassDropdownSingleChoiceList(
     trailingIcon: ImageVector? = null,
     accentColor: Color = MiuixTheme.colorScheme.primary,
     variant: GlassVariant = GlassVariant.SheetAction,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    textMaxLines: Int = 1
 ) {
     options.forEachIndexed { index, option ->
         LiquidGlassDropdownSingleChoiceItem(
@@ -546,7 +562,8 @@ fun LiquidGlassDropdownSingleChoiceList(
             trailingIcon = trailingIcon,
             accentColor = accentColor,
             variant = variant,
-            enabled = enabled
+            enabled = enabled,
+            textMaxLines = textMaxLines
         )
     }
 }

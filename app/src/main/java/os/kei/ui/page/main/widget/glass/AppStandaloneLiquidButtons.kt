@@ -10,13 +10,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -40,6 +43,9 @@ fun AppStandaloneLiquidTextButton(
     textMaxLines: Int = Int.MAX_VALUE,
     textOverflow: TextOverflow = TextOverflow.Clip,
     textSoftWrap: Boolean = true,
+    textSize: TextUnit = AppTypographyTokens.Body.fontSize,
+    textLineHeight: TextUnit = AppTypographyTokens.Body.lineHeight,
+    textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
     pressScaleEnabled: Boolean = true,
     pressOverlayEnabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified
@@ -75,6 +81,9 @@ fun AppStandaloneLiquidTextButton(
             textMaxLines = textMaxLines,
             textOverflow = textOverflow,
             textSoftWrap = textSoftWrap,
+            textSize = textSize,
+            textLineHeight = textLineHeight,
+            textFontWeight = textFontWeight,
             pressScaleEnabled = pressScaleEnabled,
             pressOverlayEnabled = pressOverlayEnabled
         )

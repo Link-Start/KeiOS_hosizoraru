@@ -1,14 +1,18 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -42,7 +46,13 @@ fun AppDropdownAnchorButton(
     textColor: Color = MiuixTheme.colorScheme.primary,
     minHeight: Dp = AppInteractiveTokens.compactAppLiquidTextButtonMinHeight,
     horizontalPadding: Dp = 10.dp,
-    verticalPadding: Dp = 6.dp
+    verticalPadding: Dp = 6.dp,
+    textMaxLines: Int = 1,
+    textOverflow: TextOverflow = TextOverflow.Ellipsis,
+    textSoftWrap: Boolean = false,
+    textSize: TextUnit = AppTypographyTokens.Body.fontSize,
+    textLineHeight: TextUnit = AppTypographyTokens.Body.lineHeight,
+    textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight
 ) {
     val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
     if (backdrop != null) {
@@ -58,9 +68,12 @@ fun AppDropdownAnchorButton(
             minHeight = minHeight,
             horizontalPadding = horizontalPadding,
             verticalPadding = verticalPadding,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-            textSoftWrap = false
+            textMaxLines = textMaxLines,
+            textOverflow = textOverflow,
+            textSoftWrap = textSoftWrap,
+            textSize = textSize,
+            textLineHeight = textLineHeight,
+            textFontWeight = textFontWeight
         )
     } else {
         AppStandaloneLiquidTextButton(
@@ -74,9 +87,12 @@ fun AppDropdownAnchorButton(
             minHeight = minHeight,
             horizontalPadding = horizontalPadding,
             verticalPadding = verticalPadding,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-            textSoftWrap = false
+            textMaxLines = textMaxLines,
+            textOverflow = textOverflow,
+            textSoftWrap = textSoftWrap,
+            textSize = textSize,
+            textLineHeight = textLineHeight,
+            textFontWeight = textFontWeight
         )
     }
 }
@@ -98,6 +114,16 @@ fun AppDropdownSelector(
     minHeight: Dp = AppInteractiveTokens.compactAppLiquidTextButtonMinHeight,
     horizontalPadding: Dp = 10.dp,
     verticalPadding: Dp = 6.dp,
+    anchorFillMaxWidth: Boolean = false,
+    anchorTextMaxLines: Int = 1,
+    anchorTextOverflow: TextOverflow = TextOverflow.Ellipsis,
+    anchorTextSoftWrap: Boolean = false,
+    anchorTextSize: TextUnit = AppTypographyTokens.Body.fontSize,
+    anchorTextLineHeight: TextUnit = AppTypographyTokens.Body.lineHeight,
+    anchorTextFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+    dropdownItemTextMaxLines: Int = 1,
+    popupMaxWidth: Dp? = 280.dp,
+    popupMatchAnchorWidth: Boolean = false,
     anchorAlignment: Alignment = Alignment.CenterStart,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.BottomEnd,
     placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd
@@ -109,13 +135,20 @@ fun AppDropdownSelector(
         AppDropdownAnchorButton(
             text = selectedText,
             onClick = { onExpandedChange(!expanded) },
+            modifier = if (anchorFillMaxWidth) Modifier.fillMaxWidth() else Modifier,
             backdrop = backdrop,
             variant = variant,
             enabled = options.isNotEmpty(),
             textColor = textColor,
             minHeight = minHeight,
             horizontalPadding = horizontalPadding,
-            verticalPadding = verticalPadding
+            verticalPadding = verticalPadding,
+            textMaxLines = anchorTextMaxLines,
+            textOverflow = anchorTextOverflow,
+            textSoftWrap = anchorTextSoftWrap,
+            textSize = anchorTextSize,
+            textLineHeight = anchorTextLineHeight,
+            textFontWeight = anchorTextFontWeight
         )
         if (expanded && options.isNotEmpty()) {
             SnapshotWindowListPopup(
@@ -124,7 +157,9 @@ fun AppDropdownSelector(
                 anchorBounds = anchorBounds,
                 placement = placement,
                 onDismissRequest = { onExpandedChange(false) },
-                enableWindowDim = false
+                enableWindowDim = false,
+                maxWidth = popupMaxWidth,
+                matchAnchorWidth = popupMatchAnchorWidth
             ) {
                 val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
                 AppLiquidGlassDropdownColumn(
@@ -138,7 +173,8 @@ fun AppDropdownSelector(
                         onSelectedIndexChange = onSelectedIndexChange,
                         onExpandedChange = onExpandedChange,
                         accentColor = accentColor,
-                        variant = variant
+                        variant = variant,
+                        textMaxLines = dropdownItemTextMaxLines
                     )
                 }
             }
@@ -153,7 +189,8 @@ private fun DropdownSelectorChoiceList(
     onSelectedIndexChange: (Int) -> Unit,
     onExpandedChange: (Boolean) -> Unit,
     accentColor: Color,
-    variant: GlassVariant
+    variant: GlassVariant,
+    textMaxLines: Int
 ) {
     LiquidGlassDropdownSingleChoiceList(
         options = options,
@@ -163,6 +200,7 @@ private fun DropdownSelectorChoiceList(
             onExpandedChange(false)
         },
         accentColor = accentColor,
-        variant = variant
+        variant = variant,
+        textMaxLines = textMaxLines
     )
 }

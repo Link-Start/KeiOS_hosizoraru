@@ -118,9 +118,7 @@ internal class GitHubPageState(
     var hasActiveInitialized by mutableStateOf(false)
     var lastTrackStoreSignalVersion by mutableStateOf(0L)
     var showActionMenuPopup by mutableStateOf(false)
-    var showCheckLogicIntervalPopup by mutableStateOf(false)
     var showOnlineShareTargetPopup by mutableStateOf(false)
-    var checkLogicIntervalPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
@@ -159,7 +157,6 @@ internal class GitHubPageState(
     var decisionAssistEnabledInput by mutableStateOf(false)
     var repositoryHealthCardEnabledInput by mutableStateOf(false)
     var apkTrustCheckEnabledInput by mutableStateOf(false)
-    var refreshIntervalHoursInput by mutableStateOf(refreshIntervalHours)
     var showApiTokenPlainText by mutableStateOf(false)
     var showShareImportFlowModePopup by mutableStateOf(false)
     var strategyBenchmarkRunning by mutableStateOf(false)
@@ -388,7 +385,6 @@ internal class GitHubPageState(
     }
 
     fun dismissCheckLogicSheet() {
-        showCheckLogicIntervalPopup = false
         showDownloaderPopup = false
         showOnlineShareTargetPopup = false
         showShareImportFlowModePopup = false

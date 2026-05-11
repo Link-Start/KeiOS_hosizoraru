@@ -47,7 +47,6 @@ internal class GitHubConfigActions(
     }
 
     fun openCheckLogicSheet() {
-        state.showCheckLogicIntervalPopup = false
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
         state.showShareImportFlowModePopup = false
@@ -66,7 +65,6 @@ internal class GitHubConfigActions(
             state.decisionAssistEnabledInput = config.decisionAssistEnabled
             state.repositoryHealthCardEnabledInput = config.repositoryHealthCardEnabled
             state.apkTrustCheckEnabledInput = config.apkTrustCheckEnabled
-            state.refreshIntervalHoursInput = repository.loadRefreshIntervalHours()
             state.showCheckLogicSheet = true
         }
     }
@@ -80,7 +78,6 @@ internal class GitHubConfigActions(
         scope.launch {
             repository.saveRefreshIntervalHours(normalizedHours)
             state.refreshIntervalHours = normalizedHours
-            state.refreshIntervalHoursInput = normalizedHours
             repository.scheduleGitHubRefresh(context)
             env.toast(R.string.github_toast_refresh_interval_saved)
         }
@@ -193,7 +190,6 @@ internal class GitHubConfigActions(
     fun applyCheckLogicSheet(installedOnlineShareTargets: List<OnlineShareTargetOption>) {
         scope.launch {
             val previousConfig = repository.loadLookupConfig()
-            val previousRefreshIntervalHours = repository.loadRefreshIntervalHours()
             val newConfig = previousConfig.copy(
                 checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
                 aggressiveApkFiltering = state.aggressiveApkFilteringInput,
@@ -211,9 +207,7 @@ internal class GitHubConfigActions(
                 apkTrustCheckEnabled = state.apkTrustCheckEnabledInput
             )
             repository.saveLookupConfig(newConfig)
-            repository.saveRefreshIntervalHours(state.refreshIntervalHoursInput)
             state.lookupConfig = newConfig
-            state.refreshIntervalHours = state.refreshIntervalHoursInput
             repository.scheduleGitHubRefresh(context)
             closeCheckLogicSheet()
 
@@ -238,13 +232,11 @@ internal class GitHubConfigActions(
                 previousConfig.decisionAssistEnabled != newConfig.decisionAssistEnabled ||
                         previousConfig.repositoryHealthCardEnabled != newConfig.repositoryHealthCardEnabled ||
                         previousConfig.apkTrustCheckEnabled != newConfig.apkTrustCheckEnabled
-            val intervalChanged = previousRefreshIntervalHours != state.refreshIntervalHoursInput
             val preferenceChangedCount = listOf(
                 shareImportChanged,
                 onlineShareTargetChanged,
                 downloaderChanged,
-                decisionAssistChanged,
-                intervalChanged
+                decisionAssistChanged
             ).count { it }
             when {
                 checkScopeChanged ||
@@ -286,9 +278,6 @@ internal class GitHubConfigActions(
                 }
                 decisionAssistChanged -> {
                     env.toast(R.string.github_toast_preferences_saved)
-                }
-                intervalChanged -> {
-                    env.toast(R.string.github_toast_refresh_interval_saved)
                 }
                 else -> {
                     env.toast(R.string.github_toast_check_logic_unchanged)

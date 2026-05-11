@@ -58,8 +58,8 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -396,7 +396,11 @@ private fun GitHubReleaseNotesDetailContent(
             )
         }
         SheetSectionTitle(stringResource(R.string.github_release_notes_detail_body_title))
-        SheetSectionCard(verticalSpacing = 10.dp) {
+        SheetSectionCard(
+            containerColor = releaseNotesBodyContainerColor(),
+            borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.18f),
+            verticalSpacing = 10.dp
+        ) {
             if (rawMarkdown.isNotBlank()) {
                 CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                     AppMarkdownContent(
@@ -425,6 +429,11 @@ private fun GitHubReleaseNotesDetailContent(
             }
         }
     }
+}
+
+@Composable
+private fun releaseNotesBodyContainerColor(): Color {
+    return MiuixTheme.colorScheme.surface.copy(alpha = 0.96f)
 }
 
 private fun releaseNotesTargetDropdownLabel(

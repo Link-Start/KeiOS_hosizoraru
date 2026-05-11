@@ -176,12 +176,16 @@ fun SheetSurfaceCard(
 @Composable
 fun SheetSectionCard(
     modifier: Modifier = Modifier,
+    containerColor: Color? = null,
+    borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
     verticalSpacing: Dp = 8.dp,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     SheetSurfaceCard(
         modifier = modifier,
+        containerColor = containerColor,
+        borderColor = borderColor,
         verticalSpacing = verticalSpacing,
         contentPadding = contentPadding,
         content = content

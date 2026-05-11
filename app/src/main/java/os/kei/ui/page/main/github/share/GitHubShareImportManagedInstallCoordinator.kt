@@ -15,6 +15,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.install.GitHubApkInstallFailureReason
 import os.kei.feature.github.install.GitHubApkInstallProgress
 import os.kei.feature.github.install.GitHubApkInstallRequest
+import os.kei.feature.github.install.GitHubApkInstallRequestIds
 import os.kei.feature.github.install.GitHubApkInstallResult
 import os.kei.feature.github.install.GitHubApkInstallStage
 import os.kei.feature.github.install.GitHubManagedApkInstaller
@@ -23,9 +24,6 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 
 internal object GitHubShareImportManagedInstallCoordinator {
-    private const val ACTION_MANAGED_INSTALL =
-        "os.kei.github.share_import.action.MANAGED_INSTALL"
-
     private var managedApkInstaller: GitHubManagedApkInstaller = GitHubShizukuPackageInstaller()
     private var packageNameScanner:
             suspend (GitHubReleaseAssetFile, GitHubLookupConfig) -> String = { asset, config ->
@@ -76,12 +74,14 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 assetName = selectedAsset.name
             )
         }
-        GitHubShareImportNotificationHelper.notifyInstalling(
+        GitHubShareImportNotificationHelper.notifyInstallDownloading(
             context = context,
             owner = preview.owner,
             repo = preview.repo,
             assetName = selectedAsset.name,
             progressPercent = 4,
+            downloadedBytes = 0L,
+            totalBytes = selectedAsset.sizeBytes,
             targetDisplayName = targetDisplayName
         )
         val scannedPackageNameDeferred = async(Dispatchers.IO) {
@@ -100,7 +100,8 @@ internal object GitHubShareImportManagedInstallCoordinator {
             lookupConfig = lookupConfig,
             targetDisplayName = targetDisplayName,
             scannedPackageName = scannedPackageName,
-            resolvedDownloadUrl = resolvedUrlDeferred.await()
+            resolvedDownloadUrl = resolvedUrlDeferred.await(),
+            requestId = GitHubApkInstallRequestIds.newId(context.packageName)
         )
         withContext(Dispatchers.IO) {
             GitHubTrackStore.savePendingShareImportTrack(null)
@@ -148,7 +149,6 @@ internal object GitHubShareImportManagedInstallCoordinator {
         }
         when (progress.stage) {
             GitHubApkInstallStage.Preparing,
-            GitHubApkInstallStage.Downloading,
             GitHubApkInstallStage.Staging -> {
                 GitHubShareImportNotificationHelper.notifyInstalling(
                     context = context,
@@ -156,6 +156,20 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     repo = request.repo,
                     assetName = request.asset.name,
                     progressPercent = progress.boundedProgressPercent,
+                    packageName = request.scannedPackageName,
+                    targetDisplayName = request.targetDisplayName
+                )
+            }
+
+            GitHubApkInstallStage.Downloading -> {
+                GitHubShareImportNotificationHelper.notifyInstallDownloading(
+                    context = context,
+                    owner = request.owner,
+                    repo = request.repo,
+                    assetName = request.asset.name,
+                    progressPercent = progress.boundedProgressPercent,
+                    downloadedBytes = progress.downloadedBytes,
+                    totalBytes = progress.totalBytes,
                     packageName = request.scannedPackageName,
                     targetDisplayName = request.targetDisplayName
                 )
@@ -253,7 +267,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 .ifBlank { result.appLabel }
                 .ifBlank { request.targetDisplayName }
                 .ifBlank { packageName },
-            eventAction = ACTION_MANAGED_INSTALL,
+            eventAction = managedInstallAction(context),
             detectedAtMillis = System.currentTimeMillis(),
             firstInstallTimeMs = snapshot?.firstInstallTimeMs ?: result.firstInstallTimeMs
         )
@@ -323,5 +337,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
                 context.getString(R.string.github_share_import_error_app_managed_install_failed)
             }
         }
+    }
+
+    private fun managedInstallAction(context: Context): String {
+        return "${context.packageName}.github.share_import.action.MANAGED_INSTALL"
     }
 }

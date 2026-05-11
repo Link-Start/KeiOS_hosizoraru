@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class GitHubShizukuInstallResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        GitHubShizukuInstallCommitRegistry.complete(intent)
+        GitHubShizukuInstallCommitRegistry.complete(context, intent)
     }
 }
 
@@ -24,9 +24,10 @@ internal data class GitHubShizukuInstallCommitResult(
 )
 
 internal object GitHubShizukuInstallCommitRegistry {
-    const val ACTION_INSTALL_RESULT = "os.kei.github.install.action.SHIZUKU_INSTALL_RESULT"
-    private const val EXTRA_REQUEST_ID = "os.kei.github.install.extra.REQUEST_ID"
-    private const val EXTRA_SESSION_ID = "os.kei.github.install.extra.SESSION_ID"
+    private const val ACTION_INSTALL_RESULT_SUFFIX =
+        ".github.install.action.SHIZUKU_INSTALL_RESULT"
+    private const val EXTRA_REQUEST_ID_SUFFIX = ".github.install.extra.REQUEST_ID"
+    private const val EXTRA_SESSION_ID_SUFFIX = ".github.install.extra.SESSION_ID"
     private const val EXTRA_LEGACY_STATUS = "android.content.pm.extra.LEGACY_STATUS"
     private const val INSTALL_FAILED_INTERNAL_ERROR = -110
 
@@ -48,11 +49,12 @@ internal object GitHubShizukuInstallCommitRegistry {
         requestId: String,
         sessionId: Int
     ): android.content.IntentSender {
+        val packageName = context.packageName
         val intent = Intent(context, GitHubShizukuInstallResultReceiver::class.java).apply {
-            action = ACTION_INSTALL_RESULT
-            setPackage(context.packageName)
-            putExtra(EXTRA_REQUEST_ID, requestId)
-            putExtra(EXTRA_SESSION_ID, sessionId)
+            action = installResultAction(packageName)
+            setPackage(packageName)
+            putExtra(requestIdExtra(packageName), requestId)
+            putExtra(sessionIdExtra(packageName), sessionId)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -62,14 +64,18 @@ internal object GitHubShizukuInstallCommitRegistry {
         ).intentSender
     }
 
-    fun complete(intent: Intent?): Boolean {
-        if (intent?.action != ACTION_INSTALL_RESULT) return false
-        val requestId = intent.getStringExtra(EXTRA_REQUEST_ID).orEmpty()
+    fun complete(context: Context, intent: Intent?): Boolean {
+        val packageName = context.packageName
+        val action = intent?.action ?: return false
+        if (action != installResultAction(packageName)) {
+            return false
+        }
+        val requestId = intent.getStringExtra(requestIdExtra(packageName)).orEmpty()
         if (requestId.isBlank()) return false
         val deferred = pendingResults.remove(requestId) ?: return false
         val result = GitHubShizukuInstallCommitResult(
             requestId = requestId,
-            sessionId = intent.getIntExtra(EXTRA_SESSION_ID, -1),
+            sessionId = intent.getIntExtra(sessionIdExtra(packageName), -1),
             statusCode = intent.getIntExtra(
                 PackageInstaller.EXTRA_STATUS,
                 PackageInstaller.STATUS_FAILURE
@@ -80,5 +86,17 @@ internal object GitHubShizukuInstallCommitRegistry {
         )
         deferred.complete(result)
         return true
+    }
+
+    internal fun installResultAction(packageName: String): String {
+        return packageName.trim().ifBlank { "os.kei" } + ACTION_INSTALL_RESULT_SUFFIX
+    }
+
+    private fun requestIdExtra(packageName: String): String {
+        return packageName.trim().ifBlank { "os.kei" } + EXTRA_REQUEST_ID_SUFFIX
+    }
+
+    private fun sessionIdExtra(packageName: String): String {
+        return packageName.trim().ifBlank { "os.kei" } + EXTRA_SESSION_ID_SUFFIX
     }
 }

@@ -356,7 +356,42 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `managed installing mi island exposes live progress`() {
+    fun `managed downloading notification exposes bytes and live progress`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.InstallDownloading,
+            owner = "owner",
+            repo = "repo",
+            assetName = "demo.apk",
+            targetDisplayName = "Demo",
+            progressPercentOverride = 48,
+            downloadedBytes = 5_120L,
+            totalBytes = 10_240L
+        )
+
+        val notification = buildModern(context, state)
+        val focusParam = buildMiIsland(context, state)
+            .extras
+            .getString("miui.focus.param")
+            .orEmpty()
+
+        assertEquals(
+            "Downloading APK",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertTrue(
+            notification.extras
+                .getCharSequence(Notification.EXTRA_TEXT)
+                .toString()
+                .contains("demo.apk")
+        )
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("\"title\":\"Download\""))
+        assertTrue(focusParam.contains("\"progress\":48"))
+    }
+
+    @Test
+    fun `managed staging mi island exposes live progress`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
             phase = GitHubShareImportNotificationPhase.Installing,
@@ -372,7 +407,7 @@ class GitHubShareImportNotificationHelperTest {
 
         assertEquals("Open flow", notification.actions[0].title.toString())
         assertTrue(focusParam.contains("progressTextInfo"))
-        assertTrue(focusParam.contains("\"title\":\"Installing\""))
+        assertTrue(focusParam.contains("\"title\":\"Staging\""))
         assertTrue(focusParam.contains("\"progress\":48"))
     }
 

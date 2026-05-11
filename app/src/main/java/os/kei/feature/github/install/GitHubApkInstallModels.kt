@@ -78,8 +78,15 @@ enum class GitHubApkInstallFailureReason {
 }
 
 internal object GitHubApkInstallRequestIds {
-    fun newId(): String {
-        return "github-apk-${System.currentTimeMillis()}-${randomSuffix()}"
+    fun newId(ownerPackageName: String = ""): String {
+        val ownerPrefix = ownerPackageName
+            .trim()
+            .replace(Regex("[^A-Za-z0-9._-]"), "-")
+            .take(80)
+            .takeIf { it.isNotBlank() }
+            ?.let { "$it-" }
+            .orEmpty()
+        return "${ownerPrefix}github-apk-${System.currentTimeMillis()}-${randomSuffix()}"
     }
 
     private fun randomSuffix(): String {

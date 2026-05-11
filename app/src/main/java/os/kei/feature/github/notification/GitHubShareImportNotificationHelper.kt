@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.text.format.Formatter
 import androidx.annotation.StringRes
 import os.kei.MainActivity
 import os.kei.R
@@ -107,6 +108,33 @@ object GitHubShareImportNotificationHelper {
                 packageName = packageName,
                 targetDisplayName = targetDisplayName,
                 progressPercentOverride = progressPercent.coerceIn(0, 100)
+            )
+        )
+    }
+
+    fun notifyInstallDownloading(
+        context: Context,
+        owner: String,
+        repo: String,
+        assetName: String,
+        progressPercent: Int,
+        downloadedBytes: Long,
+        totalBytes: Long,
+        packageName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.InstallDownloading,
+                owner = owner,
+                repo = repo,
+                assetName = assetName,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName,
+                progressPercentOverride = progressPercent.coerceIn(0, 100),
+                downloadedBytes = downloadedBytes.coerceAtLeast(0L),
+                totalBytes = totalBytes
             )
         )
     }
@@ -468,6 +496,13 @@ object GitHubShareImportNotificationHelper {
                 state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) }
             )
 
+            GitHubShareImportNotificationPhase.InstallDownloading -> context.getString(
+                R.string.github_share_import_notify_content_install_downloading,
+                projectLabel,
+                state.assetName.ifBlank { context.getString(R.string.github_share_import_pending_label_asset) },
+                formatDownloadProgress(context, state.downloadedBytes, state.totalBytes)
+            )
+
             GitHubShareImportNotificationPhase.Installing -> context.getString(
                 R.string.github_share_import_notify_content_installing,
                 projectLabel,
@@ -533,6 +568,25 @@ object GitHubShareImportNotificationHelper {
         }
     }
 
+    private fun formatDownloadProgress(
+        context: Context,
+        downloadedBytes: Long,
+        totalBytes: Long
+    ): String {
+        val downloaded = Formatter.formatFileSize(context, downloadedBytes.coerceAtLeast(0L))
+        if (totalBytes > 0L) {
+            return context.getString(
+                R.string.github_share_import_notify_download_progress_known,
+                downloaded,
+                Formatter.formatFileSize(context, totalBytes)
+            )
+        }
+        return context.getString(
+            R.string.github_share_import_notify_download_progress_unknown,
+            downloaded
+        )
+    }
+
     private fun notificationsGranted(context: Context): Boolean {
         return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
@@ -571,7 +625,7 @@ object GitHubShareImportNotificationHelper {
 
     private fun buildMarkReadPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
-            action = GitHubShareImportActionReceiver.ACTION_MARK_READ_SHARE_IMPORT
+            action = GitHubShareImportActionReceiver.actionMarkReadShareImport(context)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -583,7 +637,7 @@ object GitHubShareImportNotificationHelper {
 
     private fun buildCancelImportPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
-            action = GitHubShareImportActionReceiver.ACTION_CANCEL_SHARE_IMPORT
+            action = GitHubShareImportActionReceiver.actionCancelShareImport(context)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -595,7 +649,7 @@ object GitHubShareImportNotificationHelper {
 
     private fun buildRefreshImportPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
-            action = GitHubShareImportActionReceiver.ACTION_REFRESH_SHARE_IMPORT
+            action = GitHubShareImportActionReceiver.actionRefreshShareImport(context)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -607,7 +661,7 @@ object GitHubShareImportNotificationHelper {
 
     private fun buildConfirmImportPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
-            action = GitHubShareImportActionReceiver.ACTION_CONFIRM_SHARE_IMPORT
+            action = GitHubShareImportActionReceiver.actionConfirmShareImport(context)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -648,7 +702,9 @@ internal data class GitHubShareImportNotificationState(
     val primaryLabel: String = "",
     val count: Int = 0,
     val sendInstallActionEnabled: Boolean = false,
-    val progressPercentOverride: Int? = null
+    val progressPercentOverride: Int? = null,
+    val downloadedBytes: Long = 0L,
+    val totalBytes: Long = -1L
 ) {
     val projectLabel: String
         get() {
@@ -741,6 +797,15 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 52,
         ongoing = true,
         openGitHubPage = false
+    ),
+    InstallDownloading(
+        titleRes = R.string.github_share_import_notify_title_install_downloading,
+        shortTextRes = R.string.github_share_import_notify_short_install_downloading,
+        primaryActionRes = R.string.github_share_import_notify_action_view_progress,
+        progressPercent = 56,
+        ongoing = true,
+        openGitHubPage = false,
+        cancelActionEnabled = true
     ),
     Installing(
         titleRes = R.string.github_share_import_notify_title_installing,

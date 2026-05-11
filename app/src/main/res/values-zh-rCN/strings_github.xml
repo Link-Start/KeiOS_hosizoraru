@@ -714,7 +714,8 @@
     <string name="github_share_import_notify_title_resolving">正在准备分享导入</string>
     <string name="github_share_import_notify_title_asset_ready">已找到可安装 APK</string>
     <string name="github_share_import_notify_title_delivering">正在交给安装器</string>
-    <string name="github_share_import_notify_title_installing">正在由 KeiOS 安装</string>
+    <string name="github_share_import_notify_title_install_downloading">正在下载 APK</string>
+    <string name="github_share_import_notify_title_installing">正在写入 APK</string>
     <string name="github_share_import_notify_title_install_committing">正在提交安装</string>
     <string name="github_share_import_notify_title_waiting_install">等待安装完成</string>
     <string name="github_share_import_notify_title_install_detected">已检测到安装</string>
@@ -726,6 +727,7 @@
     <string name="github_share_import_notify_content_resolving">正在解析 %1$s</string>
     <string name="github_share_import_notify_content_asset_ready">%1$s · %2$s · %3$d 个 APK 可选</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s · %3$s</string>
     <string name="github_share_import_notify_content_installing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_install_committing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · 剩余 %3$d 分钟</string>
@@ -735,10 +737,13 @@
     <string name="github_share_import_notify_content_added">%1$s 已加入 %2$s 跟踪</string>
     <string name="github_share_import_notify_content_already_tracked">%1$s 已在 %2$s 跟踪中</string>
     <string name="github_share_import_notify_content_cancelled">本次分享导入联动已停止</string>
+    <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
+    <string name="github_share_import_notify_download_progress_unknown">已下载 %1$s</string>
     <string name="github_share_import_notify_short_resolving">解析</string>
     <string name="github_share_import_notify_short_asset_ready">可安装</string>
     <string name="github_share_import_notify_short_delivering">发送中</string>
-    <string name="github_share_import_notify_short_installing">安装中</string>
+    <string name="github_share_import_notify_short_install_downloading">下载中</string>
+    <string name="github_share_import_notify_short_installing">写入中</string>
     <string name="github_share_import_notify_short_install_committing">提交中</string>
     <string name="github_share_import_notify_short_waiting_install">待安装</string>
     <string name="github_share_import_notify_short_install_detected">待确认</string>

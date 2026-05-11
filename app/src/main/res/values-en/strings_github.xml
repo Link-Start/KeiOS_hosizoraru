@@ -722,7 +722,8 @@
     <string name="github_share_import_notify_title_resolving">Preparing share import</string>
     <string name="github_share_import_notify_title_asset_ready">Installable APK found</string>
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>
-    <string name="github_share_import_notify_title_installing">KeiOS is installing</string>
+    <string name="github_share_import_notify_title_install_downloading">Downloading APK</string>
+    <string name="github_share_import_notify_title_installing">Staging APK</string>
     <string name="github_share_import_notify_title_install_committing">Committing install</string>
     <string name="github_share_import_notify_title_waiting_install">Waiting for install</string>
     <string name="github_share_import_notify_title_install_detected">Install detected</string>
@@ -734,6 +735,7 @@
     <string name="github_share_import_notify_content_resolving">Parsing %1$s</string>
     <string name="github_share_import_notify_content_asset_ready">%1$s · %2$s · %3$d APKs available</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
+    <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s · %3$s</string>
     <string name="github_share_import_notify_content_installing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_install_committing">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · %3$d min left</string>
@@ -743,10 +745,13 @@
     <string name="github_share_import_notify_content_added">%1$s was added to %2$s tracking</string>
     <string name="github_share_import_notify_content_already_tracked">%1$s is already tracked for %2$s</string>
     <string name="github_share_import_notify_content_cancelled">This share-import linkage has stopped</string>
+    <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
+    <string name="github_share_import_notify_download_progress_unknown">%1$s downloaded</string>
     <string name="github_share_import_notify_short_resolving">Parse</string>
     <string name="github_share_import_notify_short_asset_ready">Ready</string>
     <string name="github_share_import_notify_short_delivering">Sending</string>
-    <string name="github_share_import_notify_short_installing">Installing</string>
+    <string name="github_share_import_notify_short_install_downloading">Download</string>
+    <string name="github_share_import_notify_short_installing">Staging</string>
     <string name="github_share_import_notify_short_install_committing">Commit</string>
     <string name="github_share_import_notify_short_waiting_install">Install</string>
     <string name="github_share_import_notify_short_install_detected">Confirm</string>

@@ -84,13 +84,6 @@ class GitHubShizukuPackageInstaller(
                 )
             }
 
-            onProgress(
-                GitHubApkInstallProgress(
-                    stage = GitHubApkInstallStage.Downloading,
-                    progressPercent = 8,
-                    sessionId = sessionId
-                )
-            )
             val writeResult = runCatching {
                 streamApkIntoSession(
                     resolvedUrl = resolvedUrl,
@@ -260,6 +253,14 @@ class GitHubShizukuPackageInstaller(
             }
             val fileName = assetName.trim().ifBlank { "base.apk" }
             var totalRead = 0L
+            onProgress(
+                GitHubApkInstallProgress(
+                    stage = GitHubApkInstallStage.Downloading,
+                    progressPercent = 8,
+                    totalBytes = totalBytes,
+                    sessionId = sessionId
+                )
+            )
             body.byteStream().use { input ->
                 session.openWrite(fileName, 0, totalBytes).use { output ->
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -271,7 +272,7 @@ class GitHubShizukuPackageInstaller(
                         totalRead += read.toLong()
                         onProgress(
                             GitHubApkInstallProgress(
-                                stage = GitHubApkInstallStage.Staging,
+                                stage = GitHubApkInstallStage.Downloading,
                                 progressPercent = installWriteProgressPercent(
                                     totalRead,
                                     totalBytes
@@ -282,6 +283,15 @@ class GitHubShizukuPackageInstaller(
                             )
                         )
                     }
+                    onProgress(
+                        GitHubApkInstallProgress(
+                            stage = GitHubApkInstallStage.Staging,
+                            progressPercent = 88,
+                            downloadedBytes = totalRead,
+                            totalBytes = totalBytes,
+                            sessionId = sessionId
+                        )
+                    )
                     session.fsync(output)
                 }
             }

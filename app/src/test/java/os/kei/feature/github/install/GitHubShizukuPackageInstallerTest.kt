@@ -73,6 +73,25 @@ class GitHubShizukuPackageInstallerTest {
         )
     }
 
+    @Test
+    fun `request id can be scoped by runtime package name`() {
+        val requestId = GitHubApkInstallRequestIds.newId("os.kei.debug")
+
+        assertEquals(true, requestId.startsWith("os.kei.debug-github-apk-"))
+    }
+
+    @Test
+    fun `install result action is scoped by runtime package name`() {
+        assertEquals(
+            "os.kei.debug.github.install.action.SHIZUKU_INSTALL_RESULT",
+            GitHubShizukuInstallCommitRegistry.installResultAction("os.kei.debug")
+        )
+        assertEquals(
+            "os.kei.benchmark.github.install.action.SHIZUKU_INSTALL_RESULT",
+            GitHubShizukuInstallCommitRegistry.installResultAction("os.kei.benchmark")
+        )
+    }
+
     private fun request(
         resolvedDownloadUrl: String = "https://example.com/app.apk"
     ): GitHubApkInstallRequest {

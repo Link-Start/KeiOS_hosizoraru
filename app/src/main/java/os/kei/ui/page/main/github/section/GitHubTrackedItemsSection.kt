@@ -373,6 +373,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                     label = stringResource(R.string.github_item_label_stable_release),
                                     value = stableReleaseMeta,
                                     valueColor = MiuixTheme.colorScheme.primary,
+                                    valueMaxLines = 2,
                                     onClick = {
                                         onOpenExternalUrl(
                                             state.githubStableReleaseLinkUrl(item.owner, item.repo)
@@ -404,6 +405,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             textColor = preReleaseCardTextColor,
                             expanded = preExpanded,
                             emphasized = state.recommendsPreRelease || state.hasPreReleaseUpdate,
+                            valueMaxLines = 2,
                             onExpandedChange = { expanded ->
                                 onPreReleaseVersionExpandedChange(item.id, expanded)
                             }
@@ -422,6 +424,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                     value = preReleaseMeta,
                                     labelColor = preReleaseCardTextColor,
                                     valueColor = preReleaseCardTextColor,
+                                    valueMaxLines = 2,
                                     onClick = {
                                         onOpenExternalUrl(
                                             state.githubPreReleaseLinkUrl(item.owner, item.repo)

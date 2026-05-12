@@ -33,13 +33,12 @@ import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val GitHubActionMenuCompactMinWidth = 288.dp
-private val GitHubActionMenuPreferredMinWidth = 304.dp
-private val GitHubActionMenuPreferredMaxWidth = 336.dp
-private val GitHubActionMenuHorizontalMargin = 40.dp
-private val GitHubActionSubmenuPreferredMinWidth = 208.dp
-private val GitHubActionSubmenuPreferredMaxWidth = 288.dp
+private val GitHubActionMenuCompactMinWidth = 244.dp
+private val GitHubActionMenuPreferredMinWidth = 256.dp
+private val GitHubActionMenuPreferredMaxWidth = 272.dp
+private val GitHubActionMenuHorizontalMargin = 92.dp
 
 @Composable
 internal fun GitHubTopBarSection(
@@ -106,8 +105,8 @@ internal fun GitHubTopBarActions(
     val actionMenuMaxWidth = (screenWidth - GitHubActionMenuHorizontalMargin)
         .coerceIn(GitHubActionMenuCompactMinWidth, GitHubActionMenuPreferredMaxWidth)
     val actionMenuMinWidth = minOf(GitHubActionMenuPreferredMinWidth, actionMenuMaxWidth)
-    val actionSubmenuMaxWidth = minOf(GitHubActionSubmenuPreferredMaxWidth, actionMenuMaxWidth)
-    val actionSubmenuMinWidth = minOf(GitHubActionSubmenuPreferredMinWidth, actionSubmenuMaxWidth)
+    val actionSubmenuMaxWidth = actionMenuMaxWidth
+    val actionSubmenuMinWidth = actionMenuMinWidth
     val actionItems = remember(
         editStrategyIcon,
         checkLogicIcon,
@@ -182,6 +181,7 @@ internal fun GitHubTopBarActions(
                         }
                         LiquidGlassActionMenu(
                             backdrop = backdrop,
+                            accentColor = MiuixTheme.colorScheme.onBackground,
                             minWidth = actionMenuMinWidth,
                             maxWidth = actionMenuMaxWidth,
                             submenuMinWidth = actionSubmenuMinWidth,

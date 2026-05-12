@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,12 +34,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private val ActionMenuQuickActionMaxWidth = 64.dp
+private val ActionMenuQuickActionMinWidth = 52.dp
+private val ActionMenuQuickActionSpacing = 4.dp
+private val ActionMenuQuickActionRowHorizontalPadding = 4.dp
+private val ActionMenuQuickActionRowVerticalPadding = 3.dp
+private val ActionMenuQuickActionMinHeight = 52.dp
+private val ActionMenuDividerHorizontalPadding = 12.dp
+private val ActionMenuDividerVerticalPadding = 4.dp
 
 data class LiquidGlassActionMenuQuickAction(
     val id: String,
@@ -98,8 +109,8 @@ fun LiquidGlassActionMenu(
     minWidth: Dp = 252.dp,
     maxWidth: Dp = 312.dp,
     maxHeight: Dp = 420.dp,
-    submenuMinWidth: Dp = 208.dp,
-    submenuMaxWidth: Dp = 288.dp,
+    submenuMinWidth: Dp = minWidth,
+    submenuMaxWidth: Dp = maxWidth,
     initialExpandedSubmenuId: String? = null,
     onDismissRequest: () -> Unit = {}
 ) {
@@ -311,20 +322,32 @@ private fun LiquidGlassActionMenuQuickActionsRow(
     accentColor: Color,
     onActionClick: (LiquidGlassActionMenuQuickAction) -> Unit
 ) {
-    Row(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(
+                horizontal = ActionMenuQuickActionRowHorizontalPadding,
+                vertical = ActionMenuQuickActionRowVerticalPadding
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        quickActions.forEach { action ->
-            LiquidGlassActionMenuQuickActionButton(
-                action = action,
-                accentColor = accentColor,
-                onActionClick = onActionClick,
-                modifier = Modifier.weight(1f)
-            )
+        val actionCount = quickActions.size.coerceAtLeast(1)
+        val totalSpacing = ActionMenuQuickActionSpacing * (actionCount - 1)
+        val availableButtonWidth = ((maxWidth - totalSpacing) / actionCount)
+            .coerceAtLeast(ActionMenuQuickActionMinWidth)
+        val buttonWidth = minOf(ActionMenuQuickActionMaxWidth, availableButtonWidth)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(ActionMenuQuickActionSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            quickActions.forEach { action ->
+                LiquidGlassActionMenuQuickActionButton(
+                    action = action,
+                    accentColor = accentColor,
+                    onActionClick = onActionClick,
+                    modifier = Modifier.width(buttonWidth)
+                )
+            }
         }
     }
 }
@@ -359,7 +382,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
     val shape = RoundedCornerShape(18.dp)
     Column(
         modifier = modifier
-            .defaultMinSize(minHeight = 62.dp)
+            .defaultMinSize(minHeight = ActionMenuQuickActionMinHeight)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -373,21 +396,21 @@ private fun LiquidGlassActionMenuQuickActionButton(
                 role = Role.Button,
                 onClick = { onActionClick(action) }
             )
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .padding(horizontal = 2.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically)
     ) {
         Icon(
             imageVector = action.icon,
             contentDescription = action.contentDescription,
             tint = contentColor,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(21.dp)
         )
         Text(
             text = action.label,
             color = contentColor,
-            fontSize = AppTypographyTokens.Caption.fontSize,
-            lineHeight = AppTypographyTokens.Caption.lineHeight,
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -400,7 +423,10 @@ private fun LiquidGlassActionMenuDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .padding(
+                horizontal = ActionMenuDividerHorizontalPadding,
+                vertical = ActionMenuDividerVerticalPadding
+            )
             .height(1.dp)
             .background(
                 color = MiuixTheme.colorScheme.onBackground.copy(

@@ -83,6 +83,7 @@ fun LiquidGlassDropdownItem(
 
     val isDark = isSystemInDarkTheme()
     val itemBackdrop = LocalLiquidGlassDropdownBackdrop.current
+    val material = LocalLiquidGlassDropdownMaterial.current
     val itemAccent = liquidGlassDropdownItemAccent(
         isDark = isDark,
         accentColor = accentColor,
@@ -100,7 +101,10 @@ fun LiquidGlassDropdownItem(
         MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.88f else 0.78f)
     }.let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
     val checkColor = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f)
-    val selectedSurface = liquidGlassDropdownSelectedSurfaceColor(isDark = isDark)
+    val selectedSurface = liquidGlassDropdownSelectedSurfaceColor(
+        isDark = isDark,
+        material = material
+    )
     val currentOnClick by rememberUpdatedState(onClick)
     val rowShape = RoundedRectangle(LiquidGlassDropdownItemRadius)
     val outerTopPadding = if (index == 0) {
@@ -114,7 +118,7 @@ fun LiquidGlassDropdownItem(
         2.dp
     }
 
-    if (itemBackdrop != null && highlighted) {
+    if (itemBackdrop != null && highlighted && material != LiquidGlassDropdownMaterial.ActionMenu) {
         LiquidSurface(
             backdrop = itemBackdrop,
             modifier = modifier
@@ -159,11 +163,15 @@ fun LiquidGlassDropdownItem(
             durationMillis = 110,
             label = "liquid_glass_dropdown_item_pressed_alpha"
         )
-        val showSelectionPill = highlighted || pressed
-        val pillSurface = if (highlighted) {
+        val showHighlightedPill = highlighted && material != LiquidGlassDropdownMaterial.ActionMenu
+        val showSelectionPill = showHighlightedPill || pressed
+        val pillSurface = if (showHighlightedPill) {
             selectedSurface
         } else {
-            liquidGlassDropdownPressedSurfaceColor(isDark = isDark)
+            liquidGlassDropdownPressedSurfaceColor(
+                isDark = isDark,
+                material = material
+            )
         }
         Box(
             modifier = modifier
@@ -175,11 +183,23 @@ fun LiquidGlassDropdownItem(
                 .then(
                     if (showSelectionPill) {
                         Modifier.shadow(
-                            elevation = 10.dp,
+                            elevation = if (material == LiquidGlassDropdownMaterial.ActionMenu) 6.dp else 10.dp,
                             shape = rowShape,
                             clip = false,
-                            ambientColor = Color.Black.copy(alpha = if (isDark) 0.18f else 0.10f),
-                            spotColor = Color.Black.copy(alpha = if (isDark) 0.16f else 0.08f)
+                            ambientColor = Color.Black.copy(
+                                alpha = if (material == LiquidGlassDropdownMaterial.ActionMenu) {
+                                    if (isDark) 0.10f else 0.05f
+                                } else {
+                                    if (isDark) 0.18f else 0.10f
+                                }
+                            ),
+                            spotColor = Color.Black.copy(
+                                alpha = if (material == LiquidGlassDropdownMaterial.ActionMenu) {
+                                    if (isDark) 0.08f else 0.04f
+                                } else {
+                                    if (isDark) 0.16f else 0.08f
+                                }
+                            )
                         )
                     } else {
                         Modifier
@@ -191,7 +211,10 @@ fun LiquidGlassDropdownItem(
                     if (showSelectionPill) {
                         Modifier.border(
                             width = 1.dp,
-                            color = liquidGlassDropdownSelectedBorderColor(isDark = isDark),
+                            color = liquidGlassDropdownSelectedBorderColor(
+                                isDark = isDark,
+                                material = material
+                            ),
                             shape = rowShape
                         )
                     } else {
@@ -297,10 +320,15 @@ private fun LiquidGlassDropdownMeasureItem(
     }
 }
 
+@Composable
 private fun liquidGlassDropdownRowContentModifier(): Modifier {
+    val minHeight = when (LocalLiquidGlassDropdownMaterial.current) {
+        LiquidGlassDropdownMaterial.ActionMenu -> 42.dp
+        LiquidGlassDropdownMaterial.Default -> LiquidGlassDropdownRowMinHeight
+    }
     return Modifier
         .fillMaxWidth()
-        .defaultMinSize(minHeight = LiquidGlassDropdownRowMinHeight)
+        .defaultMinSize(minHeight = minHeight)
 }
 
 @Composable
@@ -318,18 +346,35 @@ private fun LiquidGlassDropdownRowContent(
     textMaxLines: Int = 1,
     enabled: Boolean = true
 ) {
-    val textTypography = if (textMaxLines == 1 && subtitle == null) {
-        AppTypographyTokens.Body
-    } else {
-        AppTypographyTokens.Supporting
+    val material = LocalLiquidGlassDropdownMaterial.current
+    val textTypography = when {
+        material == LiquidGlassDropdownMaterial.ActionMenu -> AppTypographyTokens.Supporting
+        textMaxLines == 1 && subtitle == null -> AppTypographyTokens.Body
+        else -> AppTypographyTokens.Supporting
     }
-    val subtitleTypography = AppTypographyTokens.Caption
+    val subtitleTypography = when (material) {
+        LiquidGlassDropdownMaterial.ActionMenu -> AppTypographyTokens.Eyebrow
+        LiquidGlassDropdownMaterial.Default -> AppTypographyTokens.Caption
+    }
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant
-        .copy(alpha = if (enabled) 0.68f else 0.34f)
+        .copy(
+            alpha = if (enabled) {
+                if (material == LiquidGlassDropdownMaterial.ActionMenu) 0.62f else 0.68f
+            } else {
+                0.34f
+            }
+        )
+    val rowHorizontalPadding =
+        if (material == LiquidGlassDropdownMaterial.ActionMenu) 11.dp else 12.dp
+    val rowVerticalPadding = if (material == LiquidGlassDropdownMaterial.ActionMenu) 7.dp else 8.dp
+    val rowSpacing = if (material == LiquidGlassDropdownMaterial.ActionMenu) 9.dp else 10.dp
     Row(
-        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier = modifier.padding(
+            horizontal = rowHorizontalPadding,
+            vertical = rowVerticalPadding
+        ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(rowSpacing)
     ) {
         if (leadingIcon != null) {
             Icon(

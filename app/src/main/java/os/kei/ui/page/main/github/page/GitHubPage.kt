@@ -29,6 +29,7 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.isKeiOsSelfTrack
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
@@ -258,8 +259,8 @@ fun GitHubPage(
             searchExpanded = enableSearchBar && searchExpanded,
             trackedSearch = state.trackedSearch,
             sortMode = state.sortMode,
+            trackedFilterMode = state.trackedFilterMode,
             refreshIntervalHours = state.refreshIntervalHours,
-            showFailedOnly = state.showFailedOnly,
             showActionMenuPopup = state.showActionMenuPopup,
             floatingDockSide = runtime.floatingDockSide,
             deleteInProgress = state.deleteInProgress,
@@ -301,6 +302,7 @@ fun GitHubPage(
             },
             onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
             onSortModeChange = { state.sortMode = it },
+            onTrackedFilterModeChange = { state.trackedFilterMode = it },
             onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
             onExportTrackedItems = transferCallbacks.onExportTrackedItems,
             onImportTrackedItems = transferCallbacks.onImportTrackedItems,
@@ -314,7 +316,13 @@ fun GitHubPage(
             onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
             onRefreshAllTracked = { actions.refreshAllTracked(showToast = true) },
             onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
-            onShowFailedOnlyChange = { state.showFailedOnly = it },
+            onFailedFilterToggle = { enabled ->
+                state.trackedFilterMode = if (enabled) {
+                    GitHubTrackedFilterMode.FailedChecks
+                } else {
+                    GitHubTrackedFilterMode.All
+                }
+            },
             onRefreshTrackedItem = { actions.refreshTrackedItem(it, showToastOnError = true) },
             onOpenActionsSheet = actions::openActionsSheet,
             onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,

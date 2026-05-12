@@ -210,6 +210,7 @@
     <string name="github_topbar_cd_edit_strategy">Edit fetch strategy</string>
     <string name="github_topbar_cd_check_logic">Check logic</string>
     <string name="github_topbar_cd_sort">Sort</string>
+    <string name="github_topbar_cd_filter">Filter</string>
     <string name="github_topbar_cd_check">Check</string>
     <string name="github_topbar_search_label">Search tracked projects (repository / app / package)</string>
     <string name="github_overview_title">Project version tracking</string>
@@ -247,6 +248,12 @@
     <string name="github_sort_update_first">Updates first</string>
     <string name="github_sort_name_asc">Name A-Z</string>
     <string name="github_sort_prerelease_first">Pre-releases first</string>
+    <string name="github_filter_all">All</string>
+    <string name="github_filter_prerelease_tracked">Pre-release tracking</string>
+    <string name="github_filter_update_available">Update available</string>
+    <string name="github_filter_installed">Installed</string>
+    <string name="github_filter_failed_checks">Check failed</string>
+    <string name="github_filter_actions_check_enabled">Actions checks</string>
     <string name="github_refresh_interval_1h">1 hour</string>
     <string name="github_refresh_interval_3h">3 hours</string>
     <string name="github_refresh_interval_6h">6 hours</string>

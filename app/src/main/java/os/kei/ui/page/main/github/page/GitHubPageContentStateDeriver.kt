@@ -7,17 +7,19 @@ import kotlinx.coroutines.withContext
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSortMode
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
 import os.kei.ui.page.main.github.section.GitHubOverviewMetrics
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.shareImportTrackMaxAgeMs
+import java.util.Locale
 
 @Immutable
 internal data class GitHubPageContentInput(
     val trackedItems: List<GitHubTrackedApp>,
     val trackedSearch: String,
-    val showFailedOnly: Boolean,
+    val trackedFilterMode: GitHubTrackedFilterMode,
     val sortMode: GitHubSortMode,
     val checkStates: Map<String, VersionCheckUi>,
     val appList: List<InstalledAppItem>,
@@ -44,10 +46,32 @@ internal class GitHubPageContentStateDeriver(
                         displayTitle.contains(input.trackedSearch, ignoreCase = true) ||
                         item.packageName.contains(input.trackedSearch, ignoreCase = true)
             }
-            val filteredTracked = if (input.showFailedOnly) {
-                searchedTracked.filter { item -> input.checkStates[item.id]?.failed == true }
-            } else {
-                searchedTracked
+            val installedPackages = input.appList
+                .asSequence()
+                .map { it.packageName.trim().lowercase(Locale.ROOT) }
+                .filter { it.isNotBlank() }
+                .toSet()
+            val filteredTracked = when (input.trackedFilterMode) {
+                GitHubTrackedFilterMode.All -> searchedTracked
+                GitHubTrackedFilterMode.PreReleaseTracked ->
+                    searchedTracked.filter { item -> input.checkStates[item.id]?.isPreRelease == true }
+
+                GitHubTrackedFilterMode.UpdateAvailable ->
+                    searchedTracked.filter { item ->
+                        val itemState = input.checkStates[item.id]
+                        itemState?.hasUpdate == true || itemState?.hasPreReleaseUpdate == true
+                    }
+
+                GitHubTrackedFilterMode.Installed ->
+                    searchedTracked.filter { item ->
+                        item.packageName.trim().lowercase(Locale.ROOT) in installedPackages
+                    }
+
+                GitHubTrackedFilterMode.FailedChecks ->
+                    searchedTracked.filter { item -> input.checkStates[item.id]?.failed == true }
+
+                GitHubTrackedFilterMode.ActionsCheckEnabled ->
+                    searchedTracked.filter { item -> item.checkActionsUpdates }
             }
             val isSortUpdatable: (GitHubTrackedApp) -> Boolean = { item ->
                 item.alwaysShowLatestReleaseDownloadButton || input.checkStates[item.id]?.hasUpdate == true

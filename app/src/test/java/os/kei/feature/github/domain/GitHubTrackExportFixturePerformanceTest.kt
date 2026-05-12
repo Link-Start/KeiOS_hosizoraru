@@ -32,6 +32,7 @@ import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSortMode
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubPageContentInput
 import os.kei.ui.page.main.github.page.GitHubPageContentStateDeriver
@@ -269,7 +270,7 @@ class GitHubTrackExportFixturePerformanceTest {
                     input = GitHubPageContentInput(
                         trackedItems = items,
                         trackedSearch = "",
-                        showFailedOnly = false,
+                        trackedFilterMode = GitHubTrackedFilterMode.All,
                         sortMode = GitHubSortMode.UpdateFirst,
                         checkStates = items.mapIndexed { index, item ->
                             item.id to VersionCheckUi(

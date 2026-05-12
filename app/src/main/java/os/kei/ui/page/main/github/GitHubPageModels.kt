@@ -91,6 +91,17 @@ internal enum class GitHubSortMode(
     PreReleaseFirst(R.string.github_sort_prerelease_first)
 }
 
+internal enum class GitHubTrackedFilterMode(
+    @get:StringRes val labelRes: Int
+) {
+    All(R.string.github_filter_all),
+    PreReleaseTracked(R.string.github_filter_prerelease_tracked),
+    UpdateAvailable(R.string.github_filter_update_available),
+    Installed(R.string.github_filter_installed),
+    FailedChecks(R.string.github_filter_failed_checks),
+    ActionsCheckEnabled(R.string.github_filter_actions_check_enabled)
+}
+
 internal enum class OverviewRefreshState {
     Idle,
     Cached,

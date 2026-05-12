@@ -44,6 +44,7 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.GitHubSortMode
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
@@ -63,7 +64,7 @@ internal class GitHubPageState(
     trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState()
 ) {
     var trackedSearch by mutableStateOf("")
-    var showFailedOnly by mutableStateOf(false)
+    var trackedFilterMode by mutableStateOf(GitHubTrackedFilterMode.All)
     var repoUrlInput by mutableStateOf("")
     var packageNameInput by mutableStateOf("")
     var repoScanCandidates by mutableStateOf<List<GitHubPackageRepositoryScanCandidate>>(emptyList())

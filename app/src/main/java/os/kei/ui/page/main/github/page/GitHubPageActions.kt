@@ -15,6 +15,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
 import os.kei.ui.page.main.github.page.action.GitHubAssetActions
@@ -399,7 +400,7 @@ internal class GitHubPageActions(
 
     fun focusShareImportResult() {
         val result = env.state.pendingShareImportResult ?: return
-        env.state.showFailedOnly = false
+        env.state.trackedFilterMode = GitHubTrackedFilterMode.All
         val query = result.appDisplayLabel
             .ifBlank { result.packageName }
             .ifBlank { result.repo }

@@ -10,11 +10,13 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubSortMode
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.RefreshIntervalOption
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
+import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
@@ -61,6 +63,7 @@ internal fun GitHubTopBarActions(
     backdrop: LayerBackdrop,
     liquidActionBarLayeredStyleEnabled: Boolean,
     sortMode: GitHubSortMode,
+    trackedFilterMode: GitHubTrackedFilterMode,
     refreshIntervalHours: Int,
     showActionMenuPopup: Boolean,
     tracksExporting: Boolean,
@@ -69,6 +72,7 @@ internal fun GitHubTopBarActions(
     onOpenCheckLogicSheet: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
+    onTrackedFilterModeChange: (GitHubTrackedFilterMode) -> Unit,
     onRefreshIntervalHoursChange: (Int) -> Unit,
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
@@ -81,12 +85,14 @@ internal fun GitHubTopBarActions(
     val importTracksIcon = appLucideUploadIcon()
     val importStarsIcon = appLucideHeartIcon()
     val sortIcon = appLucideSortIcon()
+    val filterIcon = appLucideFilterIcon()
     val intervalIcon = appLucideTimeIcon()
     val moreIcon = appLucideMoreIcon()
     val chevronRightIcon = appLucideChevronRightIcon()
     val editStrategyContentDescription = stringResource(R.string.github_topbar_cd_edit_strategy)
     val checkLogicContentDescription = stringResource(R.string.github_topbar_cd_check_logic)
     val sortContentDescription = stringResource(R.string.github_topbar_cd_sort)
+    val filterLabel = stringResource(R.string.github_topbar_cd_filter)
     val refreshIntervalLabel = stringResource(R.string.github_check_sheet_label_refresh_interval)
     val moreContentDescription = stringResource(R.string.github_item_cd_more_actions)
     val exportTracksLabel = if (tracksExporting) {
@@ -166,6 +172,12 @@ internal fun GitHubTopBarActions(
                         val selectedSortLabel = sortLabels.getOrElse(modes.indexOf(sortMode)) {
                             stringResource(sortMode.labelRes)
                         }
+                        val filterModes = GitHubTrackedFilterMode.entries
+                        val filterLabels = filterModes.map { mode -> stringResource(mode.labelRes) }
+                        val selectedFilterLabel =
+                            filterLabels.getOrElse(filterModes.indexOf(trackedFilterMode)) {
+                                stringResource(trackedFilterMode.labelRes)
+                            }
                         val refreshIntervalOptions = RefreshIntervalOption.entries
                         val refreshIntervalLabels = refreshIntervalOptions.map { option ->
                             stringResource(option.labelRes)
@@ -219,6 +231,22 @@ internal fun GitHubTopBarActions(
                                             selected = sortMode == mode,
                                             leadingIcon = sortIcon,
                                             onClick = { onSortModeChange(mode) }
+                                        )
+                                    }
+                                ),
+                                LiquidGlassActionMenuSubmenuRow(
+                                    id = "filter",
+                                    text = filterLabel,
+                                    subtitle = selectedFilterLabel,
+                                    leadingIcon = filterIcon,
+                                    trailingIcon = chevronRightIcon,
+                                    submenuItems = filterModes.mapIndexed { index, mode ->
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = mode.name,
+                                            text = filterLabels[index],
+                                            selected = trackedFilterMode == mode,
+                                            leadingIcon = filterIcon,
+                                            onClick = { onTrackedFilterModeChange(mode) }
                                         )
                                     }
                                 ),

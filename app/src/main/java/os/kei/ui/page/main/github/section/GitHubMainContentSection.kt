@@ -25,6 +25,7 @@ import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubSortMode
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
@@ -61,8 +62,8 @@ internal fun GitHubMainContent(
     searchExpanded: Boolean,
     trackedSearch: String,
     sortMode: GitHubSortMode,
+    trackedFilterMode: GitHubTrackedFilterMode,
     refreshIntervalHours: Int,
-    showFailedOnly: Boolean,
     showActionMenuPopup: Boolean,
     floatingDockSide: AppFloatingDockSide,
     deleteInProgress: Boolean,
@@ -102,6 +103,7 @@ internal fun GitHubMainContent(
     onSearchExpandedChange: (Boolean) -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
+    onTrackedFilterModeChange: (GitHubTrackedFilterMode) -> Unit,
     onRefreshIntervalHoursChange: (Int) -> Unit,
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
@@ -115,7 +117,7 @@ internal fun GitHubMainContent(
     onOpenOverviewEntrySheet: () -> Unit,
     onRefreshAllTracked: () -> Unit,
     onRetryFailedTracked: () -> Unit,
-    onShowFailedOnlyChange: (Boolean) -> Unit,
+    onFailedFilterToggle: (Boolean) -> Unit,
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
     onOpenTrackSheetForAdd: () -> Unit,
@@ -201,10 +203,10 @@ internal fun GitHubMainContent(
                             lastRefreshMs = lastRefreshMs,
                             visibleEntries = overviewVisibleEntries,
                             metrics = overviewMetrics,
-                            showFailedOnly = showFailedOnly,
+                            failedFilterActive = trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
                             onEditVisibleEntries = onOpenOverviewEntrySheet,
                             onRetryFailedTracked = onRetryFailedTracked,
-                            onShowFailedOnlyChange = onShowFailedOnlyChange
+                            onFailedFilterToggle = onFailedFilterToggle
                         )
                     }
                     if (showPendingShareImportCard && pendingShareImportTrack != null) {
@@ -339,6 +341,7 @@ internal fun GitHubMainContent(
                 backdrop = topBarBackdrop,
                 liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 sortMode = sortMode,
+                trackedFilterMode = trackedFilterMode,
                 refreshIntervalHours = refreshIntervalHours,
                 showActionMenuPopup = showActionMenuPopup,
                 tracksExporting = tracksExporting,
@@ -347,6 +350,7 @@ internal fun GitHubMainContent(
                 onOpenCheckLogicSheet = onOpenCheckLogicSheet,
                 onShowActionMenuPopupChange = onShowActionMenuPopupChange,
                 onSortModeChange = onSortModeChange,
+                onTrackedFilterModeChange = onTrackedFilterModeChange,
                 onRefreshIntervalHoursChange = onRefreshIntervalHoursChange,
                 onExportTrackedItems = onExportTrackedItems,
                 onImportTrackedItems = onImportTrackedItems,

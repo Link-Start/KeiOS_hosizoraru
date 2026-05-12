@@ -81,10 +81,10 @@ internal fun GitHubOverviewCard(
     lastRefreshMs: Long,
     visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
-    showFailedOnly: Boolean,
+    failedFilterActive: Boolean,
     onEditVisibleEntries: () -> Unit,
     onRetryFailedTracked: () -> Unit,
-    onShowFailedOnlyChange: (Boolean) -> Unit
+    onFailedFilterToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val overviewTitleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant
@@ -210,9 +210,9 @@ internal fun GitHubOverviewCard(
                     apiColor = apiColor,
                     visibleEntries = visibleEntries,
                     metrics = metrics,
-                    showFailedOnly = showFailedOnly,
+                    failedFilterActive = failedFilterActive,
                     onRetryFailedTracked = onRetryFailedTracked,
-                    onShowFailedOnlyChange = onShowFailedOnlyChange
+                    onFailedFilterToggle = onFailedFilterToggle
                 )
             } else {
                 GitHubOverviewCollapsedContent(
@@ -242,9 +242,9 @@ private fun GitHubOverviewExpandedContent(
     apiColor: Color,
     visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
-    showFailedOnly: Boolean,
+    failedFilterActive: Boolean,
     onRetryFailedTracked: () -> Unit,
-    onShowFailedOnlyChange: (Boolean) -> Unit
+    onFailedFilterToggle: (Boolean) -> Unit
 ) {
     val entries = visibleEntries.orDefaultGitHubOverviewEntries()
     val tiles = buildList {
@@ -374,7 +374,7 @@ private fun GitHubOverviewExpandedContent(
             }
         }
         if (metrics.failedCount > 0) {
-            if (showFailedOnly) {
+            if (failedFilterActive) {
                 StatusPill(
                     label = stringResource(R.string.github_overview_failed_filter_active),
                     color = GitHubStatusPalette.Error,
@@ -388,13 +388,13 @@ private fun GitHubOverviewExpandedContent(
                 AppLiquidDialogActionButton(
                     modifier = Modifier.weight(1f),
                     text = stringResource(
-                        if (showFailedOnly) {
+                        if (failedFilterActive) {
                             R.string.github_overview_action_clear_failed_filter
                         } else {
                             R.string.github_overview_action_show_failed
                         }
                     ),
-                    onClick = { onShowFailedOnlyChange(!showFailedOnly) },
+                    onClick = { onFailedFilterToggle(!failedFilterActive) },
                     containerColor = GitHubStatusPalette.Error,
                     variant = GlassVariant.SheetDangerAction
                 )
@@ -502,10 +502,10 @@ private fun GitHubOverviewCardPreview() {
                 preReleaseUpdateCount = 2,
                 failedCount = 1
             ),
-            showFailedOnly = false,
+            failedFilterActive = false,
             onEditVisibleEntries = {},
             onRetryFailedTracked = {},
-            onShowFailedOnlyChange = {}
+            onFailedFilterToggle = {}
         )
     }
 }

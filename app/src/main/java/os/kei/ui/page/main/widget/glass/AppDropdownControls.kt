@@ -1,11 +1,18 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
@@ -20,6 +27,9 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val DropdownNeutralTint = Color(0xFF3B82F6)
+private val DropdownSelectorMinWidth = 152.dp
+private val DropdownSelectorScreenHorizontalMargin = 18.dp
+private val DropdownSelectorHorizontalChrome = 78.dp
 
 private fun dropdownAnchorTint(
     textColor: Color,
@@ -129,7 +139,61 @@ fun AppDropdownSelector(
     placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd,
     enabled: Boolean = true
 ) {
-    androidx.compose.foundation.layout.Box(
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val maxScreenWidth =
+        (configuration.screenWidthDp.dp - DropdownSelectorScreenHorizontalMargin * 2)
+            .coerceAtLeast(DropdownSelectorMinWidth)
+    val resolvedMaxWidth = (popupMaxWidth ?: maxScreenWidth)
+        .coerceAtMost(maxScreenWidth)
+        .coerceAtLeast(DropdownSelectorMinWidth)
+    val anchorWidth = remember(anchorBounds, density) {
+        anchorBounds?.let { bounds ->
+            with(density) { bounds.width.toDp() }
+        } ?: 0.dp
+    }
+    val optionTextStyle = TextStyle(
+        fontSize = if (dropdownItemTextMaxLines == 1) {
+            AppTypographyTokens.Body.fontSize
+        } else {
+            AppTypographyTokens.Supporting.fontSize
+        },
+        lineHeight = if (dropdownItemTextMaxLines == 1) {
+            AppTypographyTokens.Body.lineHeight
+        } else {
+            AppTypographyTokens.Supporting.lineHeight
+        },
+        fontWeight = FontWeight.Medium
+    )
+    val measuredOptionWidth = remember(
+        options,
+        dropdownItemTextMaxLines,
+        optionTextStyle,
+        density,
+        textMeasurer
+    ) {
+        val textWidthPx = options.maxOfOrNull { option ->
+            textMeasurer.measure(
+                text = AnnotatedString(option),
+                style = optionTextStyle,
+                maxLines = dropdownItemTextMaxLines,
+                overflow = if (dropdownItemTextMaxLines == 1) {
+                    TextOverflow.Ellipsis
+                } else {
+                    TextOverflow.Clip
+                }
+            ).size.width
+        } ?: 0
+        with(density) { textWidthPx.toDp() } + DropdownSelectorHorizontalChrome
+    }
+    val resolvedPopupWidth = maxOf(
+        DropdownSelectorMinWidth,
+        measuredOptionWidth,
+        if (popupMatchAnchorWidth) anchorWidth else 0.dp
+    ).coerceAtMost(resolvedMaxWidth)
+
+    Box(
         modifier = modifier.capturePopupAnchor { onAnchorBoundsChange(it) },
         contentAlignment = anchorAlignment
     ) {
@@ -159,11 +223,15 @@ fun AppDropdownSelector(
                 placement = placement,
                 onDismissRequest = { onExpandedChange(false) },
                 enableWindowDim = false,
-                maxWidth = popupMaxWidth,
-                matchAnchorWidth = popupMatchAnchorWidth
+                minWidth = resolvedPopupWidth,
+                maxWidth = resolvedPopupWidth,
+                matchAnchorWidth = false
             ) {
                 val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
                 AppLiquidGlassDropdownColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    minWidth = resolvedPopupWidth,
+                    maxWidth = resolvedPopupWidth,
                     accentColor = accentColor,
                     initialScrollItemIndex = selectedIndex,
                     backdrop = backdrop
@@ -202,6 +270,7 @@ private fun DropdownSelectorChoiceList(
         },
         accentColor = accentColor,
         variant = variant,
+        modifier = Modifier.fillMaxWidth(),
         textMaxLines = textMaxLines
     )
 }

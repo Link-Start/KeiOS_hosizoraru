@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.section
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,9 +45,13 @@ import os.kei.ui.page.main.github.formatReleaseValue
 import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.repositoryHealthLabelRes
 import os.kei.ui.page.main.github.repositoryHealthStatusColor
+import os.kei.ui.page.main.os.appLucideBranchIcon
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
+import os.kei.ui.page.main.os.appLucideNotesIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -56,6 +62,7 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.liquidGlassDropdownItemAccent
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -66,6 +73,11 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private val GitHubTrackedItemMoreMenuMinWidth = 148.dp
+private val GitHubTrackedItemMoreMenuMaxWidth = 170.dp
+private val GitHubTrackedItemMoreMenuMaxHeight = 232.dp
+private const val GitHubTrackedItemMoreMenuWidthFraction = 0.40f
 
 @Composable
 internal fun GitHubRepositoryLinkCard(
@@ -296,6 +308,18 @@ internal fun GitHubTrackedItemMoreActions(
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
     val optionSize = if (showReleaseNotesAction) 4 else 3
+    val refreshIcon = appLucideRefreshIcon()
+    val actionsIcon = appLucideBranchIcon()
+    val releaseNotesIcon = appLucideNotesIcon()
+    val deleteIcon = appLucideTrashIcon()
+    val dangerTint = liquidGlassDropdownItemAccent(
+        isDark = isSystemInDarkTheme(),
+        accentColor = MiuixTheme.colorScheme.error,
+        variant = GlassVariant.SheetDangerAction
+    )
+    val menuMaxWidth =
+        (LocalConfiguration.current.screenWidthDp.dp * GitHubTrackedItemMoreMenuWidthFraction)
+            .coerceIn(GitHubTrackedItemMoreMenuMinWidth, GitHubTrackedItemMoreMenuMaxWidth)
     Box(
         modifier = Modifier.capturePopupAnchor { menuAnchorBounds = it },
         contentAlignment = Alignment.Center
@@ -316,9 +340,14 @@ internal fun GitHubTrackedItemMoreActions(
                 enableWindowDim = false,
                 onDismissRequest = { menuExpanded = false }
             ) {
-                LiquidGlassDropdownColumn {
+                LiquidGlassDropdownColumn(
+                    minWidth = GitHubTrackedItemMoreMenuMinWidth,
+                    maxWidth = menuMaxWidth,
+                    maxHeight = GitHubTrackedItemMoreMenuMaxHeight
+                ) {
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.common_refresh),
+                        leadingIcon = refreshIcon,
                         index = 0,
                         optionSize = optionSize,
                         onClick = {
@@ -328,6 +357,7 @@ internal fun GitHubTrackedItemMoreActions(
                     )
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.github_actions_menu),
+                        leadingIcon = actionsIcon,
                         index = 1,
                         optionSize = optionSize,
                         onClick = {
@@ -338,6 +368,7 @@ internal fun GitHubTrackedItemMoreActions(
                     if (showReleaseNotesAction) {
                         GitHubTrackedItemMenuAction(
                             text = stringResource(R.string.github_release_notes_title),
+                            leadingIcon = releaseNotesIcon,
                             index = 2,
                             optionSize = optionSize,
                             onClick = {
@@ -348,9 +379,11 @@ internal fun GitHubTrackedItemMoreActions(
                     }
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.github_track_sheet_btn_delete),
+                        leadingIcon = deleteIcon,
                         index = optionSize - 1,
                         optionSize = optionSize,
                         variant = GlassVariant.SheetDangerAction,
+                        contentTint = dangerTint,
                         onClick = {
                             menuExpanded = false
                             onRequestDeleteTrackedItem(item)
@@ -365,16 +398,20 @@ internal fun GitHubTrackedItemMoreActions(
 @Composable
 private fun GitHubTrackedItemMenuAction(
     text: String,
+    leadingIcon: ImageVector,
     index: Int,
     optionSize: Int,
     onClick: () -> Unit,
+    contentTint: Color? = null,
     variant: GlassVariant = GlassVariant.SheetAction
 ) {
     LiquidGlassDropdownActionItem(
         text = text,
+        leadingIcon = leadingIcon,
         onClick = onClick,
         index = index,
         optionSize = optionSize,
+        contentTint = contentTint,
         variant = variant
     )
 }

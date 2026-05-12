@@ -53,6 +53,7 @@ fun LiquidGlassDropdownItem(
     subtitle: String? = null,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
     accentColor: Color = MiuixTheme.colorScheme.primary,
+    contentTint: Color? = null,
     variant: GlassVariant = GlassVariant.SheetAction,
     enabled: Boolean = true,
     highlighted: Boolean = selected,
@@ -93,16 +94,16 @@ fun LiquidGlassDropdownItem(
         variant = variant
     )
     val contentHighlighted = highlighted && highlightContent
-    val textColor = if (contentHighlighted) {
+    val textColor = (contentTint ?: if (contentHighlighted) {
         itemAccent
     } else {
         MiuixTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.96f else 0.92f)
-    }.let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
-    val iconColor = if (contentHighlighted) {
+    }).let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
+    val iconColor = (contentTint ?: if (contentHighlighted) {
         itemAccent
     } else {
         MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.88f else 0.78f)
-    }.let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
+    }).let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
     val checkColor = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f)
     val selectedSurface = liquidGlassDropdownSelectedSurfaceColor(
         isDark = isDark,
@@ -539,6 +540,7 @@ fun LiquidGlassDropdownActionItem(
     subtitle: String? = null,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
     accentColor: Color = MiuixTheme.colorScheme.primary,
+    contentTint: Color? = null,
     variant: GlassVariant = GlassVariant.SheetAction,
     enabled: Boolean = true,
     highlighted: Boolean = false
@@ -555,6 +557,7 @@ fun LiquidGlassDropdownActionItem(
         subtitle = subtitle,
         trailingContent = trailingContent,
         accentColor = accentColor,
+        contentTint = contentTint,
         variant = variant,
         enabled = enabled,
         highlighted = highlighted,

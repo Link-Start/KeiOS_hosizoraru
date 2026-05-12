@@ -811,6 +811,12 @@
     <string name="github_asset_badge_incompatible">May be incompatible</string>
     <string name="github_cd_install_asset">Install or update %1$s</string>
     <string name="github_cd_install_asset_running">Installing %1$s</string>
+    <string name="github_page_install_confirm_title">Confirm install</string>
+    <string name="github_page_install_confirm_summary">Review the APK, ABI, version, and local state before installing.</string>
+    <string name="github_page_install_confirm_section_asset">Install source</string>
+    <string name="github_page_install_confirm_section_manifest">APK info</string>
+    <string name="github_page_install_confirm_section_review">Review hints</string>
+    <string name="github_page_install_confirm_action_install">Confirm install</string>
     <string name="github_release_notes_title">Release Notes</string>
     <string name="github_health_score_value">Health score %1$d</string>
     <string name="github_health_reason_repository_archived">Repository archived</string>

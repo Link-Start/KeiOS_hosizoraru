@@ -132,6 +132,7 @@ internal class GitHubPageState(
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
     var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
+    var managedInstallConfirmRequest by mutableStateOf<GitHubManagedInstallConfirmRequest?>(null)
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(GitHubSortMode.UpdateFirst)
     var overviewExpanded by mutableStateOf(overviewUiState.expanded)
@@ -460,6 +461,11 @@ internal class GitHubPageState(
 }
 
 internal data class GitHubApkInfoDetailRequest(
+    val item: GitHubTrackedApp,
+    val asset: GitHubReleaseAssetFile
+)
+
+internal data class GitHubManagedInstallConfirmRequest(
     val item: GitHubTrackedApp,
     val asset: GitHubReleaseAssetFile
 )

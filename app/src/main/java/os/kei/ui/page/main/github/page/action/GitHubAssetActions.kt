@@ -22,6 +22,7 @@ import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.page.GitHubApkInfoDetailRequest
+import os.kei.ui.page.main.github.page.GitHubManagedInstallConfirmRequest
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.page.releaseNotesApkVersionKey
 import os.kei.ui.page.main.github.statusActionUrl
@@ -55,11 +56,23 @@ internal class GitHubAssetActions(
     fun openApkInDownloader(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) {
         scope.launch {
             if (shouldInstallWithKeiOs(asset)) {
-                managedInstallRunner.install(item, asset)
+                openManagedInstallConfirm(item, asset)
             } else {
                 openApkInDownloaderInternal(asset)
             }
         }
+    }
+
+    fun confirmManagedInstall() {
+        val request = state.managedInstallConfirmRequest ?: return
+        state.managedInstallConfirmRequest = null
+        scope.launch {
+            managedInstallRunner.install(request.item, request.asset)
+        }
+    }
+
+    fun dismissManagedInstallConfirm() {
+        state.managedInstallConfirmRequest = null
     }
 
     fun openApkInfo(
@@ -67,11 +80,30 @@ internal class GitHubAssetActions(
         asset: GitHubReleaseAssetFile,
         forceRefresh: Boolean = false
     ) {
-        val key = asset.githubApkInfoKey()
         state.apkInfoDetailRequest = GitHubApkInfoDetailRequest(
             item = item,
             asset = asset
         )
+        loadApkInfo(asset = asset, forceRefresh = forceRefresh)
+    }
+
+    private fun openManagedInstallConfirm(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile
+    ) {
+        state.apkInfoDetailRequest = null
+        state.managedInstallConfirmRequest = GitHubManagedInstallConfirmRequest(
+            item = item,
+            asset = asset
+        )
+        loadApkInfo(asset = asset, forceRefresh = false)
+    }
+
+    private fun loadApkInfo(
+        asset: GitHubReleaseAssetFile,
+        forceRefresh: Boolean
+    ) {
+        val key = asset.githubApkInfoKey()
         if (forceRefresh) {
             state.apkInfoResults.remove(key)
             state.apkInfoInstalledResults.remove(key)

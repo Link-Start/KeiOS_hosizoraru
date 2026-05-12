@@ -396,6 +396,10 @@ internal class GitHubPageActions(
     fun openApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
         assetActions.openApkInfo(item, asset)
 
+    fun confirmManagedInstall() = assetActions.confirmManagedInstall()
+
+    fun dismissManagedInstallConfirm() = assetActions.dismissManagedInstallConfirm()
+
     fun refreshApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
         assetActions.openApkInfo(item, asset, forceRefresh = true)
 

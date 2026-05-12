@@ -12,6 +12,7 @@ import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
 import os.kei.ui.page.main.github.sheet.GitHubDecisionAssistDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheet
 import os.kei.ui.page.main.github.sheet.GitHubOverviewEntrySheet
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
@@ -271,6 +272,24 @@ internal fun GitHubPageSheetHost(
         },
         onShare = { apkInfoAsset?.let(actions::shareApkLink) },
         onDismissRequest = { state.apkInfoDetailRequest = null }
+    )
+
+    val managedInstallConfirmRequest = state.managedInstallConfirmRequest
+    val managedInstallAsset = managedInstallConfirmRequest?.asset
+    val managedInstallInfoKey = managedInstallAsset?.githubApkInfoKey().orEmpty()
+    val managedInstallRunning = managedInstallConfirmRequest?.let { request ->
+        state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] == true
+    } == true
+    GitHubManagedInstallConfirmSheet(
+        request = managedInstallConfirmRequest,
+        info = state.apkInfoResults[managedInstallInfoKey],
+        installedInfo = state.apkInfoInstalledResults[managedInstallInfoKey],
+        loading = state.apkInfoLoading[managedInstallInfoKey] == true,
+        error = state.apkInfoErrors[managedInstallInfoKey].orEmpty(),
+        running = managedInstallRunning,
+        backdrop = backdrops.sheet,
+        onConfirm = actions::confirmManagedInstall,
+        onDismissRequest = actions::dismissManagedInstallConfirm
     )
 
     GitHubTrackEditSheet(

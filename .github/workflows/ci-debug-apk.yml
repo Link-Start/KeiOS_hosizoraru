@@ -45,6 +45,11 @@ on:
         description: Commit SHA/branch/tag to build (optional). Leave empty to build the latest commit on selected branch.
         required: false
         type: string
+      publish-build-scan:
+        description: Publish Gradle Build Scan data for this run.
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
@@ -98,6 +103,7 @@ jobs:
           android-build-tools-version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
           github-actor: ${{ env.GITHUB_ACTOR }}
           github-token: ${{ env.GITHUB_TOKEN }}
+          build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 
       - name: Prepare Firebase config
         env:

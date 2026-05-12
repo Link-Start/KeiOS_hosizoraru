@@ -28,6 +28,14 @@ inputs:
   github-token:
     description: GitHub Packages token.
     required: true
+  cache-read-only:
+    description: Read existing Gradle caches without writing new cache entries.
+    required: false
+    default: "false"
+  build-scan-publish:
+    description: Publish Gradle Build Scan data for this job.
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -45,7 +53,11 @@ runs:
       uses: gradle/actions/setup-gradle@v6
       with:
         cache-provider: enhanced
+        cache-read-only: ${{ inputs.cache-read-only }}
         cache-cleanup: on-success
+        build-scan-publish: ${{ inputs.build-scan-publish }}
+        build-scan-terms-of-use-url: https://gradle.com/terms-of-service
+        build-scan-terms-of-use-agree: yes
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v4

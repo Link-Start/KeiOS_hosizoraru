@@ -758,6 +758,7 @@
     <string name="github_share_import_notify_title_adding_track">正在新增 GitHub 跟踪</string>
     <string name="github_share_import_notify_title_added">GitHub 跟踪已新增</string>
     <string name="github_share_import_notify_title_already_tracked">GitHub 跟踪已存在</string>
+    <string name="github_page_install_notify_title_confirm">等待安装确认</string>
     <string name="github_page_install_notify_title_completed">安装已完成</string>
     <string name="github_page_install_notify_title_failed">安装失败</string>
     <string name="github_share_import_notify_title_failed">分享导入失败</string>
@@ -775,6 +776,7 @@
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s 已加入 %2$s 跟踪</string>
     <string name="github_share_import_notify_content_already_tracked">%1$s 已在 %2$s 跟踪中</string>
+    <string name="github_page_install_notify_content_confirm">%1$s · %2$s · 待确认</string>
     <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_cancelled">本次分享导入联动已停止</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
@@ -791,6 +793,7 @@
     <string name="github_share_import_notify_short_adding_track">追踪中</string>
     <string name="github_share_import_notify_short_added">已追踪</string>
     <string name="github_share_import_notify_short_already_tracked">已存在</string>
+    <string name="github_page_install_notify_short_confirm">确认</string>
     <string name="github_page_install_notify_short_completed">完成</string>
     <string name="github_share_import_notify_short_failed">失败</string>
     <string name="github_share_import_notify_short_cancelled">已取消</string>
@@ -802,8 +805,15 @@
     <string name="github_page_install_confirm_summary">安装前请确认 APK、架构、版本和本机状态</string>
     <string name="github_page_install_confirm_section_asset">安装来源</string>
     <string name="github_page_install_confirm_section_manifest">APK 信息</string>
+    <string name="github_page_install_confirm_section_compare">本机与即将安装</string>
     <string name="github_page_install_confirm_section_review">确认提示</string>
     <string name="github_page_install_confirm_action_install">确认安装</string>
+    <string name="github_page_install_compare_arrow">%1$s → %2$s</string>
+    <string name="github_page_install_compare_not_installed">未安装</string>
+    <string name="github_page_install_compare_label_version_name">versionName</string>
+    <string name="github_page_install_compare_label_version_code">versionCode</string>
+    <string name="github_page_install_compare_label_target_api">target API</string>
+    <string name="github_page_install_compare_label_abi">ABI</string>
     <string name="github_release_notes_title">发行日志</string>
     <string name="github_health_score_value">健康评分 %1$d</string>
     <string name="github_health_reason_repository_archived">仓库已归档</string>

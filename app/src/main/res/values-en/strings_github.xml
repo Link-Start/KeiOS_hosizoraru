@@ -771,6 +771,7 @@
     <string name="github_share_import_notify_title_adding_track">Adding GitHub tracking</string>
     <string name="github_share_import_notify_title_added">GitHub tracking added</string>
     <string name="github_share_import_notify_title_already_tracked">GitHub tracking already exists</string>
+    <string name="github_page_install_notify_title_confirm">Waiting for install confirmation</string>
     <string name="github_page_install_notify_title_completed">Install completed</string>
     <string name="github_page_install_notify_title_failed">Install failed</string>
     <string name="github_share_import_notify_title_failed">Share import failed</string>
@@ -788,6 +789,7 @@
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s was added to %2$s tracking</string>
     <string name="github_share_import_notify_content_already_tracked">%1$s is already tracked for %2$s</string>
+    <string name="github_page_install_notify_content_confirm">%1$s · %2$s · waiting</string>
     <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_cancelled">This share-import linkage has stopped</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
@@ -804,6 +806,7 @@
     <string name="github_share_import_notify_short_adding_track">Tracking</string>
     <string name="github_share_import_notify_short_added">Tracked</string>
     <string name="github_share_import_notify_short_already_tracked">Exists</string>
+    <string name="github_page_install_notify_short_confirm">Confirm</string>
     <string name="github_page_install_notify_short_completed">Done</string>
     <string name="github_share_import_notify_short_failed">Failed</string>
     <string name="github_share_import_notify_short_cancelled">Cancelled</string>
@@ -815,8 +818,15 @@
     <string name="github_page_install_confirm_summary">Review the APK, ABI, version, and local state before installing.</string>
     <string name="github_page_install_confirm_section_asset">Install source</string>
     <string name="github_page_install_confirm_section_manifest">APK info</string>
+    <string name="github_page_install_confirm_section_compare">Local vs incoming</string>
     <string name="github_page_install_confirm_section_review">Review hints</string>
     <string name="github_page_install_confirm_action_install">Confirm install</string>
+    <string name="github_page_install_compare_arrow">%1$s → %2$s</string>
+    <string name="github_page_install_compare_not_installed">Not installed</string>
+    <string name="github_page_install_compare_label_version_name">versionName</string>
+    <string name="github_page_install_compare_label_version_code">versionCode</string>
+    <string name="github_page_install_compare_label_target_api">target API</string>
+    <string name="github_page_install_compare_label_abi">ABI</string>
     <string name="github_release_notes_title">Release Notes</string>
     <string name="github_health_score_value">Health score %1$d</string>
     <string name="github_health_reason_repository_archived">Repository archived</string>

@@ -320,6 +320,33 @@ object GitHubShareImportNotificationHelper {
         )
     }
 
+    fun notifyPageInstallConfirm(
+        context: Context,
+        owner: String,
+        repo: String,
+        releaseTag: String = "",
+        assetName: String = "",
+        appLabel: String = "",
+        packageName: String = "",
+        versionName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.PageInstallConfirm,
+                owner = owner,
+                repo = repo,
+                releaseTag = releaseTag,
+                assetName = assetName,
+                appLabel = appLabel,
+                packageName = packageName,
+                versionName = versionName,
+                targetDisplayName = targetDisplayName
+            )
+        )
+    }
+
     fun notifyPageInstallCompleted(
         context: Context,
         owner: String,
@@ -661,6 +688,12 @@ object GitHubShareImportNotificationHelper {
 
             GitHubShareImportNotificationPhase.AlreadyTracked -> context.getString(
                 R.string.github_share_import_notify_content_already_tracked,
+                state.appDisplayLabel,
+                projectLabel
+            )
+
+            GitHubShareImportNotificationPhase.PageInstallConfirm -> context.getString(
+                R.string.github_page_install_notify_content_confirm,
                 state.appDisplayLabel,
                 projectLabel
             )
@@ -1089,6 +1122,15 @@ internal enum class GitHubShareImportNotificationPhase(
         openGitHubPage = true,
         promotedLiveUpdate = true,
         miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
+        progressTemplateEnabled = false
+    ),
+    PageInstallConfirm(
+        titleRes = R.string.github_page_install_notify_title_confirm,
+        shortTextRes = R.string.github_page_install_notify_short_confirm,
+        primaryActionRes = R.string.github_share_import_notify_action_view_github,
+        progressPercent = 18,
+        ongoing = true,
+        openGitHubPage = true,
         progressTemplateEnabled = false
     ),
     PageInstallCompleted(

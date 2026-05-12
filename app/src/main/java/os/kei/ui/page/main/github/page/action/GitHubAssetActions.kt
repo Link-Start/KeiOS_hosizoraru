@@ -13,14 +13,17 @@ import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.page.GitHubApkInfoDetailRequest
 import os.kei.ui.page.main.github.page.GitHubManagedInstallConfirmRequest
 import os.kei.ui.page.main.github.page.githubApkInfoKey
@@ -96,6 +99,7 @@ internal class GitHubAssetActions(
             item = item,
             asset = asset
         )
+        notifyManagedInstallConfirm(item, asset, state.apkInfoResults[asset.githubApkInfoKey()])
         loadApkInfo(asset = asset, forceRefresh = false)
     }
 
@@ -114,6 +118,9 @@ internal class GitHubAssetActions(
                 state.apkInfoInstalledResults[key] =
                     loadInstalledPackageInfo(cachedInfo.packageName)
             }
+            state.managedInstallConfirmRequest
+                ?.takeIf { it.asset.githubApkInfoKey() == key }
+                ?.let { request -> notifyManagedInstallConfirm(request.item, asset, cachedInfo) }
             return
         }
         if (state.apkInfoLoading[key] == true) return
@@ -131,11 +138,32 @@ internal class GitHubAssetActions(
             result.onSuccess { info ->
                 state.apkInfoResults[key] = info
                 state.apkInfoInstalledResults[key] = loadInstalledPackageInfo(info.packageName)
+                state.managedInstallConfirmRequest
+                    ?.takeIf { it.asset.githubApkInfoKey() == key }
+                    ?.let { request -> notifyManagedInstallConfirm(request.item, asset, info) }
             }.onFailure { error ->
                 state.apkInfoErrors[key] = error.message
                     ?: context.getString(R.string.github_apk_info_error_failed)
             }
         }
+    }
+
+    private fun notifyManagedInstallConfirm(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+        info: GitHubApkManifestInfo?
+    ) {
+        GitHubShareImportNotificationHelper.notifyPageInstallConfirm(
+            context = context,
+            owner = item.owner,
+            repo = item.repo,
+            releaseTag = "latest",
+            assetName = asset.name,
+            appLabel = info?.appLabel.orEmpty().ifBlank { item.appLabel },
+            packageName = info?.packageName.orEmpty().ifBlank { item.packageName },
+            versionName = info?.versionName.orEmpty(),
+            targetDisplayName = item.appLabel.ifBlank { assetDisplayName(asset.name) }
+        )
     }
 
     private fun shouldInstallWithKeiOs(asset: GitHubReleaseAssetFile): Boolean {

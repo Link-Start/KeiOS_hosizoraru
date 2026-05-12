@@ -625,6 +625,36 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `page managed install confirmation uses live update short state`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.PageInstallConfirm,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo",
+            packageName = "dev.demo.app",
+            versionName = "2.0.0"
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(
+            "Waiting for install confirmation",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            "Demo · owner/repo · waiting",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertEquals("View GitHub", notification.actions[0].title.toString())
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertTrue(focusParam.contains("\"title\":\"Confirm\""))
+        assertTrue(focusParam.contains("Demo · owner/repo · waiting"))
+        assertTrue(focusParam.contains("progressTextInfo"))
+    }
+
+    @Test
     fun `final mi island notifications stay promoted and offer mark read`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val states = listOf(

@@ -184,6 +184,17 @@ internal fun GitHubManagedInstallConfirmSheet(
                 }
             }
 
+            info?.let { manifestInfo ->
+                SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_compare))
+                SheetSectionCard {
+                    LocalRemoteComparisonBlock(
+                        info = manifestInfo,
+                        installedInfo = installedInfo,
+                        supportedAbis = supportedAbis
+                    )
+                }
+            }
+
             trustSignal.reasons
                 .takeIf { reasons ->
                     trustSignal.level != GitHubDecisionLevel.Good ||
@@ -274,6 +285,93 @@ private fun ManifestInfoBlock(
             info.packageName.ifBlank { "-" }
         )
     )
+}
+
+@Composable
+private fun LocalRemoteComparisonBlock(
+    info: GitHubApkManifestInfo,
+    installedInfo: GitHubInstalledPackageInfo?,
+    supportedAbis: List<String>
+) {
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_apk_info_label_app),
+        localValue = installedInfo?.appLabel.orEmpty(),
+        remoteValue = info.appLabel,
+        compareWhenLocalMissing = false
+    )
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_page_install_compare_label_version_name),
+        localValue = installedInfo?.versionName.orEmpty(),
+        remoteValue = info.versionName
+    )
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_page_install_compare_label_version_code),
+        localValue = installedInfo?.versionCode
+            ?.takeIf { it >= 0L }
+            ?.toString()
+            .orEmpty(),
+        remoteValue = info.versionCode
+    )
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_page_install_compare_label_target_api),
+        localValue = installedInfo?.targetSdk
+            ?.takeIf { it >= 0 }
+            ?.toString()
+            .orEmpty(),
+        remoteValue = info.targetSdk
+    )
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_page_install_compare_label_abi),
+        localValue = supportedAbis
+            .take(2)
+            .joinToString(" / "),
+        remoteValue = info.nativeAbis.takeIf { it.isNotEmpty() }?.joinToString(" / ")
+            ?: stringResource(R.string.github_apk_info_diff_abi_universal),
+        compareWhenLocalMissing = false
+    )
+}
+
+@Composable
+private fun ComparisonInfoRow(
+    label: String,
+    localValue: String,
+    remoteValue: String,
+    compareWhenLocalMissing: Boolean = true
+) {
+    ConfirmInfoRow(
+        label = label,
+        value = comparisonValue(
+            localValue = localValue,
+            remoteValue = remoteValue,
+            compareWhenLocalMissing = compareWhenLocalMissing
+        )
+    )
+}
+
+@Composable
+private fun comparisonValue(
+    localValue: String,
+    remoteValue: String,
+    compareWhenLocalMissing: Boolean
+): String {
+    val local = localValue.trim()
+    val remote = remoteValue.trim()
+    val remoteDisplay = remote.ifBlank { stringResource(R.string.common_na) }
+    if (local.isBlank()) {
+        return if (compareWhenLocalMissing) {
+            stringResource(
+                R.string.github_page_install_compare_arrow,
+                stringResource(R.string.github_page_install_compare_not_installed),
+                remoteDisplay
+            )
+        } else {
+            remoteDisplay
+        }
+    }
+    if (remote.isBlank() || local.equals(remote, ignoreCase = true)) {
+        return local
+    }
+    return stringResource(R.string.github_page_install_compare_arrow, local, remote)
 }
 
 @Composable

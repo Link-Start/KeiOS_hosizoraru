@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PluralsCandidate">
     <string name="ba_topbar_title">Blue Archive</string>
     <string name="ba_cd_edit">Edit</string>
     <string name="ba_cd_notification_settings">Notification settings</string>

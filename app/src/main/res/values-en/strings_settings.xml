@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PluralsCandidate">
     <string name="settings_title">Settings</string>
     <string name="settings_search_placeholder">Search settings</string>
     <string name="settings_category_access">Access</string>

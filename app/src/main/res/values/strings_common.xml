@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
     <string name="common_open">打开</string>
     <string name="common_download">下载</string>
     <string name="common_close">关闭</string>

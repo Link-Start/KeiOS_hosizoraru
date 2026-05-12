@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
     <string name="about_page_title">About</string>
     <string name="about_project_url">https://github.com/hosizoraru/KeiOS</string>
     <string name="about_value_yes">是</string>

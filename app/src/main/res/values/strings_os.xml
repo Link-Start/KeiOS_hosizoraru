@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
     <string name="os_action_manage_cards">管理卡片显示</string>
     <string name="os_action_manage_activities">管理活动显示</string>
     <string name="os_action_refresh_params">刷新 OS 参数</string>

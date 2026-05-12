@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PluralsCandidate">
     <string name="os_action_manage_cards">Manage card visibility</string>
     <string name="os_action_manage_activities">Manage activity visibility</string>
     <string name="os_action_refresh_params">Refresh OS parameters</string>

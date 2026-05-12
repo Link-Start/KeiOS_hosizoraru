@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PluralsCandidate">
     <string name="mcp_skill_page_title">MCP Skill</string>
     <string name="mcp_skill_markdown_empty"># MCP Skill\n\nNo content yet</string>
     <string name="mcp_skill_section_empty_items">No items</string>

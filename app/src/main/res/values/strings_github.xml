@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources,PluralsCandidate">
     <string name="github_refresh_channel_name">GitHub 项目追踪刷新</string>
     <string name="github_refresh_channel_desc">用于展示 GitHub 项目追踪刷新进度与结果</string>
     <string name="github_refresh_title_running">GitHub项目追踪刷新中</string>

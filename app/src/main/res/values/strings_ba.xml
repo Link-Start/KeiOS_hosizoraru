@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
     <string name="ba_topbar_title">BlueArchive</string>
     <string name="ba_cd_edit">编辑</string>
     <string name="ba_cd_notification_settings">通知设置</string>

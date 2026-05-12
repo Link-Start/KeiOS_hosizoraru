@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="UnusedResources">
     <string name="main_toast_pool_guide_missing">该卡池暂未关联学生图鉴</string>
     <string name="home_cd_edit_bottom_pages">编辑底栏板块</string>
     <string name="home_sheet_bottom_pages_title">卡片底栏板块</string>

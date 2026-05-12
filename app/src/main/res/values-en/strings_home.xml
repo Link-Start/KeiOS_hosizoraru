@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PluralsCandidate">
     <string name="main_toast_pool_guide_missing">This recruitment banner is not linked to a student guide yet.</string>
     <string name="home_cd_edit_bottom_pages">Edit bottom pages</string>
     <string name="home_sheet_bottom_pages_title">Bottom pages</string>

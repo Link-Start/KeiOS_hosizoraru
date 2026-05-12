@@ -35,8 +35,7 @@ import os.kei.core.system.ShizukuApiUtils
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
-import os.kei.ui.page.main.ba.BaApNotificationDispatcher
-import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
 import os.kei.ui.page.main.host.main.MainScreen
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -318,13 +317,7 @@ class MainActivity : ComponentActivity() {
         val action = pendingShortcutAction ?: return
         if (action != SHORTCUT_ACTION_BA_AP_ISLAND) return
         pendingShortcutAction = null
-        val snapshot = BASettingsStore.loadSnapshot()
-        val sent = BaApNotificationDispatcher.send(
-            context = this,
-            currentDisplay = snapshot.apCurrent.coerceAtLeast(0.0).toInt(),
-            limitDisplay = snapshot.apLimit.coerceAtLeast(0),
-            thresholdDisplay = snapshot.apNotifyThreshold.coerceAtLeast(0)
-        )
+        val sent = BaApIslandShortcutNotificationCoordinator.send(this)
         if (!sent) {
             Toast.makeText(
                 this,

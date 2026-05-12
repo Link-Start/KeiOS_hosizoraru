@@ -89,16 +89,6 @@ jobs:
           cache-read-only: "true"
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 
-      - name: Prepare Firebase config
-        env:
-          GOOGLE_SERVICES_JSON_BENCHMARK_B64: ${{ secrets.GOOGLE_SERVICES_JSON_BENCHMARK_B64 }}
-        run: |
-          scripts/ci/write_google_services_json.sh \
-            benchmark \
-            app/src/benchmark/google-services.json \
-            GOOGLE_SERVICES_JSON_BENCHMARK_B64 \
-            os.kei.benchmark
-
       - name: Build benchmark APK
         env:
           RUN_LINT_VITAL: ${{ github.event.inputs.run-lint-vital || 'false' }}

@@ -231,7 +231,6 @@
     <string name="about_row_ktor">Ktor</string>
     <string name="about_row_okhttp">OkHttp</string>
     <string name="about_row_focus_api">Focus API</string>
-    <string name="about_row_firebase">Firebase</string>
     <string name="about_row_icon_set">Icon set</string>
     <string name="about_row_broadcast_handler">Broadcast Handler</string>
     <string name="about_row_foreground_info_handler">ForegroundInfo Handler</string>
@@ -294,8 +293,6 @@
     <string name="about_license_value_mcp">v%1$s · MIT</string>
     <string name="about_license_row_network_stack">Network &amp; notification stack</string>
     <string name="about_license_value_network_stack">Ktor %1$s · OkHttp %2$s · Focus API %3$s · Apache-2.0</string>
-    <string name="about_license_row_firebase">Firebase</string>
-    <string name="about_license_value_firebase">BoM %1$s · Analytics · Crashlytics Gradle %2$s · Apache-2.0</string>
     <string name="about_license_row_media_stack">Media &amp; image stack</string>
     <string name="about_license_value_media_stack">Media3 %1$s · Coil %2$s · ZoomImage %3$s · uCrop %4$s · Apache-2.0</string>
     <string name="about_license_row_package_installer">PackageInstaller</string>
@@ -314,7 +311,6 @@
     <string name="about_license_url_mmkv">https://github.com/Tencent/MMKV/blob/master/LICENSE.TXT</string>
     <string name="about_license_url_mcp">https://github.com/modelcontextprotocol/kotlin-sdk/blob/main/LICENSE</string>
     <string name="about_license_url_network_stack">https://github.com/square/okhttp/blob/master/LICENSE.txt</string>
-    <string name="about_license_url_firebase">https://github.com/firebase/firebase-android-sdk/blob/main/LICENSE</string>
     <string name="about_license_url_media_stack">https://www.apache.org/licenses/LICENSE-2.0.txt</string>
     <string name="about_license_url_package_installer">https://github.com/vvb2060/PackageInstaller</string>
 

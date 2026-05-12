@@ -138,10 +138,11 @@
 - [ ] 跟踪 Android 17 post-quantum / hybrid APK signing 在 AGP、apksigner、GitHub Actions、本地发布 keystore 中的稳定支持，再规划发布管线调整。
 - [ ] 继续跟踪 OkHttp、Ktor、Coil、Media3、Navigation3、Activity Compose 对 Android 36 / 37 新平台能力的稳定版支持。
 
-### P2-C 性能、触感、遥测
+### P2-C 性能、触感、诊断
 
 - [ ] 当前动画 / 材质表现稳定后，再评估 richer haptics 与 frame-rate API 在液态底栏、slider、画廊视频、全屏媒体中的收益。
-- [ ] 性能遥测路线需要更深平台信号时，再评估 `ApplicationStartInfo`、`reportFullyDrawn`、allow-while-idle alarm listener API、JobScheduler `JobDebugInfo`。
+- [ ] 本机诊断路线需要更深平台信号时，再评估 `ApplicationStartInfo`、`reportFullyDrawn`
+  、allow-while-idle alarm listener API、JobScheduler `JobDebugInfo`。
 
 ### P2-D 无障碍与包容性体验
 

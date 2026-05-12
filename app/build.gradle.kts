@@ -1,4 +1,3 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -162,8 +161,6 @@ val focusApiVersion = "1.4"
 val metricsPerformanceVersion = "1.0.0"
 val profileInstallerVersion = "1.4.1"
 val lifecycleViewModelComposeVersion = "2.10.0"
-val firebaseBomVersion = "34.13.0"
-val firebaseCrashlyticsGradleVersion = "3.0.7"
 val robolectricVersion = "4.16.1"
 val androidTestExtJunitVersion = "1.3.0"
 val roborazziVersion = "1.60.0"
@@ -179,8 +176,6 @@ plugins {
     id("io.github.takahirom.roborazzi")
     id("org.jetbrains.kotlin.plugin.compose")
     id("androidx.baselineprofile")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -232,12 +227,6 @@ android {
         buildConfigField("String", "DOCUMENTFILE_VERSION", "\"$documentFileVersion\"")
         buildConfigField("String", "SHIZUKU_VERSION", "\"$shizukuVersion\"")
         buildConfigField("String", "FOCUS_API_VERSION", "\"$focusApiVersion\"")
-        buildConfigField("String", "FIREBASE_BOM_VERSION", "\"$firebaseBomVersion\"")
-        buildConfigField(
-            "String",
-            "FIREBASE_CRASHLYTICS_GRADLE_VERSION",
-            "\"$firebaseCrashlyticsGradleVersion\""
-        )
         buildConfigField("String", "GRADLE_VERSION", "\"$projectGradleVersion\"")
         buildConfigField("String", "BASE_VERSION_NAME", "\"${releaseVersion.name}\"")
         buildConfigField("String", "NEXT_VERSION_NAME", "\"${nonReleaseVersion.name}\"")
@@ -254,7 +243,7 @@ android {
         buildConfigField("int", "TARGET_SDK_VERSION", projectTargetSdk.toString())
         buildConfigField("String", "JAVA_VERSION", "\"${projectJavaVersion.majorVersion}\"")
         buildConfigField("String", "JVM_TARGET_VERSION", "\"${projectJvmTarget.target}\"")
-        buildConfigField("boolean", "LOG_DEBUG_DEFAULT", "false")
+        buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -262,12 +251,12 @@ android {
     buildTypes {
         getByName("debug") {
             applicationIdSuffix = ".debug"
-            buildConfigField("boolean", "LOG_DEBUG_DEFAULT", "true")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"debug\"")
         }
 
         release {
             optimization.enable = true
-            buildConfigField("boolean", "LOG_DEBUG_DEFAULT", "false")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 
         create("benchmark") {
@@ -275,7 +264,7 @@ android {
             applicationIdSuffix = ".benchmark"
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
-            buildConfigField("boolean", "LOG_DEBUG_DEFAULT", "false")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
             matchingFallbacks += listOf("release")
         }
     }
@@ -306,10 +295,6 @@ android {
             it.systemProperty("okhttp.platform", "jdk9")
         }
     }
-}
-
-googleServices {
-    missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN
 }
 
 androidComponents {
@@ -401,9 +386,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleViewModelComposeVersion")
     implementation("androidx.documentfile:documentfile:$documentFileVersion")
     implementation("com.xzakota.hyper.notification:focus-api:$focusApiVersion")
-    implementation(platform("com.google.firebase:firebase-bom:$firebaseBomVersion"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-crashlytics")
 
     // Keep kotlin-test aligned with the applied Kotlin plugin version to avoid version skew.
     testImplementation(kotlin("test"))

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import os.kei.core.log.AppLogLevel
 
 class UiPrefsRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -118,9 +119,9 @@ class UiPrefsRepository(
         }
     }
 
-    suspend fun setLogDebugEnabled(value: Boolean) {
-        updateAndPersist({ copy(logDebugEnabled = value) }) {
-            UiPrefs.setLogDebugEnabled(value)
+    suspend fun setLogLevel(value: AppLogLevel) {
+        updateAndPersist({ copy(logLevel = value) }) {
+            UiPrefs.setLogLevel(value)
         }
     }
 
@@ -133,18 +134,6 @@ class UiPrefsRepository(
     suspend fun setCacheDiagnosticsEnabled(value: Boolean) {
         updateAndPersist({ copy(cacheDiagnosticsEnabled = value) }) {
             UiPrefs.setCacheDiagnosticsEnabled(value)
-        }
-    }
-
-    suspend fun setFirebaseBasicStatsEnabled(value: Boolean) {
-        updateAndPersist({ copy(firebaseBasicStatsEnabled = value) }) {
-            UiPrefs.setFirebaseBasicStatsEnabled(value)
-        }
-    }
-
-    suspend fun setFirebaseErrorLogsEnabled(value: Boolean) {
-        updateAndPersist({ copy(firebaseErrorLogsEnabled = value) }) {
-            UiPrefs.setFirebaseErrorLogsEnabled(value)
         }
     }
 

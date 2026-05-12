@@ -43,29 +43,6 @@ Gradle 配置也支持环境变量兜底：
 - `GITHUB_ACTOR`
 - `GITHUB_TOKEN`
 
-### Firebase 配置文件
-
-Firebase Android 配置文件作为本地密钥处理，并已加入 git ignore：
-
-- `app/src/release/google-services.json` 对应 `os.kei`
-- `app/src/debug/google-services.json` 对应 `os.kei.debug`
-- `app/src/benchmark/google-services.json` 对应 `os.kei.benchmark`
-
-本地构建直接读取这些文件。GitHub Actions 会在 Gradle 构建前，从 base64 编码后的 repository
-secrets 写入 Debug / Benchmark 配置文件。fork pull request 的 Debug 构建在无法读取 repository
-secrets 时使用本地 CI stub。
-
-用对应本地文件生成 secret value：
-
-```bash
-base64 < app/src/debug/google-services.json | tr -d '\n'
-base64 < app/src/benchmark/google-services.json | tr -d '\n'
-base64 < app/src/release/google-services.json | tr -d '\n'
-```
-
-CI helper 会在构建前校验生成文件里包含对应 Android 包名。Google Cloud Console 里建议把 Firebase
-Android API key 限制到 `os.kei`、`os.kei.debug`、`os.kei.benchmark` 对应的包名和签名证书指纹。
-
 ### 可选本地覆盖项
 
 推荐通过 `~/.gradle/gradle.properties`（优先）或 `local.properties` 做本机覆盖：
@@ -122,7 +99,6 @@ JDK 兜底示例路径：
 - 手动触发：`workflow_dispatch`，可选 `commit`（commit SHA / branch / tag）。
 - 构建产物：自动构建并上传 Debug APK 到 GitHub Actions。
 - 使用场景：开发过程中的快速预览与验证。
-- Firebase 配置：由 `GOOGLE_SERVICES_JSON_DEBUG_B64` 生成，并校验 `os.kei.debug`。
 - 签名：仅 Debug / Benchmark artifact 使用 `app/signing/` 内的共享 CI debug keystore。
 - 保留期：14 天。
 - nightly.link：`https://nightly.link/hosizoraru/KeiOS/workflows/ci-debug-apk/master`
@@ -139,7 +115,6 @@ JDK 兜底示例路径：
 - 构建任务：`./gradlew :app:assembleBenchmark --stacktrace`。
 - 构建产物：自动上传 Benchmark APK 到 GitHub Actions Artifact。
 - 使用场景：稳定版通道之外的基准验证与尝鲜预览。
-- Firebase 配置：由 `GOOGLE_SERVICES_JSON_BENCHMARK_B64` 生成，并校验 `os.kei.benchmark`。
 - 签名：仅 Debug / Benchmark artifact 使用 `app/signing/` 内的共享 CI debug keystore。
 - 保留期：14 天。
 - nightly.link：`https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master`

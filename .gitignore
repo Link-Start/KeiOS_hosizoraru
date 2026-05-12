@@ -69,8 +69,6 @@ signing.properties
 .env.*
 !/app/signing/
 !/app/signing/keios-ci-debug.keystore
-/app/google-services*.json
-/app/src/**/google-services.json
 
 # Temporary / local scratch
 tmp/

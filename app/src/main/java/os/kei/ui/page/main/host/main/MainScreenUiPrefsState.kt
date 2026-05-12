@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefsSnapshot
-import os.kei.core.telemetry.FirebaseTelemetry
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.McpServerManager
 
@@ -33,11 +33,9 @@ internal class MainScreenUiPrefsState(
     val superIslandNotificationEnabled: Boolean get() = snapshot.superIslandNotificationEnabled
     val superIslandBypassRestrictionEnabled: Boolean get() = snapshot.superIslandBypassRestrictionEnabled
     val superIslandRestoreDelayMs: Int get() = snapshot.superIslandRestoreDelayMs
-    val logDebugEnabled: Boolean get() = snapshot.logDebugEnabled
+    val logLevel: AppLogLevel get() = snapshot.logLevel
     val textCopyCapabilityExpanded: Boolean get() = snapshot.textCopyCapabilityExpanded
     val cacheDiagnosticsEnabled: Boolean get() = snapshot.cacheDiagnosticsEnabled
-    val firebaseBasicStatsEnabled: Boolean get() = snapshot.firebaseBasicStatsEnabled
-    val firebaseErrorLogsEnabled: Boolean get() = snapshot.firebaseErrorLogsEnabled
     val visibleBottomPageNames: Set<String> get() = snapshot.visibleBottomPageNames
 
     fun updateLiquidBottomBarEnabled(value: Boolean) {
@@ -110,9 +108,9 @@ internal class MainScreenUiPrefsState(
         McpNotificationHelper.refreshCurrentNotificationStyle(appContext)
     }
 
-    fun updateLogDebugEnabled(value: Boolean) {
-        viewModel.updateLogDebugEnabled(value)
-        AppLogger.setDebugEnabled(value)
+    fun updateLogLevel(value: AppLogLevel) {
+        viewModel.updateLogLevel(value)
+        AppLogger.setLogLevel(value)
     }
 
     fun updateTextCopyCapabilityExpanded(value: Boolean) {
@@ -121,16 +119,6 @@ internal class MainScreenUiPrefsState(
 
     fun updateCacheDiagnosticsEnabled(value: Boolean) {
         viewModel.updateCacheDiagnosticsEnabled(value)
-    }
-
-    fun updateFirebaseBasicStatsEnabled(value: Boolean) {
-        viewModel.updateFirebaseBasicStatsEnabled(value)
-        FirebaseTelemetry.setBasicStatsEnabled(appContext, value)
-    }
-
-    fun updateFirebaseErrorLogsEnabled(value: Boolean) {
-        viewModel.updateFirebaseErrorLogsEnabled(value)
-        FirebaseTelemetry.setErrorLogsEnabled(value)
     }
 
     fun updateVisibleBottomPageNames(value: Set<String>) {

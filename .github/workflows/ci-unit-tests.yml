@@ -103,17 +103,6 @@ jobs:
           cache-read-only: "true"
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 
-      - name: Prepare Firebase config
-        env:
-          GOOGLE_SERVICES_JSON_DEBUG_B64: ${{ secrets.GOOGLE_SERVICES_JSON_DEBUG_B64 }}
-          ALLOW_GOOGLE_SERVICES_STUB: "true"
-        run: |
-          scripts/ci/write_google_services_json.sh \
-            debug \
-            app/src/debug/google-services.json \
-            GOOGLE_SERVICES_JSON_DEBUG_B64 \
-            os.kei.debug
-
       - name: Run debug unit tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 

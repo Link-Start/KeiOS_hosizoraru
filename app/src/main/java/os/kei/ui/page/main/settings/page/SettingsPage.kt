@@ -39,6 +39,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainLoadedPager
@@ -102,16 +103,12 @@ fun SettingsPage(
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     superIslandRestoreDelayMs: Int,
     onSuperIslandRestoreDelayMsChanged: (Int) -> Unit,
-    logDebugEnabled: Boolean,
-    onLogDebugChanged: (Boolean) -> Unit,
+    logLevel: AppLogLevel,
+    onLogLevelChanged: (AppLogLevel) -> Unit,
     textCopyCapabilityExpanded: Boolean,
     onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
     cacheDiagnosticsEnabled: Boolean,
     onCacheDiagnosticsChanged: (Boolean) -> Unit,
-    firebaseBasicStatsEnabled: Boolean,
-    onFirebaseBasicStatsChanged: (Boolean) -> Unit,
-    firebaseErrorLogsEnabled: Boolean,
-    onFirebaseErrorLogsChanged: (Boolean) -> Unit,
     shizukuStatus: String,
     onCheckOrRequestShizuku: () -> Unit,
     shizukuApiUtils: ShizukuApiUtils,
@@ -133,8 +130,6 @@ fun SettingsPage(
         cacheState = cacheState,
         logState = logState
     )
-    val telemetryState by settingsPageViewModel.telemetryState.collectAsStateWithLifecycle()
-
     val pageUiState = rememberSettingsPageUiState()
     val backgroundController = rememberSettingsBackgroundController(
         nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
@@ -158,9 +153,7 @@ fun SettingsPage(
         notificationPermissionGranted = notificationPermissionGranted,
         shizukuStatus = shizukuStatus,
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
-        logDebugEnabled = logDebugEnabled,
-        firebaseBasicStatsEnabled = firebaseBasicStatsEnabled,
-        firebaseErrorLogsEnabled = firebaseErrorLogsEnabled,
+        logLevel = logLevel,
         shizukuRefreshToken = shizukuRefreshToken
     )
     val sectionContracts = rememberSettingsPageSectionContracts(
@@ -356,13 +349,8 @@ fun SettingsPage(
         logState = routeState.logState,
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
         onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
-        logDebugEnabled = logDebugEnabled,
-        onLogDebugChanged = onLogDebugChanged,
-        firebaseBasicStatsEnabled = firebaseBasicStatsEnabled,
-        onFirebaseBasicStatsChanged = onFirebaseBasicStatsChanged,
-        firebaseErrorLogsEnabled = firebaseErrorLogsEnabled,
-        onFirebaseErrorLogsChanged = onFirebaseErrorLogsChanged,
-        telemetryState = telemetryState,
+        logLevel = logLevel,
+        onLogLevelChanged = onLogLevelChanged,
         nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
         onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
         nonHomeBackgroundUri = nonHomeBackgroundUri,

@@ -44,6 +44,13 @@ body:
       label: Additional context, screenshots, or references
       description: Add mockups, screenshots, recordings, links, or examples if useful.
 
+  - type: textarea
+    id: environment
+    attributes:
+      label: Optional environment / 可选环境信息
+      description: KeiOS version, Android version, device model, or install source if the request depends on a specific environment.
+      placeholder: KeiOS version · Android version · device model · install source
+
   - type: checkboxes
     id: checks
     attributes:

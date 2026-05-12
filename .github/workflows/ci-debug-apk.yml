@@ -105,17 +105,6 @@ jobs:
           github-token: ${{ env.GITHUB_TOKEN }}
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 
-      - name: Prepare Firebase config
-        env:
-          GOOGLE_SERVICES_JSON_DEBUG_B64: ${{ secrets.GOOGLE_SERVICES_JSON_DEBUG_B64 }}
-          ALLOW_GOOGLE_SERVICES_STUB: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-        run: |
-          scripts/ci/write_google_services_json.sh \
-            debug \
-            app/src/debug/google-services.json \
-            GOOGLE_SERVICES_JSON_DEBUG_B64 \
-            os.kei.debug
-
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 

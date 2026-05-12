@@ -39,19 +39,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KeiOS">
 
-        <meta-data
-            android:name="firebase_analytics_collection_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="google_analytics_adid_collection_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="google_analytics_default_allow_ad_personalization_signals"
-            android:value="false" />
-        <meta-data
-            android:name="firebase_crashlytics_collection_enabled"
-            android:value="false" />
-
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -114,6 +101,13 @@
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:enableOnBackInvokedCallback="true"
             android:exported="false" />
+
+        <activity
+            android:name=".ui.page.main.feedback.FeedbackIssueActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/feedback_issue_title" />
 
         <activity
             android:name=".ui.page.main.ba.BaActivityCalendarActivity"

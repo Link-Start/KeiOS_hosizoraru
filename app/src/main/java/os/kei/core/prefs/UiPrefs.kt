@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import os.kei.BuildConfig
+import os.kei.core.log.AppLogLevel
 
 enum class AppThemeMode {
     FOLLOW_SYSTEM,
@@ -29,11 +30,9 @@ data class UiPrefsSnapshot(
     val superIslandNotificationEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
-    val logDebugEnabled: Boolean,
+    val logLevel: AppLogLevel,
     val textCopyCapabilityExpanded: Boolean,
     val cacheDiagnosticsEnabled: Boolean,
-    val firebaseBasicStatsEnabled: Boolean,
-    val firebaseErrorLogsEnabled: Boolean,
     val appThemeMode: AppThemeMode,
     val visibleBottomPageNames: Set<String>
 )
@@ -57,10 +56,9 @@ object UiPrefs {
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
     private const val KEY_SUPER_ISLAND_RESTORE_DELAY_MS = "super_island_restore_delay_ms"
     private const val KEY_LOG_DEBUG = "log_debug"
+    private const val KEY_LOG_LEVEL = "log_level"
     private const val KEY_TEXT_COPY_CAPABILITY_EXPANDED = "text_copy_capability_expanded"
     private const val KEY_CACHE_DIAGNOSTICS = "cache_diagnostics"
-    private const val KEY_FIREBASE_BASIC_STATS = "firebase_basic_stats"
-    private const val KEY_FIREBASE_ERROR_LOGS = "firebase_error_logs"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_VISIBLE_BOTTOM_PAGES = "visible_bottom_pages"
     private const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
@@ -79,6 +77,10 @@ object UiPrefs {
 
     private fun buildTypeAwareLogDebugKey(): String {
         return "${KEY_LOG_DEBUG}_${BuildConfig.BUILD_TYPE}"
+    }
+
+    private fun buildTypeAwareLogLevelKey(): String {
+        return "${KEY_LOG_LEVEL}_${BuildConfig.BUILD_TYPE}"
     }
 
     fun isLiquidBottomBarEnabled(defaultValue: Boolean = true): Boolean {
@@ -232,12 +234,40 @@ object UiPrefs {
         )
     }
 
-    fun isLogDebugEnabled(defaultValue: Boolean = BuildConfig.LOG_DEBUG_DEFAULT): Boolean {
-        return kv().decodeBool(buildTypeAwareLogDebugKey(), defaultValue)
+    fun getLogLevel(
+        defaultValue: AppLogLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
+    ): AppLogLevel {
+        val store = kv()
+        val levelKey = buildTypeAwareLogLevelKey()
+        if (store.containsKey(levelKey)) {
+            return AppLogLevel.fromStorageId(
+                raw = store.decodeString(levelKey, defaultValue.storageId),
+                fallback = defaultValue
+            )
+        }
+        val legacyKey = buildTypeAwareLogDebugKey()
+        if (store.containsKey(legacyKey)) {
+            return if (store.decodeBool(legacyKey, false)) {
+                AppLogLevel.Debug
+            } else {
+                AppLogLevel.Off
+            }
+        }
+        return defaultValue
+    }
+
+    fun setLogLevel(value: AppLogLevel) {
+        kv().encode(buildTypeAwareLogLevelKey(), value.storageId)
+    }
+
+    fun isLogDebugEnabled(defaultValue: Boolean = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID) == AppLogLevel.Debug): Boolean {
+        return getLogLevel(
+            defaultValue = if (defaultValue) AppLogLevel.Debug else AppLogLevel.Off
+        ) == AppLogLevel.Debug
     }
 
     fun setLogDebugEnabled(value: Boolean) {
-        kv().encode(buildTypeAwareLogDebugKey(), value)
+        setLogLevel(if (value) AppLogLevel.Debug else AppLogLevel.Off)
     }
 
     fun isTextCopyCapabilityExpanded(defaultValue: Boolean = false): Boolean {
@@ -259,22 +289,6 @@ object UiPrefs {
 
     fun setCacheDiagnosticsEnabled(value: Boolean) {
         kv().encode(KEY_CACHE_DIAGNOSTICS, value)
-    }
-
-    fun isFirebaseBasicStatsEnabled(defaultValue: Boolean = false): Boolean {
-        return kv().decodeBool(KEY_FIREBASE_BASIC_STATS, defaultValue)
-    }
-
-    fun setFirebaseBasicStatsEnabled(value: Boolean) {
-        kv().encode(KEY_FIREBASE_BASIC_STATS, value)
-    }
-
-    fun isFirebaseErrorLogsEnabled(defaultValue: Boolean = false): Boolean {
-        return kv().decodeBool(KEY_FIREBASE_ERROR_LOGS, defaultValue)
-    }
-
-    fun setFirebaseErrorLogsEnabled(value: Boolean) {
-        kv().encode(KEY_FIREBASE_ERROR_LOGS, value)
     }
 
     fun getAppThemeMode(defaultValue: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): AppThemeMode {
@@ -323,11 +337,9 @@ object UiPrefs {
             superIslandNotificationEnabled = false,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
-            logDebugEnabled = BuildConfig.LOG_DEBUG_DEFAULT,
+            logLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID),
             textCopyCapabilityExpanded = false,
             cacheDiagnosticsEnabled = true,
-            firebaseBasicStatsEnabled = false,
-            firebaseErrorLogsEnabled = false,
             appThemeMode = appThemeMode,
             visibleBottomPageNames = DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES
         )
@@ -355,11 +367,9 @@ object UiPrefs {
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),
             superIslandRestoreDelayMs = getSuperIslandRestoreDelayMs(),
-            logDebugEnabled = store.decodeBool(buildTypeAwareLogDebugKey(), BuildConfig.LOG_DEBUG_DEFAULT),
+            logLevel = getLogLevel(),
             textCopyCapabilityExpanded = store.decodeBool(KEY_TEXT_COPY_CAPABILITY_EXPANDED, false),
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
-            firebaseBasicStatsEnabled = store.decodeBool(KEY_FIREBASE_BASIC_STATS, false),
-            firebaseErrorLogsEnabled = store.decodeBool(KEY_FIREBASE_ERROR_LOGS, false),
             appThemeMode = getAppThemeMode(),
             visibleBottomPageNames = loadVisibleBottomPageNames()
         )

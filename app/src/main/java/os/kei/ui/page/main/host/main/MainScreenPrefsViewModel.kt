@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 
@@ -123,9 +124,9 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
-    fun updateLogDebugEnabled(value: Boolean) {
+    fun updateLogLevel(value: AppLogLevel) {
         launchRepositoryUpdate {
-            setLogDebugEnabled(value)
+            setLogLevel(value)
         }
     }
 
@@ -138,18 +139,6 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     fun updateCacheDiagnosticsEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setCacheDiagnosticsEnabled(value)
-        }
-    }
-
-    fun updateFirebaseBasicStatsEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setFirebaseBasicStatsEnabled(value)
-        }
-    }
-
-    fun updateFirebaseErrorLogsEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setFirebaseErrorLogsEnabled(value)
         }
     }
 

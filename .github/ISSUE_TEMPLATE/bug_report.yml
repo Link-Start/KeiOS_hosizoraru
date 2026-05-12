@@ -1,101 +1,102 @@
-name: Bug report
-description: Report a reproducible problem in KeiOS.
+name: Bug report / Bug 反馈
+description: Report a reproducible KeiOS problem. / 反馈可复现的 KeiOS 问题。
 title: "[Bug]: "
 labels: [ "bug" ]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug. Please include enough detail for maintainers to reproduce it.
+        Please include reproducible steps and attach exported KeiOS logs when useful.
+        请尽量填写可复现步骤；需要时附上 KeiOS 导出的日志 ZIP。
 
   - type: textarea
     id: description
     attributes:
-      label: Problem description
-      description: What is the bug?
-      placeholder: Describe the problem clearly.
+      label: Problem description / 问题描述
+      description: What is the bug? / 具体问题是什么？
+      placeholder: Describe the problem clearly. / 请清楚描述问题。
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: List the exact steps that trigger the issue.
+      label: Steps to reproduce / 复现步骤
+      description: List exact actions that trigger the issue. / 写出触发问题的具体操作。
       placeholder: |
-        1. Open ...
-        2. Tap ...
-        3. See ...
+        1. Open KeiOS / 打开 KeiOS
+        2. Tap ... / 点击 ...
+        3. See ... / 出现 ...
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
-      placeholder: What should have happened?
+      label: Expected behavior / 期望行为
+      placeholder: What should happen? / 正常应该发生什么？
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: Actual behavior
-      placeholder: What happened instead?
+      label: Actual behavior / 实际行为
+      placeholder: What happened? / 实际发生了什么？
     validations:
       required: true
 
   - type: textarea
-    id: media
+    id: device-info
     attributes:
-      label: Screenshots or recordings
-      description: Drag and drop screenshots or screen recordings here if they help explain the issue.
-
-  - type: input
-    id: device
-    attributes:
-      label: Device model
-      placeholder: Pixel 9, Xiaomi 15, emulator, etc.
+      label: Device information / 设备信息
+      description: Manufacturer, model, Android version, ABI. / 厂商、机型、Android 版本、ABI。
+      placeholder: Xiaomi 15 · Android 16 API 36 · arm64-v8a
     validations:
       required: true
 
-  - type: input
-    id: android-version
+  - type: textarea
+    id: keios-info
     attributes:
-      label: Android version
-      placeholder: Android 15 / 16 / 17, API level if known
-    validations:
-      required: true
-
-  - type: input
-    id: keios-version
-    attributes:
-      label: KeiOS version
-      placeholder: App version, release tag, or commit hash
+      label: KeiOS information / KeiOS 信息
+      description: App version, versionCode, package name, build type. / App 版本、versionCode、包名、构建类型。
+      placeholder: KeiOS 1.4.3 (10403000) · os.kei · release
     validations:
       required: true
 
   - type: input
     id: install-source
     attributes:
-      label: Install source
+      label: Install source / 安装来源
       placeholder: GitHub release, locally built APK, Android Studio, etc.
     validations:
       required: true
 
   - type: textarea
+    id: exported-log-zip
+    attributes:
+      label: Exported log ZIP / 导出的日志 ZIP
+      description: Drag the ZIP exported from KeiOS here if it helps. / 如有帮助，请拖入 KeiOS 导出的 ZIP。
+
+  - type: textarea
     id: logs
     attributes:
-      label: Logs
-      description: Paste relevant logcat output or crash logs. Remove private tokens or personal data.
+      label: Log summary / 日志摘要
+      description: Paste a redacted summary from KeiOS or logcat. / 粘贴已脱敏的 KeiOS 或 logcat 摘要。
       render: shell
+
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or recordings / 截图或录屏
+      description: Drag and drop screenshots or recordings here. / 可拖入截图或录屏。
 
   - type: checkboxes
     id: checks
     attributes:
-      label: Checklist
+      label: Checklist / 检查项
       options:
-        - label: I checked for existing related issues.
+        - label: I checked for existing related issues. / 我已检查相关 Issue。
           required: true
-        - label: I removed sensitive information from logs and screenshots.
+        - label: I removed sensitive information from logs, screenshots, recordings, and attachments. / 我已移除日志、截图、录屏、附件中的敏感信息。
           required: true

@@ -11,6 +11,7 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import os.kei.core.log.AppLogLevel
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
@@ -27,9 +28,7 @@ internal fun BindSettingsPageEffects(
     notificationPermissionGranted: Boolean,
     shizukuStatus: String,
     cacheDiagnosticsEnabled: Boolean,
-    logDebugEnabled: Boolean,
-    firebaseBasicStatsEnabled: Boolean,
-    firebaseErrorLogsEnabled: Boolean,
+    logLevel: AppLogLevel,
     shizukuRefreshToken: Int
 ) {
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
@@ -63,17 +62,10 @@ internal fun BindSettingsPageEffects(
             enabled = cacheDiagnosticsEnabled
         )
     }
-    LaunchedEffect(context, logDebugEnabled) {
+    LaunchedEffect(context, logLevel) {
         settingsPageViewModel.bindLogStats(
             context = context,
-            logDebugEnabled = logDebugEnabled
-        )
-    }
-    LaunchedEffect(context, firebaseBasicStatsEnabled, firebaseErrorLogsEnabled) {
-        settingsPageViewModel.bindTelemetry(
-            context = context,
-            basicStatsEnabled = firebaseBasicStatsEnabled,
-            errorLogsEnabled = firebaseErrorLogsEnabled
+            logLevel = logLevel
         )
     }
     LaunchedEffect(shizukuRefreshToken) {

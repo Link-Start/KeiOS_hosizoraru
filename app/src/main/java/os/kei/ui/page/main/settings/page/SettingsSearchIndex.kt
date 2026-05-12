@@ -14,7 +14,6 @@ internal enum class SettingsSearchCard {
     Background,
     Notify,
     Copy,
-    Telemetry,
     Cache,
     Log,
 }
@@ -116,17 +115,6 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> {
             ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.Telemetry,
-            category = SettingsCategory.Data,
-            tokens = settingsTokens(
-                stringResource(R.string.settings_telemetry_header),
-                stringResource(R.string.settings_telemetry_title),
-                stringResource(R.string.settings_telemetry_basic_title),
-                stringResource(R.string.settings_telemetry_errors_title),
-                stringResource(R.string.settings_telemetry_recent_title),
-            ),
-        ),
-        SettingsSearchTarget(
             card = SettingsSearchCard.Cache,
             category = SettingsCategory.Data,
             tokens = settingsTokens(
@@ -145,7 +133,8 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> {
             category = SettingsCategory.Data,
             tokens = settingsTokens(
                 stringResource(R.string.settings_group_log_title),
-                stringResource(R.string.settings_log_debug_title),
+                stringResource(R.string.settings_log_level_title),
+                stringResource(R.string.settings_log_feedback_action),
             ),
         ),
     )

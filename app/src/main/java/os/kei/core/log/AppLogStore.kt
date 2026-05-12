@@ -23,6 +23,12 @@ object AppLogStore {
         }
     }
 
+    data class Preview(
+        val text: String,
+        val fileCount: Int,
+        val truncated: Boolean
+    )
+
     private data class LogBlob(
         val name: String,
         val bytes: ByteArray
@@ -96,6 +102,36 @@ object AppLogStore {
                 }
             }
         }
+    }
+
+    fun previewText(
+        context: Context,
+        maxChars: Int = 24_000
+    ): Preview {
+        val safeMaxChars = maxChars.coerceAtLeast(1_000)
+        val blobs = synchronized(lock) {
+            snapshotBlobsLocked(context)
+        }
+        if (blobs.isEmpty()) {
+            return Preview(
+                text = "",
+                fileCount = 0,
+                truncated = false
+            )
+        }
+        val merged = buildString {
+            blobs.forEachIndexed { index, blob ->
+                if (index > 0) appendLine()
+                appendLine("----- ${blob.name} -----")
+                append(blob.bytes.toString(Charsets.UTF_8))
+            }
+        }
+        val truncated = merged.length > safeMaxChars
+        return Preview(
+            text = if (truncated) merged.takeLast(safeMaxChars) else merged,
+            fileCount = blobs.size,
+            truncated = truncated
+        )
     }
 
     private fun snapshotBlobsLocked(context: Context): List<LogBlob> {

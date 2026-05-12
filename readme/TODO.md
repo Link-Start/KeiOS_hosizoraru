@@ -139,10 +139,11 @@ Official references checked on 2026-04-29:
 - [ ] Track Android 17 post-quantum / hybrid APK signing support in AGP, apksigner, GitHub Actions, and local release keystores before changing the release pipeline.
 - [ ] Continue tracking stable OkHttp, Ktor, Coil, Media3, Navigation3, and Activity Compose support for Android 36 / 37 platform capabilities.
 
-### P2-C Performance, Haptics, And Telemetry
+### P2-C Performance, Haptics, And Diagnostics
 
 - [ ] Evaluate richer haptics and frame-rate APIs for liquid bottom bar, sliders, gallery video, and fullscreen media after the current animation / material behavior is stable.
-- [ ] Evaluate `ApplicationStartInfo`, `reportFullyDrawn`, allow-while-idle alarm listener APIs, and JobScheduler `JobDebugInfo` only when the performance telemetry roadmap needs deeper platform signals.
+- [ ] Evaluate `ApplicationStartInfo`, `reportFullyDrawn`, allow-while-idle alarm listener APIs, and
+  JobScheduler `JobDebugInfo` only when the local diagnostics roadmap needs deeper platform signals.
 
 ### P2-D Accessibility And Inclusive UX
 

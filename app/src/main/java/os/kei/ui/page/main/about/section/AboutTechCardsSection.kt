@@ -192,11 +192,6 @@ fun AboutNetworkServiceCardSection(
             R.string.about_row_focus_api,
             BuildConfig.FOCUS_API_VERSION,
             appLucideAlertIcon()
-        ),
-        AboutInfoRow(
-            R.string.about_row_firebase,
-            BuildConfig.FIREBASE_BOM_VERSION,
-            appLucideInfoIcon()
         )
     )
     AboutSectionCard(

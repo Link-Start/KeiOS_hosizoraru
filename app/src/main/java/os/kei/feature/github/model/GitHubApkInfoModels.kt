@@ -68,7 +68,8 @@ data class GitHubInstalledPackageInfo(
     val versionName: String = "",
     val versionCode: Long = -1L,
     val minSdk: Int = -1,
-    val targetSdk: Int = -1
+    val targetSdk: Int = -1,
+    val apkSizeBytes: Long = -1L
 )
 
 data class GitHubApkManifestNode(

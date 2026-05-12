@@ -9,6 +9,7 @@ internal object BinaryManifestFixture {
     private const val RES_STRING_POOL_TYPE = 0x0001
     private const val RES_XML_START_ELEMENT_TYPE = 0x0102
     private const val UTF8_FLAG = 0x00000100
+    private const val TYPE_REFERENCE = 0x01
     private const val TYPE_STRING = 0x03
 
     fun build(
@@ -41,6 +42,53 @@ internal object BinaryManifestFixture {
         }.toByteArray()
     }
 
+    fun buildWithApplicationLabelResource(
+        packageName: String,
+        labelResourceId: Int
+    ): ByteArray {
+        val strings = listOf(
+            "manifest",
+            "application",
+            "package",
+            packageName,
+            "label"
+        )
+        val stringIndexes = strings.withIndex().associate { it.value to it.index }
+        val stringPool = stringPool(strings)
+        val manifestStartElement = startElement(
+            elementNameIndex = stringIndexes.getValue("manifest"),
+            attributes = listOf(
+                BinaryAttribute(
+                    nameIndex = stringIndexes.getValue("package"),
+                    rawValueIndex = stringIndexes.getValue(packageName),
+                    valueType = TYPE_STRING,
+                    valueData = stringIndexes.getValue(packageName)
+                )
+            )
+        )
+        val applicationStartElement = startElement(
+            elementNameIndex = stringIndexes.getValue("application"),
+            attributes = listOf(
+                BinaryAttribute(
+                    nameIndex = stringIndexes.getValue("label"),
+                    rawValueIndex = -1,
+                    valueType = TYPE_REFERENCE,
+                    valueData = labelResourceId
+                )
+            )
+        )
+        val totalSize =
+            8 + stringPool.size + manifestStartElement.size + applicationStartElement.size
+        return ByteArrayOutputStream().apply {
+            writeU16(RES_XML_TYPE)
+            writeU16(8)
+            writeI32(totalSize)
+            write(stringPool)
+            write(manifestStartElement)
+            write(applicationStartElement)
+        }.toByteArray()
+    }
+
     private fun stringPool(strings: List<String>): ByteArray {
         val offsets = mutableListOf<Int>()
         val data = ByteArrayOutputStream()
@@ -69,6 +117,23 @@ internal object BinaryManifestFixture {
     }
 
     private fun manifestStartElement(attributes: List<Pair<Int, Int>>): ByteArray {
+        return startElement(
+            elementNameIndex = 0,
+            attributes = attributes.map { (nameIndex, valueIndex) ->
+                BinaryAttribute(
+                    nameIndex = nameIndex,
+                    rawValueIndex = valueIndex,
+                    valueType = TYPE_STRING,
+                    valueData = valueIndex
+                )
+            }
+        )
+    }
+
+    private fun startElement(
+        elementNameIndex: Int,
+        attributes: List<BinaryAttribute>
+    ): ByteArray {
         val chunkSize = 36 + attributes.size * 20
         return ByteArrayOutputStream().apply {
             writeU16(RES_XML_START_ELEMENT_TYPE)
@@ -77,24 +142,31 @@ internal object BinaryManifestFixture {
             writeI32(1)
             writeI32(-1)
             writeI32(-1)
-            writeI32(0)
+            writeI32(elementNameIndex)
             writeU16(20)
             writeU16(20)
             writeU16(attributes.size)
             writeU16(0)
             writeU16(0)
             writeU16(0)
-            attributes.forEach { (nameIndex, valueIndex) ->
+            attributes.forEach { attribute ->
                 writeI32(-1)
-                writeI32(nameIndex)
-                writeI32(valueIndex)
+                writeI32(attribute.nameIndex)
+                writeI32(attribute.rawValueIndex)
                 writeU16(8)
                 write(0)
-                write(TYPE_STRING)
-                writeI32(valueIndex)
+                write(attribute.valueType)
+                writeI32(attribute.valueData)
             }
         }.toByteArray()
     }
+
+    private data class BinaryAttribute(
+        val nameIndex: Int,
+        val rawValueIndex: Int,
+        val valueType: Int,
+        val valueData: Int
+    )
 
     private fun ByteArrayOutputStream.writeLength8(value: Int) {
         if (value > 0x7F) {

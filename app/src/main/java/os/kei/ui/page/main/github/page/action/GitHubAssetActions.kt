@@ -190,7 +190,8 @@ internal class GitHubAssetActions(
             versionName = packageInfo.versionName?.trim().orEmpty(),
             versionCode = packageInfo.longVersionCode,
             minSdk = applicationInfo?.minSdkVersion ?: -1,
-            targetSdk = applicationInfo?.targetSdkVersion ?: -1
+            targetSdk = applicationInfo?.targetSdkVersion ?: -1,
+            apkSizeBytes = applicationInfo.installedApkSizeBytes()
         )
     }
 

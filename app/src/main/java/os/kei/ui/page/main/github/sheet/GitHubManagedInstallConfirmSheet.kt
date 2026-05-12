@@ -81,6 +81,20 @@ internal fun GitHubManagedInstallConfirmSheet(
     } else {
         GitHubStatusPalette.Active
     }
+    val versionDecision = remember(info, installedInfo) {
+        info?.let { manifestInfo ->
+            buildInstallVersionDecision(manifestInfo, installedInfo)
+        }
+    }
+    val abiDecision = remember(info, supportedAbis, likelyCompatible) {
+        info?.let { manifestInfo ->
+            buildInstallAbiDecision(
+                info = manifestInfo,
+                supportedAbis = supportedAbis,
+                likelyCompatible = likelyCompatible
+            )
+        }
+    }
 
     SnapshotWindowBottomSheet(
         show = true,
@@ -100,10 +114,12 @@ internal fun GitHubManagedInstallConfirmSheet(
     ) {
         SheetContentColumn(verticalSpacing = 10.dp) {
             SheetSummaryCard(
-                title = info?.appLabel
-                    .orEmpty()
-                    .ifBlank { request.item.appLabel }
-                    .ifBlank { assetDisplayName(asset.name) },
+                title = installConfirmTitle(
+                    info = info,
+                    installedInfo = installedInfo,
+                    fallbackAppLabel = request.item.appLabel,
+                    assetName = asset.name
+                ),
                 badgeLabel = stringResource(trustSignal.level.labelRes()),
                 badgeColor = trustSignal.level.toStatusColor()
             ) {
@@ -116,10 +132,18 @@ internal fun GitHubManagedInstallConfirmSheet(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                     itemVerticalAlignment = Alignment.CenterVertically
                 ) {
-                    InstallConfirmPill(
-                        label = formatAssetSize(asset.sizeBytes, context),
-                        color = MiuixTheme.colorScheme.onBackgroundVariant
-                    )
+                    versionDecision?.let { decision ->
+                        InstallConfirmPill(
+                            label = stringResource(decision.labelRes()),
+                            color = decision.statusColor()
+                        )
+                    }
+                    abiDecision?.let { decision ->
+                        InstallConfirmPill(
+                            label = stringResource(decision.labelRes()),
+                            color = decision.statusColor()
+                        )
+                    }
                     abiLabel?.let {
                         InstallConfirmPill(
                             label = it,
@@ -144,7 +168,7 @@ internal fun GitHubManagedInstallConfirmSheet(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_asset))
+            SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_compare))
             SheetSectionCard {
                 ConfirmInfoRow(
                     label = stringResource(R.string.github_share_import_dialog_label_project),
@@ -164,10 +188,6 @@ internal fun GitHubManagedInstallConfirmSheet(
                         }
                     )
                 )
-            }
-
-            SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_manifest))
-            SheetSectionCard {
                 when {
                     loading -> LoadingManifestRow()
                     error.isNotBlank() -> ConfirmHintText(
@@ -180,17 +200,13 @@ internal fun GitHubManagedInstallConfirmSheet(
                         color = MiuixTheme.colorScheme.onBackgroundVariant
                     )
 
-                    else -> ManifestInfoBlock(info, installedInfo)
-                }
-            }
-
-            info?.let { manifestInfo ->
-                SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_compare))
-                SheetSectionCard {
-                    LocalRemoteComparisonBlock(
-                        info = manifestInfo,
+                    else -> InstallComparisonBlock(
+                        info = info,
                         installedInfo = installedInfo,
-                        supportedAbis = supportedAbis
+                        supportedAbis = supportedAbis,
+                        fallbackAppLabel = request.item.appLabel,
+                        assetName = asset.name,
+                        assetSizeBytes = asset.sizeBytes
                     )
                 }
             }
@@ -242,61 +258,29 @@ internal fun GitHubManagedInstallConfirmSheet(
 }
 
 @Composable
-private fun ManifestInfoBlock(
-    info: GitHubApkManifestInfo,
-    installedInfo: GitHubInstalledPackageInfo?
-) {
-    ConfirmInfoRow(
-        label = stringResource(R.string.github_apk_info_label_app),
-        value = info.appLabel
-    )
-    ConfirmInfoRow(
-        label = stringResource(R.string.github_apk_info_label_package),
-        value = info.packageName
-    )
-    ConfirmInfoRow(
-        label = stringResource(R.string.github_apk_info_label_version),
-        value = listOf(info.versionName, info.versionCode)
-            .filter { it.isNotBlank() }
-            .joinToString(" / ")
-    )
-    ConfirmInfoRow(
-        label = stringResource(R.string.github_apk_info_label_api),
-        value = stringResource(
-            R.string.github_apk_info_value_api,
-            info.minSdk.ifBlank { "-" },
-            info.targetSdk.ifBlank { "-" }
-        )
-    )
-    ConfirmInfoRow(
-        label = stringResource(R.string.github_apk_info_label_abi),
-        value = info.nativeAbis.takeIf { it.isNotEmpty() }?.joinToString(" / ")
-            ?: stringResource(R.string.github_apk_info_diff_abi_universal)
-    )
-    ConfirmInfoRow(
-        label = stringResource(R.string.github_apk_info_label_installed_status),
-        value = installedInfo?.let { installed ->
-            listOf(installed.versionName, installed.versionCode.takeIf { it >= 0L }?.toString())
-                .filter { !it.isNullOrBlank() }
-                .joinToString(" / ")
-                .ifBlank { stringResource(R.string.github_apk_info_installed_present) }
-        } ?: stringResource(
-            R.string.github_apk_info_installed_missing,
-            info.packageName.ifBlank { "-" }
-        )
-    )
-}
-
-@Composable
-private fun LocalRemoteComparisonBlock(
+private fun InstallComparisonBlock(
     info: GitHubApkManifestInfo,
     installedInfo: GitHubInstalledPackageInfo?,
-    supportedAbis: List<String>
+    supportedAbis: List<String>,
+    fallbackAppLabel: String,
+    assetName: String,
+    assetSizeBytes: Long
 ) {
+    val context = LocalContext.current
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_apk_info_label_package),
+        localValue = installedInfo?.packageName.orEmpty(),
+        remoteValue = info.packageName
+    )
     ComparisonInfoRow(
         label = stringResource(R.string.github_apk_info_label_app),
         localValue = installedInfo?.appLabel.orEmpty(),
-        remoteValue = info.appLabel,
+        remoteValue = resolvedRemoteAppLabel(
+            info = info,
+            installedInfo = installedInfo,
+            fallbackAppLabel = fallbackAppLabel,
+            assetName = assetName
+        ),
         compareWhenLocalMissing = false
     )
     ComparisonInfoRow(
@@ -311,6 +295,14 @@ private fun LocalRemoteComparisonBlock(
             ?.toString()
             .orEmpty(),
         remoteValue = info.versionCode
+    )
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_page_install_compare_label_min_api),
+        localValue = installedInfo?.minSdk
+            ?.takeIf { it >= 0 }
+            ?.toString()
+            .orEmpty(),
+        remoteValue = info.minSdk
     )
     ComparisonInfoRow(
         label = stringResource(R.string.github_page_install_compare_label_target_api),
@@ -329,6 +321,14 @@ private fun LocalRemoteComparisonBlock(
             ?: stringResource(R.string.github_apk_info_diff_abi_universal),
         compareWhenLocalMissing = false
     )
+    ComparisonInfoRow(
+        label = stringResource(R.string.github_page_install_compare_label_size),
+        localValue = installedInfo?.apkSizeBytes
+            ?.takeIf { it > 0L }
+            ?.let { formatAssetSize(it, context) }
+            .orEmpty(),
+        remoteValue = formatAssetSize(assetSizeBytes, context)
+    )
 }
 
 @Composable
@@ -344,7 +344,8 @@ private fun ComparisonInfoRow(
             localValue = localValue,
             remoteValue = remoteValue,
             compareWhenLocalMissing = compareWhenLocalMissing
-        )
+        ),
+        valueTextAlign = TextAlign.End
     )
 }
 
@@ -368,7 +369,7 @@ private fun comparisonValue(
             remoteDisplay
         }
     }
-    if (remote.isBlank() || local.equals(remote, ignoreCase = true)) {
+    if (remote.isBlank() || local == remote) {
         return local
     }
     return stringResource(R.string.github_page_install_compare_arrow, local, remote)
@@ -396,16 +397,18 @@ private fun LoadingManifestRow() {
 @Composable
 private fun ConfirmInfoRow(
     label: String,
-    value: String
+    value: String,
+    valueTextAlign: TextAlign = TextAlign.Start
 ) {
     AppInfoRow(
         label = label,
         value = value,
-        labelWeight = 0.26f,
-        valueWeight = 0.74f,
-        valueTextAlign = TextAlign.Start,
+        labelWeight = 0.38f,
+        valueWeight = 0.62f,
+        valueTextAlign = valueTextAlign,
         horizontalSpacing = 8.dp,
         rowVerticalPadding = 2.dp,
+        labelMaxLines = 1,
         valueMaxLines = 2,
         valueOverflow = TextOverflow.Ellipsis
     )
@@ -430,6 +433,129 @@ private fun InstallConfirmPill(
     color: Color
 ) {
     StatusPill(label = label, color = color)
+}
+
+private fun installConfirmTitle(
+    info: GitHubApkManifestInfo?,
+    installedInfo: GitHubInstalledPackageInfo?,
+    fallbackAppLabel: String,
+    assetName: String
+): String {
+    return info
+        ?.let { manifestInfo ->
+            resolvedRemoteAppLabel(
+                info = manifestInfo,
+                installedInfo = installedInfo,
+                fallbackAppLabel = fallbackAppLabel,
+                assetName = assetName
+            )
+        }
+        .orEmpty()
+        .ifBlank { installedInfo?.appLabel.orEmpty() }
+        .ifBlank { fallbackAppLabel }
+        .ifBlank { assetDisplayName(assetName) }
+}
+
+private fun resolvedRemoteAppLabel(
+    info: GitHubApkManifestInfo,
+    installedInfo: GitHubInstalledPackageInfo?,
+    fallbackAppLabel: String,
+    assetName: String
+): String {
+    return info.appLabel
+        .trim()
+        .ifBlank { installedInfo?.appLabel.orEmpty().trim() }
+        .ifBlank { fallbackAppLabel.trim() }
+        .ifBlank { assetDisplayName(assetName) }
+}
+
+private fun buildInstallVersionDecision(
+    info: GitHubApkManifestInfo,
+    installedInfo: GitHubInstalledPackageInfo?
+): InstallVersionDecision {
+    installedInfo ?: return InstallVersionDecision.Install
+    val remoteVersionCode = info.versionCode.trim().toLongOrNull()
+    val localVersionCode = installedInfo.versionCode.takeIf { it >= 0L }
+    val sameVersionCode = remoteVersionCode != null &&
+            localVersionCode != null &&
+            remoteVersionCode == localVersionCode
+    val sameVersionName = info.versionName
+        .trim()
+        .equals(installedInfo.versionName.trim(), ignoreCase = false)
+    return when {
+        sameVersionCode && sameVersionName -> InstallVersionDecision.Same
+        remoteVersionCode != null && localVersionCode != null && remoteVersionCode < localVersionCode ->
+            InstallVersionDecision.Downgrade
+
+        else -> InstallVersionDecision.Update
+    }
+}
+
+private fun buildInstallAbiDecision(
+    info: GitHubApkManifestInfo,
+    supportedAbis: List<String>,
+    likelyCompatible: Boolean
+): InstallAbiDecision {
+    val remoteAbis = info.nativeAbis.map { it.trim() }.filter { it.isNotBlank() }
+    if (remoteAbis.isEmpty()) return InstallAbiDecision.Universal
+    val hasMatch = remoteAbis.any { remoteAbi ->
+        supportedAbis.any { supported -> supported.equals(remoteAbi, ignoreCase = true) }
+    }
+    return when {
+        hasMatch -> InstallAbiDecision.Match
+        likelyCompatible -> InstallAbiDecision.Unknown
+        else -> InstallAbiDecision.Mismatch
+    }
+}
+
+private enum class InstallVersionDecision {
+    Install,
+    Update,
+    Downgrade,
+    Same
+}
+
+private fun InstallVersionDecision.labelRes(): Int {
+    return when (this) {
+        InstallVersionDecision.Install -> R.string.github_page_install_status_install
+        InstallVersionDecision.Update -> R.string.github_page_install_status_update
+        InstallVersionDecision.Downgrade -> R.string.github_page_install_status_downgrade
+        InstallVersionDecision.Same -> R.string.github_page_install_status_same
+    }
+}
+
+private fun InstallVersionDecision.statusColor(): Color {
+    return when (this) {
+        InstallVersionDecision.Install -> GitHubStatusPalette.Active
+        InstallVersionDecision.Update -> GitHubStatusPalette.Update
+        InstallVersionDecision.Downgrade -> GitHubStatusPalette.Error
+        InstallVersionDecision.Same -> GitHubStatusPalette.Cache
+    }
+}
+
+private enum class InstallAbiDecision {
+    Match,
+    Universal,
+    Mismatch,
+    Unknown
+}
+
+private fun InstallAbiDecision.labelRes(): Int {
+    return when (this) {
+        InstallAbiDecision.Match -> R.string.github_page_install_status_abi_match
+        InstallAbiDecision.Universal -> R.string.github_page_install_status_abi_universal
+        InstallAbiDecision.Mismatch -> R.string.github_page_install_status_abi_mismatch
+        InstallAbiDecision.Unknown -> R.string.github_page_install_status_abi_unknown
+    }
+}
+
+private fun InstallAbiDecision.statusColor(): Color {
+    return when (this) {
+        InstallAbiDecision.Match -> GitHubStatusPalette.Update
+        InstallAbiDecision.Universal -> GitHubStatusPalette.Active
+        InstallAbiDecision.Mismatch -> GitHubStatusPalette.Error
+        InstallAbiDecision.Unknown -> GitHubStatusPalette.Cache
+    }
 }
 
 private fun GitHubDecisionLevel.labelRes(): Int {

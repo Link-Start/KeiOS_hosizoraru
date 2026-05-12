@@ -12,6 +12,7 @@ internal object AndroidBinaryXmlPackageNameParser {
     private const val CHUNK_XML_START_ELEMENT = 0x0102
     private const val XML_NODE_HEADER_SIZE = 16
     private const val UTF8_FLAG = 0x00000100
+    private const val TYPE_REFERENCE = 0x01
     private const val TYPE_STRING = 0x03
     private const val TYPE_INT_DEC = 0x10
     private const val TYPE_INT_HEX = 0x11
@@ -23,7 +24,10 @@ internal object AndroidBinaryXmlPackageNameParser {
         }
     }
 
-    fun parseManifestInfo(manifestBytes: ByteArray): Result<GitHubApkManifestInfo> = runCatching {
+    fun parseManifestInfo(
+        manifestBytes: ByteArray,
+        resourceTableBytes: ByteArray? = null
+    ): Result<GitHubApkManifestInfo> = runCatching {
         val buffer = ByteBuffer.wrap(manifestBytes).order(ByteOrder.LITTLE_ENDIAN)
         val strings = readStringPool(buffer)
         var packageName = ""
@@ -60,9 +64,21 @@ internal object AndroidBinaryXmlPackageNameParser {
                     }
 
                     "application" -> {
-                        appLabel = element.attr("label").takeIf { label ->
-                            label.isLiteralManifestLabel()
-                        }.orEmpty()
+                        val rawLabel = element.attr("label")
+                        appLabel = rawLabel.takeIf { label -> label.isLiteralManifestLabel() }
+                            .orEmpty()
+                            .ifBlank {
+                                resourceTableBytes
+                                    ?.let { tableBytes ->
+                                        element.attrResource("label")?.let { labelResourceId ->
+                                            AndroidResourceTableStringResolver.resolveString(
+                                                tableBytes = tableBytes,
+                                                resourceId = labelResourceId
+                                            )
+                                        }
+                                    }
+                                    .orEmpty()
+                            }
                     }
 
                     "uses-permission" -> {
@@ -139,6 +155,7 @@ internal object AndroidBinaryXmlPackageNameParser {
         val attributeCount = buffer.u16(chunkOffset + 28)
         val attributesOffset = chunkOffset + XML_NODE_HEADER_SIZE + attributeStart
         val attrs = mutableMapOf<String, String>()
+        val resourceAttrs = mutableMapOf<String, Int>()
         for (index in 0 until attributeCount) {
             val attributeOffset = attributesOffset + index * attributeSize
             if (attributeOffset + 20 > buffer.capacity()) break
@@ -152,13 +169,19 @@ internal object AndroidBinaryXmlPackageNameParser {
                 valueType = valueType,
                 valueData = valueData
             )
+            val resourceValue = if (valueType == TYPE_REFERENCE) valueData else null
             if (attributeName.isNotBlank() && value.isNotBlank()) {
-                attrs[attributeName.removeAndroidNamespace()] = value
+                val normalizedName = attributeName.removeAndroidNamespace()
+                attrs[normalizedName] = value
+                resourceValue?.let { resource ->
+                    resourceAttrs[normalizedName] = resource
+                }
             }
         }
         return BinaryXmlStartElement(
             name = elementName,
-            attributes = attrs
+            attributes = attrs,
+            resourceAttributes = resourceAttrs
         )
     }
 
@@ -170,6 +193,7 @@ internal object AndroidBinaryXmlPackageNameParser {
     ): String {
         return when {
             rawValueIndex >= 0 -> strings.getOrNull(rawValueIndex).orEmpty()
+            valueType == TYPE_REFERENCE -> "@0x${valueData.toUInt().toString(16).padStart(8, '0')}"
             valueType == TYPE_STRING -> strings.getOrNull(valueData).orEmpty()
             valueType == TYPE_INT_BOOLEAN -> (valueData != 0).toString()
             valueType == TYPE_INT_DEC -> valueData.toString()
@@ -261,9 +285,12 @@ internal object AndroidBinaryXmlPackageNameParser {
 
     private data class BinaryXmlStartElement(
         val name: String,
-        val attributes: Map<String, String>
+        val attributes: Map<String, String>,
+        val resourceAttributes: Map<String, Int>
     ) {
         fun attr(name: String): String = attributes[name].orEmpty()
+
+        fun attrResource(name: String): Int? = resourceAttributes[name]
 
         fun toManifestNode(): GitHubApkManifestNode {
             val display = attr("name")

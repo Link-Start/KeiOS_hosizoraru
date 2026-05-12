@@ -468,7 +468,7 @@
     <string name="github_check_sheet_action_import_tracks">导入跟踪</string>
     <string name="github_check_sheet_action_exporting">导出中</string>
     <string name="github_check_sheet_action_importing">导入中</string>
-    <string name="github_check_sheet_action_import_stars">导入 Star List</string>
+    <string name="github_check_sheet_action_import_stars">StarList</string>
     <string name="github_check_sheet_section_debug">调试</string>
     <string name="github_check_sheet_label_debug_actions_update_notification">Actions 更新通知</string>
     <string name="github_check_sheet_summary_debug_actions_update_notification">发送一条模拟 #1424 的实时通知/超级岛，用于检查样式、权限和通知动作。</string>

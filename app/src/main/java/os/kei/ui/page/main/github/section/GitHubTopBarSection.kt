@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -33,9 +34,12 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
-private val GitHubActionMenuPopupMaxWidth = 372.dp
-private val GitHubActionMenuMinWidth = 336.dp
-private val GitHubActionMenuMaxWidth = 356.dp
+private val GitHubActionMenuCompactMinWidth = 288.dp
+private val GitHubActionMenuPreferredMinWidth = 304.dp
+private val GitHubActionMenuPreferredMaxWidth = 336.dp
+private val GitHubActionMenuHorizontalMargin = 40.dp
+private val GitHubActionSubmenuPreferredMinWidth = 208.dp
+private val GitHubActionSubmenuPreferredMaxWidth = 288.dp
 
 @Composable
 internal fun GitHubTopBarSection(
@@ -98,6 +102,12 @@ internal fun GitHubTopBarActions(
     }
     val importStarsLabel = stringResource(R.string.github_check_sheet_action_import_stars)
     val transferActionEnabled = !tracksExporting && !tracksImporting
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val actionMenuMaxWidth = (screenWidth - GitHubActionMenuHorizontalMargin)
+        .coerceIn(GitHubActionMenuCompactMinWidth, GitHubActionMenuPreferredMaxWidth)
+    val actionMenuMinWidth = minOf(GitHubActionMenuPreferredMinWidth, actionMenuMaxWidth)
+    val actionSubmenuMaxWidth = minOf(GitHubActionSubmenuPreferredMaxWidth, actionMenuMaxWidth)
+    val actionSubmenuMinWidth = minOf(GitHubActionSubmenuPreferredMinWidth, actionSubmenuMaxWidth)
     val actionItems = remember(
         editStrategyIcon,
         checkLogicIcon,
@@ -152,7 +162,7 @@ internal fun GitHubTopBarActions(
                         placement = SnapshotPopupPlacement.ButtonEnd,
                         onDismissRequest = { onShowActionMenuPopupChange(false) },
                         enableWindowDim = false,
-                        maxWidth = GitHubActionMenuPopupMaxWidth
+                        maxWidth = actionMenuMaxWidth
                     ) {
                         val modes = GitHubSortMode.entries
                         val sortLabels = modes.map { mode -> stringResource(mode.labelRes) }
@@ -172,8 +182,10 @@ internal fun GitHubTopBarActions(
                         }
                         LiquidGlassActionMenu(
                             backdrop = backdrop,
-                            minWidth = GitHubActionMenuMinWidth,
-                            maxWidth = GitHubActionMenuMaxWidth,
+                            minWidth = actionMenuMinWidth,
+                            maxWidth = actionMenuMaxWidth,
+                            submenuMinWidth = actionSubmenuMinWidth,
+                            submenuMaxWidth = actionSubmenuMaxWidth,
                             quickActions = listOf(
                                 LiquidGlassActionMenuQuickAction(
                                     id = "export_tracks",

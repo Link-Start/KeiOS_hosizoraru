@@ -104,7 +104,7 @@ private fun liquidGlassDropdownMetrics(material: LiquidGlassDropdownMaterial): L
 
         LiquidGlassDropdownMaterial.ActionMenu -> LiquidGlassDropdownMetrics(
             containerRadius = 31.dp,
-            contentPadding = 10.dp,
+            contentPadding = 8.dp,
             blurRadius = 28.dp,
             lensStart = 34.dp,
             lensEnd = 64.dp,

@@ -468,7 +468,7 @@
     <string name="github_check_sheet_action_import_tracks">Import tracks</string>
     <string name="github_check_sheet_action_exporting">Exporting</string>
     <string name="github_check_sheet_action_importing">Importing</string>
-    <string name="github_check_sheet_action_import_stars">Import Star List</string>
+    <string name="github_check_sheet_action_import_stars">StarList</string>
     <string name="github_check_sheet_section_debug">Debug</string>
     <string name="github_check_sheet_label_debug_actions_update_notification">Actions update notification</string>
     <string name="github_check_sheet_summary_debug_actions_update_notification">Sends a simulated #1424 live notification / island to test styling, permission, and actions.</string>

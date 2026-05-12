@@ -95,11 +95,11 @@ fun LiquidGlassActionMenu(
     quickActions: List<LiquidGlassActionMenuQuickAction> = emptyList(),
     items: List<LiquidGlassActionMenuItem>,
     accentColor: Color = MiuixTheme.colorScheme.primary,
-    minWidth: Dp = 264.dp,
-    maxWidth: Dp = 320.dp,
-    maxHeight: Dp = 440.dp,
-    submenuMinWidth: Dp = 220.dp,
-    submenuMaxWidth: Dp = 300.dp,
+    minWidth: Dp = 252.dp,
+    maxWidth: Dp = 312.dp,
+    maxHeight: Dp = 420.dp,
+    submenuMinWidth: Dp = 208.dp,
+    submenuMaxWidth: Dp = 288.dp,
     initialExpandedSubmenuId: String? = null,
     onDismissRequest: () -> Unit = {}
 ) {
@@ -314,8 +314,8 @@ private fun LiquidGlassActionMenuQuickActionsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         quickActions.forEach { action ->
@@ -359,7 +359,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
     val shape = RoundedCornerShape(18.dp)
     Column(
         modifier = modifier
-            .defaultMinSize(minHeight = 72.dp)
+            .defaultMinSize(minHeight = 62.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -373,9 +373,9 @@ private fun LiquidGlassActionMenuQuickActionButton(
                 role = Role.Button,
                 onClick = { onActionClick(action) }
             )
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .padding(horizontal = 4.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
     ) {
         Icon(
             imageVector = action.icon,
@@ -400,7 +400,7 @@ private fun LiquidGlassActionMenuDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
+            .padding(horizontal = 12.dp, vertical = 2.dp)
             .height(1.dp)
             .background(
                 color = MiuixTheme.colorScheme.onBackground.copy(

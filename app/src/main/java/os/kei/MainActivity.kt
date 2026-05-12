@@ -354,6 +354,7 @@ private fun PackageManager.getPackageInfoCompat(packageName: String): PackageInf
 }
 
 @Composable
+@Suppress("DEPRECATION")
 private fun SystemBarAutoStyle(appThemeMode: AppThemeMode) {
     val view = LocalView.current
     val darkTheme = when (appThemeMode) {

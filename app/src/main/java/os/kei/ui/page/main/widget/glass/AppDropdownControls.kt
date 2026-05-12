@@ -126,7 +126,8 @@ fun AppDropdownSelector(
     popupMatchAnchorWidth: Boolean = false,
     anchorAlignment: Alignment = Alignment.CenterStart,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.BottomEnd,
-    placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd
+    placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd,
+    enabled: Boolean = true
 ) {
     androidx.compose.foundation.layout.Box(
         modifier = modifier.capturePopupAnchor { onAnchorBoundsChange(it) },
@@ -138,7 +139,7 @@ fun AppDropdownSelector(
             modifier = if (anchorFillMaxWidth) Modifier.fillMaxWidth() else Modifier,
             backdrop = backdrop,
             variant = variant,
-            enabled = options.isNotEmpty(),
+            enabled = enabled && options.isNotEmpty(),
             textColor = textColor,
             minHeight = minHeight,
             horizontalPadding = horizontalPadding,
@@ -150,7 +151,7 @@ fun AppDropdownSelector(
             textLineHeight = anchorTextLineHeight,
             textFontWeight = anchorTextFontWeight
         )
-        if (expanded && options.isNotEmpty()) {
+        if (expanded && enabled && options.isNotEmpty()) {
             SnapshotWindowListPopup(
                 show = true,
                 alignment = alignment,

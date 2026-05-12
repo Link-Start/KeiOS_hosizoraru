@@ -132,6 +132,11 @@ internal fun GitHubCheckLogicSheet(
         val selectedOnlineShareTargetLabel = onlineShareTargetOptions.firstOrNull {
             it.packageName == onlineShareTargetPackageInput
         }?.label ?: noOnlineShareTargetOption(context).label
+        val effectiveOnlineShareTargetLabel = if (appManagedShareInstallEnabledInput) {
+            stringResource(R.string.app_name)
+        } else {
+            selectedOnlineShareTargetLabel
+        }
         val logicChanged =
             checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
@@ -177,7 +182,7 @@ internal fun GitHubCheckLogicSheet(
                 shareImportLinkageEnabledInput = shareImportLinkageEnabledInput,
                 shareImportFlowModeInput = shareImportFlowModeInput,
                 appManagedShareInstallEnabledInput = appManagedShareInstallEnabledInput,
-                selectedOnlineShareTargetLabel = selectedOnlineShareTargetLabel,
+                selectedOnlineShareTargetLabel = effectiveOnlineShareTargetLabel,
                 onlineShareTargetOptions = onlineShareTargetOptions,
                 installedOnlineShareTargets = installedOnlineShareTargets,
                 onlineShareTargetPackageInput = onlineShareTargetPackageInput,
@@ -510,19 +515,31 @@ private fun GitHubCheckTransferSection(
         }
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_share_to_installer),
-            summary = if (installedOnlineShareTargets.isNotEmpty()) {
-                stringResource(R.string.github_check_sheet_summary_share_available)
-            } else {
-                stringResource(R.string.github_check_sheet_summary_share_unavailable)
+            summary = when {
+                appManagedShareInstallEnabledInput -> {
+                    stringResource(R.string.github_check_sheet_summary_share_managed_by_app)
+                }
+
+                installedOnlineShareTargets.isNotEmpty() -> {
+                    stringResource(R.string.github_check_sheet_summary_share_available)
+                }
+
+                else -> {
+                    stringResource(R.string.github_check_sheet_summary_share_unavailable)
+                }
             }
         ) {
             AppDropdownSelector(
                 selectedText = selectedOnlineShareTargetLabel,
-                options = onlineShareTargetOptions.map { it.label },
+                options = if (appManagedShareInstallEnabledInput) {
+                    listOf(stringResource(R.string.app_name))
+                } else {
+                    onlineShareTargetOptions.map { it.label }
+                },
                 selectedIndex = onlineShareTargetOptions.indexOfFirst {
                     onlineShareTargetPackageInput == it.packageName
-                }.coerceAtLeast(0),
-                expanded = showOnlineShareTargetPopup,
+                }.coerceAtLeast(0).takeUnless { appManagedShareInstallEnabledInput } ?: 0,
+                expanded = showOnlineShareTargetPopup && !appManagedShareInstallEnabledInput,
                 anchorBounds = onlineShareTargetPopupAnchorBounds,
                 onExpandedChange = onShowOnlineShareTargetPopupChange,
                 onSelectedIndexChange = { selectedIndex ->
@@ -532,7 +549,8 @@ private fun GitHubCheckTransferSection(
                 },
                 onAnchorBoundsChange = onOnlineShareTargetPopupAnchorBoundsChange,
                 backdrop = backdrop,
-                variant = GlassVariant.SheetAction
+                variant = GlassVariant.SheetAction,
+                enabled = !appManagedShareInstallEnabledInput
             )
         }
     }

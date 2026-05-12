@@ -437,6 +437,7 @@
     <string name="github_check_sheet_label_app_managed_share_install">本 App 接管安装</string>
     <string name="github_check_sheet_summary_app_managed_share_install">开启后，分享导入联动中的单 APK 会由 KeiOS 通过 Shizuku 下载并安装</string>
     <string name="github_check_sheet_label_share_to_installer">分享到安装器</string>
+    <string name="github_check_sheet_summary_share_managed_by_app">已由 KeiOS 接管安装，外部安装器选择会暂时锁定</string>
     <string name="github_check_sheet_summary_share_available">分享时可直接发送到支持直接边下载边安装的安装器</string>
     <string name="github_check_sheet_summary_share_unavailable">未检测到支持的安装器，默认不联动</string>
     <string name="github_check_sheet_section_enhancements">增强信息</string>

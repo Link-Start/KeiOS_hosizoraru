@@ -437,6 +437,7 @@
     <string name="github_check_sheet_label_app_managed_share_install">KeiOS managed install</string>
     <string name="github_check_sheet_summary_app_managed_share_install">When enabled, single-APK share-import linkage downloads and installs through KeiOS with Shizuku.</string>
     <string name="github_check_sheet_label_share_to_installer">Share to installer</string>
+    <string name="github_check_sheet_summary_share_managed_by_app">KeiOS manages installation, so the external installer choice is temporarily locked.</string>
     <string name="github_check_sheet_summary_share_available">Share actions can be sent directly to installers that support download-while-install.</string>
     <string name="github_check_sheet_summary_share_unavailable">No supported installer detected, so linkage stays disabled by default.</string>
     <string name="github_check_sheet_section_enhancements">Enhanced info</string>

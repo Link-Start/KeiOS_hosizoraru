@@ -1,14 +1,17 @@
 package os.kei.ui.page.main.jsonimport
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -20,6 +23,7 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
@@ -31,11 +35,15 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppFeatureCard
+import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
+import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -111,26 +119,24 @@ internal fun KeiOSJsonImportPage(
 @Composable
 private fun JsonImportStatusCard(state: KeiOSJsonImportUiState) {
     val isError = state.stage == KeiOSJsonImportStage.Failed
-    val accent = if (isError) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary
-    val statusText = when (state.stage) {
-        KeiOSJsonImportStage.Idle -> stringResource(R.string.json_import_stage_idle)
-        KeiOSJsonImportStage.Reading -> stringResource(R.string.json_import_stage_reading)
-        KeiOSJsonImportStage.Detecting -> stringResource(R.string.json_import_stage_detecting)
-        KeiOSJsonImportStage.Parsing -> stringResource(R.string.json_import_stage_parsing)
-        KeiOSJsonImportStage.PreviewReady -> stringResource(R.string.json_import_stage_preview_ready)
-        KeiOSJsonImportStage.Importing -> stringResource(R.string.json_import_stage_importing)
-        KeiOSJsonImportStage.Done -> stringResource(R.string.json_import_stage_done)
-        KeiOSJsonImportStage.Failed -> state.errorMessage.ifBlank {
-            stringResource(R.string.common_status_failed)
-        }
-    }
+    val accent = jsonImportStageColor(state.stage)
+    val statusText = jsonImportStageTitle(state)
     AppFeatureCard(
         title = statusText,
         subtitle = statusSubtitle(state),
         eyebrow = stringResource(R.string.json_import_status_eyebrow),
         sectionIcon = if (isError) appLucideWarningIcon() else appLucidePackageIcon(),
         titleColor = accent,
+        subtitleColor = jsonImportSecondaryTextColor(),
+        containerColor = jsonImportHeroCardContainerColor(accent),
         showIndication = false,
+        headerEndActions = {
+            StatusPill(
+                label = jsonImportStagePillLabel(state),
+                color = accent,
+                size = AppStatusPillSize.Compact
+            )
+        },
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
         contentPadding = PaddingValues(
             start = CardLayoutRhythm.cardHorizontalPadding,
@@ -145,13 +151,15 @@ private fun JsonImportStatusCard(state: KeiOSJsonImportUiState) {
                 contentDescription = statusText
             )
         }
-        state.errorMessage.takeIf { it.isNotBlank() && state.stage != KeiOSJsonImportStage.Failed }
+        state.errorMessage.takeIf { it.isNotBlank() }
             ?.let {
                 Text(
                     text = it,
                     color = MiuixTheme.colorScheme.error,
                     fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight
+                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
     }
@@ -164,6 +172,8 @@ private fun JsonImportSourceCard(state: KeiOSJsonImportUiState) {
         subtitle = state.sourceName.ifBlank { stringResource(R.string.json_import_source_unknown) },
         eyebrow = stringResource(R.string.json_import_source_eyebrow),
         sectionIcon = appLucideInfoIcon(),
+        containerColor = jsonImportCardContainerColor(),
+        subtitleColor = jsonImportSecondaryTextColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
     ) {
@@ -196,8 +206,13 @@ private fun JsonImportPreviewCard(preview: KeiOSJsonImportPreview) {
         subtitle = subtitle,
         eyebrow = stringResource(R.string.json_import_preview_eyebrow),
         sectionIcon = appLucidePackageIcon(),
+        containerColor = jsonImportCardContainerColor(),
+        subtitleColor = jsonImportSecondaryTextColor(),
         showIndication = false,
-        contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
+        headerEndActions = {
+            JsonImportPreviewPills(preview)
+        },
+        contentVerticalSpacing = CardLayoutRhythm.compactSectionGap
     ) {
         if (preview.marker.isNotBlank()) {
             SettingsInfoItem(
@@ -211,12 +226,7 @@ private fun JsonImportPreviewCard(preview: KeiOSJsonImportPreview) {
                 value = preview.version.toString()
             )
         }
-        preview.stats.forEach { stat ->
-            SettingsInfoItem(
-                key = stat.label,
-                value = stat.value
-            )
-        }
+        JsonImportMetricRows(preview)
     }
 }
 
@@ -226,6 +236,8 @@ private fun JsonImportSamplesCard(samples: List<KeiOSJsonImportSample>) {
         title = stringResource(R.string.json_import_samples_title),
         subtitle = stringResource(R.string.json_import_samples_summary, samples.size),
         eyebrow = stringResource(R.string.json_import_samples_eyebrow),
+        containerColor = jsonImportCardContainerColor(),
+        subtitleColor = jsonImportSecondaryTextColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
     ) {
@@ -266,15 +278,11 @@ private fun JsonImportActionCard(
     onConfirmImport: () -> Unit,
     onClose: () -> Unit
 ) {
-    val primaryText = when {
-        state.stage == KeiOSJsonImportStage.Done -> stringResource(R.string.common_close)
-        state.preview?.readOnly == true -> stringResource(R.string.common_acknowledge)
-        state.busy -> stringResource(R.string.common_processing)
-        else -> stringResource(R.string.json_import_action_import)
-    }
     AppFeatureCard(
         title = stringResource(R.string.json_import_action_title),
         subtitle = actionSummary(state),
+        containerColor = jsonImportCardContainerColor(),
+        subtitleColor = jsonImportSecondaryTextColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
     ) {
@@ -288,38 +296,231 @@ private fun JsonImportActionCard(
                 value = result.updatedCount.toString()
             )
         }
-        AppDualActionRow(
+        JsonImportActionButtons(
+            state = state,
+            onConfirmImport = onConfirmImport,
+            onClose = onClose
+        )
+    }
+}
+
+@Composable
+private fun JsonImportPreviewPills(preview: KeiOSJsonImportPreview) {
+    if (preview.readOnly) {
+        StatusPill(
+            label = stringResource(R.string.json_import_mode_read_only),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            size = AppStatusPillSize.Compact
+        )
+    } else if (preview.highVersion || preview.legacyFormat) {
+        StatusPill(
+            label = stringResource(R.string.common_status_cached),
+            color = AppStatusColors.Cached,
+            size = AppStatusPillSize.Compact
+        )
+    } else if (preview.canImport) {
+        StatusPill(
+            label = stringResource(R.string.common_available),
+            color = AppStatusColors.Fresh,
+            size = AppStatusPillSize.Compact
+        )
+    }
+}
+
+@Composable
+private fun JsonImportMetricRows(preview: KeiOSJsonImportPreview) {
+    val rows = preview.stats.chunked(3)
+    rows.forEach { rowStats ->
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            rowStats.forEach { stat ->
+                AppOverviewMetricTile(
+                    label = stat.label,
+                    value = stat.value,
+                    modifier = Modifier.weight(1f),
+                    valueColor = if (stat.emphasized) {
+                        MiuixTheme.colorScheme.primary
+                    } else {
+                        MiuixTheme.colorScheme.onBackground
+                    },
+                    labelColor = jsonImportSecondaryTextColor(),
+                    valueMaxLines = 2
+                )
+            }
+            repeat(3 - rowStats.size) {
+                Column(modifier = Modifier.weight(1f)) {}
+            }
+        }
+    }
+}
+
+@Composable
+private fun JsonImportActionButtons(
+    state: KeiOSJsonImportUiState,
+    onConfirmImport: () -> Unit,
+    onClose: () -> Unit
+) {
+    when {
+        state.canConfirmImport -> AppDualActionRow(
             first = { modifier ->
-                AppStandaloneLiquidTextButton(
+                JsonImportNeutralButton(
                     modifier = modifier,
                     text = stringResource(R.string.common_cancel),
-                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    variant = GlassVariant.Compact,
-                    enabled = !state.busy,
                     onClick = onClose
                 )
             },
             second = { modifier ->
-                AppStandaloneLiquidTextButton(
+                JsonImportPrimaryButton(
                     modifier = modifier,
-                    text = primaryText,
-                    textColor = MiuixTheme.colorScheme.primary,
-                    containerColor = MiuixTheme.colorScheme.primary,
-                    leadingIcon = appLucideConfirmIcon(),
-                    variant = GlassVariant.Compact,
-                    enabled = state.canConfirmImport || state.stage == KeiOSJsonImportStage.Done ||
-                            state.preview?.readOnly == true,
-                    onClick = {
-                        if (state.canConfirmImport) {
-                            onConfirmImport()
-                        } else {
-                            onClose()
-                        }
-                    }
+                    text = stringResource(R.string.json_import_action_import),
+                    enabled = true,
+                    onClick = onConfirmImport
                 )
             }
         )
+
+        state.busy -> AppDualActionRow(
+            first = { modifier ->
+                JsonImportNeutralButton(
+                    modifier = modifier,
+                    text = stringResource(R.string.common_cancel),
+                    enabled = false,
+                    onClick = onClose
+                )
+            },
+            second = { modifier ->
+                JsonImportPrimaryButton(
+                    modifier = modifier,
+                    text = stringResource(R.string.common_processing),
+                    enabled = false,
+                    onClick = {}
+                )
+            }
+        )
+
+        else -> {
+            val text = when {
+                state.preview?.readOnly == true -> stringResource(R.string.common_acknowledge)
+                else -> stringResource(R.string.common_close)
+            }
+            JsonImportNeutralButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = text,
+                leadingIcon = appLucideCloseIcon(),
+                onClick = onClose
+            )
+        }
+    }
+}
+
+@Composable
+private fun JsonImportPrimaryButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppLiquidTextButton(
+        backdrop = null,
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        textColor = MiuixTheme.colorScheme.primary,
+        containerColor = MiuixTheme.colorScheme.primary,
+        leadingIcon = appLucideConfirmIcon(),
+        variant = GlassVariant.SheetPrimaryAction,
+        textMaxLines = 1,
+        textOverflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun JsonImportNeutralButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null
+) {
+    AppLiquidTextButton(
+        backdrop = null,
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        containerColor = null,
+        leadingIcon = leadingIcon,
+        iconTint = MiuixTheme.colorScheme.onBackgroundVariant,
+        variant = GlassVariant.Content,
+        textMaxLines = 1,
+        textOverflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun jsonImportStageTitle(state: KeiOSJsonImportUiState): String {
+    return when (state.stage) {
+        KeiOSJsonImportStage.Idle -> stringResource(R.string.json_import_stage_idle)
+        KeiOSJsonImportStage.Reading -> stringResource(R.string.json_import_stage_reading)
+        KeiOSJsonImportStage.Detecting -> stringResource(R.string.json_import_stage_detecting)
+        KeiOSJsonImportStage.Parsing -> stringResource(R.string.json_import_stage_parsing)
+        KeiOSJsonImportStage.PreviewReady -> stringResource(R.string.json_import_stage_preview_ready)
+        KeiOSJsonImportStage.Importing -> stringResource(R.string.json_import_stage_importing)
+        KeiOSJsonImportStage.Done -> stringResource(R.string.json_import_stage_done)
+        KeiOSJsonImportStage.Failed -> stringResource(R.string.common_status_failed)
+    }
+}
+
+@Composable
+private fun jsonImportStagePillLabel(state: KeiOSJsonImportUiState): String {
+    return when (state.stage) {
+        KeiOSJsonImportStage.Failed -> stringResource(R.string.common_status_failed)
+        KeiOSJsonImportStage.PreviewReady -> stringResource(R.string.common_available)
+        KeiOSJsonImportStage.Done -> stringResource(R.string.json_import_stage_done)
+        KeiOSJsonImportStage.Idle -> stringResource(R.string.common_not_loaded)
+        else -> stringResource(R.string.common_processing)
+    }
+}
+
+@Composable
+private fun jsonImportStageColor(stage: KeiOSJsonImportStage): Color {
+    return when (stage) {
+        KeiOSJsonImportStage.Failed -> AppStatusColors.Failed
+        KeiOSJsonImportStage.Done -> AppStatusColors.Fresh
+        KeiOSJsonImportStage.PreviewReady -> MiuixTheme.colorScheme.primary
+        KeiOSJsonImportStage.Idle -> MiuixTheme.colorScheme.onBackgroundVariant
+        else -> AppStatusColors.Refreshing
+    }
+}
+
+@Composable
+private fun jsonImportHeroCardContainerColor(accent: Color): Color {
+    return if (isSystemInDarkTheme()) {
+        accent.copy(alpha = 0.16f)
+    } else {
+        Color.White.copy(alpha = 0.78f)
+    }
+}
+
+@Composable
+private fun jsonImportCardContainerColor(): Color {
+    return if (isSystemInDarkTheme()) {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
+    } else {
+        Color.White.copy(alpha = 0.76f)
+    }
+}
+
+@Composable
+private fun jsonImportSecondaryTextColor(): Color {
+    return if (isSystemInDarkTheme()) {
+        MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f)
+    } else {
+        Color(0xFF64748B).copy(alpha = 0.96f)
     }
 }
 

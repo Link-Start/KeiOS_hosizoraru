@@ -3,7 +3,11 @@ package os.kei.feature.github.data.remote
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.BadParcelableException
+import android.os.DeadObjectException
+import android.os.TransactionTooLargeException
 import os.kei.core.system.HyperOsSettingsIntents
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidate
@@ -99,7 +103,7 @@ object GitHubVersionUtils {
         val overlayFlagMask = installedAppResourceOverlayFlagMask()
         val installSourceLabelCache = mutableMapOf<String, String>()
         val labelSortLocale = Locale.getDefault()
-        val apps = pm.queryInstalledPackageInfos()
+        val apps = pm.queryInstalledPackageInfosSafely()
             .asSequence()
             .mapNotNull { pkgInfo ->
                 val packageName = pkgInfo.packageName.trim()
@@ -739,12 +743,50 @@ object GitHubVersionUtils {
     }
 }
 
+private fun PackageManager.queryInstalledPackageInfosSafely(): List<PackageInfo> {
+    val primary = runCatching { queryInstalledPackageInfos() }
+    primary.getOrNull()?.let { return it }
+
+    val error = primary.exceptionOrNull()
+    if (error?.isInstalledPackageListBinderFailure() != true) {
+        throw error ?: IllegalStateException("Installed package query failed")
+    }
+
+    return runCatching {
+        queryLauncherPackageInfos()
+    }.getOrDefault(emptyList())
+}
+
 private fun PackageManager.queryInstalledPackageInfos() =
     getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
+
+private fun PackageManager.queryLauncherPackageInfos(): List<PackageInfo> {
+    val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+    return queryIntentActivities(launchIntent, PackageManager.ResolveInfoFlags.of(0))
+        .asSequence()
+        .mapNotNull { it.activityInfo?.packageName?.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .mapNotNull(::getPackageInfoCompat)
+        .toList()
+}
+
+internal fun Throwable.isInstalledPackageListBinderFailure(): Boolean {
+    return this is BadParcelableException ||
+            this is DeadObjectException ||
+            this is TransactionTooLargeException ||
+            cause?.isInstalledPackageListBinderFailure() == true
+}
 
 private fun PackageManager.getApplicationInfoCompat(packageName: String): ApplicationInfo? {
     return runCatching {
         getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
+    }.getOrNull()
+}
+
+private fun PackageManager.getPackageInfoCompat(packageName: String): PackageInfo? {
+    return runCatching {
+        getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
     }.getOrNull()
 }
 

@@ -1,5 +1,8 @@
 package os.kei.feature.github.data.remote
 
+import android.os.BadParcelableException
+import android.os.DeadObjectException
+import android.os.TransactionTooLargeException
 import org.junit.Test
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import kotlin.test.assertEquals
@@ -7,6 +10,28 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class GitHubVersionUtilsTest {
+    @Test
+    fun `installed package query detects binder parcel failures`() {
+        assertTrue(BadParcelableException("short package list").isInstalledPackageListBinderFailure())
+        assertTrue(DeadObjectException().isInstalledPackageListBinderFailure())
+        assertTrue(TransactionTooLargeException().isInstalledPackageListBinderFailure())
+    }
+
+    @Test
+    fun `installed package query detects nested binder parcel failures`() {
+        val wrapped =
+            IllegalStateException("package manager failed", BadParcelableException("partial list"))
+
+        assertTrue(wrapped.isInstalledPackageListBinderFailure())
+    }
+
+    @Test
+    fun `installed package query keeps ordinary failures distinct`() {
+        val ordinary = IllegalArgumentException("bad package flag")
+
+        assertEquals(false, ordinary.isInstalledPackageListBinderFailure())
+    }
+
     @Test
     fun `stable release outranks same-base rc from ImageToolbox style versions`() {
         val compare = GitHubVersionUtils.compareVersionToCandidates(

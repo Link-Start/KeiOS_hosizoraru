@@ -47,6 +47,30 @@ Fallback env vars are also supported by Gradle config:
 - `GITHUB_ACTOR`
 - `GITHUB_TOKEN`
 
+### Firebase Config Files
+
+Firebase Android config files are local secrets and are ignored by git:
+
+- `app/src/release/google-services.json` for `os.kei`
+- `app/src/debug/google-services.json` for `os.kei.debug`
+- `app/src/benchmark/google-services.json` for `os.kei.benchmark`
+
+Local builds read these files directly. GitHub Actions writes the debug and benchmark files from
+base64-encoded repository secrets before running Gradle. Fork pull-request debug builds use a local
+CI stub when repository secrets are unavailable.
+
+Create each secret value from the corresponding local file:
+
+```bash
+base64 < app/src/debug/google-services.json | tr -d '\n'
+base64 < app/src/benchmark/google-services.json | tr -d '\n'
+base64 < app/src/release/google-services.json | tr -d '\n'
+```
+
+The CI helper validates that the generated file contains the expected Android package name before
+building. In Google Cloud Console, keep Firebase Android API keys restricted to the matching package
+names and signing certificate fingerprints for `os.kei`, `os.kei.debug`, and `os.kei.benchmark`.
+
 ### Optional Local Overrides
 
 Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-only tuning:
@@ -104,6 +128,7 @@ Workflow: `.github/workflows/ci-debug-apk.yml`
 - Manual trigger: `workflow_dispatch` with optional `commit` (commit SHA / branch / tag).
 - Job output: debug APK artifact uploaded to GitHub Actions.
 - Intended use: quick preview builds for development validation.
+- Firebase config: generated from `GOOGLE_SERVICES_JSON_DEBUG_B64` and checked for `os.kei.debug`.
 - Signing: the shared CI debug keystore in `app/signing/` is used only for debug/benchmark artifacts.
 - Retention: 14 days.
 - nightly.link: `https://nightly.link/hosizoraru/KeiOS/workflows/ci-debug-apk/master`
@@ -120,6 +145,8 @@ Workflow: `.github/workflows/ci-benchmark-apk.yml`
 - Build task: `./gradlew :app:assembleBenchmark --stacktrace`.
 - Job output: benchmark APK artifact uploaded to GitHub Actions.
 - Intended use: benchmark / preview verification outside the stable release channel.
+- Firebase config: generated from `GOOGLE_SERVICES_JSON_BENCHMARK_B64` and checked for
+  `os.kei.benchmark`.
 - Signing: the shared CI debug keystore in `app/signing/` is used only for debug/benchmark artifacts.
 - Retention: 14 days.
 - nightly.link: `https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master`

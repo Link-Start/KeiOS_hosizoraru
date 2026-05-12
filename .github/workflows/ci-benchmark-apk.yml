@@ -14,6 +14,7 @@ on:
       - "gradle/**"
       - "gradlew"
       - "gradlew.bat"
+      - "scripts/ci/**"
       - "settings.gradle.kts"
   workflow_dispatch:
     inputs:
@@ -115,6 +116,16 @@ jobs:
             echo "gpr.user=${GITHUB_ACTOR}"
             echo "gpr.key=${GITHUB_TOKEN}"
           } >> "${HOME}/.gradle/gradle.properties"
+
+      - name: Prepare Firebase config
+        env:
+          GOOGLE_SERVICES_JSON_BENCHMARK_B64: ${{ secrets.GOOGLE_SERVICES_JSON_BENCHMARK_B64 }}
+        run: |
+          scripts/ci/write_google_services_json.sh \
+            benchmark \
+            app/src/benchmark/google-services.json \
+            GOOGLE_SERVICES_JSON_BENCHMARK_B64 \
+            os.kei.benchmark
 
       - name: Build benchmark APK
         run: ./gradlew :app:assembleBenchmark --stacktrace

@@ -14,4 +14,10 @@
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:windowNoTitle">true</item>
     </style>
+
+    <style name="Theme.KeiOS.ShortcutAction" parent="@android:style/Theme.NoDisplay">
+        <item name="android:windowNoDisplay">true</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

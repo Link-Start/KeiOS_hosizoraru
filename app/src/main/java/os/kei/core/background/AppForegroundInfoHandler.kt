@@ -77,6 +77,56 @@ object AppForegroundInfoHandler {
         }
     }
 
+    internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
+        githubTickMutex.withLock {
+            val nowMs = System.currentTimeMillis()
+            val snapshot = withContext(Dispatchers.IO) { GitHubTrackStore.loadSnapshot() }
+            val tracked = snapshot.items
+            if (tracked.isEmpty()) {
+                GitHubRefreshNotificationHelper.cancel(context)
+                return AppShortcutGitHubRefreshResult.NoTrackedItems
+            }
+
+            GitHubRefreshNotificationHelper.notifyProgress(
+                context = context,
+                current = 0,
+                total = tracked.size,
+                preReleaseUpdateCount = 0,
+                updatableCount = 0,
+                failedCount = 0
+            )
+            val result = GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = tracked,
+                refreshTimestampMs = nowMs
+            ) { item ->
+                GitHubReleaseCheckService.evaluateTrackedApp(context, item)
+            }
+            AppLogger.i(
+                "AppForegroundInfoHandler",
+                "github shortcut refreshed total=${result.totalCount} elapsed=${result.performance.elapsedMs}ms " +
+                        "p50=${result.performance.p50ItemMs}ms p95=${result.performance.p95ItemMs}ms " +
+                        "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}"
+            )
+            withContext(Dispatchers.IO) {
+                GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)
+            }
+            handleGitHubActionsUpdates(
+                context = context,
+                snapshot = snapshot,
+                nowMs = nowMs
+            )
+            GitHubRefreshNotificationHelper.notifyCompleted(
+                context = context,
+                total = result.totalCount,
+                preReleaseUpdateCount = result.preReleaseUpdateCount,
+                updatableCount = result.updatableCount,
+                failedCount = result.failedCount
+            )
+            AppBackgroundScheduler.scheduleGitHubRefresh(context)
+            return AppShortcutGitHubRefreshResult.Completed
+        }
+    }
+
     private suspend fun handleGitHubActionsUpdates(
         context: Context,
         snapshot: GitHubTrackSnapshot,
@@ -311,4 +361,9 @@ object AppForegroundInfoHandler {
         }
     }
 
+}
+
+internal enum class AppShortcutGitHubRefreshResult {
+    Completed,
+    NoTrackedItems
 }

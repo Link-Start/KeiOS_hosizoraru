@@ -28,8 +28,8 @@ internal object AppShortcuts {
             .setLongLabel(context.getString(R.string.shortcut_label_ap_island_long))
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_ba_ap_island_shift))
             .setIntent(
-                Intent(context, MainActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
+                Intent(context, AppShortcutActionActivity::class.java).apply {
+                    action = AppShortcutActionReceiver.ACTION_HANDLE_SHORTCUT
                     putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
                     putExtra(MainActivity.EXTRA_SHORTCUT_ACTION, MainActivity.SHORTCUT_ACTION_BA_AP_ISLAND)
                 }
@@ -44,8 +44,8 @@ internal object AppShortcuts {
             .setLongLabel(context.getString(R.string.shortcut_label_mcp_toggle_long))
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_mcp_lobehub))
             .setIntent(
-                Intent(context, MainActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
+                Intent(context, AppShortcutActionActivity::class.java).apply {
+                    action = AppShortcutActionReceiver.ACTION_HANDLE_SHORTCUT
                     putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_MCP)
                     putExtra(MainActivity.EXTRA_MCP_SERVER_ACTION, MainActivity.MCP_SERVER_ACTION_TOGGLE)
                 }
@@ -60,8 +60,8 @@ internal object AppShortcuts {
             .setLongLabel(context.getString(R.string.shortcut_label_github_refresh_long))
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_github_invertocat))
             .setIntent(
-                Intent(context, MainActivity::class.java).apply {
-                    action = Intent.ACTION_VIEW
+                Intent(context, AppShortcutActionActivity::class.java).apply {
+                    action = AppShortcutActionReceiver.ACTION_HANDLE_SHORTCUT
                     putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_GITHUB)
                     putExtra(
                         MainActivity.EXTRA_SHORTCUT_ACTION,

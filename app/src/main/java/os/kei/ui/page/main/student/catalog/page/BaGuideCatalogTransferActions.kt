@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.provider.DocumentsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
-import androidx.core.net.toUri
 
 internal data class BaGuideCatalogTransferSaveLocationState(
     val mediaSaveCustomEnabled: Boolean,
@@ -98,10 +97,20 @@ internal fun rememberBaGuideCatalogJsonExportAction(
             return@rememberLauncherForActivityResult
         }
         runCatching {
-            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(treeUri, flags)
+            val persistableFlags = result.data?.flags.orZero() and
+                    (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            if (persistableFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0) {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+            if (persistableFlags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION != 0) {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
         }
         BASettingsStore.saveMediaSaveFixedTreeUri(treeUri.toString())
         mediaSaveFixedTreeUri = treeUri.toString()
@@ -207,6 +216,8 @@ internal fun rememberBaGuideCatalogJsonExportAction(
         )
     }
 }
+
+private fun Int?.orZero(): Int = this ?: 0
 
 private fun writeBaGuideCatalogJsonExportToTree(
     context: Context,

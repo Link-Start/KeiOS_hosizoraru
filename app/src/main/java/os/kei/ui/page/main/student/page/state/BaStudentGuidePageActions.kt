@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
@@ -71,11 +72,15 @@ internal fun rememberBaStudentGuideMediaSaveAction(
             if (success) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.guide_media_save_success, request.fileName),
+                    context.resolveString(R.string.guide_media_save_success, request.fileName),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                Toast.makeText(context, context.getString(R.string.guide_media_save_failed), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.resolveString(R.string.guide_media_save_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -113,11 +118,15 @@ internal fun rememberBaStudentGuideMediaSaveAction(
             if (success) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.guide_media_save_success, request.fileName),
+                    context.resolveString(R.string.guide_media_save_success, request.fileName),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                Toast.makeText(context, context.getString(R.string.guide_media_save_failed), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.resolveString(R.string.guide_media_save_failed),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -130,7 +139,11 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                 rawPrefix = studentNamePrefixState.value()
             )
             if (request == null) {
-                Toast.makeText(context, context.getString(R.string.guide_media_save_empty), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.resolveString(R.string.guide_media_save_empty),
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 val useFixedSaveLocation = BASettingsStore.loadMediaSaveCustomEnabled()
                 if (!useFixedSaveLocation) {
@@ -161,7 +174,10 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                             if (success) {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.guide_media_save_success, request.fileName),
+                                    context.resolveString(
+                                        R.string.guide_media_save_success,
+                                        request.fileName
+                                    ),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
@@ -227,7 +243,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
             if (result.success) {
                 Toast.makeText(
                     context,
-                    context.getString(
+                    context.resolveString(
                         R.string.guide_media_pack_save_success,
                         result.savedCount,
                         result.totalCount,
@@ -238,7 +254,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
             } else {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.guide_media_pack_save_failed),
+                    context.resolveString(R.string.guide_media_pack_save_failed),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -282,7 +298,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
             if (result?.success == true) {
                 Toast.makeText(
                     context,
-                    context.getString(
+                    context.resolveString(
                         R.string.guide_media_pack_save_success,
                         result.savedCount,
                         result.totalCount,
@@ -293,7 +309,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
             } else {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.guide_media_pack_save_failed),
+                    context.resolveString(R.string.guide_media_pack_save_failed),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -308,7 +324,11 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                 rawPrefix = studentNamePrefixState.value()
             )
             if (request == null) {
-                Toast.makeText(context, context.getString(R.string.guide_media_save_empty), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.resolveString(R.string.guide_media_save_empty),
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 val useFixedSaveLocation = BASettingsStore.loadMediaSaveCustomEnabled()
                 if (!useFixedSaveLocation) {
@@ -338,7 +358,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                             if (result?.success == true) {
                                 Toast.makeText(
                                     context,
-                                    context.getString(
+                                    context.resolveString(
                                         R.string.guide_media_pack_save_success,
                                         result.savedCount,
                                         result.totalCount,
@@ -349,7 +369,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                             } else if (treeReady) {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.guide_media_pack_save_failed),
+                                    context.resolveString(R.string.guide_media_pack_save_failed),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
@@ -492,7 +512,7 @@ internal fun rememberBaStudentGuidePageActions(
                         onVoicePlayProgressChange(0f)
                         Toast.makeText(
                             context,
-                            context.getString(
+                            context.resolveString(
                                 R.string.guide_toast_voice_play_failed_with_reason,
                                 error.javaClass.simpleName
                             ),

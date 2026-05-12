@@ -41,6 +41,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
@@ -262,7 +263,7 @@ fun BaGuideCatalogPage(
             bgmCacheRevision += 1
             Toast.makeText(
                 context,
-                context.getString(R.string.ba_catalog_bgm_cache_batch_done, targets.size),
+                context.resolveString(R.string.ba_catalog_bgm_cache_batch_done, targets.size),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -280,7 +281,7 @@ fun BaGuideCatalogPage(
             bgmCacheRevision += 1
             Toast.makeText(
                 context,
-                context.getString(R.string.ba_catalog_bgm_cache_cleaned, cleaned),
+                context.resolveString(R.string.ba_catalog_bgm_cache_cleaned, cleaned),
                 Toast.LENGTH_SHORT
             ).show()
         }

@@ -49,7 +49,8 @@ internal object McpXiaomiMagicDispatcher {
         context: Context,
         notificationId: Int,
         notification: Notification
-    ) {
+    ): Boolean {
+        if (!McpNotificationHelper.canPostNotifications(context)) return false
         val notificationManager = NotificationManagerCompat.from(context)
         val targetUid = resolveXmsfUid(context)
         AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
@@ -58,13 +59,21 @@ internal object McpXiaomiMagicDispatcher {
             if (canUseCommand()) {
                 restoreNetworkIfNeeded(context)
             }
-            notificationManager.notify(notificationId, notification)
-            return
+            return McpNotificationHelper.notifySafely(
+                context,
+                notificationManager,
+                notificationId,
+                notification
+            )
         }
         val nonNullUid = targetUid ?: run {
             AppLogger.w(TAG, "skip Xiaomi magic: xmsf uid is null")
-            notificationManager.notify(notificationId, notification)
-            return
+            return McpNotificationHelper.notifySafely(
+                context,
+                notificationManager,
+                notificationId,
+                notification
+            )
         }
 
         scope.launch {
@@ -76,18 +85,23 @@ internal object McpXiaomiMagicDispatcher {
                     AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
                     blockXmsfNetworkingLocked(nonNullUid)
                     networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
-                    notificationManager.notify(notificationId, notification)
-                    notificationDispatched = true
+                    notificationDispatched = McpNotificationHelper.notifySafely(
+                        context = context,
+                        notificationManager = notificationManager,
+                        notificationId = notificationId,
+                        notification = notification
+                    )
                     delay(resolveBlockIntervalMs().milliseconds)
                 } catch (throwable: Throwable) {
                     if (throwable is CancellationException) throw throwable
                     AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
                     if (!notificationDispatched) {
-                        runCatching {
-                            notificationManager.notify(notificationId, notification)
-                        }.onFailure {
-                            AppLogger.e(TAG, "Fallback notification dispatch failed", it)
-                        }
+                        McpNotificationHelper.notifySafely(
+                            context = context,
+                            notificationManager = notificationManager,
+                            notificationId = notificationId,
+                            notification = notification
+                        )
                     }
                 } finally {
                     withContext(NonCancellable) {
@@ -108,6 +122,7 @@ internal object McpXiaomiMagicDispatcher {
                 }
             }
         }
+        return true
     }
 
     fun restoreNetworkIfNeeded(context: Context) {

@@ -1,3 +1,5 @@
+@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package os.kei.ui.page.main.student.section.gallery
 
 import androidx.compose.foundation.clickable
@@ -8,20 +10,21 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.Player
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.flow.MutableStateFlow
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
 import top.yukonga.miuix.kmp.icon.extended.Replace
@@ -44,8 +47,10 @@ internal fun GuideInlineVideoPreview(
             )
         }
     } else {
-        previewProgressState?.value = 1f
-        onPreviewLoadingChanged?.invoke(false)
+        LaunchedEffect(previewProgressState, onPreviewLoadingChanged) {
+            previewProgressState?.value = 1f
+            onPreviewLoadingChanged?.invoke(false)
+        }
     }
 }
 

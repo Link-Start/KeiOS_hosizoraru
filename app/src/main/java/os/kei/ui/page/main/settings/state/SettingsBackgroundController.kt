@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.yalantis.ucrop.UCrop
 import os.kei.R
 import os.kei.core.intent.UriGrantCompat
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.settings.support.createNonHomeBackgroundCropOutputUri
 import os.kei.ui.page.main.settings.support.deleteManagedNonHomeBackgroundFile
 import os.kei.ui.page.main.settings.support.resolveNonHomeBackgroundAspectRatio
@@ -48,11 +49,14 @@ internal fun rememberSettingsBackgroundController(
         if (result.resultCode != Activity.RESULT_OK) {
             if (cropError != null) {
                 val reason = cropError.javaClass.simpleName.ifBlank {
-                    context.getString(R.string.common_unknown)
+                    context.resolveString(R.string.common_unknown)
                 }
                 Toast.makeText(
                     context,
-                    context.getString(R.string.settings_non_home_background_toast_crop_failed, reason),
+                    context.resolveString(
+                        R.string.settings_non_home_background_toast_crop_failed,
+                        reason
+                    ),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -62,9 +66,9 @@ internal fun rememberSettingsBackgroundController(
         val outputUri = data?.let { UCrop.getOutput(it) } ?: run {
             Toast.makeText(
                 context,
-                context.getString(
+                context.resolveString(
                     R.string.settings_non_home_background_toast_crop_failed,
-                    context.getString(R.string.common_unknown)
+                    context.resolveString(R.string.common_unknown)
                 ),
                 Toast.LENGTH_SHORT
             ).show()
@@ -78,7 +82,7 @@ internal fun rememberSettingsBackgroundController(
         }
         Toast.makeText(
             context,
-            context.getString(R.string.settings_non_home_background_toast_selected),
+            context.resolveString(R.string.settings_non_home_background_toast_selected),
             Toast.LENGTH_SHORT
         ).show()
     }
@@ -98,7 +102,7 @@ internal fun rememberSettingsBackgroundController(
         val (aspectRatioX, aspectRatioY) = resolveNonHomeBackgroundAspectRatio(context)
         val (maxResultWidth, maxResultHeight) = resolveNonHomeBackgroundCropSize(context)
         val cropOptions = UCrop.Options().apply {
-            setToolbarTitle(context.getString(R.string.settings_non_home_background_crop_title))
+            setToolbarTitle(context.resolveString(R.string.settings_non_home_background_crop_title))
             setCompressionFormat(Bitmap.CompressFormat.JPEG)
             setCompressionQuality(92)
             setFreeStyleCropEnabled(false)
@@ -115,11 +119,14 @@ internal fun rememberSettingsBackgroundController(
                 .getIntent(context)
         }.getOrElse { error ->
             val reason = error.javaClass.simpleName.ifBlank {
-                context.getString(R.string.common_unknown)
+                context.resolveString(R.string.common_unknown)
             }
             Toast.makeText(
                 context,
-                context.getString(R.string.settings_non_home_background_toast_crop_failed, reason),
+                context.resolveString(
+                    R.string.settings_non_home_background_toast_crop_failed,
+                    reason
+                ),
                 Toast.LENGTH_SHORT
             ).show()
             return@rememberLauncherForActivityResult
@@ -144,7 +151,7 @@ internal fun rememberSettingsBackgroundController(
                 latestOnBackgroundUriChange("")
                 Toast.makeText(
                     context,
-                    context.getString(R.string.settings_non_home_background_toast_cleared),
+                    context.resolveString(R.string.settings_non_home_background_toast_cleared),
                     Toast.LENGTH_SHORT
                 ).show()
             }

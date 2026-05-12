@@ -1,15 +1,19 @@
 package os.kei.mcp.notification
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
+import os.kei.core.log.AppLogger
 import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.domain.notification.SessionNotifier
 import os.kei.mcp.framework.notification.NotificationHelper
@@ -17,6 +21,7 @@ import os.kei.mcp.framework.notification.SessionNotifierImpl
 import os.kei.mcp.service.McpKeepAliveService
 
 object McpNotificationHelper {
+    private const val TAG = "McpNotificationHelper"
     const val CHANNEL_ID = "mcp_keepalive_channel_v2"
     const val LIVE_CHANNEL_ID = "mcp_live_update_channel_v1"
     const val FOREGROUND_SERVICE_CHANNEL_ID = "mcp_keepalive_service_channel_v1"
@@ -517,20 +522,19 @@ object McpNotificationHelper {
         notificationId: Int,
         notification: Notification,
         useXiaomiMagic: Boolean
-    ) {
+    ): Boolean {
         if (useXiaomiMagic) {
-            McpXiaomiMagicDispatcher.notify(
+            return McpXiaomiMagicDispatcher.notify(
                 context = context,
                 notificationId = notificationId,
                 notification = notification
             )
-            return
         }
         val notificationManager = NotificationManagerCompat.from(context)
         if (McpXiaomiMagicDispatcher.canUseCommand()) {
             restoreXiaomiNetworkIfNeeded(context)
         }
-        notificationManager.notify(notificationId, notification)
+        return notifySafely(context, notificationManager, notificationId, notification)
     }
 
     fun dispatchNotification(
@@ -538,8 +542,8 @@ object McpNotificationHelper {
         notificationId: Int,
         notification: Notification,
         useXiaomiMagic: Boolean
-    ) {
-        notifyWithResolvedDispatcher(
+    ): Boolean {
+        return notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
             notification = notification,
@@ -556,5 +560,28 @@ object McpNotificationHelper {
             restoreXiaomiNetworkIfNeeded(context)
         }
         NotificationManagerCompat.from(context).cancel(notificationId)
+    }
+
+    internal fun canPostNotifications(context: Context): Boolean {
+        return context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED &&
+                NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+
+    @SuppressLint("MissingPermission")
+    internal fun notifySafely(
+        context: Context,
+        notificationManager: NotificationManagerCompat,
+        notificationId: Int,
+        notification: Notification
+    ): Boolean {
+        if (!canPostNotifications(context)) return false
+        return runCatching {
+            notificationManager.notify(notificationId, notification)
+            true
+        }.getOrElse { throwable ->
+            AppLogger.e(TAG, "Notification dispatch failed id=$notificationId", throwable)
+            false
+        }
     }
 }

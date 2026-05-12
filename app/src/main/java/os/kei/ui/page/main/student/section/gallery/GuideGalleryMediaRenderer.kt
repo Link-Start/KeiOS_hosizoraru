@@ -16,7 +16,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.student.GuideVideoControlAction
@@ -27,8 +30,6 @@ import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
-import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.flow.MutableStateFlow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
@@ -114,7 +115,7 @@ internal fun GuideGalleryCardContent(
                         if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.guide_media_video_url_invalid),
+                                context.resolveString(R.string.guide_media_video_url_invalid),
                                 Toast.LENGTH_SHORT
                             ).show()
                         } else if (!gestureState.videoInlineExpanded) {
@@ -135,7 +136,7 @@ internal fun GuideGalleryCardContent(
                         if (normalized.isBlank()) {
                             Toast.makeText(
                                 context,
-                                context.getString(R.string.guide_media_video_url_invalid),
+                                context.resolveString(R.string.guide_media_video_url_invalid),
                                 Toast.LENGTH_SHORT
                             ).show()
                         } else {
@@ -305,7 +306,10 @@ internal fun GuideGalleryCardContent(
 
         audioState.loadError?.takeIf { it.isNotBlank() }?.let { err ->
             Text(
-                text = context.getString(R.string.guide_media_audio_play_failed_with_reason, err),
+                text = context.resolveString(
+                    R.string.guide_media_audio_play_failed_with_reason,
+                    err
+                ),
                 color = MiuixTheme.colorScheme.error,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

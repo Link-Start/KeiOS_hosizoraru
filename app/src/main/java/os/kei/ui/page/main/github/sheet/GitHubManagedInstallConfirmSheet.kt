@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.ui.page.main.github.GitHubApkTrustReason
@@ -221,7 +222,7 @@ internal fun GitHubManagedInstallConfirmSheet(
                     SheetSectionCard {
                         ConfirmHintText(
                             text = reasons.joinToString(" / ") { reason ->
-                                context.getString(reason.labelRes())
+                                context.resolveString(reason.labelRes())
                             },
                             color = trustSignal.level.toStatusColor()
                         )

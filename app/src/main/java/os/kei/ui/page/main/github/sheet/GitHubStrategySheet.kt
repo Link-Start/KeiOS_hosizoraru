@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
@@ -112,9 +113,9 @@ internal fun GitHubStrategySheet(
         val tokenUsedByDraft = selectedStrategyInput == GitHubLookupStrategyOption.GitHubApiToken ||
             selectedActionsStrategyInput == GitHubActionsLookupStrategyOption.GitHubApiToken
         val tokenStatusLabel = when {
-            !tokenUsedByDraft -> context.getString(R.string.common_not_used)
-            sanitizedTokenInput.isBlank() -> context.getString(R.string.common_guest)
-            else -> context.getString(R.string.common_filled)
+            !tokenUsedByDraft -> context.resolveString(R.string.common_not_used)
+            sanitizedTokenInput.isBlank() -> context.resolveString(R.string.common_guest)
+            else -> context.resolveString(R.string.common_filled)
         }
         val tokenStatusColor = when {
             !tokenUsedByDraft -> MiuixTheme.colorScheme.onBackgroundVariant
@@ -122,10 +123,10 @@ internal fun GitHubStrategySheet(
             else -> GitHubStatusPalette.Update
         }
         val credentialAvailabilityLabel = when {
-            credentialCheckRunning -> context.getString(R.string.common_checking)
-            credentialCheckStatus != null -> context.getString(R.string.common_available)
-            credentialCheckError != null -> context.getString(R.string.common_unavailable)
-            else -> context.getString(R.string.common_not_checked)
+            credentialCheckRunning -> context.resolveString(R.string.common_checking)
+            credentialCheckStatus != null -> context.resolveString(R.string.common_available)
+            credentialCheckError != null -> context.resolveString(R.string.common_unavailable)
+            else -> context.resolveString(R.string.common_not_checked)
         }
         val credentialAvailabilityColor = when {
             credentialCheckRunning -> MiuixTheme.colorScheme.primary
@@ -280,7 +281,7 @@ internal fun GitHubStrategySheet(
                         onClick = {
                             onOpenExternalUrl(
                                 buildGitHubFineGrainedTokenTemplateUrl(),
-                                context.getString(R.string.github_strategy_error_open_create_page)
+                                context.resolveString(R.string.github_strategy_error_open_create_page)
                             )
                         }
                     )
@@ -292,7 +293,7 @@ internal fun GitHubStrategySheet(
                         onClick = {
                             onOpenExternalUrl(
                                 githubFineGrainedPatDocsUrl,
-                                context.getString(R.string.github_strategy_error_open_docs)
+                                context.resolveString(R.string.github_strategy_error_open_docs)
                             )
                         }
                     )

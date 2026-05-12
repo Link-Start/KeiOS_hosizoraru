@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.core.ui.resource.resolveString
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
@@ -116,7 +117,7 @@ fun McpPage(
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val currentUiState by rememberUpdatedState(uiState)
-    val serverNameHint = context.getString(R.string.mcp_input_service_name_hint)
+    val serverNameHint = context.resolveString(R.string.mcp_input_service_name_hint)
     var localNetworkPermissionGranted by remember {
         mutableStateOf(hasMcpLocalNetworkPermission(context))
     }
@@ -126,23 +127,38 @@ fun McpPage(
         scope.launch {
             when (val result = mcpPageViewModel.toggleServer(mcpServerManager)) {
                 McpToggleServerResult.InvalidPort -> {
-                    Toast.makeText(context, context.getString(R.string.common_port_invalid), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        context.resolveString(R.string.common_port_invalid),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
 
                 is McpToggleServerResult.Failed -> {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.mcp_toast_start_failed, result.reason ?: unknownText),
+                        context.resolveString(
+                            R.string.mcp_toast_start_failed,
+                            result.reason ?: unknownText
+                        ),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
 
                 McpToggleServerResult.Started -> {
-                    Toast.makeText(context, context.getString(R.string.mcp_toast_service_started), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        context.resolveString(R.string.mcp_toast_service_started),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
 
                 McpToggleServerResult.Stopped -> {
-                    Toast.makeText(context, context.getString(R.string.mcp_toast_service_stopped), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        context.resolveString(R.string.mcp_toast_service_stopped),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -153,7 +169,7 @@ fun McpPage(
         localNetworkPermissionGranted = granted || hasMcpLocalNetworkPermission(context)
         Toast.makeText(
             context,
-            context.getString(
+            context.resolveString(
                 if (localNetworkPermissionGranted) {
                     R.string.mcp_toast_local_network_permission_granted
                 } else {
@@ -190,7 +206,7 @@ fun McpPage(
                 }
             Toast.makeText(
                 context,
-                context.getString(R.string.mcp_toast_local_network_permission_requested),
+                context.resolveString(R.string.mcp_toast_local_network_permission_requested),
                 Toast.LENGTH_SHORT
             ).show()
             return@toggleServer
@@ -219,7 +235,7 @@ fun McpPage(
             copyToClipboard(context, "mcp-config", json)
             Toast.makeText(
                 context,
-                context.getString(R.string.mcp_toast_config_copied),
+                context.resolveString(R.string.mcp_toast_config_copied),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -232,7 +248,7 @@ fun McpPage(
                     mcpPageViewModel.refreshNow(mcpServerManager)
                     Toast.makeText(
                         context,
-                        context.getString(R.string.common_refreshed),
+                        context.resolveString(R.string.common_refreshed),
                         Toast.LENGTH_SHORT
                     ).show()
                 } finally {
@@ -245,13 +261,17 @@ fun McpPage(
         scope.launch {
             when (val result = mcpPageViewModel.saveConfig(mcpServerManager)) {
                 McpSaveConfigResult.InvalidPort -> {
-                    Toast.makeText(context, context.getString(R.string.common_port_invalid), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        context.resolveString(R.string.common_port_invalid),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
 
                 is McpSaveConfigResult.Failed -> {
                     Toast.makeText(
                         context,
-                        context.getString(
+                        context.resolveString(
                             R.string.common_save_failed_with_reason,
                             result.reason ?: unknownText
                         ),
@@ -262,7 +282,7 @@ fun McpPage(
                 McpSaveConfigResult.Success -> {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.mcp_toast_saved_requires_restart),
+                        context.resolveString(R.string.mcp_toast_saved_requires_restart),
                         Toast.LENGTH_SHORT
                     ).show()
                     mcpPageViewModel.updateEditSheetVisible(false)
@@ -277,14 +297,14 @@ fun McpPage(
                 .onSuccess {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.mcp_toast_test_notification_sent),
+                        context.resolveString(R.string.mcp_toast_test_notification_sent),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
                 .onFailure {
                     Toast.makeText(
                         context,
-                        context.getString(
+                        context.resolveString(
                             R.string.common_send_failed_with_reason,
                             it.message ?: unknownText
                         ),
@@ -298,7 +318,7 @@ fun McpPage(
             val requiresRestart = mcpPageViewModel.resetConfigPreservingToken(mcpServerManager)
             Toast.makeText(
                 context,
-                context.getString(
+                context.resolveString(
                     if (requiresRestart) {
                         R.string.mcp_toast_config_reset_requires_restart
                     } else {
@@ -315,7 +335,7 @@ fun McpPage(
             mcpPageViewModel.resetToken(mcpServerManager)
             Toast.makeText(
                 context,
-                context.getString(R.string.mcp_toast_token_reset_reconnect),
+                context.resolveString(R.string.mcp_toast_token_reset_reconnect),
                 Toast.LENGTH_SHORT
             ).show()
             mcpPageViewModel.updateResetTokenConfirmVisible(false)
@@ -354,13 +374,13 @@ fun McpPage(
             result.onSuccess {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.mcp_toast_logs_exported),
+                    context.resolveString(R.string.mcp_toast_logs_exported),
                     Toast.LENGTH_SHORT
                 ).show()
             }.onFailure {
                 Toast.makeText(
                     context,
-                    context.getString(
+                    context.resolveString(
                         R.string.mcp_toast_logs_export_failed,
                         it.javaClass.simpleName
                     ),
@@ -499,7 +519,7 @@ fun McpPage(
                                 mcpPageViewModel.finishLogsExport()
                                 Toast.makeText(
                                     context,
-                                    context.getString(
+                                    context.resolveString(
                                         R.string.mcp_toast_logs_export_failed,
                                         it.javaClass.simpleName
                                     ),

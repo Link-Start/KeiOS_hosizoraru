@@ -45,6 +45,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.student.BaGuideGalleryItem
@@ -179,15 +180,19 @@ fun GuideGalleryExpressionCardItem(
                 .replace(Regex("""\d+$"""), "")
                 .trim('（', '）', '(', ')', '-', '·', ' ')
             if (variant.isBlank()) {
-                context.getString(R.string.guide_gallery_expression_fallback_format, index + 1)
+                context.resolveString(R.string.guide_gallery_expression_fallback_format, index + 1)
             } else if (variant == "包") {
-                context.getString(R.string.guide_gallery_expression_pack_format, index + 1)
+                context.resolveString(R.string.guide_gallery_expression_pack_format, index + 1)
             } else {
                 val displayVariant = when (variant) {
-                    "差分" -> context.getString(R.string.guide_gallery_expression_variant_difference)
+                    "差分" -> context.resolveString(R.string.guide_gallery_expression_variant_difference)
                     else -> variant
                 }
-                context.getString(R.string.guide_gallery_expression_variant_format, index + 1, displayVariant)
+                context.resolveString(
+                    R.string.guide_gallery_expression_variant_format,
+                    index + 1,
+                    displayVariant
+                )
             }
         }
     }
@@ -229,7 +234,10 @@ fun GuideGalleryExpressionCardItem(
                 null
             } else {
                 target to optionLabels.getOrElse(index) {
-                    context.getString(R.string.guide_gallery_expression_fallback_format, index + 1)
+                    context.resolveString(
+                        R.string.guide_gallery_expression_fallback_format,
+                        index + 1
+                    )
                 }
             }
         }.distinctBy { it.first }
@@ -318,7 +326,7 @@ fun GuideGalleryExpressionCardItem(
                             if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.guide_media_video_url_invalid),
+                                    context.resolveString(R.string.guide_media_video_url_invalid),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else if (!videoInlineExpanded) {
@@ -339,7 +347,7 @@ fun GuideGalleryExpressionCardItem(
                             if (normalized.isBlank()) {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.guide_media_video_url_invalid),
+                                    context.resolveString(R.string.guide_media_video_url_invalid),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {

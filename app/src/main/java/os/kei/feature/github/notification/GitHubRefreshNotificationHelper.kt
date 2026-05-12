@@ -302,7 +302,12 @@ object GitHubRefreshNotificationHelper {
             )
             return
         }
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, buildResult.notification)
+        McpNotificationHelper.dispatchNotification(
+            context = context,
+            notificationId = NOTIFICATION_ID,
+            notification = buildResult.notification,
+            useXiaomiMagic = false
+        )
     }
 
     private fun buildNotification(

@@ -18,6 +18,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.StarImportApplyResult
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -62,7 +63,7 @@ internal fun GitHubStarImportPage(
                     onImported(event.result)
                     Toast.makeText(
                         context,
-                        context.getString(
+                        context.resolveString(
                             R.string.github_star_import_toast_imported,
                             event.result.changedCount
                         ),

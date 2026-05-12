@@ -81,10 +81,20 @@ internal fun BaSettingsSheet(
         if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
         val treeUri = result.data?.data ?: return@rememberLauncherForActivityResult
         runCatching {
-            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(treeUri, flags)
+            val persistableFlags = (result.data?.flags ?: 0) and
+                    (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            if (persistableFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0) {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
+            if (persistableFlags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION != 0) {
+                context.contentResolver.takePersistableUriPermission(
+                    treeUri,
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
         }
         onMediaSaveFixedTreeUriChange(treeUri.toString())
     }

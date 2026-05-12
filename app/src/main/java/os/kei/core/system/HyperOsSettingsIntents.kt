@@ -1,5 +1,6 @@
 package os.kei.core.system
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -19,6 +20,7 @@ internal object HyperOsSettingsIntents {
             ?.startsWith(HYPER_OS_VERSION_PREFIX, ignoreCase = true) == true
     }
 
+    @SuppressLint("BatteryLife")
     fun buildBatteryOptimizationIntent(context: Context, alreadyIgnored: Boolean): Intent? {
         val packageManager = context.packageManager
         val packageUri = "package:${context.packageName}".toUri()

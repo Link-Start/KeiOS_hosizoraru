@@ -21,23 +21,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideVideoControlAction
 import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
 import os.kei.ui.page.main.student.guideLocalizedLabel
+import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.buildGuideCopyPayload
 import os.kei.ui.page.main.student.section.guideCopyable
-import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
-import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun GuideGalleryVideoGroupCardItem(
@@ -106,7 +107,7 @@ fun GuideGalleryVideoGroupCardItem(
                     if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.guide_media_video_url_invalid),
+                            context.resolveString(R.string.guide_media_video_url_invalid),
                             Toast.LENGTH_SHORT
                         ).show()
                     } else if (!videoInlineExpanded) {
@@ -120,7 +121,7 @@ fun GuideGalleryVideoGroupCardItem(
                     if (normalized.isBlank()) {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.guide_media_video_url_invalid),
+                            context.resolveString(R.string.guide_media_video_url_invalid),
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
@@ -232,7 +233,7 @@ internal fun GuideInlineVideoPlayer(
             if (normalizedUrl.isBlank()) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.guide_media_video_url_invalid),
+                    context.resolveString(R.string.guide_media_video_url_invalid),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
@@ -245,6 +246,20 @@ internal fun GuideInlineVideoPlayer(
     }
 
     if (!expanded) {
+        LaunchedEffect(
+            showCollapsedPreview,
+            previewProgressState,
+            onPreviewLoadingChanged,
+            onBufferingChange,
+            onIsPlayingChange
+        ) {
+            if (!showCollapsedPreview) {
+                previewProgressState?.value = 1f
+                onPreviewLoadingChanged?.invoke(false)
+            }
+            onBufferingChange(false)
+            onIsPlayingChange(false)
+        }
         if (showCollapsedPreview) {
             GuideInlineVideoPreview(
                 previewImageUrl = normalizedPreviewUrl,
@@ -255,12 +270,7 @@ internal fun GuideInlineVideoPlayer(
                 previewProgressState = previewProgressState,
                 onPreviewLoadingChanged = onPreviewLoadingChanged
             )
-        } else {
-            previewProgressState?.value = 1f
-            onPreviewLoadingChanged?.invoke(false)
         }
-        onBufferingChange(false)
-        onIsPlayingChange(false)
         return
     }
 

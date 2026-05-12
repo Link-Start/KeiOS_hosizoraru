@@ -122,12 +122,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
             BaGuideBgmBottomChromeMode.SearchExpanded -> BaGuideBgmExpandedChromeHeight
         }
     }
-    val tabGroupHeight by transition.animateDp(
-        transitionSpec = { animationSpec },
-        label = "ba_catalog_bgm_tab_height"
-    ) {
-        BaGuideBgmExpandedDockHeight
-    }
+    val tabGroupHeight = BaGuideBgmExpandedDockHeight
     val tabGroupY by transition.animateDp(
         transitionSpec = { animationSpec },
         label = "ba_catalog_bgm_tab_y"
@@ -139,24 +134,9 @@ internal fun BaGuideBgmFloatingBottomChrome(
             BaGuideBgmBottomChromeMode.Compact -> BaGuideBgmCompactControlInset
         }
     }
-    val miniPlayerHeight by transition.animateDp(
-        transitionSpec = { animationSpec },
-        label = "ba_catalog_bgm_mini_height"
-    ) { mode ->
-        BaGuideBgmExpandedMiniHeight
-    }
-    val miniPlayerY by transition.animateDp(
-        transitionSpec = { animationSpec },
-        label = "ba_catalog_bgm_mini_y"
-    ) {
-        BaGuideBgmCompactMiniY
-    }
-    val searchSize by transition.animateDp(
-        transitionSpec = { animationSpec },
-        label = "ba_catalog_bgm_search_size"
-    ) {
-        BaGuideBgmExpandedDockHeight
-    }
+    val miniPlayerHeight = BaGuideBgmExpandedMiniHeight
+    val miniPlayerY = BaGuideBgmCompactMiniY
+    val searchSize = BaGuideBgmExpandedDockHeight
     val searchY by transition.animateDp(
         transitionSpec = { animationSpec },
         label = "ba_catalog_bgm_search_y"

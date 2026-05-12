@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -119,8 +120,10 @@ fun GuideRemoteImageAdaptive(
     val context = LocalContext.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) {
-        progressState?.value = 1f
-        onLoadingChanged?.invoke(false)
+        LaunchedEffect(progressState, onLoadingChanged) {
+            progressState?.value = 1f
+            onLoadingChanged?.invoke(false)
+        }
         return
     }
     val fallbackRatio = remember(target) { detectMediaRatioFromUrl(target) ?: (16f / 9f) }

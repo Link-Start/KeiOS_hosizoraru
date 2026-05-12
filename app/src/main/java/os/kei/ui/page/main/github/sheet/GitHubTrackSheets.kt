@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubShareImportFlowMode
@@ -446,7 +447,7 @@ private fun GitHubCheckTransferSection(
     val context = LocalContext.current
     val flowModeOptions = GitHubShareImportFlowMode.entries
     val flowModeLabels = flowModeOptions.map { mode ->
-        context.getString(mode.labelRes())
+        context.resolveString(mode.labelRes())
     }
     val selectedFlowModeIndex = flowModeOptions
         .indexOf(shareImportFlowModeInput)

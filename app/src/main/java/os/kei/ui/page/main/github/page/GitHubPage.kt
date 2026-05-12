@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
@@ -46,7 +47,7 @@ fun GitHubPage(
     onActionBarInteractingChanged: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val openLinkFailureMessage = context.getString(R.string.github_error_open_link)
+    val openLinkFailureMessage = context.resolveString(R.string.github_error_open_link)
     val systemDmOption = remember(context) { systemDownloadManagerOption(context) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()

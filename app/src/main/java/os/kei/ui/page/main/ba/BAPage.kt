@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
@@ -496,7 +497,7 @@ fun BAPage(
                         poolEntries = poolUiState.entries
                     ) ?: return@BaDebugSheet
                 } else {
-                    context.getString(R.string.ba_debug_sample_change_detail)
+                    context.resolveString(R.string.ba_debug_sample_change_detail)
                 }
                 notifyBaDebugResult(
                     context = context,
@@ -525,7 +526,7 @@ private fun sampleCalendarEntry(
     val endAtMs = if (upcoming) nowMs + 3L * 60L * 60L * 1000L else nowMs + 60L * 60L * 1000L
     return BaCalendarEntry(
         id = -10_001,
-        title = context.getString(R.string.ba_debug_sample_calendar_title),
+        title = context.resolveString(R.string.ba_debug_sample_calendar_title),
         kindId = 14,
         kindName = "",
         beginAtMs = startAtMs,
@@ -545,7 +546,7 @@ private fun samplePoolEntry(
     val endAtMs = if (upcoming) nowMs + 3L * 60L * 60L * 1000L else nowMs + 60L * 60L * 1000L
     return BaPoolEntry(
         id = -10_002,
-        name = context.getString(R.string.ba_debug_sample_pool_title),
+        name = context.resolveString(R.string.ba_debug_sample_pool_title),
         tagId = 6,
         tagName = "",
         startAtMs = startAtMs,
@@ -565,7 +566,7 @@ private fun notifyBaDebugResult(
     } else {
         R.string.ba_toast_notification_permission_required
     }
-    Toast.makeText(context, context.getString(messageRes), Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, context.resolveString(messageRes), Toast.LENGTH_SHORT).show()
 }
 
 private fun resolveCalendarDebugEntries(
@@ -596,7 +597,7 @@ private fun resolveCalendarDebugEntries(
     }
     Toast.makeText(
         context,
-        context.getString(R.string.ba_toast_calendar_pool_real_data_missing),
+        context.resolveString(R.string.ba_toast_calendar_pool_real_data_missing),
         Toast.LENGTH_SHORT
     ).show()
     return null
@@ -630,7 +631,7 @@ private fun resolvePoolDebugEntries(
     }
     Toast.makeText(
         context,
-        context.getString(R.string.ba_toast_calendar_pool_real_data_missing),
+        context.resolveString(R.string.ba_toast_calendar_pool_real_data_missing),
         Toast.LENGTH_SHORT
     ).show()
     return null
@@ -658,7 +659,7 @@ private fun resolveRealChangeDebugDetail(
     if (detail.isNotBlank()) return detail
     Toast.makeText(
         context,
-        context.getString(R.string.ba_toast_calendar_pool_real_data_missing),
+        context.resolveString(R.string.ba_toast_calendar_pool_real_data_missing),
         Toast.LENGTH_SHORT
     ).show()
     return null

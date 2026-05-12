@@ -32,6 +32,8 @@ data class UiPrefsSnapshot(
     val logDebugEnabled: Boolean,
     val textCopyCapabilityExpanded: Boolean,
     val cacheDiagnosticsEnabled: Boolean,
+    val firebaseBasicStatsEnabled: Boolean,
+    val firebaseErrorLogsEnabled: Boolean,
     val appThemeMode: AppThemeMode,
     val visibleBottomPageNames: Set<String>
 )
@@ -57,6 +59,8 @@ object UiPrefs {
     private const val KEY_LOG_DEBUG = "log_debug"
     private const val KEY_TEXT_COPY_CAPABILITY_EXPANDED = "text_copy_capability_expanded"
     private const val KEY_CACHE_DIAGNOSTICS = "cache_diagnostics"
+    private const val KEY_FIREBASE_BASIC_STATS = "firebase_basic_stats"
+    private const val KEY_FIREBASE_ERROR_LOGS = "firebase_error_logs"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_VISIBLE_BOTTOM_PAGES = "visible_bottom_pages"
     private const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
@@ -257,6 +261,22 @@ object UiPrefs {
         kv().encode(KEY_CACHE_DIAGNOSTICS, value)
     }
 
+    fun isFirebaseBasicStatsEnabled(defaultValue: Boolean = false): Boolean {
+        return kv().decodeBool(KEY_FIREBASE_BASIC_STATS, defaultValue)
+    }
+
+    fun setFirebaseBasicStatsEnabled(value: Boolean) {
+        kv().encode(KEY_FIREBASE_BASIC_STATS, value)
+    }
+
+    fun isFirebaseErrorLogsEnabled(defaultValue: Boolean = false): Boolean {
+        return kv().decodeBool(KEY_FIREBASE_ERROR_LOGS, defaultValue)
+    }
+
+    fun setFirebaseErrorLogsEnabled(value: Boolean) {
+        kv().encode(KEY_FIREBASE_ERROR_LOGS, value)
+    }
+
     fun getAppThemeMode(defaultValue: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): AppThemeMode {
         val raw = kv().decodeString(KEY_THEME_MODE, null) ?: return defaultValue
         return AppThemeMode.entries.firstOrNull { it.name == raw } ?: defaultValue
@@ -306,6 +326,8 @@ object UiPrefs {
             logDebugEnabled = BuildConfig.LOG_DEBUG_DEFAULT,
             textCopyCapabilityExpanded = false,
             cacheDiagnosticsEnabled = true,
+            firebaseBasicStatsEnabled = false,
+            firebaseErrorLogsEnabled = false,
             appThemeMode = appThemeMode,
             visibleBottomPageNames = DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES
         )
@@ -336,6 +358,8 @@ object UiPrefs {
             logDebugEnabled = store.decodeBool(buildTypeAwareLogDebugKey(), BuildConfig.LOG_DEBUG_DEFAULT),
             textCopyCapabilityExpanded = store.decodeBool(KEY_TEXT_COPY_CAPABILITY_EXPANDED, false),
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
+            firebaseBasicStatsEnabled = store.decodeBool(KEY_FIREBASE_BASIC_STATS, false),
+            firebaseErrorLogsEnabled = store.decodeBool(KEY_FIREBASE_ERROR_LOGS, false),
             appThemeMode = getAppThemeMode(),
             visibleBottomPageNames = loadVisibleBottomPageNames()
         )

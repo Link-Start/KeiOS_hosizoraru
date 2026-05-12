@@ -15,9 +15,12 @@ import kotlinx.coroutines.launch
 import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogStore
 import os.kei.core.prefs.CacheEntrySummary
+import os.kei.core.telemetry.FirebaseTelemetry
+import os.kei.core.telemetry.FirebaseTelemetryRecord
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val SETTINGS_LOG_STATS_REFRESH_MS = 1_200L
+private const val SETTINGS_TELEMETRY_REFRESH_MS = 1_600L
 
 @Immutable
 internal data class SettingsCacheUiState(
@@ -34,17 +37,29 @@ internal data class SettingsLogUiState(
     val pendingExportFileName: String? = null
 )
 
+internal data class SettingsTelemetryUiState(
+    val basicStatsEnabled: Boolean = false,
+    val errorLogsEnabled: Boolean = false,
+    val recentRecords: List<FirebaseTelemetryRecord> = emptyList(),
+    val processingCrashReports: Boolean = false
+)
+
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
     private var cacheLoadJob: Job? = null
     private var logStatsJob: Job? = null
+    private var telemetryJob: Job? = null
     private var boundLogDebugEnabled: Boolean? = null
+    private var boundTelemetryKey: Pair<Boolean, Boolean>? = null
 
     private val _cacheState = MutableStateFlow(SettingsCacheUiState())
     val cacheState: StateFlow<SettingsCacheUiState> = _cacheState.asStateFlow()
 
     private val _logState = MutableStateFlow(SettingsLogUiState())
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
+
+    private val _telemetryState = MutableStateFlow(SettingsTelemetryUiState())
+    val telemetryState: StateFlow<SettingsTelemetryUiState> = _telemetryState.asStateFlow()
 
     fun bindCacheDiagnostics(
         context: Context,
@@ -122,6 +137,71 @@ internal class SettingsPageViewModel : ViewModel() {
             _logState.update { state ->
                 state.copy(logStats = repository.loadLogStats(appContext))
             }
+        }
+    }
+
+    fun bindTelemetry(
+        context: Context,
+        basicStatsEnabled: Boolean,
+        errorLogsEnabled: Boolean
+    ) {
+        val appContext = context.applicationContext
+        val nextKey = basicStatsEnabled to errorLogsEnabled
+        if (boundTelemetryKey == nextKey && telemetryJob?.isActive == true) return
+        boundTelemetryKey = nextKey
+        telemetryJob?.cancel()
+        telemetryJob = viewModelScope.launch {
+            do {
+                val snapshot = FirebaseTelemetry.loadSnapshot()
+                _telemetryState.update { state ->
+                    state.copy(
+                        basicStatsEnabled = snapshot.basicStatsEnabled,
+                        errorLogsEnabled = snapshot.errorLogsEnabled,
+                        recentRecords = snapshot.recentRecords
+                    )
+                }
+                if (!basicStatsEnabled && !errorLogsEnabled) break
+                delay(SETTINGS_TELEMETRY_REFRESH_MS.milliseconds)
+            } while (true)
+        }
+        FirebaseTelemetry.applyCollectionPrefs(appContext)
+    }
+
+    fun reloadTelemetry() {
+        val snapshot = FirebaseTelemetry.loadSnapshot()
+        _telemetryState.update { state ->
+            state.copy(
+                basicStatsEnabled = snapshot.basicStatsEnabled,
+                errorLogsEnabled = snapshot.errorLogsEnabled,
+                recentRecords = snapshot.recentRecords
+            )
+        }
+    }
+
+    fun clearTelemetryRecords() {
+        FirebaseTelemetry.clearRecentRecords()
+        reloadTelemetry()
+    }
+
+    fun sendUnsentErrorReports() {
+        if (_telemetryState.value.processingCrashReports) return
+        viewModelScope.launch {
+            _telemetryState.update { state -> state.copy(processingCrashReports = true) }
+            FirebaseTelemetry.sendUnsentErrorReports()
+            delay(300.milliseconds)
+            _telemetryState.update { state -> state.copy(processingCrashReports = false) }
+            reloadTelemetry()
+        }
+    }
+
+    fun deleteUnsentErrorReports() {
+        if (_telemetryState.value.processingCrashReports) return
+        viewModelScope.launch {
+            _telemetryState.update { state -> state.copy(processingCrashReports = true) }
+            FirebaseTelemetry.deleteUnsentErrorReports()
+            delay(300.milliseconds)
+            _telemetryState.update { state -> state.copy(processingCrashReports = false) }
+            reloadTelemetry()
         }
     }
 

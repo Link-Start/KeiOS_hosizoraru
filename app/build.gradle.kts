@@ -163,6 +163,7 @@ val metricsPerformanceVersion = "1.0.0"
 val profileInstallerVersion = "1.4.1"
 val lifecycleViewModelComposeVersion = "2.10.0"
 val firebaseBomVersion = "34.13.0"
+val firebaseCrashlyticsGradleVersion = "3.0.7"
 val robolectricVersion = "4.16.1"
 val androidTestExtJunitVersion = "1.3.0"
 val roborazziVersion = "1.60.0"
@@ -179,6 +180,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("androidx.baselineprofile")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -231,6 +233,11 @@ android {
         buildConfigField("String", "SHIZUKU_VERSION", "\"$shizukuVersion\"")
         buildConfigField("String", "FOCUS_API_VERSION", "\"$focusApiVersion\"")
         buildConfigField("String", "FIREBASE_BOM_VERSION", "\"$firebaseBomVersion\"")
+        buildConfigField(
+            "String",
+            "FIREBASE_CRASHLYTICS_GRADLE_VERSION",
+            "\"$firebaseCrashlyticsGradleVersion\""
+        )
         buildConfigField("String", "GRADLE_VERSION", "\"$projectGradleVersion\"")
         buildConfigField("String", "BASE_VERSION_NAME", "\"${releaseVersion.name}\"")
         buildConfigField("String", "NEXT_VERSION_NAME", "\"${nonReleaseVersion.name}\"")
@@ -396,6 +403,7 @@ dependencies {
     implementation("com.xzakota.hyper.notification:focus-api:$focusApiVersion")
     implementation(platform("com.google.firebase:firebase-bom:$firebaseBomVersion"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
 
     // Keep kotlin-test aligned with the applied Kotlin plugin version to avoid version skew.
     testImplementation(kotlin("test"))

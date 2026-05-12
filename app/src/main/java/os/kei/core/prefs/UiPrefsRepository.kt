@@ -136,6 +136,18 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setFirebaseBasicStatsEnabled(value: Boolean) {
+        updateAndPersist({ copy(firebaseBasicStatsEnabled = value) }) {
+            UiPrefs.setFirebaseBasicStatsEnabled(value)
+        }
+    }
+
+    suspend fun setFirebaseErrorLogsEnabled(value: Boolean) {
+        updateAndPersist({ copy(firebaseErrorLogsEnabled = value) }) {
+            UiPrefs.setFirebaseErrorLogsEnabled(value)
+        }
+    }
+
     suspend fun saveVisibleBottomPageNames(value: Set<String>) {
         updateAndPersist({ copy(visibleBottomPageNames = value) }) {
             UiPrefs.saveVisibleBottomPageNames(value)

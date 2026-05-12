@@ -147,7 +147,8 @@ fun AboutLicenseCardSection(
             titleRes = R.string.about_license_row_firebase,
             value = stringResource(
                 R.string.about_license_value_firebase,
-                BuildConfig.FIREBASE_BOM_VERSION
+                BuildConfig.FIREBASE_BOM_VERSION,
+                BuildConfig.FIREBASE_CRASHLYTICS_GRADLE_VERSION
             ),
             sourceUrl = stringResource(R.string.about_license_url_firebase),
             icon = appLucideInfoIcon()

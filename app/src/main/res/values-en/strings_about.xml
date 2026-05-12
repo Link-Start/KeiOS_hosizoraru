@@ -295,7 +295,7 @@
     <string name="about_license_row_network_stack">Network &amp; notification stack</string>
     <string name="about_license_value_network_stack">Ktor %1$s · OkHttp %2$s · Focus API %3$s · Apache-2.0</string>
     <string name="about_license_row_firebase">Firebase</string>
-    <string name="about_license_value_firebase">BoM %1$s · Analytics · Apache-2.0</string>
+    <string name="about_license_value_firebase">BoM %1$s · Analytics · Crashlytics Gradle %2$s · Apache-2.0</string>
     <string name="about_license_row_media_stack">Media &amp; image stack</string>
     <string name="about_license_value_media_stack">Media3 %1$s · Coil %2$s · ZoomImage %3$s · uCrop %4$s · Apache-2.0</string>
     <string name="about_license_row_package_installer">PackageInstaller</string>

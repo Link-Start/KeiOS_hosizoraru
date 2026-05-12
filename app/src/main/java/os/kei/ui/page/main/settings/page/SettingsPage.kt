@@ -108,6 +108,10 @@ fun SettingsPage(
     onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
     cacheDiagnosticsEnabled: Boolean,
     onCacheDiagnosticsChanged: (Boolean) -> Unit,
+    firebaseBasicStatsEnabled: Boolean,
+    onFirebaseBasicStatsChanged: (Boolean) -> Unit,
+    firebaseErrorLogsEnabled: Boolean,
+    onFirebaseErrorLogsChanged: (Boolean) -> Unit,
     shizukuStatus: String,
     onCheckOrRequestShizuku: () -> Unit,
     shizukuApiUtils: ShizukuApiUtils,
@@ -129,6 +133,7 @@ fun SettingsPage(
         cacheState = cacheState,
         logState = logState
     )
+    val telemetryState by settingsPageViewModel.telemetryState.collectAsStateWithLifecycle()
 
     val pageUiState = rememberSettingsPageUiState()
     val backgroundController = rememberSettingsBackgroundController(
@@ -154,6 +159,8 @@ fun SettingsPage(
         shizukuStatus = shizukuStatus,
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
         logDebugEnabled = logDebugEnabled,
+        firebaseBasicStatsEnabled = firebaseBasicStatsEnabled,
+        firebaseErrorLogsEnabled = firebaseErrorLogsEnabled,
         shizukuRefreshToken = shizukuRefreshToken
     )
     val sectionContracts = rememberSettingsPageSectionContracts(
@@ -351,6 +358,11 @@ fun SettingsPage(
         onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
         logDebugEnabled = logDebugEnabled,
         onLogDebugChanged = onLogDebugChanged,
+        firebaseBasicStatsEnabled = firebaseBasicStatsEnabled,
+        onFirebaseBasicStatsChanged = onFirebaseBasicStatsChanged,
+        firebaseErrorLogsEnabled = firebaseErrorLogsEnabled,
+        onFirebaseErrorLogsChanged = onFirebaseErrorLogsChanged,
+        telemetryState = telemetryState,
         nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
         onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
         nonHomeBackgroundUri = nonHomeBackgroundUri,

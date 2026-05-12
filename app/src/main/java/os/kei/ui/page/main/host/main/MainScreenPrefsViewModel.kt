@@ -141,6 +141,18 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateFirebaseBasicStatsEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setFirebaseBasicStatsEnabled(value)
+        }
+    }
+
+    fun updateFirebaseErrorLogsEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setFirebaseErrorLogsEnabled(value)
+        }
+    }
+
     fun updateVisibleBottomPageNames(value: Set<String>) {
         launchRepositoryUpdate {
             saveVisibleBottomPageNames(value)

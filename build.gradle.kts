@@ -5,4 +5,5 @@ plugins {
     id("com.android.test") version "9.2.1" apply false
     id("androidx.baselineprofile") version "1.5.0-alpha06" apply false
     id("com.google.gms.google-services") version "4.4.4" apply false
+    id("com.google.firebase.crashlytics") version "3.0.7" apply false
 }

@@ -15,12 +15,14 @@ import os.kei.ui.page.main.settings.section.SettingsCopySection
 import os.kei.ui.page.main.settings.section.SettingsLogSection
 import os.kei.ui.page.main.settings.section.SettingsNotifySection
 import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSection
+import os.kei.ui.page.main.settings.section.SettingsTelemetrySection
 import os.kei.ui.page.main.settings.section.SettingsVisualSection
 import os.kei.ui.page.main.settings.state.SettingsBackgroundController
 import os.kei.ui.page.main.settings.state.SettingsCacheUiState
 import os.kei.ui.page.main.settings.state.SettingsLogUiState
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
+import os.kei.ui.page.main.settings.state.SettingsTelemetryUiState
 
 internal fun LazyListScope.settingsCardItem(
     card: SettingsSearchCard,
@@ -97,6 +99,19 @@ internal fun LazyListScope.settingsCardItem(
                 disabledCardColor = input.disabledCardColor,
             )
 
+            SettingsSearchCard.Telemetry -> SettingsTelemetrySection(
+                basicStatsEnabled = input.firebaseBasicStatsEnabled,
+                onBasicStatsChanged = input.onFirebaseBasicStatsChanged,
+                errorLogsEnabled = input.firebaseErrorLogsEnabled,
+                onErrorLogsChanged = input.onFirebaseErrorLogsChanged,
+                telemetryState = input.telemetryState,
+                onSendUnsentErrors = input.settingsPageViewModel::sendUnsentErrorReports,
+                onDeleteUnsentErrors = input.settingsPageViewModel::deleteUnsentErrorReports,
+                onClearRecords = input.settingsPageViewModel::clearTelemetryRecords,
+                enabledCardColor = input.enabledCardColor,
+                disabledCardColor = input.disabledCardColor,
+            )
+
             SettingsSearchCard.Log -> SettingsLogSection(
                 logDebugEnabled = input.logDebugEnabled,
                 onLogDebugChanged = input.onLogDebugChanged,
@@ -134,6 +149,7 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
         SettingsCategory.Notify -> listOf(SettingsSearchCard.Notify)
         SettingsCategory.Data -> listOf(
             SettingsSearchCard.Copy,
+            SettingsSearchCard.Telemetry,
             SettingsSearchCard.Cache,
             SettingsSearchCard.Log
         )
@@ -152,6 +168,11 @@ internal data class SettingsSearchCardRenderInput(
     val onCacheDiagnosticsChanged: (Boolean) -> Unit,
     val logDebugEnabled: Boolean,
     val onLogDebugChanged: (Boolean) -> Unit,
+    val firebaseBasicStatsEnabled: Boolean,
+    val onFirebaseBasicStatsChanged: (Boolean) -> Unit,
+    val firebaseErrorLogsEnabled: Boolean,
+    val onFirebaseErrorLogsChanged: (Boolean) -> Unit,
+    val telemetryState: SettingsTelemetryUiState,
     val nonHomeBackgroundEnabled: Boolean,
     val onNonHomeBackgroundEnabledChanged: (Boolean) -> Unit,
     val nonHomeBackgroundUri: String,

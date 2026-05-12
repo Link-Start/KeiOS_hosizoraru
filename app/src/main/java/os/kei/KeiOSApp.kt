@@ -14,6 +14,7 @@ import os.kei.core.log.AppLogger
 import os.kei.core.perf.Android17AnomalyProfiler
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.core.system.AppPackageChangedEvents
+import os.kei.core.telemetry.FirebaseTelemetry
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
@@ -66,6 +67,8 @@ class KeiOSApp : Application() {
         }
         MMKV.initialize(this)
         AppLogger.refreshEnabledFromPrefs()
+        FirebaseTelemetry.applyCollectionPrefs(this)
+        FirebaseTelemetry.recordAppOpenIfEnabled(this)
         Android17AnomalyProfiler.install(this)
         AppBackgroundScheduler.scheduleAll(this)
         GitHubShareImportPendingScheduler.scheduleNext(this)

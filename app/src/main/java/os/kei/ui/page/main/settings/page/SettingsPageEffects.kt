@@ -28,6 +28,8 @@ internal fun BindSettingsPageEffects(
     shizukuStatus: String,
     cacheDiagnosticsEnabled: Boolean,
     logDebugEnabled: Boolean,
+    firebaseBasicStatsEnabled: Boolean,
+    firebaseErrorLogsEnabled: Boolean,
     shizukuRefreshToken: Int
 ) {
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
@@ -65,6 +67,13 @@ internal fun BindSettingsPageEffects(
         settingsPageViewModel.bindLogStats(
             context = context,
             logDebugEnabled = logDebugEnabled
+        )
+    }
+    LaunchedEffect(context, firebaseBasicStatsEnabled, firebaseErrorLogsEnabled) {
+        settingsPageViewModel.bindTelemetry(
+            context = context,
+            basicStatsEnabled = firebaseBasicStatsEnabled,
+            errorLogsEnabled = firebaseErrorLogsEnabled
         )
     }
     LaunchedEffect(shizukuRefreshToken) {

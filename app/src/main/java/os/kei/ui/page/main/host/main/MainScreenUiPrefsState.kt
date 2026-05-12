@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefsSnapshot
+import os.kei.core.telemetry.FirebaseTelemetry
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.McpServerManager
 
@@ -35,6 +36,8 @@ internal class MainScreenUiPrefsState(
     val logDebugEnabled: Boolean get() = snapshot.logDebugEnabled
     val textCopyCapabilityExpanded: Boolean get() = snapshot.textCopyCapabilityExpanded
     val cacheDiagnosticsEnabled: Boolean get() = snapshot.cacheDiagnosticsEnabled
+    val firebaseBasicStatsEnabled: Boolean get() = snapshot.firebaseBasicStatsEnabled
+    val firebaseErrorLogsEnabled: Boolean get() = snapshot.firebaseErrorLogsEnabled
     val visibleBottomPageNames: Set<String> get() = snapshot.visibleBottomPageNames
 
     fun updateLiquidBottomBarEnabled(value: Boolean) {
@@ -118,6 +121,16 @@ internal class MainScreenUiPrefsState(
 
     fun updateCacheDiagnosticsEnabled(value: Boolean) {
         viewModel.updateCacheDiagnosticsEnabled(value)
+    }
+
+    fun updateFirebaseBasicStatsEnabled(value: Boolean) {
+        viewModel.updateFirebaseBasicStatsEnabled(value)
+        FirebaseTelemetry.setBasicStatsEnabled(appContext, value)
+    }
+
+    fun updateFirebaseErrorLogsEnabled(value: Boolean) {
+        viewModel.updateFirebaseErrorLogsEnabled(value)
+        FirebaseTelemetry.setErrorLogsEnabled(value)
     }
 
     fun updateVisibleBottomPageNames(value: Set<String>) {

@@ -4,6 +4,7 @@ import android.util.Log
 import os.kei.BuildConfig
 import os.kei.KeiOSApp
 import os.kei.core.prefs.UiPrefs
+import os.kei.core.telemetry.FirebaseTelemetry
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,6 +61,11 @@ object AppLogger {
         } else {
             Log.e(tag, message, throwable)
         }
+        FirebaseTelemetry.recordErrorLog(
+            tag = tag,
+            message = message,
+            throwable = throwable
+        )
         if (!debugEnabled) return
         append(level = "E", tag = tag, message = message, throwable = throwable)
     }

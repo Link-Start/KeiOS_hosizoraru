@@ -575,26 +575,22 @@ object GitHubShareImportNotificationHelper {
 
             GitHubShareImportNotificationPhase.InstallDownloading -> context.getString(
                 R.string.github_share_import_notify_content_install_downloading,
-                projectDisplayLabel,
                 targetLabel,
                 formatDownloadProgress(context, state.downloadedBytes, state.totalBytes)
             )
 
             GitHubShareImportNotificationPhase.Installing -> context.getString(
                 R.string.github_share_import_notify_content_installing,
-                projectDisplayLabel,
                 targetLabel
             )
 
             GitHubShareImportNotificationPhase.InstallReady -> context.getString(
                 R.string.github_share_import_notify_content_install_ready,
-                projectDisplayLabel,
                 targetLabel
             )
 
             GitHubShareImportNotificationPhase.InstallCommitting -> context.getString(
                 R.string.github_share_import_notify_content_install_committing,
-                projectDisplayLabel,
                 targetLabel
             )
 
@@ -604,7 +600,6 @@ object GitHubShareImportNotificationHelper {
                 } else {
                     R.string.github_share_import_notify_content_waiting_install
                 },
-                projectDisplayLabel,
                 targetLabel,
                 state.count.coerceAtLeast(0)
             )

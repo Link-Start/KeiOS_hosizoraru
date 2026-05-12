@@ -144,6 +144,15 @@ fun AboutLicenseCardSection(
             icon = osLucideSettingsIcon()
         ),
         AboutLicenseEntry(
+            titleRes = R.string.about_license_row_firebase,
+            value = stringResource(
+                R.string.about_license_value_firebase,
+                BuildConfig.FIREBASE_BOM_VERSION
+            ),
+            sourceUrl = stringResource(R.string.about_license_url_firebase),
+            icon = appLucideInfoIcon()
+        ),
+        AboutLicenseEntry(
             titleRes = R.string.about_license_row_media_stack,
             value = stringResource(
                 R.string.about_license_value_media_stack,

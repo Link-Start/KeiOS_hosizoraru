@@ -15,6 +15,8 @@ import os.kei.R
 import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.core.security.AdvancedProtectionCompat
 import os.kei.core.system.ShizukuApiUtils
+import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
+import os.kei.ui.page.main.about.ui.AboutSectionCard
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideAppWindowIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
@@ -28,8 +30,6 @@ import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideVersionIcon
 import os.kei.ui.page.main.os.osLucideSettingsIcon
-import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
-import os.kei.ui.page.main.about.ui.AboutSectionCard
 
 private data class AboutInfoRow(
     @get:StringRes val titleRes: Int,
@@ -188,7 +188,16 @@ fun AboutNetworkServiceCardSection(
         AboutInfoRow(R.string.about_row_mcp_sdk, BuildConfig.MCP_KOTLIN_SDK_VERSION, appLucideInfoIcon()),
         AboutInfoRow(R.string.about_row_ktor, BuildConfig.KTOR_VERSION, osLucideSettingsIcon()),
         AboutInfoRow(R.string.about_row_okhttp, BuildConfig.OKHTTP_VERSION, osLucideSettingsIcon()),
-        AboutInfoRow(R.string.about_row_focus_api, BuildConfig.FOCUS_API_VERSION, appLucideAlertIcon())
+        AboutInfoRow(
+            R.string.about_row_focus_api,
+            BuildConfig.FOCUS_API_VERSION,
+            appLucideAlertIcon()
+        ),
+        AboutInfoRow(
+            R.string.about_row_firebase,
+            BuildConfig.FIREBASE_BOM_VERSION,
+            appLucideInfoIcon()
+        )
     )
     AboutSectionCard(
         cardColor = cardColor,

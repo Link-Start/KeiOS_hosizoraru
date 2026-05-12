@@ -35,6 +35,35 @@ class MainActivityIntentRoutingTest {
     }
 
     @Test
+    fun `valid github actions track route is preserved`() {
+        val trackId = "open-ani/animeko|me.him188.ani"
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            rawMcpServerAction = null,
+            rawShortcutAction = null,
+            rawGitHubActionsTrackId = "  $trackId  "
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_GITHUB, route?.targetBottomPage)
+        assertEquals(trackId, route?.githubActionsTrackId)
+        assertNull(route?.shortcutAction)
+        assertNull(route?.mcpServerAction)
+    }
+
+    @Test
+    fun `github actions track route is dropped outside github`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,
+            rawMcpServerAction = null,
+            rawShortcutAction = null,
+            rawGitHubActionsTrackId = "open-ani/animeko|me.him188.ani"
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_MCP, route?.targetBottomPage)
+        assertNull(route?.githubActionsTrackId)
+    }
+
+    @Test
     fun `mismatched shortcut action is dropped`() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,
@@ -68,6 +97,19 @@ class MainActivityIntentRoutingTest {
 
         assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, route?.targetBottomPage)
         assertEquals(MainActivity.SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK, route?.shortcutAction)
+        assertNull(route?.mcpServerAction)
+    }
+
+    @Test
+    fun `valid os target route is preserved`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_OS,
+            rawMcpServerAction = null,
+            rawShortcutAction = null
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_OS, route?.targetBottomPage)
+        assertNull(route?.shortcutAction)
         assertNull(route?.mcpServerAction)
     }
 

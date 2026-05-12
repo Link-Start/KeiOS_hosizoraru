@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +26,7 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
+import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
@@ -52,6 +54,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun KeiOSJsonImportPage(
     state: KeiOSJsonImportUiState,
     onConfirmImport: () -> Unit,
+    onOpenResult: (KeiOSJsonImportKind) -> Unit,
     onClose: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -109,6 +112,7 @@ internal fun KeiOSJsonImportPage(
                 JsonImportActionCard(
                     state = state,
                     onConfirmImport = onConfirmImport,
+                    onOpenResult = onOpenResult,
                     onClose = onClose
                 )
             }
@@ -276,6 +280,7 @@ private fun JsonImportSamplesCard(samples: List<KeiOSJsonImportSample>) {
 private fun JsonImportActionCard(
     state: KeiOSJsonImportUiState,
     onConfirmImport: () -> Unit,
+    onOpenResult: (KeiOSJsonImportKind) -> Unit,
     onClose: () -> Unit
 ) {
     AppFeatureCard(
@@ -299,6 +304,7 @@ private fun JsonImportActionCard(
         JsonImportActionButtons(
             state = state,
             onConfirmImport = onConfirmImport,
+            onOpenResult = onOpenResult,
             onClose = onClose
         )
     }
@@ -360,9 +366,52 @@ private fun JsonImportMetricRows(preview: KeiOSJsonImportPreview) {
 private fun JsonImportActionButtons(
     state: KeiOSJsonImportUiState,
     onConfirmImport: () -> Unit,
+    onOpenResult: (KeiOSJsonImportKind) -> Unit,
     onClose: () -> Unit
 ) {
+    val resultAction = state.preview?.jsonImportResultAction()
     when {
+        state.stage == KeiOSJsonImportStage.Done && resultAction != null ->
+            AppDualActionRow(
+                first = { modifier ->
+                    JsonImportNeutralButton(
+                        modifier = modifier,
+                        text = stringResource(R.string.common_close),
+                        leadingIcon = appLucideCloseIcon(),
+                        onClick = onClose
+                    )
+                },
+                second = { modifier ->
+                    JsonImportPrimaryButton(
+                        modifier = modifier,
+                        text = stringResource(resultAction.labelRes),
+                        enabled = true,
+                        leadingIcon = appLucideExternalLinkIcon(),
+                        onClick = { onOpenResult(resultAction.kind) }
+                    )
+                }
+            )
+
+        state.preview?.readOnly == true && resultAction != null ->
+            AppDualActionRow(
+                first = { modifier ->
+                    JsonImportNeutralButton(
+                        modifier = modifier,
+                        text = stringResource(R.string.common_close),
+                        leadingIcon = appLucideCloseIcon(),
+                        onClick = onClose
+                    )
+                },
+                second = { modifier ->
+                    JsonImportNeutralButton(
+                        modifier = modifier,
+                        text = stringResource(resultAction.labelRes),
+                        leadingIcon = appLucideExternalLinkIcon(),
+                        onClick = { onOpenResult(resultAction.kind) }
+                    )
+                }
+            )
+
         state.canConfirmImport -> AppDualActionRow(
             first = { modifier ->
                 JsonImportNeutralButton(
@@ -376,6 +425,7 @@ private fun JsonImportActionButtons(
                     modifier = modifier,
                     text = stringResource(R.string.json_import_action_import),
                     enabled = true,
+                    leadingIcon = appLucideConfirmIcon(),
                     onClick = onConfirmImport
                 )
             }
@@ -395,6 +445,7 @@ private fun JsonImportActionButtons(
                     modifier = modifier,
                     text = stringResource(R.string.common_processing),
                     enabled = false,
+                    leadingIcon = appLucideConfirmIcon(),
                     onClick = {}
                 )
             }
@@ -420,7 +471,8 @@ private fun JsonImportPrimaryButton(
     text: String,
     enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null
 ) {
     AppLiquidTextButton(
         backdrop = null,
@@ -430,7 +482,7 @@ private fun JsonImportPrimaryButton(
         enabled = enabled,
         textColor = MiuixTheme.colorScheme.primary,
         containerColor = MiuixTheme.colorScheme.primary,
-        leadingIcon = appLucideConfirmIcon(),
+        leadingIcon = leadingIcon,
         variant = GlassVariant.SheetPrimaryAction,
         textMaxLines = 1,
         textOverflow = TextOverflow.Ellipsis
@@ -443,7 +495,7 @@ private fun JsonImportNeutralButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null
+    leadingIcon: ImageVector? = null
 ) {
     AppLiquidTextButton(
         backdrop = null,
@@ -459,6 +511,29 @@ private fun JsonImportNeutralButton(
         textMaxLines = 1,
         textOverflow = TextOverflow.Ellipsis
     )
+}
+
+private data class JsonImportResultAction(
+    val kind: KeiOSJsonImportKind,
+    val labelRes: Int
+)
+
+private fun KeiOSJsonImportPreview.jsonImportResultAction(): JsonImportResultAction? {
+    val labelRes = when (kind) {
+        KeiOSJsonImportKind.GitHubTracked -> R.string.json_import_action_view_github
+        KeiOSJsonImportKind.OsActivityCards,
+        KeiOSJsonImportKind.OsShellCards,
+        KeiOSJsonImportKind.OsCardsBundle,
+        KeiOSJsonImportKind.OsInfoCard -> R.string.json_import_action_view_os
+
+        KeiOSJsonImportKind.BaCatalogFavorites,
+        KeiOSJsonImportKind.BaBgmFavorites,
+        KeiOSJsonImportKind.BaAllFavorites -> R.string.json_import_action_view_ba
+
+        KeiOSJsonImportKind.McpLogs -> R.string.json_import_action_view_mcp
+        KeiOSJsonImportKind.Unknown -> return null
+    }
+    return JsonImportResultAction(kind, labelRes)
 }
 
 @Composable

@@ -19,6 +19,10 @@
     <string name="json_import_samples_summary">Showing up to %1$d samples</string>
     <string name="json_import_action_title">Confirm import</string>
     <string name="json_import_action_import">Import</string>
+    <string name="json_import_action_view_github">View GitHub</string>
+    <string name="json_import_action_view_os">View OS</string>
+    <string name="json_import_action_view_ba">View BA</string>
+    <string name="json_import_action_view_mcp">View MCP</string>
     <string name="json_import_action_import_summary">KeiOS will merge items in batch. Duplicate items use the file configuration.</string>
     <string name="json_import_action_read_only_summary">This file is available as an information preview.</string>
     <string name="json_import_action_done_summary">Import finished. Return to KeiOS to view the result.</string>

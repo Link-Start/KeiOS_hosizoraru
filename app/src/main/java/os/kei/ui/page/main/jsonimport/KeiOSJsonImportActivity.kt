@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.jsonimport
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import os.kei.MainActivity
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
@@ -56,11 +58,57 @@ class KeiOSJsonImportActivity : ComponentActivity() {
                             onConfirmImport = {
                                 viewModel.confirmImport(this@KeiOSJsonImportActivity)
                             },
+                            onOpenResult = { kind ->
+                                openResultPage(kind)
+                            },
                             onClose = { finish() }
                         )
                     }
                 }
             }
+        }
+    }
+
+    private fun openResultPage(kind: KeiOSJsonImportKind) {
+        val targetPage = kind.resultTargetBottomPage() ?: run {
+            finish()
+            return
+        }
+        val targetIntent = Intent(this, MainActivity::class.java).apply {
+            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, targetPage)
+            addFlags(
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+            )
+        }
+        runCatching { startActivity(targetIntent) }
+            .onFailure {
+                runCatching {
+                    startActivity(
+                        Intent(this, MainActivity::class.java).apply {
+                            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, targetPage)
+                        }
+                    )
+                }
+            }
+        finish()
+    }
+
+    private fun KeiOSJsonImportKind.resultTargetBottomPage(): String? {
+        return when (this) {
+            KeiOSJsonImportKind.GitHubTracked -> MainActivity.TARGET_BOTTOM_PAGE_GITHUB
+            KeiOSJsonImportKind.OsActivityCards,
+            KeiOSJsonImportKind.OsShellCards,
+            KeiOSJsonImportKind.OsCardsBundle,
+            KeiOSJsonImportKind.OsInfoCard -> MainActivity.TARGET_BOTTOM_PAGE_OS
+
+            KeiOSJsonImportKind.BaCatalogFavorites,
+            KeiOSJsonImportKind.BaBgmFavorites,
+            KeiOSJsonImportKind.BaAllFavorites -> MainActivity.TARGET_BOTTOM_PAGE_BA
+
+            KeiOSJsonImportKind.McpLogs -> MainActivity.TARGET_BOTTOM_PAGE_MCP
+            KeiOSJsonImportKind.Unknown -> null
         }
     }
 }

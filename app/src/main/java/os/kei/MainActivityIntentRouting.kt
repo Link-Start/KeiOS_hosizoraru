@@ -3,14 +3,16 @@ package os.kei
 internal data class MainActivityIntentRoute(
     val targetBottomPage: String,
     val mcpServerAction: String?,
-    val shortcutAction: String?
+    val shortcutAction: String?,
+    val githubActionsTrackId: String? = null
 )
 
 internal object MainActivityIntentRouting {
     fun sanitize(
         rawTargetBottomPage: String?,
         rawMcpServerAction: String?,
-        rawShortcutAction: String?
+        rawShortcutAction: String?,
+        rawGitHubActionsTrackId: String? = null
     ): MainActivityIntentRoute? {
         val target = normalizeTargetBottomPage(rawTargetBottomPage) ?: return null
         val mcpServerAction = normalizeMcpServerAction(
@@ -21,15 +23,21 @@ internal object MainActivityIntentRouting {
             targetBottomPage = target,
             rawAction = rawShortcutAction
         )
+        val githubActionsTrackId = normalizeGitHubActionsTrackId(
+            targetBottomPage = target,
+            rawTrackId = rawGitHubActionsTrackId
+        )
         return MainActivityIntentRoute(
             targetBottomPage = target,
             mcpServerAction = mcpServerAction,
-            shortcutAction = shortcutAction
+            shortcutAction = shortcutAction,
+            githubActionsTrackId = githubActionsTrackId
         )
     }
 
     private fun normalizeTargetBottomPage(raw: String?): String? {
         return when (raw?.trim()) {
+            MainActivity.TARGET_BOTTOM_PAGE_OS -> MainActivity.TARGET_BOTTOM_PAGE_OS
             MainActivity.TARGET_BOTTOM_PAGE_GITHUB -> MainActivity.TARGET_BOTTOM_PAGE_GITHUB
             MainActivity.TARGET_BOTTOM_PAGE_MCP -> MainActivity.TARGET_BOTTOM_PAGE_MCP
             MainActivity.TARGET_BOTTOM_PAGE_BA -> MainActivity.TARGET_BOTTOM_PAGE_BA
@@ -79,5 +87,15 @@ internal object MainActivityIntentRouting {
                 }
             else -> null
         }
+    }
+
+    private fun normalizeGitHubActionsTrackId(
+        targetBottomPage: String,
+        rawTrackId: String?
+    ): String? {
+        if (targetBottomPage != MainActivity.TARGET_BOTTOM_PAGE_GITHUB) return null
+        return rawTrackId
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
     }
 }

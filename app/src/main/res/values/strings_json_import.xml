@@ -19,6 +19,10 @@
     <string name="json_import_samples_summary">最多展示 %1$d 条样例</string>
     <string name="json_import_action_title">导入确认</string>
     <string name="json_import_action_import">导入</string>
+    <string name="json_import_action_view_github">查看 GitHub</string>
+    <string name="json_import_action_view_os">查看 OS</string>
+    <string name="json_import_action_view_ba">查看 BA</string>
+    <string name="json_import_action_view_mcp">查看 MCP</string>
     <string name="json_import_action_import_summary">确认后会批量合并，重复条目会更新为文件中的配置。</string>
     <string name="json_import_action_read_only_summary">当前文件用于查看信息摘要。</string>
     <string name="json_import_action_done_summary">导入完成，可以回到 KeiOS 查看结果。</string>

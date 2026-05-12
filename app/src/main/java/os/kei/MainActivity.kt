@@ -46,6 +46,8 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_TARGET_BOTTOM_PAGE = "os.kei.extra.TARGET_BOTTOM_PAGE"
         const val EXTRA_MCP_SERVER_ACTION = "os.kei.extra.MCP_SERVER_ACTION"
         const val EXTRA_SHORTCUT_ACTION = "os.kei.extra.SHORTCUT_ACTION"
+        const val EXTRA_GITHUB_ACTIONS_TRACK_ID = "os.kei.extra.GITHUB_ACTIONS_TRACK_ID"
+        const val TARGET_BOTTOM_PAGE_OS = "Os"
         const val TARGET_BOTTOM_PAGE_GITHUB = "GitHub"
         const val TARGET_BOTTOM_PAGE_MCP = "Mcp"
         const val TARGET_BOTTOM_PAGE_BA = "Ba"
@@ -64,6 +66,8 @@ class MainActivity : ComponentActivity() {
     private var requestedBottomPageToken by mutableIntStateOf(0)
     private var requestedGitHubRefreshToken by mutableIntStateOf(0)
     private var requestedGitHubManagedInstallConfirmToken by mutableIntStateOf(0)
+    private var requestedGitHubActionsTrackId by mutableStateOf<String?>(null)
+    private var requestedGitHubActionsSheetToken by mutableIntStateOf(0)
     private var requestedBaBgmPlaybackToken by mutableIntStateOf(0)
     private var transientExternalLaunchActive by mutableStateOf(false)
     private var pendingMcpServerAction: String? = null
@@ -175,6 +179,8 @@ class MainActivity : ComponentActivity() {
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                         requestedGitHubManagedInstallConfirmToken =
                             requestedGitHubManagedInstallConfirmToken,
+                        requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
+                        requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
                         requestedBaBgmPlaybackToken = requestedBaBgmPlaybackToken,
                         transientExternalLaunchActive = transientExternalLaunchActive,
                         onRequestedBottomPageConsumed = {
@@ -271,12 +277,17 @@ class MainActivity : ComponentActivity() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = intent?.getStringExtra(EXTRA_TARGET_BOTTOM_PAGE),
             rawMcpServerAction = intent?.getStringExtra(EXTRA_MCP_SERVER_ACTION),
-            rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION)
+            rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION),
+            rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID)
         ) ?: return
         requestedBottomPage = route.targetBottomPage
         requestedBottomPageToken += 1
         pendingMcpServerAction = route.mcpServerAction
         pendingShortcutAction = route.shortcutAction
+        route.githubActionsTrackId?.let { trackId ->
+            requestedGitHubActionsTrackId = trackId
+            requestedGitHubActionsSheetToken += 1
+        }
     }
 
     private fun applyPendingShortcutActions() {

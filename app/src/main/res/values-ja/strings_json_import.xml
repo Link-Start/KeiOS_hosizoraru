@@ -19,6 +19,10 @@
     <string name="json_import_samples_summary">最大 %1$d 件を表示</string>
     <string name="json_import_action_title">インポート確認</string>
     <string name="json_import_action_import">インポート</string>
+    <string name="json_import_action_view_github">GitHub を表示</string>
+    <string name="json_import_action_view_os">OS を表示</string>
+    <string name="json_import_action_view_ba">BA を表示</string>
+    <string name="json_import_action_view_mcp">MCP を表示</string>
     <string name="json_import_action_import_summary">項目をまとめて統合します。重複項目はファイル側の設定で更新されます。</string>
     <string name="json_import_action_read_only_summary">このファイルは情報プレビューとして表示できます。</string>
     <string name="json_import_action_done_summary">インポートが完了しました。KeiOS に戻って結果を確認できます。</string>

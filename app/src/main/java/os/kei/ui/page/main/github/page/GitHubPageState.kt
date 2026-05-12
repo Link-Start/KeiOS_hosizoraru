@@ -131,7 +131,7 @@ internal class GitHubPageState(
     private var nextTrackCardFocusRequestVersion by mutableIntStateOf(0)
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
-    var apkInfoDetailRequest by mutableStateOf<GitHubReleaseAssetFile?>(null)
+    var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(GitHubSortMode.UpdateFirst)
     var overviewExpanded by mutableStateOf(overviewUiState.expanded)
@@ -195,6 +195,7 @@ internal class GitHubPageState(
     val apkInfoErrors = mutableStateMapOf<String, String>()
     val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
     val apkInfoInstalledResults = mutableStateMapOf<String, GitHubInstalledPackageInfo?>()
+    val managedInstallLoading = mutableStateMapOf<String, Boolean>()
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
     val actionsRecommendedRunSnapshots =
@@ -456,6 +457,24 @@ internal class GitHubPageState(
         showAddSheet = false
         resetTrackEditor()
     }
+}
+
+internal data class GitHubApkInfoDetailRequest(
+    val item: GitHubTrackedApp,
+    val asset: GitHubReleaseAssetFile
+)
+
+internal fun GitHubTrackedApp.githubManagedInstallKey(asset: GitHubReleaseAssetFile): String {
+    return listOf(
+        id,
+        owner,
+        repo,
+        asset.name,
+        asset.downloadUrl,
+        asset.apiAssetUrl,
+        asset.sizeBytes.toString(),
+        asset.digest
+    ).joinToString("|")
 }
 
 internal enum class GitHubDecisionAssistDetailType {

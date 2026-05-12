@@ -390,12 +390,14 @@ internal class GitHubPageActions(
 
     fun shareApkLink(asset: GitHubReleaseAssetFile) = assetActions.shareApkLink(asset)
 
-    fun openApkInDownloader(asset: GitHubReleaseAssetFile) = assetActions.openApkInDownloader(asset)
+    fun openApkInDownloader(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
+        assetActions.openApkInDownloader(item, asset)
 
-    fun openApkInfo(asset: GitHubReleaseAssetFile) = assetActions.openApkInfo(asset)
+    fun openApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
+        assetActions.openApkInfo(item, asset)
 
-    fun refreshApkInfo(asset: GitHubReleaseAssetFile) =
-        assetActions.openApkInfo(asset, forceRefresh = true)
+    fun refreshApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
+        assetActions.openApkInfo(item, asset, forceRefresh = true)
 
     fun clearApkAssetUiState(itemId: String) = assetActions.clearApkAssetUiState(itemId)
 

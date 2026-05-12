@@ -126,9 +126,14 @@ internal fun GitHubCheckLogicSheet(
         val onlineShareTargetOptions = remember(installedOnlineShareTargets) {
             listOf(noOnlineShareTargetOption(context)) + installedOnlineShareTargets
         }
-        val selectedDownloaderLabel = allDownloaderOptions.firstOrNull {
+        val rawSelectedDownloaderLabel = allDownloaderOptions.firstOrNull {
             it.packageName == preferredDownloaderPackageInput
         }?.label ?: systemDefaultDownloaderOption(context).label
+        val selectedDownloaderLabel = if (appManagedShareInstallEnabledInput) {
+            stringResource(R.string.app_name)
+        } else {
+            rawSelectedDownloaderLabel
+        }
         val selectedOnlineShareTargetLabel = onlineShareTargetOptions.firstOrNull {
             it.packageName == onlineShareTargetPackageInput
         }?.label ?: noOnlineShareTargetOption(context).label
@@ -160,6 +165,7 @@ internal fun GitHubCheckLogicSheet(
                 selectedRefreshOption = selectedRefreshOption,
                 selectedDownloaderPackage = preferredDownloaderPackageInput,
                 selectedDownloaderLabel = selectedDownloaderLabel,
+                appManagedShareInstallEnabled = appManagedShareInstallEnabledInput,
                 shareImportLinkageEnabled = shareImportLinkageEnabledInput
             )
             GitHubCheckStrategySection(
@@ -235,6 +241,7 @@ private fun GitHubCheckOverviewSection(
     selectedRefreshOption: RefreshIntervalOption,
     selectedDownloaderPackage: String,
     selectedDownloaderLabel: String,
+    appManagedShareInstallEnabled: Boolean,
     shareImportLinkageEnabled: Boolean
 ) {
     val saveStateLabel = if (logicChanged) {
@@ -288,10 +295,14 @@ private fun GitHubCheckOverviewSection(
         GitHubCheckMetricRow {
             GitHubOverviewMetricItem(
                 label = stringResource(R.string.github_check_sheet_metric_downloader_compact),
-                value = compactDownloaderLabel(
-                    packageName = selectedDownloaderPackage,
-                    fallbackLabel = selectedDownloaderLabel
-                ),
+                value = if (appManagedShareInstallEnabled) {
+                    stringResource(R.string.app_name)
+                } else {
+                    compactDownloaderLabel(
+                        packageName = selectedDownloaderPackage,
+                        fallbackLabel = selectedDownloaderLabel
+                    )
+                },
                 modifier = Modifier.weight(1f),
                 backdrop = backdrop,
                 labelMaxLines = 1,
@@ -532,15 +543,25 @@ private fun GitHubCheckTransferSection(
         }
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_downloader),
-            summary = stringResource(R.string.github_check_sheet_summary_downloader)
+            summary = stringResource(
+                if (appManagedShareInstallEnabledInput) {
+                    R.string.github_check_sheet_summary_downloader_managed_by_app
+                } else {
+                    R.string.github_check_sheet_summary_downloader
+                }
+            )
         ) {
             AppDropdownSelector(
                 selectedText = selectedDownloaderLabel,
-                options = allDownloaderOptions.map { it.label },
+                options = if (appManagedShareInstallEnabledInput) {
+                    listOf(stringResource(R.string.app_name))
+                } else {
+                    allDownloaderOptions.map { it.label }
+                },
                 selectedIndex = allDownloaderOptions.indexOfFirst {
                     preferredDownloaderPackageInput == it.packageName
-                }.coerceAtLeast(0),
-                expanded = showDownloaderPopup,
+                }.coerceAtLeast(0).takeUnless { appManagedShareInstallEnabledInput } ?: 0,
+                expanded = showDownloaderPopup && !appManagedShareInstallEnabledInput,
                 anchorBounds = downloaderPopupAnchorBounds,
                 onExpandedChange = onShowDownloaderPopupChange,
                 onSelectedIndexChange = { selectedIndex ->
@@ -550,7 +571,8 @@ private fun GitHubCheckTransferSection(
                 },
                 onAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
                 backdrop = backdrop,
-                variant = GlassVariant.SheetAction
+                variant = GlassVariant.SheetAction,
+                enabled = !appManagedShareInstallEnabledInput
             )
         }
     }

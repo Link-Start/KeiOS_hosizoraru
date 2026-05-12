@@ -320,11 +320,59 @@ object GitHubShareImportNotificationHelper {
         )
     }
 
+    fun notifyPageInstallCompleted(
+        context: Context,
+        owner: String,
+        repo: String,
+        releaseTag: String = "",
+        assetName: String = "",
+        appLabel: String = "",
+        packageName: String = "",
+        versionName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.PageInstallCompleted,
+                owner = owner,
+                repo = repo,
+                releaseTag = releaseTag,
+                assetName = assetName,
+                appLabel = appLabel,
+                packageName = packageName,
+                versionName = versionName,
+                targetDisplayName = targetDisplayName
+            )
+        )
+    }
+
     fun notifyFailed(context: Context, reason: String) {
         notifyState(
             context = context,
             state = GitHubShareImportNotificationState(
                 phase = GitHubShareImportNotificationPhase.Failed,
+                primaryLabel = reason
+            )
+        )
+    }
+
+    fun notifyPageInstallFailed(
+        context: Context,
+        reason: String,
+        owner: String = "",
+        repo: String = "",
+        packageName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.PageInstallFailed,
+                owner = owner,
+                repo = repo,
+                packageName = packageName,
+                targetDisplayName = targetDisplayName,
                 primaryLabel = reason
             )
         )
@@ -617,8 +665,18 @@ object GitHubShareImportNotificationHelper {
                 projectLabel
             )
 
+            GitHubShareImportNotificationPhase.PageInstallCompleted -> context.getString(
+                R.string.github_page_install_notify_content_completed,
+                state.appDisplayLabel,
+                projectLabel
+            )
+
             GitHubShareImportNotificationPhase.Failed -> state.primaryLabel.ifBlank {
                 context.getString(R.string.github_share_import_error_resolve_failed)
+            }
+
+            GitHubShareImportNotificationPhase.PageInstallFailed -> state.primaryLabel.ifBlank {
+                context.getString(R.string.github_share_import_error_app_managed_install_failed)
             }
 
             GitHubShareImportNotificationPhase.Cancelled -> context.getString(
@@ -1033,8 +1091,30 @@ internal enum class GitHubShareImportNotificationPhase(
         miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
         progressTemplateEnabled = false
     ),
+    PageInstallCompleted(
+        titleRes = R.string.github_page_install_notify_title_completed,
+        shortTextRes = R.string.github_page_install_notify_short_completed,
+        primaryActionRes = R.string.github_share_import_notify_action_view_github,
+        progressPercent = 100,
+        ongoing = false,
+        openGitHubPage = true,
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
+        progressTemplateEnabled = false
+    ),
     Failed(
         titleRes = R.string.github_share_import_notify_title_failed,
+        shortTextRes = R.string.github_share_import_notify_short_failed,
+        primaryActionRes = R.string.github_share_import_notify_action_view_github,
+        progressPercent = 100,
+        ongoing = false,
+        openGitHubPage = true,
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR,
+        progressTemplateEnabled = false
+    ),
+    PageInstallFailed(
+        titleRes = R.string.github_page_install_notify_title_failed,
         shortTextRes = R.string.github_share_import_notify_short_failed,
         primaryActionRes = R.string.github_share_import_notify_action_view_github,
         progressPercent = 100,

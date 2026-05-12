@@ -248,8 +248,12 @@ internal fun GitHubPageSheetHost(
         onShare = actions::shareActionsArtifact
     )
 
-    val apkInfoAsset = state.apkInfoDetailRequest
+    val apkInfoRequest = state.apkInfoDetailRequest
+    val apkInfoAsset = apkInfoRequest?.asset
     val apkInfoKey = apkInfoAsset?.githubApkInfoKey().orEmpty()
+    val apkInfoManagedInstallRunning = apkInfoRequest?.let { request ->
+        state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] == true
+    } == true
     GitHubApkInfoSheet(
         asset = apkInfoAsset,
         info = state.apkInfoResults[apkInfoKey],
@@ -257,8 +261,14 @@ internal fun GitHubPageSheetHost(
         loading = state.apkInfoLoading[apkInfoKey] == true,
         error = state.apkInfoErrors[apkInfoKey].orEmpty(),
         backdrop = backdrops.sheet,
-        onRefresh = { apkInfoAsset?.let(actions::refreshApkInfo) },
-        onDownload = { apkInfoAsset?.let(actions::openApkInDownloader) },
+        managedInstallEnabled = state.lookupConfig.appManagedShareInstallEnabled,
+        managedInstallRunning = apkInfoManagedInstallRunning,
+        onRefresh = {
+            apkInfoRequest?.let { actions.refreshApkInfo(it.item, it.asset) }
+        },
+        onDownload = {
+            apkInfoRequest?.let { actions.openApkInDownloader(it.item, it.asset) }
+        },
         onShare = { apkInfoAsset?.let(actions::shareApkLink) },
         onDismissRequest = { state.apkInfoDetailRequest = null }
     )

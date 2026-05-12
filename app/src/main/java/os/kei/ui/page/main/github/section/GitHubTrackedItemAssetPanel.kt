@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -19,6 +20,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.page.githubManagedInstallKey
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 
@@ -33,10 +35,11 @@ internal fun GitHubTrackedItemAssetPanel(
     assetLoading: Boolean,
     assetError: String,
     assetExpanded: Boolean,
+    managedInstallLoading: SnapshotStateMap<String, Boolean>,
     onOpenExternalUrl: (String) -> Unit,
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
-    onOpenApkInfo: (GitHubReleaseAssetFile) -> Unit,
-    onOpenApkInDownloader: (GitHubReleaseAssetFile) -> Unit,
+    onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
+    onOpenApkInDownloader: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     context: Context,
     supportedAbis: List<String>
@@ -115,9 +118,13 @@ internal fun GitHubTrackedItemAssetPanel(
                             supportedAbis = supportedAbis,
                             showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
                                     lookupConfig.apkTrustCheckEnabled,
+                            managedInstallEnabled = lookupConfig.appManagedShareInstallEnabled,
+                            managedInstallRunning = managedInstallLoading[
+                                item.githubManagedInstallKey(asset)
+                            ] == true,
                             context = context,
-                            onOpenApkInfo = onOpenApkInfo,
-                            onOpenApkInDownloader = onOpenApkInDownloader,
+                            onOpenApkInfo = { onOpenApkInfo(item, asset) },
+                            onOpenApkInDownloader = { onOpenApkInDownloader(item, asset) },
                             onShareApkLink = onShareApkLink
                         )
                     }

@@ -593,6 +593,38 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `page managed install completion uses final short state`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.PageInstallCompleted,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo",
+            packageName = "dev.demo.app",
+            versionName = "2.0.0"
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(
+            "Install completed",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
+        )
+        assertEquals(
+            "Demo · owner/repo",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
+        )
+        assertEquals("View GitHub", notification.actions[0].title.toString())
+        assertEquals("Mark read", notification.actions[1].title.toString())
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"Done\""))
+        assertTrue(focusParam.contains("Demo · owner/repo"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+    }
+
+    @Test
     fun `final mi island notifications stay promoted and offer mark read`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val states = listOf(

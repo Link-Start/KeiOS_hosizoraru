@@ -32,6 +32,7 @@ import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
@@ -58,6 +59,8 @@ internal fun GitHubApkInfoSheet(
     loading: Boolean,
     error: String,
     backdrop: LayerBackdrop,
+    managedInstallEnabled: Boolean,
+    managedInstallRunning: Boolean,
     onRefresh: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
@@ -120,6 +123,8 @@ internal fun GitHubApkInfoSheet(
                 ApkInfoActionRow(
                     backdrop = backdrop,
                     loading = loading,
+                    managedInstallEnabled = managedInstallEnabled,
+                    managedInstallRunning = managedInstallRunning,
                     onRefresh = onRefresh,
                     onDownload = onDownload,
                     onShare = onShare
@@ -183,6 +188,8 @@ internal fun GitHubApkInfoSheet(
 private fun ApkInfoActionRow(
     backdrop: LayerBackdrop,
     loading: Boolean,
+    managedInstallEnabled: Boolean,
+    managedInstallRunning: Boolean,
     onRefresh: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit
@@ -209,9 +216,16 @@ private fun ApkInfoActionRow(
         )
         AppLiquidIconButton(
             backdrop = backdrop,
-            icon = appLucideDownloadIcon(),
-            contentDescription = stringResource(R.string.github_apk_info_action_download),
+            icon = if (managedInstallEnabled) appLucidePackageIcon() else appLucideDownloadIcon(),
+            contentDescription = stringResource(
+                when {
+                    managedInstallRunning -> R.string.github_apk_info_action_installing
+                    managedInstallEnabled -> R.string.github_apk_info_action_install
+                    else -> R.string.github_apk_info_action_download
+                }
+            ),
             onClick = onDownload,
+            enabled = !managedInstallRunning,
             variant = GlassVariant.SheetPrimaryAction
         )
         AppLiquidIconButton(

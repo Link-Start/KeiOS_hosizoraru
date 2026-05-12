@@ -56,6 +56,9 @@
     <string name="github_toast_share_import_track_added">Tracking added: %1$s</string>
     <string name="github_toast_share_import_track_exists">This project and app are already tracked locally, so it was skipped automatically.</string>
     <string name="github_toast_share_import_pending_cancelled">This share-import linkage was cancelled</string>
+    <string name="github_toast_page_install_started">Installing: %1$s</string>
+    <string name="github_toast_page_install_completed">Install complete: %1$s</string>
+    <string name="github_toast_page_install_failed">Install failed: %1$s</string>
     <string name="github_share_import_error_no_valid_link">No valid GitHub link was detected</string>
     <string name="github_share_import_error_no_usable_apk">The target release contains no usable APK</string>
     <string name="github_share_import_error_resolve_failed">Share import resolution failed</string>
@@ -428,6 +431,7 @@
     <string name="github_check_sheet_summary_deep_profile">Off by default. When enabled, traffic, fork sync, and security endpoints are read for deeper checks. Token mode gives fuller data and uses more requests.</string>
     <string name="github_check_sheet_label_downloader">Downloader</string>
     <string name="github_check_sheet_summary_downloader">Used for opening direct download links; follows system default by default.</string>
+    <string name="github_check_sheet_summary_downloader_managed_by_app">When KeiOS manages installs, APK downloads and installs are handled inside KeiOS.</string>
     <string name="github_check_sheet_label_share_import_linkage">Share import linkage</string>
     <string name="github_check_sheet_summary_share_import_linkage">Allows sharing GitHub links from other apps to KeiOS, automatically resolving release APKs and entering install linkage.</string>
     <string name="github_check_sheet_label_share_import_flow_mode">Share import flow</string>
@@ -767,6 +771,8 @@
     <string name="github_share_import_notify_title_adding_track">Adding GitHub tracking</string>
     <string name="github_share_import_notify_title_added">GitHub tracking added</string>
     <string name="github_share_import_notify_title_already_tracked">GitHub tracking already exists</string>
+    <string name="github_page_install_notify_title_completed">Install completed</string>
+    <string name="github_page_install_notify_title_failed">Install failed</string>
     <string name="github_share_import_notify_title_failed">Share import failed</string>
     <string name="github_share_import_notify_title_cancelled">Share import cancelled</string>
     <string name="github_share_import_notify_content_resolving">Parsing %1$s</string>
@@ -782,6 +788,7 @@
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s was added to %2$s tracking</string>
     <string name="github_share_import_notify_content_already_tracked">%1$s is already tracked for %2$s</string>
+    <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_cancelled">This share-import linkage has stopped</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
     <string name="github_share_import_notify_download_progress_unknown">%1$s downloaded</string>
@@ -797,10 +804,13 @@
     <string name="github_share_import_notify_short_adding_track">Tracking</string>
     <string name="github_share_import_notify_short_added">Tracked</string>
     <string name="github_share_import_notify_short_already_tracked">Exists</string>
+    <string name="github_page_install_notify_short_completed">Done</string>
     <string name="github_share_import_notify_short_failed">Failed</string>
     <string name="github_share_import_notify_short_cancelled">Cancelled</string>
     <string name="github_asset_badge_recommended">Recommended for this device</string>
     <string name="github_asset_badge_incompatible">May be incompatible</string>
+    <string name="github_cd_install_asset">Install or update %1$s</string>
+    <string name="github_cd_install_asset_running">Installing %1$s</string>
     <string name="github_release_notes_title">Release Notes</string>
     <string name="github_health_score_value">Health score %1$d</string>
     <string name="github_health_reason_repository_archived">Repository archived</string>
@@ -883,6 +893,8 @@
     <string name="github_apk_info_action_refresh">Refresh</string>
     <string name="github_apk_info_action_refreshing">Refreshing</string>
     <string name="github_apk_info_action_download">Download</string>
+    <string name="github_apk_info_action_install">Install</string>
+    <string name="github_apk_info_action_installing">Installing</string>
     <string name="github_apk_info_action_share">Share</string>
     <string name="github_apk_info_label_package">Package</string>
     <string name="github_apk_info_label_version">Version</string>

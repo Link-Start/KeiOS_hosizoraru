@@ -358,6 +358,8 @@ class AppDesignSystemScreenshotTest {
                             contentBackdrop = rememberLayerBackdrop(),
                             supportedAbis = listOf("arm64-v8a"),
                             showApkTrustCheck = true,
+                            managedInstallEnabled = false,
+                            managedInstallRunning = false,
                             context = ApplicationProvider.getApplicationContext(),
                             onOpenApkInfo = {},
                             onOpenApkInDownloader = {},

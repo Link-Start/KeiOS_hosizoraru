@@ -21,6 +21,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.page.GitHubApkInfoDetailRequest
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.page.releaseNotesApkVersionKey
 import os.kei.ui.page.main.github.statusActionUrl
@@ -34,6 +35,7 @@ internal class GitHubAssetActions(
     private val repository get() = env.repository
     private val systemDmOption get() = env.systemDmOption
     private val apkInfoRepository = GitHubApkInfoRepository()
+    private val managedInstallRunner = GitHubPageManagedInstallRunner(env, apkInfoRepository)
 
     fun openExternalUrl(
         url: String,
@@ -50,18 +52,26 @@ internal class GitHubAssetActions(
         }
     }
 
-    fun openApkInDownloader(asset: GitHubReleaseAssetFile) {
+    fun openApkInDownloader(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) {
         scope.launch {
-            openApkInDownloaderInternal(asset)
+            if (shouldInstallWithKeiOs(asset)) {
+                managedInstallRunner.install(item, asset)
+            } else {
+                openApkInDownloaderInternal(asset)
+            }
         }
     }
 
     fun openApkInfo(
+        item: GitHubTrackedApp,
         asset: GitHubReleaseAssetFile,
         forceRefresh: Boolean = false
     ) {
         val key = asset.githubApkInfoKey()
-        state.apkInfoDetailRequest = asset
+        state.apkInfoDetailRequest = GitHubApkInfoDetailRequest(
+            item = item,
+            asset = asset
+        )
         if (forceRefresh) {
             state.apkInfoResults.remove(key)
             state.apkInfoInstalledResults.remove(key)
@@ -94,6 +104,11 @@ internal class GitHubAssetActions(
                     ?: context.getString(R.string.github_apk_info_error_failed)
             }
         }
+    }
+
+    private fun shouldInstallWithKeiOs(asset: GitHubReleaseAssetFile): Boolean {
+        return state.lookupConfig.appManagedShareInstallEnabled &&
+                asset.name.endsWith(".apk", ignoreCase = true)
     }
 
     private fun loadInstalledPackageInfo(packageName: String): GitHubInstalledPackageInfo? {

@@ -56,6 +56,9 @@
     <string name="github_toast_share_import_track_added">已新增跟踪：%1$s</string>
     <string name="github_toast_share_import_track_exists">该项目与 App 已在本地追踪，已自动跳过</string>
     <string name="github_toast_share_import_pending_cancelled">已取消本次分享导入联动</string>
+    <string name="github_toast_page_install_started">开始安装：%1$s</string>
+    <string name="github_toast_page_install_completed">安装完成：%1$s</string>
+    <string name="github_toast_page_install_failed">安装失败：%1$s</string>
     <string name="github_share_import_error_no_valid_link">未识别到有效的 GitHub 链接</string>
     <string name="github_share_import_error_no_usable_apk">目标 release 中未找到可用 APK</string>
     <string name="github_share_import_error_resolve_failed">分享导入解析失败</string>
@@ -428,6 +431,7 @@
     <string name="github_check_sheet_summary_deep_profile">默认关闭。开启后会额外读取流量、Fork 同步与安全扫描端点，适合手动复查重点仓库；Token 下信息更完整，请求量也更高。</string>
     <string name="github_check_sheet_label_downloader">下载器</string>
     <string name="github_check_sheet_summary_downloader">用于直链下载跳转；默认跟随系统</string>
+    <string name="github_check_sheet_summary_downloader_managed_by_app">本 App 接管安装开启时，APK 下载和安装由 KeiOS 内部完成</string>
     <string name="github_check_sheet_label_share_import_linkage">分享导入联动</string>
     <string name="github_check_sheet_summary_share_import_linkage">开启后可从外部分享 GitHub 链接到 KeiOS，自动解析 release APK 并进入安装联动</string>
     <string name="github_check_sheet_label_share_import_flow_mode">分享导入流程</string>
@@ -772,6 +776,8 @@
     <string name="github_share_import_notify_title_adding_track">正在新增 GitHub 跟踪</string>
     <string name="github_share_import_notify_title_added">GitHub 跟踪已新增</string>
     <string name="github_share_import_notify_title_already_tracked">GitHub 跟踪已存在</string>
+    <string name="github_page_install_notify_title_completed">安装已完成</string>
+    <string name="github_page_install_notify_title_failed">安装失败</string>
     <string name="github_share_import_notify_title_failed">分享导入失败</string>
     <string name="github_share_import_notify_title_cancelled">分享导入已取消</string>
     <string name="github_share_import_notify_content_resolving">正在解析 %1$s</string>
@@ -787,6 +793,7 @@
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s 已加入 %2$s 跟踪</string>
     <string name="github_share_import_notify_content_already_tracked">%1$s 已在 %2$s 跟踪中</string>
+    <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_cancelled">本次分享导入联动已停止</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
     <string name="github_share_import_notify_download_progress_unknown">已下载 %1$s</string>
@@ -802,10 +809,13 @@
     <string name="github_share_import_notify_short_adding_track">追踪中</string>
     <string name="github_share_import_notify_short_added">已追踪</string>
     <string name="github_share_import_notify_short_already_tracked">已存在</string>
+    <string name="github_page_install_notify_short_completed">完成</string>
     <string name="github_share_import_notify_short_failed">失败</string>
     <string name="github_share_import_notify_short_cancelled">已取消</string>
     <string name="github_asset_badge_recommended">推荐本机</string>
     <string name="github_asset_badge_incompatible">可能不兼容</string>
+    <string name="github_cd_install_asset">安装或更新 %1$s</string>
+    <string name="github_cd_install_asset_running">正在安装 %1$s</string>
     <string name="github_release_notes_title">发行日志</string>
     <string name="github_health_score_value">健康评分 %1$d</string>
     <string name="github_health_reason_repository_archived">仓库已归档</string>
@@ -959,6 +969,8 @@
     <string name="github_apk_info_action_refresh">刷新</string>
     <string name="github_apk_info_action_refreshing">刷新中</string>
     <string name="github_apk_info_action_download">下载</string>
+    <string name="github_apk_info_action_install">安装</string>
+    <string name="github_apk_info_action_installing">安装中</string>
     <string name="github_apk_info_action_share">分享</string>
     <string name="github_apk_info_label_package">包名</string>
     <string name="github_apk_info_label_version">版本</string>

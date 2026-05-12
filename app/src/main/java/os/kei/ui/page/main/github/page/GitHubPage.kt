@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -42,6 +43,8 @@ fun GitHubPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     externalRefreshTriggerToken: Int = 0,
     externalManagedInstallConfirmToken: Int = 0,
+    externalActionsTrackId: String? = null,
+    externalActionsSheetToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onActionBarInteractingChanged: (Boolean) -> Unit = {}
@@ -73,6 +76,7 @@ fun GitHubPage(
 
     val state = rememberGitHubPageState(githubPageViewModel)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
+    var consumedExternalActionsSheetToken by rememberSaveable { mutableIntStateOf(0) }
     val transferState by githubPageViewModel.transferState.collectAsStateWithLifecycle()
     val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsStateWithLifecycle()
     val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsStateWithLifecycle()
@@ -178,6 +182,28 @@ fun GitHubPage(
             return@LaunchedEffect
         }
         actions.confirmManagedInstall()
+    }
+    val trackedItemIds by remember {
+        derivedStateOf { state.trackedItems.joinToString(separator = "\n") { it.id } }
+    }
+    LaunchedEffect(
+        externalActionsSheetToken,
+        externalActionsTrackId,
+        trackedItemIds,
+        runtime.contentReady
+    ) {
+        if (externalActionsSheetToken <= 0 ||
+            externalActionsSheetToken == consumedExternalActionsSheetToken ||
+            !runtime.contentReady
+        ) {
+            return@LaunchedEffect
+        }
+        val trackId = externalActionsTrackId.orEmpty().trim()
+        if (trackId.isBlank()) return@LaunchedEffect
+        val item = state.trackedItems.firstOrNull { it.id == trackId } ?: return@LaunchedEffect
+        consumedExternalActionsSheetToken = externalActionsSheetToken
+        state.requestTrackCardFocus(item.id)
+        actions.openActionsSheet(item)
     }
     LaunchedEffect(actions, runtime.contentReady) {
         if (!runtime.contentReady) return@LaunchedEffect

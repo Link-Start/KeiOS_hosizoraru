@@ -110,7 +110,7 @@ object GitHubActionsUpdateNotificationHelper {
     ): Notification {
         val title = title(context)
         val content = content(context, snapshot)
-        val openPendingIntent = buildOpenPendingIntent(context)
+        val openPendingIntent = buildOpenPendingIntent(context, snapshot)
         val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
         return NotificationCompat.Builder(context, GitHubRefreshNotificationHelper.CHANNEL_ID)
             .setSmallIcon(ICON_RES_ID)
@@ -145,7 +145,7 @@ object GitHubActionsUpdateNotificationHelper {
     ): Notification {
         val title = title(context)
         val content = content(context, snapshot)
-        val openPendingIntent = buildOpenPendingIntent(context)
+        val openPendingIntent = buildOpenPendingIntent(context, snapshot)
         val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
         val builder =
             NotificationCompat.Builder(context, GitHubRefreshNotificationHelper.CHANNEL_ID)
@@ -194,8 +194,12 @@ object GitHubActionsUpdateNotificationHelper {
                                 text = MiFocusExpandedText(
                                     title = title,
                                     content = content.ifBlank { " " }
-                                ),
-                                picFunction = MiFocusPictureRef.Expanded
+                                )
+                            ),
+                            MiFocusExpandedComponent.Picture(
+                                pic = MiFocusPictureRef.Expanded,
+                                picDark = MiFocusPictureRef.Expanded,
+                                type = 1
                             ),
                             MiFocusExpandedComponent.TextButtons(
                                 actions = listOf(
@@ -258,7 +262,10 @@ object GitHubActionsUpdateNotificationHelper {
         )
     }
 
-    private fun buildOpenPendingIntent(context: Context): PendingIntent {
+    private fun buildOpenPendingIntent(
+        context: Context,
+        snapshot: GitHubActionsRecommendedRunSnapshot
+    ): PendingIntent {
         val openIntent = Intent(context, MainActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -266,6 +273,7 @@ object GitHubActionsUpdateNotificationHelper {
                         Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
             putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_GITHUB)
+            putExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID, snapshot.trackId)
         }
         return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,

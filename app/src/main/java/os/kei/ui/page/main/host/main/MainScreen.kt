@@ -42,6 +42,8 @@ fun MainScreen(
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
     requestedGitHubManagedInstallConfirmToken: Int,
+    requestedGitHubActionsTrackId: String?,
+    requestedGitHubActionsSheetToken: Int,
     requestedBaBgmPlaybackToken: Int,
     transientExternalLaunchActive: Boolean,
     onRequestedBottomPageConsumed: () -> Unit
@@ -119,6 +121,8 @@ fun MainScreen(
         requestedBottomPageToken = effectiveRequestedBottomPageToken,
         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
         requestedGitHubManagedInstallConfirmToken = requestedGitHubManagedInstallConfirmToken,
+        requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
+        requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
         onRequestedBottomPageConsumed = {
             if (externalBottomPageRequested) {
                 onRequestedBottomPageConsumed()

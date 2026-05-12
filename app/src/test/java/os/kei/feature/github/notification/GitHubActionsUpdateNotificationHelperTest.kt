@@ -14,6 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
+import os.kei.MainActivity
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import kotlin.test.assertEquals
@@ -49,6 +50,8 @@ class GitHubActionsUpdateNotificationHelperTest {
         val markReadAction = notification.focusAction("github_actions_update_read")
         val displayIcon = notification.focusPicture("mi_focus_display")
         val expandedIcon = notification.focusPicture("mi_focus_expanded")
+        val contentIntent = Shadows.shadowOf(notification.contentIntent).savedIntent
+        val focusOpenIntent = Shadows.shadowOf(openAction.actionIntent).savedIntent
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertNotNull(notification.getLargeIcon())
@@ -59,7 +62,9 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"#44\""))
         assertFalse(focusParam.contains("\"content\":\"Actions\""))
-        assertTrue(focusParam.contains("\"picFunction\":\"mi_focus_expanded\""))
+        assertFalse(focusParam.contains("\"picFunction\""))
+        assertTrue(focusParam.contains("\"baseInfo\""))
+        assertTrue(focusParam.contains("\"picInfo\":{\"type\":1,\"pic\":\"mi_focus_expanded\""))
         assertTrue(focusParam.contains("\"actionTitle\":\"${context.getString(R.string.common_open)}\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"actionTitleColor\":\"#FFFFFF\""))
@@ -67,6 +72,22 @@ class GitHubActionsUpdateNotificationHelperTest {
             focusParam.contains(
                 "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\""
             )
+        )
+        assertEquals(
+            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            contentIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE)
+        )
+        assertEquals(
+            snapshot.trackId,
+            contentIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID)
+        )
+        assertEquals(
+            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            focusOpenIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE)
+        )
+        assertEquals(
+            snapshot.trackId,
+            focusOpenIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID)
         )
     }
 

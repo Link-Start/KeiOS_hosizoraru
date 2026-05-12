@@ -23,14 +23,13 @@ internal class GitHubApkManifestReader(
         val entries = inspectPayload.value
         val manifest = entries.entries[ANDROID_MANIFEST_ENTRY]
             ?: error("$ANDROID_MANIFEST_ENTRY was not found in APK")
-        val resourceTable = entries.entries[RESOURCES_TABLE_ENTRY]
         val signatureEntry = entries.entryNames.firstSignatureEntry()
         val signatureInfo = signatureEntry?.let { entryName ->
             entries.entries[entryName]?.let { certBytes ->
                 parseSignatureInfo(entryName, certBytes).getOrNull()
             }
         }
-        AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest, resourceTable).getOrThrow()
+        AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest).getOrThrow()
             .copy(
             assetName = asset.name,
             fetchSource = inspectPayload.source,
@@ -131,9 +130,6 @@ internal class GitHubApkManifestReader(
     private fun selectInspectEntryNames(entryNames: List<String>): List<String> {
         return buildList {
             add(ANDROID_MANIFEST_ENTRY)
-            if (RESOURCES_TABLE_ENTRY in entryNames) {
-                add(RESOURCES_TABLE_ENTRY)
-            }
             entryNames.firstSignatureEntry()?.let(::add)
         }
     }
@@ -257,7 +253,6 @@ internal class GitHubApkManifestReader(
 
     companion object {
         private const val ANDROID_MANIFEST_ENTRY = "AndroidManifest.xml"
-        private const val RESOURCES_TABLE_ENTRY = "resources.arsc"
     }
 }
 

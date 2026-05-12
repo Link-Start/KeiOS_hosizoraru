@@ -651,7 +651,9 @@ class GitHubShareImportNotificationHelperTest {
         assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertTrue(focusParam.contains("\"title\":\"Confirm\""))
         assertTrue(focusParam.contains("Demo · owner/repo · waiting"))
-        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
     }
 
     @Test

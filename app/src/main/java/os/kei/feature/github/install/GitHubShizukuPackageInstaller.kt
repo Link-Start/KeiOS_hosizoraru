@@ -1,6 +1,7 @@
 package os.kei.feature.github.install
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.SystemClock
@@ -16,6 +17,8 @@ import okhttp3.Request
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.minutes
@@ -50,9 +53,17 @@ interface GitHubManagedApkInstaller {
     ): GitHubApkInstallResult {
         val staged = stage(context, request, onProgress)
         if (staged !is GitHubApkInstallResult.Staged) return staged
+        val commitRequest = request.copy(
+            scannedAppLabel = staged.appLabel.ifBlank { request.scannedAppLabel },
+            scannedPackageName = staged.packageName.ifBlank { request.scannedPackageName },
+            scannedVersionName = staged.versionName.ifBlank { request.scannedVersionName },
+            scannedVersionCode = staged.versionCode.ifBlank { request.scannedVersionCode },
+            scannedMinSdk = staged.minSdk.ifBlank { request.scannedMinSdk },
+            scannedTargetSdk = staged.targetSdk.ifBlank { request.scannedTargetSdk }
+        )
         return commit(
             context = context,
-            request = request,
+            request = commitRequest,
             sessionId = staged.sessionId,
             downloadedBytes = staged.downloadedBytes,
             totalBytes = staged.totalBytes,
@@ -160,6 +171,7 @@ class GitHubShizukuPackageInstaller(
 
             val writeResult = runCatching {
                 streamApkIntoSession(
+                    context = appContext,
                     resolvedUrl = resolvedUrl,
                     assetName = request.asset.name,
                     declaredSizeBytes = request.asset.sizeBytes,
@@ -194,19 +206,34 @@ class GitHubShizukuPackageInstaller(
             }
 
             session.closeQuietly()
+            val archiveInfo = writeResult.archiveInfo
+            val stagedPackageName = archiveInfo.packageName.ifBlank {
+                request.scannedPackageName.trim()
+            }
             onProgress(
                 GitHubApkInstallProgress(
                     stage = GitHubApkInstallStage.ReadyToCommit,
                     progressPercent = 100,
                     downloadedBytes = writeResult.bytesWritten,
                     totalBytes = writeResult.totalBytes,
-                    sessionId = sessionId
+                    sessionId = sessionId,
+                    appLabel = archiveInfo.appLabel,
+                    packageName = stagedPackageName,
+                    versionName = archiveInfo.versionName,
+                    versionCode = archiveInfo.versionCode,
+                    minSdk = archiveInfo.minSdk,
+                    targetSdk = archiveInfo.targetSdk
                 )
             )
             GitHubApkInstallResult.Staged(
                 requestId = request.requestId,
                 sessionId = sessionId,
-                packageName = request.scannedPackageName.trim(),
+                packageName = stagedPackageName,
+                appLabel = archiveInfo.appLabel,
+                versionName = archiveInfo.versionName,
+                versionCode = archiveInfo.versionCode,
+                minSdk = archiveInfo.minSdk,
+                targetSdk = archiveInfo.targetSdk,
                 downloadedBytes = writeResult.bytesWritten,
                 totalBytes = writeResult.totalBytes
             )
@@ -247,7 +274,13 @@ class GitHubShizukuPackageInstaller(
                     progressPercent = 92,
                     downloadedBytes = downloadedBytes,
                     totalBytes = totalBytes,
-                    sessionId = sessionId
+                    sessionId = sessionId,
+                    appLabel = request.scannedAppLabel,
+                    packageName = request.scannedPackageName,
+                    versionName = request.scannedVersionName,
+                    versionCode = request.scannedVersionCode,
+                    minSdk = request.scannedMinSdk,
+                    targetSdk = request.scannedTargetSdk
                 )
             )
             val capability = bridge.checkCapability()
@@ -369,7 +402,13 @@ class GitHubShizukuPackageInstaller(
                     progressPercent = 100,
                     downloadedBytes = downloadedBytes,
                     totalBytes = totalBytes,
-                    sessionId = sessionId
+                    sessionId = sessionId,
+                    appLabel = request.scannedAppLabel,
+                    packageName = packageName,
+                    versionName = request.scannedVersionName,
+                    versionCode = request.scannedVersionCode,
+                    minSdk = request.scannedMinSdk,
+                    targetSdk = request.scannedTargetSdk
                 )
             )
             val installed = loadPackageInfo(appContext, packageName)
@@ -414,6 +453,7 @@ class GitHubShizukuPackageInstaller(
     }
 
     private suspend fun streamApkIntoSession(
+        context: Context,
         resolvedUrl: String,
         assetName: String,
         declaredSizeBytes: Long,
@@ -468,32 +508,89 @@ class GitHubShizukuPackageInstaller(
                 )
             }
             emitDownloadProgress(force = true)
-            body.byteStream().use { input ->
-                session.openWrite(fileName, 0, totalBytes).use { output ->
-                    val buffer = ByteArray(APK_STREAM_BUFFER_SIZE)
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val read = input.read(buffer)
-                        if (read == -1) break
-                        output.write(buffer, 0, read)
-                        totalRead += read.toLong()
-                        emitDownloadProgress()
-                    }
-                    emitDownloadProgress(force = true)
-                    onProgress(
-                        GitHubApkInstallProgress(
-                            stage = GitHubApkInstallStage.Staging,
-                            progressPercent = 100,
-                            downloadedBytes = totalRead,
-                            totalBytes = totalBytes,
-                            sessionId = sessionId
+            val tempApkFile = createTempApkFile(context, assetName)
+            try {
+                body.byteStream().use { input ->
+                    session.openWrite(fileName, 0, totalBytes).use { output ->
+                        FileOutputStream(tempApkFile).use { archiveOutput ->
+                            val buffer = ByteArray(APK_STREAM_BUFFER_SIZE)
+                            while (true) {
+                                currentCoroutineContext().ensureActive()
+                                val read = input.read(buffer)
+                                if (read == -1) break
+                                output.write(buffer, 0, read)
+                                archiveOutput.write(buffer, 0, read)
+                                totalRead += read.toLong()
+                                emitDownloadProgress()
+                            }
+                            archiveOutput.flush()
+                        }
+                        emitDownloadProgress(force = true)
+                        val archiveInfo = readArchiveInfo(context, tempApkFile)
+                        onProgress(
+                            GitHubApkInstallProgress(
+                                stage = GitHubApkInstallStage.Staging,
+                                progressPercent = 100,
+                                downloadedBytes = totalRead,
+                                totalBytes = totalBytes,
+                                sessionId = sessionId,
+                                appLabel = archiveInfo.appLabel,
+                                packageName = archiveInfo.packageName,
+                                versionName = archiveInfo.versionName,
+                                versionCode = archiveInfo.versionCode,
+                                minSdk = archiveInfo.minSdk,
+                                targetSdk = archiveInfo.targetSdk
+                            )
                         )
-                    )
-                    session.fsync(output)
+                        session.fsync(output)
+                        return SessionWriteResult(totalRead, totalBytes, archiveInfo)
+                    }
                 }
+            } finally {
+                runCatching { tempApkFile.delete() }
             }
-            return SessionWriteResult(totalRead, totalBytes)
         }
+    }
+
+    private fun createTempApkFile(context: Context, assetName: String): File {
+        val directory = File(context.cacheDir, "github-managed-install").apply { mkdirs() }
+        val safeName = assetName
+            .trim()
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .take(80)
+            .ifBlank { "download.apk" }
+        return File.createTempFile("kei-", "-$safeName", directory)
+    }
+
+    private fun readArchiveInfo(context: Context, apkFile: File): ApkArchiveInfo {
+        val pm = context.packageManager
+        val packageInfo = runCatching {
+            pm.getPackageArchiveInfo(
+                apkFile.absolutePath,
+                PackageManager.PackageInfoFlags.of(0)
+            )
+        }.recoverCatching {
+            @Suppress("DEPRECATION")
+            pm.getPackageArchiveInfo(apkFile.absolutePath, 0)
+        }.getOrNull() ?: return ApkArchiveInfo()
+        val appInfo = packageInfo.applicationInfo?.applyArchiveSource(apkFile)
+        val label = appInfo?.let { info ->
+            runCatching { info.loadLabel(pm).toString().trim() }.getOrDefault("")
+        }.orEmpty()
+        return ApkArchiveInfo(
+            packageName = packageInfo.packageName.orEmpty(),
+            appLabel = label,
+            versionName = packageInfo.versionName?.trim().orEmpty(),
+            versionCode = packageInfo.longVersionCode.takeIf { it >= 0L }?.toString().orEmpty(),
+            minSdk = appInfo?.minSdkVersion?.takeIf { it >= 0 }?.toString().orEmpty(),
+            targetSdk = appInfo?.targetSdkVersion?.takeIf { it >= 0 }?.toString().orEmpty()
+        )
+    }
+
+    private fun ApplicationInfo.applyArchiveSource(apkFile: File): ApplicationInfo {
+        sourceDir = apkFile.absolutePath
+        publicSourceDir = apkFile.absolutePath
+        return this
     }
 
     private fun downloadProgressPercent(downloadedBytes: Long, totalBytes: Long): Int {
@@ -547,7 +644,17 @@ class GitHubShizukuPackageInstaller(
 
     private data class SessionWriteResult(
         val bytesWritten: Long,
-        val totalBytes: Long
+        val totalBytes: Long,
+        val archiveInfo: ApkArchiveInfo = ApkArchiveInfo()
+    )
+
+    private data class ApkArchiveInfo(
+        val packageName: String = "",
+        val appLabel: String = "",
+        val versionName: String = "",
+        val versionCode: String = "",
+        val minSdk: String = "",
+        val targetSdk: String = ""
     )
 
     private data class InstalledPackageInfo(

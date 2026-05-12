@@ -475,7 +475,7 @@ class MiIslandNotificationBuilder(
                 ?: state.port.coerceIn(0, 100)
             val progressColor = miIslandProgressColorOverride
                 ?: GITHUB_SHARE_IMPORT_ACCENT_COLOR
-            val useProgressTemplate = state.clients > 0
+            val useProgressTemplate = state.clients > 0 && state.overrideProgressPercent != null
             return IslandPresentation(
                 allowFloat = state.clients <= 0,
                 showTextButtons = true,

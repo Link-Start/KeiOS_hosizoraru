@@ -9,7 +9,6 @@ internal object BinaryManifestFixture {
     private const val RES_STRING_POOL_TYPE = 0x0001
     private const val RES_XML_START_ELEMENT_TYPE = 0x0102
     private const val UTF8_FLAG = 0x00000100
-    private const val TYPE_REFERENCE = 0x01
     private const val TYPE_STRING = 0x03
 
     fun build(
@@ -39,53 +38,6 @@ internal object BinaryManifestFixture {
             writeI32(totalSize)
             write(stringPool)
             write(startElement)
-        }.toByteArray()
-    }
-
-    fun buildWithApplicationLabelResource(
-        packageName: String,
-        labelResourceId: Int
-    ): ByteArray {
-        val strings = listOf(
-            "manifest",
-            "application",
-            "package",
-            packageName,
-            "label"
-        )
-        val stringIndexes = strings.withIndex().associate { it.value to it.index }
-        val stringPool = stringPool(strings)
-        val manifestStartElement = startElement(
-            elementNameIndex = stringIndexes.getValue("manifest"),
-            attributes = listOf(
-                BinaryAttribute(
-                    nameIndex = stringIndexes.getValue("package"),
-                    rawValueIndex = stringIndexes.getValue(packageName),
-                    valueType = TYPE_STRING,
-                    valueData = stringIndexes.getValue(packageName)
-                )
-            )
-        )
-        val applicationStartElement = startElement(
-            elementNameIndex = stringIndexes.getValue("application"),
-            attributes = listOf(
-                BinaryAttribute(
-                    nameIndex = stringIndexes.getValue("label"),
-                    rawValueIndex = -1,
-                    valueType = TYPE_REFERENCE,
-                    valueData = labelResourceId
-                )
-            )
-        )
-        val totalSize =
-            8 + stringPool.size + manifestStartElement.size + applicationStartElement.size
-        return ByteArrayOutputStream().apply {
-            writeU16(RES_XML_TYPE)
-            writeU16(8)
-            writeI32(totalSize)
-            write(stringPool)
-            write(manifestStartElement)
-            write(applicationStartElement)
         }.toByteArray()
     }
 

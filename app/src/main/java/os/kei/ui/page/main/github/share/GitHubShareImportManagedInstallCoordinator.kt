@@ -308,8 +308,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     releaseTag = request.releaseTag,
                     assetName = request.asset.name,
                     progressPercent = progress.boundedProgressPercent,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = uiProgress.appLabel,
+                    packageName = uiProgress.packageName,
+                    versionName = uiProgress.versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -324,8 +325,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     progressPercent = progress.boundedProgressPercent,
                     downloadedBytes = progress.downloadedBytes,
                     totalBytes = progress.totalBytes,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = uiProgress.appLabel,
+                    packageName = uiProgress.packageName,
+                    versionName = uiProgress.versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -337,8 +339,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     repo = request.repo,
                     releaseTag = request.releaseTag,
                     assetName = request.asset.name,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = uiProgress.appLabel,
+                    packageName = uiProgress.packageName,
+                    versionName = uiProgress.versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -350,8 +353,9 @@ internal object GitHubShareImportManagedInstallCoordinator {
                     repo = request.repo,
                     releaseTag = request.releaseTag,
                     assetName = request.asset.name,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = uiProgress.appLabel,
+                    packageName = uiProgress.packageName,
+                    versionName = uiProgress.versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -379,12 +383,12 @@ internal object GitHubShareImportManagedInstallCoordinator {
         return GitHubShareImportManagedInstallProgress(
             phase = phase,
             assetName = request.asset.name,
-            appLabel = request.scannedAppLabel,
-            packageName = request.scannedPackageName,
-            versionName = request.scannedVersionName,
-            versionCode = request.scannedVersionCode,
-            minSdk = request.scannedMinSdk,
-            targetSdk = request.scannedTargetSdk,
+            appLabel = appLabel.ifBlank { request.scannedAppLabel },
+            packageName = packageName.ifBlank { request.scannedPackageName },
+            versionName = versionName.ifBlank { request.scannedVersionName },
+            versionCode = versionCode.ifBlank { request.scannedVersionCode },
+            minSdk = minSdk.ifBlank { request.scannedMinSdk },
+            targetSdk = targetSdk.ifBlank { request.scannedTargetSdk },
             nativeAbis = request.scannedNativeAbis,
             targetDisplayName = request.targetDisplayName,
             progressPercent = boundedProgressPercent,
@@ -458,12 +462,17 @@ internal object GitHubShareImportManagedInstallCoordinator {
         }
         val nextRecord = activeRecord.copy(
             sessionId = result.sessionId,
-            appLabel = request.scannedAppLabel.ifBlank { activeRecord.appLabel },
+            appLabel = result.appLabel.ifBlank { request.scannedAppLabel }
+                .ifBlank { activeRecord.appLabel },
             packageName = result.packageName.ifBlank { activeRecord.packageName },
-            versionName = request.scannedVersionName.ifBlank { activeRecord.versionName },
-            versionCode = request.scannedVersionCode.ifBlank { activeRecord.versionCode },
-            minSdk = request.scannedMinSdk.ifBlank { activeRecord.minSdk },
-            targetSdk = request.scannedTargetSdk.ifBlank { activeRecord.targetSdk },
+            versionName = result.versionName.ifBlank { request.scannedVersionName }
+                .ifBlank { activeRecord.versionName },
+            versionCode = result.versionCode.ifBlank { request.scannedVersionCode }
+                .ifBlank { activeRecord.versionCode },
+            minSdk = result.minSdk.ifBlank { request.scannedMinSdk }
+                .ifBlank { activeRecord.minSdk },
+            targetSdk = result.targetSdk.ifBlank { request.scannedTargetSdk }
+                .ifBlank { activeRecord.targetSdk },
             nativeAbis = request.scannedNativeAbis.ifEmpty { activeRecord.nativeAbis },
             progressPhase = GitHubShareImportPhase.InstallReady.name,
             progressPercent = 100,
@@ -480,6 +489,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
             repo = request.repo,
             releaseTag = request.releaseTag,
             assetName = request.asset.name,
+            appLabel = nextRecord.appLabel,
             packageName = nextRecord.packageName,
             versionName = nextRecord.versionName,
             targetDisplayName = request.targetDisplayName

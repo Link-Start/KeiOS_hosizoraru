@@ -39,7 +39,13 @@ data class GitHubApkInstallProgress(
     val progressPercent: Int = 0,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long = -1L,
-    val sessionId: Int = -1
+    val sessionId: Int = -1,
+    val appLabel: String = "",
+    val packageName: String = "",
+    val versionName: String = "",
+    val versionCode: String = "",
+    val minSdk: String = "",
+    val targetSdk: String = ""
 ) {
     val boundedProgressPercent: Int
         get() = progressPercent.coerceIn(0, 100)
@@ -50,6 +56,11 @@ sealed interface GitHubApkInstallResult {
         val requestId: String,
         val sessionId: Int,
         val packageName: String = "",
+        val appLabel: String = "",
+        val versionName: String = "",
+        val versionCode: String = "",
+        val minSdk: String = "",
+        val targetSdk: String = "",
         val downloadedBytes: Long = 0L,
         val totalBytes: Long = -1L
     ) : GitHubApkInstallResult

@@ -143,6 +143,9 @@ internal class GitHubPageManagedInstallRunner(
         request: GitHubApkInstallRequest,
         progress: GitHubApkInstallProgress
     ) {
+        val appLabel = progress.appLabel.trim()
+        val packageName = progress.packageName.trim().ifBlank { request.scannedPackageName }
+        val versionName = progress.versionName.trim().ifBlank { request.scannedVersionName }
         when (progress.stage) {
             GitHubApkInstallStage.Preparing,
             GitHubApkInstallStage.Staging -> {
@@ -153,8 +156,9 @@ internal class GitHubPageManagedInstallRunner(
                     releaseTag = request.releaseTag,
                     assetName = request.asset.name,
                     progressPercent = progress.boundedProgressPercent,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = appLabel,
+                    packageName = packageName,
+                    versionName = versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -169,8 +173,9 @@ internal class GitHubPageManagedInstallRunner(
                     progressPercent = progress.boundedProgressPercent,
                     downloadedBytes = progress.downloadedBytes,
                     totalBytes = progress.totalBytes,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = appLabel,
+                    packageName = packageName,
+                    versionName = versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }
@@ -183,8 +188,9 @@ internal class GitHubPageManagedInstallRunner(
                     repo = request.repo,
                     releaseTag = request.releaseTag,
                     assetName = request.asset.name,
-                    packageName = request.scannedPackageName,
-                    versionName = request.scannedVersionName,
+                    appLabel = appLabel,
+                    packageName = packageName,
+                    versionName = versionName,
                     targetDisplayName = request.targetDisplayName
                 )
             }

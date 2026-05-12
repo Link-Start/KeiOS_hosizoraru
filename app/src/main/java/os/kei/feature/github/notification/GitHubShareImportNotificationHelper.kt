@@ -100,6 +100,7 @@ object GitHubShareImportNotificationHelper {
         releaseTag: String = "",
         assetName: String,
         progressPercent: Int,
+        appLabel: String = "",
         packageName: String = "",
         versionName: String = "",
         targetDisplayName: String = ""
@@ -112,6 +113,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 releaseTag = releaseTag,
                 assetName = assetName,
+                appLabel = appLabel,
                 packageName = packageName,
                 versionName = versionName,
                 targetDisplayName = targetDisplayName,
@@ -129,6 +131,7 @@ object GitHubShareImportNotificationHelper {
         progressPercent: Int,
         downloadedBytes: Long,
         totalBytes: Long,
+        appLabel: String = "",
         packageName: String = "",
         versionName: String = "",
         targetDisplayName: String = ""
@@ -141,6 +144,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 releaseTag = releaseTag,
                 assetName = assetName,
+                appLabel = appLabel,
                 packageName = packageName,
                 versionName = versionName,
                 targetDisplayName = targetDisplayName,
@@ -157,6 +161,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         releaseTag: String = "",
         assetName: String,
+        appLabel: String = "",
         packageName: String = "",
         versionName: String = "",
         targetDisplayName: String = ""
@@ -169,6 +174,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 releaseTag = releaseTag,
                 assetName = assetName,
+                appLabel = appLabel,
                 packageName = packageName,
                 versionName = versionName,
                 targetDisplayName = targetDisplayName
@@ -182,6 +188,7 @@ object GitHubShareImportNotificationHelper {
         repo: String,
         releaseTag: String = "",
         assetName: String,
+        appLabel: String = "",
         packageName: String = "",
         versionName: String = "",
         targetDisplayName: String = ""
@@ -194,6 +201,7 @@ object GitHubShareImportNotificationHelper {
                 repo = repo,
                 releaseTag = releaseTag,
                 assetName = assetName,
+                appLabel = appLabel,
                 packageName = packageName,
                 versionName = versionName,
                 targetDisplayName = targetDisplayName
@@ -521,7 +529,7 @@ object GitHubShareImportNotificationHelper {
             running = liveUpdateActive,
             port = progressPercent,
             path = content,
-            clients = if (state.phase.ongoing) 1 else 0,
+            clients = if (state.phase.ongoing && state.phase.progressTemplateEnabled) 1 else 0,
             ongoing = liveUpdateActive,
             onlyAlertOnce = true,
             openPendingIntent = openPendingIntent,
@@ -1052,8 +1060,7 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 64,
         ongoing = true,
         openGitHubPage = false,
-        cancelActionEnabled = true,
-        progressTemplateEnabled = false
+        cancelActionEnabled = true
     ),
     InstallReady(
         titleRes = R.string.github_share_import_notify_title_install_ready,
@@ -1062,8 +1069,7 @@ internal enum class GitHubShareImportNotificationPhase(
         progressPercent = 88,
         ongoing = true,
         openGitHubPage = false,
-        cancelActionEnabled = true,
-        progressTemplateEnabled = false
+        cancelActionEnabled = true
     ),
     InstallCommitting(
         titleRes = R.string.github_share_import_notify_title_install_committing,
@@ -1071,8 +1077,7 @@ internal enum class GitHubShareImportNotificationPhase(
         primaryActionRes = R.string.github_share_import_notify_action_view_status,
         progressPercent = 92,
         ongoing = true,
-        openGitHubPage = false,
-        progressTemplateEnabled = false
+        openGitHubPage = false
     ),
     WaitingInstall(
         titleRes = R.string.github_share_import_notify_title_waiting_install,

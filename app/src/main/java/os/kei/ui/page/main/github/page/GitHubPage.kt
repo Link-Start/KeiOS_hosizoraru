@@ -146,6 +146,27 @@ fun GitHubPage(
             uri = uri
         )
     }
+    val transferCallbacks = remember(
+        context,
+        scope,
+        state,
+        actions,
+        githubPageViewModel,
+        tracksExportLauncher,
+        tracksImportLauncher,
+        starImportLauncher
+    ) {
+        buildGitHubPageTrackTransferCallbacks(
+            context = context,
+            scope = scope,
+            state = state,
+            actions = actions,
+            githubPageViewModel = githubPageViewModel,
+            launchTrackedExport = { fileName -> tracksExportLauncher.launch(fileName) },
+            launchTrackedImport = { mimeTypes -> tracksImportLauncher.launch(mimeTypes) },
+            launchStarImport = { intent -> starImportLauncher.launch(intent) }
+        )
+    }
     LaunchedEffect(externalRefreshTriggerToken) {
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
@@ -208,6 +229,8 @@ fun GitHubPage(
             showActionMenuPopup = state.showActionMenuPopup,
             floatingDockSide = runtime.floatingDockSide,
             deleteInProgress = state.deleteInProgress,
+            tracksExporting = transferState.tracksExporting,
+            tracksImporting = transferState.tracksImporting,
             isDark = isDark,
             overviewRefreshState = state.overviewRefreshState,
             overviewExpanded = state.overviewExpanded,
@@ -244,6 +267,9 @@ fun GitHubPage(
             onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
             onSortModeChange = { state.sortMode = it },
             onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
+            onExportTrackedItems = transferCallbacks.onExportTrackedItems,
+            onImportTrackedItems = transferCallbacks.onImportTrackedItems,
+            onOpenStarImport = transferCallbacks.onOpenStarImport,
             onOpenStrategySheet = actions::openStrategySheet,
             onOpenCheckLogicSheet = actions::openCheckLogicSheet,
             onOverviewExpandedChange = actions::setOverviewExpanded,
@@ -296,28 +322,6 @@ fun GitHubPage(
         )
     }
 
-    val transferCallbacks = remember(
-        context,
-        scope,
-        state,
-        actions,
-        githubPageViewModel,
-        tracksExportLauncher,
-        tracksImportLauncher,
-        starImportLauncher
-    ) {
-        buildGitHubPageTrackTransferCallbacks(
-            context = context,
-            scope = scope,
-            state = state,
-            actions = actions,
-            githubPageViewModel = githubPageViewModel,
-            launchTrackedExport = { fileName -> tracksExportLauncher.launch(fileName) },
-            launchTrackedImport = { mimeTypes -> tracksImportLauncher.launch(mimeTypes) },
-            launchStarImport = { intent -> starImportLauncher.launch(intent) }
-        )
-    }
-
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
         GitHubPageSheetHost(
             context = context,
@@ -331,9 +335,6 @@ fun GitHubPage(
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
-            onExportTrackedItems = transferCallbacks.onExportTrackedItems,
-            onImportTrackedItems = transferCallbacks.onImportTrackedItems,
-            onOpenStarImport = transferCallbacks.onOpenStarImport,
             onConfirmTrackImport = transferCallbacks.onConfirmTrackImport
         )
     }

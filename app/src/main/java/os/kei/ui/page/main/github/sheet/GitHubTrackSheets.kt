@@ -1,8 +1,6 @@
 package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,7 +36,6 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
-import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
@@ -78,9 +75,6 @@ internal fun GitHubCheckLogicSheet(
     onDismissRequest: () -> Unit,
     onApply: () -> Unit,
     onEnsureKeiOsSelfTrack: () -> Unit,
-    onExportTrackedItems: () -> Unit,
-    onImportTrackedItems: () -> Unit,
-    onOpenStarImport: () -> Unit,
     onSendDebugActionsUpdateNotification: () -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
@@ -217,10 +211,7 @@ internal fun GitHubCheckLogicSheet(
                 hasKeiOsSelfTrack = hasKeiOsSelfTrack,
                 exportInProgress = exportInProgress,
                 importInProgress = importInProgress,
-                onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
-                onExportTrackedItems = onExportTrackedItems,
-                onImportTrackedItems = onImportTrackedItems,
-                onOpenStarImport = onOpenStarImport
+                onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack
             )
             GitHubCheckDebugSection(
                 backdrop = backdrop,
@@ -596,10 +587,7 @@ private fun GitHubCheckTracksSection(
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
     importInProgress: Boolean,
-    onEnsureKeiOsSelfTrack: () -> Unit,
-    onExportTrackedItems: () -> Unit,
-    onImportTrackedItems: () -> Unit,
-    onOpenStarImport: () -> Unit
+    onEnsureKeiOsSelfTrack: () -> Unit
 ) {
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_tracks))
     SheetDescriptionText(
@@ -625,54 +613,6 @@ private fun GitHubCheckTracksSection(
                 enabled = !hasKeiOsSelfTrack && !exportInProgress && !importInProgress,
                 variant = GlassVariant.SheetAction
             )
-        }
-        SheetFieldBlock(
-            title = stringResource(R.string.github_check_sheet_label_track_transfer),
-            summary = stringResource(R.string.github_check_sheet_summary_track_transfer)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        AppLiquidTextButton(
-                            backdrop = backdrop,
-                            text = if (exportInProgress) {
-                                stringResource(R.string.github_check_sheet_action_exporting)
-                            } else {
-                                stringResource(R.string.github_check_sheet_action_export_tracks)
-                            },
-                            onClick = onExportTrackedItems,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !exportInProgress && !importInProgress,
-                            variant = GlassVariant.SheetAction
-                        )
-                    }
-                    Box(modifier = Modifier.weight(1f)) {
-                        AppLiquidTextButton(
-                            backdrop = backdrop,
-                            text = if (importInProgress) {
-                                stringResource(R.string.github_check_sheet_action_importing)
-                            } else {
-                                stringResource(R.string.github_check_sheet_action_import_tracks)
-                            },
-                            onClick = onImportTrackedItems,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !exportInProgress && !importInProgress,
-                            variant = GlassVariant.SheetAction
-                        )
-                    }
-                }
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    text = stringResource(R.string.github_check_sheet_action_import_stars),
-                    onClick = onOpenStarImport,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !exportInProgress && !importInProgress,
-                    variant = GlassVariant.SheetAction
-                )
-            }
         }
     }
 }

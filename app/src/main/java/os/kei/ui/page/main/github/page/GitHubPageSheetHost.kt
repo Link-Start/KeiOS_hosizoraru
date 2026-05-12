@@ -31,9 +31,6 @@ internal fun GitHubPageSheetHost(
     tracksExporting: Boolean,
     tracksImporting: Boolean,
     onEnsureKeiOsSelfTrack: () -> Unit,
-    onExportTrackedItems: () -> Unit,
-    onImportTrackedItems: () -> Unit,
-    onOpenStarImport: () -> Unit,
     onConfirmTrackImport: () -> Unit
 ) {
     GitHubOverviewEntrySheet(
@@ -111,9 +108,6 @@ internal fun GitHubPageSheetHost(
         onDismissRequest = actions::closeCheckLogicSheet,
         onApply = { actions.applyCheckLogicSheet(installedOnlineShareTargets) },
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
-        onExportTrackedItems = onExportTrackedItems,
-        onImportTrackedItems = onImportTrackedItems,
-        onOpenStarImport = onOpenStarImport,
         onSendDebugActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
         onCheckAllTrackedPreReleasesInputChange = { state.checkAllTrackedPreReleasesInput = it },
         onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },

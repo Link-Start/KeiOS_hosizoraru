@@ -16,7 +16,10 @@
     <string name="json_import_legacy_summary">This legacy JSON is previewed with compatibility rules.</string>
     <string name="json_import_samples_eyebrow">Samples</string>
     <string name="json_import_samples_title">Preview items</string>
-    <string name="json_import_samples_summary">Showing up to %1$d samples</string>
+    <plurals name="json_import_samples_summary">
+        <item quantity="one">Showing up to %1$d sample</item>
+        <item quantity="other">Showing up to %1$d samples</item>
+    </plurals>
     <string name="json_import_action_title">Confirm import</string>
     <string name="json_import_action_import">Import</string>
     <string name="json_import_action_view_github">View GitHub</string>

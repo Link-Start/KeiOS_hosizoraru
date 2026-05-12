@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -238,7 +239,11 @@ private fun JsonImportPreviewCard(preview: KeiOSJsonImportPreview) {
 private fun JsonImportSamplesCard(samples: List<KeiOSJsonImportSample>) {
     AppFeatureCard(
         title = stringResource(R.string.json_import_samples_title),
-        subtitle = stringResource(R.string.json_import_samples_summary, samples.size),
+        subtitle = pluralStringResource(
+            R.plurals.json_import_samples_summary,
+            samples.size,
+            samples.size
+        ),
         eyebrow = stringResource(R.string.json_import_samples_eyebrow),
         containerColor = jsonImportCardContainerColor(),
         subtitleColor = jsonImportSecondaryTextColor(),

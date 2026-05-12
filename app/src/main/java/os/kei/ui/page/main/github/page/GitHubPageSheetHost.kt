@@ -88,7 +88,6 @@ internal fun GitHubPageSheetHost(
         preciseApkVersionEnabledInput = state.preciseApkVersionEnabledInput,
         scanSystemAppsByDefaultInput = state.scanSystemAppsByDefaultInput,
         profileDepthInput = state.profileDepthInput,
-        shareImportLinkageEnabledInput = state.shareImportLinkageEnabledInput,
         shareImportFlowModeInput = state.shareImportFlowModeInput,
         appManagedShareInstallEnabledInput = state.appManagedShareInstallEnabledInput,
         onlineShareTargetPackageInput = state.onlineShareTargetPackageInput,
@@ -116,7 +115,6 @@ internal fun GitHubPageSheetHost(
         onPreciseApkVersionEnabledInputChange = { state.preciseApkVersionEnabledInput = it },
         onScanSystemAppsByDefaultInputChange = { state.scanSystemAppsByDefaultInput = it },
         onProfileDepthInputChange = { state.profileDepthInput = it },
-        onShareImportLinkageEnabledInputChange = { state.shareImportLinkageEnabledInput = it },
         onShareImportFlowModeInputChange = { state.shareImportFlowModeInput = it },
         onAppManagedShareInstallEnabledInputChange = {
             state.appManagedShareInstallEnabledInput = it

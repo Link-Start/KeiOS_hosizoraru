@@ -35,9 +35,9 @@ class GitHubShareImportActivityLaunchPolicyTest {
     }
 
     @Test
-    fun `disabled share import shows disabled state`() {
+    fun `legacy disabled share import flag still follows flow mode`() {
         assertEquals(
-            GitHubShareImportActivityDisplayState.Disabled,
+            GitHubShareImportActivityDisplayState.Hidden,
             GitHubShareImportActivityLaunchPolicy.forIncomingShare(
                 sharedText = "https://github.com/open-ani/animeko/releases",
                 lookupConfig = GitHubLookupConfig(

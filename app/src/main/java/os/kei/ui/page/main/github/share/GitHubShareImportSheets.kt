@@ -494,48 +494,6 @@ private fun formatManagedInstallDownloadProgress(
 }
 
 @Composable
-internal fun GitHubShareImportDisabledSheet(
-    show: Boolean,
-    onClose: () -> Unit,
-    onOpenGitHub: () -> Unit
-) {
-    SnapshotWindowBottomSheet(
-        show = show,
-        title = stringResource(R.string.github_share_import_disabled_title),
-        onDismissRequest = onClose,
-        insideMargin = shareImportSheetInsideMargin
-    ) {
-        GitHubShareImportWindowBlurEffect(useBlur = show)
-        Column(
-            modifier = Modifier.shareImportSheetSafeArea(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            SheetDescriptionText(
-                text = stringResource(R.string.github_share_import_disabled_summary)
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_close),
-                    leadingIcon = appLucideCloseIcon(),
-                    onClick = onClose
-                )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.github_share_import_disabled_action_open),
-                    leadingIcon = appLucideExternalLinkIcon(),
-                    containerColor = GitHubStatusPalette.Active,
-                    onClick = onOpenGitHub
-                )
-            }
-        }
-    }
-}
-
-@Composable
 internal fun GitHubShareImportPendingSheet(
     pending: GitHubPendingShareImportTrackRecord?,
     onDismissRequest: () -> Unit,

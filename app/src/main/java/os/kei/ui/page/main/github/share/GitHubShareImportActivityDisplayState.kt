@@ -7,7 +7,6 @@ import os.kei.feature.github.model.GitHubShareImportFlowMode
 internal enum class GitHubShareImportActivityDisplayState {
     Hidden,
     Sheet,
-    Disabled,
     SendingInstall,
     Finish
 }
@@ -21,9 +20,6 @@ internal object GitHubShareImportActivityLaunchPolicy {
         if (normalized.isBlank()) return GitHubShareImportActivityDisplayState.Finish
         if (!GitHubShareIntentParser.looksLikeGitHubShareText(normalized)) {
             return GitHubShareImportActivityDisplayState.Finish
-        }
-        if (!lookupConfig.shareImportLinkageEnabled) {
-            return GitHubShareImportActivityDisplayState.Disabled
         }
         return when (lookupConfig.shareImportFlowMode) {
             GitHubShareImportFlowMode.NotificationFirst ->

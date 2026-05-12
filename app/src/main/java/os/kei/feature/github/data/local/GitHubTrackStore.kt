@@ -654,7 +654,7 @@ object GitHubTrackStore {
             profileDepth = GitHubProfileDepth.fromStorageId(
                 kv().decodeString(KEY_PROFILE_DEPTH).orEmpty()
             ),
-            shareImportLinkageEnabled = kv().decodeBool(KEY_SHARE_IMPORT_LINKAGE_ENABLED, false),
+            shareImportLinkageEnabled = true,
             shareImportFlowMode = GitHubShareImportFlowMode.fromStorageId(
                 kv().decodeString(KEY_SHARE_IMPORT_FLOW_MODE).orEmpty()
             ),
@@ -686,7 +686,7 @@ object GitHubTrackStore {
         kv().encode(KEY_PRECISE_APK_VERSION_ENABLED, config.preciseApkVersionEnabled)
         kv().encode(KEY_SCAN_SYSTEM_APPS_BY_DEFAULT, config.scanSystemAppsByDefault)
         kv().encode(KEY_PROFILE_DEPTH, config.profileDepth.storageId)
-        kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
+        kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, true)
         kv().encode(KEY_SHARE_IMPORT_FLOW_MODE, config.shareImportFlowMode.storageId)
         kv().encode(
             KEY_APP_MANAGED_SHARE_INSTALL_ENABLED,

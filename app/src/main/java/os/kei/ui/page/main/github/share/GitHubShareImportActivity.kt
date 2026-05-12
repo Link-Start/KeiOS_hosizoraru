@@ -88,24 +88,12 @@ class GitHubShareImportActivity : ComponentActivity() {
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
                     ) {
                         KeiOSActivityRootBackHandler(
-                            needsInterception = displayState == GitHubShareImportActivityDisplayState.Disabled ||
-                                    displayState == GitHubShareImportActivityDisplayState.SendingInstall ||
+                            needsInterception = displayState == GitHubShareImportActivityDisplayState.SendingInstall ||
                                     flowActivityBackNeedsInterception,
                             onBack = { finishSafely() }
                         )
                         Box(modifier = Modifier.fillMaxSize()) {
                             when (displayState) {
-                                GitHubShareImportActivityDisplayState.Disabled -> {
-                                    GitHubShareImportDisabledSheet(
-                                        show = true,
-                                        onClose = { finishSafely() },
-                                        onOpenGitHub = {
-                                            openGitHubPage()
-                                            finishSafely()
-                                        }
-                                    )
-                                }
-
                                 GitHubShareImportActivityDisplayState.Sheet -> {
                                     GitHubShareImportWindowFlowHost(
                                         incomingGitHubShareText = incomingGitHubShareText,
@@ -200,7 +188,6 @@ class GitHubShareImportActivity : ComponentActivity() {
                 finishSafely()
             }
 
-            GitHubShareImportActivityDisplayState.Disabled -> Unit
             GitHubShareImportActivityDisplayState.Hidden -> {
                 incomingGitHubShareText = null
                 startIncomingShareInBackground(
@@ -302,7 +289,6 @@ class GitHubShareImportActivity : ComponentActivity() {
     private fun requestNotificationPermissionIfNeededForActiveFlow() {
         if (sendInstallInProgress) return
         if (
-            shareImportDisplayState == GitHubShareImportActivityDisplayState.Disabled ||
             shareImportDisplayState == GitHubShareImportActivityDisplayState.SendingInstall ||
             shareImportDisplayState == GitHubShareImportActivityDisplayState.Finish
         ) {

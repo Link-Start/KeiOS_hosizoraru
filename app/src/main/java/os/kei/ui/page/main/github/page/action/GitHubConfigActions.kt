@@ -60,7 +60,6 @@ internal class GitHubConfigActions(
             state.preciseApkVersionEnabledInput = config.preciseApkVersionEnabled
             state.scanSystemAppsByDefaultInput = config.scanSystemAppsByDefault
             state.profileDepthInput = config.profileDepth
-            state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
             state.appManagedShareInstallEnabledInput = config.appManagedShareInstallEnabled
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
@@ -115,7 +114,7 @@ internal class GitHubConfigActions(
                 preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
                 scanSystemAppsByDefault = previousConfig.scanSystemAppsByDefault,
                 profileDepth = previousConfig.profileDepth,
-                shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
+                shareImportLinkageEnabled = true,
                 shareImportFlowMode = previousConfig.shareImportFlowMode,
                 appManagedShareInstallEnabled = previousConfig.appManagedShareInstallEnabled,
                 onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
@@ -200,7 +199,7 @@ internal class GitHubConfigActions(
                 preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
                 scanSystemAppsByDefault = state.scanSystemAppsByDefaultInput,
                 profileDepth = state.profileDepthInput,
-                shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
+                shareImportLinkageEnabled = true,
                 shareImportFlowMode = state.shareImportFlowModeInput,
                 appManagedShareInstallEnabled = state.appManagedShareInstallEnabledInput,
                 onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
@@ -227,8 +226,7 @@ internal class GitHubConfigActions(
             val profilePurposeChanged = previousConfig.defaultRepositoryProfilePurpose() !=
                     newConfig.defaultRepositoryProfilePurpose()
             val shareImportChanged =
-                previousConfig.shareImportLinkageEnabled != newConfig.shareImportLinkageEnabled ||
-                        previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode ||
+                previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode ||
                         previousConfig.appManagedShareInstallEnabled !=
                         newConfig.appManagedShareInstallEnabled
             val onlineShareTargetChanged =

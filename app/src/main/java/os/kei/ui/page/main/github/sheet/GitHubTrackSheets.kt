@@ -54,7 +54,6 @@ internal fun GitHubCheckLogicSheet(
     preciseApkVersionEnabledInput: Boolean,
     scanSystemAppsByDefaultInput: Boolean,
     profileDepthInput: GitHubProfileDepth,
-    shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
     appManagedShareInstallEnabledInput: Boolean,
     onlineShareTargetPackageInput: String,
@@ -82,7 +81,6 @@ internal fun GitHubCheckLogicSheet(
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
     onScanSystemAppsByDefaultInputChange: (Boolean) -> Unit,
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
-    onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
@@ -150,7 +148,6 @@ internal fun GitHubCheckLogicSheet(
                 preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
                     scanSystemAppsByDefaultInput != lookupConfig.scanSystemAppsByDefault ||
                 profileDepthInput != lookupConfig.profileDepth ||
-            shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
                 shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
                 appManagedShareInstallEnabledInput !=
                 lookupConfig.appManagedShareInstallEnabled ||
@@ -168,8 +165,7 @@ internal fun GitHubCheckLogicSheet(
                 selectedRefreshOption = selectedRefreshOption,
                 selectedDownloaderPackage = preferredDownloaderPackageInput,
                 selectedDownloaderLabel = selectedDownloaderLabel,
-                appManagedShareInstallEnabled = appManagedShareInstallEnabledInput,
-                shareImportLinkageEnabled = shareImportLinkageEnabledInput
+                appManagedShareInstallEnabled = appManagedShareInstallEnabledInput
             )
             GitHubCheckStrategySection(
                 checkAllTrackedPreReleasesInput = checkAllTrackedPreReleasesInput,
@@ -190,7 +186,6 @@ internal fun GitHubCheckLogicSheet(
                 preferredDownloaderPackageInput = preferredDownloaderPackageInput,
                 showDownloaderPopup = showDownloaderPopup,
                 downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
-                shareImportLinkageEnabledInput = shareImportLinkageEnabledInput,
                 shareImportFlowModeInput = shareImportFlowModeInput,
                 appManagedShareInstallEnabledInput = appManagedShareInstallEnabledInput,
                 selectedOnlineShareTargetLabel = effectiveOnlineShareTargetLabel,
@@ -202,7 +197,6 @@ internal fun GitHubCheckLogicSheet(
                 onlineShareTargetPopupAnchorBounds = onlineShareTargetPopupAnchorBounds,
                 shareImportFlowModePopupAnchorBounds = shareImportFlowModePopupAnchorBounds,
                 onPreferredDownloaderPackageInputChange = onPreferredDownloaderPackageInputChange,
-                onShareImportLinkageEnabledInputChange = onShareImportLinkageEnabledInputChange,
                 onShareImportFlowModeInputChange = onShareImportFlowModeInputChange,
                 onAppManagedShareInstallEnabledInputChange =
                     onAppManagedShareInstallEnabledInputChange,
@@ -246,8 +240,7 @@ private fun GitHubCheckOverviewSection(
     selectedRefreshOption: RefreshIntervalOption,
     selectedDownloaderPackage: String,
     selectedDownloaderLabel: String,
-    appManagedShareInstallEnabled: Boolean,
-    shareImportLinkageEnabled: Boolean
+    appManagedShareInstallEnabled: Boolean
 ) {
     val saveStateLabel = if (logicChanged) {
         stringResource(R.string.common_pending_save)
@@ -317,19 +310,9 @@ private fun GitHubCheckOverviewSection(
             )
             GitHubOverviewMetricItem(
                 label = stringResource(R.string.github_check_sheet_metric_share_import_compact),
-                value = stringResource(
-                    if (shareImportLinkageEnabled) {
-                        R.string.github_check_sheet_value_enabled
-                    } else {
-                        R.string.github_check_sheet_value_disabled
-                    }
-                ),
+                value = stringResource(R.string.github_check_sheet_value_registered),
                 modifier = Modifier.weight(1f),
-                valueColor = if (shareImportLinkageEnabled) {
-                    MiuixTheme.colorScheme.primary
-                } else {
-                    MiuixTheme.colorScheme.onBackgroundVariant
-                },
+                valueColor = MiuixTheme.colorScheme.primary,
                 backdrop = backdrop,
                 labelMaxLines = 1,
                 valueMaxLines = 1,
@@ -439,7 +422,6 @@ private fun GitHubCheckTransferSection(
     preferredDownloaderPackageInput: String,
     showDownloaderPopup: Boolean,
     downloaderPopupAnchorBounds: IntRect?,
-    shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
     appManagedShareInstallEnabledInput: Boolean,
     selectedOnlineShareTargetLabel: String,
@@ -451,7 +433,6 @@ private fun GitHubCheckTransferSection(
     onlineShareTargetPopupAnchorBounds: IntRect?,
     shareImportFlowModePopupAnchorBounds: IntRect?,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
-    onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
@@ -478,12 +459,7 @@ private fun GitHubCheckTransferSection(
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_share_import_linkage),
             summary = stringResource(R.string.github_check_sheet_summary_share_import_linkage)
-        ) {
-            AppSwitch(
-                checked = shareImportLinkageEnabledInput,
-                onCheckedChange = onShareImportLinkageEnabledInputChange
-            )
-        }
+        ) {}
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_share_import_flow_mode),
             summary = stringResource(R.string.github_check_sheet_summary_share_import_flow_mode)
@@ -513,8 +489,7 @@ private fun GitHubCheckTransferSection(
         ) {
             AppSwitch(
                 checked = appManagedShareInstallEnabledInput,
-                onCheckedChange = onAppManagedShareInstallEnabledInputChange,
-                enabled = shareImportLinkageEnabledInput
+                onCheckedChange = onAppManagedShareInstallEnabledInputChange
             )
         }
         SheetControlRow(

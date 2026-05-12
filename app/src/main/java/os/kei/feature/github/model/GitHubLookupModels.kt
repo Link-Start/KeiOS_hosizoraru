@@ -89,7 +89,7 @@ data class GitHubLookupConfig(
     val preciseApkVersionEnabled: Boolean = false,
     val scanSystemAppsByDefault: Boolean = false,
     val profileDepth: GitHubProfileDepth = GitHubProfileDepth.Basic,
-    val shareImportLinkageEnabled: Boolean = false,
+    val shareImportLinkageEnabled: Boolean = true,
     val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
     val appManagedShareInstallEnabled: Boolean = false,
     val onlineShareTargetPackage: String = "",

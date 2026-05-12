@@ -40,12 +40,6 @@ internal object GitHubShareImportFlowCoordinator {
         }
         val notificationFirst =
             resolvedLookupConfig.shareImportFlowMode == GitHubShareImportFlowMode.NotificationFirst
-        if (!resolvedLookupConfig.shareImportLinkageEnabled) {
-            return ShareImportIncomingCoordinatorResult(
-                coordinatorResult = ShareImportCoordinatorResult.None,
-                notificationFirst = notificationFirst
-            )
-        }
         notifyShareImportResolving(appContext, sharedText)
         return try {
             val parsedIncoming = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)

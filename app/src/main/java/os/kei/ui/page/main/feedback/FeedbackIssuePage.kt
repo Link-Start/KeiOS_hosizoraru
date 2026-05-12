@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -25,9 +26,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
@@ -52,7 +56,6 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidSurface
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
@@ -121,7 +124,14 @@ internal fun FeedbackIssuePage(
                 )
             }
             item {
-                FeedbackDeviceInfoCard(deviceInfo = state.deviceInfo)
+                FeedbackDraftCard(
+                    title = state.title,
+                    body = state.body,
+                    loading = state.loading,
+                    submitting = state.submittingIssue,
+                    onTitleChange = onTitleChange,
+                    onBodyChange = onBodyChange
+                )
             }
             item {
                 FeedbackLogCard(
@@ -131,14 +141,7 @@ internal fun FeedbackIssuePage(
                 )
             }
             item {
-                FeedbackDraftCard(
-                    title = state.title,
-                    body = state.body,
-                    loading = state.loading,
-                    submitting = state.submittingIssue,
-                    onTitleChange = onTitleChange,
-                    onBodyChange = onBodyChange
-                )
+                FeedbackDeviceInfoCard(deviceInfo = state.deviceInfo)
             }
             item {
                 FeedbackSubmitCard(
@@ -181,7 +184,7 @@ private fun FeedbackStatusCard(
         eyebrow = stringResource(R.string.feedback_issue_header),
         sectionIcon = appLucideWarningIcon(),
         titleColor = statusColor,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+        containerColor = feedbackCardContainerColor(),
         showIndication = false,
         headerEndActions = {
             AppStandaloneLiquidTextButton(
@@ -210,7 +213,7 @@ private fun FeedbackDeviceInfoCard(deviceInfo: FeedbackDeviceInfo) {
     AppFeatureCard(
         title = stringResource(R.string.feedback_issue_device_title),
         subtitle = stringResource(R.string.feedback_issue_device_summary),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+        containerColor = feedbackCardContainerColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.compactSectionGap
     ) {
@@ -251,7 +254,7 @@ private fun FeedbackLogCard(
     AppFeatureCard(
         title = stringResource(R.string.feedback_issue_logs_title),
         subtitle = stringResource(R.string.feedback_issue_logs_summary),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+        containerColor = feedbackCardContainerColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.compactSectionGap
     ) {
@@ -319,23 +322,27 @@ private fun FeedbackDraftCard(
     AppFeatureCard(
         title = stringResource(R.string.feedback_issue_draft_title),
         subtitle = stringResource(R.string.feedback_issue_draft_summary),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+        containerColor = feedbackDraftCardContainerColor(),
+        subtitleColor = feedbackSecondaryTextColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
     ) {
+        FeedbackFieldLabel(text = stringResource(R.string.feedback_issue_title_placeholder))
         FeedbackLiquidTextField(
             value = title,
             onValueChange = onTitleChange,
             label = stringResource(R.string.feedback_issue_title_placeholder),
             enabled = !loading && !submitting,
-            minHeight = 52.dp
+            minHeight = 48.dp,
+            singleLine = true
         )
+        FeedbackFieldLabel(text = stringResource(R.string.feedback_issue_body_placeholder))
         FeedbackLiquidTextField(
             value = body,
             onValueChange = onBodyChange,
             label = stringResource(R.string.feedback_issue_body_placeholder),
             enabled = !loading && !submitting,
-            minHeight = 320.dp
+            minHeight = 360.dp
         )
     }
 }
@@ -349,7 +356,7 @@ private fun FeedbackSubmitCard(
         title = stringResource(R.string.feedback_issue_submit_title),
         subtitle = stringResource(R.string.feedback_issue_submit_summary),
         sectionIcon = appLucideExternalLinkIcon(),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+        containerColor = feedbackCardContainerColor(),
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap
     ) {
@@ -404,27 +411,39 @@ private fun FeedbackLiquidTextField(
     onValueChange: (String) -> Unit,
     label: String,
     enabled: Boolean,
-    minHeight: Dp
+    minHeight: Dp,
+    singleLine: Boolean = false
 ) {
+    val isBody = minHeight > 120.dp
     val textStyle = TextStyle(
         color = MiuixTheme.colorScheme.onBackground,
-        fontSize = AppTypographyTokens.Body.fontSize,
-        lineHeight = AppTypographyTokens.Body.lineHeight,
+        fontSize = if (isBody) 14.sp else AppTypographyTokens.Body.fontSize,
+        lineHeight = if (isBody) 20.sp else AppTypographyTokens.Body.lineHeight,
+        textAlign = TextAlign.Start,
         platformStyle = PlatformTextStyle(includeFontPadding = false)
     )
-    val placeholderStyle = textStyle.copy(color = MiuixTheme.colorScheme.onBackgroundVariant)
+    val placeholderStyle = textStyle.copy(color = feedbackSecondaryTextColor())
     FeedbackLiquidPanel(
-        minHeight = minHeight
+        minHeight = minHeight,
+        fixedHeight = isBody
     ) {
+        val fieldHeight = minHeight - 24.dp
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             enabled = enabled,
+            singleLine = singleLine,
             textStyle = textStyle,
             cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = minHeight - 24.dp),
+                .then(
+                    if (isBody) {
+                        Modifier.height(fieldHeight)
+                    } else {
+                        Modifier.heightIn(min = fieldHeight)
+                    }
+                ),
             decorationBox = { innerTextField ->
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -438,7 +457,12 @@ private fun FeedbackLiquidTextField(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    innerTextField()
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.TopStart
+                    ) {
+                        innerTextField()
+                    }
                 }
             }
         )
@@ -446,68 +470,78 @@ private fun FeedbackLiquidTextField(
 }
 
 @Composable
+private fun FeedbackFieldLabel(text: String) {
+    Text(
+        text = text,
+        color = feedbackSecondaryTextColor(),
+        fontSize = AppTypographyTokens.Caption.fontSize,
+        lineHeight = AppTypographyTokens.Caption.lineHeight,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(top = 2.dp)
+    )
+}
+
+@Composable
 private fun FeedbackLiquidPanel(
     minHeight: Dp,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    fixedHeight: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val panelBackdrop = rememberLayerBackdrop()
     val shape = RoundedRectangle(18.dp)
     val borderColor = if (isDark) {
-        Color(0xFF9CCBFF).copy(alpha = 0.24f)
+        Color(0xFF8ABEFF).copy(alpha = 0.24f)
     } else {
-        Color(0xFFC4DCF9).copy(alpha = 0.90f)
+        Color(0xFFB5D7FF).copy(alpha = 0.82f)
     }
-    val baseColor = if (isDark) {
-        Color(0xFF121A24).copy(alpha = 0.40f)
+    val panelColor = if (isDark) {
+        Color(0xFF121A24).copy(alpha = 0.78f)
     } else {
-        Color.White.copy(alpha = 0.66f)
-    }
-    val overlayColor = if (isDark) {
-        Color(0xFF82B6F5).copy(alpha = 0.07f)
-    } else {
-        Color(0xFFE4F1FF).copy(alpha = 0.22f)
+        Color.White.copy(alpha = 0.88f)
     }
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = minHeight)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(panelBackdrop)
-        )
-        LiquidSurface(
-            backdrop = panelBackdrop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = minHeight)
-                .border(width = 1.dp, color = borderColor, shape = shape),
-            shape = shape,
-            tint = Color.Unspecified,
-            surfaceColor = baseColor,
-            blurRadius = 8.dp,
-            lensRadius = 24.dp,
-            chromaticAberration = true,
-            depthEffect = true,
-            shadow = false,
-            isInteractive = false
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(overlayColor, shape)
+            .then(
+                if (fixedHeight) {
+                    Modifier.height(minHeight)
+                } else {
+                    Modifier.heightIn(min = minHeight)
+                }
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-                content = content
-            )
-        }
+            .background(panelColor, shape)
+            .border(width = 1.dp, color = borderColor, shape = shape)
+            .padding(contentPadding),
+        content = content
+    )
+}
+
+@Composable
+private fun feedbackCardContainerColor(): Color {
+    return if (isSystemInDarkTheme()) {
+        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
+    } else {
+        Color.White.copy(alpha = 0.72f)
+    }
+}
+
+@Composable
+private fun feedbackDraftCardContainerColor(): Color {
+    return if (isSystemInDarkTheme()) {
+        Color(0xFF101824).copy(alpha = 0.72f)
+    } else {
+        Color(0xFFF8FBFF).copy(alpha = 0.88f)
+    }
+}
+
+@Composable
+private fun feedbackSecondaryTextColor(): Color {
+    return if (isSystemInDarkTheme()) {
+        MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f)
+    } else {
+        Color(0xFF65718A).copy(alpha = 0.94f)
     }
 }
 

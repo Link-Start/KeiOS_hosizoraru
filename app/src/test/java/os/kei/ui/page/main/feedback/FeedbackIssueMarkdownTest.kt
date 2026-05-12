@@ -59,6 +59,35 @@ class FeedbackIssueMarkdownTest {
         assertFalse(params.getValue("logs").contains("ghp_abcdefghijklmnopqrstuvwxyz1234567890"))
     }
 
+    @Test
+    fun bodyMarkdownKeepsHeadingsAndFencesAlignedWithMultilineLogs() {
+        val deviceInfo = FeedbackDeviceInfo(
+            appVersionName = "1.4.5",
+            appVersionCode = 10405021,
+            packageName = "os.kei.debug",
+            buildType = "debug",
+            androidRelease = "17",
+            sdkInt = 37,
+            manufacturer = "Google",
+            model = "sdk_gphone16k_arm64",
+            abis = "arm64-v8a",
+            installSource = "Android Studio"
+        )
+
+        val body = FeedbackIssueMarkdown.buildBody(
+            deviceInfo = deviceInfo,
+            logPreview = "first log line\nsecond log line",
+            logPreviewTruncated = true
+        )
+
+        assertTrue(body.startsWith("## Problem description / 问题描述"))
+        assertTrue(body.contains("\n| Field | Value |\n| --- | --- |"))
+        assertTrue(body.contains("\n```text\nfirst log line\nsecond log line\n```\n"))
+        assertTrue(body.contains("\n> Log summary is truncated to the latest local records.\n"))
+        assertFalse(body.lines().any { line -> line.startsWith("    ##") })
+        assertFalse(body.lines().any { line -> line.startsWith("    | Field") })
+    }
+
     private fun queryParams(url: String): Map<String, String> {
         return url.substringAfter('?')
             .split('&')

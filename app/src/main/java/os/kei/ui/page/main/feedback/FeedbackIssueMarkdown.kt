@@ -18,59 +18,58 @@ internal object FeedbackIssueMarkdown {
     ): String {
         val sanitizedLog =
             redactSensitiveText(logPreview).ifBlank { "No local AppLogger records yet." }
-        val truncatedNote = if (logPreviewTruncated) {
-            "\n\n> Log summary is truncated to the latest local records."
-        } else {
-            ""
+        return buildString {
+            appendLine("## Problem description / 问题描述")
+            appendLine()
+            appendLine("Please describe the problem here.")
+            appendLine()
+            appendLine("## Steps to reproduce / 复现步骤")
+            appendLine()
+            appendLine("1. Open KeiOS")
+            appendLine("2. ")
+            appendLine("3. ")
+            appendLine()
+            appendLine("## Expected behavior / 期望行为")
+            appendLine()
+            appendLine("Please describe the expected behavior.")
+            appendLine()
+            appendLine("## Actual behavior / 实际行为")
+            appendLine()
+            appendLine("Please describe what happened.")
+            appendLine()
+            appendLine("## Device information / 设备信息")
+            appendLine()
+            appendLine("| Field | Value |")
+            appendLine("| --- | --- |")
+            appendLine("| KeiOS | ${deviceInfo.appVersionLine} |")
+            appendLine("| Android | ${deviceInfo.androidLine} |")
+            appendLine("| Device | ${deviceInfo.deviceLine} |")
+            appendLine("| ABI | ${deviceInfo.abis.ifBlank { "Unknown" }} |")
+            appendLine("| Install source | ${deviceInfo.installSource.ifBlank { "Unknown" }} |")
+            appendLine()
+            appendLine("## Exported log ZIP / 导出日志 ZIP")
+            appendLine()
+            appendLine("Please attach the exported ZIP from KeiOS when it helps reproduce the issue.")
+            appendLine()
+            appendLine("## Local log summary / 本机日志摘要")
+            appendLine()
+            appendLine("```text")
+            appendLine(sanitizedLog.trimEnd())
+            appendLine("```")
+            if (logPreviewTruncated) {
+                appendLine()
+                appendLine("> Log summary is truncated to the latest local records.")
+            }
+            appendLine()
+            appendLine("## Screenshots or recordings / 截图或录屏")
+            appendLine()
+            appendLine("Drag screenshots or recordings here if they help.")
+            appendLine()
+            appendLine("## Sensitive information check / 敏感信息检查")
+            appendLine()
+            appendLine("- [ ] I reviewed the issue body and attachments.")
+            append("- [ ] I removed private tokens, account data, and unrelated personal information.")
         }
-        return """
-            ## Problem description / 问题描述
-            
-            Please describe the problem here.
-            
-            ## Steps to reproduce / 复现步骤
-            
-            1. Open KeiOS
-            2. 
-            3. 
-            
-            ## Expected behavior / 期望行为
-            
-            Please describe the expected behavior.
-            
-            ## Actual behavior / 实际行为
-            
-            Please describe what happened.
-            
-            ## Device information / 设备信息
-            
-            | Field | Value |
-            | --- | --- |
-            | KeiOS | ${deviceInfo.appVersionLine} |
-            | Android | ${deviceInfo.androidLine} |
-            | Device | ${deviceInfo.deviceLine} |
-            | ABI | ${deviceInfo.abis.ifBlank { "Unknown" }} |
-            | Install source | ${deviceInfo.installSource.ifBlank { "Unknown" }} |
-            
-            ## Exported log ZIP / 导出日志 ZIP
-            
-            Please attach the exported ZIP from KeiOS when it helps reproduce the issue.
-            
-            ## Local log summary / 本机日志摘要
-            
-            ```text
-            $sanitizedLog
-            ```$truncatedNote
-            
-            ## Screenshots or recordings / 截图或录屏
-            
-            Drag screenshots or recordings here if they help.
-            
-            ## Sensitive information check / 敏感信息检查
-            
-            - [ ] I reviewed the issue body and attachments.
-            - [ ] I removed private tokens, account data, and unrelated personal information.
-        """.trimIndent()
     }
 
     fun buildBrowserIssueUrl(

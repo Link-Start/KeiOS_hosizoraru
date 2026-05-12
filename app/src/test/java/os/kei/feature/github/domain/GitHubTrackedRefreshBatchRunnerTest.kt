@@ -76,6 +76,42 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `run emits progress as each item finishes`() = runBlocking {
+        val items = (1..4).map { index -> tracked(index) }
+        val progressEvents = mutableListOf<GitHubTrackedRefreshBatchProgress>()
+
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = items,
+            maxConcurrency = 2,
+            dispatcher = Dispatchers.Default,
+            refreshTimestampMs = NOW_MS,
+            onProgress = { progressEvents += it }
+        ) { item ->
+            when (item.repo) {
+                "repo-1" -> check(
+                    status = GitHubTrackedReleaseStatus.UpdateAvailable,
+                    hasUpdate = true
+                )
+
+                "repo-2" -> check(
+                    status = GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable,
+                    hasUpdate = true,
+                    hasPreReleaseUpdate = true
+                )
+
+                "repo-3" -> check(status = GitHubTrackedReleaseStatus.Failed)
+                else -> check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+            }
+        }
+
+        assertEquals(listOf(1, 2, 3, 4), progressEvents.map { it.current })
+        assertTrue(progressEvents.all { it.total == items.size })
+        assertEquals(result.updatableCount, progressEvents.last().updatableCount)
+        assertEquals(result.preReleaseUpdateCount, progressEvents.last().preReleaseUpdateCount)
+        assertEquals(result.failedCount, progressEvents.last().failedCount)
+    }
+
+    @Test
     fun `run exposes performance evidence for 30 and 100 item fixtures`() = runBlocking {
         listOf(30, 100).forEach { count ->
             val result = GitHubTrackedRefreshBatchRunner.run(

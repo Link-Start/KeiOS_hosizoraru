@@ -201,10 +201,16 @@ internal class GitHubPageActions(
         refreshActions.syncLocalAppStateWithInstalledApps(forceRefreshApps = true)
     }
 
-    fun refreshAllTracked(showToast: Boolean = true) {
+    fun refreshAllTracked(
+        showToast: Boolean = true,
+        forceRefresh: Boolean = true
+    ) {
         env.scope.launch {
             refreshActions.reloadApps(forceRefresh = true)
-            refreshActions.refreshAllTracked(showToast = showToast) {
+            refreshActions.refreshAllTracked(
+                showToast = showToast,
+                forceRefresh = forceRefresh
+            ) {
                 val expandedItemIds = env.state.apkAssetExpanded
                     .filterValues { it }
                     .keys

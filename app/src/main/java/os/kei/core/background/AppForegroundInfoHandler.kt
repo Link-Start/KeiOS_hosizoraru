@@ -8,10 +8,16 @@ import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
+import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
+import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchResult
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
@@ -27,6 +33,10 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 object AppForegroundInfoHandler {
+    private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE = 2
+    private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
+    private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS = 850L
+
     private val githubTickMutex = Mutex()
     private val baApTickMutex = Mutex()
 
@@ -57,9 +67,7 @@ object AppForegroundInfoHandler {
                         "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}"
             )
 
-            withContext(Dispatchers.IO) {
-                GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)
-            }
+            persistGitHubRefreshResult(result)
             handleGitHubActionsUpdates(
                 context = context,
                 snapshot = snapshot,
@@ -87,19 +95,19 @@ object AppForegroundInfoHandler {
                 return AppShortcutGitHubRefreshResult.NoTrackedItems
             }
 
-            GitHubRefreshNotificationHelper.notifyProgress(
-                context = context,
-                current = 0,
-                total = tracked.size,
-                preReleaseUpdateCount = 0,
-                updatableCount = 0,
-                failedCount = 0
-            )
+            prepareGitHubShortcutRefreshCaches()
+            val progressNotifier = GitHubShortcutRefreshProgressNotifier(context = context)
+            progressNotifier.notifyInitial(total = tracked.size)
             val result = GitHubTrackedRefreshBatchRunner.run(
                 trackedItems = tracked,
-                refreshTimestampMs = nowMs
+                refreshTimestampMs = nowMs,
+                onProgress = progressNotifier::notifyProgress
             ) { item ->
-                GitHubReleaseCheckService.evaluateTrackedApp(context, item)
+                GitHubReleaseCheckService.evaluateTrackedApp(
+                    context = context,
+                    item = item,
+                    forceRefresh = true
+                )
             }
             AppLogger.i(
                 "AppForegroundInfoHandler",
@@ -107,9 +115,7 @@ object AppForegroundInfoHandler {
                         "p50=${result.performance.p50ItemMs}ms p95=${result.performance.p95ItemMs}ms " +
                         "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}"
             )
-            withContext(Dispatchers.IO) {
-                GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)
-            }
+            persistGitHubRefreshResult(result)
             handleGitHubActionsUpdates(
                 context = context,
                 snapshot = snapshot,
@@ -124,6 +130,75 @@ object AppForegroundInfoHandler {
             )
             AppBackgroundScheduler.scheduleGitHubRefresh(context)
             return AppShortcutGitHubRefreshResult.Completed
+        }
+    }
+
+    private suspend fun prepareGitHubShortcutRefreshCaches() {
+        withContext(Dispatchers.IO) {
+            GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
+            GitHubReleaseStrategyRegistry.clearAllCaches()
+            GitHubTrackStore.clearCheckCache()
+            GitHubReleaseAssetCacheStore.clearAll()
+        }
+    }
+
+    private suspend fun persistGitHubRefreshResult(result: GitHubTrackedRefreshBatchResult) {
+        withContext(Dispatchers.IO) {
+            GitHubTrackStore.saveCheckCache(result.cacheEntries, result.refreshTimestampMs)
+            GitHubTrackStoreSignals.notifyChanged(result.refreshTimestampMs)
+        }
+    }
+
+    private class GitHubShortcutRefreshProgressNotifier(
+        private val context: Context
+    ) {
+        private val mutex = Mutex()
+        private var lastNotifyAtMs = 0L
+
+        fun notifyInitial(total: Int) {
+            GitHubRefreshNotificationHelper.notifyProgress(
+                context = context,
+                current = 0,
+                total = total,
+                preReleaseUpdateCount = 0,
+                updatableCount = 0,
+                failedCount = 0
+            )
+        }
+
+        suspend fun notifyProgress(progress: GitHubTrackedRefreshBatchProgress) {
+            val shouldNotify = mutex.withLock {
+                if (progress.current >= progress.total) return@withLock false
+                val nowMs = System.currentTimeMillis()
+                val elapsedMs = (nowMs - lastNotifyAtMs).coerceAtLeast(0L)
+                val shouldEmit = progress.current == 1 ||
+                        elapsedMs >= GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS ||
+                        (
+                                progress.current % GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&
+                                        elapsedMs >= GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS
+                                )
+                if (shouldEmit) {
+                    lastNotifyAtMs = nowMs
+                }
+                shouldEmit
+            }
+            if (!shouldNotify) return
+            runCatching {
+                GitHubRefreshNotificationHelper.notifyProgress(
+                    context = context,
+                    current = progress.current,
+                    total = progress.total,
+                    preReleaseUpdateCount = progress.preReleaseUpdateCount,
+                    updatableCount = progress.updatableCount,
+                    failedCount = progress.failedCount
+                )
+            }.onFailure { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "github shortcut progress notification failed",
+                    error
+                )
+            }
         }
     }
 

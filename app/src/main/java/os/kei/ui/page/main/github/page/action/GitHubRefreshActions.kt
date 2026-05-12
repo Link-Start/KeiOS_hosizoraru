@@ -405,6 +405,7 @@ internal class GitHubRefreshActions(
 
     fun refreshAllTracked(
         showToast: Boolean = true,
+        forceRefresh: Boolean = false,
         onFinished: (() -> Unit)? = null
     ) {
         val snapshot = state.trackedItems.toList()
@@ -458,7 +459,10 @@ internal class GitHubRefreshActions(
                     launch {
                         val itemState = semaphore.withPermit {
                             val resolved = runCatching {
-                                resolveItemState(item)
+                                resolveItemState(
+                                    item = item,
+                                    forceRefresh = forceRefresh
+                                )
                             }.getOrElse { throwable ->
                                 VersionCheckUi(
                                     failed = true,
@@ -683,6 +687,7 @@ internal class GitHubRefreshActions(
             ?.toShareImportResult()
 
         val cachedStates = trackSnapshot.checkCache
+        val nextCheckStates = linkedMapOf<String, VersionCheckUi>()
         state.checkStates.clear()
         trackSnapshot.items.forEach { item ->
             val itemLookupConfig = trackSnapshot.lookupConfig.forTrackedItem(item)
@@ -701,8 +706,25 @@ internal class GitHubRefreshActions(
                     }
                 }
                 ?.let { cached ->
-                    state.checkStates[item.id] = cached.toUi()
+                    nextCheckStates[item.id] = cached.toUi()
                 }
+        }
+        state.checkStates.putAll(nextCheckStates)
+        val externallyChangedCheckTrackIds = nextCheckStates
+            .filter { (trackId, nextState) ->
+                previousCheckStatesById[trackId]?.let { it != nextState } == true
+            }
+            .keys
+        if (!assetSignatureChanged && changedAssetTrackIds.isEmpty() && externallyChangedCheckTrackIds.isNotEmpty()) {
+            val staleAssetTargets = externallyChangedCheckTrackIds.mapNotNull { trackId ->
+                previousItemsById[trackId]?.let { item ->
+                    item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+                }
+            }
+            assetActions.clearApkAssetStatesAndCachesNow(
+                targets = staleAssetTargets,
+                clearItemIds = externallyChangedCheckTrackIds
+            )
         }
         state.lastRefreshMs = if (state.checkStates.isNotEmpty()) {
             trackSnapshot.lastRefreshMs

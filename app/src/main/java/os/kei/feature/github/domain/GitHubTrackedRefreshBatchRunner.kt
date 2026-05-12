@@ -6,6 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -35,6 +37,14 @@ internal data class GitHubTrackedRefreshBatchPerformance(
     val maxItemMs: Long = 0L
 )
 
+internal data class GitHubTrackedRefreshBatchProgress(
+    val current: Int,
+    val total: Int,
+    val updatableCount: Int,
+    val preReleaseUpdateCount: Int,
+    val failedCount: Int
+)
+
 internal object GitHubTrackedRefreshBatchRunner {
     suspend fun run(
         context: Context,
@@ -42,6 +52,7 @@ internal object GitHubTrackedRefreshBatchRunner {
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY,
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         evaluator: suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck =
             GitHubReleaseCheckService::evaluateTrackedApp
     ): GitHubTrackedRefreshBatchResult {
@@ -50,6 +61,7 @@ internal object GitHubTrackedRefreshBatchRunner {
             refreshTimestampMs = refreshTimestampMs,
             maxConcurrency = maxConcurrency,
             dispatcher = dispatcher,
+            onProgress = onProgress,
             evaluator = { item -> evaluator(context, item) }
         )
     }
@@ -59,6 +71,7 @@ internal object GitHubTrackedRefreshBatchRunner {
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY,
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck
     ): GitHubTrackedRefreshBatchResult {
         if (trackedItems.isEmpty()) {
@@ -76,6 +89,11 @@ internal object GitHubTrackedRefreshBatchRunner {
         val batchStartNs = System.nanoTime()
         val concurrency = trackedItems.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
         val nextIndex = AtomicInteger(0)
+        val progressMutex = Mutex()
+        var completedCount = 0
+        var updatableCount = 0
+        var preReleaseUpdateCount = 0
+        var failedCount = 0
         val results = arrayOfNulls<GitHubTrackedRefreshItemResult>(trackedItems.size)
         coroutineScope {
             List(concurrency) {
@@ -92,6 +110,21 @@ internal object GitHubTrackedRefreshBatchRunner {
                             check = check,
                             elapsedMs = elapsedMsSince(itemStartNs)
                         )
+                        progressMutex.withLock {
+                            if (check.hasUpdate == true) updatableCount += 1
+                            if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
+                            if (check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
+                            completedCount += 1
+                            onProgress(
+                                GitHubTrackedRefreshBatchProgress(
+                                    current = completedCount,
+                                    total = trackedItems.size,
+                                    updatableCount = updatableCount,
+                                    preReleaseUpdateCount = preReleaseUpdateCount,
+                                    failedCount = failedCount
+                                )
+                            )
+                        }
                         yield()
                     }
                 }
@@ -101,16 +134,10 @@ internal object GitHubTrackedRefreshBatchRunner {
             checkNotNull(result) { "Tracked refresh result was not produced" }
         }
 
-        var updatableCount = 0
-        var preReleaseUpdateCount = 0
-        var failedCount = 0
         val cacheEntries = LinkedHashMap<String, GitHubCheckCacheEntry>(trackedItems.size)
         checks.forEach { result ->
             val item = result.item
             val check = result.check
-            if (check.hasUpdate == true) updatableCount += 1
-            if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
-            if (check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
             cacheEntries[item.id] = GitHubReleaseCheckService.run { check.toCacheEntry() }
         }
 

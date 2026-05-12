@@ -4,6 +4,7 @@ import android.os.BadParcelableException
 import android.os.DeadObjectException
 import android.os.TransactionTooLargeException
 import org.junit.Test
+import os.kei.core.system.isPackageManagerBulkQueryFailure
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -12,9 +13,9 @@ import kotlin.test.assertTrue
 class GitHubVersionUtilsTest {
     @Test
     fun `installed package query detects binder parcel failures`() {
-        assertTrue(BadParcelableException("short package list").isInstalledPackageListBinderFailure())
-        assertTrue(DeadObjectException().isInstalledPackageListBinderFailure())
-        assertTrue(TransactionTooLargeException().isInstalledPackageListBinderFailure())
+        assertTrue(BadParcelableException("short package list").isPackageManagerBulkQueryFailure())
+        assertTrue(DeadObjectException().isPackageManagerBulkQueryFailure())
+        assertTrue(TransactionTooLargeException().isPackageManagerBulkQueryFailure())
     }
 
     @Test
@@ -22,14 +23,14 @@ class GitHubVersionUtilsTest {
         val wrapped =
             IllegalStateException("package manager failed", BadParcelableException("partial list"))
 
-        assertTrue(wrapped.isInstalledPackageListBinderFailure())
+        assertTrue(wrapped.isPackageManagerBulkQueryFailure())
     }
 
     @Test
     fun `installed package query keeps ordinary failures distinct`() {
         val ordinary = IllegalArgumentException("bad package flag")
 
-        assertEquals(false, ordinary.isInstalledPackageListBinderFailure())
+        assertEquals(false, ordinary.isPackageManagerBulkQueryFailure())
     }
 
     @Test

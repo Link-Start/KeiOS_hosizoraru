@@ -3,6 +3,8 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
@@ -64,6 +66,10 @@ internal class GitHubPageActions(
         Intent.ACTION_PACKAGE_REPLACED,
         Intent.ACTION_PACKAGE_CHANGED
     )
+
+    private companion object {
+        const val RETRY_FAILED_TRACKED_PARALLELISM = 3
+    }
 
     fun openStrategySheet() = configActions.openStrategySheet()
 
@@ -231,42 +237,60 @@ internal class GitHubPageActions(
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false
     ) {
+        env.scope.launch {
+            refreshTrackedItemNow(
+                item = item,
+                showToastOnError = showToastOnError,
+                profilePurposeOverride = profilePurposeOverride,
+                forceRefresh = forceRefresh,
+                reloadAppsBeforeRefresh = true
+            )
+        }
+    }
+
+    private suspend fun refreshTrackedItemNow(
+        item: GitHubTrackedApp,
+        showToastOnError: Boolean,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+        forceRefresh: Boolean = false,
+        reloadAppsBeforeRefresh: Boolean
+    ) {
         if (env.state.trackedItems.none { it.id == item.id }) return
         if (env.state.itemRefreshLoading[item.id] == true) return
         if (env.state.checkStates[item.id]?.loading == true) return
-        env.scope.launch {
-            env.state.itemRefreshLoading[item.id] = true
-            try {
+        env.state.itemRefreshLoading[item.id] = true
+        try {
+            if (reloadAppsBeforeRefresh) {
                 refreshActions.reloadApps(forceRefresh = true)
-                val wasAssetExpanded = env.state.apkAssetExpanded[item.id] == true
-                val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
-                val previousState = env.state.checkStates[item.id] ?: VersionCheckUi()
-                assetActions.clearApkAssetCache(item, previousState)
-                refreshActions.refreshItemNow(
-                    item = item,
-                    showToastOnError = showToastOnError,
-                    keepCurrentVisualWhileRefreshing = true,
-                    profilePurposeOverride = profilePurposeOverride,
-                    forceRefresh = forceRefresh
-                ) { updatedState ->
-                    if (wasAssetExpanded && canLoadApkAssets(item, updatedState)) {
-                        assetActions.clearApkAssetCache(item, updatedState)
-                        assetActions.loadApkAssets(
-                            item = item,
-                            itemState = updatedState,
-                            toggleOnlyWhenCached = false,
-                            includeAllAssets = includeAllAssets
-                        )
-                    } else if (wasAssetExpanded) {
-                        assetActions.clearApkAssetUiState(item.id)
-                    } else {
-                        assetActions.clearApkAssetRuntimeState(item.id)
-                    }
-                    env.state.requestTrackCardFocus(item.id)
-                }
-            } finally {
-                env.state.itemRefreshLoading.remove(item.id)
             }
+            val wasAssetExpanded = env.state.apkAssetExpanded[item.id] == true
+            val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
+            val previousState = env.state.checkStates[item.id] ?: VersionCheckUi()
+            assetActions.clearApkAssetCache(item, previousState)
+            refreshActions.refreshItemNow(
+                item = item,
+                showToastOnError = showToastOnError,
+                keepCurrentVisualWhileRefreshing = true,
+                profilePurposeOverride = profilePurposeOverride,
+                forceRefresh = forceRefresh
+            ) { updatedState ->
+                if (wasAssetExpanded && canLoadApkAssets(item, updatedState)) {
+                    assetActions.clearApkAssetCache(item, updatedState)
+                    assetActions.loadApkAssets(
+                        item = item,
+                        itemState = updatedState,
+                        toggleOnlyWhenCached = false,
+                        includeAllAssets = includeAllAssets
+                    )
+                } else if (wasAssetExpanded) {
+                    assetActions.clearApkAssetUiState(item.id)
+                } else {
+                    assetActions.clearApkAssetRuntimeState(item.id)
+                }
+                env.state.requestTrackCardFocus(item.id)
+            }
+        } finally {
+            env.state.itemRefreshLoading.remove(item.id)
         }
     }
 
@@ -282,9 +306,19 @@ internal class GitHubPageActions(
         }
         env.scope.launch {
             refreshActions.reloadApps(forceRefresh = true)
-            failedItems.forEach { item ->
-                if (env.state.trackedItems.any { it.id == item.id }) {
-                    refreshTrackedItem(item = item, showToastOnError = showToast)
+            coroutineScope {
+                failedItems.chunked(RETRY_FAILED_TRACKED_PARALLELISM).forEach { chunk ->
+                    chunk.map { item ->
+                        launch {
+                            if (env.state.trackedItems.any { it.id == item.id }) {
+                                refreshTrackedItemNow(
+                                    item = item,
+                                    showToastOnError = showToast,
+                                    reloadAppsBeforeRefresh = false
+                                )
+                            }
+                        }
+                    }.joinAll()
                 }
             }
         }

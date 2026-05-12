@@ -11,9 +11,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.yield
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -29,15 +29,24 @@ internal object GitHubExecution {
         if (concurrency <= 1) {
             return items.map { item -> block(item) }
         }
-        val semaphore = Semaphore(concurrency)
+        val nextIndex = AtomicInteger(0)
+        val results = Array<Any?>(items.size) { MissingResult }
         return coroutineScope {
-            items.map { item ->
+            List(concurrency) {
                 async(dispatcher) {
-                    semaphore.withPermit {
-                        block(item)
+                    while (true) {
+                        val index = nextIndex.getAndIncrement()
+                        if (index >= items.size) break
+                        results[index] = block(items[index])
+                        yield()
                     }
                 }
             }.awaitAll()
+            @Suppress("UNCHECKED_CAST")
+            results.map { value ->
+                check(value !== MissingResult) { "Bounded map result was not produced" }
+                value as R
+            }
         }
     }
 
@@ -63,18 +72,21 @@ internal object GitHubExecution {
         }
 
         return supervisorScope {
-            val semaphore = Semaphore(concurrency)
-            val channel = Channel<Result<R>>(capacity = Channel.UNLIMITED)
-            val jobs = items.map { item ->
+            val nextIndex = AtomicInteger(0)
+            val channel = Channel<Result<R>>(capacity = concurrency)
+            val jobs = List(concurrency) {
                 async(dispatcher) {
-                    semaphore.withPermit {
+                    while (true) {
+                        val index = nextIndex.getAndIncrement()
+                        if (index >= items.size) break
                         val result = try {
-                            block(item)
+                            block(items[index])
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             Result.failure(error)
                         }
                         channel.send(result)
+                        yield()
                     }
                 }
             }
@@ -97,6 +109,8 @@ internal object GitHubExecution {
             }
         }
     }
+
+    private object MissingResult
 
     suspend fun <T> retryOnce(
         delayMillis: Long = DEFAULT_RETRY_DELAY_MS,

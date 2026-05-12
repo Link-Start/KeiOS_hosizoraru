@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
+import os.kei.core.system.getInstalledPackageInfosSafely
 import java.util.Locale
 
 internal enum class ShortcutSuggestionField {
@@ -77,8 +78,9 @@ private object ShortcutSuggestionSessionCache {
 internal fun loadInstalledAppOptions(context: Context): List<ShortcutInstalledAppOption> {
     ShortcutSuggestionSessionCache.getInstalledApps()?.let { return it }
     val pm = context.packageManager
-    val packageInfos =
-        pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong()))
+    val packageInfos = pm.getInstalledPackageInfosSafely(
+        flags = PackageManager.PackageInfoFlags.of(PackageManager.GET_ACTIVITIES.toLong())
+    )
     val overlayFlagMask = runCatching {
         ApplicationInfo::class.java.getField("FLAG_IS_RESOURCE_OVERLAY").getInt(null)
     }.getOrDefault(0)

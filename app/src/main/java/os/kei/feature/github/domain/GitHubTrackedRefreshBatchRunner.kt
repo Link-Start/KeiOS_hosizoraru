@@ -6,12 +6,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.yield
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY = 4
 
@@ -74,22 +74,31 @@ internal object GitHubTrackedRefreshBatchRunner {
         }
 
         val batchStartNs = System.nanoTime()
-        val semaphore = Semaphore(maxConcurrency.coerceAtLeast(1))
-        val checks = coroutineScope {
-            trackedItems.map { item ->
+        val concurrency = trackedItems.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
+        val nextIndex = AtomicInteger(0)
+        val results = arrayOfNulls<GitHubTrackedRefreshItemResult>(trackedItems.size)
+        coroutineScope {
+            List(concurrency) {
                 async(dispatcher) {
-                    semaphore.withPermit {
+                    while (true) {
+                        val index = nextIndex.getAndIncrement()
+                        if (index >= trackedItems.size) break
+                        val item = trackedItems[index]
                         val itemStartNs = System.nanoTime()
                         val check = runCatching { evaluator(item) }
                             .getOrElse { error -> failedCheck(error) }
-                        GitHubTrackedRefreshItemResult(
+                        results[index] = GitHubTrackedRefreshItemResult(
                             item = item,
                             check = check,
                             elapsedMs = elapsedMsSince(itemStartNs)
                         )
+                        yield()
                     }
                 }
             }.awaitAll()
+        }
+        val checks = results.map { result ->
+            checkNotNull(result) { "Tracked refresh result was not produced" }
         }
 
         var updatableCount = 0

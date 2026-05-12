@@ -389,7 +389,7 @@ internal class GitHubRefreshActions(
                 snapshot.map { item ->
                     launch {
                         val itemState = semaphore.withPermit {
-                            runCatching {
+                            val resolved = runCatching {
                                 resolveItemState(item)
                             }.getOrElse { throwable ->
                                 VersionCheckUi(
@@ -397,9 +397,10 @@ internal class GitHubRefreshActions(
                                     message = throwable.message ?: throwable.javaClass.simpleName
                                 )
                             }
-                        }
-                        if (item.checkActionsUpdates) {
-                            refreshActionsRunSnapshotForItem(item)
+                            if (item.checkActionsUpdates) {
+                                refreshActionsRunSnapshotForItem(item)
+                            }
+                            resolved
                         }
                         var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
                         var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
@@ -440,8 +441,9 @@ internal class GitHubRefreshActions(
                             val shouldFlushUi = pendingUiResults.size >= GITHUB_REFRESH_UI_BATCH_SIZE ||
                                 completedCount == totalCount
                             if (shouldFlushUi) {
+                                val activeTrackIds = state.trackedItems.mapTo(HashSet()) { it.id }
                                 pendingUiResults.forEach { (pendingItem, pendingState) ->
-                                    if (state.trackedItems.any { tracked -> tracked.id == pendingItem.id }) {
+                                    if (pendingItem.id in activeTrackIds) {
                                         state.checkStates[pendingItem.id] = pendingState
                                     }
                                 }

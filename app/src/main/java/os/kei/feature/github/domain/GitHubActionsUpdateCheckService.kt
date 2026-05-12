@@ -3,6 +3,8 @@ package os.kei.feature.github.domain
 import android.os.Build
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubActionsDownloadHistoryStore
 import os.kei.feature.github.data.remote.GitHubActionsRepository
@@ -28,57 +30,68 @@ class GitHubActionsUpdateCheckService(
         nowMs: Long = System.currentTimeMillis()
     ): Result<GitHubActionsRecommendedRunSnapshot> = withContext(ioDispatcher) {
         runCatching {
-            val itemLookupConfig = lookupConfig.forTrackedItem(item)
-            val repository = GitHubActionsRepository.fromLookupConfig(itemLookupConfig)
-            val history =
-                GitHubActionsDownloadHistoryStore.load(owner = item.owner, repo = item.repo)
-            val info = repository.fetchRepositoryInfo(
-                owner = item.owner,
-                repo = item.repo
-            ).result.getOrThrow()
-            val workflows = repository.fetchWorkflows(
-                owner = item.owner,
-                repo = item.repo
-            ).result.getOrThrow()
-            val workflow = selectWorkflow(
-                workflows = workflows,
-                history = history,
-                lookupConfig = itemLookupConfig,
-                previousWorkflowId = previousWorkflowId
-            ) ?: throw IllegalStateException("No GitHub Actions workflow matched")
-            val workflowId = workflowLookupId(workflow, itemLookupConfig)
-            val preferredBranches = preferredBranches(
-                defaultBranch = info.defaultBranch,
-                lookupConfig = itemLookupConfig
-            )
-            val branch =
-                if (itemLookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink) {
-                    preferredBranches.firstOrNull().orEmpty()
-                } else {
-                    ""
+            coroutineScope {
+                val itemLookupConfig = lookupConfig.forTrackedItem(item)
+                val repository = GitHubActionsRepository.fromLookupConfig(itemLookupConfig)
+                val historyDeferred = async {
+                    GitHubActionsDownloadHistoryStore.load(owner = item.owner, repo = item.repo)
                 }
-            val snapshot = repository.fetchWorkflowArtifactSnapshot(
-                owner = item.owner,
-                repo = item.repo,
-                workflowId = workflowId,
-                runLimit = BACKGROUND_RUN_LIMIT,
-                artifactsPerRun = BACKGROUND_ARTIFACT_LIMIT,
-                artifactRunLimit = BACKGROUND_ARTIFACT_RUN_LIMIT,
-                branch = branch
-            ).result.getOrThrow()
-            val run = selectRun(
-                workflow = workflow,
-                snapshotRuns = snapshot.runs,
-                history = history,
-                lookupConfig = itemLookupConfig,
-                defaultBranch = info.defaultBranch,
-                preferredBranches = preferredBranches
-            ) ?: throw IllegalStateException("No GitHub Actions run matched")
-            run.toSnapshot(
-                item = item,
-                workflow = workflow,
-                checkedAtMs = nowMs
-            )
+                val infoDeferred = async {
+                    repository.fetchRepositoryInfo(
+                        owner = item.owner,
+                        repo = item.repo
+                    ).result.getOrThrow()
+                }
+                val workflowsDeferred = async {
+                    repository.fetchWorkflows(
+                        owner = item.owner,
+                        repo = item.repo
+                    ).result.getOrThrow()
+                }
+
+                val history = historyDeferred.await()
+                val workflows = workflowsDeferred.await()
+                val info = infoDeferred.await()
+                val workflow = selectWorkflow(
+                    workflows = workflows,
+                    history = history,
+                    lookupConfig = itemLookupConfig,
+                    previousWorkflowId = previousWorkflowId
+                ) ?: throw IllegalStateException("No GitHub Actions workflow matched")
+                val workflowId = workflowLookupId(workflow, itemLookupConfig)
+                val preferredBranches = preferredBranches(
+                    defaultBranch = info.defaultBranch,
+                    lookupConfig = itemLookupConfig
+                )
+                val branch =
+                    if (itemLookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink) {
+                        preferredBranches.firstOrNull().orEmpty()
+                    } else {
+                        ""
+                    }
+                val snapshot = repository.fetchWorkflowArtifactSnapshot(
+                    owner = item.owner,
+                    repo = item.repo,
+                    workflowId = workflowId,
+                    runLimit = BACKGROUND_RUN_LIMIT,
+                    artifactsPerRun = BACKGROUND_ARTIFACT_LIMIT,
+                    artifactRunLimit = BACKGROUND_ARTIFACT_RUN_LIMIT,
+                    branch = branch
+                ).result.getOrThrow()
+                val run = selectRun(
+                    workflow = workflow,
+                    snapshotRuns = snapshot.runs,
+                    history = history,
+                    lookupConfig = itemLookupConfig,
+                    defaultBranch = info.defaultBranch,
+                    preferredBranches = preferredBranches
+                ) ?: throw IllegalStateException("No GitHub Actions run matched")
+                run.toSnapshot(
+                    item = item,
+                    workflow = workflow,
+                    checkedAtMs = nowMs
+                )
+            }
         }
     }
 

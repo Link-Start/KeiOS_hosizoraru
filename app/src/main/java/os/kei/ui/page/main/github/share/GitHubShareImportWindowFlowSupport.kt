@@ -12,6 +12,7 @@ import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.system.AppPackageChangedEvent
+import os.kei.core.system.getInstalledPackageInfosSafely
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -342,12 +343,7 @@ internal fun findRecentInstalledCandidateForPendingTrack(
     }
 
     val pm = context.packageManager
-    val installed = runCatching {
-        pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(0))
-    }.recoverCatching {
-        @Suppress("DEPRECATION")
-        pm.getInstalledPackages(0)
-    }.getOrDefault(emptyList())
+    val installed = pm.getInstalledPackageInfosSafely()
 
     val candidates = installed.asSequence()
         .filter { info ->
@@ -405,13 +401,10 @@ internal fun selectRecentInstalledCandidateForPendingTrack(
         }
     }
 
-    val eligible = candidates.asSequence()
-        .filter { it.packageName.isNotBlank() }
-        // Polling reconciliation must only pick packages updated after this share was armed.
-        .filter { it.lastUpdateTimeMs >= pendingTrack.armedAtMillis }
-        .sortedByDescending { it.lastUpdateTimeMs }
-        .take(3)
-        .toList()
+    val eligible = topRecentEligibleInstalledCandidates(
+        pendingTrack = pendingTrack,
+        candidates = candidates
+    )
 
     if (eligible.isEmpty()) return null
     if (eligible.size >= 2) {
@@ -423,6 +416,39 @@ internal fun selectRecentInstalledCandidateForPendingTrack(
         }
     }
     return eligible.first()
+}
+
+private fun topRecentEligibleInstalledCandidates(
+    pendingTrack: GitHubPendingShareImportTrackRecord,
+    candidates: List<ShareImportInstalledPackageSnapshot>
+): List<ShareImportInstalledPackageSnapshot> {
+    var first: ShareImportInstalledPackageSnapshot? = null
+    var second: ShareImportInstalledPackageSnapshot? = null
+    var third: ShareImportInstalledPackageSnapshot? = null
+
+    candidates.forEach { candidate ->
+        if (candidate.packageName.isBlank()) return@forEach
+        // Polling reconciliation must only pick packages updated after this share was armed.
+        if (candidate.lastUpdateTimeMs < pendingTrack.armedAtMillis) return@forEach
+        when {
+            first == null || candidate.lastUpdateTimeMs > first.lastUpdateTimeMs -> {
+                third = second
+                second = first
+                first = candidate
+            }
+
+            second == null || candidate.lastUpdateTimeMs > second.lastUpdateTimeMs -> {
+                third = second
+                second = candidate
+            }
+
+            third == null || candidate.lastUpdateTimeMs > third.lastUpdateTimeMs -> {
+                third = candidate
+            }
+        }
+    }
+
+    return listOfNotNull(first, second, third)
 }
 
 internal fun isShareImportExactPackageMatch(

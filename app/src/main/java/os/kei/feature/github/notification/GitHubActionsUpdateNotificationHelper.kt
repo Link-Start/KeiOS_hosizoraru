@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.toColorInt
 import os.kei.MainActivity
@@ -18,7 +19,10 @@ import os.kei.core.notification.focus.MiFocusIslandSpec
 import os.kei.core.notification.focus.MiFocusNotificationAction
 import os.kei.core.notification.focus.MiFocusNotificationSpec
 import os.kei.core.notification.focus.MiFocusNotificationTemplate
+import os.kei.core.notification.focus.MiFocusPictureRef
+import os.kei.core.notification.focus.MiFocusPictureSource
 import os.kei.core.prefs.UiPrefs
+import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.framework.notification.NotificationHelper
@@ -107,6 +111,7 @@ object GitHubActionsUpdateNotificationHelper {
         val title = title(context)
         val content = content(context, snapshot)
         val openPendingIntent = buildOpenPendingIntent(context)
+        val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
         return NotificationCompat.Builder(context, GitHubRefreshNotificationHelper.CHANNEL_ID)
             .setSmallIcon(ICON_RES_ID)
             .setContentTitle(title)
@@ -127,6 +132,9 @@ object GitHubActionsUpdateNotificationHelper {
                 context.getString(R.string.common_mark_read),
                 buildMarkReadPendingIntent(context)
             )
+            .apply {
+                appIconBitmap?.let(::setLargeIcon)
+            }
             .build()
     }
 
@@ -138,6 +146,7 @@ object GitHubActionsUpdateNotificationHelper {
         val title = title(context)
         val content = content(context, snapshot)
         val openPendingIntent = buildOpenPendingIntent(context)
+        val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
         val builder =
             NotificationCompat.Builder(context, GitHubRefreshNotificationHelper.CHANNEL_ID)
                 .setSmallIcon(ICON_RES_ID)
@@ -160,17 +169,24 @@ object GitHubActionsUpdateNotificationHelper {
                     context.getString(R.string.common_mark_read),
                     buildMarkReadPendingIntent(context)
                 )
+                .apply {
+                    appIconBitmap?.let(::setLargeIcon)
+                }
 
         runCatching {
+            val trackedAppPicture = appIconBitmap?.let(MiFocusPictureSource::BitmapValue)
             MiFocusNotificationTemplate.build(
                 context = context,
                 spec = MiFocusNotificationSpec(
                     title = title,
                     content = content,
                     displayIconResId = ICON_RES_ID,
+                    displayPictureSource = trackedAppPicture
+                        ?: MiFocusPictureSource.Resource(ICON_RES_ID),
+                    expandedPictureSource = trackedAppPicture
+                        ?: MiFocusPictureSource.Resource(ICON_RES_ID),
                     island = MiFocusIslandSpec.summaryText(
-                        title = snapshot.runLabel,
-                        content = context.getString(R.string.github_actions_update_island_content)
+                        title = snapshot.runLabel
                     ),
                     expanded = MiFocusExpandedSpec(
                         components = listOf(
@@ -178,19 +194,25 @@ object GitHubActionsUpdateNotificationHelper {
                                 text = MiFocusExpandedText(
                                     title = title,
                                     content = content.ifBlank { " " }
-                                )
+                                ),
+                                picFunction = MiFocusPictureRef.Expanded
                             ),
                             MiFocusExpandedComponent.TextButtons(
                                 actions = listOf(
                                     MiFocusNotificationAction(
                                         key = "github_actions_update_open",
                                         title = context.getString(R.string.common_open),
-                                        pendingIntent = openPendingIntent
+                                        pendingIntent = openPendingIntent,
+                                        isHighlighted = true,
+                                        backgroundColor = GITHUB_ACTIONS_COLOR,
+                                        backgroundColorDark = GITHUB_ACTIONS_COLOR,
+                                        collapsePanel = true
                                     ),
                                     MiFocusNotificationAction(
                                         key = "github_actions_update_read",
                                         title = context.getString(R.string.common_mark_read),
-                                        pendingIntent = buildMarkReadPendingIntent(context)
+                                        pendingIntent = buildMarkReadPendingIntent(context),
+                                        collapsePanel = true
                                     )
                                 )
                             )
@@ -208,6 +230,16 @@ object GitHubActionsUpdateNotificationHelper {
             )
         }.getOrNull()?.let(builder::addExtras)
         return builder.build()
+    }
+
+    private fun resolveTrackedAppIconBitmap(
+        context: Context,
+        snapshot: GitHubActionsRecommendedRunSnapshot
+    ): Bitmap? {
+        val packageName = snapshot.trackId.substringAfter('|', missingDelimiterValue = "")
+            .trim()
+        if (packageName.isBlank()) return null
+        return AppIconCache.getOrLoad(context, packageName)
     }
 
     private fun title(context: Context): String {

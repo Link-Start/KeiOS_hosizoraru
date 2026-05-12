@@ -1,0 +1,145 @@
+package os.kei.feature.github.notification
+
+import android.app.Application
+import android.app.Notification
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Icon
+import android.os.Bundle
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Shadows
+import org.robolectric.annotation.Config
+import os.kei.R
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+@RunWith(AndroidJUnit4::class)
+@Config(
+    application = GitHubActionsUpdateNotificationHelperTestApp::class,
+    sdk = [35]
+)
+class GitHubActionsUpdateNotificationHelperTest {
+    @Test
+    @Suppress("DEPRECATION")
+    fun `mi island summary keeps short run label and expanded action colors are semantic`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val trackedPackageName = "me.him188.ani"
+        Shadows.shadowOf(context.packageManager).apply {
+            addPackage(
+                PackageInfo().apply {
+                    packageName = trackedPackageName
+                    applicationInfo = ApplicationInfo().apply {
+                        packageName = trackedPackageName
+                    }
+                }
+            )
+            setApplicationIcon(trackedPackageName, ColorDrawable(Color.MAGENTA))
+        }
+        val snapshot = createSnapshot(trackedPackageName)
+        val notification = invokeMiIslandNotification(context, snapshot)
+        val openAction = notification.focusAction("github_actions_update_open")
+        val markReadAction = notification.focusAction("github_actions_update_read")
+        val displayIcon = notification.focusPicture("mi_focus_display")
+        val expandedIcon = notification.focusPicture("mi_focus_expanded")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertNotNull(notification.getLargeIcon())
+        assertNotNull(Shadows.shadowOf(displayIcon).bitmap)
+        assertNotNull(Shadows.shadowOf(expandedIcon).bitmap)
+        assertEquals(context.getString(R.string.common_open), openAction.title.toString())
+        assertEquals(context.getString(R.string.common_mark_read), markReadAction.title.toString())
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"#44\""))
+        assertFalse(focusParam.contains("\"content\":\"Actions\""))
+        assertTrue(focusParam.contains("\"picFunction\":\"mi_focus_expanded\""))
+        assertTrue(focusParam.contains("\"actionTitle\":\"${context.getString(R.string.common_open)}\""))
+        assertTrue(focusParam.contains("\"actionBgColor\":\"#3B82F6\""))
+        assertTrue(focusParam.contains("\"actionTitleColor\":\"#FFFFFF\""))
+        assertFalse(
+            focusParam.contains(
+                "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\""
+            )
+        )
+    }
+
+    private fun createSnapshot(packageName: String): GitHubActionsRecommendedRunSnapshot {
+        return GitHubActionsRecommendedRunSnapshot(
+            trackId = "open-ani/animeko|$packageName",
+            owner = "open-ani",
+            repo = "animeko",
+            appLabel = "Animeko",
+            workflowId = 42L,
+            workflowName = "CI / Benchmark APK",
+            workflowPath = ".github/workflows/android.yml",
+            runId = 4444L,
+            runNumber = 44L,
+            runAttempt = 1,
+            runDisplayName = "Build #44",
+            headBranch = "main",
+            headSha = "abcdef0",
+            event = "workflow_dispatch",
+            status = "completed",
+            conclusion = "success",
+            htmlUrl = "https://github.com/open-ani/animeko/actions/runs/4444",
+            artifactCount = 2,
+            androidArtifactCount = 1,
+            createdAtMillis = 1778000000000L,
+            updatedAtMillis = 1778000100000L,
+            checkedAtMillis = 1778000200000L
+        )
+    }
+
+    private fun invokeMiIslandNotification(
+        context: Application,
+        snapshot: GitHubActionsRecommendedRunSnapshot
+    ): Notification {
+        val method = GitHubActionsUpdateNotificationHelper::class.java.getDeclaredMethod(
+            "buildMiIslandNotification",
+            android.content.Context::class.java,
+            GitHubActionsRecommendedRunSnapshot::class.java,
+            Boolean::class.javaPrimitiveType
+        ).apply {
+            isAccessible = true
+        }
+        return method.invoke(
+            GitHubActionsUpdateNotificationHelper,
+            context,
+            snapshot,
+            true
+        ) as Notification
+    }
+
+    private fun Notification.focusAction(key: String): Notification.Action {
+        val actions = extras.getBundle("miui.focus.actions")
+        assertNotNull(actions, "Focus actions bundle should be present")
+        return actions.getActionCompat(key)
+    }
+
+    private fun Notification.focusPicture(key: String): Icon {
+        val pictures = extras.getBundle("miui.focus.pics")
+        assertNotNull(pictures, "Focus pictures bundle should be present")
+        return pictures.getIconCompat(key)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun Bundle.getActionCompat(key: String): Notification.Action {
+        return getParcelable<Notification.Action>(key)
+            ?: error("Missing focus action: $key")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun Bundle.getIconCompat(key: String): Icon {
+        return getParcelable<Icon>(key)
+            ?: error("Missing focus picture: $key")
+    }
+}
+
+class GitHubActionsUpdateNotificationHelperTestApp : Application()

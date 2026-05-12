@@ -449,29 +449,6 @@ private fun GitHubCheckTransferSection(
     )
     SheetSectionCard {
         SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_downloader),
-            summary = stringResource(R.string.github_check_sheet_summary_downloader)
-        ) {
-            AppDropdownSelector(
-                selectedText = selectedDownloaderLabel,
-                options = allDownloaderOptions.map { it.label },
-                selectedIndex = allDownloaderOptions.indexOfFirst {
-                    preferredDownloaderPackageInput == it.packageName
-                }.coerceAtLeast(0),
-                expanded = showDownloaderPopup,
-                anchorBounds = downloaderPopupAnchorBounds,
-                onExpandedChange = onShowDownloaderPopupChange,
-                onSelectedIndexChange = { selectedIndex ->
-                    onPreferredDownloaderPackageInputChange(
-                        allDownloaderOptions[selectedIndex].packageName
-                    )
-                },
-                onAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
-                backdrop = backdrop,
-                variant = GlassVariant.SheetAction
-            )
-        }
-        SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_share_import_linkage),
             summary = stringResource(R.string.github_check_sheet_summary_share_import_linkage)
         ) {
@@ -551,6 +528,29 @@ private fun GitHubCheckTransferSection(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
                 enabled = !appManagedShareInstallEnabledInput
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_downloader),
+            summary = stringResource(R.string.github_check_sheet_summary_downloader)
+        ) {
+            AppDropdownSelector(
+                selectedText = selectedDownloaderLabel,
+                options = allDownloaderOptions.map { it.label },
+                selectedIndex = allDownloaderOptions.indexOfFirst {
+                    preferredDownloaderPackageInput == it.packageName
+                }.coerceAtLeast(0),
+                expanded = showDownloaderPopup,
+                anchorBounds = downloaderPopupAnchorBounds,
+                onExpandedChange = onShowDownloaderPopupChange,
+                onSelectedIndexChange = { selectedIndex ->
+                    onPreferredDownloaderPackageInputChange(
+                        allDownloaderOptions[selectedIndex].packageName
+                    )
+                },
+                onAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction
             )
         }
     }

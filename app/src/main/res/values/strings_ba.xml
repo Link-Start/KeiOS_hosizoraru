@@ -22,7 +22,7 @@
     <string name="ba_office_name_jp">夏莱办公室</string>
     <string name="ba_office_overview_title">%1$s总览</string>
     <string name="ba_state_not_synced">未同步</string>
-    <string name="ba_syncing">同步中...</string>
+    <string name="ba_syncing">同步中…</string>
     <string name="ba_status_running">进行中</string>
     <string name="ba_status_ended">已结束</string>
     <string name="ba_status_upcoming">即将开始</string>
@@ -124,7 +124,7 @@
     <string name="ba_settings_summary_media_save_fixed_uri_empty">当前未设置目录，点击“选择目录”或粘贴目录 URI。</string>
     <string name="ba_settings_summary_media_save_fixed_uri_ready">当前目录已设置，后续保存默认写入该目录。</string>
     <string name="ba_settings_action_pick_media_save_location">选择目录</string>
-    <string name="ba_settings_hint_media_save_fixed_uri">content://.../tree/...</string>
+    <string name="ba_settings_hint_media_save_fixed_uri">content://…/tree/…</string>
     <string name="ba_settings_label_id_independent_by_server">按服务器独立 ID 卡</string>
     <string name="ba_settings_summary_id_independent_by_server">开启后，昵称和好友码会按当前服务器分别保存与切换。</string>
     <string name="ba_settings_label_show_ended_activity">显示已结束活动</string>
@@ -508,7 +508,7 @@
     <string name="guide_gallery_pv_format">PV %1$s</string>
     <string name="guide_gallery_video_not_found">未找到可播放的视频地址</string>
     <string name="guide_gallery_video_unavailable">视频暂不可用</string>
-    <string name="guide_gallery_video_loading">视频加载中...</string>
+    <string name="guide_gallery_video_loading">视频加载中…</string>
     <string name="guide_gallery_video_failed_with_reason">视频播放失败：%1$s</string>
     <string name="guide_gallery_image_load_error">图片加载异常</string>
     <string name="guide_gallery_memory_unlock_level">回忆大厅解锁等级</string>

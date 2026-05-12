@@ -154,7 +154,7 @@
     <string name="settings_shizuku_status_permission_not_granted">Shizuku permission not granted</string>
     <string name="settings_shizuku_status_permission_denied">Shizuku permission denied</string>
     <string name="settings_shizuku_status_permission_denied_permanently">Permission denied permanently</string>
-    <string name="settings_shizuku_status_requesting_permission">Requesting permission...</string>
+    <string name="settings_shizuku_status_requesting_permission">Requesting permission…</string>
     <string name="settings_shizuku_status_process_api_unavailable">Process API unavailable</string>
     <string name="settings_shizuku_status_unsupported_service_uid">Unsupported UID: %1$s</string>
     <string name="settings_shizuku_status_init_failed">Init failed: %1$s</string>
@@ -251,4 +251,8 @@
     <string name="settings_log_toast_export_failed">Log export failed: %1$s</string>
     <string name="settings_log_toast_cleared">Logs cleared</string>
     <string name="settings_log_toast_clear_failed">Log cleanup failed: %1$s</string>
+    <string name="settings_search_auto_focus_title">Search bar auto-focus</string>
+    <string name="settings_search_auto_focus_summary_enabled">Focus the input and open the keyboard after expanding the search bar.</string>
+    <string name="settings_search_auto_focus_summary_disabled">Expanding the search bar shows the input first; tap the input to open the keyboard.</string>
+    <string name="settings_search_auto_focus_scope">Affects main search bars such as About, Settings, OS, GitHub, and Catalog.</string>
 </resources>

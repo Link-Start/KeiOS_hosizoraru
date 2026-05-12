@@ -158,7 +158,7 @@
     <string name="settings_shizuku_status_permission_not_granted">Shizuku 未授权</string>
     <string name="settings_shizuku_status_permission_denied">Shizuku 授权已拒绝</string>
     <string name="settings_shizuku_status_permission_denied_permanently">授权永久拒绝</string>
-    <string name="settings_shizuku_status_requesting_permission">请求授权中...</string>
+    <string name="settings_shizuku_status_requesting_permission">请求授权中…</string>
     <string name="settings_shizuku_status_process_api_unavailable">进程 API 不可用</string>
     <string name="settings_shizuku_status_unsupported_service_uid">UID 不支持：%1$s</string>
     <string name="settings_shizuku_status_init_failed">初始化失败：%1$s</string>

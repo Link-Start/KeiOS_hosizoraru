@@ -87,10 +87,10 @@
     <string name="github_actions_label_artifacts_with_count">Artifacts %1$d</string>
     <string name="github_actions_value_run_number">#%1$d</string>
     <string name="github_actions_value_run_attempt">第 %1$d 次</string>
-    <string name="github_actions_loading_workflows">正在读取 workflows 与最近 runs...</string>
-    <string name="github_actions_loading_branches">正在判断活跃分支...</string>
-    <string name="github_actions_loading_runs">正在读取 run 与 artifact...</string>
-    <string name="github_actions_loading_artifacts">正在读取该 run 的 artifact...</string>
+    <string name="github_actions_loading_workflows">正在读取 workflows 与最近 runs…</string>
+    <string name="github_actions_loading_branches">正在判断活跃分支…</string>
+    <string name="github_actions_loading_runs">正在读取 run 与 artifact…</string>
+    <string name="github_actions_loading_artifacts">正在读取该 run 的 artifact…</string>
     <string name="github_actions_empty_branches">读取 workflow 后显示分支</string>
     <string name="github_actions_empty_workflows">该仓库当前没有可展示的 active workflow</string>
     <string name="github_actions_empty_runs">当前 workflow 没有可展示的 run</string>
@@ -176,7 +176,7 @@
     <string name="github_actions_error_detail_nightly_artifact_expired">nightly.link 返回 artifact 已过期。请选择更新的 run，或切换 GitHub API Token。</string>
     <string name="github_actions_error_detail_nightly_rate_limited">nightly.link 或 GitHub 公开页面当前限流。请稍后重试，或切换 GitHub API Token。</string>
     <string name="github_actions_error_detail_nightly_read_failed">nightly.link 或 GitHub 公开页面读取失败：%1$s</string>
-    <string name="github_msg_checking">检查中...</string>
+    <string name="github_msg_checking">检查中…</string>
     <string name="github_msg_assets_no_downloadable_except_source">%1$s 当前除了 Source code 外没有其它可下载资源</string>
     <string name="github_msg_assets_no_downloadable">%1$s 当前没有可直接下载的资源</string>
     <string name="github_error_load_apk_assets_failed">加载 APK 资产失败</string>
@@ -324,7 +324,7 @@
     <string name="github_strategy_btn_show_token">显示 Token</string>
     <string name="github_strategy_token_input_label">GitHub API token（选填）</string>
     <string name="github_strategy_section_verify_now">立即验证</string>
-    <string name="github_strategy_btn_check_running">检测中...</string>
+    <string name="github_strategy_btn_check_running">检测中…</string>
     <string name="github_strategy_btn_check_now">检测当前凭证</string>
     <string name="github_strategy_desc_guest_api">留空时自动走游客 API，适合少量追踪；若项目变多或遇到限流，再补本地 token 即可。token 仅保存在当前设备 MMKV。</string>
     <string name="github_strategy_desc_pat_scope">GitHub API Token 会被 Release 与 Actions 共用。Release 元数据和 assets 下载需要 `Contents: Read`；Actions workflows、runs、artifacts 和 artifact 下载需要 `Actions: Read`；private 仓库还需 token 本身有该仓库访问权。</string>
@@ -344,7 +344,7 @@
     <string name="github_strategy_section_local_benchmark">本地对比</string>
     <string name="github_strategy_benchmark_desc_no_target">会用当前已追踪仓库做对比，最多抽 6 个样本；当前还没有可用样本。</string>
     <string name="github_strategy_benchmark_desc_with_target">会对比 Release 快照、Release Assets、发行日志、APK Manifest、缓存复测、APK 包名扫描和包名反扫仓库，展示 Atom 与 API 的耗时、命中率和能力差异。</string>
-    <string name="github_strategy_benchmark_btn_running">对比中...</string>
+    <string name="github_strategy_benchmark_btn_running">对比中…</string>
     <string name="github_strategy_benchmark_btn_run">运行双策略对比</string>
     <string name="github_strategy_benchmark_error">对比测试失败：%1$s</string>
     <string name="github_strategy_guide_pros">优点：%1$s</string>
@@ -366,7 +366,7 @@
     <string name="github_strategy_benchmark_title_with_auth">%1$s · %2$s</string>
     <string name="github_strategy_benchmark_compare_title">策略倾向</string>
     <string name="github_strategy_benchmark_compare_badge">%1$d/%2$d 项有明显领先</string>
-    <string name="github_strategy_benchmark_compare_summary">成功数优先；成功数一致时，平均耗时快 15% 以上记为明显领先，其余记为接近。</string>
+    <string name="github_strategy_benchmark_compare_summary">成功数优先；成功数一致时，平均耗时快 15%% 以上记为明显领先，其余记为接近。</string>
     <string name="github_strategy_benchmark_compare_level_clear">明显领先</string>
     <string name="github_strategy_benchmark_compare_level_close">接近</string>
     <string name="github_strategy_benchmark_compare_level_insufficient">样本不足</string>
@@ -413,7 +413,7 @@
     <string name="github_check_sheet_value_disabled">关闭</string>
     <string name="github_check_sheet_value_registered">已注册</string>
     <string name="github_check_sheet_label_refresh_interval">更新间隔</string>
-    <string name="github_check_sheet_summary_refresh_interval">超过所选间隔后，后台和页面刷新会把缓存视为过期；间隔越短请求越频繁，追踪较多时建议 3-6 小时。</string>
+    <string name="github_check_sheet_summary_refresh_interval">超过所选间隔后，后台和页面刷新会把缓存视为过期；间隔越短请求越频繁，追踪较多时建议 3–6 小时。</string>
     <string name="github_check_sheet_label_prerelease_check">检查所有追踪项的预发行最新版</string>
     <string name="github_check_sheet_summary_prerelease_check">额外检查每个项目的最新预发，但不代表自动推荐安装</string>
     <string name="github_check_sheet_label_aggressive_filter">更激进的过滤方式</string>
@@ -503,9 +503,9 @@
     <string name="github_star_import_requirement_label">准备条件</string>
     <string name="github_star_import_requirement_token">需要在抓取方案中填写 GitHub API Token。</string>
     <string name="github_star_import_requirement_username">输入用户名、个人主页链接或 stars 链接后读取公开 stars。</string>
-    <string name="github_star_import_requirement_list_url">粘贴 GitHub 个人 stars 页、/stars/... 或 /stars/.../lists/... 链接。</string>
+    <string name="github_star_import_requirement_list_url">粘贴 GitHub 个人 stars 页、/stars/… 或 /stars/…/lists/… 链接。</string>
     <string name="github_star_import_sample_label">填写示例</string>
-    <string name="github_star_import_sample_token">示例：ghp_xxx...；在抓取方案配置。</string>
+    <string name="github_star_import_sample_token">示例：ghp_xxx…；在抓取方案配置。</string>
     <string name="github_star_import_sample_username">示例：hosizoraru 或 https://github.com/hosizoraru?tab=stars</string>
     <string name="github_star_import_sample_list_url">示例：https://github.com/stars/octocat/lists/android-apps</string>
     <string name="github_star_import_input_hint_label">填写说明</string>
@@ -665,7 +665,7 @@
     <string name="github_track_sheet_btn_delete">删除跟踪</string>
     <string name="github_delete_dialog_title">删除跟踪</string>
     <string name="github_delete_dialog_summary">确定删除 %1$s (%2$s/%3$s) 吗？</string>
-    <string name="github_delete_dialog_deleting">删除中...</string>
+    <string name="github_delete_dialog_deleting">删除中…</string>
     <string name="github_import_dialog_title">导入预览</string>
     <string name="github_import_dialog_summary_ready">会按同一条目智能合并后写入当前设备。</string>
     <string name="github_import_dialog_summary_invalid">这个文件里还没有可导入的有效条目。</string>
@@ -680,7 +680,7 @@
     <string name="github_import_dialog_action_confirm">确认导入</string>
     <string name="github_share_import_dialog_title">分享导入</string>
     <string name="github_share_import_activity_title">导入 GitHub APK</string>
-    <string name="github_share_import_dialog_summary_parsing">正在解析 GitHub 分享链接...</string>
+    <string name="github_share_import_dialog_summary_parsing">正在解析 GitHub 分享链接…</string>
     <string name="github_share_import_phase_idle">待处理</string>
     <string name="github_share_import_phase_resolving">解析链接</string>
     <string name="github_share_import_phase_asset_ready">选择 APK</string>
@@ -721,8 +721,8 @@
     <string name="github_share_import_attach_dialog_duplicate_hint">本地已存在同仓库同包名追踪，当前操作会自动跳过新增。</string>
     <string name="github_share_import_attach_dialog_action_confirm">新增跟踪</string>
     <string name="github_share_import_attach_dialog_action_confirm_and_open_github">新增并前往 KeiOS</string>
-    <string name="github_share_import_attach_dialog_processing_add">正在新增跟踪...</string>
-    <string name="github_share_import_attach_dialog_processing_open">正在新增并前往 KeiOS...</string>
+    <string name="github_share_import_attach_dialog_processing_add">正在新增跟踪…</string>
+    <string name="github_share_import_attach_dialog_processing_open">正在新增并前往 KeiOS…</string>
     <string name="github_share_import_pending_title">分享导入联动进行中</string>
     <string name="github_share_import_pending_armed_minutes">%1$d 分钟前</string>
     <string name="github_share_import_pending_remaining_minutes">剩余 %1$d 分钟</string>
@@ -768,12 +768,12 @@
     <string name="github_share_import_notify_content_resolving">正在解析 %1$s</string>
     <string name="github_share_import_notify_content_asset_ready">%1$s · %3$d APK · %2$s</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
-    <string name="github_share_import_notify_content_install_downloading">%2$s · %3$s</string>
-    <string name="github_share_import_notify_content_installing">%2$s · 准备中</string>
-    <string name="github_share_import_notify_content_install_ready">%2$s · 待确认</string>
-    <string name="github_share_import_notify_content_install_committing">%2$s · 提交中</string>
-    <string name="github_share_import_notify_content_waiting_install">%2$s · %3$d 分钟</string>
-    <string name="github_share_import_notify_content_waiting_install_exact">%2$s · %3$d 分钟</string>
+    <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s · %3$s</string>
+    <string name="github_share_import_notify_content_installing">%1$s · %2$s · 准备中</string>
+    <string name="github_share_import_notify_content_install_ready">%1$s · %2$s · 待确认</string>
+    <string name="github_share_import_notify_content_install_committing">%1$s · %2$s · 提交中</string>
+    <string name="github_share_import_notify_content_waiting_install">%1$s · %2$s · %3$d 分钟</string>
+    <string name="github_share_import_notify_content_waiting_install_exact">%1$s · %2$s · %3$d 分钟</string>
     <string name="github_share_import_notify_content_install_detected">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_adding_track">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_added">%1$s 已加入 %2$s 跟踪</string>
@@ -1105,4 +1105,26 @@
     <string name="github_strategy_actions_guide_api_con_1">需要本地保存 GitHub token</string>
     <string name="github_strategy_actions_guide_api_con_2">token 失效、权限不足或额度耗尽时会访问受限</string>
     <string name="github_strategy_actions_guide_api_requirement">Fine-grained PAT 需要 Actions: Read；private 仓库还要授权对应仓库</string>
+    <string name="github_check_sheet_metric_refresh_interval_compact">间隔</string>
+    <string name="github_check_sheet_metric_track_count_compact">追踪</string>
+    <string name="github_check_sheet_metric_downloader_compact">下载</string>
+    <string name="github_check_sheet_metric_share_import_compact">入口</string>
+    <string name="github_check_sheet_value_refresh_interval_compact">%1$d小时</string>
+    <string name="github_check_sheet_value_track_count_compact">%1$d项</string>
+    <string name="github_check_sheet_value_downloader_default_compact">默认</string>
+    <string name="github_check_sheet_value_downloader_builtin_compact">内置</string>
+    <string name="github_track_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
+    <string name="github_track_sheet_summary_precise_apk_version">控制这个项目是否读取远端 APK Manifest 中的真实 versionName 与 versionCode，可跟随全局或单独覆盖。</string>
+    <string name="github_track_sheet_precise_apk_version_follow_global">跟随全局</string>
+    <string name="github_track_sheet_precise_apk_version_enabled">仅此项目开启</string>
+    <string name="github_track_sheet_precise_apk_version_disabled">仅此项目关闭</string>
+    <string name="github_import_dialog_label_project_options">项目设置</string>
+    <string name="github_import_dialog_label_pre_release_items">预发行优先</string>
+    <string name="github_import_dialog_label_actions_items">Actions 检查</string>
+    <string name="github_import_dialog_label_precise_items">精准版本覆盖</string>
+    <string name="github_import_dialog_label_download_items">常显最新下载</string>
+    <string name="github_release_notes_detail_release">Release</string>
+    <string name="github_release_notes_marker_stable">稳定版</string>
+    <string name="github_release_notes_marker_prerelease">预发布</string>
+    <string name="github_release_notes_marker_latest">Latest</string>
 </resources>

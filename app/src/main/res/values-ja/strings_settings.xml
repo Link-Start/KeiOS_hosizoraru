@@ -154,7 +154,7 @@
     <string name="settings_shizuku_status_permission_not_granted">Shizuku は未認可です</string>
     <string name="settings_shizuku_status_permission_denied">Shizuku 認可が拒否されました</string>
     <string name="settings_shizuku_status_permission_denied_permanently">認可を恒久拒否</string>
-    <string name="settings_shizuku_status_requesting_permission">認可リクエスト中...</string>
+    <string name="settings_shizuku_status_requesting_permission">認可リクエスト中…</string>
     <string name="settings_shizuku_status_process_api_unavailable">プロセス API 不可</string>
     <string name="settings_shizuku_status_unsupported_service_uid">非対応 UID: %1$s</string>
     <string name="settings_shizuku_status_init_failed">初期化失敗: %1$s</string>
@@ -251,4 +251,8 @@
     <string name="settings_log_toast_export_failed">ログのエクスポートに失敗しました: %1$s</string>
     <string name="settings_log_toast_cleared">ログをクリアしました</string>
     <string name="settings_log_toast_clear_failed">ログ削除に失敗しました: %1$s</string>
+    <string name="settings_search_auto_focus_title">検索バー自動フォーカス</string>
+    <string name="settings_search_auto_focus_summary_enabled">検索バーを展開したら入力欄に自動フォーカスし、キーボードを開きます。</string>
+    <string name="settings_search_auto_focus_summary_disabled">検索バー展開時は入力欄だけを表示し、入力欄をタップしてからキーボードを開きます。</string>
+    <string name="settings_search_auto_focus_scope">About / 設定 / OS / GitHub / 図鑑などのメイン検索バーに適用します。</string>
 </resources>

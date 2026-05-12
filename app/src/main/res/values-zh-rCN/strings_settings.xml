@@ -150,7 +150,7 @@
     <string name="settings_shizuku_status_permission_not_granted">Shizuku 未授权</string>
     <string name="settings_shizuku_status_permission_denied">Shizuku 授权已拒绝</string>
     <string name="settings_shizuku_status_permission_denied_permanently">授权永久拒绝</string>
-    <string name="settings_shizuku_status_requesting_permission">请求授权中...</string>
+    <string name="settings_shizuku_status_requesting_permission">请求授权中…</string>
     <string name="settings_shizuku_status_process_api_unavailable">进程 API 不可用</string>
     <string name="settings_shizuku_status_unsupported_service_uid">UID 不支持：%1$s</string>
     <string name="settings_shizuku_status_init_failed">初始化失败：%1$s</string>
@@ -247,4 +247,12 @@
     <string name="settings_log_toast_export_failed">日志导出失败: %1$s</string>
     <string name="settings_log_toast_cleared">日志已清理</string>
     <string name="settings_log_toast_clear_failed">日志清理失败: %1$s</string>
+    <string name="settings_search_auto_focus_title">搜索栏自动聚焦</string>
+    <string name="settings_search_auto_focus_summary_enabled">展开搜索栏后自动聚焦输入框并呼出输入法。</string>
+    <string name="settings_search_auto_focus_summary_disabled">展开搜索栏时只显示输入框，点按输入框后再呼出输入法。</string>
+    <string name="settings_search_auto_focus_scope">影响 About / 设置 / OS / GitHub / 图鉴等主界面搜索栏。</string>
+    <string name="settings_home_dynamic_full_effect_title">主页动态背景完整版</string>
+    <string name="settings_home_dynamic_full_effect_summary_enabled">主页上下滑动、左右切页与点击交互时保持完整动态背景与玻璃强度。</string>
+    <string name="settings_home_dynamic_full_effect_summary_disabled">主页滑动时使用常规动态背景策略，优先控制瞬时渲染负载。</string>
+    <string name="settings_home_dynamic_full_effect_scope">影响 Home 页动态背景、首页卡片玻璃与 Home 顶部 ActionBar 的滑动时特效策略。</string>
 </resources>

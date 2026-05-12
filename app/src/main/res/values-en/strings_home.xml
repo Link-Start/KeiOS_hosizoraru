@@ -73,4 +73,11 @@
     <string name="home_value_on">On</string>
     <string name="home_value_off">Off</string>
     <string name="home_value_threshold_plus">%1$d+</string>
+    <string name="home_sheet_debug_title">Debug</string>
+    <string name="home_sheet_show_cache_freshness">Show cache freshness</string>
+    <string name="home_sheet_show_cache_freshness_desc">Used to verify cache state. When enabled, GitHub and BA cards show the freshness field.</string>
+    <string name="home_stat_cache_state">Freshness</string>
+    <string name="home_cache_state_fresh">Fresh</string>
+    <string name="home_cache_state_stale">Stale</string>
+    <string name="home_cache_state_empty">Empty</string>
 </resources>

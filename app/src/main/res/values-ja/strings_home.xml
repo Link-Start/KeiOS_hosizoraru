@@ -73,4 +73,11 @@
     <string name="home_value_on">オン</string>
     <string name="home_value_off">オフ</string>
     <string name="home_value_threshold_plus">%1$d+</string>
+    <string name="home_sheet_debug_title">デバッグ</string>
+    <string name="home_sheet_show_cache_freshness">キャッシュ鮮度を表示</string>
+    <string name="home_sheet_show_cache_freshness_desc">キャッシュ状態の検証用です。有効時、GitHub と BA カードに鮮度フィールドを表示します。</string>
+    <string name="home_stat_cache_state">鮮度</string>
+    <string name="home_cache_state_fresh">新鮮</string>
+    <string name="home_cache_state_stale">期限切れ</string>
+    <string name="home_cache_state_empty">空</string>
 </resources>

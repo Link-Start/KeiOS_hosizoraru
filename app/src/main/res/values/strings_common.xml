@@ -25,7 +25,7 @@
     <string name="common_guest">游客</string>
     <string name="common_filled">已填写</string>
     <string name="common_checking">检测中</string>
-    <string name="common_loading">加载中...</string>
+    <string name="common_loading">加载中…</string>
     <string name="common_available">可用</string>
     <string name="common_unavailable">不可用</string>
     <string name="common_selected">已选择</string>

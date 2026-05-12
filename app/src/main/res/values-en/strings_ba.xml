@@ -22,7 +22,7 @@
     <string name="ba_office_name_jp">Schale Office (Japan)</string>
     <string name="ba_office_overview_title">%1$s Overview</string>
     <string name="ba_state_not_synced">Not synced</string>
-    <string name="ba_syncing">Syncing...</string>
+    <string name="ba_syncing">Syncing…</string>
     <string name="ba_status_running">Active</string>
     <string name="ba_status_ended">Ended</string>
     <string name="ba_status_upcoming">Upcoming</string>
@@ -124,7 +124,7 @@
     <string name="ba_settings_summary_media_save_fixed_uri_empty">No folder selected. Choose a folder or paste a tree URI.</string>
     <string name="ba_settings_summary_media_save_fixed_uri_ready">Folder selected. Future saves will use it by default.</string>
     <string name="ba_settings_action_pick_media_save_location">Choose folder</string>
-    <string name="ba_settings_hint_media_save_fixed_uri">content://.../tree/...</string>
+    <string name="ba_settings_hint_media_save_fixed_uri">content://…/tree/…</string>
     <string name="ba_settings_label_id_independent_by_server">Server-specific ID card</string>
     <string name="ba_settings_summary_id_independent_by_server">When enabled, nickname and friend code are saved and switched per server.</string>
     <string name="ba_settings_label_show_ended_activity">Show ended events</string>
@@ -258,7 +258,7 @@
     <string name="ba_catalog_empty_title">No results</string>
     <string name="ba_catalog_empty_subtitle_default">No entries in this category.</string>
     <string name="ba_catalog_empty_subtitle_search">No matching entries.</string>
-    <string name="ba_catalog_loading_more">Loading more entries...</string>
+    <string name="ba_catalog_loading_more">Loading more entries…</string>
     <string name="ba_catalog_student_bgm_title">Student Memorial Lobby BGM</string>
     <string name="ba_catalog_student_bgm_overview_subtitle">Favorited students stay on top. Tap a student to fetch and preview.</string>
     <string name="ba_catalog_student_bgm_overview_search_subtitle">%1$d / %2$d students matched</string>
@@ -504,7 +504,7 @@
     <string name="guide_gallery_pv_format">PV %1$s</string>
     <string name="guide_gallery_video_not_found">No playable video URL found</string>
     <string name="guide_gallery_video_unavailable">Video unavailable</string>
-    <string name="guide_gallery_video_loading">Loading video...</string>
+    <string name="guide_gallery_video_loading">Loading video…</string>
     <string name="guide_gallery_video_failed_with_reason">Video playback failed: %1$s</string>
     <string name="guide_gallery_image_load_error">Image failed to load</string>
     <string name="guide_gallery_memory_unlock_level">Memorial Lobby Unlock</string>
@@ -574,4 +574,8 @@
     <string name="guide_simulate_empty_ability_release">No Ability Release data parsed.</string>
     <string name="guide_simulate_empty_bond">No Bond Rank Rewards data parsed.</string>
     <string name="guide_simulate_empty_unique_weapon">No Unique Weapon data parsed.</string>
+    <string name="ba_catalog_playback_settings_title">Playback settings</string>
+    <string name="ba_catalog_bgm_native_media_notification">Native media notification</string>
+    <string name="ba_catalog_bgm_native_media_notification_summary">When enabled, BGM playback joins the system media session so notification controls can play, pause, skip previous, and skip next.</string>
+    <string name="ba_catalog_bgm_native_media_notification_permission_summary">Requires notification permission. The system permission prompt appears before enabling it.</string>
 </resources>

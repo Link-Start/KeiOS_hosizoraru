@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="about_page_title">このアプリについて</string>
     <string name="about_project_url">https://github.com/hosizoraru/KeiOS</string>
     <string name="about_value_yes">はい</string>
@@ -234,7 +234,7 @@
     <string name="about_value_github_strategy">Atom Feed / Releases API (optional token)</string>
     <string name="about_value_github_worktree_clean">clean</string>
     <string name="about_value_github_worktree_dirty">dirty</string>
-    <string name="about_value_github_data_source">git rev-list --count HEAD / git rev-list --count %1$s..HEAD / git rev-parse --short HEAD / git rev-parse --abbrev-ref HEAD</string>
+    <string name="about_value_github_data_source" tools:ignore="TypographyDashes">git rev-list --count HEAD / git rev-list --count %1$s..HEAD / git rev-parse --short HEAD / git rev-parse --abbrev-ref HEAD</string>
     <string name="about_value_github_version_source">Anchor: %1$s · Release: %2$s · DevBase: %3$s · Relative: %4$d · Total: %5$d · Hash: %6$s%7$s · VersionCode: %8$d</string>
     <string name="about_value_github_tracking">Stable / pre-release 比較、更新提案、アセット入口</string>
     <string name="about_value_github_notify">更新進行通知 + Live Update / Super Island スタイル</string>
@@ -272,7 +272,7 @@
     <string name="about_license_row_lucide">Lucide Icons</string>
     <string name="about_license_value_lucide">v%1$s · MIT</string>
     <string name="about_license_row_blue_archive_logos">Blue Archive Logos</string>
-    <string name="about_license_value_blue_archive_logos">MIT · Copyright (c) 2024 Avrona</string>
+    <string name="about_license_value_blue_archive_logos">MIT · Copyright © 2024 Avrona</string>
     <string name="about_license_row_backdrop">Backdrop</string>
     <string name="about_license_value_backdrop">v%1$s · Apache-2.0</string>
     <string name="about_license_row_capsule">Capsule</string>
@@ -383,4 +383,12 @@
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">Shizuku 権限ブリッジ機能へ接続します</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku 状態確認と機能呼び出し</string>
+    <string name="about_category_system">システム</string>
+    <string name="about_category_lab">ラボ</string>
+    <string name="about_card_component_lab_title">コンポーネントラボ</string>
+    <string name="about_card_component_lab_subtitle">Liquid サンプル、コントロール状態、ページリズムの検証入口</string>
+    <string name="about_component_lab_row_entry">入口</string>
+    <string name="about_component_lab_row_scope">検証範囲</string>
+    <string name="about_component_lab_row_activity">ホスト方式</string>
+    <string name="about_component_lab_row_components">コンポーネント</string>
 </resources>

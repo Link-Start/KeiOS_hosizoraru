@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="about_page_title">About</string>
     <string name="about_project_url">https://github.com/hosizoraru/KeiOS</string>
     <string name="about_value_yes">Yes</string>
@@ -237,7 +237,7 @@
     <string name="about_value_github_strategy">Atom Feed / Releases API (optional token)</string>
     <string name="about_value_github_worktree_clean">clean</string>
     <string name="about_value_github_worktree_dirty">dirty</string>
-    <string name="about_value_github_data_source">git rev-list --count HEAD / git rev-list --count %1$s..HEAD / git rev-parse --short HEAD / git rev-parse --abbrev-ref HEAD</string>
+    <string name="about_value_github_data_source" tools:ignore="TypographyDashes">git rev-list --count HEAD / git rev-list --count %1$s..HEAD / git rev-parse --short HEAD / git rev-parse --abbrev-ref HEAD</string>
     <string name="about_value_github_version_source">Anchor: %1$s · Release: %2$s · DevBase: %3$s · Relative: %4$d · Total: %5$d · Hash: %6$s%7$s · VersionCode: %8$d</string>
     <string name="about_value_github_tracking">Stable / pre-release comparison, update suggestions, and asset entries</string>
     <string name="about_value_github_notify">Refresh progress notification + Live Update / Super Island style</string>
@@ -276,7 +276,7 @@
     <string name="about_license_row_lucide">Lucide Icons</string>
     <string name="about_license_value_lucide">v%1$s · MIT</string>
     <string name="about_license_row_blue_archive_logos">Blue Archive Logos</string>
-    <string name="about_license_value_blue_archive_logos">MIT · Copyright (c) 2024 Avrona</string>
+    <string name="about_license_value_blue_archive_logos">MIT · Copyright © 2024 Avrona</string>
     <string name="about_license_row_backdrop">Backdrop</string>
     <string name="about_license_value_backdrop">v%1$s · Apache-2.0</string>
     <string name="about_license_row_capsule">Capsule</string>
@@ -391,4 +391,12 @@
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">Connects Shizuku permission bridge capabilities</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku status checks and capability calls</string>
+    <string name="about_category_system">System</string>
+    <string name="about_category_lab">Lab</string>
+    <string name="about_card_component_lab_title">Component Lab</string>
+    <string name="about_card_component_lab_subtitle">Liquid samples, control states, and page rhythm checks</string>
+    <string name="about_component_lab_row_entry">Entry</string>
+    <string name="about_component_lab_row_scope">Validation scope</string>
+    <string name="about_component_lab_row_activity">Host</string>
+    <string name="about_component_lab_row_components">Components</string>
 </resources>

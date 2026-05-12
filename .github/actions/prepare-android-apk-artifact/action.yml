@@ -83,7 +83,7 @@ runs:
         output_file = str(element["outputFile"])
         safe_version = filename_component(version_name, "0")
 
-        artifact_base = f"KeiOS_{safe_version}"
+        artifact_base = f"KeiOS_{safe_version}_{variant}"
         apk_path = metadata_path.parent / output_file
         outputs = {
             "application_id": str(data.get("applicationId", "")),

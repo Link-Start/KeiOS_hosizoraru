@@ -1,0 +1,121 @@
+name: CI / Unit Tests
+run-name: "T#${{ github.run_number }} - ${{ github.event.pull_request.title || github.event.head_commit.message || github.event.inputs.commit || github.ref_name }}"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/actions/setup-android-gradle-build/**"
+      - ".github/workflows/ci-unit-tests.yml"
+      - "app/**"
+      - "baselineprofile/**"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "scripts/ci/**"
+      - "settings.gradle.kts"
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    branches:
+      - master
+    paths:
+      - ".github/actions/setup-android-gradle-build/**"
+      - ".github/workflows/ci-unit-tests.yml"
+      - "app/**"
+      - "baselineprofile/**"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "scripts/ci/**"
+      - "settings.gradle.kts"
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit SHA/branch/tag to test (optional). Leave empty to test the latest commit on selected branch.
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unit-tests:
+    name: Run debug unit tests
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANDROID_BUILD_TOOLS_VERSION: "37.0.0"
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.commit || github.sha }}
+
+      - name: Build context
+        id: context
+        run: |
+          set -euo pipefail
+          COMMIT_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=12 HEAD)"
+          {
+            echo "commit_sha=${COMMIT_SHA}"
+            echo "short_sha=${SHORT_SHA}"
+            echo "run_number=${GITHUB_RUN_NUMBER}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "Commit: ${COMMIT_SHA}"
+          echo "Short commit: ${SHORT_SHA}"
+          echo "Run number: ${GITHUB_RUN_NUMBER}"
+
+      - name: Setup Android Gradle build
+        uses: ./.github/actions/setup-android-gradle-build
+        with:
+          android-build-tools-version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
+          github-actor: ${{ env.GITHUB_ACTOR }}
+          github-token: ${{ env.GITHUB_TOKEN }}
+
+      - name: Prepare Firebase config
+        env:
+          GOOGLE_SERVICES_JSON_DEBUG_B64: ${{ secrets.GOOGLE_SERVICES_JSON_DEBUG_B64 }}
+          ALLOW_GOOGLE_SERVICES_STUB: "true"
+        run: |
+          scripts/ci/write_google_services_json.sh \
+            debug \
+            app/src/debug/google-services.json \
+            GOOGLE_SERVICES_JSON_DEBUG_B64 \
+            os.kei.debug
+
+      - name: Run debug unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Write test summary
+        run: |
+          {
+            echo "### Debug unit tests"
+            echo ""
+            echo "- Task: \`:app:testDebugUnitTest\`"
+            echo "- Commit: \`${{ steps.context.outputs.commit_sha }}\`"
+            echo "- Run number: \`${{ steps.context.outputs.run_number }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"

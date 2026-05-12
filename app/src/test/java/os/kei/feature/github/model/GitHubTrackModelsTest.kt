@@ -1,7 +1,7 @@
 package os.kei.feature.github.model
 
-import os.kei.BuildConfig
 import org.junit.Test
+import os.kei.BuildConfig
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -22,5 +22,38 @@ class GitHubTrackModelsTest {
         val item = defaultKeiOsTrackedApp()
 
         assertTrue(item.isKeiOsSelfTrack())
+    }
+
+    @Test
+    fun `direct apk identity preserves host and full path`() {
+        val identity =
+            buildDirectApkTrackIdentity("https://telegram.org/dl/android/apk-public-beta")
+
+        assertEquals("telegram.org", identity?.owner)
+        assertEquals("dl-android-apk-public-beta", identity?.repo)
+        assertEquals("telegram.org/dl/android/apk-public-beta", identity?.displayName)
+        assertEquals("apk-public-beta.apk", identity?.assetName)
+    }
+
+    @Test
+    fun `direct apk track id keeps repository ids stable`() {
+        val direct = GitHubTrackedApp(
+            repoUrl = "https://telegram.org/dl/android/apk",
+            owner = "telegram.org",
+            repo = "dl-android-apk",
+            packageName = "org.telegram.messenger",
+            appLabel = "Telegram",
+            sourceMode = GitHubTrackedSourceMode.DirectApk
+        )
+        val repository = GitHubTrackedApp(
+            repoUrl = "https://github.com/telegram/telegram-android",
+            owner = "telegram",
+            repo = "telegram-android",
+            packageName = "org.telegram.messenger",
+            appLabel = "Telegram"
+        )
+
+        assertEquals("direct_apk|telegram.org/dl-android-apk|org.telegram.messenger", direct.id)
+        assertEquals("telegram/telegram-android|org.telegram.messenger", repository.id)
     }
 }

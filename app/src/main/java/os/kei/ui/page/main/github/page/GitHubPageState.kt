@@ -40,6 +40,7 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.GitHubSortMode
@@ -107,6 +108,7 @@ internal class GitHubPageState(
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
     var checkActionsUpdatesInput by mutableStateOf(false)
     var preciseApkVersionModeInput by mutableStateOf(GitHubTrackedPreciseApkVersionMode.FollowGlobal)
+    var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
     var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
     var selectedApp by mutableStateOf<InstalledAppItem?>(null)
@@ -450,6 +452,7 @@ internal class GitHubPageState(
         alwaysShowLatestReleaseDownloadButtonInput = false
         checkActionsUpdatesInput = false
         preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
+        trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
         repoUrlScanRunning = false
         packageNameScanRunning = false
     }

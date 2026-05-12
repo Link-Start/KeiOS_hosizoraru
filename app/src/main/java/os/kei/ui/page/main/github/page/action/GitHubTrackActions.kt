@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -41,6 +42,7 @@ internal class GitHubTrackActions(
         state.appSearch = ""
         state.pickerExpanded = false
         state.repoScanCandidates = emptyList()
+        state.trackSourceModeInput = item.sourceMode
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.checkActionsUpdatesInput = item.checkActionsUpdates
@@ -100,12 +102,21 @@ internal class GitHubTrackActions(
         state.repoScanCandidates = emptyList()
         scope.launch {
             try {
-                val result = repository.scanPackageNameFromLatestStableApk(
-                    GitHubApkPackageNameScanRequest(
-                        repoUrl = state.repoUrlInput,
-                        lookupConfig = state.lookupConfig
-                    )
-                ).getOrElse { error ->
+                val result = when (state.trackSourceModeInput) {
+                    GitHubTrackedSourceMode.GitHubRepository ->
+                        repository.scanPackageNameFromLatestStableApk(
+                            GitHubApkPackageNameScanRequest(
+                                repoUrl = state.repoUrlInput,
+                                lookupConfig = state.lookupConfig
+                            )
+                        )
+
+                    GitHubTrackedSourceMode.DirectApk ->
+                        repository.scanPackageNameFromDirectApk(
+                            repoUrl = state.repoUrlInput,
+                            lookupConfig = state.lookupConfig
+                        )
+                }.getOrElse { error ->
                     env.toast(
                         R.string.github_toast_package_scan_failed,
                         error.message.orEmpty().ifBlank {
@@ -131,6 +142,7 @@ internal class GitHubTrackActions(
 
     fun scanRepoUrlFromPackage() {
         if (state.repoUrlScanRunning || state.packageNameScanRunning) return
+        if (state.trackSourceModeInput == GitHubTrackedSourceMode.DirectApk) return
         val packageName = state.packageNameInput.trim().ifBlank {
             state.selectedApp?.packageName.orEmpty().trim()
         }
@@ -197,11 +209,23 @@ internal class GitHubTrackActions(
 
     fun applyTrackSheet() {
         val draft = GitHubTrackEditorDraft(
+            sourceMode = state.trackSourceModeInput,
             repoUrl = state.repoUrlInput,
             packageName = state.packageNameInput,
-            preferPreRelease = state.preferPreReleaseInput,
-            alwaysShowLatestReleaseDownloadButton = state.alwaysShowLatestReleaseDownloadButtonInput,
-            checkActionsUpdates = state.checkActionsUpdatesInput,
+            preferPreRelease = when (state.trackSourceModeInput) {
+                GitHubTrackedSourceMode.GitHubRepository -> state.preferPreReleaseInput
+                GitHubTrackedSourceMode.DirectApk -> false
+            },
+            alwaysShowLatestReleaseDownloadButton = when (state.trackSourceModeInput) {
+                GitHubTrackedSourceMode.GitHubRepository ->
+                    state.alwaysShowLatestReleaseDownloadButtonInput
+
+                GitHubTrackedSourceMode.DirectApk -> false
+            },
+            checkActionsUpdates = when (state.trackSourceModeInput) {
+                GitHubTrackedSourceMode.GitHubRepository -> state.checkActionsUpdatesInput
+                GitHubTrackedSourceMode.DirectApk -> false
+            },
             preciseApkVersionMode = state.preciseApkVersionModeInput,
             appList = state.appList
         )

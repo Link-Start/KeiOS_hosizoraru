@@ -17,6 +17,7 @@ import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -25,6 +26,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
+import os.kei.feature.github.domain.GitHubDirectApkReleaseCheckSource
 import os.kei.feature.github.domain.GitHubPackageRepositoryResolver
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
@@ -36,6 +38,7 @@ import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
 import os.kei.feature.github.model.GitHubRepoTarget
@@ -47,7 +50,10 @@ import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.parseGithubOwnerRepoStrict
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -66,6 +72,7 @@ import os.kei.ui.page.main.github.state.toUi
 
 @Immutable
 internal data class GitHubTrackEditorDraft(
+    val sourceMode: GitHubTrackedSourceMode,
     val repoUrl: String,
     val packageName: String,
     val preferPreRelease: Boolean,
@@ -80,6 +87,12 @@ internal sealed interface GitHubTrackEditorResult {
     data object InvalidRepository : GitHubTrackEditorResult
     data object InvalidPackageName : GitHubTrackEditorResult
 }
+
+private data class GitHubTrackEditorSourceIdentity(
+    val owner: String,
+    val repo: String,
+    val fallbackLabel: String
+)
 
 @Immutable
 internal data class GitHubOnlineShareTargetInput(
@@ -449,8 +462,27 @@ internal class GitHubPageRepository(
 
     suspend fun buildTrackedItem(draft: GitHubTrackEditorDraft): GitHubTrackEditorResult {
         return withContext(defaultDispatcher) {
-            val parsed = GitHubVersionUtils.parseOwnerRepo(draft.repoUrl)
-                ?: return@withContext GitHubTrackEditorResult.InvalidRepository
+            val sourceIdentity = when (draft.sourceMode) {
+                GitHubTrackedSourceMode.GitHubRepository -> {
+                    val parsed = parseGithubOwnerRepoStrict(draft.repoUrl)
+                        ?: return@withContext GitHubTrackEditorResult.InvalidRepository
+                    GitHubTrackEditorSourceIdentity(
+                        owner = parsed.first,
+                        repo = parsed.second,
+                        fallbackLabel = "${parsed.first}/${parsed.second}"
+                    )
+                }
+
+                GitHubTrackedSourceMode.DirectApk -> {
+                    val identity = buildDirectApkTrackIdentity(draft.repoUrl)
+                        ?: return@withContext GitHubTrackEditorResult.InvalidRepository
+                    GitHubTrackEditorSourceIdentity(
+                        owner = identity.owner,
+                        repo = identity.repo,
+                        fallbackLabel = identity.displayName
+                    )
+                }
+            }
             val resolvedPackageName = draft.packageName.trim()
             if (resolvedPackageName.isNotBlank() && !packageNamePattern.matches(resolvedPackageName)) {
                 return@withContext GitHubTrackEditorResult.InvalidPackageName
@@ -465,18 +497,30 @@ internal class GitHubPageRepository(
             val resolvedAppLabel = when {
                 matchedInstalledApp != null -> matchedInstalledApp.label
                 resolvedPackageName.isNotBlank() -> resolvedPackageName
-                else -> "${parsed.first}/${parsed.second}"
+                else -> sourceIdentity.fallbackLabel
             }
             GitHubTrackEditorResult.Ready(
                 GitHubTrackedApp(
                     repoUrl = draft.repoUrl.trim(),
-                    owner = parsed.first,
-                    repo = parsed.second,
+                    owner = sourceIdentity.owner,
+                    repo = sourceIdentity.repo,
                     packageName = resolvedPackageName,
                     appLabel = resolvedAppLabel,
-                    preferPreRelease = draft.preferPreRelease,
-                    alwaysShowLatestReleaseDownloadButton = draft.alwaysShowLatestReleaseDownloadButton,
-                    checkActionsUpdates = draft.checkActionsUpdates,
+                    sourceMode = draft.sourceMode,
+                    preferPreRelease = when (draft.sourceMode) {
+                        GitHubTrackedSourceMode.GitHubRepository -> draft.preferPreRelease
+                        GitHubTrackedSourceMode.DirectApk -> false
+                    },
+                    alwaysShowLatestReleaseDownloadButton = when (draft.sourceMode) {
+                        GitHubTrackedSourceMode.GitHubRepository ->
+                            draft.alwaysShowLatestReleaseDownloadButton
+
+                        GitHubTrackedSourceMode.DirectApk -> false
+                    },
+                    checkActionsUpdates = when (draft.sourceMode) {
+                        GitHubTrackedSourceMode.GitHubRepository -> draft.checkActionsUpdates
+                        GitHubTrackedSourceMode.DirectApk -> false
+                    },
                     preciseApkVersionMode = draft.preciseApkVersionMode,
                     localAppType = GitHubTrackedLocalAppType.fromSystemFlag(
                         matchedInstalledApp?.isSystemApp
@@ -521,6 +565,46 @@ internal class GitHubPageRepository(
             GitHubApkPackageNameScanner(
                 GitHubApkPackageNameScanRepository()
             ).scan(request)
+        }
+    }
+
+    suspend fun scanPackageNameFromDirectApk(
+        repoUrl: String,
+        lookupConfig: GitHubLookupConfig
+    ): Result<GitHubApkPackageNameScanResult> {
+        return withContext(ioDispatcher) {
+            runCatching {
+                val identity = buildDirectApkTrackIdentity(repoUrl)
+                    ?: error("invalid direct APK URL")
+                val item = GitHubTrackedApp(
+                    repoUrl = identity.url,
+                    owner = identity.owner,
+                    repo = identity.repo,
+                    packageName = "",
+                    appLabel = identity.displayName,
+                    sourceMode = GitHubTrackedSourceMode.DirectApk
+                )
+                val asset = GitHubDirectApkReleaseCheckSource.buildDirectApkAsset(item)
+                    ?: error("invalid direct APK URL")
+                val manifest = GitHubApkInfoRepository().inspectAsync(
+                    asset = asset,
+                    lookupConfig = lookupConfig.copy(
+                        selectedStrategy = GitHubLookupStrategyOption.AtomFeed,
+                        apiToken = "",
+                        checkAllTrackedPreReleases = false,
+                        preciseApkVersionEnabled = true
+                    ),
+                    forceRefresh = true
+                ).getOrThrow()
+                GitHubApkPackageNameScanResult(
+                    owner = identity.owner,
+                    repo = identity.repo,
+                    releaseTag = manifest.versionName.ifBlank { manifest.versionCode },
+                    releaseUrl = identity.url,
+                    assetName = manifest.assetName.ifBlank { identity.assetName },
+                    packageName = manifest.packageName
+                )
+            }
         }
     }
 

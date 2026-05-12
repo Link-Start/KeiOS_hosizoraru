@@ -256,6 +256,7 @@
     <string name="github_list_label_search_result">Search results</string>
     <string name="github_list_msg_no_match">No matching tracked projects</string>
     <string name="github_item_label_repo">Repository URL</string>
+    <string name="github_item_label_direct_apk">Direct APK</string>
     <string name="github_item_label_local_version">Local version</string>
     <string name="github_item_value_local_version_uninstalled">App not installed</string>
     <string name="github_item_value_check_pending">Pending check</string>
@@ -613,8 +614,12 @@
     <string name="github_track_sheet_section_repo_app">Repository &amp; app</string>
     <string name="github_track_sheet_section_repository">Repository source</string>
     <string name="github_track_sheet_section_package_app">Package &amp; local app</string>
+    <string name="github_track_sheet_source_mode_github">GitHub project</string>
+    <string name="github_track_sheet_source_mode_direct_apk">Direct APK</string>
     <string name="github_track_sheet_input_repo">GitHub project URL</string>
+    <string name="github_track_sheet_input_direct_apk">Direct APK URL</string>
     <string name="github_track_sheet_summary_repo">Use a repository or release URL. The project URL can also be scanned from the package name.</string>
+    <string name="github_track_sheet_summary_direct_apk">Use a directly reachable APK download link. Refresh reads the remote APK Manifest and compares it with the local version.</string>
     <string name="github_track_sheet_section_repo_candidates">Project candidates</string>
     <string name="github_track_sheet_repo_candidates_summary">These repositories were verified against the same package name. Select one to fill the draft.</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d found</string>
@@ -633,6 +638,7 @@
     <string name="github_track_sheet_btn_scan_package_running">Scanning</string>
     <string name="github_track_sheet_summary_package_optional">Leave empty to track only repository version. Filling a package name later or installing the matching app will link refresh automatically.</string>
     <string name="github_track_sheet_summary_package_link">The package name matches local install state. It can also be scanned from the latest stable APK.</string>
+    <string name="github_track_sheet_summary_package_direct_apk">The package name matches local install state. Package scanning reads the direct APK Manifest.</string>
     <string name="github_track_sheet_label_selected_app">Selected app</string>
     <string name="github_track_sheet_selected_none">None selected</string>
     <string name="github_track_sheet_summary_app_binding_none">Optional. Binding a local app enables installed-version comparison and install-time refresh.</string>
@@ -646,6 +652,7 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
     <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
+    <string name="github_track_sheet_summary_direct_apk_check_options">Direct mode always reads the remote APK Manifest for version comparison. Pre-release, latest Release download, and Actions checks are closed for this mode.</string>
     <string name="github_item_label_actions_run">Actions Run</string>
     <string name="github_item_actions_run_value">%1$s · recorded at %2$s</string>
     <string name="github_item_actions_run_not_recorded">Not recorded yet</string>

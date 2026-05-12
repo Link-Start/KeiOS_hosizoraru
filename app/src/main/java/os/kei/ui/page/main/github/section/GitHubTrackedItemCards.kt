@@ -38,6 +38,8 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.github.GitHubRepositoryHealth
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
@@ -84,10 +86,25 @@ internal fun GitHubRepositoryLinkCard(
     item: GitHubTrackedApp,
     onOpenExternalUrl: (String) -> Unit
 ) {
-    val repoUrl = GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
+    val directIdentity = if (item.isGitHubRepositoryTrack()) {
+        null
+    } else {
+        buildDirectApkTrackIdentity(item.repoUrl)
+    }
+    val repoUrl = if (item.isGitHubRepositoryTrack()) {
+        GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
+    } else {
+        item.repoUrl
+    }
     GitHubLinkedInfoCard(
-        label = stringResource(R.string.github_item_label_repo),
-        value = "${item.owner}/${item.repo}",
+        label = stringResource(
+            if (item.isGitHubRepositoryTrack()) {
+                R.string.github_item_label_repo
+            } else {
+                R.string.github_item_label_direct_apk
+            }
+        ),
+        value = directIdentity?.displayName ?: "${item.owner}/${item.repo}",
         valueColor = MiuixTheme.colorScheme.onBackground,
         onClick = { onOpenExternalUrl(repoUrl) }
     )
@@ -307,7 +324,11 @@ internal fun GitHubTrackedItemMoreActions(
 ) {
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
-    val optionSize = if (showReleaseNotesAction) 4 else 3
+    val showActionsAction = item.isGitHubRepositoryTrack()
+    val normalizedShowReleaseNotesAction = showReleaseNotesAction && showActionsAction
+    val optionSize = 2 +
+            if (showActionsAction) 1 else 0 +
+                    if (normalizedShowReleaseNotesAction) 1 else 0
     val refreshIcon = appLucideRefreshIcon()
     val actionsIcon = appLucideBranchIcon()
     val releaseNotesIcon = appLucideNotesIcon()
@@ -345,31 +366,34 @@ internal fun GitHubTrackedItemMoreActions(
                     maxWidth = menuMaxWidth,
                     maxHeight = GitHubTrackedItemMoreMenuMaxHeight
                 ) {
+                    var optionIndex = 0
                     GitHubTrackedItemMenuAction(
                         text = stringResource(R.string.common_refresh),
                         leadingIcon = refreshIcon,
-                        index = 0,
+                        index = optionIndex++,
                         optionSize = optionSize,
                         onClick = {
                             menuExpanded = false
                             onRefreshTrackedItem(item)
                         }
                     )
-                    GitHubTrackedItemMenuAction(
-                        text = stringResource(R.string.github_actions_menu),
-                        leadingIcon = actionsIcon,
-                        index = 1,
-                        optionSize = optionSize,
-                        onClick = {
-                            menuExpanded = false
-                            onOpenActionsSheet(item)
-                        }
-                    )
-                    if (showReleaseNotesAction) {
+                    if (showActionsAction) {
+                        GitHubTrackedItemMenuAction(
+                            text = stringResource(R.string.github_actions_menu),
+                            leadingIcon = actionsIcon,
+                            index = optionIndex++,
+                            optionSize = optionSize,
+                            onClick = {
+                                menuExpanded = false
+                                onOpenActionsSheet(item)
+                            }
+                        )
+                    }
+                    if (normalizedShowReleaseNotesAction) {
                         GitHubTrackedItemMenuAction(
                             text = stringResource(R.string.github_release_notes_title),
                             leadingIcon = releaseNotesIcon,
-                            index = 2,
+                            index = optionIndex++,
                             optionSize = optionSize,
                             onClick = {
                                 menuExpanded = false

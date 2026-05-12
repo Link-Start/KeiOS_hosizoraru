@@ -4,6 +4,7 @@ import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
 
 class GitHubTrackStoreTrackedItemJsonTest {
@@ -60,6 +61,67 @@ class GitHubTrackStoreTrackedItemJsonTest {
             GitHubTrackedPreciseApkVersionMode.Enabled,
             payload.items.single().preciseApkVersionMode
         )
+    }
+
+    @Test
+    fun `direct apk tracking round trips and closes github only options`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://telegram.org/dl/android/apk-public-beta",
+            owner = "telegram.org",
+            repo = "dl-android-apk-public-beta",
+            packageName = "org.telegram.messenger.beta",
+            appLabel = "Telegram Beta",
+            sourceMode = GitHubTrackedSourceMode.DirectApk,
+            preferPreRelease = true,
+            alwaysShowLatestReleaseDownloadButton = true,
+            checkActionsUpdates = true,
+            preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled
+        )
+
+        val exported = GitHubTrackStore.buildTrackedItemsExportJson(
+            listOf(item),
+            exportedAtMillis = 3000L
+        )
+        val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
+
+        assertEquals(GitHubTrackedSourceMode.DirectApk, imported.sourceMode)
+        assertEquals("telegram.org", imported.owner)
+        assertEquals("dl-android-apk-public-beta", imported.repo)
+        assertEquals(false, imported.preferPreRelease)
+        assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, imported.preciseApkVersionMode)
+    }
+
+    @Test
+    fun `direct apk import derives identity when owner and repo are missing`() {
+        val payload = GitHubTrackStore.parseTrackedItemsImport(
+            """
+            [
+              {
+                "sourceMode": "direct_apk",
+                "repoUrl": "https://telegram.org/dl/android/apk",
+                "packageName": "org.telegram.messenger",
+                "appLabel": "",
+                "settings": {
+                  "preferPreRelease": true,
+                  "alwaysShowLatestReleaseDownloadButton": true,
+                  "checkActionsUpdates": true
+                }
+              }
+            ]
+            """.trimIndent()
+        )
+
+        val imported = payload.items.single()
+
+        assertEquals(GitHubTrackedSourceMode.DirectApk, imported.sourceMode)
+        assertEquals("telegram.org", imported.owner)
+        assertEquals("dl-android-apk", imported.repo)
+        assertEquals("org.telegram.messenger", imported.appLabel)
+        assertEquals(false, imported.preferPreRelease)
+        assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, imported.checkActionsUpdates)
     }
 
     @Test

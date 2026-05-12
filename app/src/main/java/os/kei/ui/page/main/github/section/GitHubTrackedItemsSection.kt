@@ -26,6 +26,7 @@ import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -167,10 +168,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         owner = item.owner,
                         repo = item.repo
                     )
-                    val canLoadApkAssets = alwaysLatestReleaseDownload ||
-                        state.hasUpdate == true ||
-                        state.recommendsPreRelease ||
-                        state.hasPreReleaseUpdate
+                    val canLoadApkAssets = item.isGitHubRepositoryTrack() &&
+                            (
+                                    alwaysLatestReleaseDownload ||
+                                            state.hasUpdate == true ||
+                                            state.recommendsPreRelease ||
+                                            state.hasPreReleaseUpdate
+                                    )
                     val isAssetPanelExpanded = apkAssetExpanded[item.id] == true
                     val isAssetPanelLoading = apkAssetLoading[item.id] == true
                     val statusIcon = when {
@@ -420,7 +424,8 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     val assetLoading = apkAssetLoading[item.id] == true
                     val assetError = apkAssetErrors[item.id].orEmpty()
                     val assetExpanded = apkAssetExpanded[item.id] == true
-                    if (lookupConfig.decisionAssistEnabled &&
+                    if (item.isGitHubRepositoryTrack() &&
+                        lookupConfig.decisionAssistEnabled &&
                         lookupConfig.repositoryHealthCardEnabled
                     ) {
                         val health = buildGitHubRepositoryHealth(item, state)
@@ -434,25 +439,27 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             }
                         )
                     }
-                    GitHubTrackedItemAssetPanel(
-                        item = item,
-                        state = state,
-                        lookupConfig = itemLookupConfig,
-                        isDark = isDark,
-                        contentBackdrop = contentBackdrop,
-                        assetBundle = assetBundle,
-                        assetLoading = assetLoading,
-                        assetError = assetError,
-                        assetExpanded = assetExpanded,
-                        managedInstallLoading = managedInstallLoading,
-                        onOpenExternalUrl = onOpenExternalUrl,
-                        onLoadApkAssets = onLoadApkAssets,
-                        onOpenApkInfo = onOpenApkInfo,
-                        onOpenApkInDownloader = onOpenApkInDownloader,
-                        onShareApkLink = onShareApkLink,
-                        context = context,
-                        supportedAbis = supportedAbis
-                    )
+                    if (item.isGitHubRepositoryTrack()) {
+                        GitHubTrackedItemAssetPanel(
+                            item = item,
+                            state = state,
+                            lookupConfig = itemLookupConfig,
+                            isDark = isDark,
+                            contentBackdrop = contentBackdrop,
+                            assetBundle = assetBundle,
+                            assetLoading = assetLoading,
+                            assetError = assetError,
+                            assetExpanded = assetExpanded,
+                            managedInstallLoading = managedInstallLoading,
+                            onOpenExternalUrl = onOpenExternalUrl,
+                            onLoadApkAssets = onLoadApkAssets,
+                            onOpenApkInfo = onOpenApkInfo,
+                            onOpenApkInDownloader = onOpenApkInDownloader,
+                            onShareApkLink = onShareApkLink,
+                            context = context,
+                            supportedAbis = supportedAbis
+                        )
+                    }
                 }
             }
         }

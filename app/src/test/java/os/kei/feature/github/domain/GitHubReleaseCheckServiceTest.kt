@@ -2,6 +2,7 @@ package os.kei.feature.github.domain
 
 import org.junit.Test
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubProfileField
@@ -17,6 +18,7 @@ import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -432,6 +434,69 @@ class GitHubReleaseCheckServiceTest {
         assertEquals("check-v2|fixture", restored.repositoryProfile?.sourceConfigSignature)
     }
 
+    @Test
+    fun `direct apk manifest with newer version code reports update`() {
+        val item = directApkTrackedApp()
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            manifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.1.0",
+                versionCode = "101"
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+        assertEquals("10.1.0", result.preciseStableApkVersion?.versionName)
+        assertEquals("101", result.preciseStableApkVersion?.versionCode)
+        assertEquals("https://telegram.org/dl/android/apk", result.stableRelease?.link)
+    }
+
+    @Test
+    fun `direct apk manifest with same version code reports up to date`() {
+        val item = directApkTrackedApp()
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            manifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.0.1",
+                versionCode = "100"
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpToDate, result.status)
+        assertEquals(false, result.hasUpdate)
+    }
+
+    @Test
+    fun `direct apk manifest package mismatch fails before version comparison`() {
+        val item = directApkTrackedApp()
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            manifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.other",
+                versionName = "99.0",
+                versionCode = "9900"
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.Failed, result.status)
+        assertTrue(result.message.contains("org.telegram.other"))
+    }
+
     private fun trackedApp(preferPreRelease: Boolean): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = "https://github.com/demo/app",
@@ -440,6 +505,17 @@ class GitHubReleaseCheckServiceTest {
             packageName = "demo.app",
             appLabel = "Demo",
             preferPreRelease = preferPreRelease
+        )
+    }
+
+    private fun directApkTrackedApp(): GitHubTrackedApp {
+        return GitHubTrackedApp(
+            repoUrl = "https://telegram.org/dl/android/apk",
+            owner = "telegram.org",
+            repo = "dl-android-apk",
+            packageName = "org.telegram.messenger",
+            appLabel = "Telegram",
+            sourceMode = GitHubTrackedSourceMode.DirectApk
         )
     }
 

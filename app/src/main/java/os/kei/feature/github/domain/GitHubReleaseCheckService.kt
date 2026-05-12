@@ -24,6 +24,7 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubCheckSourceSignature
+import os.kei.feature.github.model.isDirectApkTrack
 import java.io.IOException
 
 object GitHubReleaseCheckService {
@@ -97,6 +98,15 @@ object GitHubReleaseCheckService {
         }.getOrNull()
         val localVersion = localVersionInfo?.versionName.orEmpty()
         val localVersionCode = localVersionInfo?.versionCode ?: -1L
+        if (item.isDirectApkTrack()) {
+            return GitHubDirectApkReleaseCheckSource().evaluate(
+                item = item,
+                lookupConfig = lookupConfig,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                forceRefresh = forceRefresh
+            )
+        }
         val profileRepository = GitHubRepositoryProfileRepository()
         val effectiveStrategy = strategy ?: GitHubReleaseStrategyRegistry.resolveConfiguredStrategy().getOrElse { error ->
             val profile = loadRepositoryProfile(

@@ -15,10 +15,13 @@ import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
 import os.kei.feature.github.model.requiredCapabilities
+import os.kei.feature.github.model.withSourceModeConstraints
 
 data class GitHubTrackSnapshot(
     val items: List<GitHubTrackedApp> = emptyList(),
@@ -356,16 +359,17 @@ object GitHubTrackStore {
     fun calculateTrackedItemsOptionCounts(
         items: List<GitHubTrackedApp>
     ): GitHubTrackedItemsOptionCounts {
+        val normalizedItems = items.map { it.withSourceModeConstraints() }
         return GitHubTrackedItemsOptionCounts(
-            preferPreReleaseCount = items.count { it.preferPreRelease },
-            latestReleaseDownloadCount = items.count {
+            preferPreReleaseCount = normalizedItems.count { it.preferPreRelease },
+            latestReleaseDownloadCount = normalizedItems.count {
                 it.alwaysShowLatestReleaseDownloadButton
             },
-            actionsUpdateCount = items.count { it.checkActionsUpdates },
-            preciseApkVersionOverrideCount = items.count {
+            actionsUpdateCount = normalizedItems.count { it.checkActionsUpdates },
+            preciseApkVersionOverrideCount = normalizedItems.count {
                 it.preciseApkVersionMode != GitHubTrackedPreciseApkVersionMode.FollowGlobal
             },
-            archivedOrForkCount = items.count { it.repositoryArchived || it.repositoryFork }
+            archivedOrForkCount = normalizedItems.count { it.repositoryArchived || it.repositoryFork }
         )
     }
 
@@ -704,47 +708,72 @@ object GitHubTrackStore {
         val settings = obj.optJSONObject("settings")
         val repository = obj.optJSONObject("repository")
         val repoUrl = obj.optString("repoUrl").trim()
-        val owner = obj.optString("owner").trim()
-        val repo = obj.optString("repo").trim()
+        val sourceMode = parseTrackedSourceMode(obj)
+        val directIdentity = if (sourceMode == GitHubTrackedSourceMode.DirectApk) {
+            buildDirectApkTrackIdentity(repoUrl)
+        } else {
+            null
+        }
+        val owner = obj.optString("owner").trim().ifBlank {
+            directIdentity?.owner.orEmpty()
+        }
+        val repo = obj.optString("repo").trim().ifBlank {
+            directIdentity?.repo.orEmpty()
+        }
         val packageName = obj.optString("packageName").trim()
         val appLabel = obj.optString("appLabel").trim()
         if (repoUrl.isBlank() || owner.isBlank() || repo.isBlank()) {
             return null
         }
-        val fallbackLabel = packageName.ifBlank { "$owner/$repo" }
+        val fallbackLabel = packageName.ifBlank {
+            directIdentity?.displayName ?: "$owner/$repo"
+        }
+        val preferPreRelease = when {
+            sourceMode == GitHubTrackedSourceMode.DirectApk -> false
+            settings?.has("preferPreRelease") == true ->
+                settings.optBoolean("preferPreRelease", false)
+
+            obj.has("preferPreRelease") -> obj.optBoolean("preferPreRelease", false)
+            obj.has("checkPreRelease") -> obj.optBoolean("checkPreRelease", false)
+            settings?.has("checkPreRelease") == true ->
+                settings.optBoolean("checkPreRelease", false)
+
+            else -> false
+        }
+        val alwaysShowLatestReleaseDownloadButton = when {
+            sourceMode == GitHubTrackedSourceMode.DirectApk -> false
+            settings?.has("alwaysShowLatestReleaseDownloadButton") == true ->
+                settings.optBoolean("alwaysShowLatestReleaseDownloadButton", false)
+
+            obj.has("alwaysShowLatestReleaseDownloadButton") ->
+                obj.optBoolean("alwaysShowLatestReleaseDownloadButton", false)
+
+            settings?.has("alwaysShowLatestReleaseDownload") == true ->
+                settings.optBoolean("alwaysShowLatestReleaseDownload", false)
+
+            obj.has("alwaysShowLatestReleaseDownload") ->
+                obj.optBoolean("alwaysShowLatestReleaseDownload", false)
+
+            else -> false
+        }
+        val checkActionsUpdates = when {
+            sourceMode == GitHubTrackedSourceMode.DirectApk -> false
+            settings?.has("checkActionsUpdates") == true ->
+                settings.optBoolean("checkActionsUpdates", false)
+
+            obj.has("checkActionsUpdates") -> obj.optBoolean("checkActionsUpdates", false)
+            else -> false
+        }
         return GitHubTrackedApp(
             repoUrl = repoUrl,
             owner = owner,
             repo = repo,
             packageName = packageName,
             appLabel = appLabel.ifBlank { fallbackLabel },
-            preferPreRelease = when {
-                settings?.has("preferPreRelease") == true ->
-                    settings.optBoolean("preferPreRelease", false)
-                obj.has("preferPreRelease") -> obj.optBoolean("preferPreRelease", false)
-                obj.has("checkPreRelease") -> obj.optBoolean("checkPreRelease", false)
-                settings?.has("checkPreRelease") == true ->
-                    settings.optBoolean("checkPreRelease", false)
-                else -> false
-            },
-            alwaysShowLatestReleaseDownloadButton = when {
-                settings?.has("alwaysShowLatestReleaseDownloadButton") == true ->
-                    settings.optBoolean("alwaysShowLatestReleaseDownloadButton", false)
-                obj.has("alwaysShowLatestReleaseDownloadButton") ->
-                    obj.optBoolean("alwaysShowLatestReleaseDownloadButton", false)
-                settings?.has("alwaysShowLatestReleaseDownload") == true ->
-                    settings.optBoolean("alwaysShowLatestReleaseDownload", false)
-                obj.has("alwaysShowLatestReleaseDownload") ->
-                    obj.optBoolean("alwaysShowLatestReleaseDownload", false)
-                else -> false
-            },
-            checkActionsUpdates = when {
-                settings?.has("checkActionsUpdates") == true ->
-                    settings.optBoolean("checkActionsUpdates", false)
-
-                obj.has("checkActionsUpdates") -> obj.optBoolean("checkActionsUpdates", false)
-                else -> false
-            },
+            sourceMode = sourceMode,
+            preferPreRelease = preferPreRelease,
+            alwaysShowLatestReleaseDownloadButton = alwaysShowLatestReleaseDownloadButton,
+            checkActionsUpdates = checkActionsUpdates,
             preciseApkVersionMode = parsePreciseApkVersionMode(obj),
             repositoryArchived = when {
                 repository?.has("archived") == true -> repository.optBoolean("archived", false)
@@ -757,7 +786,24 @@ object GitHubTrackStore {
                 else -> false
             },
             localAppType = parseTrackedLocalAppType(obj)
-        )
+        ).withSourceModeConstraints()
+    }
+
+    private fun parseTrackedSourceMode(obj: JSONObject): GitHubTrackedSourceMode {
+        val settings = obj.optJSONObject("settings")
+        val source = obj.optJSONObject("source")
+        return when {
+            source?.has("mode") == true ->
+                GitHubTrackedSourceMode.fromStorageId(source.optString("mode"))
+
+            settings?.has("sourceMode") == true ->
+                GitHubTrackedSourceMode.fromStorageId(settings.optString("sourceMode"))
+
+            obj.has("sourceMode") ->
+                GitHubTrackedSourceMode.fromStorageId(obj.optString("sourceMode"))
+
+            else -> GitHubTrackedSourceMode.GitHubRepository
+        }
     }
 
     private fun parseTrackedLocalAppType(obj: JSONObject): GitHubTrackedLocalAppType {
@@ -823,39 +869,51 @@ object GitHubTrackStore {
     }
 
     private fun trackedItemToJson(item: GitHubTrackedApp): JSONObject {
+        val normalizedItem = item.withSourceModeConstraints()
         val settings = JSONObject()
-            .put("preferPreRelease", item.preferPreRelease)
+            .put("sourceMode", normalizedItem.sourceMode.storageId)
+            .put("preferPreRelease", normalizedItem.preferPreRelease)
             .put(
                 "alwaysShowLatestReleaseDownloadButton",
-                item.alwaysShowLatestReleaseDownloadButton
+                normalizedItem.alwaysShowLatestReleaseDownloadButton
             )
-            .put("checkActionsUpdates", item.checkActionsUpdates)
-            .put("preciseApkVersionMode", item.preciseApkVersionMode.storageId)
-            .put("localAppType", item.localAppType.storageId)
+            .put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+            .put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
+            .put("localAppType", normalizedItem.localAppType.storageId)
+        val source = JSONObject()
+            .put("mode", normalizedItem.sourceMode.storageId)
         val repository = JSONObject()
-            .put("archived", item.repositoryArchived)
-            .put("fork", item.repositoryFork)
+            .put("archived", normalizedItem.repositoryArchived)
+            .put("fork", normalizedItem.repositoryFork)
         val local = JSONObject()
-            .put("appType", item.localAppType.storageId)
-            .put("isSystemApp", item.localAppType == GitHubTrackedLocalAppType.System)
+            .put("appType", normalizedItem.localAppType.storageId)
+            .put("isSystemApp", normalizedItem.localAppType == GitHubTrackedLocalAppType.System)
         return JSONObject()
-            .put("repoUrl", item.repoUrl)
-            .put("owner", item.owner)
-            .put("repo", item.repo)
-            .put("packageName", item.packageName)
-            .put("appLabel", item.appLabel)
+            .put("sourceMode", normalizedItem.sourceMode.storageId)
+            .put("repoUrl", normalizedItem.repoUrl)
+            .put("owner", normalizedItem.owner)
+            .put("repo", normalizedItem.repo)
+            .put("packageName", normalizedItem.packageName)
+            .put("appLabel", normalizedItem.appLabel)
+            .put("source", source)
             .put("settings", settings)
             .put("local", local)
-            .put("preferPreRelease", item.preferPreRelease)
-            .put("checkPreRelease", item.preferPreRelease)
-            .put("alwaysShowLatestReleaseDownloadButton", item.alwaysShowLatestReleaseDownloadButton)
-            .put("alwaysShowLatestReleaseDownload", item.alwaysShowLatestReleaseDownloadButton)
-            .put("checkActionsUpdates", item.checkActionsUpdates)
-            .put("preciseApkVersionMode", item.preciseApkVersionMode.storageId)
-            .put("localAppType", item.localAppType.storageId)
+            .put("preferPreRelease", normalizedItem.preferPreRelease)
+            .put("checkPreRelease", normalizedItem.preferPreRelease)
+            .put(
+                "alwaysShowLatestReleaseDownloadButton",
+                normalizedItem.alwaysShowLatestReleaseDownloadButton
+            )
+            .put(
+                "alwaysShowLatestReleaseDownload",
+                normalizedItem.alwaysShowLatestReleaseDownloadButton
+            )
+            .put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+            .put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
+            .put("localAppType", normalizedItem.localAppType.storageId)
             .put("repository", repository)
-            .put("repositoryArchived", item.repositoryArchived)
-            .put("repositoryFork", item.repositoryFork)
+            .put("repositoryArchived", normalizedItem.repositoryArchived)
+            .put("repositoryFork", normalizedItem.repositoryFork)
     }
 
     private fun GitHubTrackedItemsOptionCounts.toJson(): JSONObject {

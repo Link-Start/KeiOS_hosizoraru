@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import androidx.compose.runtime.Composable
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
@@ -307,6 +308,7 @@ internal fun GitHubPageSheetHost(
         appList = state.appList,
         trackedPackageNames = state.trackedItems.map { it.packageName }.toSet(),
         appListRefreshing = state.appListRefreshing,
+        sourceModeInput = state.trackSourceModeInput,
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
         checkActionsUpdatesInput = state.checkActionsUpdatesInput,
@@ -317,6 +319,15 @@ internal fun GitHubPageSheetHost(
         onRepoUrlInputChange = {
             state.repoUrlInput = it
             state.repoScanCandidates = emptyList()
+        },
+        onSourceModeInputChange = { mode ->
+            state.trackSourceModeInput = mode
+            state.repoScanCandidates = emptyList()
+            if (mode == GitHubTrackedSourceMode.DirectApk) {
+                state.preferPreReleaseInput = false
+                state.alwaysShowLatestReleaseDownloadButtonInput = false
+                state.checkActionsUpdatesInput = false
+            }
         },
         onAppSearchChange = { state.appSearch = it },
         onPackageNameInputChange = { input ->

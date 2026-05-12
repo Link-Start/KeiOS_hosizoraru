@@ -1,6 +1,8 @@
 package os.kei.feature.github.model
 
 import os.kei.BuildConfig
+import java.net.URI
+import java.util.Locale
 
 private const val keiOsTrackOwner = "hosizoraru"
 private const val keiOsTrackRepo = "KeiOS"
@@ -13,6 +15,7 @@ data class GitHubTrackedApp(
     val repo: String,
     val packageName: String,
     val appLabel: String,
+    val sourceMode: GitHubTrackedSourceMode = GitHubTrackedSourceMode.GitHubRepository,
     val preferPreRelease: Boolean = false,
     val alwaysShowLatestReleaseDownloadButton: Boolean = false,
     val checkActionsUpdates: Boolean = false,
@@ -23,7 +26,129 @@ data class GitHubTrackedApp(
     val localAppType: GitHubTrackedLocalAppType = GitHubTrackedLocalAppType.Unknown
 ) {
     val id: String
-        get() = "$owner/$repo|$packageName"
+        get() {
+            val base = "$owner/$repo|$packageName"
+            return when (sourceMode) {
+                GitHubTrackedSourceMode.GitHubRepository -> base
+                GitHubTrackedSourceMode.DirectApk -> "${sourceMode.storageId}|$base"
+            }
+        }
+}
+
+enum class GitHubTrackedSourceMode(val storageId: String) {
+    GitHubRepository("github_repository"),
+    DirectApk("direct_apk");
+
+    companion object {
+        fun fromStorageId(value: String?): GitHubTrackedSourceMode {
+            val normalized = value.orEmpty().trim()
+            return entries.firstOrNull { it.storageId.equals(normalized, ignoreCase = true) }
+                ?: GitHubRepository
+        }
+    }
+}
+
+data class GitHubDirectApkTrackIdentity(
+    val url: String,
+    val owner: String,
+    val repo: String,
+    val displayName: String,
+    val assetName: String
+)
+
+fun GitHubTrackedApp.isGitHubRepositoryTrack(): Boolean {
+    return sourceMode == GitHubTrackedSourceMode.GitHubRepository
+}
+
+fun GitHubTrackedApp.isDirectApkTrack(): Boolean {
+    return sourceMode == GitHubTrackedSourceMode.DirectApk
+}
+
+fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
+    return when (sourceMode) {
+        GitHubTrackedSourceMode.GitHubRepository -> this
+        GitHubTrackedSourceMode.DirectApk -> copy(
+            preferPreRelease = false,
+            alwaysShowLatestReleaseDownloadButton = false,
+            checkActionsUpdates = false
+        )
+    }
+}
+
+fun buildDirectApkTrackIdentity(rawUrl: String): GitHubDirectApkTrackIdentity? {
+    val normalizedUrl = rawUrl.trim()
+    if (normalizedUrl.isBlank()) return null
+    val uri = runCatching { URI(normalizedUrl) }.getOrNull() ?: return null
+    val scheme = uri.scheme.orEmpty().lowercase(Locale.ROOT)
+    if (scheme != "http" && scheme != "https") return null
+    val host = uri.host.orEmpty()
+        .lowercase(Locale.ROOT)
+        .removePrefix("www.")
+        .ifBlank { return null }
+    val pathSegments = uri.path
+        .orEmpty()
+        .split('/')
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+    val pathKey = pathSegments
+        .joinToString("-")
+        .sanitizeDirectApkIdentityPart()
+        .ifBlank { "apk" }
+    val displayPath = pathSegments.joinToString("/")
+    val displayName = if (displayPath.isBlank()) host else "$host/$displayPath"
+    val fileName = pathSegments.lastOrNull()
+        ?.takeIf { it.isNotBlank() }
+        ?: "remote.apk"
+    val assetName = fileName
+        .substringBefore('?')
+        .ifBlank { "remote.apk" }
+        .let { name ->
+            if (name.endsWith(".apk", ignoreCase = true)) name else "$name.apk"
+        }
+    return GitHubDirectApkTrackIdentity(
+        url = normalizedUrl,
+        owner = host,
+        repo = pathKey,
+        displayName = displayName,
+        assetName = assetName
+    )
+}
+
+fun parseGithubOwnerRepoStrict(urlOrPath: String): Pair<String, String>? {
+    val raw = urlOrPath.trim()
+        .removePrefix("git+")
+        .removeSuffix(".git")
+        .trimEnd('/')
+    if (raw.isBlank()) return null
+    if (raw.contains(":") && raw.contains("@") && raw.contains("github.com")) {
+        val afterColon = raw.substringAfter(':', "")
+        val ownerRepo = afterColon.removePrefix("/").split("/")
+        if (ownerRepo.size >= 2) return ownerRepo[0] to ownerRepo[1]
+    }
+    val uri = runCatching { URI(raw) }.getOrNull()
+    if (uri != null && uri.scheme != null) {
+        val host = uri.host.orEmpty()
+        if (!host.equals("github.com", ignoreCase = true) &&
+            !host.endsWith(".github.com", ignoreCase = true)
+        ) {
+            return null
+        }
+        val segments = uri.path.trim('/').split('/').filter { it.isNotBlank() }
+        if (segments.size >= 2) return segments[0] to segments[1].removeSuffix(".git")
+        return null
+    }
+    val normalized = raw
+        .removePrefix("github.com/")
+        .trim('/')
+    val parts = normalized.split('/').filter { it.isNotBlank() }
+    if (parts.size >= 2) return parts[0] to parts[1].removeSuffix(".git")
+    return null
+}
+
+private fun String.sanitizeDirectApkIdentityPart(): String {
+    return lowercase(Locale.ROOT)
+        .replace(Regex("""[^a-z0-9._-]+"""), "-")
+        .trim('-', '.', '_')
 }
 
 enum class GitHubTrackedLocalAppType(val storageId: String) {
@@ -89,6 +214,12 @@ internal fun GitHubTrackedApp.isKeiOsSelfTrack(): Boolean {
 }
 
 fun GitHubLookupConfig.forTrackedItem(item: GitHubTrackedApp): GitHubLookupConfig {
+    if (item.isDirectApkTrack()) {
+        return copy(
+            checkAllTrackedPreReleases = false,
+            preciseApkVersionEnabled = true
+        )
+    }
     val preciseResolved = when (item.preciseApkVersionMode) {
         GitHubTrackedPreciseApkVersionMode.FollowGlobal -> this
         GitHubTrackedPreciseApkVersionMode.Enabled -> copy(preciseApkVersionEnabled = true)

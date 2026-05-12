@@ -44,6 +44,7 @@ import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
@@ -87,6 +88,7 @@ internal fun GitHubTrackEditSheet(
     appList: List<InstalledAppItem>,
     trackedPackageNames: Set<String>,
     appListRefreshing: Boolean,
+    sourceModeInput: GitHubTrackedSourceMode,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
@@ -95,6 +97,7 @@ internal fun GitHubTrackEditSheet(
     onDismissRequest: () -> Unit,
     onApply: () -> Unit,
     onRepoUrlInputChange: (String) -> Unit,
+    onSourceModeInputChange: (GitHubTrackedSourceMode) -> Unit,
     onAppSearchChange: (String) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
     onScanRepoUrl: () -> Unit,
@@ -182,12 +185,14 @@ internal fun GitHubTrackEditSheet(
                     repoUrlScanRunning = repoUrlScanRunning,
                     packageNameScanRunning = packageNameScanRunning,
                     selectedApp = selectedApp,
+                    sourceModeInput = sourceModeInput,
                     preferPreReleaseInput = preferPreReleaseInput,
                     alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
                     checkActionsUpdatesInput = checkActionsUpdatesInput,
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
                     globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
+                    onSourceModeInputChange = onSourceModeInputChange,
                     onPackageNameInputChange = onPackageNameInputChange,
                     onScanRepoUrl = onScanRepoUrl,
                     onScanPackageName = onScanPackageName,
@@ -386,12 +391,14 @@ private fun GitHubTrackEditFormContent(
     repoUrlScanRunning: Boolean,
     packageNameScanRunning: Boolean,
     selectedApp: InstalledAppItem?,
+    sourceModeInput: GitHubTrackedSourceMode,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
+    onSourceModeInputChange: (GitHubTrackedSourceMode) -> Unit,
     onPackageNameInputChange: (String) -> Unit,
     onScanRepoUrl: () -> Unit,
     onScanPackageName: () -> Unit,
@@ -402,8 +409,14 @@ private fun GitHubTrackEditFormContent(
     onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
+    var sourceModeExpanded by remember { mutableStateOf(false) }
+    var sourceModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var preciseModeExpanded by remember { mutableStateOf(false) }
     var preciseModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val sourceModes = GitHubTrackedSourceMode.entries
+    val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
+    val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
+    val directApkMode = sourceModeInput == GitHubTrackedSourceMode.DirectApk
     val preciseModes = GitHubTrackedPreciseApkVersionMode.entries
     val preciseModeOptions = preciseModes.map { mode -> preciseApkVersionModeLabel(mode) }
     val preciseModeIndex = preciseModes.indexOf(preciseApkVersionModeInput).coerceAtLeast(0)
@@ -430,48 +443,96 @@ private fun GitHubTrackEditFormContent(
     }
     val canScanRepoUrl = !repoUrlScanRunning &&
             !packageNameScanRunning &&
+            !directApkMode &&
             (packageNameInput.isNotBlank() || selectedApp != null)
     val canScanPackageName = !repoUrlScanRunning &&
             !packageNameScanRunning &&
             repoUrlInput.isNotBlank()
+    val repoInputLabel = stringResource(
+        if (directApkMode) {
+            R.string.github_track_sheet_input_direct_apk
+        } else {
+            R.string.github_track_sheet_input_repo
+        }
+    )
+    val repoSummary = stringResource(
+        if (directApkMode) {
+            R.string.github_track_sheet_summary_direct_apk
+        } else {
+            R.string.github_track_sheet_summary_repo
+        }
+    )
+    val packageSummary = stringResource(
+        if (directApkMode) {
+            R.string.github_track_sheet_summary_package_direct_apk
+        } else {
+            R.string.github_track_sheet_summary_package_link
+        }
+    )
 
     SheetContentColumn(verticalSpacing = 10.dp) {
-        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_repository))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SheetSectionTitle(
+                text = stringResource(R.string.github_track_sheet_section_repository),
+                modifier = Modifier.weight(1f)
+            )
+            AppDropdownSelector(
+                selectedText = sourceModeOptions.getOrElse(sourceModeIndex) {
+                    stringResource(R.string.github_track_sheet_source_mode_github)
+                },
+                options = sourceModeOptions,
+                selectedIndex = sourceModeIndex,
+                expanded = sourceModeExpanded,
+                anchorBounds = sourceModeAnchorBounds,
+                onExpandedChange = { sourceModeExpanded = it },
+                onSelectedIndexChange = { index ->
+                    sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
+                },
+                onAnchorBoundsChange = { sourceModeAnchorBounds = it },
+                backdrop = backdrop
+            )
+        }
         SheetSectionCard {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SheetInputTitle(stringResource(R.string.github_track_sheet_input_repo))
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text = if (repoUrlScanRunning) {
-                        stringResource(R.string.github_track_sheet_btn_scan_repo_running)
-                    } else {
-                        stringResource(R.string.github_track_sheet_btn_scan_repo)
-                    },
-                    enabled = canScanRepoUrl,
-                    onClick = onScanRepoUrl,
-                    minHeight = 30.dp,
-                    horizontalPadding = 10.dp,
-                    verticalPadding = 4.dp,
-                    textMaxLines = 1
-                )
+                SheetInputTitle(repoInputLabel)
+                if (!directApkMode) {
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text = if (repoUrlScanRunning) {
+                            stringResource(R.string.github_track_sheet_btn_scan_repo_running)
+                        } else {
+                            stringResource(R.string.github_track_sheet_btn_scan_repo)
+                        },
+                        enabled = canScanRepoUrl,
+                        onClick = onScanRepoUrl,
+                        minHeight = 30.dp,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 4.dp,
+                        textMaxLines = 1
+                    )
+                }
             }
             AppLiquidSearchField(
                 value = repoUrlInput,
                 onValueChange = onRepoUrlInputChange,
-                label = stringResource(R.string.github_track_sheet_input_repo),
+                label = repoInputLabel,
                 backdrop = backdrop,
                 variant = GlassVariant.SheetInput,
                 singleLine = true
             )
             SheetDescriptionText(
-                text = stringResource(R.string.github_track_sheet_summary_repo)
+                text = repoSummary
             )
-            if (repoScanCandidates.isNotEmpty()) {
+            if (!directApkMode && repoScanCandidates.isNotEmpty()) {
                 RepositoryScanCandidateList(
                     candidates = repoScanCandidates,
                     selectedRepoUrl = repoUrlInput,
@@ -513,7 +574,7 @@ private fun GitHubTrackEditFormContent(
                 singleLine = true
             )
             SheetDescriptionText(
-                text = stringResource(R.string.github_track_sheet_summary_package_link)
+                text = packageSummary
             )
             SheetControlRow(
                 label = stringResource(R.string.github_track_sheet_label_selected_app),
@@ -537,55 +598,72 @@ private fun GitHubTrackEditFormContent(
 
         SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
         SheetSectionCard {
-            SheetControlRow(
-                label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
-                summary = stringResource(R.string.github_track_sheet_summary_prefer_prerelease)
-            ) {
-                AppSwitch(
-                    checked = preferPreReleaseInput,
-                    onCheckedChange = onPreferPreReleaseInputChange
+            if (directApkMode) {
+                SheetDescriptionText(
+                    text = stringResource(R.string.github_track_sheet_summary_direct_apk_check_options)
                 )
-            }
-            SheetControlRow(
-                label = stringResource(R.string.github_track_sheet_label_always_show_latest_release_download),
-                summary = stringResource(R.string.github_track_sheet_summary_always_show_latest_release_download)
-            ) {
-                AppSwitch(
-                    checked = alwaysShowLatestReleaseDownloadButtonInput,
-                    onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
-                )
-            }
-            SheetControlRow(
-                label = stringResource(R.string.github_track_sheet_label_check_actions_updates),
-                summary = stringResource(R.string.github_track_sheet_summary_check_actions_updates)
-            ) {
-                AppSwitch(
-                    checked = checkActionsUpdatesInput,
-                    onCheckedChange = onCheckActionsUpdatesInputChange
-                )
-            }
-            SheetControlRow(
-                label = stringResource(R.string.github_track_sheet_label_precise_apk_version),
-                summary = preciseModeSummary,
-                summaryColor = preciseModeSummaryColor
-            ) {
-                AppDropdownSelector(
-                    selectedText = preciseModeOptions.getOrElse(preciseModeIndex) {
-                        stringResource(R.string.github_track_sheet_precise_apk_version_follow_global)
-                    },
-                    options = preciseModeOptions,
-                    selectedIndex = preciseModeIndex,
-                    expanded = preciseModeExpanded,
-                    anchorBounds = preciseModeAnchorBounds,
-                    onExpandedChange = { preciseModeExpanded = it },
-                    onSelectedIndexChange = { index ->
-                        preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
-                    },
-                    onAnchorBoundsChange = { preciseModeAnchorBounds = it },
-                    backdrop = backdrop
-                )
+            } else {
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
+                    summary = stringResource(R.string.github_track_sheet_summary_prefer_prerelease)
+                ) {
+                    AppSwitch(
+                        checked = preferPreReleaseInput,
+                        onCheckedChange = onPreferPreReleaseInputChange
+                    )
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_label_always_show_latest_release_download),
+                    summary = stringResource(R.string.github_track_sheet_summary_always_show_latest_release_download)
+                ) {
+                    AppSwitch(
+                        checked = alwaysShowLatestReleaseDownloadButtonInput,
+                        onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange
+                    )
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_label_check_actions_updates),
+                    summary = stringResource(R.string.github_track_sheet_summary_check_actions_updates)
+                ) {
+                    AppSwitch(
+                        checked = checkActionsUpdatesInput,
+                        onCheckedChange = onCheckActionsUpdatesInputChange
+                    )
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_label_precise_apk_version),
+                    summary = preciseModeSummary,
+                    summaryColor = preciseModeSummaryColor
+                ) {
+                    AppDropdownSelector(
+                        selectedText = preciseModeOptions.getOrElse(preciseModeIndex) {
+                            stringResource(R.string.github_track_sheet_precise_apk_version_follow_global)
+                        },
+                        options = preciseModeOptions,
+                        selectedIndex = preciseModeIndex,
+                        expanded = preciseModeExpanded,
+                        anchorBounds = preciseModeAnchorBounds,
+                        onExpandedChange = { preciseModeExpanded = it },
+                        onSelectedIndexChange = { index ->
+                            preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
+                        },
+                        onAnchorBoundsChange = { preciseModeAnchorBounds = it },
+                        backdrop = backdrop
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun trackedSourceModeLabel(mode: GitHubTrackedSourceMode): String {
+    return when (mode) {
+        GitHubTrackedSourceMode.GitHubRepository ->
+            stringResource(R.string.github_track_sheet_source_mode_github)
+
+        GitHubTrackedSourceMode.DirectApk ->
+            stringResource(R.string.github_track_sheet_source_mode_direct_apk)
     }
 }
 

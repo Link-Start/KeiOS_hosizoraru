@@ -1,0 +1,186 @@
+package os.kei.feature.github.domain
+
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubApkManifestInfo
+import os.kei.feature.github.model.GitHubAtomFeed
+import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubReleaseChannel
+import os.kei.feature.github.model.GitHubReleaseSignalSource
+import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedReleaseCheck
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubVersionCandidateSource
+import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import java.util.Locale
+
+internal class GitHubDirectApkReleaseCheckSource(
+    private val apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository()
+) {
+    suspend fun evaluate(
+        item: GitHubTrackedApp,
+        lookupConfig: GitHubLookupConfig,
+        localVersion: String,
+        localVersionCode: Long,
+        forceRefresh: Boolean
+    ): GitHubTrackedReleaseCheck {
+        val asset = buildDirectApkAsset(item)
+            ?: return failedCheck(
+                item = item,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                detail = "invalid direct APK URL"
+            )
+        val directLookupConfig = lookupConfig.copy(
+            selectedStrategy = GitHubLookupStrategyOption.AtomFeed,
+            apiToken = "",
+            checkAllTrackedPreReleases = false,
+            preciseApkVersionEnabled = true
+        )
+        val manifest = apkInfoRepository.inspectAsync(
+            asset = asset,
+            lookupConfig = directLookupConfig,
+            forceRefresh = forceRefresh
+        ).getOrElse { error ->
+            return failedCheck(
+                item = item,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                detail = error.message.orEmpty().ifBlank { "remote APK manifest read failed" }
+            )
+        }
+        return evaluateManifest(
+            item = item,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            manifest = manifest,
+            sourceConfigSignature = directApkSourceSignature(item)
+        )
+    }
+
+    private fun failedCheck(
+        item: GitHubTrackedApp,
+        localVersion: String,
+        localVersionCode: Long,
+        detail: String
+    ): GitHubTrackedReleaseCheck {
+        return GitHubTrackedReleaseCheck(
+            strategyId = DIRECT_APK_STRATEGY_ID,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            sourceConfigSignature = directApkSourceSignature(item),
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+        )
+    }
+
+    internal companion object {
+        const val DIRECT_APK_STRATEGY_ID = "direct_apk"
+
+        fun buildDirectApkAsset(item: GitHubTrackedApp): GitHubReleaseAssetFile? {
+            val identity = buildDirectApkTrackIdentity(item.repoUrl) ?: return null
+            return GitHubReleaseAssetFile(
+                name = identity.assetName,
+                downloadUrl = identity.url,
+                sizeBytes = 0L,
+                downloadCount = 0,
+                contentType = "application/vnd.android.package-archive"
+            )
+        }
+
+        fun evaluateManifest(
+            item: GitHubTrackedApp,
+            localVersion: String,
+            localVersionCode: Long,
+            manifest: GitHubApkManifestInfo,
+            sourceConfigSignature: String = directApkSourceSignature(item)
+        ): GitHubTrackedReleaseCheck {
+            val trackedPackage = item.packageName.trim()
+            val remotePackage = manifest.packageName.trim()
+            if (
+                trackedPackage.isNotBlank() &&
+                remotePackage.isNotBlank() &&
+                !trackedPackage.equals(remotePackage, ignoreCase = true)
+            ) {
+                return GitHubTrackedReleaseCheck(
+                    strategyId = DIRECT_APK_STRATEGY_ID,
+                    localVersion = localVersion,
+                    localVersionCode = localVersionCode,
+                    sourceConfigSignature = sourceConfigSignature,
+                    status = GitHubTrackedReleaseStatus.Failed,
+                    message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                        "remote package $remotePackage does not match $trackedPackage"
+                    )
+                )
+            }
+            val preciseInfo = GitHubRemoteApkVersionInfo(
+                releaseName = manifest.appLabel.ifBlank { item.appLabel },
+                releaseTag = manifest.versionName.ifBlank { manifest.versionCode },
+                releaseUrl = item.repoUrl,
+                assetName = manifest.assetName,
+                packageName = remotePackage,
+                versionName = manifest.versionName,
+                versionCode = manifest.versionCode,
+                fetchSource = manifest.fetchSource.ifBlank { DIRECT_APK_STRATEGY_ID }
+            )
+            val displayVersion = preciseInfo.versionLabel()
+                .ifBlank { preciseInfo.releaseLabel() }
+                .ifBlank { manifest.assetName }
+            val candidates = GitHubVersionUtils.buildVersionCandidates(
+                GitHubVersionCandidateSource.Tag to manifest.versionName,
+                GitHubVersionCandidateSource.Title to manifest.versionCode,
+                GitHubVersionCandidateSource.Link to item.repoUrl
+            )
+            val stableSignal = GitHubReleaseVersionSignals(
+                displayVersion = displayVersion,
+                rawTag = manifest.versionName.ifBlank { manifest.versionCode },
+                rawName = manifest.appLabel.ifBlank { manifest.assetName },
+                link = item.repoUrl,
+                versionCandidates = candidates,
+                source = GitHubReleaseSignalSource.AtomFallback,
+                channel = GitHubReleaseChannel.STABLE
+            )
+            val entry = GitHubAtomReleaseEntry(
+                tag = stableSignal.rawTag,
+                title = stableSignal.rawName.ifBlank { stableSignal.displayVersion },
+                link = item.repoUrl,
+                versionCandidates = candidates,
+                channel = GitHubReleaseChannel.STABLE,
+                isLikelyPreRelease = false
+            )
+            val snapshot = GitHubRepositoryReleaseSnapshot(
+                strategyId = DIRECT_APK_STRATEGY_ID,
+                feed = GitHubAtomFeed(
+                    title = item.appLabel,
+                    feedUrl = item.repoUrl,
+                    entries = listOf(entry)
+                ),
+                latestStable = stableSignal,
+                hasStableRelease = true
+            )
+            return GitHubReleaseCheckService.evaluateSnapshot(
+                item = item,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                snapshot = snapshot,
+                checkAllTrackedPreReleases = false,
+                preciseStableApkVersion = preciseInfo,
+                sourceConfigSignature = sourceConfigSignature
+            )
+        }
+
+        fun directApkSourceSignature(item: GitHubTrackedApp): String {
+            return listOf(
+                DIRECT_APK_STRATEGY_ID,
+                item.repoUrl.trim().lowercase(Locale.ROOT),
+                item.packageName.trim().lowercase(Locale.ROOT)
+            ).joinToString("|")
+        }
+    }
+}

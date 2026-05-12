@@ -256,6 +256,7 @@
     <string name="github_list_label_search_result">搜索结果</string>
     <string name="github_list_msg_no_match">没有匹配的跟踪项目</string>
     <string name="github_item_label_repo">仓库地址</string>
+    <string name="github_item_label_direct_apk">APK 直链</string>
     <string name="github_item_label_local_version">本地版本</string>
     <string name="github_item_value_local_version_uninstalled">未安装 App</string>
     <string name="github_item_value_check_pending">待检查</string>
@@ -613,8 +614,12 @@
     <string name="github_track_sheet_section_repo_app">仓库与 App</string>
     <string name="github_track_sheet_section_repository">仓库来源</string>
     <string name="github_track_sheet_section_package_app">包名与本机 App</string>
+    <string name="github_track_sheet_source_mode_github">GitHub 项目</string>
+    <string name="github_track_sheet_source_mode_direct_apk">直链 APK</string>
     <string name="github_track_sheet_input_repo">GitHub 项目地址</string>
+    <string name="github_track_sheet_input_direct_apk">APK 直链地址</string>
     <string name="github_track_sheet_summary_repo">填写仓库主页或 release 地址；也可以通过包名反向扫描项目地址。</string>
+    <string name="github_track_sheet_summary_direct_apk">填写可直接访问的 APK 下载链接；刷新时会读取远端 APK Manifest 与本机版本对比。</string>
     <string name="github_track_sheet_section_repo_candidates">项目候选</string>
     <string name="github_track_sheet_repo_candidates_summary">已验证到同一包名，选择一个仓库写入草稿。</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d 个</string>
@@ -633,6 +638,7 @@
     <string name="github_track_sheet_btn_scan_package_running">扫描中</string>
     <string name="github_track_sheet_summary_package_optional">可留空仅跟踪仓库版本；后续填入包名或安装对应 App 后会自动联动刷新</string>
     <string name="github_track_sheet_summary_package_link">包名用于匹配本机安装状态；也可以通过最新稳定版 APK 自动扫描。</string>
+    <string name="github_track_sheet_summary_package_direct_apk">包名用于匹配本机安装状态；扫描包名会读取直链 APK 的 Manifest。</string>
     <string name="github_track_sheet_label_selected_app">已选 App</string>
     <string name="github_track_sheet_selected_none">未选择</string>
     <string name="github_track_sheet_summary_app_binding_none">可选。绑定本机 App 后会用于版本对比和安装后刷新。</string>
@@ -646,6 +652,7 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
     <string name="github_track_sheet_label_check_actions_updates">检查 Actions 更新</string>
     <string name="github_track_sheet_summary_check_actions_updates">按“更新间隔”自动检查此项目推荐的 Actions Run；发现新 Run 时发送实时通知/超级岛。</string>
+    <string name="github_track_sheet_summary_direct_apk_check_options">直链模式固定读取远端 APK Manifest 进行版本对比；预发行、最新 Release 下载和 Actions 检查会随此模式关闭。</string>
     <string name="github_item_label_actions_run">Actions Run</string>
     <string name="github_item_actions_run_value">%1$s · 记录于 %2$s</string>
     <string name="github_item_actions_run_not_recorded">尚未记录</string>

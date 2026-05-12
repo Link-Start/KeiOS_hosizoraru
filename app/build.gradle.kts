@@ -198,6 +198,7 @@ android {
         versionCode = releaseVersionCode
         versionName = releaseVersionName
         ndk {
+            //noinspection ChromeOsAbiSupport
             abiFilters += "arm64-v8a"
         }
         buildConfigField("String", "CORE_KTX_VERSION", "\"$coreKtxVersion\"")

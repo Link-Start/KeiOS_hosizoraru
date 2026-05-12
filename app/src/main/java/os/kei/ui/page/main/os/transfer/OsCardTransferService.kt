@@ -1,14 +1,14 @@
 package os.kei.ui.page.main.os.transfer
 
+import org.json.JSONObject
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
+import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
-import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.state.OsCardImportTarget
-import org.json.JSONObject
 
 internal object OsCardTransferService {
     fun buildActivityCardsExportJson(
@@ -40,6 +40,75 @@ internal object OsCardTransferService {
             )
             put("shell", JSONObject(buildShellCardsExportJson(shellCards)))
         }.toString(2)
+    }
+
+    fun parseBundleImportPayload(
+        raw: String,
+        defaults: OsGoogleSystemServiceConfig,
+        builtInSampleDefaults: OsGoogleSystemServiceConfig
+    ): OsCardBundleImportPayload {
+        val root = JSONObject(raw)
+        val schemaVersion = root.optInt("schemaVersion", OS_CARD_EXPORT_SCHEMA_VERSION)
+            .coerceAtLeast(OS_CARD_LEGACY_SCHEMA_VERSION)
+        val activityPayload = root.optJSONObject("activity")?.let { activityRoot ->
+            OsActivityShortcutCardStore.parseCardsImport(
+                root = parseOsCardImportRoot(activityRoot.toString()),
+                defaults = defaults,
+                builtInSampleDefaults = builtInSampleDefaults
+            )
+        }
+        val shellPayload = root.optJSONObject("shell")?.let { shellRoot ->
+            OsShellCommandCardStore.parseCardsImport(parseOsCardImportRoot(shellRoot.toString()))
+        }
+        return OsCardBundleImportPayload(
+            activityPayload = activityPayload,
+            shellPayload = shellPayload,
+            schemaVersion = schemaVersion,
+            isLegacyFormat = root.optString("schema").trim().isBlank()
+        )
+    }
+
+    fun buildBundleImportPreview(
+        raw: String,
+        activityShortcutCards: List<OsActivityShortcutCard>,
+        shellCommandCards: List<OsShellCommandCard>,
+        defaults: OsGoogleSystemServiceConfig,
+        builtInSampleDefaults: OsGoogleSystemServiceConfig
+    ): OsCardBundleImportPreview {
+        val payload = parseBundleImportPayload(
+            raw = raw,
+            defaults = defaults,
+            builtInSampleDefaults = builtInSampleDefaults
+        )
+        val activityPreview = payload.activityPayload?.let { activityPayload ->
+            buildPreview(
+                target = OsCardImportTarget.Activity,
+                payload = activityPayload,
+                validCount = activityPayload.cards.size,
+                result = OsActivityShortcutCardStore.previewImportedCards(
+                    payload = activityPayload,
+                    existingCards = activityShortcutCards,
+                    defaults = defaults,
+                    builtInSampleDefaults = builtInSampleDefaults
+                )
+            )
+        }
+        val shellPreview = payload.shellPayload?.let { shellPayload ->
+            buildPreview(
+                target = OsCardImportTarget.Shell,
+                payload = shellPayload,
+                validCount = shellPayload.cards.size,
+                result = OsShellCommandCardStore.previewImportedCards(
+                    payload = shellPayload,
+                    existingCards = shellCommandCards
+                )
+            )
+        }
+        return OsCardBundleImportPreview(
+            payload = payload,
+            activityPreview = activityPreview,
+            shellPreview = shellPreview
+        )
     }
 
     fun buildImportPreview(
@@ -174,6 +243,42 @@ internal object OsCardTransferService {
         return OsShellCommandCardStore.applyImportedCards(
             payload = payload,
             existingCards = existingCards
+        )
+    }
+
+    fun applyBundleImport(
+        payload: OsCardBundleImportPayload,
+        activityShortcutCards: List<OsActivityShortcutCard>,
+        shellCommandCards: List<OsShellCommandCard>,
+        defaults: OsGoogleSystemServiceConfig,
+        builtInSampleDefaults: OsGoogleSystemServiceConfig
+    ): OsCardBundleImportApplyResult {
+        val activityResult = payload.activityPayload
+            ?.takeIf { it.cards.isNotEmpty() }
+            ?.let { activityPayload ->
+                applyActivityImport(
+                    payload = activityPayload,
+                    existingCards = activityShortcutCards,
+                    defaults = defaults,
+                    builtInSampleDefaults = builtInSampleDefaults
+                )
+            }
+        val shellResult = payload.shellPayload
+            ?.takeIf { it.cards.isNotEmpty() }
+            ?.let { shellPayload ->
+                applyShellImport(
+                    payload = shellPayload,
+                    existingCards = shellCommandCards
+                )
+            }
+        return OsCardBundleImportApplyResult(
+            addedCount = (activityResult?.addedCount ?: 0) + (shellResult?.addedCount ?: 0),
+            updatedCount = (activityResult?.updatedCount ?: 0) + (shellResult?.updatedCount ?: 0),
+            unchangedCount = (activityResult?.unchangedCount ?: 0) + (shellResult?.unchangedCount
+                ?: 0),
+            invalidCount = payload.invalidCount,
+            duplicateCount = payload.duplicateCount,
+            mergedCount = (activityResult?.cards?.size ?: 0) + (shellResult?.cards?.size ?: 0)
         )
     }
 

@@ -1,10 +1,10 @@
 package os.kei.ui.page.main.os.transfer
 
+import org.json.JSONObject
+import org.junit.Test
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import org.json.JSONObject
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -69,6 +69,46 @@ class OsCardTransferServiceTest {
         assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, activityJson.optInt("schemaVersion"))
         assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, bundleJson.optInt("schemaVersion"))
         assertEquals(OS_CARD_BUNDLE_EXPORT_SCHEMA, bundleJson.optString("schema"))
+    }
+
+    @Test
+    fun `bundle import preview combines activity and shell cards`() {
+        val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
+        val sampleDefaults = defaults.copy(title = "Sample")
+        val bundleRaw = OsCardTransferService.buildCardsBundleExportJson(
+            activityCards = listOf(
+                OsActivityShortcutCard(
+                    id = "activity-1",
+                    config = defaults.copy(
+                        title = "Settings",
+                        packageName = "com.android.settings",
+                        className = "Settings"
+                    )
+                )
+            ),
+            shellCards = listOf(
+                OsShellCommandCard(
+                    id = "shell-1",
+                    title = "List global",
+                    command = "settings list global"
+                )
+            ),
+            defaults = defaults
+        )
+
+        val preview = OsCardTransferService.buildBundleImportPreview(
+            raw = bundleRaw,
+            activityShortcutCards = emptyList(),
+            shellCommandCards = emptyList(),
+            defaults = defaults,
+            builtInSampleDefaults = sampleDefaults
+        )
+
+        assertTrue(preview.canImport)
+        assertEquals(2, preview.fileItemCount)
+        assertEquals(2, preview.validCount)
+        assertEquals(2, preview.newCount)
+        assertEquals(0, preview.updatedCount)
     }
 
     @Test

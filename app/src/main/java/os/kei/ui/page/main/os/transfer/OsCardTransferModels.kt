@@ -116,6 +116,59 @@ internal data class OsCardImportPreview(
         get() = validCount > 0 && !canImport && payload.fileKind != OsCardImportFileKind.Unknown
 }
 
+@Immutable
+internal data class OsCardBundleImportPayload(
+    val activityPayload: OsActivityCardImportPayload?,
+    val shellPayload: OsShellCardImportPayload?,
+    val schemaVersion: Int,
+    val isLegacyFormat: Boolean
+) {
+    val sourceCount: Int
+        get() = (activityPayload?.sourceCount ?: 0) + (shellPayload?.sourceCount ?: 0)
+    val validCount: Int
+        get() = (activityPayload?.cards?.size ?: 0) + (shellPayload?.cards?.size ?: 0)
+    val invalidCount: Int
+        get() = (activityPayload?.invalidCount ?: 0) + (shellPayload?.invalidCount ?: 0)
+    val duplicateCount: Int
+        get() = (activityPayload?.duplicateCount ?: 0) + (shellPayload?.duplicateCount ?: 0)
+}
+
+@Immutable
+internal data class OsCardBundleImportPreview(
+    val payload: OsCardBundleImportPayload,
+    val activityPreview: OsCardImportPreview?,
+    val shellPreview: OsCardImportPreview?
+) {
+    val canImport: Boolean
+        get() = activityPreview?.canImport == true || shellPreview?.canImport == true
+    val fileItemCount: Int
+        get() = payload.sourceCount
+    val validCount: Int
+        get() = payload.validCount
+    val duplicateCount: Int
+        get() = payload.duplicateCount
+    val invalidCount: Int
+        get() = payload.invalidCount
+    val newCount: Int
+        get() = (activityPreview?.newCount ?: 0) + (shellPreview?.newCount ?: 0)
+    val updatedCount: Int
+        get() = (activityPreview?.updatedCount ?: 0) + (shellPreview?.updatedCount ?: 0)
+    val unchangedCount: Int
+        get() = (activityPreview?.unchangedCount ?: 0) + (shellPreview?.unchangedCount ?: 0)
+    val mergedCount: Int
+        get() = (activityPreview?.mergedCount ?: 0) + (shellPreview?.mergedCount ?: 0)
+}
+
+@Immutable
+internal data class OsCardBundleImportApplyResult(
+    val addedCount: Int,
+    val updatedCount: Int,
+    val unchangedCount: Int,
+    val invalidCount: Int,
+    val duplicateCount: Int,
+    val mergedCount: Int
+)
+
 internal fun OsCardImportTarget.expectedFileKind(): OsCardImportFileKind {
     return when (this) {
         OsCardImportTarget.Activity -> OsCardImportFileKind.Activity

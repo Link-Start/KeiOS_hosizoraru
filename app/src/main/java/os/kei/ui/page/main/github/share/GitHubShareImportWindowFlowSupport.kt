@@ -20,12 +20,14 @@ import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
+import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
@@ -227,7 +229,13 @@ internal suspend fun attachCandidateToTracked(
             owner = candidate.owner,
             repo = candidate.repo,
             packageName = candidate.packageName,
-            appLabel = candidate.appLabel.ifBlank { candidate.packageName }
+            appLabel = candidate.appLabel.ifBlank { candidate.packageName },
+            localAppType = GitHubVersionUtils.localVersionInfoOrNull(
+                context = context,
+                packageName = candidate.packageName
+            )?.let { info ->
+                GitHubTrackedLocalAppType.fromSystemFlag(info.isSystemApp)
+            } ?: GitHubTrackedLocalAppType.Unknown
         )
         trackedItems.add(trackedItem)
         GitHubTrackStore.save(trackedItems)

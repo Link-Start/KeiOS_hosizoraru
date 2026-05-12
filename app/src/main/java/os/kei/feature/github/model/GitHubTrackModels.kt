@@ -19,10 +19,39 @@ data class GitHubTrackedApp(
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
         GitHubTrackedPreciseApkVersionMode.FollowGlobal,
     val repositoryArchived: Boolean = false,
-    val repositoryFork: Boolean = false
+    val repositoryFork: Boolean = false,
+    val localAppType: GitHubTrackedLocalAppType = GitHubTrackedLocalAppType.Unknown
 ) {
     val id: String
         get() = "$owner/$repo|$packageName"
+}
+
+enum class GitHubTrackedLocalAppType(val storageId: String) {
+    Unknown("unknown"),
+    User("user"),
+    System("system");
+
+    companion object {
+        fun fromStorageId(value: String?): GitHubTrackedLocalAppType {
+            val normalized = value.orEmpty().trim()
+            return entries.firstOrNull { it.storageId.equals(normalized, ignoreCase = true) }
+                ?: Unknown
+        }
+
+        fun fromSystemFlag(isSystemApp: Boolean?): GitHubTrackedLocalAppType {
+            return when (isSystemApp) {
+                true -> System
+                false -> User
+                null -> Unknown
+            }
+        }
+    }
+}
+
+fun GitHubTrackedApp.hasSameGitHubTrackingConfigIgnoringLocalAppType(
+    other: GitHubTrackedApp
+): Boolean {
+    return copy(localAppType = other.localAppType) == other
 }
 
 enum class GitHubTrackedPreciseApkVersionMode(val storageId: String) {

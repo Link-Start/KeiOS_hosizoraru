@@ -9,6 +9,7 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
+import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
 import os.kei.ui.page.main.github.page.GitHubTrackEditorResult
@@ -62,7 +63,10 @@ internal class GitHubTrackActions(
     fun refreshAppListForTrackSheet() {
         if (appListRefreshJob?.isActive == true) return
         appListRefreshJob = scope.launch {
-            refreshActions.reloadApps(forceRefresh = true)
+            refreshActions.reloadApps(
+                forceRefresh = true,
+                includeSystemApps = true
+            )
             syncSelectedAppFromPackageInput()
         }
     }
@@ -110,7 +114,10 @@ internal class GitHubTrackActions(
                     )
                     return@launch
                 }
-                refreshActions.reloadApps(forceRefresh = true)
+                refreshActions.reloadApps(
+                    forceRefresh = true,
+                    includeSystemApps = true
+                )
                 state.packageNameInput = result.packageName
                 state.selectedApp = state.appList.firstOrNull { app ->
                     app.packageName.equals(result.packageName, ignoreCase = true)
@@ -234,6 +241,8 @@ internal class GitHubTrackActions(
                 }
                 val editingState = state.checkStates[editing.id] ?: VersionCheckUi()
                 val itemChanged = editing != newItem
+                val trackingConfigChanged =
+                    !editing.hasSameGitHubTrackingConfigIgnoringLocalAppType(newItem)
                 val existingAddedAt = state.trackedAddedAtById[editing.id]
                     ?.takeIf { it > 0L }
                     ?: state.trackedAddedAtById[newItem.id]
@@ -245,7 +254,7 @@ internal class GitHubTrackActions(
                 } else {
                     state.trackedItems.add(newItem)
                 }
-                if (itemChanged) {
+                if (itemChanged && trackingConfigChanged) {
                     assetActions.clearApkAssetStateAndCacheNow(
                         item = editing,
                         itemState = editingState
@@ -268,7 +277,13 @@ internal class GitHubTrackActions(
                 }
                 state.recordTrackedAddedAt(newItem.id, existingAddedAt)
                 state.requestTrackCardFocus(newItem.id)
-                env.saveTrackedItems(refreshTrackIds = setOf(newItem.id))
+                env.saveTrackedItems(
+                    refreshTrackIds = if (trackingConfigChanged) {
+                        setOf(newItem.id)
+                    } else {
+                        emptySet()
+                    }
+                )
                 env.toast(R.string.github_toast_track_updated)
             }
             state.dismissTrackSheet()

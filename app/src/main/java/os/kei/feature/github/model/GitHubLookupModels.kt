@@ -87,6 +87,7 @@ data class GitHubLookupConfig(
     val checkAllTrackedPreReleases: Boolean = false,
     val aggressiveApkFiltering: Boolean = false,
     val preciseApkVersionEnabled: Boolean = false,
+    val scanSystemAppsByDefault: Boolean = false,
     val profileDepth: GitHubProfileDepth = GitHubProfileDepth.Basic,
     val shareImportLinkageEnabled: Boolean = false,
     val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
@@ -114,6 +115,7 @@ fun GitHubLookupConfig.githubCheckSourceSignature(): String {
         checkAllTrackedPreReleases.toString(),
         aggressiveApkFiltering.toString(),
         preciseApkVersionEnabled.toString(),
+        scanSystemAppsByDefault.toString(),
         profileDepth.storageId
     ).joinToString("|")
 }
@@ -142,6 +144,7 @@ fun GitHubLookupConfig.githubProfileSourceSignature(
         checkAllTrackedPreReleases.toString(),
         aggressiveApkFiltering.toString(),
         preciseApkVersionEnabled.toString(),
+        scanSystemAppsByDefault.toString(),
         profileDepth.storageId,
         capabilities.sortedBy { it.name }.joinToString(",") { it.name }
     ).joinToString("|")

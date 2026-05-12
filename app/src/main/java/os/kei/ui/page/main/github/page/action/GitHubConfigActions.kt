@@ -6,7 +6,9 @@ import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
+import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.RefreshIntervalOption
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -56,6 +58,7 @@ internal class GitHubConfigActions(
             state.checkAllTrackedPreReleasesInput = config.checkAllTrackedPreReleases
             state.aggressiveApkFilteringInput = config.aggressiveApkFiltering
             state.preciseApkVersionEnabledInput = config.preciseApkVersionEnabled
+            state.scanSystemAppsByDefaultInput = config.scanSystemAppsByDefault
             state.profileDepthInput = config.profileDepth
             state.shareImportLinkageEnabledInput = config.shareImportLinkageEnabled
             state.shareImportFlowModeInput = config.shareImportFlowMode
@@ -110,6 +113,7 @@ internal class GitHubConfigActions(
                 checkAllTrackedPreReleases = previousConfig.checkAllTrackedPreReleases,
                 aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
                 preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
+                scanSystemAppsByDefault = previousConfig.scanSystemAppsByDefault,
                 profileDepth = previousConfig.profileDepth,
                 shareImportLinkageEnabled = previousConfig.shareImportLinkageEnabled,
                 shareImportFlowMode = previousConfig.shareImportFlowMode,
@@ -194,6 +198,7 @@ internal class GitHubConfigActions(
                 checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
                 aggressiveApkFiltering = state.aggressiveApkFilteringInput,
                 preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
+                scanSystemAppsByDefault = state.scanSystemAppsByDefaultInput,
                 profileDepth = state.profileDepthInput,
                 shareImportLinkageEnabled = state.shareImportLinkageEnabledInput,
                 shareImportFlowMode = state.shareImportFlowModeInput,
@@ -216,6 +221,8 @@ internal class GitHubConfigActions(
             val filteringChanged = previousConfig.aggressiveApkFiltering != newConfig.aggressiveApkFiltering
             val preciseVersionChanged =
                 previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled
+            val scanSystemAppsChanged =
+                previousConfig.scanSystemAppsByDefault != newConfig.scanSystemAppsByDefault
             val profileDepthChanged = previousConfig.profileDepth != newConfig.profileDepth
             val profilePurposeChanged = previousConfig.defaultRepositoryProfilePurpose() !=
                     newConfig.defaultRepositoryProfilePurpose()
@@ -242,6 +249,7 @@ internal class GitHubConfigActions(
                 checkScopeChanged ||
                         filteringChanged ||
                         preciseVersionChanged ||
+                        scanSystemAppsChanged ||
                         profileDepthChanged ||
                         profilePurposeChanged -> {
                     repository.clearCheckCache()
@@ -251,6 +259,9 @@ internal class GitHubConfigActions(
                     state.lastRefreshMs = 0L
                     state.refreshProgress = 0f
                     state.overviewRefreshState = OverviewRefreshState.Idle
+                    if (scanSystemAppsChanged) {
+                        refreshActions.reloadApps(forceRefresh = true)
+                    }
                     if (state.trackedItems.isNotEmpty()) {
                         env.toast(
                             if (profileDepthChanged) {
@@ -365,6 +376,7 @@ internal class GitHubConfigActions(
             .associate { it.value.id to it.index }
             .toMutableMap()
         val touchedItems = mutableListOf<GitHubTrackedApp>()
+        val refreshItems = mutableListOf<GitHubTrackedApp>()
         var addedCount = 0
         var updatedCount = 0
         var unchangedCount = 0
@@ -376,19 +388,28 @@ internal class GitHubConfigActions(
                     indexById[item.id] = mergedItems.lastIndex
                     state.recordTrackedAddedAt(item.id, nowMillis)
                     touchedItems += item
+                    refreshItems += item
                     addedCount += 1
                 }
 
                 mergedItems[existingIndex] != item -> {
                     val existingItem = mergedItems[existingIndex]
-                    val existingState = state.checkStates[item.id] ?: VersionCheckUi()
-                    assetActions.clearApkAssetStateAndCacheNow(
-                        item = existingItem,
-                        itemState = existingState
-                    )
-                    mergedItems[existingIndex] = item
-                    state.checkStates.remove(item.id)
-                    touchedItems += item
+                    val mergedItem = item.withTrackedLocalAppTypeFallback(existingItem)
+                    val trackingConfigChanged =
+                        !existingItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(mergedItem)
+                    if (trackingConfigChanged) {
+                        val existingState = state.checkStates[item.id] ?: VersionCheckUi()
+                        assetActions.clearApkAssetStateAndCacheNow(
+                            item = existingItem,
+                            itemState = existingState
+                        )
+                    }
+                    mergedItems[existingIndex] = mergedItem
+                    if (trackingConfigChanged) {
+                        state.checkStates.remove(item.id)
+                        refreshItems += mergedItem
+                    }
+                    touchedItems += mergedItem
                     updatedCount += 1
                 }
 
@@ -412,12 +433,12 @@ internal class GitHubConfigActions(
         env.saveTrackedItems()
         refreshActions.persistCheckCache()
 
-        val touchedCount = touchedItems.size
-        if (touchedCount in 1..6) {
-            touchedItems.forEach { item ->
+        val refreshCount = refreshItems.size
+        if (refreshCount in 1..6) {
+            refreshItems.forEach { item ->
                 refreshActions.refreshItem(item = item, showToastOnError = false)
             }
-        } else {
+        } else if (refreshCount > 6) {
             state.lastRefreshMs = 0L
             state.refreshProgress = 0f
             state.overviewRefreshState = OverviewRefreshState.Idle
@@ -432,4 +453,14 @@ internal class GitHubConfigActions(
         )
     }
 
+}
+
+private fun GitHubTrackedApp.withTrackedLocalAppTypeFallback(
+    existingItem: GitHubTrackedApp
+): GitHubTrackedApp {
+    return if (localAppType == GitHubTrackedLocalAppType.Unknown) {
+        copy(localAppType = existingItem.localAppType)
+    } else {
+        this
+    }
 }

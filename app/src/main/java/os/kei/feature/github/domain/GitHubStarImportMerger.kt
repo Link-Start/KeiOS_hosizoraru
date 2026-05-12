@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.StarImportApplyResult
 import java.util.Locale
 
@@ -47,27 +48,30 @@ internal object GitHubStarImportMerger {
 
             when {
                 exactIndex != null -> {
-                    if (mergedItems[exactIndex] == item) {
+                    val mergedItem = item.withLocalAppTypeFallback(mergedItems[exactIndex])
+                    if (mergedItems[exactIndex] == mergedItem) {
                         unchangedCount += 1
                     } else {
-                        mergedItems[exactIndex] = item
+                        mergedItems[exactIndex] = mergedItem
                         updatedCount += 1
-                        affectedTrackIds += item.id
-                        item.packageName.trim().takeIf { it.isNotBlank() }
+                        affectedTrackIds += mergedItem.id
+                        mergedItem.packageName.trim().takeIf { it.isNotBlank() }
                             ?.let(affectedPackages::add)
                     }
                 }
 
                 fallbackIndex != null -> {
                     val previous = mergedItems[fallbackIndex]
-                    mergedItems[fallbackIndex] = item
+                    val mergedItem = item.withLocalAppTypeFallback(previous)
+                    mergedItems[fallbackIndex] = mergedItem
                     indexById.remove(previous.id)
-                    indexById[item.id] = fallbackIndex
+                    indexById[mergedItem.id] = fallbackIndex
                     repoOnlyIndexByRepo.remove(previous.repoKey())
                     updatedCount += 1
                     removedTrackIds += previous.id
-                    affectedTrackIds += item.id
-                    item.packageName.trim().takeIf { it.isNotBlank() }?.let(affectedPackages::add)
+                    affectedTrackIds += mergedItem.id
+                    mergedItem.packageName.trim().takeIf { it.isNotBlank() }
+                        ?.let(affectedPackages::add)
                 }
 
                 else -> {
@@ -99,4 +103,14 @@ internal object GitHubStarImportMerger {
 
 private fun GitHubTrackedApp.repoKey(): String {
     return "${owner.trim().lowercase(Locale.ROOT)}/${repo.trim().lowercase(Locale.ROOT)}"
+}
+
+private fun GitHubTrackedApp.withLocalAppTypeFallback(
+    existingItem: GitHubTrackedApp
+): GitHubTrackedApp {
+    return if (localAppType == GitHubTrackedLocalAppType.Unknown) {
+        copy(localAppType = existingItem.localAppType)
+    } else {
+        this
+    }
 }

@@ -50,8 +50,19 @@ object GitHubVersionUtils {
 
     private data class CachedInstalledApps(
         val updatedAtMs: Long,
-        val apps: List<InstalledAppItem>
+        val apps: List<InstalledAppItem>,
+        val includesSystemApps: Boolean,
+        val pinnedSystemPackageNames: Set<String>
     )
+
+    private fun CachedInstalledApps.canServeInstalledAppScope(
+        includeSystemApps: Boolean,
+        pinnedSystemPackageNames: Set<String>
+    ): Boolean {
+        if (includesSystemApps) return true
+        if (includeSystemApps) return false
+        return pinnedSystemPackageNames.all { it in this.pinnedSystemPackageNames }
+    }
 
     private data class InstalledAppSortEntry(
         val item: InstalledAppItem,
@@ -61,7 +72,8 @@ object GitHubVersionUtils {
 
     data class LocalVersionInfo(
         val versionName: String,
-        val versionCode: Long
+        val versionCode: Long,
+        val isSystemApp: Boolean = false
     )
 
     fun buildRepositoryUrl(owner: String, repo: String): String {
@@ -87,13 +99,26 @@ object GitHubVersionUtils {
     fun queryInstalledLaunchableApps(
         context: Context,
         forceRefresh: Boolean = false,
-        ttlMs: Long = INSTALLED_APPS_CACHE_TTL_MS
+        ttlMs: Long = INSTALLED_APPS_CACHE_TTL_MS,
+        includeSystemApps: Boolean = true,
+        pinnedSystemPackageNames: Set<String> = emptySet()
     ): List<InstalledAppItem> {
         val now = System.currentTimeMillis()
+        val normalizedPinnedSystemPackages = pinnedSystemPackageNames.normalizedPackageNameSet()
         if (!forceRefresh) {
             installedAppsCache?.takeIf { cache ->
-                (now - cache.updatedAtMs).coerceAtLeast(0L) < ttlMs.coerceAtLeast(0L)
-            }?.let { return it.apps }
+                (now - cache.updatedAtMs).coerceAtLeast(0L) < ttlMs.coerceAtLeast(0L) &&
+                        cache.canServeInstalledAppScope(
+                            includeSystemApps = includeSystemApps,
+                            pinnedSystemPackageNames = normalizedPinnedSystemPackages
+                        )
+            }?.let { cache ->
+                return filterGitHubInstalledAppsByScanScope(
+                    apps = cache.apps,
+                    includeSystemApps = includeSystemApps,
+                    pinnedSystemPackageNames = normalizedPinnedSystemPackages
+                )
+            }
         }
 
         val pm = context.packageManager
@@ -110,6 +135,13 @@ object GitHubVersionUtils {
                 if (shouldIgnoreInstalledAppForGitHubList(appInfo, overlayFlagMask)) {
                     return@mapNotNull null
                 }
+                val isSystemApp = appInfo.isSystemAppForGitHubPicker()
+                if (!includeSystemApps &&
+                    isSystemApp &&
+                    packageName.lowercase(Locale.ROOT) !in normalizedPinnedSystemPackages
+                ) {
+                    return@mapNotNull null
+                }
 
                 val label = runCatching {
                     pm.getApplicationLabel(appInfo).toString()
@@ -120,7 +152,7 @@ object GitHubVersionUtils {
                     packageName = packageName,
                     firstInstallTimeMs = pkgInfo.firstInstallTime,
                     lastUpdateTimeMs = pkgInfo.lastUpdateTime,
-                    isSystemApp = appInfo.isSystemAppForGitHubPicker(),
+                    isSystemApp = isSystemApp,
                     installSourcePackageName = installSource.packageName,
                     installSourceLabel = installSource.label
                 )
@@ -139,9 +171,24 @@ object GitHubVersionUtils {
             .toList()
         installedAppsCache = CachedInstalledApps(
             updatedAtMs = now,
-            apps = apps
+            apps = apps,
+            includesSystemApps = includeSystemApps,
+            pinnedSystemPackageNames = normalizedPinnedSystemPackages
         )
         return apps
+    }
+
+    internal fun filterGitHubInstalledAppsByScanScope(
+        apps: List<InstalledAppItem>,
+        includeSystemApps: Boolean,
+        pinnedSystemPackageNames: Set<String>
+    ): List<InstalledAppItem> {
+        if (includeSystemApps) return apps
+        val normalizedPinnedSystemPackages = pinnedSystemPackageNames.normalizedPackageNameSet()
+        return apps.filter { app ->
+            !app.isSystemApp ||
+                    app.packageName.lowercase(Locale.ROOT) in normalizedPinnedSystemPackages
+        }
     }
 
     fun invalidateInstalledLaunchableAppsCache() {
@@ -169,11 +216,17 @@ object GitHubVersionUtils {
             }
             throw error
         }
+        val appInfo = pkgInfo.applicationInfo ?: pm.getApplicationInfoCompat(packageName)
+        val overlayFlagMask = installedAppResourceOverlayFlagMask()
+        if (appInfo != null && shouldIgnoreInstalledAppForGitHubList(appInfo, overlayFlagMask)) {
+            return null
+        }
         val versionName = pkgInfo.versionName?.trim().orEmpty().ifBlank { "unknown" }
         val versionCode = pkgInfo.longVersionCode
         return LocalVersionInfo(
             versionName = versionName,
-            versionCode = versionCode
+            versionCode = versionCode,
+            isSystemApp = appInfo?.isSystemAppForGitHubPicker() == true
         )
     }
 
@@ -744,6 +797,12 @@ private fun PackageManager.getApplicationInfoCompat(packageName: String): Applic
     return runCatching {
         getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
     }.getOrNull()
+}
+
+private fun Set<String>.normalizedPackageNameSet(): Set<String> {
+    return mapNotNullTo(LinkedHashSet()) { packageName ->
+        packageName.trim().lowercase(Locale.ROOT).takeIf { it.isNotBlank() }
+    }
 }
 
 private data class InstalledAppInstallSource(

@@ -52,6 +52,7 @@ internal fun GitHubCheckLogicSheet(
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
+    scanSystemAppsByDefaultInput: Boolean,
     profileDepthInput: GitHubProfileDepth,
     shareImportLinkageEnabledInput: Boolean,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
@@ -79,6 +80,7 @@ internal fun GitHubCheckLogicSheet(
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
+    onScanSystemAppsByDefaultInputChange: (Boolean) -> Unit,
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShareImportLinkageEnabledInputChange: (Boolean) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
@@ -146,6 +148,7 @@ internal fun GitHubCheckLogicSheet(
             checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
                 preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
+                    scanSystemAppsByDefaultInput != lookupConfig.scanSystemAppsByDefault ||
                 profileDepthInput != lookupConfig.profileDepth ||
             shareImportLinkageEnabledInput != lookupConfig.shareImportLinkageEnabled ||
                 shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
@@ -172,10 +175,12 @@ internal fun GitHubCheckLogicSheet(
                 checkAllTrackedPreReleasesInput = checkAllTrackedPreReleasesInput,
                 aggressiveApkFilteringInput = aggressiveApkFilteringInput,
                 preciseApkVersionEnabledInput = preciseApkVersionEnabledInput,
+                scanSystemAppsByDefaultInput = scanSystemAppsByDefaultInput,
                 profileDepthInput = profileDepthInput,
                 onCheckAllTrackedPreReleasesInputChange = onCheckAllTrackedPreReleasesInputChange,
                 onAggressiveApkFilteringInputChange = onAggressiveApkFilteringInputChange,
                 onPreciseApkVersionEnabledInputChange = onPreciseApkVersionEnabledInputChange,
+                onScanSystemAppsByDefaultInputChange = onScanSystemAppsByDefaultInputChange,
                 onProfileDepthInputChange = onProfileDepthInputChange
             )
             GitHubCheckTransferSection(
@@ -364,10 +369,12 @@ private fun GitHubCheckStrategySection(
     checkAllTrackedPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
+    scanSystemAppsByDefaultInput: Boolean,
     profileDepthInput: GitHubProfileDepth,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
+    onScanSystemAppsByDefaultInputChange: (Boolean) -> Unit,
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit
 ) {
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_checks))
@@ -397,6 +404,15 @@ private fun GitHubCheckStrategySection(
             AppSwitch(
                 checked = preciseApkVersionEnabledInput,
                 onCheckedChange = onPreciseApkVersionEnabledInputChange
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_scan_system_apps),
+            summary = stringResource(R.string.github_check_sheet_summary_scan_system_apps)
+        ) {
+            AppSwitch(
+                checked = scanSystemAppsByDefaultInput,
+                onCheckedChange = onScanSystemAppsByDefaultInputChange
             )
         }
         SheetControlRow(

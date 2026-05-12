@@ -41,6 +41,22 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `system app scanning is disabled by default`() {
+        assertEquals(false, GitHubLookupConfig().scanSystemAppsByDefault)
+    }
+
+    @Test
+    fun `system app scanning participates in check source signature`() {
+        val disabled = GitHubLookupConfig(scanSystemAppsByDefault = false)
+        val enabled = GitHubLookupConfig(scanSystemAppsByDefault = true)
+
+        assertEquals(
+            false,
+            disabled.githubCheckSourceSignature() == enabled.githubCheckSourceSignature()
+        )
+    }
+
+    @Test
     fun `tracked precise apk version mode overrides global config`() {
         val item = GitHubTrackedApp(
             repoUrl = "https://github.com/owner/repo",

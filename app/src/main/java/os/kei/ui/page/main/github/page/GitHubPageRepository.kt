@@ -45,6 +45,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -262,12 +263,16 @@ internal class GitHubPageRepository(
 
     suspend fun queryInstalledLaunchableApps(
         context: Context,
-        forceRefresh: Boolean
+        forceRefresh: Boolean,
+        includeSystemApps: Boolean = true,
+        pinnedSystemPackageNames: Set<String> = emptySet()
     ): List<InstalledAppItem> {
         return withContext(ioDispatcher) {
             GitHubVersionUtils.queryInstalledLaunchableApps(
                 context = context,
-                forceRefresh = forceRefresh
+                forceRefresh = forceRefresh,
+                includeSystemApps = includeSystemApps,
+                pinnedSystemPackageNames = pinnedSystemPackageNames
             )
         }
     }
@@ -472,7 +477,10 @@ internal class GitHubPageRepository(
                     preferPreRelease = draft.preferPreRelease,
                     alwaysShowLatestReleaseDownloadButton = draft.alwaysShowLatestReleaseDownloadButton,
                     checkActionsUpdates = draft.checkActionsUpdates,
-                    preciseApkVersionMode = draft.preciseApkVersionMode
+                    preciseApkVersionMode = draft.preciseApkVersionMode,
+                    localAppType = GitHubTrackedLocalAppType.fromSystemFlag(
+                        matchedInstalledApp?.isSystemApp
+                    )
                 )
             )
         }

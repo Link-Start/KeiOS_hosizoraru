@@ -427,6 +427,8 @@
     <string name="github_check_sheet_summary_aggressive_filter">Ignore `armeabi-v7a`, `armeabi`, `x86_64`, and `x86`; when arm64-v8a exists, ignore universal as well.</string>
     <string name="github_check_sheet_label_precise_apk_version">More precise version logic</string>
     <string name="github_check_sheet_summary_precise_apk_version">Reads real versionName and versionCode from remote APK Manifest data; large tracking lists may spend a little more time parsing.</string>
+    <string name="github_check_sheet_label_scan_system_apps">Scan system apps by default</string>
+    <string name="github_check_sheet_summary_scan_system_apps">When off, refresh and retry scan user apps plus tracked items already recorded as system apps. Resource overlays are always filtered.</string>
     <string name="github_check_sheet_label_deep_profile">Deep repository profile</string>
     <string name="github_check_sheet_summary_deep_profile">Off by default. When enabled, traffic, fork sync, and security endpoints are read for deeper checks. Token mode gives fuller data and uses more requests.</string>
     <string name="github_check_sheet_label_downloader">Downloader</string>

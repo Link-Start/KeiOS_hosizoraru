@@ -149,6 +149,7 @@ internal class GitHubPageState(
     var checkAllTrackedPreReleasesInput by mutableStateOf(false)
     var aggressiveApkFilteringInput by mutableStateOf(false)
     var preciseApkVersionEnabledInput by mutableStateOf(false)
+    var scanSystemAppsByDefaultInput by mutableStateOf(false)
     var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportLinkageEnabledInput by mutableStateOf(false)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)

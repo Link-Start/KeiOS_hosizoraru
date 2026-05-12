@@ -2,6 +2,7 @@ package os.kei.feature.github.domain
 
 import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -72,6 +73,24 @@ class GitHubStarImportMergerTest {
         assertEquals(1, merge.result.unchangedCount)
         assertTrue(merge.result.affectedTrackIds.isEmpty())
         assertTrue(merge.result.affectedPackages.isEmpty())
+    }
+
+    @Test
+    fun `unknown imported local app type preserves existing system marker`() {
+        val existing = track(
+            repo = "systemized",
+            packageName = "demo.systemized"
+        ).copy(localAppType = GitHubTrackedLocalAppType.System)
+        val imported = existing.copy(localAppType = GitHubTrackedLocalAppType.Unknown)
+
+        val merge = GitHubStarImportMerger.merge(
+            existingItems = listOf(existing),
+            importedItems = listOf(imported)
+        )
+
+        assertEquals(listOf(existing), merge.items)
+        assertEquals(1, merge.result.unchangedCount)
+        assertTrue(merge.result.affectedTrackIds.isEmpty())
     }
 
     private fun track(

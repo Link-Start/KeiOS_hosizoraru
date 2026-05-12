@@ -16,8 +16,10 @@ import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubCheckSourceSignature
+import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -29,6 +31,7 @@ import os.kei.ui.page.main.github.share.toShareImportResult
 import os.kei.ui.page.main.github.share.toShareImportTrack
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
+import java.util.Locale
 
 private const val GITHUB_REFRESH_ALL_PARALLELISM = 4
 private const val GITHUB_REFRESH_UI_BATCH_SIZE = 4
@@ -99,14 +102,20 @@ internal class GitHubRefreshActions(
         env.toast(reason)
     }
 
-    suspend fun reloadApps(forceRefresh: Boolean = false) {
+    suspend fun reloadApps(
+        forceRefresh: Boolean = false,
+        includeSystemApps: Boolean = state.lookupConfig.scanSystemAppsByDefault
+    ) {
         appListReloadMutex.withLock {
             state.appListRefreshing = true
             try {
                 state.appList = repository.queryInstalledLaunchableApps(
                     context = context,
-                    forceRefresh = forceRefresh
+                    forceRefresh = forceRefresh,
+                    includeSystemApps = includeSystemApps,
+                    pinnedSystemPackageNames = trackedSystemPackageNames()
                 )
+                syncTrackedLocalAppTypesFromAppList()
                 val trackedPackages = state.trackedItems
                     .map { it.packageName.trim() }
                     .filter { it.isNotBlank() }
@@ -120,6 +129,55 @@ internal class GitHubRefreshActions(
                 state.appListRefreshing = false
             }
         }
+    }
+
+    private fun trackedSystemPackageNames(): Set<String> {
+        return state.trackedItems
+            .asSequence()
+            .filter { it.localAppType == GitHubTrackedLocalAppType.System }
+            .mapNotNull { item ->
+                item.packageName.trim().lowercase(Locale.ROOT)
+                    .takeIf { packageName -> packageName.isNotBlank() }
+            }
+            .toSet()
+    }
+
+    private fun syncTrackedLocalAppTypesFromAppList() {
+        if (state.trackedItems.isEmpty() || state.appList.isEmpty()) return
+        val detectedTypeByPackage = state.appList
+            .mapNotNull { app ->
+                val packageName = app.packageName.trim().lowercase(Locale.ROOT)
+                    .takeIf { it.isNotBlank() }
+                    ?: return@mapNotNull null
+                packageName to GitHubTrackedLocalAppType.fromSystemFlag(app.isSystemApp)
+            }
+            .toMap()
+        val updates = state.trackedItems.mapNotNull { item ->
+            val detectedType = detectedTypeByPackage[item.packageName.trim().lowercase(Locale.ROOT)]
+                ?: return@mapNotNull null
+            if (item.localAppType == detectedType) {
+                null
+            } else {
+                item.id to detectedType
+            }
+        }.toMap()
+        applyTrackedLocalAppTypeUpdates(updates)
+    }
+
+    private fun applyTrackedLocalAppTypeUpdates(
+        updates: Map<String, GitHubTrackedLocalAppType>
+    ) {
+        if (updates.isEmpty()) return
+        val updatedItems = state.trackedItems.map { item ->
+            val detectedType = updates[item.id]?.takeIf {
+                it != GitHubTrackedLocalAppType.Unknown && it != item.localAppType
+            } ?: return@map item
+            item.copy(localAppType = detectedType)
+        }
+        if (updatedItems == state.trackedItems.toList()) return
+        state.trackedItems.clear()
+        state.trackedItems.addAll(updatedItems)
+        env.saveTrackedItems()
     }
 
     suspend fun initializeWarmSnapshot() {
@@ -252,6 +310,7 @@ internal class GitHubRefreshActions(
         val trackedSnapshot = state.trackedItems.toList()
         if (trackedSnapshot.isEmpty()) return
 
+        val localAppTypeUpdates = mutableMapOf<String, GitHubTrackedLocalAppType>()
         trackedSnapshot.forEach { item ->
             val packageName = item.packageName.trim()
             if (packageName.isBlank()) return@forEach
@@ -259,6 +318,14 @@ internal class GitHubRefreshActions(
             val latestLocalVersionInfo = runCatching {
                 repository.localVersionInfoOrNull(context, packageName)
             }.getOrNull()
+            latestLocalVersionInfo?.let { info ->
+                val detectedType = GitHubTrackedLocalAppType.fromSystemFlag(info.isSystemApp)
+                if (detectedType != GitHubTrackedLocalAppType.Unknown &&
+                    detectedType != item.localAppType
+                ) {
+                    localAppTypeUpdates[item.id] = detectedType
+                }
+            }
             val installed = latestLocalVersionInfo != null
 
             val cachedState = state.checkStates[item.id] ?: return@forEach
@@ -275,6 +342,7 @@ internal class GitHubRefreshActions(
                 refreshItem(item = item, showToastOnError = false)
             }
         }
+        applyTrackedLocalAppTypeUpdates(localAppTypeUpdates)
     }
 
     fun refreshItem(
@@ -543,7 +611,9 @@ internal class GitHubRefreshActions(
                     incomingItemsById
                         .filter { (trackId, incomingItem) ->
                             previousItemsById[trackId]?.let { previousItem ->
-                                previousItem != incomingItem
+                                !previousItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(
+                                    incomingItem
+                                )
                             } == true
                         }
                         .keys
@@ -562,6 +632,7 @@ internal class GitHubRefreshActions(
         state.shareImportFlowModeInput = trackSnapshot.lookupConfig.shareImportFlowMode
         state.appManagedShareInstallEnabledInput =
             trackSnapshot.lookupConfig.appManagedShareInstallEnabled
+        state.scanSystemAppsByDefaultInput = trackSnapshot.lookupConfig.scanSystemAppsByDefault
         state.onlineShareTargetPackageInput = trackSnapshot.lookupConfig.onlineShareTargetPackage
         state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage
         state.refreshIntervalHours = trackSnapshot.refreshIntervalHours

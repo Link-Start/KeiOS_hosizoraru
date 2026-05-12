@@ -2,6 +2,7 @@ package os.kei.feature.github.data.local
 
 import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import kotlin.test.assertEquals
 
@@ -17,7 +18,8 @@ class GitHubTrackStoreTrackedItemJsonTest {
             preferPreRelease = true,
             alwaysShowLatestReleaseDownloadButton = true,
             checkActionsUpdates = true,
-            preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled
+            preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled,
+            localAppType = GitHubTrackedLocalAppType.System
         )
 
         val exported = GitHubTrackStore.buildTrackedItemsExportJson(
@@ -34,6 +36,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
         assertEquals(GitHubTrackedPreciseApkVersionMode.Disabled, imported.preciseApkVersionMode)
+        assertEquals(GitHubTrackedLocalAppType.System, imported.localAppType)
     }
 
     @Test
@@ -78,7 +81,11 @@ class GitHubTrackStoreTrackedItemJsonTest {
                     "preferPreRelease": true,
                     "alwaysShowLatestReleaseDownloadButton": true,
                     "checkActionsUpdates": true,
-                    "preciseApkVersionMode": "enabled"
+                    "preciseApkVersionMode": "enabled",
+                    "localAppType": "system"
+                  },
+                  "local": {
+                    "appType": "system"
                   },
                   "repository": {
                     "archived": true,
@@ -98,6 +105,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
         assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, imported.preciseApkVersionMode)
+        assertEquals(GitHubTrackedLocalAppType.System, imported.localAppType)
         assertEquals(true, imported.repositoryArchived)
         assertEquals(true, imported.repositoryFork)
     }

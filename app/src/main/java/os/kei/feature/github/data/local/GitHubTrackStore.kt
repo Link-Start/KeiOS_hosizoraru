@@ -13,6 +13,7 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
@@ -84,6 +85,7 @@ object GitHubTrackStore {
     private const val KEY_CHECK_ALL_TRACKED_PRE_RELEASES = "check_all_tracked_pre_releases"
     private const val KEY_AGGRESSIVE_APK_FILTERING = "github_aggressive_apk_filtering"
     private const val KEY_PRECISE_APK_VERSION_ENABLED = "github_precise_apk_version_enabled"
+    private const val KEY_SCAN_SYSTEM_APPS_BY_DEFAULT = "github_scan_system_apps_by_default"
     private const val KEY_PROFILE_DEPTH = "github_profile_depth"
     private const val KEY_SHARE_IMPORT_LINKAGE_ENABLED = "github_share_import_linkage_enabled"
     private const val KEY_SHARE_IMPORT_FLOW_MODE = "github_share_import_flow_mode"
@@ -648,6 +650,7 @@ object GitHubTrackStore {
             checkAllTrackedPreReleases = kv().decodeBool(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, false),
             aggressiveApkFiltering = kv().decodeBool(KEY_AGGRESSIVE_APK_FILTERING, false),
             preciseApkVersionEnabled = kv().decodeBool(KEY_PRECISE_APK_VERSION_ENABLED, false),
+            scanSystemAppsByDefault = kv().decodeBool(KEY_SCAN_SYSTEM_APPS_BY_DEFAULT, false),
             profileDepth = GitHubProfileDepth.fromStorageId(
                 kv().decodeString(KEY_PROFILE_DEPTH).orEmpty()
             ),
@@ -681,6 +684,7 @@ object GitHubTrackStore {
         kv().encode(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, config.checkAllTrackedPreReleases)
         kv().encode(KEY_AGGRESSIVE_APK_FILTERING, config.aggressiveApkFiltering)
         kv().encode(KEY_PRECISE_APK_VERSION_ENABLED, config.preciseApkVersionEnabled)
+        kv().encode(KEY_SCAN_SYSTEM_APPS_BY_DEFAULT, config.scanSystemAppsByDefault)
         kv().encode(KEY_PROFILE_DEPTH, config.profileDepth.storageId)
         kv().encode(KEY_SHARE_IMPORT_LINKAGE_ENABLED, config.shareImportLinkageEnabled)
         kv().encode(KEY_SHARE_IMPORT_FLOW_MODE, config.shareImportFlowMode.storageId)
@@ -751,8 +755,38 @@ object GitHubTrackStore {
                 repository?.has("fork") == true -> repository.optBoolean("fork", false)
                 obj.has("repositoryFork") -> obj.optBoolean("repositoryFork", false)
                 else -> false
-            }
+            },
+            localAppType = parseTrackedLocalAppType(obj)
         )
+    }
+
+    private fun parseTrackedLocalAppType(obj: JSONObject): GitHubTrackedLocalAppType {
+        val settings = obj.optJSONObject("settings")
+        val local = obj.optJSONObject("local")
+        return when {
+            local?.has("appType") == true ->
+                GitHubTrackedLocalAppType.fromStorageId(local.optString("appType"))
+
+            local?.has("isSystemApp") == true ->
+                GitHubTrackedLocalAppType.fromSystemFlag(local.optBoolean("isSystemApp", false))
+
+            settings?.has("localAppType") == true ->
+                GitHubTrackedLocalAppType.fromStorageId(settings.optString("localAppType"))
+
+            settings?.has("isSystemApp") == true ->
+                GitHubTrackedLocalAppType.fromSystemFlag(settings.optBoolean("isSystemApp", false))
+
+            obj.has("localAppType") ->
+                GitHubTrackedLocalAppType.fromStorageId(obj.optString("localAppType"))
+
+            obj.has("appType") ->
+                GitHubTrackedLocalAppType.fromStorageId(obj.optString("appType"))
+
+            obj.has("isSystemApp") ->
+                GitHubTrackedLocalAppType.fromSystemFlag(obj.optBoolean("isSystemApp", false))
+
+            else -> GitHubTrackedLocalAppType.Unknown
+        }
     }
 
     private fun parsePreciseApkVersionMode(obj: JSONObject): GitHubTrackedPreciseApkVersionMode {
@@ -797,9 +831,13 @@ object GitHubTrackStore {
             )
             .put("checkActionsUpdates", item.checkActionsUpdates)
             .put("preciseApkVersionMode", item.preciseApkVersionMode.storageId)
+            .put("localAppType", item.localAppType.storageId)
         val repository = JSONObject()
             .put("archived", item.repositoryArchived)
             .put("fork", item.repositoryFork)
+        val local = JSONObject()
+            .put("appType", item.localAppType.storageId)
+            .put("isSystemApp", item.localAppType == GitHubTrackedLocalAppType.System)
         return JSONObject()
             .put("repoUrl", item.repoUrl)
             .put("owner", item.owner)
@@ -807,12 +845,14 @@ object GitHubTrackStore {
             .put("packageName", item.packageName)
             .put("appLabel", item.appLabel)
             .put("settings", settings)
+            .put("local", local)
             .put("preferPreRelease", item.preferPreRelease)
             .put("checkPreRelease", item.preferPreRelease)
             .put("alwaysShowLatestReleaseDownloadButton", item.alwaysShowLatestReleaseDownloadButton)
             .put("alwaysShowLatestReleaseDownload", item.alwaysShowLatestReleaseDownloadButton)
             .put("checkActionsUpdates", item.checkActionsUpdates)
             .put("preciseApkVersionMode", item.preciseApkVersionMode.storageId)
+            .put("localAppType", item.localAppType.storageId)
             .put("repository", repository)
             .put("repositoryArchived", item.repositoryArchived)
             .put("repositoryFork", item.repositoryFork)

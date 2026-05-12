@@ -1,6 +1,6 @@
-@file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:OptIn(UnstableApi::class)
 
-package os.kei.ui.page.main.student
+package os.kei.ui.page.main.student.media
 
 import android.content.Context
 import androidx.annotation.OptIn
@@ -8,6 +8,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaNotification
+import os.kei.ui.page.main.student.BaGuideBgmMediaIslandShareNotificationProvider
+import os.kei.ui.page.main.student.BaGuideBgmMediaOemCompat
 
 @OptIn(UnstableApi::class)
 internal val BA_GUIDE_BGM_MEDIA_NOTIFICATION_ID: Int =

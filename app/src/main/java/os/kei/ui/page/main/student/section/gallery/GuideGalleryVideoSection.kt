@@ -125,7 +125,7 @@ fun GuideGalleryVideoGroupCardItem(
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
-                        GuideVideoFullscreenActivity.Companion.launch(
+                        GuideVideoFullscreenActivity.launch(
                             context = context,
                             mediaUrl = normalized
                         )
@@ -237,7 +237,7 @@ internal fun GuideInlineVideoPlayer(
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                GuideVideoFullscreenActivity.Companion.launch(
+                GuideVideoFullscreenActivity.launch(
                     context = context,
                     mediaUrl = normalizedUrl
                 )

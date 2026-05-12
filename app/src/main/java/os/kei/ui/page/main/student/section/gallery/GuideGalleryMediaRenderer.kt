@@ -140,7 +140,7 @@ internal fun GuideGalleryCardContent(
                                 Toast.LENGTH_SHORT
                             ).show()
                         } else {
-                            GuideVideoFullscreenActivity.Companion.launch(
+                            GuideVideoFullscreenActivity.launch(
                                 context = context,
                                 mediaUrl = normalized
                             )

@@ -14,6 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import os.kei.R
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
+import os.kei.ui.page.main.student.media.BaGuideBgmMediaNotificationProviderFactory
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue

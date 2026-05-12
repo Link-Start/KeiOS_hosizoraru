@@ -11,6 +11,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import os.kei.R
+import os.kei.ui.page.main.student.media.BA_GUIDE_BGM_MEDIA_NOTIFICATION_ID
+import os.kei.ui.page.main.student.media.BaGuideBgmMediaNotificationProviderFactory
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue

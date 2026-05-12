@@ -3,8 +3,6 @@ package os.kei.ui.page.main.github.share
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.drawable.ColorDrawable
-import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
@@ -20,6 +18,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import os.kei.MainActivity
@@ -272,10 +271,8 @@ class GitHubShareImportActivity : ComponentActivity() {
 
     private fun configureTransparentShareImportWindow() {
         enableEdgeToEdge()
-        window.setBackgroundDrawable(ColorDrawable(AndroidColor.TRANSPARENT))
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isNavigationBarContrastEnforced = false
-        }
+        window.setBackgroundDrawable(AndroidColor.TRANSPARENT.toDrawable())
+        window.isNavigationBarContrastEnforced = false
         clearShareImportWindowDim()
     }
 

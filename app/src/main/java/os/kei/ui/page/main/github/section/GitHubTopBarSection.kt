@@ -105,8 +105,6 @@ internal fun GitHubTopBarActions(
     val actionMenuMaxWidth = (screenWidth - GitHubActionMenuHorizontalMargin)
         .coerceIn(GitHubActionMenuCompactMinWidth, GitHubActionMenuPreferredMaxWidth)
     val actionMenuMinWidth = minOf(GitHubActionMenuPreferredMinWidth, actionMenuMaxWidth)
-    val actionSubmenuMaxWidth = actionMenuMaxWidth
-    val actionSubmenuMinWidth = actionMenuMinWidth
     val actionItems = remember(
         editStrategyIcon,
         checkLogicIcon,
@@ -184,8 +182,6 @@ internal fun GitHubTopBarActions(
                             accentColor = MiuixTheme.colorScheme.onBackground,
                             minWidth = actionMenuMinWidth,
                             maxWidth = actionMenuMaxWidth,
-                            submenuMinWidth = actionSubmenuMinWidth,
-                            submenuMaxWidth = actionSubmenuMaxWidth,
                             quickActions = listOf(
                                 LiquidGlassActionMenuQuickAction(
                                     id = "export_tracks",

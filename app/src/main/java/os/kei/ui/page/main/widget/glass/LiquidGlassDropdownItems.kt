@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -57,6 +58,7 @@ fun LiquidGlassDropdownItem(
     highlighted: Boolean = selected,
     showCheck: Boolean = selected,
     highlightContent: Boolean = selected && showCheck,
+    reserveCheckSlot: Boolean = false,
     textMaxLines: Int = 1
 ) {
     if (LocalLiquidGlassDropdownSizingPass.current) {
@@ -75,6 +77,7 @@ fun LiquidGlassDropdownItem(
             highlighted = highlighted,
             showCheck = showCheck,
             highlightContent = highlightContent,
+            reserveCheckSlot = reserveCheckSlot,
             textMaxLines = textMaxLines,
             enabled = enabled
         )
@@ -141,6 +144,7 @@ fun LiquidGlassDropdownItem(
                 iconColor = iconColor,
                 checkColor = checkColor,
                 showCheck = showCheck,
+                reserveCheckSlot = reserveCheckSlot,
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
                 subtitle = subtitle,
@@ -236,6 +240,7 @@ fun LiquidGlassDropdownItem(
                 iconColor = iconColor,
                 checkColor = checkColor,
                 showCheck = showCheck,
+                reserveCheckSlot = reserveCheckSlot,
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
                 subtitle = subtitle,
@@ -274,6 +279,7 @@ private fun LiquidGlassDropdownMeasureItem(
     highlighted: Boolean = selected,
     showCheck: Boolean = selected,
     highlightContent: Boolean = selected && showCheck,
+    reserveCheckSlot: Boolean = false,
     textMaxLines: Int = 1,
     enabled: Boolean = true
 ) {
@@ -309,6 +315,7 @@ private fun LiquidGlassDropdownMeasureItem(
             iconColor = iconColor,
             checkColor = checkColor,
             showCheck = showCheck,
+            reserveCheckSlot = reserveCheckSlot,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
             subtitle = subtitle,
@@ -338,6 +345,7 @@ private fun LiquidGlassDropdownRowContent(
     iconColor: Color,
     checkColor: Color,
     showCheck: Boolean,
+    reserveCheckSlot: Boolean,
     leadingIcon: ImageVector?,
     trailingIcon: ImageVector?,
     subtitle: String?,
@@ -364,10 +372,15 @@ private fun LiquidGlassDropdownRowContent(
                 0.34f
             }
         )
-    val rowHorizontalPadding =
-        if (material == LiquidGlassDropdownMaterial.ActionMenu) 11.dp else 12.dp
+    val actionMenuLeadingCheck = material == LiquidGlassDropdownMaterial.ActionMenu &&
+            reserveCheckSlot
+    val rowHorizontalPadding = when {
+        material != LiquidGlassDropdownMaterial.ActionMenu -> 12.dp
+        actionMenuLeadingCheck -> 23.dp
+        else -> 23.dp
+    }
     val rowVerticalPadding = if (material == LiquidGlassDropdownMaterial.ActionMenu) 7.dp else 8.dp
-    val rowSpacing = if (material == LiquidGlassDropdownMaterial.ActionMenu) 9.dp else 10.dp
+    val rowSpacing = if (material == LiquidGlassDropdownMaterial.ActionMenu) 13.dp else 10.dp
     Row(
         modifier = modifier.padding(
             horizontal = rowHorizontalPadding,
@@ -376,7 +389,18 @@ private fun LiquidGlassDropdownRowContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(rowSpacing)
     ) {
-        if (leadingIcon != null) {
+        if (actionMenuLeadingCheck) {
+            if (showCheck) {
+                Icon(
+                    imageVector = MiuixIcons.Basic.Check,
+                    contentDescription = null,
+                    tint = checkColor,
+                    modifier = Modifier.size(LiquidGlassDropdownCheckSize)
+                )
+            } else {
+                Spacer(modifier = Modifier.size(LiquidGlassDropdownCheckSize))
+            }
+        } else if (leadingIcon != null) {
             Icon(
                 imageVector = leadingIcon,
                 contentDescription = null,
@@ -418,7 +442,7 @@ private fun LiquidGlassDropdownRowContent(
             )
         }
         trailingContent?.invoke(this)
-        if (showCheck) {
+        if (showCheck && !actionMenuLeadingCheck) {
             Icon(
                 imageVector = MiuixIcons.Basic.Check,
                 contentDescription = null,
@@ -463,6 +487,7 @@ fun LiquidGlassDropdownSingleChoiceItem(
         highlighted = isSelected,
         showCheck = isSelected,
         highlightContent = isSelected,
+        reserveCheckSlot = true,
         textMaxLines = textMaxLines
     )
 }

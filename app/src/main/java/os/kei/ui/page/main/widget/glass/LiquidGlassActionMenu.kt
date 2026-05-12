@@ -1,6 +1,9 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -8,7 +11,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -16,9 +18,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,18 +38,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.widget.motion.AppMotionTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.appExpandIn
+import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val ActionMenuQuickActionMaxWidth = 64.dp
-private val ActionMenuQuickActionMinWidth = 52.dp
 private val ActionMenuQuickActionSpacing = 4.dp
 private val ActionMenuQuickActionRowHorizontalPadding = 4.dp
 private val ActionMenuQuickActionRowVerticalPadding = 3.dp
 private val ActionMenuQuickActionMinHeight = 52.dp
-private val ActionMenuDividerHorizontalPadding = 12.dp
+private val ActionMenuDividerHorizontalPadding = 23.dp
 private val ActionMenuDividerVerticalPadding = 4.dp
 
 data class LiquidGlassActionMenuQuickAction(
@@ -109,14 +113,21 @@ fun LiquidGlassActionMenu(
     minWidth: Dp = 252.dp,
     maxWidth: Dp = 312.dp,
     maxHeight: Dp = 420.dp,
-    submenuMinWidth: Dp = minWidth,
-    submenuMaxWidth: Dp = maxWidth,
     initialExpandedSubmenuId: String? = null,
     onDismissRequest: () -> Unit = {}
 ) {
     var expandedSubmenuId by remember(items, initialExpandedSubmenuId) {
         mutableStateOf(initialExpandedSubmenuId)
     }
+    var renderedSubmenuId by remember(items, initialExpandedSubmenuId) {
+        mutableStateOf(initialExpandedSubmenuId)
+    }
+    val submenuVisibilityState = remember(items, initialExpandedSubmenuId) {
+        MutableTransitionState(initialExpandedSubmenuId != null).apply {
+            targetState = initialExpandedSubmenuId != null
+        }
+    }
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val expandedSubmenu = items
         .filterIsInstance<LiquidGlassActionMenuSubmenuRow>()
         .firstOrNull { item ->
@@ -124,13 +135,60 @@ fun LiquidGlassActionMenu(
                     item.enabled &&
                     item.submenuItems.isNotEmpty()
         }
-    val visibleItems = if (expandedSubmenu != null) {
-        items.takeWhile { item -> item.id != expandedSubmenu.id }
-    } else {
-        items
+    val renderedSubmenu = items
+        .filterIsInstance<LiquidGlassActionMenuSubmenuRow>()
+        .firstOrNull { item ->
+            item.id == renderedSubmenuId &&
+                    item.enabled &&
+                    item.submenuItems.isNotEmpty()
+        }
+    LaunchedEffect(expandedSubmenu?.id) {
+        if (expandedSubmenu != null) {
+            renderedSubmenuId = expandedSubmenu.id
+            submenuVisibilityState.targetState = true
+        } else {
+            submenuVisibilityState.targetState = false
+        }
+    }
+    LaunchedEffect(
+        submenuVisibilityState.isIdle,
+        submenuVisibilityState.currentState,
+        expandedSubmenuId
+    ) {
+        if (submenuVisibilityState.isIdle &&
+            !submenuVisibilityState.currentState &&
+            expandedSubmenuId == null
+        ) {
+            renderedSubmenuId = null
+        }
+    }
+    val collapseSubmenu = {
+        expandedSubmenuId = null
+        submenuVisibilityState.targetState = false
+    }
+    val expandSubmenu: (String) -> Unit = { id ->
+        if (expandedSubmenuId == id) {
+            collapseSubmenu()
+        } else {
+            renderedSubmenuId = id
+            submenuVisibilityState.targetState = true
+            expandedSubmenuId = id
+        }
     }
     AppLiquidGlassDropdownColumn(
-        modifier = modifier.animateContentSize(),
+        modifier = modifier.animateContentSize(
+            animationSpec = tween(
+                durationMillis = if (transitionAnimationsEnabled) {
+                    if (expandedSubmenu == null) {
+                        AppMotionTokens.expandSizeOutMs
+                    } else {
+                        AppMotionTokens.expandSizeInMs
+                    }
+                } else {
+                    AppMotionTokens.disabledDurationMs
+                }
+            )
+        ),
         minWidth = minWidth,
         maxWidth = maxWidth,
         maxHeight = maxHeight,
@@ -149,33 +207,47 @@ fun LiquidGlassActionMenu(
             )
             LiquidGlassActionMenuDivider()
         }
-        visibleItems.forEachIndexed { index, item ->
-            LiquidGlassActionMenuItemRow(
-                item = item,
-                index = index,
-                optionSize = if (expandedSubmenu != null) visibleItems.size + 1 else visibleItems.size,
-                expanded = expandedSubmenuId == item.id,
+        if (renderedSubmenu == null) {
+            LiquidGlassActionMenuItemsPanel(
+                items = items,
+                expandedSubmenuId = expandedSubmenuId,
                 accentColor = accentColor,
-                onExpandSubmenu = { id ->
-                    expandedSubmenuId = if (expandedSubmenuId == id) null else id
-                },
+                onExpandSubmenu = expandSubmenu,
                 onDismissRequest = onDismissRequest
             )
-        }
-        if (expandedSubmenu != null) {
+        } else {
             LiquidGlassActionMenuSubmenuPanel(
-                item = expandedSubmenu,
+                item = renderedSubmenu,
+                choicesVisibleState = submenuVisibilityState,
                 accentColor = accentColor,
-                backdrop = backdrop,
-                minWidth = submenuMinWidth,
-                maxWidth = submenuMaxWidth,
-                onCollapse = { expandedSubmenuId = null },
+                onCollapse = collapseSubmenu,
                 onDismissRequest = {
-                    expandedSubmenuId = null
+                    collapseSubmenu()
                     onDismissRequest()
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun LiquidGlassActionMenuItemsPanel(
+    items: List<LiquidGlassActionMenuItem>,
+    expandedSubmenuId: String?,
+    accentColor: Color,
+    onExpandSubmenu: (String) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    items.forEachIndexed { index, item ->
+        LiquidGlassActionMenuItemRow(
+            item = item,
+            index = index,
+            optionSize = items.size,
+            expanded = expandedSubmenuId == item.id,
+            accentColor = accentColor,
+            onExpandSubmenu = onExpandSubmenu,
+            onDismissRequest = onDismissRequest
+        )
     }
 }
 
@@ -250,68 +322,63 @@ private fun LiquidGlassActionMenuItemRow(
 @Composable
 private fun LiquidGlassActionMenuSubmenuPanel(
     item: LiquidGlassActionMenuSubmenuRow,
+    choicesVisibleState: MutableTransitionState<Boolean>,
     accentColor: Color,
-    backdrop: Backdrop?,
-    minWidth: Dp,
-    maxWidth: Dp,
     onCollapse: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    val selectedIndex = item.submenuItems.indexOfFirst { choice -> choice.selected }
-    AppLiquidGlassDropdownColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 0.dp),
-        minWidth = minWidth,
-        maxWidth = maxWidth,
-        initialScrollItemIndex = selectedIndex.takeIf { it >= 0 },
+    LiquidGlassDropdownActionItem(
+        text = item.text,
+        onClick = onCollapse,
+        index = 0,
+        optionSize = 1,
+        leadingIcon = item.leadingIcon,
+        subtitle = item.subtitle
+            ?: item.submenuItems.firstOrNull { choice -> choice.selected }?.text,
+        trailingContent = {
+            item.trailingIcon?.let { icon ->
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onBackgroundVariant.copy(
+                        alpha = if (isSystemInDarkTheme()) 0.82f else 0.70f
+                    ),
+                    modifier = Modifier
+                        .size(18.dp)
+                        .graphicsLayer { rotationZ = 90f }
+                )
+            }
+        },
         accentColor = accentColor,
-        backdrop = backdrop,
-        material = LiquidGlassDropdownMaterial.ActionMenu
+        variant = item.variant,
+        enabled = item.enabled
+    )
+    AnimatedVisibility(
+        visibleState = choicesVisibleState,
+        enter = appExpandIn(),
+        exit = appExpandOut(),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        LiquidGlassDropdownActionItem(
-            text = item.text,
-            onClick = onCollapse,
-            index = 0,
-            optionSize = item.submenuItems.size + 1,
-            leadingIcon = item.leadingIcon,
-            subtitle = item.subtitle
-                ?: item.submenuItems.firstOrNull { choice -> choice.selected }?.text,
-            trailingContent = {
-                item.trailingIcon?.let { icon ->
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onBackgroundVariant.copy(
-                            alpha = if (isSystemInDarkTheme()) 0.82f else 0.70f
-                        ),
-                        modifier = Modifier
-                            .size(18.dp)
-                            .graphicsLayer { rotationZ = 90f }
-                    )
-                }
-            },
-            accentColor = accentColor,
-            variant = item.variant,
-            enabled = item.enabled
-        )
-        LiquidGlassActionMenuDivider()
-        item.submenuItems.forEachIndexed { choiceIndex, choice ->
-            LiquidGlassDropdownSingleChoiceItem(
-                text = choice.text,
-                optionSize = item.submenuItems.size,
-                isSelected = choice.selected,
-                index = choiceIndex,
-                onSelectedIndexChange = {
-                    choice.onClick()
-                    onDismissRequest()
-                },
-                trailingIcon = choice.trailingIcon,
-                subtitle = choice.subtitle,
-                accentColor = accentColor,
-                variant = choice.variant,
-                enabled = choice.enabled
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            LiquidGlassActionMenuDivider()
+            val optionSize = item.submenuItems.size
+            item.submenuItems.forEachIndexed { choiceIndex, choice ->
+                LiquidGlassDropdownSingleChoiceItem(
+                    text = choice.text,
+                    optionSize = optionSize,
+                    isSelected = choice.selected,
+                    index = choiceIndex,
+                    onSelectedIndexChange = {
+                        choice.onClick()
+                        onDismissRequest()
+                    },
+                    trailingIcon = choice.trailingIcon,
+                    subtitle = choice.subtitle,
+                    accentColor = accentColor,
+                    variant = choice.variant,
+                    enabled = choice.enabled
+                )
+            }
         }
     }
 }
@@ -322,32 +389,23 @@ private fun LiquidGlassActionMenuQuickActionsRow(
     accentColor: Color,
     onActionClick: (LiquidGlassActionMenuQuickAction) -> Unit
 ) {
-    BoxWithConstraints(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
                 horizontal = ActionMenuQuickActionRowHorizontalPadding,
                 vertical = ActionMenuQuickActionRowVerticalPadding
             ),
-        contentAlignment = Alignment.Center
+        horizontalArrangement = Arrangement.spacedBy(ActionMenuQuickActionSpacing),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        val actionCount = quickActions.size.coerceAtLeast(1)
-        val totalSpacing = ActionMenuQuickActionSpacing * (actionCount - 1)
-        val availableButtonWidth = ((maxWidth - totalSpacing) / actionCount)
-            .coerceAtLeast(ActionMenuQuickActionMinWidth)
-        val buttonWidth = minOf(ActionMenuQuickActionMaxWidth, availableButtonWidth)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(ActionMenuQuickActionSpacing),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            quickActions.forEach { action ->
-                LiquidGlassActionMenuQuickActionButton(
-                    action = action,
-                    accentColor = accentColor,
-                    onActionClick = onActionClick,
-                    modifier = Modifier.width(buttonWidth)
-                )
-            }
+        quickActions.forEach { action ->
+            LiquidGlassActionMenuQuickActionButton(
+                action = action,
+                accentColor = accentColor,
+                onActionClick = onActionClick,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

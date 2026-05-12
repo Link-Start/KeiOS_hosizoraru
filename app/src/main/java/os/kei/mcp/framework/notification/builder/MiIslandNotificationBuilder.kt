@@ -639,7 +639,8 @@ class MiIslandNotificationBuilder(
         val installActionLabels = setOf(
             context.getString(R.string.github_share_import_notify_action_send_install),
             context.getString(R.string.github_share_import_notify_action_continue_install),
-            context.getString(R.string.github_share_import_notify_action_confirm_track)
+            context.getString(R.string.github_share_import_notify_action_confirm_track),
+            context.getString(R.string.github_page_install_confirm_action_install)
         )
         if (secondaryActionLabel in installActionLabels) {
             return IslandActionStyle.Tonal(

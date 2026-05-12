@@ -759,6 +759,7 @@
     <string name="github_share_import_notify_action_confirm_track">Confirm tracking</string>
     <string name="github_share_import_notify_action_view_tracking">View tracking</string>
     <string name="github_share_import_notify_action_view_github">View GitHub</string>
+    <string name="github_page_install_notify_action_view_confirm">Review install</string>
     <string name="github_share_import_notify_title_resolving">Preparing share import</string>
     <string name="github_share_import_notify_title_asset_ready">Installable APK found</string>
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>
@@ -816,6 +817,7 @@
     <string name="github_cd_install_asset_running">Installing %1$s</string>
     <string name="github_page_install_confirm_title">Confirm install</string>
     <string name="github_page_install_confirm_summary">Review the APK, ABI, version, and local state before installing.</string>
+    <string name="github_page_install_confirm_expired">Install confirmation expired. Open the confirmation sheet again.</string>
     <string name="github_page_install_confirm_section_asset">Install source</string>
     <string name="github_page_install_confirm_section_manifest">APK info</string>
     <string name="github_page_install_confirm_section_compare">Local vs incoming</string>

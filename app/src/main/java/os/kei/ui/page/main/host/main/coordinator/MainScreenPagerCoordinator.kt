@@ -23,6 +23,7 @@ internal data class MainScreenPagerCoordinator(
     val requestedBottomPage: String?,
     val requestedBottomPageToken: Int,
     val requestedGitHubRefreshToken: Int,
+    val requestedGitHubManagedInstallConfirmToken: Int,
     val onRequestedBottomPageConsumed: () -> Unit,
     val onBaGuideCatalogOpen: () -> Unit,
     val onBaGuideCatalogBack: () -> Unit
@@ -38,6 +39,7 @@ internal fun buildMainScreenPagerCoordinator(
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
+    requestedGitHubManagedInstallConfirmToken: Int,
     onRequestedBottomPageConsumed: () -> Unit,
     onBaGuideCatalogOpen: () -> Unit,
     onBaGuideCatalogBack: () -> Unit
@@ -62,6 +64,7 @@ internal fun buildMainScreenPagerCoordinator(
         requestedBottomPage = requestedBottomPage,
         requestedBottomPageToken = requestedBottomPageToken,
         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
+        requestedGitHubManagedInstallConfirmToken = requestedGitHubManagedInstallConfirmToken,
         onRequestedBottomPageConsumed = onRequestedBottomPageConsumed,
         onBaGuideCatalogOpen = onBaGuideCatalogOpen,
         onBaGuideCatalogBack = onBaGuideCatalogBack

@@ -746,6 +746,7 @@
     <string name="github_share_import_notify_action_confirm_track">确认跟踪</string>
     <string name="github_share_import_notify_action_view_tracking">查看跟踪</string>
     <string name="github_share_import_notify_action_view_github">查看 GitHub</string>
+    <string name="github_page_install_notify_action_view_confirm">查看确认</string>
     <string name="github_share_import_notify_title_resolving">正在准备分享导入</string>
     <string name="github_share_import_notify_title_asset_ready">已找到可安装 APK</string>
     <string name="github_share_import_notify_title_delivering">正在交给安装器</string>
@@ -803,6 +804,7 @@
     <string name="github_cd_install_asset_running">正在安装 %1$s</string>
     <string name="github_page_install_confirm_title">确认安装</string>
     <string name="github_page_install_confirm_summary">安装前请确认 APK、架构、版本和本机状态</string>
+    <string name="github_page_install_confirm_expired">安装确认已过期，请重新打开确认页</string>
     <string name="github_page_install_confirm_section_asset">安装来源</string>
     <string name="github_page_install_confirm_section_manifest">APK 信息</string>
     <string name="github_page_install_confirm_section_compare">本机与即将安装</string>

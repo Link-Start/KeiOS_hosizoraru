@@ -67,7 +67,11 @@ internal class GitHubAssetActions(
     }
 
     fun confirmManagedInstall() {
-        val request = state.managedInstallConfirmRequest ?: return
+        val request = state.managedInstallConfirmRequest ?: run {
+            GitHubShareImportNotificationHelper.cancel(context)
+            env.toast(R.string.github_page_install_confirm_expired)
+            return
+        }
         state.managedInstallConfirmRequest = null
         scope.launch {
             managedInstallRunner.install(request.item, request.asset)
@@ -75,7 +79,11 @@ internal class GitHubAssetActions(
     }
 
     fun dismissManagedInstallConfirm() {
+        val hadRequest = state.managedInstallConfirmRequest != null
         state.managedInstallConfirmRequest = null
+        if (hadRequest) {
+            GitHubShareImportNotificationHelper.cancel(context)
+        }
     }
 
     fun openApkInfo(
@@ -162,7 +170,8 @@ internal class GitHubAssetActions(
             appLabel = info?.appLabel.orEmpty().ifBlank { item.appLabel },
             packageName = info?.packageName.orEmpty().ifBlank { item.packageName },
             versionName = info?.versionName.orEmpty(),
-            targetDisplayName = item.appLabel.ifBlank { assetDisplayName(asset.name) }
+            targetDisplayName = item.appLabel.ifBlank { assetDisplayName(asset.name) },
+            confirmActionEnabled = info != null
         )
     }
 

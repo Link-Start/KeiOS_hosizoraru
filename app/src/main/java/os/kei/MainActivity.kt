@@ -54,6 +54,8 @@ class MainActivity : ComponentActivity() {
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
         const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
         const val SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED = "github_refresh_tracked"
+        const val SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL =
+            "github_confirm_managed_install"
     }
 
     private var shizukuStatus = mutableStateOf("Shizuku status: initializing...")
@@ -62,6 +64,7 @@ class MainActivity : ComponentActivity() {
     private var requestedBottomPage by mutableStateOf<String?>(null)
     private var requestedBottomPageToken by mutableIntStateOf(0)
     private var requestedGitHubRefreshToken by mutableIntStateOf(0)
+    private var requestedGitHubManagedInstallConfirmToken by mutableIntStateOf(0)
     private var requestedBaBgmPlaybackToken by mutableIntStateOf(0)
     private var transientExternalLaunchActive by mutableStateOf(false)
     private var pendingMcpServerAction: String? = null
@@ -171,6 +174,8 @@ class MainActivity : ComponentActivity() {
                         requestedBottomPage = requestedBottomPage,
                         requestedBottomPageToken = requestedBottomPageToken,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
+                        requestedGitHubManagedInstallConfirmToken =
+                            requestedGitHubManagedInstallConfirmToken,
                         requestedBaBgmPlaybackToken = requestedBaBgmPlaybackToken,
                         transientExternalLaunchActive = transientExternalLaunchActive,
                         onRequestedBottomPageConsumed = {
@@ -280,6 +285,7 @@ class MainActivity : ComponentActivity() {
         applyPendingBaApIslandAction()
         applyPendingBaBgmPlaybackAction()
         applyPendingGitHubRefreshAction()
+        applyPendingGitHubManagedInstallConfirmAction()
         pendingShortcutAction = null
     }
 
@@ -333,6 +339,13 @@ class MainActivity : ComponentActivity() {
         if (action != SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED) return
         pendingShortcutAction = null
         requestedGitHubRefreshToken += 1
+    }
+
+    private fun applyPendingGitHubManagedInstallConfirmAction() {
+        val action = pendingShortcutAction ?: return
+        if (action != SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL) return
+        pendingShortcutAction = null
+        requestedGitHubManagedInstallConfirmToken += 1
     }
 
     private fun applyPendingBaBgmPlaybackAction() {

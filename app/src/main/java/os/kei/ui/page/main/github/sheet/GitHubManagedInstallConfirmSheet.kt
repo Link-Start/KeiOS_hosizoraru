@@ -250,7 +250,7 @@ internal fun GitHubManagedInstallConfirmSheet(
                     leadingIcon = appLucidePackageIcon(),
                     containerColor = actionColor,
                     onClick = onConfirm,
-                    enabled = !loading && !running
+                    enabled = info != null && !loading && !running && error.isBlank()
                 )
             }
         }

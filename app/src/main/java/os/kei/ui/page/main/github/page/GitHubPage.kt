@@ -40,6 +40,7 @@ import kotlin.math.abs
 fun GitHubPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     externalRefreshTriggerToken: Int = 0,
+    externalManagedInstallConfirmToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onActionBarInteractingChanged: (Boolean) -> Unit = {}
@@ -170,6 +171,12 @@ fun GitHubPage(
     LaunchedEffect(externalRefreshTriggerToken) {
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
+    }
+    LaunchedEffect(externalManagedInstallConfirmToken, runtime.contentReady) {
+        if (externalManagedInstallConfirmToken <= 0 || !runtime.contentReady) {
+            return@LaunchedEffect
+        }
+        actions.confirmManagedInstall()
     }
     LaunchedEffect(actions, runtime.contentReady) {
         if (!runtime.contentReady) return@LaunchedEffect

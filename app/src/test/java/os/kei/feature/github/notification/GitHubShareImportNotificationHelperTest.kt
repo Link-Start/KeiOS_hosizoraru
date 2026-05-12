@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import os.kei.MainActivity
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 import kotlin.test.assertEquals
@@ -633,7 +634,8 @@ class GitHubShareImportNotificationHelperTest {
             repo = "repo",
             appLabel = "Demo",
             packageName = "dev.demo.app",
-            versionName = "2.0.0"
+            versionName = "2.0.0",
+            pageInstallConfirmActionEnabled = true
         )
 
         val notification = buildMiIsland(context, state)
@@ -647,13 +649,53 @@ class GitHubShareImportNotificationHelperTest {
             "Demo · owner/repo · waiting",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
         )
-        assertEquals("View GitHub", notification.actions[0].title.toString())
+        assertEquals(2, notification.actions.size)
+        assertEquals("Review install", notification.actions[0].title.toString())
+        assertEquals("Confirm install", notification.actions[1].title.toString())
+        val confirmIntent = shadowOf(notification.actions[1].actionIntent).savedIntent
+        assertEquals(MainActivity::class.java.name, confirmIntent.component?.className)
+        assertEquals(
+            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            confirmIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE)
+        )
+        assertEquals(
+            MainActivity.SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL,
+            confirmIntent.getStringExtra(MainActivity.EXTRA_SHORTCUT_ACTION)
+        )
         assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals("Review install", notification.focusAction("mcp_action_open").title.toString())
+        assertEquals(
+            "Confirm install",
+            notification.focusAction("mcp_action_stop").title.toString()
+        )
         assertTrue(focusParam.contains("\"title\":\"Confirm\""))
         assertTrue(focusParam.contains("Demo · owner/repo · waiting"))
         assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"actionBgColor\":\"#DBEAFE\""))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
+    }
+
+    @Test
+    fun `page managed install confirmation waits for manifest before confirm action`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.PageInstallConfirm,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "Demo",
+            packageName = "dev.demo.app",
+            versionName = "2.0.0",
+            pageInstallConfirmActionEnabled = false
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(1, notification.actions.size)
+        assertEquals("Review install", notification.actions[0].title.toString())
+        assertTrue(focusParam.contains("mcp_action_open"))
+        assertFalse(focusParam.contains("mcp_action_stop"))
     }
 
     @Test

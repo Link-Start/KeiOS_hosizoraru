@@ -19,6 +19,22 @@ class MainActivityIntentRoutingTest {
     }
 
     @Test
+    fun `valid github managed install confirmation route is preserved`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            rawMcpServerAction = null,
+            rawShortcutAction = MainActivity.SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_GITHUB, route?.targetBottomPage)
+        assertEquals(
+            MainActivity.SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL,
+            route?.shortcutAction
+        )
+        assertNull(route?.mcpServerAction)
+    }
+
+    @Test
     fun `mismatched shortcut action is dropped`() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,

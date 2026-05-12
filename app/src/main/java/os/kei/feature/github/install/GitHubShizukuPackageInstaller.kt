@@ -578,7 +578,7 @@ class GitHubShizukuPackageInstaller(
             runCatching { info.loadLabel(pm).toString().trim() }.getOrDefault("")
         }.orEmpty()
         return ApkArchiveInfo(
-            packageName = packageInfo.packageName.orEmpty(),
+            packageName = packageInfo.packageName,
             appLabel = label,
             versionName = packageInfo.versionName?.trim().orEmpty(),
             versionCode = packageInfo.longVersionCode.takeIf { it >= 0L }?.toString().orEmpty(),

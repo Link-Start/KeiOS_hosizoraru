@@ -62,6 +62,7 @@ internal fun MainPagerLayout(
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
+    requestedGitHubManagedInstallConfirmToken: Int,
     transientExternalLaunchActive: Boolean,
     onRequestedBottomPageConsumed: () -> Unit
 ) {
@@ -238,6 +239,8 @@ internal fun MainPagerLayout(
                         visibleOverviewCards = coordinator.visibleOverviewCards,
                         showCacheFreshnessInCards = coordinator.showCacheFreshnessInCards,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
+                        requestedGitHubManagedInstallConfirmToken =
+                            requestedGitHubManagedInstallConfirmToken,
                         onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
                         onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
                         onCacheFreshnessVisibilityChange = coordinator.onCacheFreshnessVisibilityChange,

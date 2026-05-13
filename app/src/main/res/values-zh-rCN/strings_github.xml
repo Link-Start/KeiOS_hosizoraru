@@ -476,7 +476,7 @@
     <string name="github_check_sheet_section_debug">调试</string>
     <string name="github_check_sheet_label_debug_actions_update_notification">Actions 更新通知</string>
     <string name="github_check_sheet_summary_debug_actions_update_notification">读取 KeiOS 最新推荐 Actions Run，并强制按“有新构建”发送实时通知/超级岛。</string>
-    <string name="github_check_sheet_action_debug_actions_update_notification">测试 KeiOS Actions 通知</string>
+    <string name="github_check_sheet_action_debug_actions_update_notification">测试通知</string>
     <string name="github_check_sheet_action_debug_actions_update_notification_loading">读取中</string>
     <string name="github_check_sheet_section_notes">说明</string>
     <string name="github_check_sheet_note_transfer">导入会先显示预览，再按“owner/repo + 包名”识别同一条目：同 ID 会覆盖更新，新条目会追加，现有未出现在导入文件里的项目会保留。</string>

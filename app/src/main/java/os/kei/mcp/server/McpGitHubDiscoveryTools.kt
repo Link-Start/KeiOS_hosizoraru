@@ -3,9 +3,11 @@ package os.kei.mcp.server
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
 import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
 import os.kei.feature.github.domain.GitHubApkPackageNameScanner
+import os.kei.feature.github.domain.GitHubDirectApkReleaseCheckSource
 import os.kei.feature.github.domain.GitHubPackageNameValidator
 import os.kei.feature.github.domain.GitHubPackageRepositoryResolver
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
@@ -18,6 +20,10 @@ import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.forTrackedItem
 import java.util.Locale
 
 internal class McpGitHubDiscoveryTools(
@@ -38,7 +44,26 @@ internal class McpGitHubDiscoveryTools(
 
         server.addMcpTextTool(environment, name = "keios.github.repo.package.scan") { request ->
             val repoUrl = argString(request.arguments?.get("repoUrl")).trim()
-            buildRepoPackageScanText(repoUrl)
+            val expectedPackageName =
+                argString(request.arguments?.get("expectedPackageName")).trim()
+            buildRepoPackageScanText(
+                repoUrl = repoUrl,
+                expectedPackageName = expectedPackageName
+            )
+        }
+
+        server.addMcpTextTool(environment, name = "keios.github.direct_apk.inspect") { request ->
+            val url = argString(request.arguments?.get("url")).trim()
+            val expectedPackageName =
+                argString(request.arguments?.get("expectedPackageName")).trim()
+            val appLabel = argString(request.arguments?.get("appLabel")).trim()
+            val forceRefresh = argBoolean(request.arguments?.get("forceRefresh"), false)
+            buildDirectApkInspectText(
+                url = url,
+                expectedPackageName = expectedPackageName,
+                appLabel = appLabel,
+                forceRefresh = forceRefresh
+            )
         }
 
         server.addMcpTextTool(environment, name = "keios.github.package.repo.scan") { request ->
@@ -83,12 +108,20 @@ internal class McpGitHubDiscoveryTools(
         val snapshot = GitHubTrackStore.loadSnapshot()
         return buildString {
             appendLine("strategy=${snapshot.lookupConfig.selectedStrategy.storageId}")
+            appendLine("actionsStrategy=${snapshot.lookupConfig.actionsStrategy.storageId}")
             appendLine("apiTokenConfigured=${snapshot.lookupConfig.apiToken.isNotBlank()}")
             appendLine("refreshIntervalHours=${snapshot.refreshIntervalHours}")
             appendLine("checkAllTrackedPreReleases=${snapshot.lookupConfig.checkAllTrackedPreReleases}")
             appendLine("aggressiveApkFiltering=${snapshot.lookupConfig.aggressiveApkFiltering}")
+            appendLine("preciseApkVersionEnabled=${snapshot.lookupConfig.preciseApkVersionEnabled}")
+            appendLine("scanSystemAppsByDefault=${snapshot.lookupConfig.scanSystemAppsByDefault}")
+            appendLine("profileDepth=${snapshot.lookupConfig.profileDepth.storageId}")
             appendLine("shareImportLinkageEnabled=${snapshot.lookupConfig.shareImportLinkageEnabled}")
             appendLine("shareImportFlowMode=${snapshot.lookupConfig.shareImportFlowMode.storageId}")
+            appendLine("appManagedShareInstallEnabled=${snapshot.lookupConfig.appManagedShareInstallEnabled}")
+            appendLine("repositoryHealthCardEnabled=${snapshot.lookupConfig.repositoryHealthCardEnabled}")
+            appendLine("apkTrustCheckEnabled=${snapshot.lookupConfig.apkTrustCheckEnabled}")
+            appendLine("releaseNotesMode=${snapshot.lookupConfig.releaseNotesMode.storageId}")
             appendLine("trackedCount=${snapshot.items.size}")
             appendLine("checkCacheCount=${snapshot.checkCache.size}")
             appendLine("lastRefreshMs=${snapshot.lastRefreshMs}")
@@ -117,13 +150,14 @@ internal class McpGitHubDiscoveryTools(
         )
     }
 
-    private fun buildRepoPackageScanText(repoUrl: String): String {
+    private fun buildRepoPackageScanText(repoUrl: String, expectedPackageName: String): String {
         if (repoUrl.isBlank()) return "ok=false\nmessage=repoUrl_required"
         val scanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
         return scanner.scan(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
-                lookupConfig = GitHubTrackStore.loadLookupConfig()
+                lookupConfig = GitHubTrackStore.loadLookupConfig(),
+                expectedPackageName = expectedPackageName
             )
         ).fold(
             onSuccess = { result ->
@@ -132,6 +166,16 @@ internal class McpGitHubDiscoveryTools(
                     appendLine("owner=${result.owner}")
                     appendLine("repo=${result.repo}")
                     appendLine("packageName=${result.packageName}")
+                    appendLine("expectedPackageName=$expectedPackageName")
+                    appendLine(
+                        "packageMatched=${
+                            expectedPackageName.isBlank() ||
+                                    result.packageName.equals(
+                                        expectedPackageName,
+                                        ignoreCase = true
+                                    )
+                        }"
+                    )
                     appendLine("releaseTag=${result.releaseTag}")
                     appendLine("releaseUrl=${result.releaseUrl}")
                     appendLine("assetName=${result.assetName}")
@@ -139,6 +183,65 @@ internal class McpGitHubDiscoveryTools(
             },
             onFailure = { error ->
                 "ok=false\nrepoUrl=$repoUrl\nmessage=${error.message ?: error.javaClass.simpleName}"
+            }
+        )
+    }
+
+    private suspend fun buildDirectApkInspectText(
+        url: String,
+        expectedPackageName: String,
+        appLabel: String,
+        forceRefresh: Boolean
+    ): String {
+        val identity = buildDirectApkTrackIdentity(url)
+            ?: return "ok=false\nmessage=invalid_direct_apk_url"
+        val item = GitHubTrackedApp(
+            repoUrl = identity.url,
+            owner = identity.owner,
+            repo = identity.repo,
+            packageName = expectedPackageName,
+            appLabel = appLabel.ifBlank { identity.displayName },
+            sourceMode = GitHubTrackedSourceMode.DirectApk
+        )
+        val asset = GitHubDirectApkReleaseCheckSource.buildDirectApkAsset(item)
+            ?: return "ok=false\nmessage=invalid_direct_apk_url"
+        return GitHubApkInfoRepository().inspectAsync(
+            asset = asset,
+            lookupConfig = GitHubTrackStore.loadLookupConfig().forTrackedItem(item),
+            forceRefresh = forceRefresh
+        ).fold(
+            onSuccess = { manifest ->
+                buildString {
+                    appendLine("ok=true")
+                    appendLine("url=${identity.url}")
+                    appendLine("displayName=${identity.displayName}")
+                    appendLine("assetName=${manifest.assetName.ifBlank { asset.name }}")
+                    appendLine("packageName=${manifest.packageName}")
+                    appendLine("expectedPackageName=$expectedPackageName")
+                    appendLine(
+                        "packageMatched=${
+                            expectedPackageName.isBlank() ||
+                                    manifest.packageName.equals(
+                                        expectedPackageName,
+                                        ignoreCase = true
+                                    )
+                        }"
+                    )
+                    appendLine("appLabel=${manifest.appLabel}")
+                    appendLine("versionName=${manifest.versionName}")
+                    appendLine("versionCode=${manifest.versionCode}")
+                    appendLine("minSdk=${manifest.minSdk}")
+                    appendLine("targetSdk=${manifest.targetSdk}")
+                    appendLine("nativeAbis=${manifest.nativeAbis.joinToString(",")}")
+                    appendLine("permissionCount=${manifest.permissions.size}")
+                    appendLine("featureCount=${manifest.features.size}")
+                    appendLine("signatureSha256=${manifest.signatureInfo?.sha256.orEmpty()}")
+                    appendLine("fetchSource=${manifest.fetchSource}")
+                    appendLine("forceRefresh=$forceRefresh")
+                }.trim()
+            },
+            onFailure = { error ->
+                "ok=false\nurl=${identity.url}\nmessage=${error.message ?: error.javaClass.simpleName}"
             }
         )
     }

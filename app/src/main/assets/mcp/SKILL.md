@@ -46,9 +46,10 @@
 - Config: `keios.github.config.snapshot`
 - Tracking: `keios.github.tracks.snapshot`, `keios.github.tracks.list`, `keios.github.tracks.check`,
   `keios.github.tracks.summary`, `keios.github.tracks.export`, `keios.github.tracks.import`
+- Actions: `keios.github.actions.recommended`
 - Links: `keios.github.link.parse`, `keios.github.link.resolve`, `keios.github.link.pending`
 - Discovery: `keios.github.discovery.search`, `keios.github.repo.package.scan`,
-  `keios.github.package.repo.scan`
+  `keios.github.direct_apk.inspect`, `keios.github.package.repo.scan`
 - Star import: `keios.github.stars.lists`, `keios.github.stars.preview`,
   `keios.github.stars.import`, `keios.github.stars.apk.verify`
 - Cache: `keios.github.cache.clear`
@@ -71,12 +72,18 @@
    `keios.mcp.runtime.logs`
 2. GitHub update audit: `keios.github.config.snapshot` ->
    `keios.github.tracks.summary(mode=cache)` -> `keios.github.tracks.check(onlyUpdates=true)`
-3. Repo to package: `keios.github.repo.package.scan(repoUrl=...)`
-4. Package to repo: `keios.github.package.repo.scan(packageName=..., appLabel=...)`
-5. Star import: `keios.github.stars.lists` -> `keios.github.stars.preview` ->
+3. GitHub source split: use `sourceMode=github_repository` or `sourceMode=direct_apk` on
+   track list, export, check, and summary tools.
+4. Repo to package: `keios.github.repo.package.scan(repoUrl=..., expectedPackageName=...)`
+5. Direct APK check: `keios.github.direct_apk.inspect(url=..., expectedPackageName=...)`
+6. Actions audit: `keios.github.actions.recommended(refresh=false)` then
+   `keios.github.actions.recommended(refresh=true, onlyEnabled=true)` when network refresh is
+   needed.
+7. Package to repo: `keios.github.package.repo.scan(packageName=..., appLabel=...)`
+8. Star import: `keios.github.stars.lists` -> `keios.github.stars.preview` ->
    `keios.github.stars.apk.verify` -> `keios.github.stars.import(apply=true)`
-6. Shared link intake: `keios.github.link.parse` -> `keios.github.link.resolve`
-7. BA cache audit: `keios.ba.snapshot` -> `keios.ba.calendar.cache` or `keios.ba.pool.cache` ->
+9. Shared link intake: `keios.github.link.parse` -> `keios.github.link.resolve`
+10. BA cache audit: `keios.ba.snapshot` -> `keios.ba.calendar.cache` or `keios.ba.pool.cache` ->
    `keios.ba.guide.cache.inspect`
 
 ## Output Contract
@@ -85,4 +92,7 @@
 - Import tools preview by default; writes require `apply=true`.
 - Start `limit` at 20 to 80 for audits.
 - `repoFilter` accepts owner/repo, package name, or app label.
+- `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.
+- Repository APK scans accept `expectedPackageName` for multi-package releases.
+- Actions refresh writes the recommended-run cache and uses bounded parallel network checks.
 - `serverIndex` accepts 0 to 2 and defaults to the current BA server.

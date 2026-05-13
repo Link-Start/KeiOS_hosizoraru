@@ -1,9 +1,9 @@
 package os.kei.mcp.server
 
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.robolectric.annotation.Config
 import os.kei.core.system.ShizukuApiUtils
 import kotlin.test.assertEquals
@@ -38,6 +38,14 @@ class McpToolRegistrationTest {
         assertEquals(listOf("query"), searchTool.inputSchema.required)
         assertTrue(searchTool.annotations?.readOnlyHint ?: false)
         assertTrue(searchTool.annotations?.openWorldHint ?: false)
+
+        val directApkTool = server.tools.getValue("keios.github.direct_apk.inspect").tool
+        assertEquals(listOf("url"), directApkTool.inputSchema.required)
+        assertTrue(directApkTool.annotations?.openWorldHint ?: false)
+
+        val actionsTool = server.tools.getValue("keios.github.actions.recommended").tool
+        assertFalse(actionsTool.annotations?.readOnlyHint ?: true)
+        assertTrue(actionsTool.annotations?.openWorldHint ?: false)
     }
 
     private fun createService(): LocalMcpService {

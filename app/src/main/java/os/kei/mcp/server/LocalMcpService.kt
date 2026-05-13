@@ -43,6 +43,7 @@ class LocalMcpService(
     private val systemOsTools = McpSystemOsTools(environment)
     private val githubTrackingTools = McpGitHubTrackingTools(environment)
     private val githubDiscoveryTools = McpGitHubDiscoveryTools(environment)
+    private val githubActionsTools = McpGitHubActionsTools(environment)
     private val baTools = McpBaTools(environment)
 
     private val serverInstructions: String by lazy {
@@ -105,6 +106,7 @@ class LocalMcpService(
         systemOsTools.register(server)
         githubTrackingTools.register(server)
         githubDiscoveryTools.register(server)
+        githubActionsTools.register(server)
         baTools.register(server)
         skillContent.registerResources(server)
         skillContent.registerPrompt(server)

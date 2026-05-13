@@ -11,6 +11,9 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import java.util.Locale
 
 internal class McpGitHubTrackingTools(
@@ -34,16 +37,22 @@ internal class McpGitHubTrackingTools(
 
         server.addMcpTextTool(environment, name = "keios.github.tracks.list") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
+            val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
                 MAX_TRACK_LIMIT
             )
-            buildGitHubTrackedListText(repoFilter = repoFilter, limit = limit)
+            buildGitHubTrackedListText(
+                repoFilter = repoFilter,
+                sourceMode = sourceMode,
+                limit = limit
+            )
         }
 
         server.addMcpTextTool(environment, name = "keios.github.tracks.export") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
-            buildGitHubTrackedExportText(repoFilter = repoFilter)
+            val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
+            buildGitHubTrackedExportText(repoFilter = repoFilter, sourceMode = sourceMode)
         }
 
         server.addMcpTextTool(environment, name = "keios.github.tracks.import") { request ->
@@ -54,12 +63,13 @@ internal class McpGitHubTrackingTools(
 
         server.addMcpTextTool(environment, name = "keios.github.tracks.check") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
+            val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
             val onlyUpdates = argBoolean(request.arguments?.get("onlyUpdates"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
                 MAX_TRACK_LIMIT
             )
-            val rows = checkTrackedGitHub(repoFilter)
+            val rows = checkTrackedGitHub(repoFilter = repoFilter, sourceMode = sourceMode)
                 .let { data -> if (onlyUpdates) data.filter { it.hasUpdate } else data }
                 .take(limit)
 
@@ -79,10 +89,17 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.summary") { request ->
             val mode = argString(request.arguments?.get("mode")).trim().lowercase(Locale.ROOT)
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
+            val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
             if (mode == "network") {
-                buildGitHubTrackedSummaryFromNetwork(repoFilter)
+                buildGitHubTrackedSummaryFromNetwork(
+                    repoFilter = repoFilter,
+                    sourceMode = sourceMode
+                )
             } else {
-                buildGitHubTrackedSummaryFromCache(repoFilter)
+                buildGitHubTrackedSummaryFromCache(
+                    repoFilter = repoFilter,
+                    sourceMode = sourceMode
+                )
             }
         }
 
@@ -115,41 +132,67 @@ internal class McpGitHubTrackingTools(
 
     private fun buildGitHubTrackedSnapshotText(): String {
         val snapshot = GitHubTrackStore.loadSnapshot()
+        val sourceCounts = GitHubTrackStore.calculateTrackedItemsSourceCounts(snapshot.items)
+        val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(snapshot.items)
         val cachedUpdateCount = snapshot.checkCache.values.count { it.hasUpdate == true }
         val cachedFailedCount = snapshot.checkCache.values.count {
             it.message.isGitHubCheckFailureMessage()
         }
         return buildString {
             appendLine("trackedCount=${snapshot.items.size}")
+            appendLine("githubRepositoryCount=${sourceCounts.githubRepositoryCount}")
+            appendLine("directApkCount=${sourceCounts.directApkCount}")
             appendLine("cachedCheckCount=${snapshot.checkCache.size}")
             appendLine("cachedHasUpdateCount=$cachedUpdateCount")
             appendLine("cachedFailedCount=$cachedFailedCount")
             appendLine("lastRefreshMs=${snapshot.lastRefreshMs}")
             appendLine("refreshIntervalHours=${snapshot.refreshIntervalHours}")
             appendLine("lookupStrategy=${snapshot.lookupConfig.selectedStrategy.storageId}")
+            appendLine("actionsStrategy=${snapshot.lookupConfig.actionsStrategy.storageId}")
             appendLine("apiTokenConfigured=${snapshot.lookupConfig.apiToken.isNotBlank()}")
             appendLine("checkAllTrackedPreReleases=${snapshot.lookupConfig.checkAllTrackedPreReleases}")
             appendLine("aggressiveApkFiltering=${snapshot.lookupConfig.aggressiveApkFiltering}")
+            appendLine("preciseApkVersionEnabled=${snapshot.lookupConfig.preciseApkVersionEnabled}")
+            appendLine("preciseApkVersionOverrideCount=${optionCounts.preciseApkVersionOverrideCount}")
+            appendLine("actionsUpdateCount=${optionCounts.actionsUpdateCount}")
         }.trim()
     }
 
     private fun filterTrackedItems(
         items: List<GitHubTrackedApp>,
-        repoFilter: String
+        repoFilter: String,
+        sourceMode: String = ""
     ): List<GitHubTrackedApp> {
-        if (repoFilter.isBlank()) return items
-        return items.filter {
-            "${it.owner}/${it.repo}".contains(repoFilter, ignoreCase = true) ||
-                    it.packageName.contains(repoFilter, ignoreCase = true) ||
-                    it.appLabel.contains(repoFilter, ignoreCase = true)
+        val sourceModeFilter = parseTrackedSourceModeFilter(sourceMode)
+        return items.filter { item ->
+            val sourceMatches = when (sourceModeFilter) {
+                null -> true
+                GitHubTrackedSourceMode.GitHubRepository -> item.isGitHubRepositoryTrack()
+                GitHubTrackedSourceMode.DirectApk -> item.isDirectApkTrack()
+            }
+            if (!sourceMatches) return@filter false
+            if (repoFilter.isBlank()) return@filter true
+            "${item.owner}/${item.repo}".contains(repoFilter, ignoreCase = true) ||
+                    item.repoUrl.contains(repoFilter, ignoreCase = true) ||
+                    item.packageName.contains(repoFilter, ignoreCase = true) ||
+                    item.appLabel.contains(repoFilter, ignoreCase = true)
         }
     }
 
-    private fun buildGitHubTrackedListText(repoFilter: String, limit: Int): String {
-        val items = filterTrackedItems(GitHubTrackStore.load(), repoFilter).take(limit)
+    private fun buildGitHubTrackedListText(
+        repoFilter: String,
+        sourceMode: String,
+        limit: Int
+    ): String {
+        val items = filterTrackedItems(
+            items = GitHubTrackStore.load(),
+            repoFilter = repoFilter,
+            sourceMode = sourceMode
+        ).take(limit)
         if (items.isEmpty()) return "No tracked GitHub apps."
         return items.joinToString("\n") { item ->
             "${item.owner}/${item.repo} | label=${item.appLabel} | package=${item.packageName} | " +
+                    "sourceMode=${item.sourceMode.storageId} | url=${item.repoUrl} | " +
                     "preferPreRelease=${item.preferPreRelease} | " +
                     "checkActionsUpdates=${item.checkActionsUpdates} | " +
                     "preciseApkVersionMode=${item.preciseApkVersionMode.storageId} | " +
@@ -157,8 +200,12 @@ internal class McpGitHubTrackingTools(
         }
     }
 
-    private fun buildGitHubTrackedExportText(repoFilter: String): String {
-        val items = filterTrackedItems(GitHubTrackStore.load(), repoFilter)
+    private fun buildGitHubTrackedExportText(repoFilter: String, sourceMode: String): String {
+        val items = filterTrackedItems(
+            items = GitHubTrackStore.load(),
+            repoFilter = repoFilter,
+            sourceMode = sourceMode
+        )
         return GitHubTrackStore.buildTrackedItemsExportJson(items)
     }
 
@@ -241,9 +288,13 @@ internal class McpGitHubTrackingTools(
         return mergedItems
     }
 
-    private fun buildGitHubTrackedSummaryFromCache(repoFilter: String): String {
+    private fun buildGitHubTrackedSummaryFromCache(repoFilter: String, sourceMode: String): String {
         val snapshot = GitHubTrackStore.loadSnapshot()
-        val tracked = filterTrackedItems(snapshot.items, repoFilter)
+        val tracked = filterTrackedItems(
+            items = snapshot.items,
+            repoFilter = repoFilter,
+            sourceMode = sourceMode
+        )
         if (tracked.isEmpty()) {
             return "mode=cache\ntracked=0\nmatched=0"
         }
@@ -259,6 +310,8 @@ internal class McpGitHubTrackingTools(
             appendLine("mode=cache")
             appendLine("tracked=${snapshot.items.size}")
             appendLine("matched=${tracked.size}")
+            appendLine("githubRepository=${tracked.count { it.isGitHubRepositoryTrack() }}")
+            appendLine("directApk=${tracked.count { it.isDirectApkTrack() }}")
             appendLine("cacheHit=${cacheHit.size}")
             appendLine("hasUpdate=$hasUpdate")
             appendLine("unknown=$unknown")
@@ -273,8 +326,11 @@ internal class McpGitHubTrackingTools(
         }.trim()
     }
 
-    private fun buildGitHubTrackedSummaryFromNetwork(repoFilter: String): String {
-        val rows = checkTrackedGitHub(repoFilter)
+    private fun buildGitHubTrackedSummaryFromNetwork(
+        repoFilter: String,
+        sourceMode: String
+    ): String {
+        val rows = checkTrackedGitHub(repoFilter = repoFilter, sourceMode = sourceMode)
         val hasUpdate = rows.count { it.hasUpdate }
         val preRelease = rows.count {
             it.preReleaseVersion.isNotBlank() || it.status.contains("pre", ignoreCase = true)
@@ -282,6 +338,8 @@ internal class McpGitHubTrackingTools(
         return buildString {
             appendLine("mode=network")
             appendLine("matched=${rows.size}")
+            appendLine("githubRepository=${rows.count { it.item.isGitHubRepositoryTrack() }}")
+            appendLine("directApk=${rows.count { it.item.isDirectApkTrack() }}")
             appendLine("hasUpdate=$hasUpdate")
             appendLine("preReleaseState=$preRelease")
             rows.sortedByDescending { it.hasUpdate }
@@ -292,9 +350,13 @@ internal class McpGitHubTrackingTools(
         }.trim()
     }
 
-    private fun checkTrackedGitHub(repoFilter: String): List<GitHubCheckRow> {
+    private fun checkTrackedGitHub(repoFilter: String, sourceMode: String): List<GitHubCheckRow> {
         val items = GitHubTrackStore.load()
-        val filtered = filterTrackedItems(items, repoFilter)
+        val filtered = filterTrackedItems(
+            items = items,
+            repoFilter = repoFilter,
+            sourceMode = sourceMode
+        )
         return filtered.map { item ->
             runCatching { evaluateTrackedApp(item) }.getOrElse { err ->
                 GitHubCheckRow(
@@ -308,6 +370,16 @@ internal class McpGitHubTrackingTools(
                     hasUpdate = false
                 )
             }
+        }
+    }
+
+    private fun parseTrackedSourceModeFilter(raw: String): GitHubTrackedSourceMode? {
+        return when (raw.trim().lowercase(Locale.ROOT)) {
+            "github", "repo", "repository", "github_repository" ->
+                GitHubTrackedSourceMode.GitHubRepository
+
+            "direct", "apk", "direct_apk" -> GitHubTrackedSourceMode.DirectApk
+            else -> null
         }
     }
 

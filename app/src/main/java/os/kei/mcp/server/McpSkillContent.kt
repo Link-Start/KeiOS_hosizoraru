@@ -243,6 +243,13 @@ internal class McpSkillContent(
             appendLine("group=${toolGroup(hit.name)}")
             appendLine("output=key_value_text")
             appendLine("writeRequiresApply=${hit.name.endsWith(".import")}")
+            appendLine("readOnly=${hit.readOnly}")
+            appendLine("openWorld=${hit.openWorld}")
+            appendLine("executionProfile=${hit.executionProfile.name}")
+            if (hit.arguments.isNotEmpty()) {
+                appendLine("arguments=${hit.arguments.joinToString(",") { argument -> argument.name }}")
+                appendLine("required=${hit.requiredArguments.joinToString(",")}")
+            }
             appendLine()
             appendLine("See $SKILL_RESOURCE_URI for grouped flows.")
         }.trim()

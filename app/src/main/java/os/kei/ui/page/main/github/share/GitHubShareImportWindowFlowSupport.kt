@@ -241,6 +241,7 @@ internal suspend fun attachCandidateToTracked(
         GitHubTrackStore.save(trackedItems)
         saveTrackedFirstInstallAtFallback(candidate)
         saveTrackedAddedAtFallback(trackedItem.id, candidate.detectedAtMillis)
+        saveTrackedModifiedAtFallback(trackedItem.id, candidate.detectedAtMillis)
         AppBackgroundScheduler.scheduleGitHubRefresh(context)
 
         if (prefetchLatestCheck) {
@@ -288,6 +289,18 @@ internal fun saveTrackedAddedAtFallback(
         existing[normalizedTrackId] = addedAtMillis
         GitHubTrackStore.saveTrackedAddedAtById(existing)
     }
+}
+
+internal fun saveTrackedModifiedAtFallback(
+    trackId: String,
+    detectedAtMillis: Long
+) {
+    val normalizedTrackId = trackId.trim()
+    if (normalizedTrackId.isBlank()) return
+    val modifiedAtMillis = detectedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
+    val existing = GitHubTrackStore.loadTrackedModifiedAtById().toMutableMap()
+    existing[normalizedTrackId] = modifiedAtMillis
+    GitHubTrackStore.saveTrackedModifiedAtById(existing)
 }
 
 internal suspend fun loadInstalledPackageSnapshot(

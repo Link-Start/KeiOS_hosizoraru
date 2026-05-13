@@ -3,12 +3,12 @@ package os.kei.ui.page.main.github.page.action
 import android.content.Context
 import android.widget.Toast
 import androidx.annotation.StringRes
-import os.kei.ui.page.main.github.page.GitHubPageState
-import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
-import os.kei.ui.page.main.github.page.GitHubPageRepository
-import os.kei.ui.page.main.github.query.DownloaderOption
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
+import os.kei.ui.page.main.github.page.GitHubPageRepository
+import os.kei.ui.page.main.github.page.GitHubPageState
+import os.kei.ui.page.main.github.query.DownloaderOption
 
 internal class GitHubPageActionEnvironment(
     val context: Context,
@@ -35,15 +35,18 @@ internal class GitHubPageActionEnvironment(
     fun saveTrackedItems(refreshTrackIds: Set<String> = emptySet()) {
         state.retainTrackedFirstInstallAtByTrackedItems()
         state.retainTrackedAddedAtByTrackedItems()
+        state.retainTrackedModifiedAtByTrackedItems()
         val items = state.trackedItems.toList()
         val trackedFirstInstallAtByPackage = state.trackedFirstInstallAtByPackage.toMap()
         val trackedAddedAtById = state.trackedAddedAtById.toMap()
+        val trackedModifiedAtById = state.trackedModifiedAtById.toMap()
         scope.launch {
             repository.saveTrackedItems(
                 context = context,
                 items = items,
                 trackedFirstInstallAtByPackage = trackedFirstInstallAtByPackage,
                 trackedAddedAtById = trackedAddedAtById,
+                trackedModifiedAtById = trackedModifiedAtById,
                 refreshTrackIds = refreshTrackIds
             )
         }

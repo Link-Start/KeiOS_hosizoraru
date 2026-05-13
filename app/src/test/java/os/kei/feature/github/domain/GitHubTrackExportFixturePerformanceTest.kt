@@ -307,6 +307,7 @@ class GitHubTrackExportFixturePerformanceTest {
                         },
                         trackedFirstInstallAtByPackage = emptyMap(),
                         trackedAddedAtById = emptyMap(),
+                        trackedModifiedAtById = emptyMap(),
                         pendingShareImportTrack = null,
                         nowMillis = 1_700_000_000_000L
                     )

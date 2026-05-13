@@ -190,6 +190,52 @@ class GitHubPageContentStateDeriverTest {
         )
     }
 
+    @Test
+    fun `changed sort uses modified time with added time fallback`() = runBlocking {
+        val items = sampleTrackedItems()
+        val derived = GitHubPageContentStateDeriver().build(
+            baseInput(
+                trackedItems = items,
+                sortMode = GitHubSortMode.ChangedNewest,
+                trackedAddedAtById = mapOf(
+                    items[0].id to 100L,
+                    items[1].id to 200L,
+                    items[2].id to 300L
+                ),
+                trackedModifiedAtById = mapOf(
+                    items[0].id to 700L,
+                    items[1].id to 500L
+                )
+            )
+        )
+
+        assertEquals(
+            listOf("demo.stable", "demo.pre", "demo.actions"),
+            derived.trackedUi.sortedTracked.map { it.packageName }
+        )
+    }
+
+    @Test
+    fun `added sort orders by tracking creation time`() = runBlocking {
+        val items = sampleTrackedItems()
+        val derived = GitHubPageContentStateDeriver().build(
+            baseInput(
+                trackedItems = items,
+                sortMode = GitHubSortMode.AddedOldest,
+                trackedAddedAtById = mapOf(
+                    items[0].id to 300L,
+                    items[1].id to 100L,
+                    items[2].id to 200L
+                )
+            )
+        )
+
+        assertEquals(
+            listOf("demo.pre", "demo.actions", "demo.stable"),
+            derived.trackedUi.sortedTracked.map { it.packageName }
+        )
+    }
+
     private fun baseInput(
         trackedItems: List<GitHubTrackedApp> = emptyList(),
         trackedSearch: String = "",
@@ -197,6 +243,8 @@ class GitHubPageContentStateDeriverTest {
         sortMode: GitHubSortMode = GitHubSortMode.UpdateFirst,
         checkStates: Map<String, VersionCheckUi> = emptyMap(),
         appList: List<InstalledAppItem> = emptyList(),
+        trackedAddedAtById: Map<String, Long> = emptyMap(),
+        trackedModifiedAtById: Map<String, Long> = emptyMap(),
         pendingShareImportTrack: GitHubPendingShareImportTrack? = null,
         nowMillis: Long = 0L
     ): GitHubPageContentInput {
@@ -208,7 +256,8 @@ class GitHubPageContentStateDeriverTest {
             checkStates = checkStates,
             appList = appList,
             trackedFirstInstallAtByPackage = emptyMap(),
-            trackedAddedAtById = emptyMap(),
+            trackedAddedAtById = trackedAddedAtById,
+            trackedModifiedAtById = trackedModifiedAtById,
             pendingShareImportTrack = pendingShareImportTrack,
             nowMillis = nowMillis
         )

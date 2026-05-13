@@ -88,7 +88,11 @@ internal enum class GitHubSortMode(
 ) {
     UpdateFirst(R.string.github_sort_update_first),
     NameAsc(R.string.github_sort_name_asc),
-    PreReleaseFirst(R.string.github_sort_prerelease_first)
+    PreReleaseFirst(R.string.github_sort_prerelease_first),
+    ChangedNewest(R.string.github_sort_changed_newest),
+    ChangedOldest(R.string.github_sort_changed_oldest),
+    AddedNewest(R.string.github_sort_added_newest),
+    AddedOldest(R.string.github_sort_added_oldest)
 }
 
 internal enum class GitHubTrackedFilterMode(

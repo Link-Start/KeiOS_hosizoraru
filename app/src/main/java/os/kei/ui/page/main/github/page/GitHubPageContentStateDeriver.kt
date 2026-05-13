@@ -27,6 +27,7 @@ internal data class GitHubPageContentInput(
     val appList: List<InstalledAppItem>,
     val trackedFirstInstallAtByPackage: Map<String, Long>,
     val trackedAddedAtById: Map<String, Long>,
+    val trackedModifiedAtById: Map<String, Long>,
     val pendingShareImportTrack: GitHubPendingShareImportTrack?,
     val nowMillis: Long
 )
@@ -84,22 +85,61 @@ internal class GitHubPageContentStateDeriver(
             val isSortUpdatable: (GitHubTrackedApp) -> Boolean = { item ->
                 item.alwaysShowLatestReleaseDownloadButton || input.checkStates[item.id]?.hasUpdate == true
             }
+            val addedAtForSortNewest: (GitHubTrackedApp) -> Long = { item ->
+                input.trackedAddedAtById[item.id]?.takeIf { it > 0L } ?: Long.MIN_VALUE
+            }
+            val addedAtForSortOldest: (GitHubTrackedApp) -> Long = { item ->
+                input.trackedAddedAtById[item.id]?.takeIf { it > 0L } ?: Long.MAX_VALUE
+            }
+            val modifiedAtForSortNewest: (GitHubTrackedApp) -> Long = { item ->
+                input.trackedModifiedAtById[item.id]?.takeIf { it > 0L }
+                    ?: input.trackedAddedAtById[item.id]?.takeIf { it > 0L }
+                    ?: Long.MIN_VALUE
+            }
+            val modifiedAtForSortOldest: (GitHubTrackedApp) -> Long = { item ->
+                input.trackedModifiedAtById[item.id]?.takeIf { it > 0L }
+                    ?: input.trackedAddedAtById[item.id]?.takeIf { it > 0L }
+                    ?: Long.MAX_VALUE
+            }
+            val titleForSort: (GitHubTrackedApp) -> String = { item ->
+                displayTitleById[item.id].orEmpty().lowercase(Locale.ROOT)
+            }
             val sortedTracked = when (input.sortMode) {
                 GitHubSortMode.UpdateFirst -> filteredTracked.sortedWith(
                     compareByDescending<GitHubTrackedApp> { isSortUpdatable(it) }
                         .thenByDescending { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
-                        .thenBy { displayTitleById[it.id].orEmpty().lowercase() }
+                        .thenBy { titleForSort(it) }
                 )
 
                 GitHubSortMode.NameAsc -> filteredTracked.sortedBy {
-                    displayTitleById[it.id].orEmpty().lowercase()
+                    titleForSort(it)
                 }
                 GitHubSortMode.PreReleaseFirst -> filteredTracked.sortedWith(
                     compareByDescending<GitHubTrackedApp> {
                         input.checkStates[it.id]?.isPreRelease == true
                     }
                         .thenByDescending { isSortUpdatable(it) }
-                        .thenBy { displayTitleById[it.id].orEmpty().lowercase() }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortMode.ChangedNewest -> filteredTracked.sortedWith(
+                    compareByDescending<GitHubTrackedApp> { modifiedAtForSortNewest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortMode.ChangedOldest -> filteredTracked.sortedWith(
+                    compareBy<GitHubTrackedApp> { modifiedAtForSortOldest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortMode.AddedNewest -> filteredTracked.sortedWith(
+                    compareByDescending<GitHubTrackedApp> { addedAtForSortNewest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortMode.AddedOldest -> filteredTracked.sortedWith(
+                    compareBy<GitHubTrackedApp> { addedAtForSortOldest(it) }
+                        .thenBy { titleForSort(it) }
                 )
             }
             val pendingShareImportRepoOverlapCount = input.pendingShareImportTrack?.let { pending ->

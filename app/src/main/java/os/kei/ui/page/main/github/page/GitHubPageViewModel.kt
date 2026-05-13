@@ -227,6 +227,7 @@ internal class GitHubPageViewModel : ViewModel() {
                         appList = state.appList.toList(),
                         trackedFirstInstallAtByPackage = state.trackedFirstInstallAtByPackage.toMap(),
                         trackedAddedAtById = state.trackedAddedAtById.toMap(),
+                        trackedModifiedAtById = state.trackedModifiedAtById.toMap(),
                         pendingShareImportTrack = state.pendingShareImportTrack,
                         nowMillis = pendingShareImportNowMillis.value
                     )

@@ -385,6 +385,7 @@ internal class GitHubConfigActions(
                     mergedItems += item
                     indexById[item.id] = mergedItems.lastIndex
                     state.recordTrackedAddedAt(item.id, nowMillis)
+                    state.recordTrackedModifiedAt(item.id, nowMillis)
                     touchedItems += item
                     refreshItems += item
                     addedCount += 1
@@ -403,6 +404,7 @@ internal class GitHubConfigActions(
                         )
                     }
                     mergedItems[existingIndex] = mergedItem
+                    state.recordTrackedModifiedAt(mergedItem.id, nowMillis)
                     if (trackingConfigChanged) {
                         state.checkStates.remove(item.id)
                         refreshItems += mergedItem

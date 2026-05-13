@@ -40,10 +40,14 @@ internal object GitHubStarImportApplier {
     private fun updateTrackedAddedAt(result: StarImportApplyResult) {
         val nowMillis = System.currentTimeMillis()
         val addedAt = GitHubTrackStore.loadTrackedAddedAtById().toMutableMap()
+        val modifiedAt = GitHubTrackStore.loadTrackedModifiedAtById().toMutableMap()
         result.removedTrackIds.forEach(addedAt::remove)
+        result.removedTrackIds.forEach(modifiedAt::remove)
         result.affectedTrackIds.forEach { trackId ->
             addedAt.putIfAbsent(trackId, nowMillis)
+            modifiedAt[trackId] = nowMillis
         }
         GitHubTrackStore.saveTrackedAddedAtById(addedAt)
+        GitHubTrackStore.saveTrackedModifiedAtById(modifiedAt)
     }
 }

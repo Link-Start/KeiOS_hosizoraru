@@ -80,7 +80,9 @@ internal class GitHubTrackActions(
             return
         }
         state.trackedItems.add(newItem)
-        state.recordTrackedAddedAt(newItem.id, System.currentTimeMillis())
+        val nowMillis = System.currentTimeMillis()
+        state.recordTrackedAddedAt(newItem.id, nowMillis)
+        state.recordTrackedModifiedAt(newItem.id, nowMillis)
         state.requestTrackCardFocus(newItem.id)
         env.saveTrackedItems(refreshTrackIds = setOf(newItem.id))
         env.toast(R.string.github_toast_track_current_app_added)
@@ -250,6 +252,7 @@ internal class GitHubTrackActions(
                 }
                 state.trackedItems.add(newItem)
                 state.recordTrackedAddedAt(newItem.id, nowMillis)
+                state.recordTrackedModifiedAt(newItem.id, nowMillis)
                 if (!newItem.checkActionsUpdates) {
                     GitHubActionsRecommendedRunStore.remove(newItem.id)
                     state.actionsRecommendedRunSnapshots.remove(newItem.id)
@@ -292,6 +295,7 @@ internal class GitHubTrackActions(
                     state.trackedPreReleaseVersionExpanded.remove(editing.id)
                     GitHubTrackedReleaseUiStateStore.remove(editing.id)
                     state.trackedAddedAtById.remove(editing.id)
+                    state.trackedModifiedAtById.remove(editing.id)
                     GitHubActionsRecommendedRunStore.remove(editing.id)
                     state.actionsRecommendedRunSnapshots.remove(editing.id)
                 }
@@ -300,6 +304,9 @@ internal class GitHubTrackActions(
                     state.actionsRecommendedRunSnapshots.remove(newItem.id)
                 }
                 state.recordTrackedAddedAt(newItem.id, existingAddedAt)
+                if (itemChanged) {
+                    state.recordTrackedModifiedAt(newItem.id, nowMillis)
+                }
                 state.requestTrackCardFocus(newItem.id)
                 env.saveTrackedItems(
                     refreshTrackIds = if (trackingConfigChanged) {
@@ -333,6 +340,7 @@ internal class GitHubTrackActions(
                 state.trackedPreReleaseVersionExpanded.remove(deleting.id)
                 GitHubTrackedReleaseUiStateStore.remove(deleting.id)
                 state.trackedAddedAtById.remove(deleting.id)
+                state.trackedModifiedAtById.remove(deleting.id)
                 GitHubActionsRecommendedRunStore.remove(deleting.id)
                 state.actionsRecommendedRunSnapshots.remove(deleting.id)
                 env.saveTrackedItems()

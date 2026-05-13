@@ -272,6 +272,7 @@ internal class GitHubRefreshActions(
             state.checkStates.remove(trackId)
             state.trackedCardExpanded.remove(trackId)
             state.trackedAddedAtById.remove(trackId)
+            state.trackedModifiedAtById.remove(trackId)
         }
         syncSnapshotFromStore(
             forceRefreshApps = true,
@@ -722,6 +723,9 @@ internal class GitHubRefreshActions(
         state.trackedAddedAtById.clear()
         state.trackedAddedAtById.putAll(trackSnapshot.trackedAddedAtById)
         state.retainTrackedAddedAtByTrackedItems()
+        state.trackedModifiedAtById.clear()
+        state.trackedModifiedAtById.putAll(trackSnapshot.trackedModifiedAtById)
+        state.retainTrackedModifiedAtByTrackedItems()
         state.actionsRecommendedRunSnapshots.clear()
         trackSnapshot.items.filter { it.checkActionsUpdates }.forEach { item ->
             GitHubActionsRecommendedRunStore.load(item.id)?.let { snapshot ->

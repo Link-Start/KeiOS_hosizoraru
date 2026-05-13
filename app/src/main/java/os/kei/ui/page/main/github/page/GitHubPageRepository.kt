@@ -172,12 +172,14 @@ internal class GitHubPageRepository(
         items: List<GitHubTrackedApp>,
         trackedFirstInstallAtByPackage: Map<String, Long>,
         trackedAddedAtById: Map<String, Long>,
+        trackedModifiedAtById: Map<String, Long>,
         refreshTrackIds: Set<String> = emptySet()
     ) {
         withContext(ioDispatcher) {
             GitHubTrackStore.save(items)
             GitHubTrackStore.saveTrackedFirstInstallAtByPackage(trackedFirstInstallAtByPackage)
             GitHubTrackStore.saveTrackedAddedAtById(trackedAddedAtById)
+            GitHubTrackStore.saveTrackedModifiedAtById(trackedModifiedAtById)
             refreshTrackIds.forEach { trackId ->
                 GitHubTrackStoreSignals.requestTrackRefresh(
                     trackId = trackId,

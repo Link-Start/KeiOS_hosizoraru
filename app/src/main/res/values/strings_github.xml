@@ -247,6 +247,10 @@
     <string name="github_sort_update_first">更新优先</string>
     <string name="github_sort_name_asc">名称 A-Z</string>
     <string name="github_sort_prerelease_first">预发行优先</string>
+    <string name="github_sort_changed_newest">最近变更</string>
+    <string name="github_sort_changed_oldest">最早变更</string>
+    <string name="github_sort_added_newest">最近新增</string>
+    <string name="github_sort_added_oldest">最早新增</string>
     <string name="github_filter_all">全部</string>
     <string name="github_filter_github_repository">GitHub 项目</string>
     <string name="github_filter_direct_apk">APK 直链</string>

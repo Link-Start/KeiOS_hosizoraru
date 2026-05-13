@@ -219,6 +219,7 @@ internal class GitHubPageState(
     }
     val trackedFirstInstallAtByPackage = mutableStateMapOf<String, Long>()
     val trackedAddedAtById = mutableStateMapOf<String, Long>()
+    val trackedModifiedAtById = mutableStateMapOf<String, Long>()
 
     val addButtonScrollConnection = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -383,6 +384,21 @@ internal class GitHubPageState(
             .filter { it.isNotBlank() }
             .toSet()
         trackedAddedAtById.keys.retainAll(trackedIds)
+    }
+
+    fun recordTrackedModifiedAt(trackId: String, modifiedAtMillis: Long) {
+        val normalizedTrackId = trackId.trim()
+        if (normalizedTrackId.isBlank()) return
+        if (modifiedAtMillis <= 0L) return
+        trackedModifiedAtById[normalizedTrackId] = modifiedAtMillis
+    }
+
+    fun retainTrackedModifiedAtByTrackedItems() {
+        val trackedIds = trackedItems
+            .map { it.id.trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
+        trackedModifiedAtById.keys.retainAll(trackedIds)
     }
 
     fun dismissStrategySheet() {

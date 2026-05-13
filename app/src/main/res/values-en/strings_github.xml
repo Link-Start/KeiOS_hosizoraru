@@ -247,6 +247,10 @@
     <string name="github_sort_update_first">Updates first</string>
     <string name="github_sort_name_asc">Name A-Z</string>
     <string name="github_sort_prerelease_first">Pre-releases first</string>
+    <string name="github_sort_changed_newest">Recently changed</string>
+    <string name="github_sort_changed_oldest">Oldest changed</string>
+    <string name="github_sort_added_newest">Recently added</string>
+    <string name="github_sort_added_oldest">Oldest added</string>
     <string name="github_filter_all">All</string>
     <string name="github_filter_github_repository">GitHub projects</string>
     <string name="github_filter_direct_apk">Direct APKs</string>

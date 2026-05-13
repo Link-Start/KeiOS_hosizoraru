@@ -3,6 +3,7 @@ package os.kei.feature.github.domain
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GITHUB_DIRECT_APK_STRATEGY_ID
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
@@ -18,7 +19,7 @@ import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
-import java.util.Locale
+import os.kei.feature.github.model.directApkCheckSourceSignature
 
 internal class GitHubDirectApkReleaseCheckSource(
     private val apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository()
@@ -81,7 +82,7 @@ internal class GitHubDirectApkReleaseCheckSource(
     }
 
     internal companion object {
-        const val DIRECT_APK_STRATEGY_ID = "direct_apk"
+        const val DIRECT_APK_STRATEGY_ID = GITHUB_DIRECT_APK_STRATEGY_ID
 
         fun buildDirectApkAsset(item: GitHubTrackedApp): GitHubReleaseAssetFile? {
             val identity = buildDirectApkTrackIdentity(item.repoUrl) ?: return null
@@ -176,11 +177,7 @@ internal class GitHubDirectApkReleaseCheckSource(
         }
 
         fun directApkSourceSignature(item: GitHubTrackedApp): String {
-            return listOf(
-                DIRECT_APK_STRATEGY_ID,
-                item.repoUrl.trim().lowercase(Locale.ROOT),
-                item.packageName.trim().lowercase(Locale.ROOT)
-            ).joinToString("|")
+            return item.directApkCheckSourceSignature()
         }
     }
 }

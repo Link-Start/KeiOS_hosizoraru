@@ -13,13 +13,13 @@ import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
-import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.forTrackedItem
-import os.kei.feature.github.model.githubCheckSourceSignature
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
+import os.kei.feature.github.model.isValidForTrackedItem
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -40,6 +40,7 @@ private const val GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS = 850L
 internal const val GITHUB_TRACK_MUTATION_IMMEDIATE_REFRESH_LIMIT = 8
 private const val GITHUB_TRACK_MUTATION_REFRESH_PARALLELISM = 2
+private const val GITHUB_MISSING_CHECK_STATE_REFRESH_PARALLELISM = 2
 
 private data class GitHubRefreshProgressSnapshot(
     val current: Int,
@@ -196,7 +197,6 @@ internal class GitHubRefreshActions(
     suspend fun initializePageActiveWork() {
         repository.scheduleGitHubRefresh(context)
         reloadApps(forceRefresh = false)
-        val refreshedRequestedTracks = refreshRequestedTracksIfNeeded()
         val hasTracked = state.trackedItems.isNotEmpty()
         val hasCachedForTracked = state.trackedItems.any { item ->
             state.checkStates.containsKey(item.id)
@@ -204,10 +204,17 @@ internal class GitHubRefreshActions(
         val stale = hasTracked && state.lastRefreshMs > 0L &&
             (System.currentTimeMillis() - state.lastRefreshMs) >=
             state.refreshIntervalHours * 60L * 60L * 1000L
+        if (stale || (!hasCachedForTracked && hasTracked)) {
+            repository.consumeTrackRefreshRequests(state.trackedItems.mapTo(HashSet()) { it.id })
+            refreshAllTracked(showToast = false)
+            return
+        }
+        val refreshedRequestedTracks = refreshRequestedTracksIfNeeded()
+        val refreshedMissingTracks = refreshPartialMissingCheckStatesIfNeeded()
         when {
-            refreshedRequestedTracks -> state.overviewRefreshState = OverviewRefreshState.Cached
-            !hasCachedForTracked && hasTracked -> refreshAllTracked(showToast = false)
-            stale -> refreshAllTracked(showToast = false)
+            refreshedRequestedTracks || refreshedMissingTracks ->
+                state.overviewRefreshState = OverviewRefreshState.Cached
+
             hasCachedForTracked -> state.overviewRefreshState = OverviewRefreshState.Cached
             else -> state.overviewRefreshState = OverviewRefreshState.Idle
         }
@@ -224,14 +231,21 @@ internal class GitHubRefreshActions(
         if (consumeRequestedRefreshes) {
             refreshRequestedTracksIfNeeded()
         }
+        val refreshedMissingTracks = if (forceRefreshApps) {
+            refreshPartialMissingCheckStatesIfNeeded()
+        } else {
+            false
+        }
         val hasTracked = state.trackedItems.isNotEmpty()
         val hasCachedForTracked = state.trackedItems.any { item ->
             state.checkStates.containsKey(item.id)
         }
-        state.overviewRefreshState = when {
-            !hasTracked -> OverviewRefreshState.Idle
-            hasCachedForTracked -> OverviewRefreshState.Cached
-            else -> OverviewRefreshState.Idle
+        when {
+            !hasTracked -> state.overviewRefreshState = OverviewRefreshState.Idle
+            hasCachedForTracked || refreshedMissingTracks ->
+                state.overviewRefreshState = OverviewRefreshState.Cached
+
+            else -> state.overviewRefreshState = OverviewRefreshState.Idle
         }
     }
 
@@ -574,11 +588,50 @@ internal class GitHubRefreshActions(
         if (trackedById.isEmpty()) return false
         val requestedIds = repository.consumeTrackRefreshRequests(trackedById.keys)
         if (requestedIds.isEmpty()) return false
-        requestedIds.forEach { trackId ->
-            val item = trackedById[trackId] ?: return@forEach
-            refreshItem(item = item, showToastOnError = false)
+        val requestedItems = requestedIds.mapNotNull { trackId -> trackedById[trackId] }
+        requestedItems.forEach(::markItemChecking)
+        requestedItems.forEach { item ->
+            refreshItem(
+                item = item,
+                showToastOnError = false,
+                keepCurrentVisualWhileRefreshing = true
+            )
         }
         return true
+    }
+
+    private fun refreshPartialMissingCheckStatesIfNeeded(): Boolean {
+        val missingItems = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
+            trackedItems = state.trackedItems.toList(),
+            cachedTrackIds = state.checkStates.keys
+        )
+        if (missingItems.isEmpty()) return false
+        missingItems.forEach(::markItemChecking)
+        scope.launch {
+            val semaphore = Semaphore(GITHUB_MISSING_CHECK_STATE_REFRESH_PARALLELISM)
+            supervisorScope {
+                missingItems.map { item ->
+                    launch {
+                        semaphore.withPermit {
+                            refreshItemNow(
+                                item = item,
+                                showToastOnError = false,
+                                keepCurrentVisualWhileRefreshing = true,
+                                profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast
+                            )
+                        }
+                    }
+                }.joinAll()
+            }
+        }
+        return true
+    }
+
+    private fun markItemChecking(item: GitHubTrackedApp) {
+        state.checkStates[item.id] = (state.checkStates[item.id] ?: VersionCheckUi()).copy(
+            loading = true,
+            message = context.getString(R.string.github_msg_checking)
+        )
     }
 
     private suspend fun persistCheckCacheNow(refreshTimestamp: Long = state.lastRefreshMs) {
@@ -691,19 +744,13 @@ internal class GitHubRefreshActions(
         state.checkStates.clear()
         trackSnapshot.items.forEach { item ->
             val itemLookupConfig = trackSnapshot.lookupConfig.forTrackedItem(item)
-            val activeCheckSignature = itemLookupConfig.githubCheckSourceSignature()
             cachedStates[item.id]
                 ?.takeIf { cache ->
-                    val sourceId = cache.sourceStrategyId.ifBlank {
-                        GitHubLookupStrategyOption.AtomFeed.storageId
-                    }
-                    when {
-                        cache.sourceConfigSignature.isNotBlank() ->
-                            cache.sourceConfigSignature == activeCheckSignature
-
-                        itemLookupConfig.preciseApkVersionEnabled -> false
-                        else -> sourceId == activeStrategyId
-                    }
+                    cache.isValidForTrackedItem(
+                        item = item,
+                        lookupConfig = itemLookupConfig,
+                        activeStrategyId = activeStrategyId
+                    )
                 }
                 ?.let { cached ->
                     nextCheckStates[item.id] = cached.toUi()

@@ -247,6 +247,7 @@ internal class McpGitHubTrackingTools(
                     "sourceMode=${item.sourceMode.storageId} | url=${item.repoUrl} | " +
                     "preferPreRelease=${item.preferPreRelease} | " +
                     "checkActionsUpdates=${item.checkActionsUpdates} | " +
+                    "actionsUpdateIntervalMode=${item.actionsUpdateIntervalMode.storageId} | " +
                     "preciseApkVersionMode=${item.preciseApkVersionMode.storageId} | " +
                     "latestDownload=${item.alwaysShowLatestReleaseDownloadButton}"
         }

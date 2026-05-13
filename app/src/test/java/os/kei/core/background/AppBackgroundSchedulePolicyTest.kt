@@ -1,12 +1,12 @@
 package os.kei.core.background
 
+import org.junit.Test
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
-import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -94,6 +94,23 @@ class AppBackgroundSchedulePolicyTest {
         assertEquals(NOW_MS + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS, schedule.triggerAtMillis)
         assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
         assertEquals(BackgroundAlarmPrecision.Prompt, schedule.precision)
+    }
+
+    @Test
+    fun `github actions due earlier than release refresh schedules earlier`() {
+        val actionsDueAtMs = NOW_MS + 30L * 60L * 1000L
+        val schedule = AppBackgroundSchedulePolicy.nextGitHubRefreshSchedule(
+            trackedItemCount = 1,
+            lastRefreshMs = NOW_MS,
+            refreshIntervalHours = 3,
+            nextActionsUpdateDueAtMs = actionsDueAtMs,
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(actionsDueAtMs, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
+        assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
     }
 
     @Test

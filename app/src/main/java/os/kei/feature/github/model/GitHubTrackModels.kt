@@ -20,6 +20,8 @@ data class GitHubTrackedApp(
     val preferPreRelease: Boolean = false,
     val alwaysShowLatestReleaseDownloadButton: Boolean = false,
     val checkActionsUpdates: Boolean = false,
+    val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode =
+        GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
         GitHubTrackedPreciseApkVersionMode.FollowGlobal,
     val repositoryArchived: Boolean = false,
@@ -67,10 +69,18 @@ fun GitHubTrackedApp.isDirectApkTrack(): Boolean {
 
 fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
     return when (sourceMode) {
-        GitHubTrackedSourceMode.GitHubRepository -> this
+        GitHubTrackedSourceMode.GitHubRepository -> {
+            if (checkActionsUpdates) {
+                this
+            } else {
+                copy(actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal)
+            }
+        }
+
         GitHubTrackedSourceMode.DirectApk -> copy(
             alwaysShowLatestReleaseDownloadButton = false,
-            checkActionsUpdates = false
+            checkActionsUpdates = false,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         )
     }
 }
@@ -195,6 +205,37 @@ enum class GitHubTrackedPreciseApkVersionMode(val storageId: String) {
             return if (value) Enabled else FollowGlobal
         }
     }
+}
+
+enum class GitHubTrackedActionsUpdateIntervalMode(
+    val storageId: String,
+    val intervalMinutes: Int?
+) {
+    FollowGlobal("follow_global", null),
+    Minutes15("15m", 15),
+    Minutes30("30m", 30),
+    Hour1("1h", 60),
+    Hours2("2h", 120),
+    Hours3("3h", 180);
+
+    companion object {
+        fun fromStorageId(value: String?): GitHubTrackedActionsUpdateIntervalMode {
+            val normalized = value.orEmpty().trim()
+            return entries.firstOrNull { it.storageId.equals(normalized, ignoreCase = true) }
+                ?: FollowGlobal
+        }
+    }
+}
+
+fun GitHubTrackedActionsUpdateIntervalMode.effectiveIntervalMs(
+    globalRefreshIntervalHours: Int
+): Long {
+    val minutes = intervalMinutes ?: globalRefreshIntervalHours.coerceIn(1, 12) * 60
+    return minutes.coerceAtLeast(1) * 60L * 1000L
+}
+
+fun GitHubTrackedApp.actionsUpdateIntervalMs(globalRefreshIntervalHours: Int): Long {
+    return actionsUpdateIntervalMode.effectiveIntervalMs(globalRefreshIntervalHours)
 }
 
 internal fun defaultKeiOsTrackedApp(): GitHubTrackedApp {

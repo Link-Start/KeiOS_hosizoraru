@@ -4,7 +4,10 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import os.kei.core.platform.AndroidPlatformVersions
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
+import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.ui.page.main.ba.support.BASettingsStore
 
 object AppBackgroundScheduler {
@@ -18,11 +21,16 @@ object AppBackgroundScheduler {
         val snapshot = GitHubTrackStore.loadSnapshot()
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
         val pending = AppBackgroundTickReceiver.githubTickPendingIntent(appContext)
+        val nowMs = System.currentTimeMillis()
         val schedule = AppBackgroundSchedulePolicy.nextGitHubRefreshSchedule(
             trackedItemCount = snapshot.items.size,
             lastRefreshMs = snapshot.lastRefreshMs,
             refreshIntervalHours = snapshot.refreshIntervalHours,
-            nowMs = System.currentTimeMillis()
+            nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
+                snapshot = snapshot,
+                nowMs = nowMs
+            ),
+            nowMs = nowMs
         )
         if (schedule == null) {
             alarmManager.cancel(pending)
@@ -30,6 +38,23 @@ object AppBackgroundScheduler {
             return
         }
         scheduleWithAlarmManager(alarmManager, schedule, pending)
+    }
+
+    private fun nextGitHubActionsUpdateDueAtMs(
+        snapshot: GitHubTrackSnapshot,
+        nowMs: Long
+    ): Long? {
+        val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
+        if (enabledItems.isEmpty()) return null
+        val previousById = GitHubActionsRecommendedRunStore.loadAll()
+        return enabledItems.minOfOrNull { item ->
+            val checkedAtMillis = previousById[item.id]?.checkedAtMillis ?: 0L
+            if (checkedAtMillis > 0L) {
+                checkedAtMillis + item.actionsUpdateIntervalMs(snapshot.refreshIntervalHours)
+            } else {
+                nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS
+            }
+        }
     }
 
     fun scheduleBaApThreshold(context: Context) {

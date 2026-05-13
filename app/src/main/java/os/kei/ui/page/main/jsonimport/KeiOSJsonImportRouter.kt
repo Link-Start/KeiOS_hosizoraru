@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 private const val GITHUB_TRACKED_FORMAT_PREFIX = "keios.github.tracked"
-private const val GITHUB_TRACKED_SCHEMA_VERSION = 2
+private const val GITHUB_TRACKED_SCHEMA_VERSION = 3
 private const val OS_ACTIVITY_SCHEMA = "keios.os.activity.cards.v1"
 private const val OS_SHELL_SCHEMA = "keios.os.shell.cards.v1"
 private const val OS_BUNDLE_SCHEMA = "keios.os.cards.bundle.v1"

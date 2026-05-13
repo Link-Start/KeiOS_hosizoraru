@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.sheet
 
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -18,6 +19,7 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
+    actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode
 ): Boolean {
     val repoUrl = repoUrlInput.trim()
@@ -29,6 +31,7 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                 preferPreReleaseInput != item.preferPreRelease ||
                 alwaysShowLatestReleaseDownloadButtonInput != item.alwaysShowLatestReleaseDownloadButton ||
                 checkActionsUpdatesInput != item.checkActionsUpdates ||
+                actionsUpdateIntervalModeInput != item.actionsUpdateIntervalMode ||
                 preciseApkVersionModeInput != item.preciseApkVersionMode
     } ?: (
             repoUrl.isNotBlank() ||
@@ -41,6 +44,8 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                     preferPreReleaseInput ||
                     alwaysShowLatestReleaseDownloadButtonInput ||
                     checkActionsUpdatesInput ||
+                    actionsUpdateIntervalModeInput !=
+                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal ||
                     preciseApkVersionModeInput != GitHubTrackedPreciseApkVersionMode.FollowGlobal
             )
 }

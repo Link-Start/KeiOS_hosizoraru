@@ -13,6 +13,7 @@ import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -83,8 +84,8 @@ data class GitHubAppPickerPreferences(
 )
 
 object GitHubTrackStore {
-    private const val TRACK_EXPORT_SCHEMA_VERSION = 2
-    private const val TRACK_EXPORT_FORMAT = "keios.github.tracked/v2"
+    private const val TRACK_EXPORT_SCHEMA_VERSION = 3
+    private const val TRACK_EXPORT_FORMAT = "keios.github.tracked/v3"
     private const val KV_ID = "github_track_store"
     private const val KEY_ITEMS = "tracked_items"
     private const val KEY_CHECK_CACHE = "tracked_check_cache"
@@ -867,6 +868,7 @@ object GitHubTrackStore {
             preferPreRelease = preferPreRelease,
             alwaysShowLatestReleaseDownloadButton = alwaysShowLatestReleaseDownloadButton,
             checkActionsUpdates = checkActionsUpdates,
+            actionsUpdateIntervalMode = parseActionsUpdateIntervalMode(obj),
             preciseApkVersionMode = parsePreciseApkVersionMode(obj),
             repositoryArchived = when {
                 repository?.has("archived") == true -> repository.optBoolean("archived", false)
@@ -961,6 +963,23 @@ object GitHubTrackStore {
         }
     }
 
+    private fun parseActionsUpdateIntervalMode(obj: JSONObject): GitHubTrackedActionsUpdateIntervalMode {
+        val settings = obj.optJSONObject("settings")
+        return when {
+            settings?.has("actionsUpdateIntervalMode") == true ->
+                GitHubTrackedActionsUpdateIntervalMode.fromStorageId(
+                    settings.optString("actionsUpdateIntervalMode")
+                )
+
+            obj.has("actionsUpdateIntervalMode") ->
+                GitHubTrackedActionsUpdateIntervalMode.fromStorageId(
+                    obj.optString("actionsUpdateIntervalMode")
+                )
+
+            else -> GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+        }
+    }
+
     private fun trackedItemToJson(item: GitHubTrackedApp): JSONObject {
         val normalizedItem = item.withSourceModeConstraints()
         val settings = JSONObject()
@@ -971,6 +990,7 @@ object GitHubTrackStore {
                 normalizedItem.alwaysShowLatestReleaseDownloadButton
             )
             .put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+            .put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
             .put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
             .put("localAppType", normalizedItem.localAppType.storageId)
         val source = JSONObject()
@@ -1003,6 +1023,7 @@ object GitHubTrackStore {
                 normalizedItem.alwaysShowLatestReleaseDownloadButton
             )
             .put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+            .put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
             .put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
             .put("localAppType", normalizedItem.localAppType.storageId)
             .put("repository", repository)

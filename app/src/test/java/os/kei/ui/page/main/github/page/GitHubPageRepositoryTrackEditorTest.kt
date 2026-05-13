@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -22,6 +23,7 @@ class GitHubPageRepositoryTrackEditorTest {
                 preferPreRelease = false,
                 alwaysShowLatestReleaseDownloadButton = false,
                 checkActionsUpdates = false,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
                 appList = emptyList()
             )
@@ -40,6 +42,7 @@ class GitHubPageRepositoryTrackEditorTest {
                 preferPreRelease = true,
                 alwaysShowLatestReleaseDownloadButton = true,
                 checkActionsUpdates = true,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
                 appList = emptyList()
             )
@@ -54,6 +57,10 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(true, item.preferPreRelease)
         assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, item.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode
+        )
     }
 
     @Test

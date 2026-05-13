@@ -29,15 +29,19 @@ internal object AppBackgroundSchedulePolicy {
         trackedItemCount: Int,
         lastRefreshMs: Long,
         refreshIntervalHours: Int,
+        nextActionsUpdateDueAtMs: Long? = null,
         nowMs: Long,
     ): BackgroundAlarmSchedule? {
         if (trackedItemCount <= 0) return null
         val intervalMs = refreshIntervalHours.coerceIn(1, 12) * 60L * 60L * 1000L
-        val dueAtMs = if (lastRefreshMs > 0L) {
+        val versionDueAtMs = if (lastRefreshMs > 0L) {
             lastRefreshMs + intervalMs
         } else {
             nowMs + GITHUB_FIRST_TICK_DELAY_MS
         }
+        val dueAtMs = listOfNotNull(versionDueAtMs, nextActionsUpdateDueAtMs)
+            .minOrNull()
+            ?: versionDueAtMs
         val triggerAtMs = dueAtMs.coerceAtLeast(nowMs + MIN_ALARM_DELAY_MS)
         val precision = if (triggerAtMs <= nowMs + 60_000L) {
             BackgroundAlarmPrecision.Prompt

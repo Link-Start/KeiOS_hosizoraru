@@ -17,6 +17,20 @@ object GitHubActionsRecommendedRunStore {
         return decodeSnapshot(root.optJSONObject(normalizedTrackId))
     }
 
+    fun loadAll(): Map<String, GitHubActionsRecommendedRunSnapshot> {
+        val root = loadRoot()
+        return buildMap {
+            val keys = root.keys()
+            while (keys.hasNext()) {
+                val trackId = keys.next().trim()
+                if (trackId.isBlank()) continue
+                decodeSnapshot(root.optJSONObject(trackId))?.let { snapshot ->
+                    put(trackId, snapshot)
+                }
+            }
+        }
+    }
+
     fun save(snapshot: GitHubActionsRecommendedRunSnapshot) {
         if (snapshot.trackId.isBlank() || snapshot.runId <= 0L) return
         val root = loadRoot()

@@ -140,6 +140,52 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `tracked actions update interval mode resolves storage ids`() {
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("follow_global")
+        )
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.Minutes15,
+            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("15m")
+        )
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.Hours2,
+            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("2h")
+        )
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.Hours3,
+            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("3h")
+        )
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("missing")
+        )
+    }
+
+    @Test
+    fun `tracked actions update interval follows global or custom minutes`() {
+        val global = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example",
+            checkActionsUpdates = true
+        )
+        val custom = global.copy(
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30
+        )
+        val customThreeHours = global.copy(
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Hours3
+        )
+
+        assertEquals(3L * 60L * 60L * 1000L, global.actionsUpdateIntervalMs(3))
+        assertEquals(30L * 60L * 1000L, custom.actionsUpdateIntervalMs(3))
+        assertEquals(3L * 60L * 60L * 1000L, customThreeHours.actionsUpdateIntervalMs(1))
+    }
+
+    @Test
     fun `direct apk lookup uses subscription pre release switch`() {
         val item = GitHubTrackedApp(
             repoUrl = "https://example.com/app.apk",

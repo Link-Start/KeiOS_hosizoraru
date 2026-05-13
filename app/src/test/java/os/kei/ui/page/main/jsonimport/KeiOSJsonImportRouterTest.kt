@@ -26,7 +26,7 @@ class KeiOSJsonImportRouterTest {
     }
 
     @Test
-    fun `detects newer github tracked as compatible high version`() {
+    fun `detects current github tracked v3`() {
         val header = KeiOSJsonImportRouter.inspect(
             """
             {
@@ -38,7 +38,7 @@ class KeiOSJsonImportRouterTest {
         )
 
         assertEquals(KeiOSJsonImportKind.GitHubTracked, header.kind)
-        assertTrue(header.highVersion)
+        assertFalse(header.highVersion)
     }
 
     @Test

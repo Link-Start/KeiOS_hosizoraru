@@ -2,6 +2,7 @@ package os.kei.feature.github.data.local
 
 import org.json.JSONObject
 import org.junit.Test
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -20,6 +21,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
             preferPreRelease = true,
             alwaysShowLatestReleaseDownloadButton = true,
             checkActionsUpdates = true,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30,
             preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled,
             localAppType = GitHubTrackedLocalAppType.System
         )
@@ -31,12 +33,16 @@ class GitHubTrackStoreTrackedItemJsonTest {
         val payload = GitHubTrackStore.parseTrackedItemsImport(exported)
         val imported = payload.items.single()
 
-        assertEquals(2, payload.schemaVersion)
-        assertEquals("keios.github.tracked/v2", payload.format)
+        assertEquals(3, payload.schemaVersion)
+        assertEquals("keios.github.tracked/v3", payload.format)
         assertEquals(1000L, payload.exportedAtMillis)
         assertEquals(true, imported.preferPreRelease)
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.Minutes30,
+            imported.actionsUpdateIntervalMode
+        )
         assertEquals(GitHubTrackedPreciseApkVersionMode.Disabled, imported.preciseApkVersionMode)
         assertEquals(GitHubTrackedLocalAppType.System, imported.localAppType)
     }
@@ -105,6 +111,10 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            imported.actionsUpdateIntervalMode
+        )
         assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, imported.preciseApkVersionMode)
     }
 
@@ -137,6 +147,10 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            imported.actionsUpdateIntervalMode
+        )
     }
 
     @Test
@@ -154,13 +168,14 @@ class GitHubTrackStoreTrackedItemJsonTest {
                   "repo": "app",
                   "packageName": "com.demo.app",
                   "appLabel": "Demo",
-                  "settings": {
-                    "preferPreRelease": true,
-                    "alwaysShowLatestReleaseDownloadButton": true,
-                    "checkActionsUpdates": true,
-                    "preciseApkVersionMode": "enabled",
-                    "localAppType": "system"
-                  },
+                    "settings": {
+                      "preferPreRelease": true,
+                      "alwaysShowLatestReleaseDownloadButton": true,
+                      "checkActionsUpdates": true,
+                      "actionsUpdateIntervalMode": "15m",
+                      "preciseApkVersionMode": "enabled",
+                      "localAppType": "system"
+                    },
                   "local": {
                     "appType": "system"
                   },
@@ -181,6 +196,10 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.Minutes15,
+            imported.actionsUpdateIntervalMode
+        )
         assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, imported.preciseApkVersionMode)
         assertEquals(GitHubTrackedLocalAppType.System, imported.localAppType)
         assertEquals(true, imported.repositoryArchived)

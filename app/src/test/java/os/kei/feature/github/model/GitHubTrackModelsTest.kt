@@ -68,4 +68,22 @@ class GitHubTrackModelsTest {
         assertEquals("direct_apk|telegram.org/dl-android-apk|org.telegram.messenger", direct.id)
         assertEquals("telegram/telegram-android|org.telegram.messenger", repository.id)
     }
+
+    @Test
+    fun `actions interval clears when actions check is disabled`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/demo/app",
+            owner = "demo",
+            repo = "app",
+            packageName = "com.demo.app",
+            appLabel = "Demo",
+            checkActionsUpdates = false,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15
+        ).withSourceModeConstraints()
+
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode
+        )
+    }
 }

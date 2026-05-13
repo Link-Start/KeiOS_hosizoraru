@@ -38,6 +38,7 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -110,6 +111,9 @@ internal class GitHubPageState(
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
     var checkActionsUpdatesInput by mutableStateOf(false)
+    var actionsUpdateIntervalModeInput by mutableStateOf(
+        GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+    )
     var preciseApkVersionModeInput by mutableStateOf(GitHubTrackedPreciseApkVersionMode.FollowGlobal)
     var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
     var repoUrlScanRunning by mutableStateOf(false)
@@ -473,6 +477,7 @@ internal class GitHubPageState(
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
         checkActionsUpdatesInput = false
+        actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
         repoUrlScanRunning = false

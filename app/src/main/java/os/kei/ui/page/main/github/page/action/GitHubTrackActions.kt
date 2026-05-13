@@ -7,6 +7,7 @@ import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
@@ -46,6 +47,7 @@ internal class GitHubTrackActions(
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.checkActionsUpdatesInput = item.checkActionsUpdates
+        state.actionsUpdateIntervalModeInput = item.actionsUpdateIntervalMode
         state.preciseApkVersionModeInput = item.preciseApkVersionMode
         state.showAddSheet = true
         refreshAppListForTrackSheet()
@@ -224,6 +226,14 @@ internal class GitHubTrackActions(
             checkActionsUpdates = when (state.trackSourceModeInput) {
                 GitHubTrackedSourceMode.GitHubRepository -> state.checkActionsUpdatesInput
                 GitHubTrackedSourceMode.DirectApk -> false
+            },
+            actionsUpdateIntervalMode = when {
+                state.trackSourceModeInput == GitHubTrackedSourceMode.DirectApk ->
+                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+
+                state.checkActionsUpdatesInput -> state.actionsUpdateIntervalModeInput
+                else ->
+                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
             },
             preciseApkVersionMode = state.preciseApkVersionModeInput,
             appList = state.appList

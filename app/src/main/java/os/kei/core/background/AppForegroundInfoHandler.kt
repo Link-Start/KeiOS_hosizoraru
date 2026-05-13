@@ -19,6 +19,9 @@ import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchResult
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
@@ -46,34 +49,48 @@ object AppForegroundInfoHandler {
             val tracked = snapshot.items
             if (tracked.isEmpty()) return
 
-            val intervalMs = snapshot.refreshIntervalHours.coerceIn(1, 12) * 60L * 60L * 1000L
             val nowMs = System.currentTimeMillis()
-            if (snapshot.lastRefreshMs > 0L &&
-                (nowMs - snapshot.lastRefreshMs).coerceAtLeast(0L) < intervalMs
-            ) {
-                return
-            }
-
-            val result = GitHubTrackedRefreshBatchRunner.run(
-                trackedItems = tracked,
-                refreshTimestampMs = nowMs
-            ) { item ->
-                GitHubReleaseCheckService.evaluateTrackedApp(context, item)
-            }
-            AppLogger.d(
-                "AppForegroundInfoHandler",
-                "github tick refreshed total=${result.totalCount} elapsed=${result.performance.elapsedMs}ms " +
-                        "p50=${result.performance.p50ItemMs}ms p95=${result.performance.p95ItemMs}ms " +
-                        "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}"
-            )
-
-            persistGitHubRefreshResult(result)
-            handleGitHubActionsUpdates(
-                context = context,
+            val shouldRefreshTracked = shouldRefreshGitHubTrackedItems(
                 snapshot = snapshot,
                 nowMs = nowMs
             )
-            if (result.hasNotifiableOutcome) {
+            val actionsTargetItems = selectGitHubActionsUpdateTargets(
+                snapshot = snapshot,
+                nowMs = nowMs
+            )
+            if (!shouldRefreshTracked && actionsTargetItems.isEmpty()) {
+                return
+            }
+
+            val result = if (shouldRefreshTracked) {
+                GitHubTrackedRefreshBatchRunner.run(
+                    trackedItems = tracked,
+                    refreshTimestampMs = nowMs
+                ) { item ->
+                    GitHubReleaseCheckService.evaluateTrackedApp(context, item)
+                }.also { refreshResult ->
+                    AppLogger.d(
+                        "AppForegroundInfoHandler",
+                        "github tick refreshed total=${refreshResult.totalCount} " +
+                                "elapsed=${refreshResult.performance.elapsedMs}ms " +
+                                "p50=${refreshResult.performance.p50ItemMs}ms " +
+                                "p95=${refreshResult.performance.p95ItemMs}ms " +
+                                "updatable=${refreshResult.updatableCount} " +
+                                "prerelease=${refreshResult.preReleaseUpdateCount} " +
+                                "failed=${refreshResult.failedCount}"
+                    )
+                    persistGitHubRefreshResult(refreshResult)
+                }
+            } else {
+                null
+            }
+            handleGitHubActionsUpdates(
+                context = context,
+                snapshot = snapshot,
+                nowMs = nowMs,
+                targetItems = actionsTargetItems
+            )
+            if (result?.hasNotifiableOutcome == true) {
                 GitHubRefreshNotificationHelper.notifyCompleted(
                     context = context,
                     total = result.totalCount,
@@ -119,7 +136,8 @@ object AppForegroundInfoHandler {
             handleGitHubActionsUpdates(
                 context = context,
                 snapshot = snapshot,
-                nowMs = nowMs
+                nowMs = nowMs,
+                targetItems = snapshot.items.filter { it.checkActionsUpdates }
             )
             GitHubRefreshNotificationHelper.notifyCompleted(
                 context = context,
@@ -205,22 +223,24 @@ object AppForegroundInfoHandler {
     private suspend fun handleGitHubActionsUpdates(
         context: Context,
         snapshot: GitHubTrackSnapshot,
-        nowMs: Long
-    ) {
+        nowMs: Long,
+        targetItems: List<GitHubTrackedApp>
+    ): Int {
         val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
         withContext(Dispatchers.IO) {
             GitHubActionsRecommendedRunStore.retain(enabledItems.map { it.id }.toSet())
         }
-        if (enabledItems.isEmpty()) return
+        if (enabledItems.isEmpty() || targetItems.isEmpty()) return 0
 
         val service = GitHubActionsUpdateCheckService()
+        val previousById = withContext(Dispatchers.IO) {
+            GitHubActionsRecommendedRunStore.loadAll()
+        }
         val notifiedCount = GitHubExecution.mapOrderedBounded(
-            items = enabledItems,
+            items = targetItems,
             maxConcurrency = 2
         ) { item ->
-            val previous = withContext(Dispatchers.IO) {
-                GitHubActionsRecommendedRunStore.load(item.id)
-            }
+            val previous = previousById[item.id]
             val current = service.fetchRecommendedRunSnapshot(
                 item = item,
                 lookupConfig = snapshot.lookupConfig,
@@ -249,9 +269,51 @@ object AppForegroundInfoHandler {
         if (notifiedCount > 0) {
             AppLogger.i(
                 "AppForegroundInfoHandler",
-                "github actions update check notified=$notifiedCount total=${enabledItems.size}"
+                "github actions update check notified=$notifiedCount checked=${targetItems.size} " +
+                        "enabled=${enabledItems.size}"
             )
         }
+        return notifiedCount
+    }
+
+    private fun shouldRefreshGitHubTrackedItems(
+        snapshot: GitHubTrackSnapshot,
+        nowMs: Long
+    ): Boolean {
+        if (snapshot.lastRefreshMs <= 0L) return true
+        val intervalMs = snapshot.refreshIntervalHours.coerceIn(1, 12) * 60L * 60L * 1000L
+        return (nowMs - snapshot.lastRefreshMs).coerceAtLeast(0L) >= intervalMs
+    }
+
+    private suspend fun selectGitHubActionsUpdateTargets(
+        snapshot: GitHubTrackSnapshot,
+        nowMs: Long
+    ): List<GitHubTrackedApp> {
+        val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
+        if (enabledItems.isEmpty()) return emptyList()
+        val previousById = withContext(Dispatchers.IO) {
+            GitHubActionsRecommendedRunStore.loadAll()
+        }
+        return enabledItems.filter { item ->
+            shouldCheckGitHubActionsUpdate(
+                item = item,
+                previous = previousById[item.id],
+                refreshIntervalHours = snapshot.refreshIntervalHours,
+                nowMs = nowMs
+            )
+        }
+    }
+
+    private fun shouldCheckGitHubActionsUpdate(
+        item: GitHubTrackedApp,
+        previous: GitHubActionsRecommendedRunSnapshot?,
+        refreshIntervalHours: Int,
+        nowMs: Long
+    ): Boolean {
+        val checkedAtMillis = previous?.checkedAtMillis ?: 0L
+        if (checkedAtMillis <= 0L) return true
+        val intervalMs = item.actionsUpdateIntervalMs(refreshIntervalHours)
+        return (nowMs - checkedAtMillis).coerceAtLeast(0L) >= intervalMs
     }
 
     suspend fun handleBaApTick(context: Context) {

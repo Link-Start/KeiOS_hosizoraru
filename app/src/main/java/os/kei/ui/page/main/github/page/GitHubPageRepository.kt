@@ -50,6 +50,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -81,6 +82,7 @@ internal data class GitHubTrackEditorDraft(
     val preferPreRelease: Boolean,
     val alwaysShowLatestReleaseDownloadButton: Boolean,
     val checkActionsUpdates: Boolean,
+    val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,
     val appList: List<InstalledAppItem>
 )
@@ -525,6 +527,11 @@ internal class GitHubPageRepository(
                     checkActionsUpdates = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.checkActionsUpdates
                         GitHubTrackedSourceMode.DirectApk -> false
+                    },
+                    actionsUpdateIntervalMode = when (draft.sourceMode) {
+                        GitHubTrackedSourceMode.GitHubRepository -> draft.actionsUpdateIntervalMode
+                        GitHubTrackedSourceMode.DirectApk ->
+                            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                     },
                     preciseApkVersionMode = draft.preciseApkVersionMode,
                     localAppType = GitHubTrackedLocalAppType.fromSystemFlag(

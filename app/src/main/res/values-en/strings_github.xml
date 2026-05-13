@@ -685,6 +685,16 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
     <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
+    <string name="github_track_sheet_label_actions_update_interval">Actions check interval</string>
+    <string name="github_track_sheet_summary_actions_update_interval_follow_global">Following global: currently %1$s</string>
+    <string name="github_track_sheet_summary_actions_update_interval_custom">Actions builds change faster, so this project will be checked on a shorter interval.</string>
+    <string name="github_track_sheet_actions_update_interval_follow_global">Follow global</string>
+    <string name="github_track_sheet_actions_update_interval_follow_global_format">Follow global (%1$s)</string>
+    <string name="github_track_sheet_actions_update_interval_15m">15 minutes</string>
+    <string name="github_track_sheet_actions_update_interval_30m">30 minutes</string>
+    <string name="github_track_sheet_actions_update_interval_1h">1 hour</string>
+    <string name="github_track_sheet_actions_update_interval_2h">2 hours</string>
+    <string name="github_track_sheet_actions_update_interval_3h">3 hours</string>
     <string name="github_track_sheet_summary_direct_apk_check_options">Subscription projects always read the remote APK Manifest for version comparison. Latest Release downloads and Actions checks are closed for this mode.</string>
     <string name="github_item_label_actions_run">Actions Run</string>
     <string name="github_item_actions_run_value">%1$s · recorded at %2$s</string>

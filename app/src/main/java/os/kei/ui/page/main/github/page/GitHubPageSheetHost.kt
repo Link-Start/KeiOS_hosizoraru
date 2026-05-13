@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import androidx.compose.runtime.Composable
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
@@ -320,7 +321,9 @@ internal fun GitHubPageSheetHost(
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
         checkActionsUpdatesInput = state.checkActionsUpdatesInput,
+        actionsUpdateIntervalModeInput = state.actionsUpdateIntervalModeInput,
         preciseApkVersionModeInput = state.preciseApkVersionModeInput,
+        globalRefreshIntervalHours = state.refreshIntervalHours,
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
         onApply = actions::applyTrackSheet,
@@ -334,6 +337,8 @@ internal fun GitHubPageSheetHost(
             if (mode == GitHubTrackedSourceMode.DirectApk) {
                 state.alwaysShowLatestReleaseDownloadButtonInput = false
                 state.checkActionsUpdatesInput = false
+                state.actionsUpdateIntervalModeInput =
+                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
             }
         },
         onAppSearchChange = { state.appSearch = it },
@@ -370,8 +375,15 @@ internal fun GitHubPageSheetHost(
         onAlwaysShowLatestReleaseDownloadButtonInputChange = {
             state.alwaysShowLatestReleaseDownloadButtonInput = it
         },
-        onCheckActionsUpdatesInputChange = {
-            state.checkActionsUpdatesInput = it
+        onCheckActionsUpdatesInputChange = { enabled ->
+            state.checkActionsUpdatesInput = enabled
+            if (!enabled) {
+                state.actionsUpdateIntervalModeInput =
+                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+            }
+        },
+        onActionsUpdateIntervalModeInputChange = {
+            state.actionsUpdateIntervalModeInput = it
         },
         onPreciseApkVersionModeInputChange = {
             state.preciseApkVersionModeInput = it

@@ -10,7 +10,9 @@ class GitHubCheckCachePolicyTest {
     fun `direct apk cache validates against direct apk source signature`() {
         val item = tracked(sourceMode = GitHubTrackedSourceMode.DirectApk)
         val lookupConfig = GitHubLookupConfig().forTrackedItem(item)
-        val directSignature = item.directApkCheckSourceSignature()
+        val directSignature = item.directApkCheckSourceSignature(
+            lookupConfig.checkAllTrackedPreReleases
+        )
 
         assertEquals(directSignature, item.checkSourceSignature(lookupConfig))
         assertTrue(
@@ -67,8 +69,8 @@ class GitHubCheckCachePolicyTest {
             preferPreRelease = true
         )
 
-        assertTrue(stableItem.directApkCheckSourceSignature().endsWith("|stable"))
-        assertTrue(preItem.directApkCheckSourceSignature().endsWith("|pre"))
+        assertTrue(stableItem.directApkCheckSourceSignature().contains("|stable|"))
+        assertTrue(preItem.directApkCheckSourceSignature().contains("|pre|"))
         assertFalse(stableItem.directApkCheckSourceSignature() == preItem.directApkCheckSourceSignature())
         assertFalse(
             GitHubCheckCacheEntry(
@@ -77,6 +79,34 @@ class GitHubCheckCachePolicyTest {
             ).isValidForTrackedItem(
                 item = preItem,
                 lookupConfig = GitHubLookupConfig().forTrackedItem(preItem),
+                activeStrategyId = GitHubLookupConfig().selectedStrategy.storageId
+            )
+        )
+    }
+
+    @Test
+    fun `direct apk cache signature changes with global subscription pre-release check`() {
+        val item = tracked(sourceMode = GitHubTrackedSourceMode.DirectApk)
+        val singleChannelConfig = GitHubLookupConfig(
+            checkAllDirectApkPreReleases = false
+        ).forTrackedItem(item)
+        val allPreConfig = GitHubLookupConfig(
+            checkAllDirectApkPreReleases = true
+        ).forTrackedItem(item)
+
+        assertTrue(item.checkSourceSignature(singleChannelConfig).endsWith("|single-channel"))
+        assertTrue(item.checkSourceSignature(allPreConfig).endsWith("|all-pre"))
+        assertFalse(
+            item.checkSourceSignature(singleChannelConfig) ==
+                    item.checkSourceSignature(allPreConfig)
+        )
+        assertFalse(
+            GitHubCheckCacheEntry(
+                sourceStrategyId = GITHUB_DIRECT_APK_STRATEGY_ID,
+                latestStableRawTag = "10.1.0"
+            ).isValidForTrackedItem(
+                item = item,
+                lookupConfig = allPreConfig,
                 activeStrategyId = GitHubLookupConfig().selectedStrategy.storageId
             )
         )

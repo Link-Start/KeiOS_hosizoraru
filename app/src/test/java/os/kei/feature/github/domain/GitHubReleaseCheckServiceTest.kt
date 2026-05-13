@@ -533,6 +533,101 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
+    fun `direct apk manifests keep stable update when stable is newer than pre-release`() {
+        val item = directApkTrackedApp(preferPreRelease = true)
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifests(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            stableManifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.2.0",
+                versionCode = "102",
+                fetchSource = "https://example.com/stable.apk"
+            ),
+            preReleaseManifest = GitHubApkManifestInfo(
+                assetName = "apk-alpha.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.1.0 Alpha1",
+                versionCode = "101",
+                fetchSource = "https://example.com/alpha.apk"
+            ),
+            checkAllTrackedPreReleases = true
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+        assertEquals(false, result.hasPreReleaseUpdate)
+        assertEquals("10.2.0", result.preciseStableApkVersion?.versionName)
+        assertEquals("10.1.0 Alpha1", result.precisePreApkVersion?.versionName)
+    }
+
+    @Test
+    fun `direct apk local pre-release keeps stable update when stable advances`() {
+        val item = directApkTrackedApp(preferPreRelease = false)
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifests(
+            item = item,
+            localVersion = "10.1.0 Alpha1",
+            localVersionCode = 101L,
+            stableManifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.2.0",
+                versionCode = "102",
+                fetchSource = "https://example.com/stable.apk"
+            ),
+            preReleaseManifest = GitHubApkManifestInfo(
+                assetName = "apk-alpha.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.1.0 Alpha1",
+                versionCode = "101",
+                fetchSource = "https://example.com/alpha.apk"
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+        assertEquals(false, result.hasPreReleaseUpdate)
+        assertEquals(false, result.recommendsPreRelease)
+        assertEquals(true, result.isPreReleaseInstalled)
+        assertTrue(result.preReleaseInfo.contains("10.1.0 Alpha1"))
+        assertEquals("10.2.0", result.preciseStableApkVersion?.versionName)
+        assertEquals("10.1.0 Alpha1", result.precisePreApkVersion?.versionName)
+    }
+
+    @Test
+    fun `direct apk manifests can show optional pre-release when global switch checks it`() {
+        val item = directApkTrackedApp(preferPreRelease = false)
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifests(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            stableManifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.0.0",
+                versionCode = "100"
+            ),
+            preReleaseManifest = GitHubApkManifestInfo(
+                assetName = "apk-alpha.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.1.0 Alpha1",
+                versionCode = "101"
+            ),
+            checkAllTrackedPreReleases = true
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.PreReleaseOptional, result.status)
+        assertEquals(false, result.hasUpdate)
+        assertEquals(true, result.hasPreReleaseUpdate)
+        assertEquals(false, result.recommendsPreRelease)
+    }
+
+    @Test
     fun `direct apk manifest package mismatch fails before version comparison`() {
         val item = directApkTrackedApp()
 

@@ -44,12 +44,14 @@ internal class GitHubDirectApkReleaseCheckSource(
         localVersionCode: Long,
         forceRefresh: Boolean
     ): GitHubTrackedReleaseCheck {
+        val sourceConfigSignature = directApkSourceSignature(item, lookupConfig)
         val asset = buildDirectApkAsset(item)
             ?: return failedCheck(
                 item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                detail = "invalid direct APK URL"
+                detail = "invalid direct APK URL",
+                sourceConfigSignature = sourceConfigSignature
             )
         val directLookupConfig = lookupConfig.copy(
             selectedStrategy = GitHubLookupStrategyOption.AtomFeed,
@@ -57,116 +59,261 @@ internal class GitHubDirectApkReleaseCheckSource(
             checkAllTrackedPreReleases = false,
             preciseApkVersionEnabled = true
         )
+        val localChannel = GitHubVersionUtils.classifyVersionChannel(localVersion)
+        val shouldInspectPreRelease = lookupConfig.checkAllTrackedPreReleases ||
+                item.preferPreRelease ||
+                localChannel?.isPreRelease == true
         // Direct APK URLs often keep the same URL and filename while serving a newer APK.
+        val targets = resolveDirectApkTargets(
+            asset = asset,
+            localVersion = localVersion,
+            inspectPreRelease = shouldInspectPreRelease
+        )
+        val stableManifestResult = targets.stable?.let { target ->
+            inspectDirectApkTarget(
+                target = target,
+                lookupConfig = directLookupConfig,
+                forceRefresh = true
+            )
+        }
+        val preReleaseManifestResult = targets.preRelease?.let { target ->
+            inspectDirectApkTarget(
+                target = target,
+                lookupConfig = directLookupConfig,
+                forceRefresh = true
+            )
+        }
+        val stableManifest = stableManifestResult?.getOrNull()
+        val preReleaseManifest = preReleaseManifestResult?.getOrNull()
+        if (stableManifest != null || preReleaseManifest != null) {
+            return evaluateManifests(
+                item = item,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                stableManifest = stableManifest,
+                preReleaseManifest = preReleaseManifest,
+                checkAllTrackedPreReleases = shouldInspectPreRelease,
+                sourceConfigSignature = sourceConfigSignature
+            )
+        }
+
+        val directError = stableManifestResult?.exceptionOrNull()
+            ?: preReleaseManifestResult?.exceptionOrNull()
+            ?: IllegalStateException("remote APK manifest read failed")
+        val attemptedUrls = listOfNotNull(
+            targets.stable?.asset?.downloadUrl,
+            targets.preRelease?.asset?.downloadUrl
+        ).toSet()
+        val originalAsset = asset.takeIf { asset.downloadUrl !in attemptedUrls }
+        val jsonFallback = jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
+        val fallbackTargets = buildList {
+            originalAsset?.let { fallbackAsset ->
+                add(
+                    DirectApkResolvedTarget(
+                        asset = fallbackAsset,
+                        channel = fallbackAsset.releaseChannel()
+                    )
+                )
+            }
+            jsonFallback?.let { fallback ->
+                add(
+                    DirectApkResolvedTarget(
+                        asset = fallback.toAsset(),
+                        channel = fallback.releaseChannel(),
+                        jsonFallback = fallback
+                    )
+                )
+            }
+        }
+        fallbackTargets.forEach { target ->
+            inspectDirectApkTarget(
+                target = target,
+                lookupConfig = directLookupConfig,
+                forceRefresh = true
+            ).getOrNull()?.let { fallbackManifest ->
+                return evaluateManifest(
+                    item = item,
+                    localVersion = localVersion,
+                    localVersionCode = localVersionCode,
+                    manifest = fallbackManifest,
+                    releaseChannel = target.channel,
+                    checkAllTrackedPreReleases = shouldInspectPreRelease,
+                    sourceConfigSignature = sourceConfigSignature
+                )
+            }
+        }
+        return failedCheck(
+            item = item,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            detail = directError.message.orEmpty().ifBlank { "remote APK manifest read failed" },
+            sourceConfigSignature = sourceConfigSignature
+        )
+    }
+
+    private fun resolveDirectApkTargets(
+        asset: GitHubReleaseAssetFile,
+        localVersion: String,
+        inspectPreRelease: Boolean
+    ): DirectApkResolvedTargets {
         val jsonPrimaryResolution = if (asset.downloadUrl.endsWith(".json", ignoreCase = true)) {
             jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
         } else {
             null
         }
-        val versionedDirectoryResolution = versionedDirectoryResolver
+        if (jsonPrimaryResolution != null) {
+            val target = DirectApkResolvedTarget(
+                asset = jsonPrimaryResolution.toAsset(),
+                channel = jsonPrimaryResolution.releaseChannel(),
+                jsonFallback = jsonPrimaryResolution
+            )
+            return DirectApkResolvedTargets.fromSingle(target)
+        }
+
+        val stableVersionedResolution = versionedDirectoryResolver
+            .resolve(directApkUrl = asset.downloadUrl, preferPreRelease = false)
+            .getOrNull()
+        if (stableVersionedResolution != null) {
+            val preReleaseVersionedResolution = if (inspectPreRelease) {
+                versionedDirectoryResolver
+                    .resolve(directApkUrl = asset.downloadUrl, preferPreRelease = true)
+                    .getOrNull()
+                    ?.takeIf { it.isPreRelease }
+            } else {
+                null
+            }
+            return DirectApkResolvedTargets(
+                stable = stableVersionedResolution
+                    .takeUnless { it.isPreRelease }
+                    ?.let { resolution ->
+                        DirectApkResolvedTarget(
+                            asset = resolution.toAsset(asset.name),
+                            channel = resolution.channel,
+                            versionedDirectoryResolution = resolution
+                        )
+                    },
+                preRelease = (
+                        preReleaseVersionedResolution
+                            ?: stableVersionedResolution.takeIf { it.isPreRelease }
+                        )?.let { resolution ->
+                        DirectApkResolvedTarget(
+                            asset = resolution.toAsset(asset.name),
+                            channel = resolution.channel,
+                            versionedDirectoryResolution = resolution
+                        )
+                    }
+            )
+        }
+
+        val stableDirectoryResolution = directoryIndexResolver
             .resolve(
-                directApkUrl = asset.downloadUrl,
-                preferPreRelease = item.preferPreRelease
+                rawUrl = asset.downloadUrl,
+                localVersion = localVersion,
+                preferPreRelease = false
             )
             .getOrNull()
-        val directoryIndexResolution = if (versionedDirectoryResolution == null) {
-            directoryIndexResolver
-                .resolve(
-                    rawUrl = asset.downloadUrl,
-                    localVersion = localVersion,
-                    preferPreRelease = item.preferPreRelease
-                )
-                .getOrNull()
-        } else {
-            null
-        }
-        val primaryAsset = jsonPrimaryResolution?.toAsset()
-            ?: versionedDirectoryResolution?.toAsset(asset.name)
-            ?: directoryIndexResolution?.toAsset(asset.name)
-            ?: asset
-        val manifestResult = apkInfoRepository.inspectAsync(
-            asset = primaryAsset,
-            lookupConfig = directLookupConfig,
-            forceRefresh = true
-        ).map { manifest ->
-            jsonPrimaryResolution?.let { resolution ->
-                manifest.withJsonFallback(resolution)
-            } ?: versionedDirectoryResolution?.let { resolution ->
-                manifest.withVersionedDirectoryResolution(resolution, primaryAsset)
-            } ?: directoryIndexResolution?.let { resolution ->
-                manifest.withDirectoryIndexResolution(resolution, primaryAsset)
-            } ?: manifest
-        }
-        val manifest = manifestResult.getOrElse { directError ->
-            val originalAsset = asset.takeIf { primaryAsset.downloadUrl != asset.downloadUrl }
-            val jsonFallback = jsonPrimaryResolution
-                ?: jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
-            val fallbackTargets = buildList {
-                originalAsset?.let { fallbackAsset ->
-                    add(DirectApkFallbackTarget(asset = fallbackAsset))
-                }
-                jsonFallback?.let { fallback ->
-                    add(
-                        DirectApkFallbackTarget(
-                            asset = fallback.toAsset(),
-                            jsonFallback = fallback
-                        )
-                    )
-                }
-            }
-            fallbackTargets.forEach { target ->
-                apkInfoRepository.inspectAsync(
-                    asset = target.asset,
-                    lookupConfig = directLookupConfig,
-                    forceRefresh = true
-                ).getOrNull()?.let { fallbackManifest ->
-                    return evaluateManifest(
-                        item = item,
+        if (stableDirectoryResolution != null) {
+            val preReleaseDirectoryResolution = if (inspectPreRelease) {
+                directoryIndexResolver
+                    .resolve(
+                        rawUrl = asset.downloadUrl,
                         localVersion = localVersion,
-                        localVersionCode = localVersionCode,
-                        manifest = target.jsonFallback?.let { fallback ->
-                            fallbackManifest.withJsonFallback(fallback)
-                        } ?: fallbackManifest,
-                        releaseChannel = GitHubReleaseChannel.STABLE,
-                        sourceConfigSignature = directApkSourceSignature(item)
+                        preferPreRelease = true
                     )
-                }
+                    .getOrNull()
+                    ?.takeIf { it.isPreRelease }
+            } else {
+                null
             }
-            return failedCheck(
-                item = item,
-                localVersion = localVersion,
-                localVersionCode = localVersionCode,
-                detail = directError.message.orEmpty().ifBlank { "remote APK manifest read failed" }
+            return DirectApkResolvedTargets(
+                stable = stableDirectoryResolution
+                    .takeUnless { it.isPreRelease }
+                    ?.let { resolution ->
+                        DirectApkResolvedTarget(
+                            asset = resolution.toAsset(asset.name),
+                            channel = resolution.channel,
+                            directoryIndexResolution = resolution
+                        )
+                    },
+                preRelease = (
+                        preReleaseDirectoryResolution
+                            ?: stableDirectoryResolution.takeIf { it.isPreRelease }
+                        )?.let { resolution ->
+                        DirectApkResolvedTarget(
+                            asset = resolution.toAsset(asset.name),
+                            channel = resolution.channel,
+                            directoryIndexResolution = resolution
+                        )
+                    }
             )
         }
-        return evaluateManifest(
-            item = item,
-            localVersion = localVersion,
-            localVersionCode = localVersionCode,
-            manifest = manifest,
-            releaseChannel = versionedDirectoryResolution?.channel
-                ?: directoryIndexResolution?.channel
-                ?: GitHubReleaseChannel.STABLE,
-            sourceConfigSignature = directApkSourceSignature(item)
+
+        return DirectApkResolvedTargets.fromSingle(
+            DirectApkResolvedTarget(
+                asset = asset,
+                channel = asset.releaseChannel()
+            )
         )
     }
 
-    private data class DirectApkFallbackTarget(
+    private suspend fun inspectDirectApkTarget(
+        target: DirectApkResolvedTarget,
+        lookupConfig: GitHubLookupConfig,
+        forceRefresh: Boolean
+    ): Result<GitHubApkManifestInfo> {
+        return apkInfoRepository.inspectAsync(
+            asset = target.asset,
+            lookupConfig = lookupConfig,
+            forceRefresh = forceRefresh
+        ).map { manifest ->
+            target.jsonFallback?.let { resolution ->
+                manifest.withJsonFallback(resolution)
+            } ?: target.versionedDirectoryResolution?.let { resolution ->
+                manifest.withVersionedDirectoryResolution(resolution, target.asset)
+            } ?: target.directoryIndexResolution?.let { resolution ->
+                manifest.withDirectoryIndexResolution(resolution, target.asset)
+            } ?: manifest.copy(
+                assetName = manifest.assetName.ifBlank { target.asset.name },
+                fetchSource = manifest.fetchSource.ifBlank { target.asset.downloadUrl }
+            )
+        }
+    }
+
+    private data class DirectApkResolvedTargets(
+        val stable: DirectApkResolvedTarget?,
+        val preRelease: DirectApkResolvedTarget?
+    ) {
+        companion object {
+            fun fromSingle(target: DirectApkResolvedTarget): DirectApkResolvedTargets {
+                return if (target.channel.isPreRelease) {
+                    DirectApkResolvedTargets(stable = null, preRelease = target)
+                } else {
+                    DirectApkResolvedTargets(stable = target, preRelease = null)
+                }
+            }
+        }
+    }
+
+    private data class DirectApkResolvedTarget(
         val asset: GitHubReleaseAssetFile,
-        val jsonFallback: GitHubDirectApkJsonFallback? = null
+        val channel: GitHubReleaseChannel,
+        val jsonFallback: GitHubDirectApkJsonFallback? = null,
+        val versionedDirectoryResolution: GitHubDirectApkVersionedDirectoryResolution? = null,
+        val directoryIndexResolution: GitHubDirectApkDirectoryIndexResolution? = null
     )
 
     private fun failedCheck(
         item: GitHubTrackedApp,
         localVersion: String,
         localVersionCode: Long,
-        detail: String
+        detail: String,
+        sourceConfigSignature: String = directApkSourceSignature(item)
     ): GitHubTrackedReleaseCheck {
         return GitHubTrackedReleaseCheck(
             strategyId = DIRECT_APK_STRATEGY_ID,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
-            sourceConfigSignature = directApkSourceSignature(item),
+            sourceConfigSignature = sourceConfigSignature,
             directApkRemoteHealth = GitHubDirectApkRemoteHealth.Degraded,
             directApkRemoteHealthMessage = detail,
             directApkRemoteCheckedAtMillis = System.currentTimeMillis(),
@@ -229,84 +376,98 @@ internal class GitHubDirectApkReleaseCheckSource(
             localVersionCode: Long,
             manifest: GitHubApkManifestInfo,
             releaseChannel: GitHubReleaseChannel = GitHubReleaseChannel.STABLE,
+            checkAllTrackedPreReleases: Boolean = false,
+            sourceConfigSignature: String = directApkSourceSignature(item)
+        ): GitHubTrackedReleaseCheck {
+            return evaluateManifests(
+                item = item,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                stableManifest = manifest.takeUnless { releaseChannel.isPreRelease },
+                preReleaseManifest = manifest.takeIf { releaseChannel.isPreRelease },
+                checkAllTrackedPreReleases = checkAllTrackedPreReleases,
+                sourceConfigSignature = sourceConfigSignature
+            )
+        }
+
+        fun evaluateManifests(
+            item: GitHubTrackedApp,
+            localVersion: String,
+            localVersionCode: Long,
+            stableManifest: GitHubApkManifestInfo?,
+            preReleaseManifest: GitHubApkManifestInfo?,
+            checkAllTrackedPreReleases: Boolean = false,
             sourceConfigSignature: String = directApkSourceSignature(item)
         ): GitHubTrackedReleaseCheck {
             val trackedPackage = item.packageName.trim()
-            val remotePackage = manifest.packageName.trim()
-            if (
-                trackedPackage.isNotBlank() &&
-                remotePackage.isNotBlank() &&
-                !trackedPackage.equals(remotePackage, ignoreCase = true)
-            ) {
-                return GitHubTrackedReleaseCheck(
-                    strategyId = DIRECT_APK_STRATEGY_ID,
-                    localVersion = localVersion,
-                    localVersionCode = localVersionCode,
-                    sourceConfigSignature = sourceConfigSignature,
-                    directApkRemoteHealth = GitHubDirectApkRemoteHealth.Available,
-                    directApkRemoteCheckedAtMillis = System.currentTimeMillis(),
-                    status = GitHubTrackedReleaseStatus.Failed,
-                    message = GitHubTrackedReleaseStatus.Failed.failureMessage(
-                        "remote package $remotePackage does not match $trackedPackage"
+            listOfNotNull(stableManifest, preReleaseManifest)
+                .firstOrNull { manifest ->
+                    val remotePackage = manifest.packageName.trim()
+                    trackedPackage.isNotBlank() &&
+                            remotePackage.isNotBlank() &&
+                            !trackedPackage.equals(remotePackage, ignoreCase = true)
+                }
+                ?.let { mismatch ->
+                    val remotePackage = mismatch.packageName.trim()
+                    return GitHubTrackedReleaseCheck(
+                        strategyId = DIRECT_APK_STRATEGY_ID,
+                        localVersion = localVersion,
+                        localVersionCode = localVersionCode,
+                        sourceConfigSignature = sourceConfigSignature,
+                        directApkRemoteHealth = GitHubDirectApkRemoteHealth.Available,
+                        directApkRemoteCheckedAtMillis = System.currentTimeMillis(),
+                        status = GitHubTrackedReleaseStatus.Failed,
+                        message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                            "remote package $remotePackage does not match $trackedPackage"
+                        )
                     )
+                }
+            val stablePreciseInfo = stableManifest?.toRemoteApkVersionInfo(item)
+            val preReleasePreciseInfo = preReleaseManifest?.toRemoteApkVersionInfo(item)
+            val stableSignal = stableManifest?.toReleaseSignal(
+                item = item,
+                preciseInfo = requireNotNull(stablePreciseInfo),
+                channel = GitHubReleaseChannel.STABLE
+            )
+            val preReleaseSignal = preReleaseManifest?.toReleaseSignal(
+                item = item,
+                preciseInfo = requireNotNull(preReleasePreciseInfo),
+                channel = preReleaseManifest.releaseChannel()
+            )
+            val hasStableRelease = stableSignal != null
+            val fallbackSignal = stableSignal
+                ?: preReleaseSignal
+                ?: GitHubReleaseVersionSignals(
+                    displayVersion = item.repoUrl,
+                    rawTag = item.repoUrl,
+                    rawName = item.appLabel,
+                    link = item.repoUrl,
+                    source = GitHubReleaseSignalSource.AtomFallback,
+                    channel = GitHubReleaseChannel.UNKNOWN
                 )
-            }
-            val preciseInfo = GitHubRemoteApkVersionInfo(
-                releaseName = manifest.appLabel.ifBlank { item.appLabel },
-                releaseTag = manifest.versionName.ifBlank { manifest.versionCode },
-                releaseUrl = item.repoUrl,
-                assetName = manifest.assetName,
-                packageName = remotePackage,
-                versionName = manifest.versionName,
-                versionCode = manifest.versionCode,
-                fetchSource = manifest.fetchSource.ifBlank { DIRECT_APK_STRATEGY_ID },
-                releaseNotes = manifest.releaseNotes
+            val entries = listOfNotNull(
+                stableSignal?.toAtomEntry(GitHubReleaseChannel.STABLE),
+                preReleaseSignal?.toAtomEntry(preReleaseSignal.channel)
             )
-            val displayVersion = preciseInfo.versionLabel()
-                .ifBlank { preciseInfo.releaseLabel() }
-                .ifBlank { manifest.assetName }
-            val candidates = GitHubVersionUtils.buildVersionCandidates(
-                GitHubVersionCandidateSource.Tag to manifest.versionName,
-                GitHubVersionCandidateSource.Title to manifest.versionCode,
-                GitHubVersionCandidateSource.Link to item.repoUrl
-            )
-            val releaseSignal = GitHubReleaseVersionSignals(
-                displayVersion = displayVersion,
-                rawTag = manifest.versionName.ifBlank { manifest.versionCode },
-                rawName = manifest.appLabel.ifBlank { manifest.assetName },
-                link = item.repoUrl,
-                versionCandidates = candidates,
-                source = GitHubReleaseSignalSource.AtomFallback,
-                channel = releaseChannel
-            )
-            val entry = GitHubAtomReleaseEntry(
-                tag = releaseSignal.rawTag,
-                title = releaseSignal.rawName.ifBlank { releaseSignal.displayVersion },
-                link = item.repoUrl,
-                versionCandidates = candidates,
-                channel = releaseChannel,
-                isLikelyPreRelease = releaseChannel.isPreRelease
-            )
-            val hasStableRelease = !releaseChannel.isPreRelease
             val snapshot = GitHubRepositoryReleaseSnapshot(
                 strategyId = DIRECT_APK_STRATEGY_ID,
                 feed = GitHubAtomFeed(
                     title = item.appLabel,
                     feedUrl = item.repoUrl,
-                    entries = listOf(entry)
+                    entries = entries
                 ),
-                latestStable = releaseSignal,
+                latestStable = stableSignal ?: fallbackSignal,
                 hasStableRelease = hasStableRelease,
-                latestPreRelease = releaseSignal.takeIf { releaseChannel.isPreRelease }
+                latestPreRelease = preReleaseSignal
             )
             return GitHubReleaseCheckService.evaluateSnapshot(
                 item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 snapshot = snapshot,
-                checkAllTrackedPreReleases = false,
-                preciseStableApkVersion = preciseInfo.takeIf { hasStableRelease },
-                precisePreReleaseApkVersion = preciseInfo.takeIf { releaseChannel.isPreRelease },
+                checkAllTrackedPreReleases = checkAllTrackedPreReleases,
+                preciseStableApkVersion = stablePreciseInfo,
+                precisePreReleaseApkVersion = preReleasePreciseInfo,
                 sourceConfigSignature = sourceConfigSignature
             ).copy(
                 directApkRemoteHealth = GitHubDirectApkRemoteHealth.Available,
@@ -314,8 +475,82 @@ internal class GitHubDirectApkReleaseCheckSource(
             )
         }
 
-        fun directApkSourceSignature(item: GitHubTrackedApp): String {
-            return item.directApkCheckSourceSignature()
+        private fun GitHubApkManifestInfo.toRemoteApkVersionInfo(
+            item: GitHubTrackedApp
+        ): GitHubRemoteApkVersionInfo {
+            return GitHubRemoteApkVersionInfo(
+                releaseName = appLabel.ifBlank { item.appLabel },
+                releaseTag = versionName.ifBlank { versionCode },
+                releaseUrl = fetchSource.ifBlank { item.repoUrl },
+                assetName = assetName,
+                packageName = packageName.trim(),
+                versionName = versionName,
+                versionCode = versionCode,
+                fetchSource = fetchSource.ifBlank { DIRECT_APK_STRATEGY_ID },
+                releaseNotes = releaseNotes
+            )
+        }
+
+        private fun GitHubApkManifestInfo.toReleaseSignal(
+            item: GitHubTrackedApp,
+            preciseInfo: GitHubRemoteApkVersionInfo,
+            channel: GitHubReleaseChannel
+        ): GitHubReleaseVersionSignals {
+            val displayVersion = preciseInfo.versionLabel()
+                .ifBlank { preciseInfo.releaseLabel() }
+                .ifBlank { assetName }
+            val link = fetchSource.ifBlank { item.repoUrl }
+            return GitHubReleaseVersionSignals(
+                displayVersion = displayVersion,
+                rawTag = versionName.ifBlank { versionCode },
+                rawName = appLabel.ifBlank { assetName },
+                link = link,
+                versionCandidates = GitHubVersionUtils.buildVersionCandidates(
+                    GitHubVersionCandidateSource.Tag to versionName,
+                    GitHubVersionCandidateSource.Title to versionCode,
+                    GitHubVersionCandidateSource.Link to link
+                ),
+                source = GitHubReleaseSignalSource.AtomFallback,
+                channel = channel
+            )
+        }
+
+        private fun GitHubApkManifestInfo.releaseChannel(): GitHubReleaseChannel {
+            return GitHubVersionUtils.classifyVersionChannel(
+                listOf(versionName, assetName, fetchSource).joinToString(" ")
+            ) ?: GitHubReleaseChannel.PREVIEW
+        }
+
+        private fun GitHubReleaseVersionSignals.toAtomEntry(
+            channel: GitHubReleaseChannel
+        ): GitHubAtomReleaseEntry {
+            return GitHubAtomReleaseEntry(
+                tag = rawTag,
+                title = rawName.ifBlank { displayVersion },
+                link = link,
+                versionCandidates = versionCandidates,
+                channel = channel,
+                isLikelyPreRelease = channel.isPreRelease
+            )
+        }
+
+        fun directApkSourceSignature(
+            item: GitHubTrackedApp,
+            lookupConfig: GitHubLookupConfig = GitHubLookupConfig()
+        ): String {
+            return item.directApkCheckSourceSignature(lookupConfig.checkAllTrackedPreReleases)
         }
     }
+}
+
+private fun GitHubDirectApkJsonFallback.releaseChannel(): GitHubReleaseChannel {
+    return GitHubVersionUtils.classifyVersionChannel(
+        listOf(versionName, fileUrl, sourceUrl).joinToString(" ")
+    ) ?: GitHubReleaseChannel.STABLE
+}
+
+private fun GitHubReleaseAssetFile.releaseChannel(): GitHubReleaseChannel {
+    return GitHubVersionUtils.classifyVersionChannel(
+        listOf(name, downloadUrl).joinToString(" ")
+    ) ?: GitHubReleaseChannel.STABLE
 }

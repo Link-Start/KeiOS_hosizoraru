@@ -140,6 +140,37 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `direct apk lookup uses subscription pre release switch`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://example.com/app.apk",
+            owner = "example.com",
+            repo = "app",
+            packageName = "com.example.app",
+            appLabel = "Example",
+            sourceMode = GitHubTrackedSourceMode.DirectApk
+        )
+
+        assertEquals(
+            false,
+            GitHubLookupConfig(checkAllDirectApkPreReleases = false)
+                .forTrackedItem(item)
+                .checkAllTrackedPreReleases
+        )
+        assertEquals(
+            true,
+            GitHubLookupConfig(checkAllDirectApkPreReleases = true)
+                .forTrackedItem(item)
+                .checkAllTrackedPreReleases
+        )
+        assertEquals(
+            true,
+            GitHubLookupConfig(preciseApkVersionEnabled = false)
+                .forTrackedItem(item)
+                .preciseApkVersionEnabled
+        )
+    }
+
+    @Test
     fun `profile source signature follows purpose capability set`() {
         val config = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
         val fast =

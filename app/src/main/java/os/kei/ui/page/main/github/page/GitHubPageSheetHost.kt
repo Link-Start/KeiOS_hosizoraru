@@ -85,6 +85,7 @@ internal fun GitHubPageSheetHost(
         trackedCount = contentDerivedState.trackedUi.overviewMetrics.trackedCount,
         refreshIntervalHours = state.refreshIntervalHours,
         checkAllTrackedPreReleasesInput = state.checkAllTrackedPreReleasesInput,
+        checkAllDirectApkPreReleasesInput = state.checkAllDirectApkPreReleasesInput,
         aggressiveApkFilteringInput = state.aggressiveApkFilteringInput,
         preciseApkVersionEnabledInput = state.preciseApkVersionEnabledInput,
         scanSystemAppsByDefaultInput = state.scanSystemAppsByDefaultInput,
@@ -113,6 +114,9 @@ internal fun GitHubPageSheetHost(
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
         onSendDebugActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
         onCheckAllTrackedPreReleasesInputChange = { state.checkAllTrackedPreReleasesInput = it },
+        onCheckAllDirectApkPreReleasesInputChange = {
+            state.checkAllDirectApkPreReleasesInput = it
+        },
         onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },
         onPreciseApkVersionEnabledInputChange = { state.preciseApkVersionEnabledInput = it },
         onScanSystemAppsByDefaultInputChange = { state.scanSystemAppsByDefaultInput = it },

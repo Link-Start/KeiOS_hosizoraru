@@ -56,6 +56,7 @@ internal class GitHubConfigActions(
             val config = repository.loadLookupConfig()
             state.lookupConfig = config
             state.checkAllTrackedPreReleasesInput = config.checkAllTrackedPreReleases
+            state.checkAllDirectApkPreReleasesInput = config.checkAllDirectApkPreReleases
             state.aggressiveApkFilteringInput = config.aggressiveApkFiltering
             state.preciseApkVersionEnabledInput = config.preciseApkVersionEnabled
             state.scanSystemAppsByDefaultInput = config.scanSystemAppsByDefault
@@ -110,6 +111,7 @@ internal class GitHubConfigActions(
                 actionsStrategy = state.selectedActionsStrategyInput,
                 apiToken = sanitizedToken,
                 checkAllTrackedPreReleases = previousConfig.checkAllTrackedPreReleases,
+                checkAllDirectApkPreReleases = previousConfig.checkAllDirectApkPreReleases,
                 aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
                 preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
                 scanSystemAppsByDefault = previousConfig.scanSystemAppsByDefault,
@@ -195,6 +197,7 @@ internal class GitHubConfigActions(
             val previousConfig = repository.loadLookupConfig()
             val newConfig = previousConfig.copy(
                 checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
+                checkAllDirectApkPreReleases = state.checkAllDirectApkPreReleasesInput,
                 aggressiveApkFiltering = state.aggressiveApkFilteringInput,
                 preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
                 scanSystemAppsByDefault = state.scanSystemAppsByDefaultInput,
@@ -216,7 +219,10 @@ internal class GitHubConfigActions(
             closeCheckLogicSheet()
 
             val checkScopeChanged =
-                previousConfig.checkAllTrackedPreReleases != newConfig.checkAllTrackedPreReleases
+                previousConfig.checkAllTrackedPreReleases !=
+                        newConfig.checkAllTrackedPreReleases ||
+                        previousConfig.checkAllDirectApkPreReleases !=
+                        newConfig.checkAllDirectApkPreReleases
             val filteringChanged = previousConfig.aggressiveApkFiltering != newConfig.aggressiveApkFiltering
             val preciseVersionChanged =
                 previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled

@@ -8,17 +8,21 @@ internal fun GitHubTrackedApp.checkSourceSignature(
     lookupConfig: GitHubLookupConfig
 ): String {
     return when (sourceMode) {
-        GitHubTrackedSourceMode.DirectApk -> directApkCheckSourceSignature()
+        GitHubTrackedSourceMode.DirectApk ->
+            directApkCheckSourceSignature(lookupConfig.checkAllTrackedPreReleases)
         GitHubTrackedSourceMode.GitHubRepository -> lookupConfig.githubCheckSourceSignature()
     }
 }
 
-internal fun GitHubTrackedApp.directApkCheckSourceSignature(): String {
+internal fun GitHubTrackedApp.directApkCheckSourceSignature(
+    checkAllPreReleases: Boolean = false
+): String {
     return listOf(
         GITHUB_DIRECT_APK_STRATEGY_ID,
         repoUrl.trim().lowercase(Locale.ROOT),
         packageName.trim().lowercase(Locale.ROOT),
-        if (preferPreRelease) "pre" else "stable"
+        if (preferPreRelease) "pre" else "stable",
+        if (checkAllPreReleases) "all-pre" else "single-channel"
     ).joinToString("|")
 }
 
@@ -35,7 +39,9 @@ internal fun GitHubCheckCacheEntry.isValidForTrackedItem(
             sourceConfigSignature == item.checkSourceSignature(lookupConfig)
 
         item.isDirectApkTrack() ->
-            sourceId == GITHUB_DIRECT_APK_STRATEGY_ID && !item.preferPreRelease
+            sourceId == GITHUB_DIRECT_APK_STRATEGY_ID &&
+                    !item.preferPreRelease &&
+                    !lookupConfig.checkAllTrackedPreReleases
         lookupConfig.preciseApkVersionEnabled -> false
         else -> sourceId == activeStrategyId
     }

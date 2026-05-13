@@ -724,6 +724,8 @@ internal class GitHubRefreshActions(
         state.selectedActionsStrategyInput = trackSnapshot.lookupConfig.actionsStrategy
         state.githubApiTokenInput = trackSnapshot.lookupConfig.apiToken
         state.checkAllTrackedPreReleasesInput = trackSnapshot.lookupConfig.checkAllTrackedPreReleases
+        state.checkAllDirectApkPreReleasesInput =
+            trackSnapshot.lookupConfig.checkAllDirectApkPreReleases
         state.aggressiveApkFilteringInput = trackSnapshot.lookupConfig.aggressiveApkFiltering
         state.preciseApkVersionEnabledInput = trackSnapshot.lookupConfig.preciseApkVersionEnabled
         state.profileDepthInput = trackSnapshot.lookupConfig.profileDepth

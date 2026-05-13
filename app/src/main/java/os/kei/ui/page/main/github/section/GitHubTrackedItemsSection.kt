@@ -331,7 +331,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         GitHubReleaseVersionCard(
                             label = stringResource(
                                 if (item.isDirectApkTrack()) {
-                                    R.string.github_item_label_remote_version
+                                    R.string.github_item_label_remote_stable_version
                                 } else {
                                     R.string.github_item_label_stable_version
                                 }
@@ -363,7 +363,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 GitHubLinkedInfoCard(
                                     label = stringResource(
                                         if (item.isDirectApkTrack()) {
-                                            R.string.github_item_label_remote_release
+                                            R.string.github_item_label_remote_stable_release
                                         } else {
                                             R.string.github_item_label_stable_release
                                         }
@@ -394,7 +394,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         )
                         val preExpanded = trackedPreReleaseVersionExpanded[item.id] == true
                         GitHubReleaseVersionCard(
-                            label = stringResource(R.string.github_item_label_prerelease_version),
+                            label = stringResource(
+                                if (item.isDirectApkTrack()) {
+                                    R.string.github_item_label_remote_prerelease_version
+                                } else {
+                                    R.string.github_item_label_prerelease_version
+                                }
+                            ),
                             value = formatApkVersionValue(
                                 preciseInfo = state.latestPreApkVersion.takeIf {
                                     itemLookupConfig.preciseApkVersionEnabled
@@ -420,7 +426,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
                             ) {
                                 GitHubLinkedInfoCard(
-                                    label = stringResource(R.string.github_item_label_prerelease_release),
+                                    label = stringResource(
+                                        if (item.isDirectApkTrack()) {
+                                            R.string.github_item_label_remote_prerelease_release
+                                        } else {
+                                            R.string.github_item_label_prerelease_release
+                                        }
+                                    ),
                                     value = preReleaseMeta,
                                     labelColor = preReleaseCardTextColor,
                                     valueColor = preReleaseCardTextColor,

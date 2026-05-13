@@ -95,6 +95,8 @@ object GitHubTrackStore {
     private const val KEY_ACTIONS_LOOKUP_STRATEGY = "actions_lookup_strategy"
     private const val KEY_GITHUB_API_TOKEN = "github_api_token"
     private const val KEY_CHECK_ALL_TRACKED_PRE_RELEASES = "check_all_tracked_pre_releases"
+    private const val KEY_CHECK_ALL_DIRECT_APK_PRE_RELEASES =
+        "github_check_all_direct_apk_pre_releases"
     private const val KEY_AGGRESSIVE_APK_FILTERING = "github_aggressive_apk_filtering"
     private const val KEY_PRECISE_APK_VERSION_ENABLED = "github_precise_apk_version_enabled"
     private const val KEY_SCAN_SYSTEM_APPS_BY_DEFAULT = "github_scan_system_apps_by_default"
@@ -731,6 +733,10 @@ object GitHubTrackStore {
             ),
             apiToken = kv().decodeString(KEY_GITHUB_API_TOKEN).orEmpty().trim(),
             checkAllTrackedPreReleases = kv().decodeBool(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, false),
+            checkAllDirectApkPreReleases = kv().decodeBool(
+                KEY_CHECK_ALL_DIRECT_APK_PRE_RELEASES,
+                false
+            ),
             aggressiveApkFiltering = kv().decodeBool(KEY_AGGRESSIVE_APK_FILTERING, false),
             preciseApkVersionEnabled = kv().decodeBool(KEY_PRECISE_APK_VERSION_ENABLED, false),
             scanSystemAppsByDefault = kv().decodeBool(KEY_SCAN_SYSTEM_APPS_BY_DEFAULT, false),
@@ -765,6 +771,10 @@ object GitHubTrackStore {
         kv().encode(KEY_ACTIONS_LOOKUP_STRATEGY, config.actionsStrategy.storageId)
         kv().encode(KEY_GITHUB_API_TOKEN, config.apiToken.trim())
         kv().encode(KEY_CHECK_ALL_TRACKED_PRE_RELEASES, config.checkAllTrackedPreReleases)
+        kv().encode(
+            KEY_CHECK_ALL_DIRECT_APK_PRE_RELEASES,
+            config.checkAllDirectApkPreReleases
+        )
         kv().encode(KEY_AGGRESSIVE_APK_FILTERING, config.aggressiveApkFiltering)
         kv().encode(KEY_PRECISE_APK_VERSION_ENABLED, config.preciseApkVersionEnabled)
         kv().encode(KEY_SCAN_SYSTEM_APPS_BY_DEFAULT, config.scanSystemAppsByDefault)

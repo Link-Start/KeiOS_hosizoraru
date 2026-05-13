@@ -283,11 +283,15 @@
     <string name="github_item_value_check_pending">Pending check</string>
     <string name="github_item_label_stable_version">Stable version</string>
     <string name="github_item_label_remote_version">Remote version</string>
+    <string name="github_item_label_remote_stable_version">Remote stable</string>
     <string name="github_item_label_prerelease_version">Pre-release version</string>
+    <string name="github_item_label_remote_prerelease_version">Remote pre-release</string>
     <string name="github_item_label_releases">Releases</string>
     <string name="github_item_label_stable_release">Stable release</string>
     <string name="github_item_label_remote_release">Remote release</string>
+    <string name="github_item_label_remote_stable_release">Remote stable release</string>
     <string name="github_item_label_prerelease_release">Pre-release</string>
+    <string name="github_item_label_remote_prerelease_release">Remote pre-release release</string>
     <string name="github_release_meta_prefix_stable">Stable</string>
     <string name="github_release_meta_prefix_prerelease">Pre-release</string>
     <string name="github_item_label_updated_at">Updated at</string>
@@ -448,6 +452,10 @@
     <string name="github_check_sheet_summary_refresh_interval">After the selected interval, background and page refreshes treat the cache as stale. Shorter intervals send more requests; 3–6 hours fits larger tracking lists.</string>
     <string name="github_check_sheet_label_prerelease_check">Check latest pre-release for every tracked item</string>
     <string name="github_check_sheet_summary_prerelease_check">Also checks the latest pre-release for each project. This does not automatically recommend installing it.</string>
+    <string name="github_check_sheet_label_github_prerelease_check">GitHub project pre-releases</string>
+    <string name="github_check_sheet_summary_github_prerelease_check">Checks the latest pre-release for all GitHub projects. Each project’s “prefer pre-release” switch still controls install recommendations.</string>
+    <string name="github_check_sheet_label_direct_apk_prerelease_check">Subscription project pre-releases</string>
+    <string name="github_check_sheet_summary_direct_apk_prerelease_check">Also resolves remote pre-release APKs for subscription projects, so cards can show remote stable and remote pre-release entries together.</string>
     <string name="github_check_sheet_label_aggressive_filter">More aggressive filtering</string>
     <string name="github_check_sheet_summary_aggressive_filter">Ignore `armeabi-v7a`, `armeabi`, `x86_64`, and `x86`; when arm64-v8a exists, ignore universal as well.</string>
     <string name="github_check_sheet_label_precise_apk_version">More precise version logic</string>

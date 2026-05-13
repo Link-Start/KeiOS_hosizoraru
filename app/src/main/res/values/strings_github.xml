@@ -283,11 +283,15 @@
     <string name="github_item_value_check_pending">待检查</string>
     <string name="github_item_label_stable_version">稳定版本</string>
     <string name="github_item_label_remote_version">远端版本</string>
+    <string name="github_item_label_remote_stable_version">远端稳定</string>
     <string name="github_item_label_prerelease_version">预发版本</string>
+    <string name="github_item_label_remote_prerelease_version">远端预发</string>
     <string name="github_item_label_releases">Releases</string>
     <string name="github_item_label_stable_release">稳定发布</string>
     <string name="github_item_label_remote_release">远端发布</string>
+    <string name="github_item_label_remote_stable_release">远端稳定发布</string>
     <string name="github_item_label_prerelease_release">预发发布</string>
+    <string name="github_item_label_remote_prerelease_release">远端预发发布</string>
     <string name="github_release_meta_prefix_stable">稳定</string>
     <string name="github_release_meta_prefix_prerelease">预发</string>
     <string name="github_item_label_updated_at">更新时间</string>
@@ -448,6 +452,10 @@
     <string name="github_check_sheet_summary_refresh_interval">超过所选间隔后，后台和页面刷新会把缓存视为过期；间隔越短请求越频繁，追踪较多时建议 3–6 小时。</string>
     <string name="github_check_sheet_label_prerelease_check">检查所有追踪项的预发行最新版</string>
     <string name="github_check_sheet_summary_prerelease_check">额外检查每个项目的最新预发，但不代表自动推荐安装</string>
+    <string name="github_check_sheet_label_github_prerelease_check">GitHub 项目预发行最新版</string>
+    <string name="github_check_sheet_summary_github_prerelease_check">为所有 GitHub 项目额外检查最新预发行版本；单项目“优先预发行版本”决定推荐安装倾向。</string>
+    <string name="github_check_sheet_label_direct_apk_prerelease_check">订阅项目预发行最新版</string>
+    <string name="github_check_sheet_summary_direct_apk_prerelease_check">为订阅项目额外解析远端预发 APK，卡片会同时展示远端稳定与远端预发；单项目开关决定推荐倾向。</string>
     <string name="github_check_sheet_label_aggressive_filter">更激进的过滤方式</string>
     <string name="github_check_sheet_summary_aggressive_filter">忽略 `armeabi-v7a`、`armeabi`、`x86_64`、`x86`；若有 arm64-v8a 也忽略 universal</string>
     <string name="github_check_sheet_label_precise_apk_version">更精准的版本号逻辑</string>

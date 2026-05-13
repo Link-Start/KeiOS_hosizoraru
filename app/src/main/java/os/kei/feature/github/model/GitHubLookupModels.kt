@@ -85,6 +85,7 @@ data class GitHubLookupConfig(
     val actionsStrategy: GitHubActionsLookupStrategyOption = GitHubActionsLookupStrategyOption.NightlyLink,
     val apiToken: String = "",
     val checkAllTrackedPreReleases: Boolean = false,
+    val checkAllDirectApkPreReleases: Boolean = false,
     val aggressiveApkFiltering: Boolean = false,
     val preciseApkVersionEnabled: Boolean = false,
     val scanSystemAppsByDefault: Boolean = false,

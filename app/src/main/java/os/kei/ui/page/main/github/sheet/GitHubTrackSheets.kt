@@ -51,6 +51,7 @@ internal fun GitHubCheckLogicSheet(
     trackedCount: Int,
     refreshIntervalHours: Int,
     checkAllTrackedPreReleasesInput: Boolean,
+    checkAllDirectApkPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
     scanSystemAppsByDefaultInput: Boolean,
@@ -79,6 +80,7 @@ internal fun GitHubCheckLogicSheet(
     onEnsureKeiOsSelfTrack: () -> Unit,
     onSendDebugActionsUpdateNotification: () -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
+    onCheckAllDirectApkPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
     onScanSystemAppsByDefaultInputChange: (Boolean) -> Unit,
@@ -146,6 +148,7 @@ internal fun GitHubCheckLogicSheet(
         }
         val logicChanged =
             checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
+                    checkAllDirectApkPreReleasesInput != lookupConfig.checkAllDirectApkPreReleases ||
             aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
                 preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
                     scanSystemAppsByDefaultInput != lookupConfig.scanSystemAppsByDefault ||
@@ -171,11 +174,14 @@ internal fun GitHubCheckLogicSheet(
             )
             GitHubCheckStrategySection(
                 checkAllTrackedPreReleasesInput = checkAllTrackedPreReleasesInput,
+                checkAllDirectApkPreReleasesInput = checkAllDirectApkPreReleasesInput,
                 aggressiveApkFilteringInput = aggressiveApkFilteringInput,
                 preciseApkVersionEnabledInput = preciseApkVersionEnabledInput,
                 scanSystemAppsByDefaultInput = scanSystemAppsByDefaultInput,
                 profileDepthInput = profileDepthInput,
                 onCheckAllTrackedPreReleasesInputChange = onCheckAllTrackedPreReleasesInputChange,
+                onCheckAllDirectApkPreReleasesInputChange =
+                    onCheckAllDirectApkPreReleasesInputChange,
                 onAggressiveApkFilteringInputChange = onAggressiveApkFilteringInputChange,
                 onPreciseApkVersionEnabledInputChange = onPreciseApkVersionEnabledInputChange,
                 onScanSystemAppsByDefaultInputChange = onScanSystemAppsByDefaultInputChange,
@@ -353,11 +359,13 @@ private fun GitHubCheckMetricRow(
 @Composable
 private fun GitHubCheckStrategySection(
     checkAllTrackedPreReleasesInput: Boolean,
+    checkAllDirectApkPreReleasesInput: Boolean,
     aggressiveApkFilteringInput: Boolean,
     preciseApkVersionEnabledInput: Boolean,
     scanSystemAppsByDefaultInput: Boolean,
     profileDepthInput: GitHubProfileDepth,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
+    onCheckAllDirectApkPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
     onPreciseApkVersionEnabledInputChange: (Boolean) -> Unit,
     onScanSystemAppsByDefaultInputChange: (Boolean) -> Unit,
@@ -366,12 +374,21 @@ private fun GitHubCheckStrategySection(
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_checks))
     SheetSectionCard {
         SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_prerelease_check),
-            summary = stringResource(R.string.github_check_sheet_summary_prerelease_check)
+            label = stringResource(R.string.github_check_sheet_label_github_prerelease_check),
+            summary = stringResource(R.string.github_check_sheet_summary_github_prerelease_check)
         ) {
             AppSwitch(
                 checked = checkAllTrackedPreReleasesInput,
                 onCheckedChange = onCheckAllTrackedPreReleasesInputChange
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_direct_apk_prerelease_check),
+            summary = stringResource(R.string.github_check_sheet_summary_direct_apk_prerelease_check)
+        ) {
+            AppSwitch(
+                checked = checkAllDirectApkPreReleasesInput,
+                onCheckedChange = onCheckAllDirectApkPreReleasesInputChange
             )
         }
         SheetControlRow(

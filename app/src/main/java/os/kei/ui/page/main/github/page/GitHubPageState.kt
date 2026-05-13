@@ -155,6 +155,7 @@ internal class GitHubPageState(
     var selectedActionsStrategyInput by mutableStateOf(lookupConfig.actionsStrategy)
     var githubApiTokenInput by mutableStateOf("")
     var checkAllTrackedPreReleasesInput by mutableStateOf(false)
+    var checkAllDirectApkPreReleasesInput by mutableStateOf(false)
     var aggressiveApkFilteringInput by mutableStateOf(false)
     var preciseApkVersionEnabledInput by mutableStateOf(false)
     var scanSystemAppsByDefaultInput by mutableStateOf(false)

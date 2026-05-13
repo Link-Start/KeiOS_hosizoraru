@@ -237,7 +237,7 @@ internal fun GitHubTrackedApp.isKeiOsSelfTrack(): Boolean {
 fun GitHubLookupConfig.forTrackedItem(item: GitHubTrackedApp): GitHubLookupConfig {
     if (item.isDirectApkTrack()) {
         return copy(
-            checkAllTrackedPreReleases = false,
+            checkAllTrackedPreReleases = checkAllDirectApkPreReleases,
             preciseApkVersionEnabled = true
         )
     }

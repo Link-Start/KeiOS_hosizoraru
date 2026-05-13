@@ -3,16 +3,16 @@
 [中文版本 (CN)](FEATURES_CN.md)
 
 KeiOS is built as a daily Android utility console. The app brings together system inspection, MCP
-service management, GitHub Releases / Actions tracking, direct APK tracking, GitHub Star import,
+service management, GitHub Releases / Actions tracking, subscription-project tracking, GitHub Star
+import,
 repository discovery, Blue Archive office reminders, JSON data migration, local issue feedback, and
 a Student Guide media browser in one phone-first interface.
 
 ## Home
 
-Home is the status hub. It summarizes MCP runtime state, GitHub stable/prerelease/direct-source
-update state, cache status, Actions/share-import readiness, BA AP values, cafe AP, AP headroom,
-active BA server, Shizuku status, and the currently visible page/card layout. Users can adjust
-bottom-page visibility and Home summary cards from the top action area.
+Home is the status hub. It uses compact status pills for Shizuku, MCP, GitHub, and BA state, then
+keeps focused MCP, GitHub, and BA cards below the hero. Users can adjust bottom-page visibility and
+Home summary-card visibility from the top action area.
 
 ## OS
 
@@ -32,20 +32,27 @@ The OS page focuses on device and system inspection:
 The MCP page manages a local KeiOS MCP server:
 
 - Start/stop controls, local-only or LAN-oriented connection settings, port/path/token display, and config copy.
-- MCP tool overview, runtime logs, and importable config generation.
-- Claw Skill quick setup prompt, localized SKILL.md generation, and tool-level help resources.
-- 42 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
-  Star List import, package scans, reverse repository scans, and Blue Archive cache inspection.
+- Productized tool sections for entrypoint, workflow, and advanced tools, with search and grouped
+  cards for users who want a smaller starting surface.
+- Claw Skill quick setup prompt, localized SKILL.md generation, workflow blueprints, and tool-level
+  help resources.
+- 45 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
+  Star List import, package scans, reverse repository scans, direct subscription inspection, and
+  Blue Archive cache inspection.
+- Typed catalog metadata, JSON schemas, tool annotations, structured outputs, and resource/prompt
+  registries for MCP clients that support the newer protocol surface.
+- Adaptive runtime-log and session monitoring to keep long-running MCP service sessions lighter.
 - Foreground keep-alive service, test notifications, and semantic icon bitmap support for
   notification builders.
 - HyperOS Super Island template support and AOSP Live Update fallback settings through the notification compatibility controls.
 
 ## GitHub
 
-The GitHub page tracks APK updates from GitHub projects and direct APK links:
+The GitHub page tracks APK updates from GitHub projects and subscription projects:
 
 - Stable and prerelease update checks for tracked repositories, plus remote-version checks for
-  direct APK sources.
+  direct APK links, JSON feeds, companion JSON files, versioned directories, and APK directory
+  indexes.
 - GitHub API strategy configuration with optional token support shared by Releases and Actions.
 - Release asset reading, APK download routing, app-managed install routing, and latest-release
   download actions.
@@ -56,9 +63,12 @@ The GitHub page tracks APK updates from GitHub projects and direct APK links:
 - Artifact ranking that highlights Android packages, build types, universal packages, recency, and previous download history.
 - Tracked-item editing with app package linkage, installed-app matching, package-name scanning from
   latest stable release APKs, reverse repository scanning from package name plus app label, source
-  mode switching, and direct-link import/export compatibility.
+  mode switching, subscription import/export compatibility, and unsaved-change confirmation.
 - Deep repository profiles, health scoring, archived/fork signals, release-note parsing,
   release-note translation, precise APK version modes, and runtime cache freshness checks.
+- Subscription-project cards with remote health, remote stable/prerelease releases, Scene-style
+  index release notes, installed-app labels, and install actions when the tracked package is
+  missing.
 - Share-import flow for repository, release, tag, and direct APK links with transparent window
   handling, notification-first/sheet-first routing, external installer handoff, and app-managed
   Shizuku delivery.
@@ -70,8 +80,10 @@ The GitHub page tracks APK updates from GitHub projects and direct APK links:
   verification, and import confirmation.
 - Strategy diagnostics that compare Atom and API behavior for release checks, package-name scans,
   and reverse repository scans.
-- Expandable overview cards, refresh notifications, local cache summaries, source filters, tracked
-  item focus/auto-scroll, and self-track shortcut for KeiOS.
+- Remembered sort/order/filter preferences, filtered-list refresh from the floating dock, full
+  refresh from shortcuts, refresh notifications, local cache summaries, tracked item
+  focus/auto-scroll, and self-track shortcut for KeiOS.
+- Independent Actions update intervals with Follow global / 1h / 2h / 3h / longer options.
 
 ## Import, Feedback, And Migration
 

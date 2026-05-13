@@ -6,6 +6,7 @@
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
 - 当前公开标签基线为 [KeiOS v1.5.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.5.0)。
+- `master` 当前包含 v1.5.0 之后的订阅项目追踪、MCP 产品化和 Home / GitHub UX 更新。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -125,7 +126,7 @@ JDK 兜底示例路径：
 ## GitHub 实时基准测试（GitHub Live Benchmark Test）
 
 `GitHubStrategyLiveBenchmarkTest` 是一个按需启用的联网测试，用于对比 Atom 与 API 两种策略在真实仓库上的行为。它覆盖
-release 读取、策略缓存 warm 样本、从 release APK 扫描包名，以及按包名反扫仓库。
+release 读取、策略缓存 warm 样本、从 release APK 扫描包名、订阅项目检查，以及按包名反扫仓库。
 
 ### 启用开关（默认关闭）
 

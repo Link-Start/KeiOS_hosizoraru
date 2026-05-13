@@ -22,23 +22,23 @@
 </p>
 
 KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
-Releases / Actions workflows, GitHub Star import, direct APK tracking, and Blue Archive helper
-tools. It combines a Compose + Miuix interface with v2 liquid-glass chrome, dense status cards,
-import/export tools, localized MCP skills, notification helpers, repository discovery, feedback
-issue drafting, cache diagnostics, and generated Baseline Profiles.
+Releases / Actions workflows, GitHub Star import, subscription-project tracking, and Blue Archive
+helper tools. It combines a Compose + Miuix interface with v2 liquid-glass chrome, dense status
+cards, import/export tools, localized MCP skills, notification helpers, repository discovery,
+feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 
 ## Project Signals
 
-| Item                 | Value                                                |
-|----------------------|------------------------------------------------------|
-| Stable package       | `os.kei`                                             |
-| Supported ABI        | `arm64-v8a`                                          |
-| Android baseline     | Android 15+ (`minSdk 35`)                            |
-| Target SDK           | Android 17 / API 37                                  |
-| UI stack             | Jetpack Compose, Miuix, liquid-glass chrome          |
-| Runtime stack        | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
-| Languages            | Simplified Chinese, English, Japanese                |
-| Current tag baseline | `v1.5.0`                                             |
+| Item              | Value                                                |
+|-------------------|------------------------------------------------------|
+| Stable package    | `os.kei`                                             |
+| Supported ABI     | `arm64-v8a`                                          |
+| Android baseline  | Android 15+ (`minSdk 35`)                            |
+| Target SDK        | Android 17 / API 37                                  |
+| UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
+| Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
+| Languages         | Simplified Chinese, English, Japanese                |
+| Latest stable tag | `v1.5.0`                                             |
 
 ## Quick Links
 
@@ -53,14 +53,14 @@ issue drafting, cache diagnostics, and generated Baseline Profiles.
 
 ## Main Features
 
-- Home dashboard with compact MCP, GitHub, BA, Shizuku, Actions, cache, and share-import status.
+- Home dashboard with compact status pills and MCP, GitHub, and BA summary cards.
 - OS tools for system tables, Android/Java/Linux properties, activity shortcuts, Shizuku shell cards, and card import/export.
 - Local MCP server controls with config copy, runtime logs, foreground service support, Claw
-  onboarding, localized SKILL.md output, and 42 tools across runtime, Home, OS, GitHub
-  discovery/tracking, and BA cache inspection.
+  onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 45 tools
+  across runtime, Home, OS, GitHub discovery/tracking, and BA cache inspection.
 - GitHub tracking for Releases and Actions artifacts, with Atom/API strategy comparison,
   package-name scanning from release APKs, reverse repository scanning from installed packages,
-  direct APK source tracking, share-import links, app linkage, and Star List import.
+  subscription-project tracking, share-import links, app linkage, and Star List import.
 - GitHub Star import activity for authenticated stars, public user stars, and public Star List URLs,
   with list discovery, quality filters, multi-select import, APK verification, and exit
   confirmation.
@@ -81,23 +81,25 @@ issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.5.0 Highlights
+## Post-v1.5.0 HEAD Highlights
 
-- GitHub tracking now supports direct APK URLs alongside GitHub repositories, with separate source
-  modes, import/export compatibility, filters, fair refresh scheduling, and remote version wording
-  for direct-link cards.
-- Repository intelligence was rebuilt around deep repository profiles, health scoring, archived/fork
-  signals, release-note parsing, release-note translation, precise APK version modes, and richer
-  cache freshness checks.
-- Share import keeps the original external-installer handoff and adds app-managed Shizuku delivery,
-  live progress, package-scoped notification actions, manifest metadata, and versionCode-aware
-  tracking.
-- Actions tracking gained recommended-run checks, app-icon notifications, Super Island refinements,
-  debug notification testing, and notification taps that open the tracked project's Actions sheet.
-- Performance work added a Baseline Profile module, committed generated profiles, background
-  Markdown parsing, immutable UI snapshots, Lazy-list tuning, and a Compose audit gate.
-- The app now includes JSON import, local GitHub issue feedback, background shortcut execution, BA
-  cafe/AP notification upgrades, refined liquid action menus, and stricter lint/R8/resource hygiene.
+- GitHub tracking now treats direct APK, JSON feed, companion JSON, versioned directory, and APK
+  directory-index sources as subscription projects, with remote health, stable/prerelease channels,
+  release notes, and remote stable/prerelease cards.
+- Subscription and GitHub tracked items can surface install actions when the package is missing;
+  the install button reuses the existing APK asset, downloader, app-managed Shizuku install, and
+  manifest inspection flow.
+- GitHub page state gained remembered sort/filter/order settings, visible-list batch refresh from
+  the floating dock, full-refresh shortcuts, unsaved-change confirmation across edit/settings
+  sheets, and separate Actions update intervals with 2h / 3h options.
+- MCP was productized around entrypoint, workflow, and advanced tools, with typed catalog metadata,
+  JSON schemas, structured outputs, workflow blueprints, resource/help registries, a redesigned MCP
+  Skill page, and adaptive runtime-log/session monitoring.
+- Home was simplified into status pills plus focused MCP / GitHub / BA cards, removing the repeated
+  overview card while keeping compact, scan-first summaries.
+- GitHub install and subscription cards now use installed app labels when available, keep remote
+  health at the bottom, and expose release notes through the same more-actions model as GitHub
+  projects.
 
 Read the full feature tour:
 - [Feature Overview (EN)](readme/FEATURES.md)

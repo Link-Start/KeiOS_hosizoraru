@@ -636,7 +636,7 @@
     <string name="github_track_sheet_input_repo">GitHub 项目地址</string>
     <string name="github_track_sheet_input_direct_apk">订阅地址</string>
     <string name="github_track_sheet_summary_repo">填写仓库主页或 release 地址；也可以通过包名反向扫描项目地址。</string>
-    <string name="github_track_sheet_summary_direct_apk">填写 APK 下载链接、JSON 订阅源或带版本目录的 APK 地址；刷新时会解析远端 APK Manifest 与本机版本对比。</string>
+    <string name="github_track_sheet_summary_direct_apk">填写 APK 下载链接、APK 目录索引、JSON 订阅源或带版本目录的 APK 地址；刷新时会解析远端 APK Manifest 与本机版本对比。</string>
     <string name="github_track_sheet_section_repo_candidates">项目候选</string>
     <string name="github_track_sheet_repo_candidates_summary">已验证到同一包名，选择一个仓库写入草稿。</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d 个</string>

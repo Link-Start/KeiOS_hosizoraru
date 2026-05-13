@@ -19,6 +19,7 @@ import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
+import os.kei.feature.github.data.remote.GitHubDirectApkDirectoryIndexResolver
 import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallbackResolver
 import os.kei.feature.github.data.remote.GitHubDirectApkVersionedDirectoryResolver
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -602,9 +603,17 @@ internal class GitHubPageRepository(
                 val versionedDirectoryResolution = GitHubDirectApkVersionedDirectoryResolver()
                     .resolve(identity.url)
                     .getOrNull()
+                val directoryIndexResolution = if (versionedDirectoryResolution == null) {
+                    GitHubDirectApkDirectoryIndexResolver()
+                        .resolve(identity.url)
+                        .getOrNull()
+                } else {
+                    null
+                }
                 val companionJsonResolution = if (
                     jsonResolution == null &&
-                    versionedDirectoryResolution == null
+                    versionedDirectoryResolution == null &&
+                    directoryIndexResolution == null
                 ) {
                     jsonFallbackResolver.resolve(identity.url).getOrNull()
                 } else {
@@ -612,6 +621,7 @@ internal class GitHubPageRepository(
                 }
                 val scanAsset = jsonResolution?.toAsset()
                     ?: versionedDirectoryResolution?.toAsset(asset.name)
+                    ?: directoryIndexResolution?.toAsset(asset.name)
                     ?: companionJsonResolution?.toAsset()
                     ?: asset
                 val manifest = GitHubApkInfoRepository().inspectAsync(
@@ -631,6 +641,7 @@ internal class GitHubPageRepository(
                         .ifBlank { jsonResolution?.versionName.orEmpty() }
                         .ifBlank { companionJsonResolution?.versionName.orEmpty() }
                         .ifBlank { versionedDirectoryResolution?.version.orEmpty() }
+                        .ifBlank { directoryIndexResolution?.version.orEmpty() }
                         .ifBlank { manifest.versionCode },
                     releaseUrl = identity.url,
                     assetName = manifest.assetName.ifBlank { scanAsset.name.ifBlank { identity.assetName } },

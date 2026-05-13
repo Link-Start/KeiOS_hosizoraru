@@ -643,7 +643,7 @@
     <string name="github_track_sheet_input_repo">GitHub project URL</string>
     <string name="github_track_sheet_input_direct_apk">Subscription URL</string>
     <string name="github_track_sheet_summary_repo">Use a repository or release URL. The project URL can also be scanned from the package name.</string>
-    <string name="github_track_sheet_summary_direct_apk">Use an APK download link, JSON feed, or versioned APK directory URL. Refresh resolves the remote APK Manifest and compares it with the local version.</string>
+    <string name="github_track_sheet_summary_direct_apk">Use an APK download link, APK directory index, JSON feed, or versioned APK directory URL. Refresh resolves the remote APK Manifest and compares it with the local version.</string>
     <string name="github_track_sheet_section_repo_candidates">Project candidates</string>
     <string name="github_track_sheet_repo_candidates_summary">These repositories were verified against the same package name. Select one to fill the draft.</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d found</string>

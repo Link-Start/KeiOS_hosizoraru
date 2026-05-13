@@ -1,6 +1,8 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
+import os.kei.feature.github.data.remote.GitHubDirectApkDirectoryIndexResolution
+import os.kei.feature.github.data.remote.GitHubDirectApkDirectoryIndexResolver
 import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallback
 import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallbackResolver
 import os.kei.feature.github.data.remote.GitHubDirectApkVersionedDirectoryResolution
@@ -31,7 +33,9 @@ internal class GitHubDirectApkReleaseCheckSource(
     private val jsonFallbackResolver: GitHubDirectApkJsonFallbackResolver =
         GitHubDirectApkJsonFallbackResolver(),
     private val versionedDirectoryResolver: GitHubDirectApkVersionedDirectoryResolver =
-        GitHubDirectApkVersionedDirectoryResolver()
+        GitHubDirectApkVersionedDirectoryResolver(),
+    private val directoryIndexResolver: GitHubDirectApkDirectoryIndexResolver =
+        GitHubDirectApkDirectoryIndexResolver()
 ) {
     suspend fun evaluate(
         item: GitHubTrackedApp,
@@ -62,8 +66,19 @@ internal class GitHubDirectApkReleaseCheckSource(
         val versionedDirectoryResolution = versionedDirectoryResolver
             .resolve(asset.downloadUrl)
             .getOrNull()
+        val directoryIndexResolution = if (versionedDirectoryResolution == null) {
+            directoryIndexResolver
+                .resolve(
+                    rawUrl = asset.downloadUrl,
+                    localVersion = localVersion
+                )
+                .getOrNull()
+        } else {
+            null
+        }
         val primaryAsset = jsonPrimaryResolution?.toAsset()
             ?: versionedDirectoryResolution?.toAsset(asset.name)
+            ?: directoryIndexResolution?.toAsset(asset.name)
             ?: asset
         val manifestResult = apkInfoRepository.inspectAsync(
             asset = primaryAsset,
@@ -74,6 +89,8 @@ internal class GitHubDirectApkReleaseCheckSource(
                 manifest.withJsonFallback(resolution)
             } ?: versionedDirectoryResolution?.let { resolution ->
                 manifest.withVersionedDirectoryResolution(resolution, primaryAsset)
+            } ?: directoryIndexResolution?.let { resolution ->
+                manifest.withDirectoryIndexResolution(resolution, primaryAsset)
             } ?: manifest
         }
         val manifest = manifestResult.getOrElse { directError ->
@@ -178,6 +195,17 @@ internal class GitHubDirectApkReleaseCheckSource(
 
         private fun GitHubApkManifestInfo.withVersionedDirectoryResolution(
             resolution: GitHubDirectApkVersionedDirectoryResolution,
+            asset: GitHubReleaseAssetFile
+        ): GitHubApkManifestInfo {
+            return copy(
+                assetName = asset.name,
+                versionName = versionName.ifBlank { resolution.version },
+                fetchSource = resolution.downloadUrl
+            )
+        }
+
+        private fun GitHubApkManifestInfo.withDirectoryIndexResolution(
+            resolution: GitHubDirectApkDirectoryIndexResolution,
             asset: GitHubReleaseAssetFile
         ): GitHubApkManifestInfo {
             return copy(

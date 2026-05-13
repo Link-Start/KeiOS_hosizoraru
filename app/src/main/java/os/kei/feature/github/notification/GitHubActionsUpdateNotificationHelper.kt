@@ -50,34 +50,6 @@ object GitHubActionsUpdateNotificationHelper {
         return true
     }
 
-    fun notifyDebug(context: Context): Boolean {
-        val snapshot = GitHubActionsRecommendedRunSnapshot(
-            trackId = "debug/actions|os.kei.debug",
-            owner = "debug",
-            repo = "actions",
-            appLabel = context.getString(R.string.github_actions_update_debug_app_label),
-            workflowId = 1424L,
-            workflowName = context.getString(R.string.github_actions_update_debug_workflow),
-            workflowPath = ".github/workflows/android.yml",
-            runId = 1424L,
-            runNumber = 1424L,
-            runAttempt = 1,
-            runDisplayName = context.getString(R.string.github_actions_update_debug_run_name),
-            headBranch = "main",
-            headSha = "debug",
-            event = "workflow_dispatch",
-            status = "completed",
-            conclusion = "success",
-            htmlUrl = "",
-            artifactCount = 2,
-            androidArtifactCount = 1,
-            createdAtMillis = System.currentTimeMillis(),
-            updatedAtMillis = System.currentTimeMillis(),
-            checkedAtMillis = System.currentTimeMillis()
-        )
-        return notifyUpdateAvailable(context, snapshot)
-    }
-
     private data class NotificationBuildResult(
         val notification: Notification,
         val useXiaomiMagic: Boolean

@@ -107,6 +107,7 @@ internal fun GitHubPageSheetHost(
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
         exportInProgress = tracksExporting,
         importInProgress = tracksImporting,
+        debugActionsUpdateNotificationLoading = state.debugActionsUpdateNotificationLoading,
         onDismissRequest = actions::closeCheckLogicSheet,
         onApply = { actions.applyCheckLogicSheet(installedOnlineShareTargets) },
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,

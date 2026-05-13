@@ -8,15 +8,19 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
 import os.kei.ui.page.main.github.page.action.GitHubAssetActions
 import os.kei.ui.page.main.github.page.action.GitHubConfigActions
@@ -81,14 +85,49 @@ internal class GitHubPageActions(
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
 
     fun sendDebugActionsUpdateNotification() {
-        val sent = GitHubActionsUpdateNotificationHelper.notifyDebug(env.context)
-        env.toast(
-            if (sent) {
-                R.string.github_actions_update_debug_toast_sent
-            } else {
-                R.string.github_actions_update_debug_toast_failed
+        if (env.state.debugActionsUpdateNotificationLoading) return
+        env.state.debugActionsUpdateNotificationLoading = true
+        env.scope.launch {
+            try {
+                val item = env.state.trackedItems.firstOrNull { it.isKeiOsSelfTrack() }
+                if (item == null) {
+                    env.toast(R.string.github_actions_update_debug_toast_track_missing)
+                    return@launch
+                }
+                val previous = GitHubActionsRecommendedRunStore.load(item.id)
+                    ?: env.state.actionsRecommendedRunSnapshots[item.id]
+                val snapshot = GitHubActionsUpdateCheckService()
+                    .fetchRecommendedRunSnapshot(
+                        item = item,
+                        lookupConfig = env.state.lookupConfig,
+                        previousWorkflowId = previous?.workflowId
+                    )
+                    .getOrElse { error ->
+                        env.toast(
+                            R.string.github_actions_update_debug_toast_fetch_failed,
+                            localizedGitHubActionsErrorMessage(env.context, error.message)
+                        )
+                        return@launch
+                    }
+                if (env.state.trackedItems.any { it.id == item.id }) {
+                    GitHubActionsRecommendedRunStore.save(snapshot)
+                    env.state.actionsRecommendedRunSnapshots[item.id] = snapshot
+                }
+                val sent = GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
+                    context = env.context,
+                    snapshot = snapshot
+                )
+                env.toast(
+                    if (sent) {
+                        R.string.github_actions_update_debug_toast_sent
+                    } else {
+                        R.string.github_actions_update_debug_toast_failed
+                    }
+                )
+            } finally {
+                env.state.debugActionsUpdateNotificationLoading = false
             }
-        )
+        }
     }
 
     fun openActionsSheet(item: GitHubTrackedApp) = actionsActions.openActionsSheet(item)

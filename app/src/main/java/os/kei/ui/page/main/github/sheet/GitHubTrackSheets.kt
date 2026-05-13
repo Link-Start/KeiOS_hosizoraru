@@ -73,6 +73,7 @@ internal fun GitHubCheckLogicSheet(
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
     importInProgress: Boolean,
+    debugActionsUpdateNotificationLoading: Boolean,
     onDismissRequest: () -> Unit,
     onApply: () -> Unit,
     onEnsureKeiOsSelfTrack: () -> Unit,
@@ -226,6 +227,7 @@ internal fun GitHubCheckLogicSheet(
             )
             GitHubCheckDebugSection(
                 backdrop = backdrop,
+                loading = debugActionsUpdateNotificationLoading,
                 onSendDebugActionsUpdateNotification = onSendDebugActionsUpdateNotification
             )
             GitHubCheckNotesSection()
@@ -652,6 +654,7 @@ private fun GitHubCheckTracksSection(
 @Composable
 private fun GitHubCheckDebugSection(
     backdrop: LayerBackdrop,
+    loading: Boolean,
     onSendDebugActionsUpdateNotification: () -> Unit
 ) {
     SheetSectionTitle(stringResource(R.string.github_check_sheet_section_debug))
@@ -662,8 +665,13 @@ private fun GitHubCheckDebugSection(
         ) {
             AppLiquidTextButton(
                 backdrop = backdrop,
-                text = stringResource(R.string.github_check_sheet_action_debug_actions_update_notification),
+                text = if (loading) {
+                    stringResource(R.string.github_check_sheet_action_debug_actions_update_notification_loading)
+                } else {
+                    stringResource(R.string.github_check_sheet_action_debug_actions_update_notification)
+                },
                 onClick = onSendDebugActionsUpdateNotification,
+                enabled = !loading,
                 variant = GlassVariant.SheetAction
             )
         }

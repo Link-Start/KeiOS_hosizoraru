@@ -15,11 +15,10 @@
     <string name="github_actions_update_notification_title">GitHub Actions 有新构建</string>
     <string name="github_actions_update_notification_content">%1$s 推荐 Run 更新到 %2$s · %3$s</string>
     <string name="github_actions_update_island_content">Actions</string>
-    <string name="github_actions_update_debug_app_label">Actions 通知测试</string>
-    <string name="github_actions_update_debug_workflow">Android 构建</string>
-    <string name="github_actions_update_debug_run_name">Debug Run #1424</string>
-    <string name="github_actions_update_debug_toast_sent">已发送 Actions 更新测试通知</string>
+    <string name="github_actions_update_debug_toast_sent">已发送 KeiOS Actions 更新测试通知</string>
     <string name="github_actions_update_debug_toast_failed">通知权限未开启，测试通知未发送</string>
+    <string name="github_actions_update_debug_toast_fetch_failed">读取 KeiOS 推荐 Actions 失败：%1$s</string>
+    <string name="github_actions_update_debug_toast_track_missing">请先跟踪本项目，再测试 KeiOS Actions 通知</string>
     <string name="github_check_failed_prefix">检查失败</string>
     <string name="github_page_title">GitHub</string>
     <string name="github_toast_no_checkable_item">暂无可检查条目</string>
@@ -476,8 +475,9 @@
     <string name="github_check_sheet_action_import_stars">StarList</string>
     <string name="github_check_sheet_section_debug">调试</string>
     <string name="github_check_sheet_label_debug_actions_update_notification">Actions 更新通知</string>
-    <string name="github_check_sheet_summary_debug_actions_update_notification">发送一条模拟 #1424 的实时通知/超级岛，用于检查样式、权限和通知动作。</string>
-    <string name="github_check_sheet_action_debug_actions_update_notification">发送测试通知</string>
+    <string name="github_check_sheet_summary_debug_actions_update_notification">读取 KeiOS 最新推荐 Actions Run，并强制按“有新构建”发送实时通知/超级岛。</string>
+    <string name="github_check_sheet_action_debug_actions_update_notification">测试 KeiOS Actions 通知</string>
+    <string name="github_check_sheet_action_debug_actions_update_notification_loading">读取中</string>
     <string name="github_check_sheet_section_notes">说明</string>
     <string name="github_check_sheet_note_transfer">导入会先显示预览，再按“owner/repo + 包名”识别同一条目：同 ID 会覆盖更新，新条目会追加，现有未出现在导入文件里的项目会保留。</string>
     <string name="github_check_sheet_note_1">全局预发检查只负责发现版本；单条目的“优先预发行版本”才决定推荐目标。</string>

@@ -105,6 +105,7 @@ internal class GitHubPageState(
     var actionsArtifactDownloadLoadingId by mutableStateOf<Long?>(null)
     var actionsArtifactShareLoadingId by mutableStateOf<Long?>(null)
     var actionsRunWatchJob by mutableStateOf<Job?>(null)
+    var debugActionsUpdateNotificationLoading by mutableStateOf(false)
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
     var checkActionsUpdatesInput by mutableStateOf(false)

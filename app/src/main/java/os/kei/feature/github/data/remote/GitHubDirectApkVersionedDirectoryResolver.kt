@@ -27,13 +27,34 @@ internal data class GitHubDirectApkVersionedDirectoryResolution(
     }
 }
 
+internal data class GitHubDirectApkVersionedDirectoryTargets(
+    val stable: GitHubDirectApkVersionedDirectoryResolution?,
+    val preRelease: GitHubDirectApkVersionedDirectoryResolution?
+)
+
 internal class GitHubDirectApkVersionedDirectoryResolver(
     private val client: OkHttpClient = defaultClient
 ) {
     fun resolve(
         directApkUrl: String,
         preferPreRelease: Boolean = false
-    ): Result<GitHubDirectApkVersionedDirectoryResolution?> =
+    ): Result<GitHubDirectApkVersionedDirectoryResolution?> {
+        return resolveTargets(
+            directApkUrl = directApkUrl,
+            includePreRelease = preferPreRelease
+        ).map { targets ->
+            if (preferPreRelease) {
+                targets?.preRelease ?: targets?.stable
+            } else {
+                targets?.stable ?: targets?.preRelease
+            }
+        }
+    }
+
+    fun resolveTargets(
+        directApkUrl: String,
+        includePreRelease: Boolean = false
+    ): Result<GitHubDirectApkVersionedDirectoryTargets?> =
         runCatching {
             val pattern = DirectApkVersionedDirectoryPattern.from(directApkUrl)
                 ?: return@runCatching null
@@ -58,23 +79,44 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
                     indexPath = pattern.indexPath,
                     html = html
                 )
-                val channelCandidates = candidates
-                    .preferredReleaseChannelCandidates(preferPreRelease)
-                    .takeIf { it.isNotEmpty() }
-                    ?: candidates
-                val latest = channelCandidates.maxWithOrNull(VersionDirectoryCandidateComparator)
-                    ?: return@use null
-                val downloadUrl = latest.uri.ensureDirectoryUri()
-                    .resolve(pattern.suffixPath)
-                    .toString()
-                GitHubDirectApkVersionedDirectoryResolution(
-                    indexUrl = pattern.indexUrl,
-                    version = latest.version.raw,
-                    downloadUrl = downloadUrl,
-                    channel = latest.version.channel
+                val latestStable = candidates
+                    .preferredReleaseChannelCandidates(preferPreRelease = false)
+                    .maxWithOrNull(VersionDirectoryCandidateComparator)
+                val latestPreRelease = candidates
+                    .preferredReleaseChannelCandidates(preferPreRelease = true)
+                    .maxWithOrNull(VersionDirectoryCandidateComparator)
+                val fallbackLatest = candidates.maxWithOrNull(VersionDirectoryCandidateComparator)
+                val stableCandidate = latestStable
+                val preReleaseCandidate = when {
+                    includePreRelease -> latestPreRelease
+                    stableCandidate == null -> latestPreRelease ?: fallbackLatest
+                        ?.takeIf { it.version.channel.isPreRelease }
+
+                    else -> null
+                }
+                val stable = stableCandidate?.toResolution(pattern)
+                val preRelease = preReleaseCandidate?.toResolution(pattern)
+                if (stable == null && preRelease == null) return@use null
+                GitHubDirectApkVersionedDirectoryTargets(
+                    stable = stable,
+                    preRelease = preRelease
                 )
             }
         }
+
+    private fun VersionDirectoryCandidate.toResolution(
+        pattern: DirectApkVersionedDirectoryPattern
+    ): GitHubDirectApkVersionedDirectoryResolution {
+        val downloadUrl = uri.ensureDirectoryUri()
+            .resolve(pattern.suffixPath)
+            .toString()
+        return GitHubDirectApkVersionedDirectoryResolution(
+            indexUrl = pattern.indexUrl,
+            version = version.raw,
+            downloadUrl = downloadUrl,
+            channel = version.channel
+        )
+    }
 
     private fun parseVersionDirectories(
         indexUri: URI,

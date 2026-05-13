@@ -11,7 +11,8 @@ internal data class GitHubDirectApkDirectoryIndexResolution(
     val indexUrl: String,
     val version: String,
     val downloadUrl: String,
-    val channel: GitHubReleaseChannel
+    val channel: GitHubReleaseChannel,
+    val releaseNotes: String = ""
 ) {
     val isPreRelease: Boolean
         get() = channel.isPreRelease
@@ -27,6 +28,11 @@ internal data class GitHubDirectApkDirectoryIndexResolution(
     }
 }
 
+internal data class GitHubDirectApkDirectoryIndexTargets(
+    val stable: GitHubDirectApkDirectoryIndexResolution?,
+    val preRelease: GitHubDirectApkDirectoryIndexResolution?
+)
+
 internal class GitHubDirectApkDirectoryIndexResolver(
     private val client: OkHttpClient = defaultClient
 ) {
@@ -34,7 +40,25 @@ internal class GitHubDirectApkDirectoryIndexResolver(
         rawUrl: String,
         localVersion: String = "",
         preferPreRelease: Boolean = false
-    ): Result<GitHubDirectApkDirectoryIndexResolution?> = runCatching {
+    ): Result<GitHubDirectApkDirectoryIndexResolution?> {
+        return resolveTargets(
+            rawUrl = rawUrl,
+            localVersion = localVersion,
+            includePreRelease = preferPreRelease
+        ).map { targets ->
+            if (preferPreRelease) {
+                targets?.preRelease ?: targets?.stable
+            } else {
+                targets?.stable ?: targets?.preRelease
+            }
+        }
+    }
+
+    fun resolveTargets(
+        rawUrl: String,
+        localVersion: String = "",
+        includePreRelease: Boolean = false
+    ): Result<GitHubDirectApkDirectoryIndexTargets?> = runCatching {
         val pattern = DirectApkDirectoryIndexPattern.from(rawUrl)
             ?: return@runCatching null
         val request = Request.Builder()
@@ -73,19 +97,102 @@ internal class GitHubDirectApkDirectoryIndexResolver(
                 .preferredCandidates(familyCandidates)
                 .takeIf { it.isNotEmpty() }
                 ?: familyCandidates
-            val channelCandidates = variantCandidates
-                .preferredReleaseChannelCandidates(preferPreRelease)
-                .takeIf { it.isNotEmpty() }
-                ?: variantCandidates
-            val latest = channelCandidates.maxWithOrNull(ApkFileCandidateComparator)
-                ?: return@use null
-            GitHubDirectApkDirectoryIndexResolution(
-                indexUrl = pattern.indexUrl,
-                version = latest.version.raw,
-                downloadUrl = latest.uri.toString(),
-                channel = latest.version.channel
+            val latestStable = variantCandidates
+                .preferredReleaseChannelCandidates(preferPreRelease = false)
+                .maxWithOrNull(ApkFileCandidateComparator)
+            val latestPreRelease = variantCandidates
+                .preferredReleaseChannelCandidates(preferPreRelease = true)
+                .maxWithOrNull(ApkFileCandidateComparator)
+            val fallbackLatest = variantCandidates.maxWithOrNull(ApkFileCandidateComparator)
+            val stableCandidate = latestStable
+            val preReleaseCandidate = when {
+                includePreRelease -> latestPreRelease
+                stableCandidate == null -> latestPreRelease ?: fallbackLatest
+                    ?.takeIf { it.version.channel.isPreRelease }
+
+                else -> null
+            }
+            val selectedVersions = listOfNotNull(stableCandidate, preReleaseCandidate)
+                .map { candidate -> candidate.version.raw }
+                .distinct()
+            val releaseNotesByVersion = loadReleaseNotesByVersion(
+                logUrl = parseReleaseLogUrl(
+                    indexUri = pattern.indexUri,
+                    indexPath = pattern.indexPath,
+                    html = html
+                ),
+                versions = selectedVersions
+            )
+            val stable = stableCandidate?.toResolution(pattern, releaseNotesByVersion)
+            val preRelease = preReleaseCandidate?.toResolution(pattern, releaseNotesByVersion)
+            if (stable == null && preRelease == null) return@use null
+            GitHubDirectApkDirectoryIndexTargets(
+                stable = stable,
+                preRelease = preRelease
             )
         }
+    }
+
+    private fun ApkFileCandidate.toResolution(
+        pattern: DirectApkDirectoryIndexPattern,
+        releaseNotesByVersion: Map<String, String>
+    ): GitHubDirectApkDirectoryIndexResolution {
+        return GitHubDirectApkDirectoryIndexResolution(
+            indexUrl = pattern.indexUrl,
+            version = version.raw,
+            downloadUrl = uri.toString(),
+            channel = version.channel,
+            releaseNotes = releaseNotesByVersion[version.raw].orEmpty()
+        )
+    }
+
+    private fun parseReleaseLogUrl(
+        indexUri: URI,
+        indexPath: String,
+        html: String
+    ): String? {
+        return hrefRegex.findAll(html)
+            .mapNotNull { match -> match.groupValues.getOrNull(1)?.trim() }
+            .mapNotNull { href -> runCatching { indexUri.resolve(href) }.getOrNull() }
+            .firstOrNull { uri ->
+                val path = uri.path.orEmpty()
+                path.parentDirectoryPath() == indexPath &&
+                        path.endsWith(".txt", ignoreCase = true) &&
+                        path.substringAfterLast('/').contains("logs", ignoreCase = true)
+            }
+            ?.toString()
+    }
+
+    private fun loadReleaseNotesByVersion(
+        logUrl: String?,
+        versions: List<String>
+    ): Map<String, String> {
+        if (logUrl.isNullOrBlank() || versions.isEmpty()) return emptyMap()
+        return runCatching {
+            val request = Request.Builder()
+                .url(logUrl)
+                .get()
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "text/plain,*/*")
+                .header("Cache-Control", "no-store")
+                .header("Pragma", "no-cache")
+                .build()
+            client.newCall(request).execute().use { response ->
+                check(response.isSuccessful) {
+                    "direct APK release logs failed (HTTP ${response.code})"
+                }
+                val raw = response.body.string()
+                check(raw.length <= MAX_LOG_TEXT_CHARS) {
+                    "direct APK release logs are too large"
+                }
+                versions.associateWith { version ->
+                    GitHubDirectApkIndexReleaseNotesParser.extractForVersion(
+                        raw = raw,
+                        version = version
+                    )
+                }.filterValues { notes -> notes.isNotBlank() }
+            }
+        }.getOrDefault(emptyMap())
     }
 
     private fun parseApkCandidates(
@@ -292,6 +399,7 @@ internal class GitHubDirectApkDirectoryIndexResolver(
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
         const val MAX_INDEX_HTML_CHARS = 512 * 1024
+        const val MAX_LOG_TEXT_CHARS = 256 * 1024
         val hrefRegex = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val versionInFileRegex = Regex(
             """(?i)(\d+(?:\.\d+){1,4})(?:[\s._-]*(alpha|beta|rc|preview|pre|nightly|canary|snapshot|unstable|dev)\s*([0-9]+)?)?"""

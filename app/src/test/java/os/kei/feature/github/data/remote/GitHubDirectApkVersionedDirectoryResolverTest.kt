@@ -78,6 +78,38 @@ class GitHubDirectApkVersionedDirectoryResolverTest {
     }
 
     @Test
+    fun `resolve targets returns stable and pre-release with one index request`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "text/html")
+                    .setBody(
+                        """
+                        <a href="/stable/1.22.2/">1.22.2</a>
+                        <a href="/stable/1.23.0-beta1/">1.23.0-beta1</a>
+                        <a href="/stable/1.23.0-beta2/">1.23.0-beta2</a>
+                        """.trimIndent()
+                    )
+            )
+
+            val result = GitHubDirectApkVersionedDirectoryResolver()
+                .resolveTargets(
+                    directApkUrl = server.url(
+                        "/stable/1.22.2/android/RetroArch_aarch64.apk"
+                    ).toString(),
+                    includePreRelease = true
+                )
+                .getOrThrow()
+
+            assertEquals("/stable/", server.takeRequest().path)
+            assertEquals(1, server.requestCount)
+            assertEquals("1.22.2", result?.stable?.version)
+            assertEquals("1.23.0-beta2", result?.preRelease?.version)
+        }
+    }
+
+    @Test
     fun `resolve returns null when url has no version segment`() {
         MockWebServer().use { server ->
             val result = GitHubDirectApkVersionedDirectoryResolver()

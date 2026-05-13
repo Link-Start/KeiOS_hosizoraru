@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubDirectApkDirectoryIndexResolution
 import os.kei.feature.github.data.remote.GitHubDirectApkDirectoryIndexResolver
@@ -69,22 +70,12 @@ internal class GitHubDirectApkReleaseCheckSource(
             localVersion = localVersion,
             inspectPreRelease = shouldInspectPreRelease
         )
-        val stableManifestResult = targets.stable?.let { target ->
-            inspectDirectApkTarget(
-                target = target,
-                lookupConfig = directLookupConfig,
-                forceRefresh = true
-            )
-        }
-        val preReleaseManifestResult = targets.preRelease?.let { target ->
-            inspectDirectApkTarget(
-                target = target,
-                lookupConfig = directLookupConfig,
-                forceRefresh = true
-            )
-        }
-        val stableManifest = stableManifestResult?.getOrNull()
-        val preReleaseManifest = preReleaseManifestResult?.getOrNull()
+        val manifestResults = inspectDirectApkTargets(
+            targets = targets,
+            lookupConfig = directLookupConfig
+        )
+        val stableManifest = manifestResults.stable?.getOrNull()
+        val preReleaseManifest = manifestResults.preRelease?.getOrNull()
         if (stableManifest != null || preReleaseManifest != null) {
             return evaluateManifests(
                 item = item,
@@ -97,8 +88,8 @@ internal class GitHubDirectApkReleaseCheckSource(
             )
         }
 
-        val directError = stableManifestResult?.exceptionOrNull()
-            ?: preReleaseManifestResult?.exceptionOrNull()
+        val directError = manifestResults.stable?.exceptionOrNull()
+            ?: manifestResults.preRelease?.exceptionOrNull()
             ?: IllegalStateException("remote APK manifest read failed")
         val attemptedUrls = listOfNotNull(
             targets.stable?.asset?.downloadUrl,
@@ -170,81 +161,54 @@ internal class GitHubDirectApkReleaseCheckSource(
             return DirectApkResolvedTargets.fromSingle(target)
         }
 
-        val stableVersionedResolution = versionedDirectoryResolver
-            .resolve(directApkUrl = asset.downloadUrl, preferPreRelease = false)
+        val versionedTargets = versionedDirectoryResolver
+            .resolveTargets(
+                directApkUrl = asset.downloadUrl,
+                includePreRelease = inspectPreRelease
+            )
             .getOrNull()
-        if (stableVersionedResolution != null) {
-            val preReleaseVersionedResolution = if (inspectPreRelease) {
-                versionedDirectoryResolver
-                    .resolve(directApkUrl = asset.downloadUrl, preferPreRelease = true)
-                    .getOrNull()
-                    ?.takeIf { it.isPreRelease }
-            } else {
-                null
-            }
+        if (versionedTargets != null) {
             return DirectApkResolvedTargets(
-                stable = stableVersionedResolution
-                    .takeUnless { it.isPreRelease }
-                    ?.let { resolution ->
-                        DirectApkResolvedTarget(
-                            asset = resolution.toAsset(asset.name),
-                            channel = resolution.channel,
-                            versionedDirectoryResolution = resolution
-                        )
-                    },
-                preRelease = (
-                        preReleaseVersionedResolution
-                            ?: stableVersionedResolution.takeIf { it.isPreRelease }
-                        )?.let { resolution ->
-                        DirectApkResolvedTarget(
-                            asset = resolution.toAsset(asset.name),
-                            channel = resolution.channel,
-                            versionedDirectoryResolution = resolution
-                        )
-                    }
+                stable = versionedTargets.stable?.let { resolution ->
+                    DirectApkResolvedTarget(
+                        asset = resolution.toAsset(asset.name),
+                        channel = resolution.channel,
+                        versionedDirectoryResolution = resolution
+                    )
+                },
+                preRelease = versionedTargets.preRelease?.let { resolution ->
+                    DirectApkResolvedTarget(
+                        asset = resolution.toAsset(asset.name),
+                        channel = resolution.channel,
+                        versionedDirectoryResolution = resolution
+                    )
+                }
             )
         }
 
-        val stableDirectoryResolution = directoryIndexResolver
-            .resolve(
+        val directoryTargets = directoryIndexResolver
+            .resolveTargets(
                 rawUrl = asset.downloadUrl,
                 localVersion = localVersion,
-                preferPreRelease = false
+                includePreRelease = inspectPreRelease
             )
             .getOrNull()
-        if (stableDirectoryResolution != null) {
-            val preReleaseDirectoryResolution = if (inspectPreRelease) {
-                directoryIndexResolver
-                    .resolve(
-                        rawUrl = asset.downloadUrl,
-                        localVersion = localVersion,
-                        preferPreRelease = true
-                    )
-                    .getOrNull()
-                    ?.takeIf { it.isPreRelease }
-            } else {
-                null
-            }
+        if (directoryTargets != null) {
             return DirectApkResolvedTargets(
-                stable = stableDirectoryResolution
-                    .takeUnless { it.isPreRelease }
-                    ?.let { resolution ->
-                        DirectApkResolvedTarget(
-                            asset = resolution.toAsset(asset.name),
-                            channel = resolution.channel,
-                            directoryIndexResolution = resolution
-                        )
-                    },
-                preRelease = (
-                        preReleaseDirectoryResolution
-                            ?: stableDirectoryResolution.takeIf { it.isPreRelease }
-                        )?.let { resolution ->
-                        DirectApkResolvedTarget(
-                            asset = resolution.toAsset(asset.name),
-                            channel = resolution.channel,
-                            directoryIndexResolution = resolution
-                        )
-                    }
+                stable = directoryTargets.stable?.let { resolution ->
+                    DirectApkResolvedTarget(
+                        asset = resolution.toAsset(asset.name),
+                        channel = resolution.channel,
+                        directoryIndexResolution = resolution
+                    )
+                },
+                preRelease = directoryTargets.preRelease?.let { resolution ->
+                    DirectApkResolvedTarget(
+                        asset = resolution.toAsset(asset.name),
+                        channel = resolution.channel,
+                        directoryIndexResolution = resolution
+                    )
+                }
             )
         }
 
@@ -253,6 +217,33 @@ internal class GitHubDirectApkReleaseCheckSource(
                 asset = asset,
                 channel = asset.releaseChannel()
             )
+        )
+    }
+
+    private suspend fun inspectDirectApkTargets(
+        targets: DirectApkResolvedTargets,
+        lookupConfig: GitHubLookupConfig
+    ): DirectApkManifestResults {
+        val inspectTargets = listOfNotNull(
+            targets.stable?.let { DirectApkInspectTargetSlot(stable = true, target = it) },
+            targets.preRelease?.let { DirectApkInspectTargetSlot(stable = false, target = it) }
+        )
+        if (inspectTargets.isEmpty()) return DirectApkManifestResults()
+        val inspected = GitHubExecution.mapOrderedBounded(
+            items = inspectTargets,
+            maxConcurrency = 2
+        ) { slot ->
+            slot to inspectDirectApkTarget(
+                target = slot.target,
+                lookupConfig = lookupConfig,
+                forceRefresh = true
+            )
+        }
+        val stable = inspected.firstOrNull { (slot, _) -> slot.stable }?.second
+        val preRelease = inspected.firstOrNull { (slot, _) -> !slot.stable }?.second
+        return DirectApkManifestResults(
+            stable = stable,
+            preRelease = preRelease
         )
     }
 
@@ -278,6 +269,16 @@ internal class GitHubDirectApkReleaseCheckSource(
             )
         }
     }
+
+    private data class DirectApkManifestResults(
+        val stable: Result<GitHubApkManifestInfo>? = null,
+        val preRelease: Result<GitHubApkManifestInfo>? = null
+    )
+
+    private data class DirectApkInspectTargetSlot(
+        val stable: Boolean,
+        val target: DirectApkResolvedTarget
+    )
 
     private data class DirectApkResolvedTargets(
         val stable: DirectApkResolvedTarget?,
@@ -366,7 +367,8 @@ internal class GitHubDirectApkReleaseCheckSource(
             return copy(
                 assetName = asset.name,
                 versionName = versionName.ifBlank { resolution.version },
-                fetchSource = resolution.downloadUrl
+                fetchSource = resolution.downloadUrl,
+                releaseNotes = releaseNotes.ifBlank { resolution.releaseNotes }
             )
         }
 

@@ -15,24 +15,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.ShellCommandInputField
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
-import os.kei.ui.page.main.os.shell.defaultOsShellCommandCardTitle
 import os.kei.ui.page.main.os.formatEpochMillis
 import os.kei.ui.page.main.os.osLucideCardIcon
 import os.kei.ui.page.main.os.osLucideRunIcon
+import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shell.ShellCommandInputField
+import os.kei.ui.page.main.os.shell.defaultOsShellCommandCardTitle
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
-import os.kei.ui.page.main.widget.glass.AppSwitch
+import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
-import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
@@ -40,8 +41,9 @@ import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
+import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import os.kei.ui.page.main.widget.status.StatusPill
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -252,21 +254,26 @@ internal fun OsShellCommandCardEditorSheet(
     draft: OsShellCommandCard,
     onDraftChange: (OsShellCommandCard) -> Unit,
     showDeleteAction: Boolean,
+    hasUnsavedChanges: Boolean,
     onDelete: () -> Unit,
     onDismissRequest: () -> Unit,
     onSave: () -> Unit
 ) {
+    val dismissHandler = rememberUnsavedSheetDismissHandler(
+        hasUnsavedChanges = hasUnsavedChanges,
+        onDismissRequest = onDismissRequest
+    )
     SnapshotWindowBottomSheet(
         show = show,
         title = title,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = sheetBackdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = dismissHandler.requestDismiss
             )
         },
         endAction = {
@@ -332,4 +339,9 @@ internal fun OsShellCommandCardEditorSheet(
             }
         }
     }
+    UnsavedSheetDismissConfirmDialog(
+        show = dismissHandler.showConfirmDialog,
+        onKeepEditing = dismissHandler.keepEditing,
+        onDiscardChanges = dismissHandler.discardChanges
+    )
 }

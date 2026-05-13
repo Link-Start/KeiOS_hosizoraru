@@ -114,6 +114,9 @@ fun McpPage(
     val portText = pageUiState.portText
     val allowExternal = pageUiState.allowExternal
     val serverName = pageUiState.serverName
+    val serviceDraftChanged = serverName.trim() != uiState.serverName.trim() ||
+            portText.trim() != uiState.port.toString() ||
+            allowExternal != uiState.allowExternal
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val currentUiState by rememberUpdatedState(uiState)
@@ -561,6 +564,7 @@ fun McpPage(
         onPortTextChange = mcpPageViewModel::updatePortText,
         portFieldWidth = portFieldWidth,
         allowExternal = allowExternal,
+        hasUnsavedChanges = serviceDraftChanged,
         onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
         onSave = saveServiceConfig,
         onDismissRequest = { mcpPageViewModel.updateEditSheetVisible(false) },

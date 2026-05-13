@@ -70,6 +70,8 @@ import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
+import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -116,6 +118,24 @@ internal fun GitHubTrackEditSheet(
     onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
+    val hasUnsavedChanges = hasGitHubTrackEditorUnsavedChanges(
+        editingTrackedItem = editingTrackedItem,
+        repoUrlInput = repoUrlInput,
+        packageNameInput = packageNameInput,
+        selectedApp = selectedApp,
+        appSearch = appSearch,
+        pickerExpanded = pickerExpanded,
+        repoScanCandidates = repoScanCandidates,
+        sourceModeInput = sourceModeInput,
+        preferPreReleaseInput = preferPreReleaseInput,
+        alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
+        checkActionsUpdatesInput = checkActionsUpdatesInput,
+        preciseApkVersionModeInput = preciseApkVersionModeInput
+    )
+    val dismissHandler = rememberUnsavedSheetDismissHandler(
+        hasUnsavedChanges = hasUnsavedChanges,
+        onDismissRequest = onDismissRequest
+    )
     SnapshotWindowBottomSheet(
         show = show,
         title = if (editingTrackedItem == null) {
@@ -123,14 +143,14 @@ internal fun GitHubTrackEditSheet(
         } else {
             stringResource(R.string.github_track_sheet_title_edit)
         },
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = dismissHandler.requestDismiss
             )
         },
         endAction = {
@@ -217,6 +237,11 @@ internal fun GitHubTrackEditSheet(
             }
         }
     }
+    UnsavedSheetDismissConfirmDialog(
+        show = dismissHandler.showConfirmDialog,
+        onKeepEditing = dismissHandler.keepEditing,
+        onDiscardChanges = dismissHandler.discardChanges
+    )
 }
 
 @Composable

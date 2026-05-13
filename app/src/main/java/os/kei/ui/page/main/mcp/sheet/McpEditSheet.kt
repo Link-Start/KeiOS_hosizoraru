@@ -1,13 +1,14 @@
 package os.kei.ui.page.main.mcp.sheet
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
@@ -22,7 +23,8 @@ import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
+import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -36,22 +38,27 @@ internal fun McpEditServiceSheet(
     onPortTextChange: (String) -> Unit,
     portFieldWidth: Dp,
     allowExternal: Boolean,
+    hasUnsavedChanges: Boolean,
     onAllowExternalChange: (Boolean) -> Unit,
     onSave: () -> Unit,
     onDismissRequest: () -> Unit,
     onShowResetTokenConfirm: () -> Unit,
 ) {
+    val dismissHandler = rememberUnsavedSheetDismissHandler(
+        hasUnsavedChanges = hasUnsavedChanges,
+        onDismissRequest = onDismissRequest
+    )
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.mcp_sheet_edit_service_title),
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = dismissHandler.requestDismiss
             )
         },
         endAction = {
@@ -123,6 +130,11 @@ internal fun McpEditServiceSheet(
             }
         }
     }
+    UnsavedSheetDismissConfirmDialog(
+        show = dismissHandler.showConfirmDialog,
+        onKeepEditing = dismissHandler.keepEditing,
+        onDiscardChanges = dismissHandler.discardChanges
+    )
 }
 
 @Composable

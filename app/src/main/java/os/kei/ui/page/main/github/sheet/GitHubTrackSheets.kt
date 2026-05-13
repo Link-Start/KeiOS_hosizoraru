@@ -41,6 +41,8 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
+import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -100,17 +102,35 @@ internal fun GitHubCheckLogicSheet(
     onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit
 ) {
     val context = LocalContext.current
+    val logicChanged =
+        checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
+                checkAllDirectApkPreReleasesInput != lookupConfig.checkAllDirectApkPreReleases ||
+                aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
+                preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
+                scanSystemAppsByDefaultInput != lookupConfig.scanSystemAppsByDefault ||
+                profileDepthInput != lookupConfig.profileDepth ||
+                shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
+                appManagedShareInstallEnabledInput != lookupConfig.appManagedShareInstallEnabled ||
+                onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
+                preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
+                decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
+                repositoryHealthCardEnabledInput != lookupConfig.repositoryHealthCardEnabled ||
+                apkTrustCheckEnabledInput != lookupConfig.apkTrustCheckEnabled
+    val dismissHandler = rememberUnsavedSheetDismissHandler(
+        hasUnsavedChanges = logicChanged,
+        onDismissRequest = onDismissRequest
+    )
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.github_check_sheet_title),
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = dismissHandler.requestDismiss
             )
         },
         endAction = {
@@ -146,21 +166,6 @@ internal fun GitHubCheckLogicSheet(
         } else {
             selectedOnlineShareTargetLabel
         }
-        val logicChanged =
-            checkAllTrackedPreReleasesInput != lookupConfig.checkAllTrackedPreReleases ||
-                    checkAllDirectApkPreReleasesInput != lookupConfig.checkAllDirectApkPreReleases ||
-            aggressiveApkFilteringInput != lookupConfig.aggressiveApkFiltering ||
-                preciseApkVersionEnabledInput != lookupConfig.preciseApkVersionEnabled ||
-                    scanSystemAppsByDefaultInput != lookupConfig.scanSystemAppsByDefault ||
-                profileDepthInput != lookupConfig.profileDepth ||
-                shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
-                appManagedShareInstallEnabledInput !=
-                lookupConfig.appManagedShareInstallEnabled ||
-            onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
-                preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
-                decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
-                repositoryHealthCardEnabledInput != lookupConfig.repositoryHealthCardEnabled ||
-                apkTrustCheckEnabledInput != lookupConfig.apkTrustCheckEnabled
 
         SheetContentColumn(verticalSpacing = 10.dp) {
             GitHubCheckOverviewSection(
@@ -239,6 +244,11 @@ internal fun GitHubCheckLogicSheet(
             GitHubCheckNotesSection()
         }
     }
+    UnsavedSheetDismissConfirmDialog(
+        show = dismissHandler.showConfirmDialog,
+        onKeepEditing = dismissHandler.keepEditing,
+        onDiscardChanges = dismissHandler.discardChanges
+    )
 }
 
 @Composable

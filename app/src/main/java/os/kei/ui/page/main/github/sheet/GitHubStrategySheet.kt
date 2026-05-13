@@ -48,6 +48,8 @@ import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
+import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -83,17 +85,25 @@ internal fun GitHubStrategySheet(
     val guides = remember(context) { githubStrategyGuides(context) }
     val actionsGuides = remember(context) { githubActionsStrategyGuides(context) }
     val tokenGuide = remember(context) { githubRecommendedTokenGuide(context) }
+    val sanitizedTokenInput = githubApiTokenInput.trim()
+    val draftChanged = selectedStrategyInput != lookupConfig.selectedStrategy ||
+            selectedActionsStrategyInput != lookupConfig.actionsStrategy ||
+            sanitizedTokenInput != lookupConfig.apiToken
+    val dismissHandler = rememberUnsavedSheetDismissHandler(
+        hasUnsavedChanges = draftChanged,
+        onDismissRequest = onDismissRequest
+    )
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.github_strategy_sheet_title),
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = dismissHandler.requestDismiss
             )
         },
         endAction = {
@@ -106,10 +116,6 @@ internal fun GitHubStrategySheet(
             )
         }
     ) {
-        val sanitizedTokenInput = githubApiTokenInput.trim()
-        val draftChanged = selectedStrategyInput != lookupConfig.selectedStrategy ||
-            selectedActionsStrategyInput != lookupConfig.actionsStrategy ||
-            sanitizedTokenInput != lookupConfig.apiToken
         val tokenUsedByDraft = selectedStrategyInput == GitHubLookupStrategyOption.GitHubApiToken ||
             selectedActionsStrategyInput == GitHubActionsLookupStrategyOption.GitHubApiToken
         val tokenStatusLabel = when {
@@ -319,6 +325,11 @@ internal fun GitHubStrategySheet(
             }
         }
     }
+    UnsavedSheetDismissConfirmDialog(
+        show = dismissHandler.showConfirmDialog,
+        onKeepEditing = dismissHandler.keepEditing,
+        onDiscardChanges = dismissHandler.discardChanges
+    )
 }
 
 @Composable

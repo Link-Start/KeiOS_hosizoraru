@@ -64,4 +64,8 @@
     <string name="common_save_failed_with_reason">Save failed: %1$s</string>
     <string name="common_send_failed_with_reason">Send failed: %1$s</string>
     <string name="common_status_failed">Failed</string>
+    <string name="common_unsaved_changes_title">Discard unsaved changes?</string>
+    <string name="common_unsaved_changes_summary">Current changes have not been saved. Closing will require entering or selecting them again.</string>
+    <string name="common_keep_editing">Keep editing</string>
+    <string name="common_discard_changes">Discard</string>
 </resources>

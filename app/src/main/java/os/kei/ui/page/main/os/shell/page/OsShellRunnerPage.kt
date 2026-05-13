@@ -155,6 +155,7 @@ fun OsShellRunnerPage(
     var pendingDangerousCommand by rememberSaveable { mutableStateOf("") }
     var saveTitleInput by rememberSaveable { mutableStateOf("") }
     var saveSubtitleInput by rememberSaveable { mutableStateOf("") }
+    var saveInitialSubtitleInput by rememberSaveable { mutableStateOf("") }
     var closeCleanupApplied by remember { mutableStateOf(false) }
 
     val latestOutputEntry = remember(outputEntries) { outputEntries.lastOrNull() }
@@ -242,7 +243,9 @@ fun OsShellRunnerPage(
         }
         scope.launch {
             saveTitleInput = ""
-            saveSubtitleInput = shellRunnerViewModel.latestShellCardSubtitle(command)
+            val suggestedSubtitle = shellRunnerViewModel.latestShellCardSubtitle(command)
+            saveSubtitleInput = suggestedSubtitle
+            saveInitialSubtitleInput = suggestedSubtitle
             showSaveSheet = true
         }
     }
@@ -493,6 +496,8 @@ fun OsShellRunnerPage(
         onSaveTitleInputChange = { saveTitleInput = it },
         saveSubtitleInput = saveSubtitleInput,
         onSaveSubtitleInputChange = { saveSubtitleInput = it },
+        hasUnsavedChanges = saveTitleInput.trim().isNotBlank() ||
+                saveSubtitleInput.trim() != saveInitialSubtitleInput.trim(),
         shellCommandAccentColor = shellCommandAccentColor,
         shellSuccessAccentColor = shellSuccessAccentColor,
         shellStoppedAccentColor = shellStoppedAccentColor,

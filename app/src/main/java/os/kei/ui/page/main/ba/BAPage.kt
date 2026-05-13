@@ -112,6 +112,31 @@ fun BAPage(
     val notificationSettingsSheetState = buildBaNotificationSettingsSheetState(
         draft = baRouteState.notificationDraftState
     )
+    val savedSettingsSheetState = BaSettingsSheetState(
+        cafeLevel = office.cafeLevel,
+        mediaAdaptiveRotationEnabled = baRouteState.mediaAdaptiveRotationEnabled,
+        mediaSaveCustomEnabled = baRouteState.mediaSaveCustomEnabled,
+        mediaSaveFixedTreeUri = baRouteState.mediaSaveFixedTreeUri,
+        idIndependentByServer = baRouteState.idIndependentByServer,
+        showEndedActivities = baRouteState.showEndedActivities,
+        showEndedPools = baRouteState.showEndedPools,
+        showCalendarPoolImages = baRouteState.showCalendarPoolImages,
+        calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
+    )
+    val savedNotificationSettingsSheetState = BaNotificationSettingsSheetState(
+        apNotifyEnabled = office.apNotifyEnabled,
+        cafeApNotifyEnabled = office.cafeApNotifyEnabled,
+        arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+        calendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled(),
+        calendarEndingNotifyEnabled = BASettingsStore.loadCalendarEndingNotifyEnabled(),
+        poolUpcomingNotifyEnabled = BASettingsStore.loadPoolUpcomingNotifyEnabled(),
+        poolEndingNotifyEnabled = BASettingsStore.loadPoolEndingNotifyEnabled(),
+        calendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled(),
+        calendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours(),
+        apNotifyThresholdText = office.apNotifyThreshold.toString(),
+        cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
+    )
     val pageContentState = buildBaPageContentState(
         isPageActive = runtime.isPageActive,
         officeOverviewTitle = officeOverviewTitle,
@@ -366,6 +391,7 @@ fun BAPage(
                     onRefreshPool = { refreshPool(force = true) },
                 )
             },
+            hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,
             onDismissRequest = ::closeSettingsSheet,
             onSaveRequest = ::saveSettings,
         )
@@ -399,6 +425,7 @@ fun BAPage(
                     ui.sheetCafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
                 ui.sheetCafeApNotifyThresholdText = normalized.toString()
             },
+            hasUnsavedChanges = notificationSettingsSheetState != savedNotificationSettingsSheetState,
             onDismissRequest = ::closeNotificationSettingsSheet,
             onSaveRequest = ::saveNotificationSettings,
         )

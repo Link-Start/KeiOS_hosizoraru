@@ -1,17 +1,17 @@
 package os.kei.ui.page.main.os.components
 
 import androidx.compose.runtime.Composable
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsSectionCard
+import os.kei.ui.page.main.os.isCardVisible
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionItem
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
-import os.kei.ui.page.main.os.isCardVisible
-import com.kyant.backdrop.backdrops.LayerBackdrop
 
 @Composable
 internal fun OsPageOverlaySheets(
@@ -47,6 +47,7 @@ internal fun OsPageOverlaySheets(
     shellCommandCardDraft: OsShellCommandCard,
     onShellCommandCardDraftChange: (OsShellCommandCard) -> Unit,
     showShellCardDeleteAction: Boolean,
+    shellCommandCardHasUnsavedChanges: Boolean,
     onDeleteShellCommandCard: () -> Unit,
     onDismissShellCommandCardEditor: () -> Unit,
     onSaveShellCommandCard: () -> Unit,
@@ -57,6 +58,7 @@ internal fun OsPageOverlaySheets(
     onOpenActivitySuggestionSheet: (ShortcutSuggestionField) -> Unit,
     showBuiltInActivityCardBadge: Boolean,
     showDeleteActivityAction: Boolean,
+    activityShortcutHasUnsavedChanges: Boolean,
     onDeleteActivityCard: () -> Unit,
     onDismissActivityEditor: () -> Unit,
     onSaveActivityEditor: () -> Unit,
@@ -135,6 +137,7 @@ internal fun OsPageOverlaySheets(
         draft = shellCommandCardDraft,
         onDraftChange = onShellCommandCardDraftChange,
         showDeleteAction = showShellCardDeleteAction,
+        hasUnsavedChanges = shellCommandCardHasUnsavedChanges,
         onDelete = onDeleteShellCommandCard,
         onDismissRequest = onDismissShellCommandCardEditor,
         onSave = onSaveShellCommandCard
@@ -148,6 +151,7 @@ internal fun OsPageOverlaySheets(
         onOpenSuggestionSheet = onOpenActivitySuggestionSheet,
         showBuiltInBadge = showBuiltInActivityCardBadge,
         showDeleteAction = showDeleteActivityAction,
+        hasUnsavedChanges = activityShortcutHasUnsavedChanges,
         onDeleteEditor = onDeleteActivityCard,
         onDismissEditor = onDismissActivityEditor,
         onSaveEditor = onSaveActivityEditor,

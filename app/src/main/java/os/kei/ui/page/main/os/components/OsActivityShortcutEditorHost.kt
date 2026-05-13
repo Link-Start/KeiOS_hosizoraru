@@ -1,12 +1,12 @@
 package os.kei.ui.page.main.os.components
 
 import androidx.compose.runtime.Composable
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionItem
-import com.kyant.backdrop.backdrops.LayerBackdrop
 
 @Composable
 internal fun OsActivityShortcutEditorHost(
@@ -18,6 +18,7 @@ internal fun OsActivityShortcutEditorHost(
     onOpenSuggestionSheet: (ShortcutSuggestionField) -> Unit,
     showBuiltInBadge: Boolean,
     showDeleteAction: Boolean,
+    hasUnsavedChanges: Boolean,
     onDeleteEditor: () -> Unit,
     onDismissEditor: () -> Unit,
     onSaveEditor: () -> Unit,
@@ -48,6 +49,7 @@ internal fun OsActivityShortcutEditorHost(
         onOpenSuggestionSheet = onOpenSuggestionSheet,
         showBuiltInBadge = showBuiltInBadge,
         showDeleteAction = showDeleteAction,
+        hasUnsavedChanges = hasUnsavedChanges,
         onDelete = onDeleteEditor,
         onDismissRequest = onDismissEditor,
         onSave = onSaveEditor

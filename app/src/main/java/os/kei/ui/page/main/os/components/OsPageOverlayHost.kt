@@ -2,19 +2,20 @@ package os.kei.ui.page.main.os.components
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
-import os.kei.ui.page.main.os.state.OsPageOverlayState
-import os.kei.ui.page.main.os.state.rememberOsPageOverlayEditorActions
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.defaultOsShellCommandCardTitle
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.os.state.OsPageCardTransferState
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import os.kei.ui.page.main.os.state.OsPageOverlayState
+import os.kei.ui.page.main.os.state.rememberOsPageOverlayEditorActions
 
 @Composable
 internal fun OsPageOverlayHost(
@@ -75,6 +76,22 @@ internal fun OsPageOverlayHost(
         shellCardDeletedToast = shellCardDeletedToast,
         activityCardDeletedToast = activityCardDeletedToast
     )
+    val editedShellCommandCard = shellCommandCards.firstOrNull { card ->
+        card.id == overlayState.editingShellCommandCardId
+    }
+    val shellCommandCardHasUnsavedChanges = overlayState.showShellCommandCardEditor &&
+            editedShellCommandCard != null &&
+            overlayState.shellCommandCardDraft != editedShellCommandCard
+    val savedActivityShortcutDraft =
+        if (overlayState.activityCardEditMode == OsActivityCardEditMode.Add) {
+            createDefaultActivityShortcutDraft(googleSystemServiceDefaults)
+        } else {
+            activityShortcutCards.firstOrNull { card ->
+                card.id == overlayState.editingActivityShortcutCardId
+            }?.config ?: createDefaultActivityShortcutDraft(googleSystemServiceDefaults)
+        }
+    val activityShortcutHasUnsavedChanges = overlayState.showActivityShortcutEditor &&
+            overlayState.activityShortcutDraft != savedActivityShortcutDraft
 
     OsPageOverlaySheets(
         showCardManager = overlayState.showCardManager,
@@ -118,6 +135,7 @@ internal fun OsPageOverlayHost(
         shellCommandCardDraft = overlayState.shellCommandCardDraft,
         onShellCommandCardDraftChange = overlayState.onShellCommandCardDraftChange,
         showShellCardDeleteAction = !overlayState.editingShellCommandCardId.isNullOrBlank(),
+        shellCommandCardHasUnsavedChanges = shellCommandCardHasUnsavedChanges,
         onDeleteShellCommandCard = editorActions.onDeleteShellCommandCard,
         onDismissShellCommandCardEditor = editorActions.onDismissShellCommandCardEditor,
         onSaveShellCommandCard = editorActions.onSaveShellCommandCard,
@@ -133,6 +151,7 @@ internal fun OsPageOverlayHost(
         showBuiltInActivityCardBadge = overlayState.editingActivityShortcutBuiltIn,
         showDeleteActivityAction = overlayState.activityCardEditMode == OsActivityCardEditMode.Edit &&
             !overlayState.editingActivityShortcutCardId.isNullOrBlank(),
+        activityShortcutHasUnsavedChanges = activityShortcutHasUnsavedChanges,
         onDeleteActivityCard = editorActions.onDeleteActivityCard,
         onDismissActivityEditor = editorActions.onDismissActivityEditor,
         onSaveActivityEditor = editorActions.onSaveActivityEditor,

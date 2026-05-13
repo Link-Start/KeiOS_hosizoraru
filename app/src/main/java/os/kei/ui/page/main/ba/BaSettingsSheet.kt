@@ -37,6 +37,8 @@ import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
+import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -68,6 +70,7 @@ internal fun BaSettingsSheet(
     onShowEndedPoolsChange: (Boolean) -> Unit,
     onShowCalendarPoolImagesChange: (Boolean) -> Unit,
     onCalendarRefreshIntervalSelected: (Int) -> Unit,
+    hasUnsavedChanges: Boolean,
     onDismissRequest: () -> Unit,
     onSaveRequest: () -> Unit,
 ) {
@@ -98,18 +101,22 @@ internal fun BaSettingsSheet(
         }
         onMediaSaveFixedTreeUriChange(treeUri.toString())
     }
+    val dismissHandler = rememberUnsavedSheetDismissHandler(
+        hasUnsavedChanges = hasUnsavedChanges,
+        onDismissRequest = onDismissRequest
+    )
 
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.ba_settings_title),
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,
                 icon = MiuixIcons.Regular.Close,
                 contentDescription = stringResource(R.string.common_close),
                 variant = GlassVariant.Bar,
-                onClick = onDismissRequest,
+                onClick = dismissHandler.requestDismiss,
             )
         },
         endAction = {
@@ -253,6 +260,11 @@ internal fun BaSettingsSheet(
             }
         }
     }
+    UnsavedSheetDismissConfirmDialog(
+        show = dismissHandler.showConfirmDialog,
+        onKeepEditing = dismissHandler.keepEditing,
+        onDiscardChanges = dismissHandler.discardChanges
+    )
 }
 
 @Composable

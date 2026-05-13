@@ -19,10 +19,14 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.asset.GitHubDirectApkAssetAccentKind
+import os.kei.ui.page.main.github.asset.directApkAssetPanelData
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.page.githubManagedInstallKey
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GitHubTrackedItemAssetPanel(
@@ -37,7 +41,8 @@ internal fun GitHubTrackedItemAssetPanel(
     assetExpanded: Boolean,
     managedInstallLoading: SnapshotStateMap<String, Boolean>,
     onOpenExternalUrl: (String) -> Unit,
-    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
+    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
+    onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     onOpenApkInDownloader: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
@@ -46,6 +51,9 @@ internal fun GitHubTrackedItemAssetPanel(
 ) {
     val alwaysLatestReleaseDownload = item.alwaysShowLatestReleaseDownloadButton
     val latestReleaseAccent = Color(0xFF06B6D4)
+    val directPanelData = item.directApkAssetPanelData(state)
+    val renderedAssetBundle = assetBundle ?: directPanelData?.bundle
+    val installFallbackMode = state.isLocalAppUninstalled()
     AnimatedVisibility(
         visible = assetExpanded || assetLoading || assetError.isNotBlank(),
         enter = appExpandIn(),
@@ -61,9 +69,20 @@ internal fun GitHubTrackedItemAssetPanel(
                 owner = item.owner,
                 repo = item.repo,
                 context = context,
-                alwaysLatestRelease = alwaysLatestReleaseDownload
+                alwaysLatestRelease = alwaysLatestReleaseDownload,
+                allowLatestReleaseFallback = installFallbackMode
             )
             val targetAccent = when {
+                directPanelData?.targetAccentKind == GitHubDirectApkAssetAccentKind.Install ->
+                    GitHubStatusPalette.Install
+
+                directPanelData?.targetAccentKind == GitHubDirectApkAssetAccentKind.PreRelease ->
+                    GitHubStatusPalette.PreRelease
+
+                directPanelData?.targetAccentKind == GitHubDirectApkAssetAccentKind.Stable ->
+                    GitHubStatusPalette.Update
+
+                installFallbackMode -> GitHubStatusPalette.Install
                 alwaysLatestReleaseDownload -> latestReleaseAccent
                 state.recommendsPreRelease || state.hasPreReleaseUpdate -> GitHubStatusPalette.PreRelease
                 else -> GitHubStatusPalette.Update
@@ -76,19 +95,33 @@ internal fun GitHubTrackedItemAssetPanel(
 
             GitHubTrackedItemAssetSummaryCard(
                 state = state,
-                assetBundle = assetBundle,
+                assetBundle = renderedAssetBundle,
                 assetLoading = assetLoading,
                 assetError = assetError,
-                targetLabel = target?.label
-                    ?: stringResource(R.string.github_item_label_update_assets),
-                targetRawTag = target?.rawTag.orEmpty(),
+                targetLabel = directPanelData?.let { stringResource(it.targetLabelRes) }
+                    ?: target?.label
+                    ?: stringResource(
+                        if (installFallbackMode) {
+                            R.string.github_asset_target_install
+                        } else {
+                            R.string.github_item_label_update_assets
+                        }
+                    ),
+                targetRawTag = directPanelData?.targetRawTag ?: target?.rawTag.orEmpty(),
                 preciseApkVersionEnabled = lookupConfig.preciseApkVersionEnabled,
-                fallbackReleaseUrl = target?.releaseUrl.orEmpty(),
+                fallbackReleaseUrl = directPanelData?.bundle?.htmlUrl
+                    ?: target?.releaseUrl.orEmpty(),
                 targetAccent = targetAccent,
                 summaryContainerColor = summaryContainerColor,
                 summaryBorderColor = summaryBorderColor,
                 onOpenExternalUrl = onOpenExternalUrl,
-                onReloadAssets = { onLoadApkAssets(item, state, false, true) },
+                onReloadAssets = {
+                    if (directPanelData != null) {
+                        onRefreshTrackedItem(item)
+                    } else {
+                        onLoadApkAssets(item, state, false, true, installFallbackMode)
+                    }
+                },
                 context = context
             )
 
@@ -106,8 +139,8 @@ internal fun GitHubTrackedItemAssetPanel(
                         isDark = isDark
                     )
                 }
-                assetBundle != null -> {
-                    assetBundle.assets.forEach { asset ->
+                renderedAssetBundle != null -> {
+                    renderedAssetBundle.assets.forEach { asset ->
                         GitHubTrackedItemAssetRow(
                             asset = asset,
                             alwaysLatestReleaseDownload = alwaysLatestReleaseDownload,
@@ -122,6 +155,11 @@ internal fun GitHubTrackedItemAssetPanel(
                             managedInstallRunning = managedInstallLoading[
                                 item.githubManagedInstallKey(asset)
                             ] == true,
+                            installActionColor = if (installFallbackMode) {
+                                GitHubStatusPalette.Install
+                            } else {
+                                MiuixTheme.colorScheme.primary
+                            },
                             context = context,
                             onOpenApkInfo = { onOpenApkInfo(item, asset) },
                             onOpenApkInDownloader = { onOpenApkInDownloader(item, asset) },

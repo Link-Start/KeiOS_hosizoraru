@@ -32,6 +32,8 @@ import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.asset.directApkAssetPanelData
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
 import os.kei.ui.page.main.github.formatApkVersionValue
@@ -50,6 +52,7 @@ import os.kei.ui.page.main.github.statusIcon
 import os.kei.ui.page.main.github.statusMessage
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppInfoListBody
@@ -95,7 +98,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     onStableVersionExpandedChange: (String, Boolean) -> Unit,
     onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,
     onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
+    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
     onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
@@ -167,6 +170,8 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     val isItemRefreshLoading = itemRefreshLoading[item.id] == true
                     val alwaysLatestReleaseDownload = item.alwaysShowLatestReleaseDownloadButton
                     val latestReleaseAccent = Color(0xFF06B6D4)
+                    val localAppUninstalled = state.isLocalAppUninstalled()
+                    val directAssetPanelData = item.directApkAssetPanelData(state)
                     val statusColor = state.statusColor(
                         neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
                     )
@@ -174,36 +179,57 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         owner = item.owner,
                         repo = item.repo
                     )
-                    val canLoadApkAssets = item.isGitHubRepositoryTrack() &&
+                    val canLoadRepositoryApkAssets = item.isGitHubRepositoryTrack() &&
                             (
                                     alwaysLatestReleaseDownload ||
                                             state.hasUpdate == true ||
                                             state.recommendsPreRelease ||
-                                            state.hasPreReleaseUpdate
+                                            state.hasPreReleaseUpdate ||
+                                            (
+                                                    localAppUninstalled &&
+                                                            state.apkAssetTarget(
+                                                                owner = item.owner,
+                                                                repo = item.repo,
+                                                                context = context,
+                                                                allowLatestReleaseFallback = true
+                                                            ) != null
+                                                    )
                                     )
+                    val canToggleDirectApkAssets =
+                        item.isDirectApkTrack() && directAssetPanelData != null
+                    val canLoadApkAssets = canLoadRepositoryApkAssets || canToggleDirectApkAssets
                     val isAssetPanelExpanded = apkAssetExpanded[item.id] == true
                     val isAssetPanelLoading = apkAssetLoading[item.id] == true
                     val statusIcon = when {
-                        alwaysLatestReleaseDownload && isAssetPanelLoading -> appLucideRefreshIcon()
-                        alwaysLatestReleaseDownload && isAssetPanelExpanded -> appLucideCloseIcon()
-                        alwaysLatestReleaseDownload -> appLucideDownloadIcon()
                         isAssetPanelLoading -> appLucideRefreshIcon()
                         canLoadApkAssets && isAssetPanelExpanded -> appLucideCloseIcon()
+                        localAppUninstalled && canLoadApkAssets -> appLucidePackageIcon()
+                        alwaysLatestReleaseDownload -> appLucideDownloadIcon()
                         else -> state.statusIcon()
                     }
-                    val iconTint = if (alwaysLatestReleaseDownload) latestReleaseAccent else statusColor
+                    val iconTint = when {
+                        localAppUninstalled && canLoadApkAssets -> GitHubStatusPalette.Install
+                        alwaysLatestReleaseDownload -> latestReleaseAccent
+                        else -> statusColor
+                    }
                     AppCompactIconAction(
                         icon = statusIcon,
-                        contentDescription = state.statusMessage(context)
-                            .ifBlank { stringResource(R.string.github_cd_status) },
+                        contentDescription = if (localAppUninstalled && canLoadApkAssets) {
+                            stringResource(R.string.github_cd_install_tracked_item, displayTitle)
+                        } else {
+                            state.statusMessage(context)
+                                .ifBlank { stringResource(R.string.github_cd_status) }
+                        },
                         tint = iconTint,
                         enabled = canLoadApkAssets || statusReleaseUrl.isNotBlank(),
                         onClick = {
-                            if (canLoadApkAssets) {
+                            if (canToggleDirectApkAssets) {
+                                apkAssetExpanded[item.id] = !isAssetPanelExpanded
+                            } else if (canLoadRepositoryApkAssets) {
                                 if (isAssetPanelExpanded) {
                                     onCollapseApkAssetPanel(item, state)
                                 } else {
-                                    onLoadApkAssets(item, state, true, false)
+                                    onLoadApkAssets(item, state, true, false, localAppUninstalled)
                                 }
                             } else {
                                 onOpenExternalUrl(statusReleaseUrl)
@@ -472,13 +498,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             }
                         )
                     }
-                    if (item.isDirectApkTrack()) {
-                        GitHubDirectApkRemoteHealthCard(
-                            item = item,
-                            state = state,
-                            onOpenExternalUrl = onOpenExternalUrl
-                        )
-                    }
                     if (item.isGitHubRepositoryTrack()) {
                         GitHubTrackedItemAssetPanel(
                             item = item,
@@ -493,11 +512,39 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             managedInstallLoading = managedInstallLoading,
                             onOpenExternalUrl = onOpenExternalUrl,
                             onLoadApkAssets = onLoadApkAssets,
+                            onRefreshTrackedItem = onRefreshTrackedItem,
                             onOpenApkInfo = onOpenApkInfo,
                             onOpenApkInDownloader = onOpenApkInDownloader,
                             onShareApkLink = onShareApkLink,
                             context = context,
                             supportedAbis = supportedAbis
+                        )
+                    }
+                    if (item.isDirectApkTrack()) {
+                        GitHubTrackedItemAssetPanel(
+                            item = item,
+                            state = state,
+                            lookupConfig = itemLookupConfig,
+                            isDark = isDark,
+                            contentBackdrop = contentBackdrop,
+                            assetBundle = null,
+                            assetLoading = false,
+                            assetError = "",
+                            assetExpanded = assetExpanded,
+                            managedInstallLoading = managedInstallLoading,
+                            onOpenExternalUrl = onOpenExternalUrl,
+                            onLoadApkAssets = onLoadApkAssets,
+                            onRefreshTrackedItem = onRefreshTrackedItem,
+                            onOpenApkInfo = onOpenApkInfo,
+                            onOpenApkInDownloader = onOpenApkInDownloader,
+                            onShareApkLink = onShareApkLink,
+                            context = context,
+                            supportedAbis = supportedAbis
+                        )
+                        GitHubDirectApkRemoteHealthCard(
+                            item = item,
+                            state = state,
+                            onOpenExternalUrl = onOpenExternalUrl
                         )
                     }
                 }

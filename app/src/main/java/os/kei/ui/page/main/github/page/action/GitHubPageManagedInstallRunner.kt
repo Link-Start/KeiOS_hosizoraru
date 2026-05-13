@@ -20,6 +20,7 @@ import os.kei.feature.github.install.GitHubApkInstallStage
 import os.kei.feature.github.install.GitHubManagedApkInstaller
 import os.kei.feature.github.install.GitHubShizukuPackageInstaller
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
+import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
@@ -218,6 +219,11 @@ internal class GitHubPageManagedInstallRunner(
                     .ifBlank { request.scannedAppLabel }
                     .ifBlank { request.targetDisplayName }
                 env.state.apkInfoInstalledResults[asset.githubApkInfoKey()] = installedInfo
+                if (installedInfo != null &&
+                    packageName.equals(item.packageName.trim(), ignoreCase = true)
+                ) {
+                    applyInstalledPackageToTrackedState(item, installedInfo, appLabel)
+                }
                 GitHubShareImportNotificationHelper.notifyPageInstallCompleted(
                     context = context,
                     owner = item.owner,
@@ -263,6 +269,33 @@ internal class GitHubPageManagedInstallRunner(
 
             is GitHubApkInstallResult.Staged -> false
         }
+    }
+
+    private fun applyInstalledPackageToTrackedState(
+        item: GitHubTrackedApp,
+        installedInfo: GitHubInstalledPackageInfo,
+        appLabel: String
+    ) {
+        val packageName = installedInfo.packageName.trim()
+        if (packageName.isBlank()) return
+        val previous = env.state.checkStates[item.id]
+        if (previous != null) {
+            env.state.checkStates[item.id] = previous.copy(
+                loading = false,
+                localVersion = installedInfo.versionName,
+                localVersionCode = installedInfo.versionCode,
+                message = previous.message.takeIf { it.isNotBlank() }
+                    ?: env.string(R.string.github_status_up_to_date)
+            )
+        }
+        val installedItem = InstalledAppItem(
+            label = appLabel.ifBlank { installedInfo.appLabel }.ifBlank { packageName },
+            packageName = packageName
+        )
+        env.state.appList = env.state.appList
+            .filterNot { it.packageName.equals(packageName, ignoreCase = true) } + installedItem
+        env.state.appListLoaded = true
+        env.state.requestTrackCardFocus(item.id)
     }
 
     private fun loadInstalledPackageInfo(

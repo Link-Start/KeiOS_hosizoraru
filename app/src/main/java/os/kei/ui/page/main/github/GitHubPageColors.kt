@@ -10,6 +10,7 @@ import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -21,6 +22,7 @@ internal object GitHubStatusPalette {
     val PreRelease = AppStatusColors.Cached
     val Cache = AppStatusColors.Cached
     val Error = AppStatusColors.Failed
+    val Install = Color(0xFF8B5CF6)
 
     fun tonedSurface(color: Color, isDark: Boolean): Color {
         return color.copy(alpha = if (isDark) 0.20f else 0.11f)
@@ -94,7 +96,7 @@ internal fun OverviewRefreshState.indicatorBackground(neutralSurface: Color): Co
 internal fun VersionCheckUi.statusIcon(): ImageVector {
     return when {
         loading -> appLucideRefreshIcon()
-        isLocalAppUninstalled() -> appLucideAlertIcon()
+        isLocalAppUninstalled() -> appLucidePackageIcon()
         isFailed() -> appLucideWarningIcon()
         recommendsPreRelease -> appLucideDownloadIcon()
         hasPreReleaseUpdate -> appLucideDownloadIcon()
@@ -115,7 +117,7 @@ internal fun VersionCheckUi.statusColor(neutralColor: Color): Color {
         hasUpdate == false && isPreRelease -> GitHubStatusPalette.PreRelease
         hasUpdate == false -> GitHubStatusPalette.Stable
         isPreRelease -> GitHubStatusPalette.PreRelease
-        isLocalAppUninstalled() -> neutralColor
+        isLocalAppUninstalled() -> GitHubStatusPalette.Install
         else -> neutralColor
     }
 }

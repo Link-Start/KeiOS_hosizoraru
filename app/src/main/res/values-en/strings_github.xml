@@ -320,6 +320,7 @@
     <string name="github_asset_target_prerelease">Pre-release</string>
     <string name="github_asset_target_stable">Stable</string>
     <string name="github_asset_target_latest">Latest</string>
+    <string name="github_asset_target_install">Install</string>
     <string name="github_asset_fetch_source_api">API</string>
     <string name="github_asset_fetch_source_html">Atom</string>
     <string name="github_asset_transport_direct">Direct link</string>
@@ -866,6 +867,7 @@
     <string name="github_share_import_notify_short_cancelled">Cancelled</string>
     <string name="github_asset_badge_recommended">Recommended for this device</string>
     <string name="github_asset_badge_incompatible">May be incompatible</string>
+    <string name="github_cd_install_tracked_item">Install %1$s</string>
     <string name="github_cd_install_asset">Install or update %1$s</string>
     <string name="github_cd_install_asset_running">Installing %1$s</string>
     <string name="github_page_install_confirm_title">Confirm install</string>

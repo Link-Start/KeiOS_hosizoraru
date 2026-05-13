@@ -133,7 +133,7 @@ internal fun GitHubMainContent(
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
     onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean) -> Unit,
+    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
     onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
     onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,

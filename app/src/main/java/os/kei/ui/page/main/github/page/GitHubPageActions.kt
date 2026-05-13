@@ -15,12 +15,15 @@ import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
 import os.kei.ui.page.main.github.page.action.GitHubAssetActions
@@ -329,7 +332,8 @@ internal class GitHubPageActions(
                     item = item,
                     itemState = itemState,
                     toggleOnlyWhenCached = false,
-                    includeAllAssets = includeAllAssets
+                    includeAllAssets = includeAllAssets,
+                    allowLatestReleaseFallback = itemState.isLocalAppUninstalled()
                 )
             } else {
                 assetActions.clearApkAssetUiState(item.id)
@@ -386,7 +390,8 @@ internal class GitHubPageActions(
                         item = item,
                         itemState = updatedState,
                         toggleOnlyWhenCached = false,
-                        includeAllAssets = includeAllAssets
+                        includeAllAssets = includeAllAssets,
+                        allowLatestReleaseFallback = updatedState.isLocalAppUninstalled()
                     )
                 } else if (wasAssetExpanded) {
                     assetActions.clearApkAssetUiState(item.id)
@@ -558,12 +563,14 @@ internal class GitHubPageActions(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
         toggleOnlyWhenCached: Boolean = true,
-        includeAllAssets: Boolean = false
+        includeAllAssets: Boolean = false,
+        allowLatestReleaseFallback: Boolean = false
     ) = assetActions.loadApkAssets(
         item = item,
         itemState = itemState,
         toggleOnlyWhenCached = toggleOnlyWhenCached,
-        includeAllAssets = includeAllAssets
+        includeAllAssets = includeAllAssets,
+        allowLatestReleaseFallback = allowLatestReleaseFallback
     )
 
     fun loadReleaseNotes(
@@ -669,10 +676,21 @@ internal class GitHubPageActions(
     }
 
     private fun canLoadApkAssets(item: GitHubTrackedApp, itemState: VersionCheckUi): Boolean {
-        return item.alwaysShowLatestReleaseDownloadButton ||
+        return item.isGitHubRepositoryTrack() && (
+                item.alwaysShowLatestReleaseDownloadButton ||
             itemState.hasUpdate == true ||
             itemState.recommendsPreRelease ||
-            itemState.hasPreReleaseUpdate
+                        itemState.hasPreReleaseUpdate ||
+                        (
+                                itemState.isLocalAppUninstalled() &&
+                                        itemState.apkAssetTarget(
+                                            owner = item.owner,
+                                            repo = item.repo,
+                                            context = env.context,
+                                            allowLatestReleaseFallback = true
+                                        ) != null
+                                )
+                )
     }
 
     private fun clearExpiredPendingShareImportTrack(nowMillis: Long) {

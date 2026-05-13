@@ -54,6 +54,7 @@ internal fun GitHubTrackedItemAssetRow(
     showApkTrustCheck: Boolean,
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,
+    installActionColor: Color,
     context: Context,
     onOpenApkInfo: () -> Unit,
     onOpenApkInDownloader: () -> Unit,
@@ -140,7 +141,7 @@ internal fun GitHubTrackedItemAssetRow(
 
                         else -> sizeLabel
                     },
-                    tint = actionButtonColor,
+                    tint = installActionColor,
                     enabled = !managedInstallRunning,
                     onClick = onOpenApkInDownloader,
                     minSize = 34.dp

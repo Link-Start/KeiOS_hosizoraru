@@ -320,6 +320,7 @@
     <string name="github_asset_target_prerelease">预发</string>
     <string name="github_asset_target_stable">稳定</string>
     <string name="github_asset_target_latest">最新</string>
+    <string name="github_asset_target_install">安装</string>
     <string name="github_asset_fetch_source_api">API</string>
     <string name="github_asset_fetch_source_html">Atom</string>
     <string name="github_asset_transport_direct">直链</string>
@@ -853,6 +854,7 @@
     <string name="github_share_import_notify_short_cancelled">已取消</string>
     <string name="github_asset_badge_recommended">推荐本机</string>
     <string name="github_asset_badge_incompatible">可能不兼容</string>
+    <string name="github_cd_install_tracked_item">安装 %1$s</string>
     <string name="github_cd_install_asset">安装或更新 %1$s</string>
     <string name="github_cd_install_asset_running">正在安装 %1$s</string>
     <string name="github_page_install_confirm_title">确认安装</string>

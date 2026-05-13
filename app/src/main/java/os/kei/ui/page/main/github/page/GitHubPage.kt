@@ -331,12 +331,13 @@ fun GitHubPage(
             onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
             onCollapseTrackedCard = actions::collapseTrackedCard,
             onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
-            onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets ->
+            onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->
                 actions.loadApkAssets(
                     item = item,
                     itemState = itemState,
                     toggleOnlyWhenCached = toggleOnlyWhenCached,
-                    includeAllAssets = includeAllAssets
+                    includeAllAssets = includeAllAssets,
+                    allowLatestReleaseFallback = allowLatestReleaseFallback
                 )
             },
             onOpenDecisionAssistDetail = { type, item ->

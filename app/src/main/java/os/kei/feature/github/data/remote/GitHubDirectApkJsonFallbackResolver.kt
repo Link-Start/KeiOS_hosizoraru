@@ -73,7 +73,7 @@ internal class GitHubDirectApkJsonFallbackResolver(
     }
 }
 
-private fun directApkFileNameFromUrl(url: String): String {
+internal fun directApkFileNameFromUrl(url: String): String {
     return runCatching {
         URI(url).path.substringAfterLast('/').trim()
     }.getOrDefault("")

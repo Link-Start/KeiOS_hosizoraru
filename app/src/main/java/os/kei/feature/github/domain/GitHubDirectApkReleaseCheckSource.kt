@@ -3,6 +3,8 @@ package os.kei.feature.github.domain
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallback
 import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallbackResolver
+import os.kei.feature.github.data.remote.GitHubDirectApkVersionedDirectoryResolution
+import os.kei.feature.github.data.remote.GitHubDirectApkVersionedDirectoryResolver
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GITHUB_DIRECT_APK_STRATEGY_ID
@@ -27,7 +29,9 @@ import os.kei.feature.github.model.directApkCheckSourceSignature
 internal class GitHubDirectApkReleaseCheckSource(
     private val apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository(),
     private val jsonFallbackResolver: GitHubDirectApkJsonFallbackResolver =
-        GitHubDirectApkJsonFallbackResolver()
+        GitHubDirectApkJsonFallbackResolver(),
+    private val versionedDirectoryResolver: GitHubDirectApkVersionedDirectoryResolver =
+        GitHubDirectApkVersionedDirectoryResolver()
 ) {
     suspend fun evaluate(
         item: GitHubTrackedApp,
@@ -50,32 +54,48 @@ internal class GitHubDirectApkReleaseCheckSource(
             preciseApkVersionEnabled = true
         )
         // Direct APK URLs often keep the same URL and filename while serving a newer APK.
+        val versionedDirectoryResolution = versionedDirectoryResolver
+            .resolve(asset.downloadUrl)
+            .getOrNull()
+        val primaryAsset = versionedDirectoryResolution?.toAsset(asset.name) ?: asset
         val manifestResult = apkInfoRepository.inspectAsync(
-            asset = asset,
+            asset = primaryAsset,
             lookupConfig = directLookupConfig,
             forceRefresh = true
-        )
+        ).map { manifest ->
+            versionedDirectoryResolution?.let { resolution ->
+                manifest.withVersionedDirectoryResolution(resolution, primaryAsset)
+            } ?: manifest
+        }
         val manifest = manifestResult.getOrElse { directError ->
-            val fallback = jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
-            if (fallback != null) {
+            val originalAsset = asset.takeIf { primaryAsset.downloadUrl != asset.downloadUrl }
+            val jsonFallback = jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
+            val fallbackTargets = buildList {
+                originalAsset?.let { fallbackAsset ->
+                    add(DirectApkFallbackTarget(asset = fallbackAsset))
+                }
+                jsonFallback?.let { fallback ->
+                    add(
+                        DirectApkFallbackTarget(
+                            asset = fallback.toAsset(),
+                            jsonFallback = fallback
+                        )
+                    )
+                }
+            }
+            fallbackTargets.forEach { target ->
                 apkInfoRepository.inspectAsync(
-                    asset = fallback.toAsset(),
+                    asset = target.asset,
                     lookupConfig = directLookupConfig,
                     forceRefresh = true
-                ).getOrElse { fallbackError ->
-                    return failedCheck(
-                        item = item,
-                        localVersion = localVersion,
-                        localVersionCode = localVersionCode,
-                        detail = fallbackError.message.orEmpty()
-                            .ifBlank { "remote APK manifest read failed" }
-                    )
-                }.let { fallbackManifest ->
+                ).getOrNull()?.let { fallbackManifest ->
                     return evaluateManifest(
                         item = item,
                         localVersion = localVersion,
                         localVersionCode = localVersionCode,
-                        manifest = fallbackManifest.withJsonFallback(fallback),
+                        manifest = target.jsonFallback?.let { fallback ->
+                            fallbackManifest.withJsonFallback(fallback)
+                        } ?: fallbackManifest,
                         sourceConfigSignature = directApkSourceSignature(item)
                     )
                 }
@@ -95,6 +115,11 @@ internal class GitHubDirectApkReleaseCheckSource(
             sourceConfigSignature = directApkSourceSignature(item)
         )
     }
+
+    private data class DirectApkFallbackTarget(
+        val asset: GitHubReleaseAssetFile,
+        val jsonFallback: GitHubDirectApkJsonFallback? = null
+    )
 
     private fun failedCheck(
         item: GitHubTrackedApp,
@@ -136,7 +161,18 @@ internal class GitHubDirectApkReleaseCheckSource(
                 assetName = assetName.ifBlank { fallback.toAsset().name },
                 versionName = versionName.ifBlank { fallback.versionName },
                 versionCode = versionCode.ifBlank { fallback.versionCode },
-                fetchSource = fallback.sourceUrl
+                fetchSource = fallback.fileUrl
+            )
+        }
+
+        private fun GitHubApkManifestInfo.withVersionedDirectoryResolution(
+            resolution: GitHubDirectApkVersionedDirectoryResolution,
+            asset: GitHubReleaseAssetFile
+        ): GitHubApkManifestInfo {
+            return copy(
+                assetName = asset.name,
+                versionName = versionName.ifBlank { resolution.version },
+                fetchSource = resolution.downloadUrl
             )
         }
 

@@ -53,6 +53,7 @@ internal data class HomePageHeroMotionState(
 @Immutable
 internal data class HomePageOverviewCardState(
     val homeHeaderStatusPills: List<HomeHeaderStatusPillState>,
+    val overviewStats: List<HomeCardStatItem>,
     val mcpOverviewStats: List<HomeCardStatItem>,
     val githubOverviewStats: List<HomeCardStatItem>,
     val baOverviewStats: List<HomeCardStatItem>
@@ -212,6 +213,10 @@ internal fun rememberHomePageOverviewCardState(
     runningColor: Color,
     stoppedColor: Color,
     inactiveColor: Color,
+    shizukuStatusLine: String,
+    mcpFocusLine: String,
+    githubFocusLine: String,
+    baFocusLine: String,
     homeStatStatus: String,
     mcpStatusText: String,
     homeStatRuntime: String,
@@ -224,10 +229,6 @@ internal fun rememberHomePageOverviewCardState(
     mcpPort: Int,
     homeStatToken: String,
     mcpTokenStatusText: String,
-    homeStatService: String,
-    mcpServerName: String,
-    homeStatPath: String,
-    mcpEndpointPath: String,
     homeStatStableUpdates: String,
     githubUpdatableLine: String,
     homeStatPreReleaseUpdates: String,
@@ -244,10 +245,6 @@ internal fun rememberHomePageOverviewCardState(
     homeStatShare: String,
     githubShareLine: String,
     githubPendingShareImport: Boolean,
-    homeStatStrategy: String,
-    githubStrategyText: String,
-    homeStatApi: String,
-    githubApiText: String,
     homeStatLastUpdate: String,
     githubLastUpdateLine: String,
     baActivationLine: String,
@@ -308,6 +305,43 @@ internal fun rememberHomePageOverviewCardState(
             )
         )
     }
+    val overviewStats = remember(
+        homeStatusShizuku,
+        shizukuStatusLine,
+        homeStatusMcp,
+        mcpFocusLine,
+        homeStatusGitHub,
+        githubFocusLine,
+        homeStatusBa,
+        baFocusLine,
+        shizukuGranted,
+        mcpRunning,
+        githubPendingShareImport,
+        baActivated
+    ) {
+        listOf(
+            HomeCardStatItem(
+                label = homeStatusShizuku,
+                value = shizukuStatusLine,
+                emphasize = shizukuGranted
+            ),
+            HomeCardStatItem(
+                label = homeStatusMcp,
+                value = mcpFocusLine,
+                emphasize = mcpRunning
+            ),
+            HomeCardStatItem(
+                label = homeStatusGitHub,
+                value = githubFocusLine,
+                emphasize = githubPendingShareImport || githubFocusLine.any(Char::isDigit)
+            ),
+            HomeCardStatItem(
+                label = homeStatusBa,
+                value = baFocusLine,
+                emphasize = baActivated
+            )
+        )
+    }
     val mcpOverviewStats = remember(
         homeStatStatus,
         mcpStatusText,
@@ -320,11 +354,7 @@ internal fun rememberHomePageOverviewCardState(
         homeStatPort,
         mcpPort,
         homeStatToken,
-        mcpTokenStatusText,
-        homeStatService,
-        mcpServerName,
-        homeStatPath,
-        mcpEndpointPath
+        mcpTokenStatusText
     ) {
         listOf(
             HomeCardStatItem(label = homeStatStatus, value = mcpStatusText, emphasize = true),
@@ -332,9 +362,7 @@ internal fun rememberHomePageOverviewCardState(
             HomeCardStatItem(label = homeStatClients, value = mcpConnectedClients.toString()),
             HomeCardStatItem(label = homeStatNetwork, value = networkModeText),
             HomeCardStatItem(label = homeStatPort, value = mcpPort.toString()),
-            HomeCardStatItem(label = homeStatToken, value = mcpTokenStatusText),
-            HomeCardStatItem(label = homeStatService, value = mcpServerName),
-            HomeCardStatItem(label = homeStatPath, value = mcpEndpointPath)
+            HomeCardStatItem(label = homeStatToken, value = mcpTokenStatusText)
         )
     }
     val githubOverviewStats = remember(
@@ -354,10 +382,6 @@ internal fun rememberHomePageOverviewCardState(
         homeStatShare,
         githubShareLine,
         githubPendingShareImport,
-        homeStatStrategy,
-        githubStrategyText,
-        homeStatApi,
-        githubApiText,
         homeStatLastUpdate,
         githubLastUpdateLine
     ) {
@@ -387,8 +411,6 @@ internal fun rememberHomePageOverviewCardState(
             if (showCacheFreshnessInCards) {
                 add(HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine))
             }
-            add(HomeCardStatItem(label = homeStatStrategy, value = githubStrategyText))
-            add(HomeCardStatItem(label = homeStatApi, value = githubApiText))
             add(HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine))
         }
         if (githubPendingShareImport) {
@@ -435,12 +457,14 @@ internal fun rememberHomePageOverviewCardState(
 
     return remember(
         homeHeaderStatusPills,
+        overviewStats,
         mcpOverviewStats,
         githubOverviewStats,
         baOverviewStats
     ) {
         HomePageOverviewCardState(
             homeHeaderStatusPills = homeHeaderStatusPills,
+            overviewStats = overviewStats,
             mcpOverviewStats = mcpOverviewStats,
             githubOverviewStats = githubOverviewStats,
             baOverviewStats = baOverviewStats

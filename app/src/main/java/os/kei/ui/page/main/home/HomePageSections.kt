@@ -234,6 +234,9 @@ internal fun HomeInfoGridCard(
         Color(0xFF1E63D6)
     }
     val labelColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
+    val rows = remember(stats, columns) {
+        homeInfoGridRows(stats, columns)
+    }
 
     Column(
         modifier = Modifier
@@ -251,7 +254,7 @@ internal fun HomeInfoGridCard(
             overflow = TextOverflow.Ellipsis
         )
 
-        stats.chunked(columns).forEach { rowStats ->
+        rows.forEach { rowStats ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -285,12 +288,30 @@ internal fun HomeInfoGridCard(
                         )
                     }
                 }
-                repeat(columns - rowStats.size) {
+                repeat((columns - rowStats.size).coerceAtLeast(0)) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
     }
+}
+
+private fun homeInfoGridRows(
+    stats: List<HomeCardStatItem>,
+    columns: Int
+): List<List<HomeCardStatItem>> {
+    val safeColumns = columns.coerceAtLeast(1)
+    if (stats.size <= safeColumns) return listOf(stats)
+
+    val rows = stats.chunked(safeColumns).map { it.toMutableList() }.toMutableList()
+    val lastIndex = rows.lastIndex
+    if (safeColumns >= 3 && rows[lastIndex].size == 1 && lastIndex > 0) {
+        val previous = rows[lastIndex - 1]
+        if (previous.size > 2) {
+            rows[lastIndex].add(0, previous.removeAt(previous.lastIndex))
+        }
+    }
+    return rows
 }
 
 internal data class HomeCardStatItem(

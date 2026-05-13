@@ -485,6 +485,8 @@ internal fun HomePageOverviewCards(
     homeCardBackdrop: Backdrop?,
     blurEnabled: Boolean,
     homeNa: String,
+    homeCardOverview: String,
+    overviewStats: List<HomeCardStatItem>,
     homeCardMcp: String,
     mcpStats: List<HomeCardStatItem>,
     homeCardGitHub: String,
@@ -497,11 +499,22 @@ internal fun HomePageOverviewCards(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Top
     ) {
+        HomeInfoCard(
+            backdrop = homeCardBackdrop,
+            blurEnabled = blurEnabled
+        ) {
+            HomeInfoGridCard(
+                title = homeCardOverview,
+                naText = homeNa,
+                columns = 2,
+                stats = overviewStats
+            )
+        }
+
         if (visibleOverviewCards.contains(HomeOverviewCard.MCP)) {
             HomeInfoCard(
                 backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled,
-                onClick = onOpenGitHubPage
+                blurEnabled = blurEnabled
             ) {
                 HomeInfoGridCard(
                     title = homeCardMcp,
@@ -515,7 +528,8 @@ internal fun HomePageOverviewCards(
         if (visibleOverviewCards.contains(HomeOverviewCard.GITHUB)) {
             HomeInfoCard(
                 backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled
+                blurEnabled = blurEnabled,
+                onClick = onOpenGitHubPage
             ) {
                 HomeInfoGridCard(
                     title = homeCardGitHub,

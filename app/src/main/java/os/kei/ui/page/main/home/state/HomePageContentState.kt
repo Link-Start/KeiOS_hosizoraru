@@ -7,7 +7,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.core.prefs.CacheFreshnessSnapshot
-import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -24,6 +23,7 @@ internal data class HomePageContentState(
     val homeStatusGitHub: String,
     val homeStatusBa: String,
     val homeStatusShizuku: String,
+    val homeCardOverview: String,
     val homeCardMcp: String,
     val homeCardGitHub: String,
     val homeCardBa: String,
@@ -33,6 +33,10 @@ internal data class HomePageContentState(
     val inactiveColor: Color,
     val cacheStateColor: Color,
     val appVersionText: String,
+    val shizukuStatusLine: String,
+    val mcpFocusLine: String,
+    val githubFocusLine: String,
+    val baFocusLine: String,
     val homeStatStatus: String,
     val mcpStatusText: String,
     val homeStatRuntime: String,
@@ -43,10 +47,6 @@ internal data class HomePageContentState(
     val networkModeText: String,
     val homeStatPort: String,
     val mcpPort: Int,
-    val homeStatPath: String,
-    val mcpEndpointPath: String,
-    val homeStatService: String,
-    val mcpServerName: String,
     val homeStatToken: String,
     val mcpTokenStatusText: String,
     val homeStatStableUpdates: String,
@@ -63,10 +63,6 @@ internal data class HomePageContentState(
     val githubCacheFreshnessLine: String,
     val homeStatShare: String,
     val githubShareLine: String,
-    val homeStatStrategy: String,
-    val githubStrategyText: String,
-    val homeStatApi: String,
-    val githubApiText: String,
     val homeStatLastUpdate: String,
     val githubLastUpdateLine: String,
     val baActivationLine: String,
@@ -119,6 +115,8 @@ internal fun rememberHomePageContentState(
     val homeBaStatusInactive = stringResource(R.string.home_ba_status_inactive)
     val homeValueOn = stringResource(R.string.home_value_on)
     val homeValueOff = stringResource(R.string.home_value_off)
+    val homeValueAuthorized = stringResource(R.string.home_value_authorized)
+    val homeValueUnauthorized = stringResource(R.string.home_value_unauthorized)
     val homeCacheStateFresh = stringResource(R.string.home_cache_state_fresh)
     val homeCacheStateStale = stringResource(R.string.home_cache_state_stale)
     val homeCacheStateEmpty = stringResource(R.string.home_cache_state_empty)
@@ -145,19 +143,15 @@ internal fun rememberHomePageContentState(
     } else {
         stringResource(R.string.home_mcp_status_stopped)
     }
+    val mcpFocusLine = if (mcpOverview.running && mcpOverview.connectedClients > 0) {
+        stringResource(R.string.home_value_devices_count, mcpOverview.connectedClients)
+    } else {
+        mcpStatusText
+    }
     val mcpTokenStatusText = if (mcpOverview.authTokenConfigured) {
         mcpOverview.authTokenPreview.ifBlank { homeCommonFilled }
     } else {
         homeCommonNotUsed
-    }
-    val githubStrategyText = when (githubOverview.strategy) {
-        GitHubLookupStrategyOption.AtomFeed -> stringResource(R.string.github_overview_strategy_atom)
-        GitHubLookupStrategyOption.GitHubApiToken -> stringResource(R.string.github_overview_strategy_api)
-    }
-    val githubApiText = when {
-        githubOverview.strategy != GitHubLookupStrategyOption.GitHubApiToken -> homeCommonNotUsed
-        githubOverview.apiTokenConfigured -> homeCommonFilled
-        else -> stringResource(R.string.common_guest)
     }
     val githubRefreshIntervalLine = stringResource(
         R.string.home_value_short_hours,
@@ -189,6 +183,17 @@ internal fun rememberHomePageContentState(
         !githubOverview.loaded || trackedCount == 0 || cacheHitCount == 0 ->
             stringResource(R.string.github_overview_value_count, 0)
         else -> stringResource(R.string.github_overview_value_count, failedCount)
+    }
+    val githubFocusLine = when {
+        !githubOverview.loaded -> homeStatusLoading
+        githubOverview.pendingShareImport -> stringResource(R.string.home_github_share_pending)
+        trackedCount == 0 -> homeGitHubUnconfigured
+        cacheHitCount == 0 -> homeGitHubPendingRefresh
+        failedCount > 0 -> stringResource(R.string.home_value_failed_count, failedCount)
+        else -> stringResource(
+            R.string.github_overview_value_count,
+            updatableCount + preReleaseUpdateCount
+        )
     }
     val githubShareLine = when {
         !githubOverview.loaded -> homeStatusLoading
@@ -223,6 +228,11 @@ internal fun rememberHomePageContentState(
         if (baOverview.activated) homeBaStatusActive else homeBaStatusInactive
     } else {
         homeStatusLoading
+    }
+    val baFocusLine = if (baOverview.loaded && baOverview.activated) {
+        stringResource(R.string.home_value_fraction, baOverview.apCurrent, baOverview.apLimit)
+    } else {
+        baActivationLine
     }
     val baApRemainingLine = if (baOverview.loaded) {
         (baOverview.apLimit - baOverview.apCurrent).coerceAtLeast(0).toString()
@@ -261,6 +271,7 @@ internal fun rememberHomePageContentState(
         homeStatusGitHub = stringResource(R.string.github_page_title),
         homeStatusBa = stringResource(R.string.home_status_ba),
         homeStatusShizuku = stringResource(R.string.home_status_shizuku),
+        homeCardOverview = stringResource(R.string.home_card_title_overview),
         homeCardMcp = stringResource(R.string.home_card_title_mcp),
         homeCardGitHub = stringResource(R.string.home_card_title_github_cache),
         homeCardBa = stringResource(R.string.home_card_title_ba),
@@ -270,6 +281,14 @@ internal fun rememberHomePageContentState(
         inactiveColor = inactiveColor,
         cacheStateColor = cacheStateColor,
         appVersionText = appVersionText,
+        shizukuStatusLine = if (shizukuStatus.contains("granted", ignoreCase = true)) {
+            homeValueAuthorized
+        } else {
+            homeValueUnauthorized
+        },
+        mcpFocusLine = mcpFocusLine,
+        githubFocusLine = githubFocusLine,
+        baFocusLine = baFocusLine,
         homeStatStatus = stringResource(R.string.home_stat_status),
         mcpStatusText = mcpStatusText,
         homeStatRuntime = stringResource(R.string.home_stat_runtime),
@@ -280,10 +299,6 @@ internal fun rememberHomePageContentState(
         networkModeText = networkModeText,
         homeStatPort = stringResource(R.string.home_stat_port),
         mcpPort = mcpOverview.port,
-        homeStatPath = stringResource(R.string.home_stat_path),
-        mcpEndpointPath = mcpOverview.endpointPath,
-        homeStatService = stringResource(R.string.home_stat_service),
-        mcpServerName = mcpOverview.serverName,
         homeStatToken = stringResource(R.string.home_stat_token),
         mcpTokenStatusText = mcpTokenStatusText,
         homeStatStableUpdates = stringResource(R.string.home_stat_stable_updates),
@@ -300,10 +315,6 @@ internal fun rememberHomePageContentState(
         githubCacheFreshnessLine = githubCacheFreshnessLine,
         homeStatShare = stringResource(R.string.home_stat_share),
         githubShareLine = githubShareLine,
-        homeStatStrategy = stringResource(R.string.home_stat_strategy),
-        githubStrategyText = githubStrategyText,
-        homeStatApi = stringResource(R.string.home_stat_api),
-        githubApiText = githubApiText,
         homeStatLastUpdate = stringResource(R.string.home_stat_last_update),
         githubLastUpdateLine = githubLastUpdateLine,
         baActivationLine = baActivationLine,

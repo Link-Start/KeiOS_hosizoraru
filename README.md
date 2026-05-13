@@ -1,5 +1,7 @@
 # KeiOS
 
+<!-- markdownlint-disable MD013 MD033 -->
+
 [中文版本 (CN)](readme/CN.md)
 
 <p align="center">
@@ -102,6 +104,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   projects.
 
 Read the full feature tour:
+
 - [Feature Overview (EN)](readme/FEATURES.md)
 - [功能完整介绍 (CN)](readme/FEATURES_CN.md)
 

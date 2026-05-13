@@ -291,7 +291,7 @@
     <string name="github_item_label_remote_release">Remote release</string>
     <string name="github_item_label_remote_stable_release">Remote stable release</string>
     <string name="github_item_label_prerelease_release">Pre-release</string>
-    <string name="github_item_label_remote_prerelease_release">Remote pre-release release</string>
+    <string name="github_item_label_remote_prerelease_release">Remote pre-release</string>
     <string name="github_release_meta_prefix_stable">Stable</string>
     <string name="github_release_meta_prefix_prerelease">Pre-release</string>
     <string name="github_item_label_updated_at">Updated at</string>

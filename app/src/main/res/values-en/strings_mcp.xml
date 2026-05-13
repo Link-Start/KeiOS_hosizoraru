@@ -95,6 +95,15 @@
     <string name="mcp_section_service_control_subtitle">Notifications and connection debugging</string>
     <string name="mcp_section_tools_title">Tools</string>
     <string name="mcp_section_tools_subtitle">%1$d tools</string>
+    <string name="mcp_section_tool_surface_title">MCP tool entry points</string>
+    <string name="mcp_section_tool_surface_subtitle">Entry points %1$d · Workflows %2$d · Advanced %3$d</string>
+    <string name="mcp_tools_search_hint">Search tools, domains, or descriptions</string>
+    <string name="mcp_tools_entrypoints_title">Recommended entry points</string>
+    <string name="mcp_tools_workflows_title">Workflow tools</string>
+    <string name="mcp_tools_advanced_title">Advanced tools</string>
+    <string name="mcp_tools_empty_group">No matching tools</string>
+    <string name="mcp_tools_expand_advanced">Show %1$d more advanced tools</string>
+    <string name="mcp_tools_collapse_advanced">Collapse advanced tools</string>
     <string name="mcp_section_logs_title">MCP Logs</string>
     <string name="mcp_section_logs_subtitle">%1$d entries</string>
     <string name="mcp_sheet_edit_service_title">Edit MCP service</string>
@@ -107,6 +116,7 @@
     <string name="mcp_toast_service_started">MCP service started</string>
     <string name="mcp_toast_start_failed">Start failed: %1$s</string>
     <string name="mcp_toast_config_copied">MCP config copied</string>
+    <string name="mcp_toast_resource_copied">MCP resource URI copied</string>
     <string name="mcp_toast_test_notification_sent">MCP test notification sent</string>
     <string name="mcp_toast_config_reset">MCP service config reset to defaults</string>
     <string name="mcp_toast_config_reset_requires_restart">MCP service config reset to defaults. The running port and network mode take effect after restarting the service.</string>

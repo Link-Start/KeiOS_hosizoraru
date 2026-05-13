@@ -97,6 +97,8 @@ internal fun GitHubStrategySheet(
         show = show,
         title = stringResource(R.string.github_strategy_sheet_title),
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,

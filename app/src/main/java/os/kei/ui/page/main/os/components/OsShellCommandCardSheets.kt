@@ -267,6 +267,8 @@ internal fun OsShellCommandCardEditorSheet(
         show = show,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = sheetBackdrop,

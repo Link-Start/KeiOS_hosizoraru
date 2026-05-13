@@ -1,6 +1,9 @@
 package os.kei.ui.page.main.widget.sheet
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
@@ -9,8 +12,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -18,6 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
@@ -32,14 +40,16 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.window.PopupPositionProvider as ComposePopupPositionProvider
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
+import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
+import androidx.compose.ui.window.PopupPositionProvider as ComposePopupPositionProvider
 
 enum class SnapshotPopupPlacement {
     Dropdown,
@@ -266,12 +276,24 @@ fun SnapshotWindowBottomSheet(
     defaultWindowInsetsPadding: Boolean = true,
     dragHandleColor: Color = BottomSheetDefaults.dragHandleColor(),
     allowDismiss: Boolean = true,
+    onBlockedDismissRequest: (() -> Unit)? = null,
     enableNestedScroll: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
+    var blockedDismissPromptToken by remember { mutableIntStateOf(0) }
+    LaunchedEffect(blockedDismissPromptToken) {
+        if (blockedDismissPromptToken <= 0) return@LaunchedEffect
+        delay(BlockedSheetDismissPromptDelayMillis)
+        currentOnBlockedDismissRequest?.invoke()
+    }
+
     WindowBottomSheet(
         show = show,
-        modifier = modifier,
+        modifier = modifier.blockedSheetDismissGesturePrompt(
+            enabled = show && !allowDismiss && onBlockedDismissRequest != null,
+            onBlockedDismissRequest = { blockedDismissPromptToken++ }
+        ),
         title = title,
         startAction = startAction,
         endAction = endAction,
@@ -289,6 +311,56 @@ fun SnapshotWindowBottomSheet(
         enableNestedScroll = enableNestedScroll,
         content = content
     )
+
+    BackHandler(
+        enabled = show && !allowDismiss && onBlockedDismissRequest != null,
+        onBack = { currentOnBlockedDismissRequest?.invoke() }
+    )
+}
+
+private const val BlockedSheetDismissPromptDelayMillis = 140L
+
+private fun Modifier.blockedSheetDismissGesturePrompt(
+    enabled: Boolean,
+    onBlockedDismissRequest: () -> Unit
+): Modifier {
+    if (!enabled) return this
+    return pointerInput(onBlockedDismissRequest) {
+        val topGestureRegionPx = 72.dp.toPx()
+        val dismissIntentThresholdPx = 42.dp.toPx()
+        awaitEachGesture {
+            val down = awaitFirstDown(
+                requireUnconsumed = false,
+                pass = PointerEventPass.Initial
+            )
+            if (down.position.y > topGestureRegionPx) {
+                return@awaitEachGesture
+            }
+            var totalX = 0f
+            var totalY = 0f
+            var hasDismissIntent = false
+            while (true) {
+                val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                val change = event.changes.firstOrNull { it.id == down.id }
+                    ?: event.changes.firstOrNull()
+                    ?: break
+                if (!change.pressed) break
+                val delta = change.positionChange()
+                totalX += delta.x
+                totalY += delta.y
+                if (
+                    !hasDismissIntent &&
+                    totalY > dismissIntentThresholdPx &&
+                    totalY > abs(totalX) * 1.35f
+                ) {
+                    hasDismissIntent = true
+                }
+            }
+            if (hasDismissIntent) {
+                onBlockedDismissRequest()
+            }
+        }
+    }
 }
 
 private fun PaddingValues.toIntRect(

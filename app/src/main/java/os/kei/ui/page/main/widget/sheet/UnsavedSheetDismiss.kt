@@ -7,12 +7,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -26,6 +26,7 @@ import top.yukonga.miuix.kmp.window.WindowDialog
 @Stable
 internal class UnsavedSheetDismissHandler(
     val showConfirmDialog: Boolean,
+    val allowDismiss: Boolean,
     val requestDismiss: () -> Unit,
     val keepEditing: () -> Unit,
     val discardChanges: () -> Unit
@@ -36,13 +37,20 @@ internal fun rememberUnsavedSheetDismissHandler(
     hasUnsavedChanges: Boolean,
     onDismissRequest: () -> Unit
 ): UnsavedSheetDismissHandler {
-    var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
     val currentHasUnsavedChanges by rememberUpdatedState(hasUnsavedChanges)
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
 
-    return remember(showConfirmDialog) {
+    LaunchedEffect(hasUnsavedChanges) {
+        if (!hasUnsavedChanges) {
+            showConfirmDialog = false
+        }
+    }
+
+    return remember(showConfirmDialog, hasUnsavedChanges) {
         UnsavedSheetDismissHandler(
             showConfirmDialog = showConfirmDialog,
+            allowDismiss = !hasUnsavedChanges,
             requestDismiss = {
                 if (currentHasUnsavedChanges) {
                     showConfirmDialog = true

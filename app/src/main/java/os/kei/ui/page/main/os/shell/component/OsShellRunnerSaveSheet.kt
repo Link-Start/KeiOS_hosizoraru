@@ -56,6 +56,8 @@ internal fun OsShellRunnerSaveSheet(
         show = show,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppStandaloneLiquidIconButton(
                 variant = GlassVariant.Bar,

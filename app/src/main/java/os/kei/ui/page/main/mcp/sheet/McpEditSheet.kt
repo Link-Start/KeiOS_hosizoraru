@@ -52,6 +52,8 @@ internal fun McpEditServiceSheet(
         show = show,
         title = stringResource(R.string.mcp_sheet_edit_service_title),
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,

@@ -149,6 +149,8 @@ internal fun GitHubTrackEditSheet(
             stringResource(R.string.github_track_sheet_title_edit)
         },
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,

@@ -110,6 +110,8 @@ internal fun BaSettingsSheet(
         show = show,
         title = stringResource(R.string.ba_settings_title),
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,

@@ -124,6 +124,8 @@ internal fun GitHubCheckLogicSheet(
         show = show,
         title = stringResource(R.string.github_check_sheet_title),
         onDismissRequest = dismissHandler.requestDismiss,
+        allowDismiss = dismissHandler.allowDismiss,
+        onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {
             AppLiquidIconButton(
                 backdrop = backdrop,

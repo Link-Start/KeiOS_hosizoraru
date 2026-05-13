@@ -44,10 +44,11 @@ internal class GitHubDirectApkReleaseCheckSource(
             checkAllTrackedPreReleases = false,
             preciseApkVersionEnabled = true
         )
+        // Direct APK URLs often keep the same URL and filename while serving a newer APK.
         val manifest = apkInfoRepository.inspectAsync(
             asset = asset,
             lookupConfig = directLookupConfig,
-            forceRefresh = forceRefresh
+            forceRefresh = true
         ).getOrElse { error ->
             return failedCheck(
                 item = item,

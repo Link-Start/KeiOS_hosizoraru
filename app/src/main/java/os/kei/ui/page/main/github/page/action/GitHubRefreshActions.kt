@@ -301,7 +301,8 @@ internal class GitHubRefreshActions(
                             item = item,
                             showToastOnError = false,
                             keepCurrentVisualWhileRefreshing = true,
-                            profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast
+                            profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast,
+                            forceRefresh = true
                         )
                     }
                 }
@@ -595,7 +596,8 @@ internal class GitHubRefreshActions(
             refreshItem(
                 item = item,
                 showToastOnError = false,
-                keepCurrentVisualWhileRefreshing = true
+                keepCurrentVisualWhileRefreshing = true,
+                forceRefresh = true
             )
         }
         return true

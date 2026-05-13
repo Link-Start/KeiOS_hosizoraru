@@ -284,7 +284,7 @@ internal class GitHubPageActions(
         item: GitHubTrackedApp,
         showToastOnError: Boolean = true,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = true
     ) {
         env.scope.launch {
             refreshTrackedItemNow(

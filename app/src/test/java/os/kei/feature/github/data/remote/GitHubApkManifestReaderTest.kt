@@ -15,6 +15,7 @@ import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.assertEquals
@@ -101,6 +102,66 @@ class GitHubApkManifestReaderTest {
                 results.map { it.packageName })
             assertEquals(listOf("3.1.0", "3.1.0"), results.map { it.versionName })
             assertTrue(server.requestCount <= 4)
+        }
+    }
+
+    @Test
+    fun `repository force refresh bypasses completed manifest cache for fixed direct URL`() {
+        val firstApkBytes = apkWithManifestAndNativeLib(
+            manifestBytes = BinaryManifestFixture.build(
+                packageName = "org.telegram.messenger",
+                versionName = "12.0.0",
+                versionCode = 120000L
+            )
+        )
+        val secondApkBytes = apkWithManifestAndNativeLib(
+            manifestBytes = BinaryManifestFixture.build(
+                packageName = "org.telegram.messenger",
+                versionName = "12.1.0",
+                versionCode = 121000L
+            )
+        )
+        MockWebServer().use { server ->
+            val probeCount = AtomicInteger(0)
+            var activeApkBytes = firstApkBytes
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    if (request.getHeader("Range").orEmpty() == "bytes=0-0") {
+                        activeApkBytes = if (probeCount.incrementAndGet() == 1) {
+                            firstApkBytes
+                        } else {
+                            secondApkBytes
+                        }
+                    }
+                    return rangeDispatcher(activeApkBytes).dispatch(request)
+                }
+            }
+            val repository = GitHubApkInfoRepository(
+                manifestReader = GitHubApkManifestReader(
+                    zipEntryReader = RemoteZipEntryReader(client = OkHttpClient())
+                )
+            )
+            val asset = GitHubReleaseAssetFile(
+                name = "Telegram.apk",
+                downloadUrl = server.url("/dl/android/apk").toString(),
+                sizeBytes = 0L,
+                downloadCount = 0
+            )
+
+            val first = repository.inspect(asset = asset, lookupConfig = GitHubLookupConfig())
+                .getOrThrow()
+            val cached = repository.inspect(asset = asset, lookupConfig = GitHubLookupConfig())
+                .getOrThrow()
+            val refreshed = repository.inspect(
+                asset = asset,
+                lookupConfig = GitHubLookupConfig(),
+                forceRefresh = true
+            ).getOrThrow()
+
+            assertEquals("12.0.0", first.versionName)
+            assertEquals("12.0.0", cached.versionName)
+            assertEquals("12.1.0", refreshed.versionName)
+            assertEquals(2, probeCount.get())
         }
     }
 

@@ -14,11 +14,13 @@ import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
+import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
+import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isValidForTrackedItem
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -404,10 +406,14 @@ internal class GitHubRefreshActions(
                 message = checkingMessage
             )
         }
-        val itemState = resolveItemState(
+        val itemState = mergeDirectApkRemoteFallback(
             item = item,
-            profilePurposeOverride = profilePurposeOverride,
-            forceRefresh = forceRefresh
+            resolvedState = resolveItemState(
+                item = item,
+                profilePurposeOverride = profilePurposeOverride,
+                forceRefresh = forceRefresh
+            ),
+            previousState = previousState
         )
         if (state.trackedItems.none { it.id == item.id }) return
         if (showToastOnError && itemState.failed) {
@@ -485,10 +491,16 @@ internal class GitHubRefreshActions(
                                     message = throwable.message ?: throwable.javaClass.simpleName
                                 )
                             }
+                            val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
+                            val itemState = mergeDirectApkRemoteFallback(
+                                item = item,
+                                resolvedState = resolved,
+                                previousState = previousState
+                            )
                             if (item.checkActionsUpdates) {
                                 refreshActionsRunSnapshotForItem(item)
                             }
-                            resolved
+                            itemState
                         }
                         var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
                         var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
@@ -646,6 +658,33 @@ internal class GitHubRefreshActions(
             val itemState = state.checkStates[item.id] ?: VersionCheckUi()
             item.id to itemState.toCacheEntry()
         }
+
+    private fun mergeDirectApkRemoteFallback(
+        item: GitHubTrackedApp,
+        resolvedState: VersionCheckUi,
+        previousState: VersionCheckUi
+    ): VersionCheckUi {
+        if (!item.isDirectApkTrack() || !resolvedState.failed) return resolvedState
+        if (!previousState.hasDirectApkReusableRemoteResult()) return resolvedState
+        return previousState.copy(
+            loading = false,
+            localVersion = resolvedState.localVersion,
+            localVersionCode = resolvedState.localVersionCode,
+            failed = false,
+            directApkRemoteHealth = GitHubDirectApkRemoteHealth.Degraded,
+            directApkRemoteHealthMessage = resolvedState.directApkRemoteHealthMessage
+                .ifBlank { resolvedState.message },
+            directApkRemoteCheckedAtMillis = resolvedState.directApkRemoteCheckedAtMillis
+                .takeIf { it > 0L } ?: System.currentTimeMillis()
+        )
+    }
+
+    private fun VersionCheckUi.hasDirectApkReusableRemoteResult(): Boolean {
+        return latestStableApkVersion != null ||
+                latestStableRawTag.isNotBlank() ||
+                latestTag.isNotBlank() ||
+                latestStableName.isNotBlank()
+    }
 
     private suspend fun resolveItemState(
         item: GitHubTrackedApp,

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
@@ -48,7 +49,10 @@ internal data class VersionCheckUi(
     val upstreamFullName: String = "",
     val upstreamArchived: Boolean = false,
     val upstreamPushedAtMillis: Long = -1L,
-    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
+    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
+    val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
+    val directApkRemoteHealthMessage: String = "",
+    val directApkRemoteCheckedAtMillis: Long = -1L
 )
 
 @Immutable

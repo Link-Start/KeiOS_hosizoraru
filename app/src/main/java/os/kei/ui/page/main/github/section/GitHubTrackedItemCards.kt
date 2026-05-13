@@ -37,10 +37,13 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.github.GitHubRepositoryHealth
+import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
 import os.kei.ui.page.main.github.formatReleaseValue
@@ -131,6 +134,72 @@ internal fun GitHubReleaseVersionCard(
         trailingIconColor = textColor,
         onClick = { onExpandedChange(!expanded) }
     )
+}
+
+@Composable
+internal fun GitHubDirectApkRemoteHealthCard(
+    item: GitHubTrackedApp,
+    state: VersionCheckUi,
+    onOpenExternalUrl: (String) -> Unit
+) {
+    if (!item.isDirectApkTrack()) return
+    val checkedAt = formatReleaseUpdatedAtCompact(state.directApkRemoteCheckedAtMillis)
+    val reason = state.directApkRemoteHealthMessage.directApkRemoteHealthReason()
+    val health = when {
+        state.loading -> GitHubDirectApkRemoteHealth.Unknown
+        else -> state.directApkRemoteHealth
+    }
+    val value = when {
+        state.loading -> stringResource(R.string.github_direct_apk_remote_health_checking)
+        health == GitHubDirectApkRemoteHealth.Available && checkedAt != null ->
+            stringResource(R.string.github_direct_apk_remote_health_available_at, checkedAt)
+
+        health == GitHubDirectApkRemoteHealth.Available ->
+            stringResource(R.string.github_direct_apk_remote_health_available)
+
+        health == GitHubDirectApkRemoteHealth.Degraded &&
+                reason.isNotBlank() &&
+                checkedAt != null ->
+            stringResource(
+                R.string.github_direct_apk_remote_health_degraded_reason_at,
+                reason,
+                checkedAt
+            )
+
+        health == GitHubDirectApkRemoteHealth.Degraded && reason.isNotBlank() ->
+            stringResource(R.string.github_direct_apk_remote_health_degraded_reason, reason)
+
+        health == GitHubDirectApkRemoteHealth.Degraded ->
+            stringResource(R.string.github_direct_apk_remote_health_degraded)
+
+        else -> stringResource(R.string.github_direct_apk_remote_health_unknown)
+    }
+    val color = when {
+        state.loading -> GitHubStatusPalette.Active
+        health == GitHubDirectApkRemoteHealth.Available -> GitHubStatusPalette.Update
+        health == GitHubDirectApkRemoteHealth.Degraded -> GitHubStatusPalette.Cache
+        else -> MiuixTheme.colorScheme.onBackgroundVariant
+    }
+    GitHubLinkedInfoCard(
+        label = stringResource(R.string.github_item_label_direct_apk_remote_health),
+        value = value,
+        labelColor = color,
+        valueColor = color,
+        valueMaxLines = 2,
+        onClick = { onOpenExternalUrl(item.repoUrl) }
+    )
+}
+
+private fun String.directApkRemoteHealthReason(): String {
+    val message = trim()
+    if (message.isBlank()) return ""
+    Regex("""HTTP\s+(\d{3})""", RegexOption.IGNORE_CASE)
+        .find(message)
+        ?.let { match -> return "HTTP ${match.groupValues[1]}" }
+    return message
+        .substringBefore('\n')
+        .take(36)
+        .trim()
 }
 
 @Composable

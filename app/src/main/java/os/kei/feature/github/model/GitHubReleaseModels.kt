@@ -17,6 +17,12 @@ enum class GitHubReleaseSignalSource {
     GitHubApi
 }
 
+enum class GitHubDirectApkRemoteHealth {
+    Unknown,
+    Available,
+    Degraded
+}
+
 enum class GitHubVersionCandidateSource(val priority: Int) {
     Tag(0),
     Title(1),
@@ -181,6 +187,9 @@ data class GitHubTrackedReleaseCheck(
     val upstreamPushedAtMillis: Long = -1L,
     val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
     val sourceConfigSignature: String = "",
+    val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
+    val directApkRemoteHealthMessage: String = "",
+    val directApkRemoteCheckedAtMillis: Long = -1L,
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
     val message: String = status.defaultMessage
 )

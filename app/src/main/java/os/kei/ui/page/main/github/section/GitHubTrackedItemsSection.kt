@@ -249,6 +249,11 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         item = item,
                         onOpenExternalUrl = onOpenExternalUrl
                     )
+                    GitHubDirectApkRemoteHealthCard(
+                        item = item,
+                        state = state,
+                        onOpenExternalUrl = onOpenExternalUrl
+                    )
                     val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
                         appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L }
                     ) ?: stringResource(R.string.common_unknown)

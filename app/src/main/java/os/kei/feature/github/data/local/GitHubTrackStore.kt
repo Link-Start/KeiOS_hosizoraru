@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubCheckCacheEntry
+import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubProfileDepth
@@ -500,6 +501,16 @@ object GitHubTrackStore {
                             ),
                             latestPreApkVersion = parseRemoteApkVersionInfo(
                                 item.optJSONObject("latestPreApkVersion")
+                            ),
+                            directApkRemoteHealth = parseDirectApkRemoteHealth(
+                                item.optString("directApkRemoteHealth")
+                            ),
+                            directApkRemoteHealthMessage = item.optString(
+                                "directApkRemoteHealthMessage"
+                            ),
+                            directApkRemoteCheckedAtMillis = item.optLong(
+                                "directApkRemoteCheckedAtMillis",
+                                -1L
                             )
                         )
                     )
@@ -612,6 +623,15 @@ object GitHubTrackStore {
                     .put(
                         "latestPreApkVersion",
                         remoteApkVersionInfoToJson(state.latestPreApkVersion)
+                    )
+                    .put("directApkRemoteHealth", state.directApkRemoteHealth.name)
+                    .put(
+                        "directApkRemoteHealthMessage",
+                        state.directApkRemoteHealthMessage
+                    )
+                    .put(
+                        "directApkRemoteCheckedAtMillis",
+                        state.directApkRemoteCheckedAtMillis
                     )
             )
             state.repositoryProfile?.let { profile ->
@@ -1015,6 +1035,12 @@ object GitHubTrackStore {
             fetchSource = obj.optString("fetchSource").trim()
         )
         return info.takeIf { it.hasVersion() || it.releaseLabel().isNotBlank() }
+    }
+
+    private fun parseDirectApkRemoteHealth(raw: String): GitHubDirectApkRemoteHealth {
+        return GitHubDirectApkRemoteHealth.entries.firstOrNull { health ->
+            health.name.equals(raw.trim(), ignoreCase = true)
+        } ?: GitHubDirectApkRemoteHealth.Unknown
     }
 
     private fun remoteApkVersionInfoToJson(info: GitHubRemoteApkVersionInfo?): JSONObject? {

@@ -1,12 +1,15 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
+import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallback
+import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallbackResolver
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GITHUB_DIRECT_APK_STRATEGY_ID
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
@@ -22,7 +25,9 @@ import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.directApkCheckSourceSignature
 
 internal class GitHubDirectApkReleaseCheckSource(
-    private val apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository()
+    private val apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository(),
+    private val jsonFallbackResolver: GitHubDirectApkJsonFallbackResolver =
+        GitHubDirectApkJsonFallbackResolver()
 ) {
     suspend fun evaluate(
         item: GitHubTrackedApp,
@@ -45,16 +50,41 @@ internal class GitHubDirectApkReleaseCheckSource(
             preciseApkVersionEnabled = true
         )
         // Direct APK URLs often keep the same URL and filename while serving a newer APK.
-        val manifest = apkInfoRepository.inspectAsync(
+        val manifestResult = apkInfoRepository.inspectAsync(
             asset = asset,
             lookupConfig = directLookupConfig,
             forceRefresh = true
-        ).getOrElse { error ->
+        )
+        val manifest = manifestResult.getOrElse { directError ->
+            val fallback = jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
+            if (fallback != null) {
+                apkInfoRepository.inspectAsync(
+                    asset = fallback.toAsset(),
+                    lookupConfig = directLookupConfig,
+                    forceRefresh = true
+                ).getOrElse { fallbackError ->
+                    return failedCheck(
+                        item = item,
+                        localVersion = localVersion,
+                        localVersionCode = localVersionCode,
+                        detail = fallbackError.message.orEmpty()
+                            .ifBlank { "remote APK manifest read failed" }
+                    )
+                }.let { fallbackManifest ->
+                    return evaluateManifest(
+                        item = item,
+                        localVersion = localVersion,
+                        localVersionCode = localVersionCode,
+                        manifest = fallbackManifest.withJsonFallback(fallback),
+                        sourceConfigSignature = directApkSourceSignature(item)
+                    )
+                }
+            }
             return failedCheck(
                 item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                detail = error.message.orEmpty().ifBlank { "remote APK manifest read failed" }
+                detail = directError.message.orEmpty().ifBlank { "remote APK manifest read failed" }
             )
         }
         return evaluateManifest(
@@ -77,6 +107,9 @@ internal class GitHubDirectApkReleaseCheckSource(
             localVersion = localVersion,
             localVersionCode = localVersionCode,
             sourceConfigSignature = directApkSourceSignature(item),
+            directApkRemoteHealth = GitHubDirectApkRemoteHealth.Degraded,
+            directApkRemoteHealthMessage = detail,
+            directApkRemoteCheckedAtMillis = System.currentTimeMillis(),
             status = GitHubTrackedReleaseStatus.Failed,
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
         )
@@ -93,6 +126,17 @@ internal class GitHubDirectApkReleaseCheckSource(
                 sizeBytes = 0L,
                 downloadCount = 0,
                 contentType = "application/vnd.android.package-archive"
+            )
+        }
+
+        private fun GitHubApkManifestInfo.withJsonFallback(
+            fallback: GitHubDirectApkJsonFallback
+        ): GitHubApkManifestInfo {
+            return copy(
+                assetName = assetName.ifBlank { fallback.toAsset().name },
+                versionName = versionName.ifBlank { fallback.versionName },
+                versionCode = versionCode.ifBlank { fallback.versionCode },
+                fetchSource = fallback.sourceUrl
             )
         }
 
@@ -115,6 +159,8 @@ internal class GitHubDirectApkReleaseCheckSource(
                     localVersion = localVersion,
                     localVersionCode = localVersionCode,
                     sourceConfigSignature = sourceConfigSignature,
+                    directApkRemoteHealth = GitHubDirectApkRemoteHealth.Available,
+                    directApkRemoteCheckedAtMillis = System.currentTimeMillis(),
                     status = GitHubTrackedReleaseStatus.Failed,
                     message = GitHubTrackedReleaseStatus.Failed.failureMessage(
                         "remote package $remotePackage does not match $trackedPackage"
@@ -174,6 +220,9 @@ internal class GitHubDirectApkReleaseCheckSource(
                 checkAllTrackedPreReleases = false,
                 preciseStableApkVersion = preciseInfo,
                 sourceConfigSignature = sourceConfigSignature
+            ).copy(
+                directApkRemoteHealth = GitHubDirectApkRemoteHealth.Available,
+                directApkRemoteCheckedAtMillis = System.currentTimeMillis()
             )
         }
 

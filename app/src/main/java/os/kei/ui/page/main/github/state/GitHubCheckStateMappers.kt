@@ -39,7 +39,10 @@ internal fun VersionCheckUi.toCacheEntry(): GitHubCheckCacheEntry = GitHubCheckC
     upstreamFullName = upstreamFullName,
     upstreamArchived = upstreamArchived,
     upstreamPushedAtMillis = upstreamPushedAtMillis,
-    repositoryProfile = repositoryProfile
+    repositoryProfile = repositoryProfile,
+    directApkRemoteHealth = directApkRemoteHealth,
+    directApkRemoteHealthMessage = directApkRemoteHealthMessage,
+    directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis
 )
 
 internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
@@ -77,7 +80,10 @@ internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
     upstreamFullName = upstreamFullName,
     upstreamArchived = upstreamArchived,
     upstreamPushedAtMillis = upstreamPushedAtMillis,
-    repositoryProfile = repositoryProfile
+    repositoryProfile = repositoryProfile,
+    directApkRemoteHealth = directApkRemoteHealth,
+    directApkRemoteHealthMessage = directApkRemoteHealthMessage,
+    directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis
 )
 
 internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
@@ -115,5 +121,8 @@ internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
     upstreamFullName = upstreamFullName,
     upstreamArchived = upstreamArchived,
     upstreamPushedAtMillis = upstreamPushedAtMillis,
-    repositoryProfile = repositoryProfile
+    repositoryProfile = repositoryProfile,
+    directApkRemoteHealth = directApkRemoteHealth,
+    directApkRemoteHealthMessage = directApkRemoteHealthMessage,
+    directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis
 )

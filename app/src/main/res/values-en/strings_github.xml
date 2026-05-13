@@ -270,6 +270,14 @@
     <string name="github_list_msg_no_match">No matching tracked projects</string>
     <string name="github_item_label_repo">Repository URL</string>
     <string name="github_item_label_direct_apk">Direct APK</string>
+    <string name="github_item_label_direct_apk_remote_health">Remote health</string>
+    <string name="github_direct_apk_remote_health_checking">Checking</string>
+    <string name="github_direct_apk_remote_health_available">Remote available</string>
+    <string name="github_direct_apk_remote_health_available_at">Remote available · %1$s</string>
+    <string name="github_direct_apk_remote_health_degraded">Remote unavailable · using last result</string>
+    <string name="github_direct_apk_remote_health_degraded_reason">Unavailable · %1$s · last result</string>
+    <string name="github_direct_apk_remote_health_degraded_reason_at">%1$s · %2$s · last result</string>
+    <string name="github_direct_apk_remote_health_unknown">Not checked</string>
     <string name="github_item_label_local_version">Local version</string>
     <string name="github_item_value_local_version_uninstalled">App not installed</string>
     <string name="github_item_value_check_pending">Pending check</string>

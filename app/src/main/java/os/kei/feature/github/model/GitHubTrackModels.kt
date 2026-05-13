@@ -298,5 +298,8 @@ data class GitHubCheckCacheEntry(
     val upstreamFullName: String = "",
     val upstreamArchived: Boolean = false,
     val upstreamPushedAtMillis: Long = -1L,
-    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
+    val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
+    val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
+    val directApkRemoteHealthMessage: String = "",
+    val directApkRemoteCheckedAtMillis: Long = -1L
 )

@@ -92,6 +92,8 @@
 - Start `limit` at 20 to 80 for audits.
 - `repoFilter` accepts owner/repo, package name, or app label.
 - `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.
+- GitHub tracking `sortMode` accepts `update_first`, `name_asc`, `prerelease_first`,
+  `changed_newest`, `changed_oldest`, `added_newest`, or `added_oldest`.
 - Repository APK scans accept `expectedPackageName` for multi-package releases.
 - Actions refresh writes the recommended-run cache and uses bounded parallel network checks.
 - `serverIndex` accepts 0 to 2 and defaults to the current BA server.

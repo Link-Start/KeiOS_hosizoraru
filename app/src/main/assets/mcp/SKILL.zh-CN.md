@@ -91,6 +91,8 @@
 - 审计任务的 `limit` 建议从 20 到 80 开始。
 - `repoFilter` 支持 owner/repo、包名或应用名。
 - `sourceMode` 支持 `github_repository`、`direct_apk`，留空表示全部追踪来源。
+- GitHub 追踪工具的 `sortMode` 支持 `update_first`、`name_asc`、`prerelease_first`、
+  `changed_newest`、`changed_oldest`、`added_newest`、`added_oldest`。
 - 仓库 APK 扫描支持 `expectedPackageName`，用于同 release 多包名 APK。
 - Actions 刷新会写入推荐 run 缓存，并使用有界并发联网检查。
 - `serverIndex` 范围 0 到 2，留空使用当前 BA 服务器。

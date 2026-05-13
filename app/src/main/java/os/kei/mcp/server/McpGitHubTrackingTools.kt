@@ -3,6 +3,7 @@ package os.kei.mcp.server
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
+import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubShareImportResolver
@@ -14,6 +15,7 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.ui.page.main.github.GitHubSortMode
 import java.util.Locale
 
 internal class McpGitHubTrackingTools(
@@ -25,7 +27,11 @@ internal class McpGitHubTrackingTools(
         val stableVersion: String,
         val preReleaseVersion: String,
         val status: String,
-        val hasUpdate: Boolean
+        val hasUpdate: Boolean,
+        val hasPreReleaseUpdate: Boolean,
+        val isPreRelease: Boolean,
+        val addedAtMillis: Long,
+        val modifiedAtMillis: Long
     )
 
     private val appContext get() = environment.appContext
@@ -38,6 +44,7 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.list") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
+            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
                 MAX_TRACK_LIMIT
@@ -45,6 +52,7 @@ internal class McpGitHubTrackingTools(
             buildGitHubTrackedListText(
                 repoFilter = repoFilter,
                 sourceMode = sourceMode,
+                sortMode = sortMode,
                 limit = limit
             )
         }
@@ -52,7 +60,12 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.export") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
-            buildGitHubTrackedExportText(repoFilter = repoFilter, sourceMode = sourceMode)
+            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
+            buildGitHubTrackedExportText(
+                repoFilter = repoFilter,
+                sourceMode = sourceMode,
+                sortMode = sortMode
+            )
         }
 
         server.addMcpTextTool(environment, name = "keios.github.tracks.import") { request ->
@@ -64,12 +77,17 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.check") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
+            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
             val onlyUpdates = argBoolean(request.arguments?.get("onlyUpdates"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
                 MAX_TRACK_LIMIT
             )
-            val rows = checkTrackedGitHub(repoFilter = repoFilter, sourceMode = sourceMode)
+            val rows = checkTrackedGitHub(
+                repoFilter = repoFilter,
+                sourceMode = sourceMode,
+                sortMode = sortMode
+            )
                 .let { data -> if (onlyUpdates) data.filter { it.hasUpdate } else data }
                 .take(limit)
 
@@ -90,15 +108,18 @@ internal class McpGitHubTrackingTools(
             val mode = argString(request.arguments?.get("mode")).trim().lowercase(Locale.ROOT)
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
+            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
             if (mode == "network") {
                 buildGitHubTrackedSummaryFromNetwork(
                     repoFilter = repoFilter,
-                    sourceMode = sourceMode
+                    sourceMode = sourceMode,
+                    sortMode = sortMode
                 )
             } else {
                 buildGitHubTrackedSummaryFromCache(
                     repoFilter = repoFilter,
-                    sourceMode = sourceMode
+                    sourceMode = sourceMode,
+                    sortMode = sortMode
                 )
             }
         }
@@ -182,12 +203,18 @@ internal class McpGitHubTrackingTools(
     private fun buildGitHubTrackedListText(
         repoFilter: String,
         sourceMode: String,
+        sortMode: GitHubSortMode,
         limit: Int
     ): String {
-        val items = filterTrackedItems(
-            items = GitHubTrackStore.load(),
-            repoFilter = repoFilter,
-            sourceMode = sourceMode
+        val snapshot = GitHubTrackStore.loadSnapshot()
+        val items = sortTrackedItems(
+            items = filterTrackedItems(
+                items = snapshot.items,
+                repoFilter = repoFilter,
+                sourceMode = sourceMode
+            ),
+            snapshot = snapshot,
+            sortMode = sortMode
         ).take(limit)
         if (items.isEmpty()) return "No tracked GitHub apps."
         return items.joinToString("\n") { item ->
@@ -200,11 +227,20 @@ internal class McpGitHubTrackingTools(
         }
     }
 
-    private fun buildGitHubTrackedExportText(repoFilter: String, sourceMode: String): String {
-        val items = filterTrackedItems(
-            items = GitHubTrackStore.load(),
-            repoFilter = repoFilter,
-            sourceMode = sourceMode
+    private fun buildGitHubTrackedExportText(
+        repoFilter: String,
+        sourceMode: String,
+        sortMode: GitHubSortMode
+    ): String {
+        val snapshot = GitHubTrackStore.loadSnapshot()
+        val items = sortTrackedItems(
+            items = filterTrackedItems(
+                items = snapshot.items,
+                repoFilter = repoFilter,
+                sourceMode = sourceMode
+            ),
+            snapshot = snapshot,
+            sortMode = sortMode
         )
         return GitHubTrackStore.buildTrackedItemsExportJson(items)
     }
@@ -288,12 +324,20 @@ internal class McpGitHubTrackingTools(
         return mergedItems
     }
 
-    private fun buildGitHubTrackedSummaryFromCache(repoFilter: String, sourceMode: String): String {
+    private fun buildGitHubTrackedSummaryFromCache(
+        repoFilter: String,
+        sourceMode: String,
+        sortMode: GitHubSortMode
+    ): String {
         val snapshot = GitHubTrackStore.loadSnapshot()
-        val tracked = filterTrackedItems(
-            items = snapshot.items,
-            repoFilter = repoFilter,
-            sourceMode = sourceMode
+        val tracked = sortTrackedItems(
+            items = filterTrackedItems(
+                items = snapshot.items,
+                repoFilter = repoFilter,
+                sourceMode = sourceMode
+            ),
+            snapshot = snapshot,
+            sortMode = sortMode
         )
         if (tracked.isEmpty()) {
             return "mode=cache\ntracked=0\nmatched=0"
@@ -317,8 +361,8 @@ internal class McpGitHubTrackingTools(
             appendLine("unknown=$unknown")
             appendLine("preReleaseState=$preRelease")
             appendLine("lastRefreshMs=${snapshot.lastRefreshMs}")
-            cacheHit.entries
-                .sortedByDescending { it.value.hasUpdate == true }
+            tracked.asSequence()
+                .mapNotNull { item -> cacheHit[item.id]?.let { entry -> item.id to entry } }
                 .take(20)
                 .forEach { (id, entry) ->
                     appendLine("$id=${entry.message.toMcpGitHubMessage()}")
@@ -328,9 +372,14 @@ internal class McpGitHubTrackingTools(
 
     private fun buildGitHubTrackedSummaryFromNetwork(
         repoFilter: String,
-        sourceMode: String
+        sourceMode: String,
+        sortMode: GitHubSortMode
     ): String {
-        val rows = checkTrackedGitHub(repoFilter = repoFilter, sourceMode = sourceMode)
+        val rows = checkTrackedGitHub(
+            repoFilter = repoFilter,
+            sourceMode = sourceMode,
+            sortMode = sortMode
+        )
         val hasUpdate = rows.count { it.hasUpdate }
         val preRelease = rows.count {
             it.preReleaseVersion.isNotBlank() || it.status.contains("pre", ignoreCase = true)
@@ -342,23 +391,26 @@ internal class McpGitHubTrackingTools(
             appendLine("directApk=${rows.count { it.item.isDirectApkTrack() }}")
             appendLine("hasUpdate=$hasUpdate")
             appendLine("preReleaseState=$preRelease")
-            rows.sortedByDescending { it.hasUpdate }
-                .take(20)
+            rows.take(20)
                 .forEach { row ->
                     appendLine("${row.item.owner}/${row.item.repo}=${row.status}")
                 }
         }.trim()
     }
 
-    private fun checkTrackedGitHub(repoFilter: String, sourceMode: String): List<GitHubCheckRow> {
-        val items = GitHubTrackStore.load()
+    private fun checkTrackedGitHub(
+        repoFilter: String,
+        sourceMode: String,
+        sortMode: GitHubSortMode
+    ): List<GitHubCheckRow> {
+        val snapshot = GitHubTrackStore.loadSnapshot()
         val filtered = filterTrackedItems(
-            items = items,
+            items = snapshot.items,
             repoFilter = repoFilter,
             sourceMode = sourceMode
         )
-        return filtered.map { item ->
-            runCatching { evaluateTrackedApp(item) }.getOrElse { err ->
+        val rows = filtered.map { item ->
+            runCatching { evaluateTrackedApp(item, snapshot) }.getOrElse { err ->
                 GitHubCheckRow(
                     item = item,
                     localVersion = runCatching {
@@ -367,10 +419,17 @@ internal class McpGitHubTrackingTools(
                     stableVersion = "unknown",
                     preReleaseVersion = "",
                     status = "Check failed: ${err.message ?: "unknown"}",
-                    hasUpdate = false
+                    hasUpdate = false,
+                    hasPreReleaseUpdate = false,
+                    isPreRelease = false,
+                    addedAtMillis = snapshot.trackedAddedAtById[item.id] ?: -1L,
+                    modifiedAtMillis = snapshot.trackedModifiedAtById[item.id]
+                        ?: snapshot.trackedAddedAtById[item.id]
+                        ?: -1L
                 )
             }
         }
+        return sortCheckRows(rows, sortMode)
     }
 
     private fun parseTrackedSourceModeFilter(raw: String): GitHubTrackedSourceMode? {
@@ -383,7 +442,162 @@ internal class McpGitHubTrackingTools(
         }
     }
 
-    private fun evaluateTrackedApp(item: GitHubTrackedApp): GitHubCheckRow {
+    private fun parseGitHubSortMode(raw: String): GitHubSortMode {
+        return when (raw.trim().lowercase(Locale.ROOT)) {
+            "", "update", "updates", "update_first", "updates_first" ->
+                GitHubSortMode.UpdateFirst
+
+            "name", "name_asc", "az", "a_z" -> GitHubSortMode.NameAsc
+            "pre", "prerelease", "pre_release", "prerelease_first", "pre_release_first" ->
+                GitHubSortMode.PreReleaseFirst
+
+            "changed", "changed_newest", "modified", "modified_newest", "recently_changed" ->
+                GitHubSortMode.ChangedNewest
+
+            "changed_oldest", "modified_oldest", "oldest_changed" ->
+                GitHubSortMode.ChangedOldest
+
+            "added", "added_newest", "created", "created_newest", "recently_added" ->
+                GitHubSortMode.AddedNewest
+
+            "added_oldest", "created_oldest", "oldest_added" ->
+                GitHubSortMode.AddedOldest
+
+            else -> GitHubSortMode.UpdateFirst
+        }
+    }
+
+    private fun sortTrackedItems(
+        items: List<GitHubTrackedApp>,
+        snapshot: GitHubTrackSnapshot,
+        sortMode: GitHubSortMode
+    ): List<GitHubTrackedApp> {
+        val titleForSort: (GitHubTrackedApp) -> String = { item ->
+            item.appLabel.ifBlank { item.repo }
+                .ifBlank { item.packageName }
+                .lowercase(Locale.ROOT)
+        }
+        val addedNewest: (GitHubTrackedApp) -> Long = { item ->
+            snapshot.trackedAddedAtById[item.id]?.takeIf { it > 0L } ?: Long.MIN_VALUE
+        }
+        val addedOldest: (GitHubTrackedApp) -> Long = { item ->
+            snapshot.trackedAddedAtById[item.id]?.takeIf { it > 0L } ?: Long.MAX_VALUE
+        }
+        val modifiedNewest: (GitHubTrackedApp) -> Long = { item ->
+            snapshot.trackedModifiedAtById[item.id]?.takeIf { it > 0L }
+                ?: snapshot.trackedAddedAtById[item.id]?.takeIf { it > 0L }
+                ?: Long.MIN_VALUE
+        }
+        val modifiedOldest: (GitHubTrackedApp) -> Long = { item ->
+            snapshot.trackedModifiedAtById[item.id]?.takeIf { it > 0L }
+                ?: snapshot.trackedAddedAtById[item.id]?.takeIf { it > 0L }
+                ?: Long.MAX_VALUE
+        }
+        return when (sortMode) {
+            GitHubSortMode.UpdateFirst -> items.sortedWith(
+                compareByDescending<GitHubTrackedApp> {
+                    snapshot.checkCache[it.id]?.hasUpdate == true
+                }
+                    .thenByDescending { snapshot.checkCache[it.id]?.hasPreReleaseUpdate == true }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.NameAsc -> items.sortedBy { titleForSort(it) }
+            GitHubSortMode.PreReleaseFirst -> items.sortedWith(
+                compareByDescending<GitHubTrackedApp> {
+                    snapshot.checkCache[it.id]?.isPreRelease == true
+                }
+                    .thenByDescending { snapshot.checkCache[it.id]?.hasUpdate == true }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.ChangedNewest -> items.sortedWith(
+                compareByDescending<GitHubTrackedApp> { modifiedNewest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.ChangedOldest -> items.sortedWith(
+                compareBy<GitHubTrackedApp> { modifiedOldest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.AddedNewest -> items.sortedWith(
+                compareByDescending<GitHubTrackedApp> { addedNewest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.AddedOldest -> items.sortedWith(
+                compareBy<GitHubTrackedApp> { addedOldest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+        }
+    }
+
+    private fun sortCheckRows(
+        rows: List<GitHubCheckRow>,
+        sortMode: GitHubSortMode
+    ): List<GitHubCheckRow> {
+        val titleForSort: (GitHubCheckRow) -> String = { row ->
+            row.item.appLabel.ifBlank { row.item.repo }
+                .ifBlank { row.item.packageName }
+                .lowercase(Locale.ROOT)
+        }
+        val addedNewest: (GitHubCheckRow) -> Long = { row ->
+            row.addedAtMillis.takeIf { it > 0L } ?: Long.MIN_VALUE
+        }
+        val addedOldest: (GitHubCheckRow) -> Long = { row ->
+            row.addedAtMillis.takeIf { it > 0L } ?: Long.MAX_VALUE
+        }
+        val modifiedNewest: (GitHubCheckRow) -> Long = { row ->
+            row.modifiedAtMillis.takeIf { it > 0L }
+                ?: row.addedAtMillis.takeIf { it > 0L }
+                ?: Long.MIN_VALUE
+        }
+        val modifiedOldest: (GitHubCheckRow) -> Long = { row ->
+            row.modifiedAtMillis.takeIf { it > 0L }
+                ?: row.addedAtMillis.takeIf { it > 0L }
+                ?: Long.MAX_VALUE
+        }
+        return when (sortMode) {
+            GitHubSortMode.UpdateFirst -> rows.sortedWith(
+                compareByDescending<GitHubCheckRow> { it.hasUpdate }
+                    .thenByDescending { it.hasPreReleaseUpdate }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.NameAsc -> rows.sortedBy { titleForSort(it) }
+            GitHubSortMode.PreReleaseFirst -> rows.sortedWith(
+                compareByDescending<GitHubCheckRow> { it.isPreRelease }
+                    .thenByDescending { it.hasUpdate }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.ChangedNewest -> rows.sortedWith(
+                compareByDescending<GitHubCheckRow> { modifiedNewest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.ChangedOldest -> rows.sortedWith(
+                compareBy<GitHubCheckRow> { modifiedOldest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.AddedNewest -> rows.sortedWith(
+                compareByDescending<GitHubCheckRow> { addedNewest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+
+            GitHubSortMode.AddedOldest -> rows.sortedWith(
+                compareBy<GitHubCheckRow> { addedOldest(it) }
+                    .thenBy { titleForSort(it) }
+            )
+        }
+    }
+
+    private fun evaluateTrackedApp(
+        item: GitHubTrackedApp,
+        snapshot: GitHubTrackSnapshot
+    ): GitHubCheckRow {
         val check = GitHubReleaseCheckService.evaluateTrackedAppBlocking(appContext, item)
         return GitHubCheckRow(
             item = item,
@@ -391,7 +605,13 @@ internal class McpGitHubTrackingTools(
             stableVersion = check.stableRelease?.displayVersion.orEmpty().ifBlank { "unknown" },
             preReleaseVersion = check.preReleaseInfo,
             status = check.message.toMcpGitHubMessage(),
-            hasUpdate = check.hasUpdate == true
+            hasUpdate = check.hasUpdate == true,
+            hasPreReleaseUpdate = check.hasPreReleaseUpdate,
+            isPreRelease = check.isPreReleaseInstalled,
+            addedAtMillis = snapshot.trackedAddedAtById[item.id] ?: -1L,
+            modifiedAtMillis = snapshot.trackedModifiedAtById[item.id]
+                ?: snapshot.trackedAddedAtById[item.id]
+                ?: -1L
         )
     }
 

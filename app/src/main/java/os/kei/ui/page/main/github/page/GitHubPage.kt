@@ -317,7 +317,12 @@ fun GitHubPage(
             onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
             onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,
             onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
-            onRefreshAllTracked = { actions.refreshAllTracked(showToast = true) },
+            onRefreshVisibleTracked = {
+                actions.refreshVisibleTracked(
+                    items = contentDerivedState.trackedUi.sortedTracked,
+                    showToast = true
+                )
+            },
             onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
             onFailedFilterToggle = { enabled ->
                 state.trackedFilterMode = if (enabled) {

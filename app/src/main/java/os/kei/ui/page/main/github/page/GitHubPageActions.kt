@@ -254,28 +254,58 @@ internal class GitHubPageActions(
                 showToast = showToast,
                 forceRefresh = forceRefresh
             ) {
-                val expandedItemIds = env.state.apkAssetExpanded
-                    .filterValues { it }
-                    .keys
-                    .toSet()
-                if (expandedItemIds.isEmpty()) return@refreshAllTracked
+                reloadExpandedAssetPanelsAfterRefresh()
+            }
+        }
+    }
 
-                env.state.trackedItems.forEach { item ->
-                    if (item.id !in expandedItemIds) return@forEach
-                    val itemState = env.state.checkStates[item.id] ?: return@forEach
-                    val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
-                    if (canLoadApkAssets(item, itemState)) {
-                        assetActions.clearApkAssetCache(item, itemState)
-                        assetActions.loadApkAssets(
-                            item = item,
-                            itemState = itemState,
-                            toggleOnlyWhenCached = false,
-                            includeAllAssets = includeAllAssets
-                        )
-                    } else {
-                        assetActions.clearApkAssetUiState(item.id)
-                    }
-                }
+    fun refreshVisibleTracked(
+        items: List<GitHubTrackedApp>,
+        showToast: Boolean = true,
+        forceRefresh: Boolean = true
+    ) {
+        if (items.isEmpty()) {
+            refreshActions.refreshTrackedBatch(
+                targets = emptyList(),
+                showToast = showToast,
+                forceRefresh = forceRefresh
+            )
+            return
+        }
+        val targetIds = items.mapTo(LinkedHashSet()) { it.id }
+        env.scope.launch {
+            refreshActions.reloadApps(forceRefresh = true)
+            refreshActions.refreshTrackedBatch(
+                targets = items,
+                showToast = showToast,
+                forceRefresh = forceRefresh
+            ) {
+                reloadExpandedAssetPanelsAfterRefresh(targetIds = targetIds)
+            }
+        }
+    }
+
+    private fun reloadExpandedAssetPanelsAfterRefresh(targetIds: Set<String>? = null) {
+        val expandedItemIds = env.state.apkAssetExpanded
+            .filterValues { it }
+            .keys
+            .filterTo(HashSet()) { targetIds == null || it in targetIds }
+        if (expandedItemIds.isEmpty()) return
+
+        env.state.trackedItems.forEach { item ->
+            if (item.id !in expandedItemIds) return@forEach
+            val itemState = env.state.checkStates[item.id] ?: return@forEach
+            val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
+            if (canLoadApkAssets(item, itemState)) {
+                assetActions.clearApkAssetCache(item, itemState)
+                assetActions.loadApkAssets(
+                    item = item,
+                    itemState = itemState,
+                    toggleOnlyWhenCached = false,
+                    includeAllAssets = includeAllAssets
+                )
+            } else {
+                assetActions.clearApkAssetUiState(item.id)
             }
         }
     }

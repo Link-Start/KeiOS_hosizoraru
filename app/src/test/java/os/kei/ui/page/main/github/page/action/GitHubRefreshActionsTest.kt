@@ -47,4 +47,24 @@ class GitHubRefreshActionsTest {
 
         assertEquals(emptyList(), selected)
     }
+
+    @Test
+    fun `visible refresh keeps requested order and removes inactive ids`() {
+        val selected = selectActiveTrackedRefreshTargetIds(
+            requestedTrackIds = listOf("beta", "missing", "alpha", "beta", " gamma "),
+            validTrackIds = setOf("alpha", "beta", "gamma", "delta")
+        )
+
+        assertEquals(listOf("beta", "alpha", "gamma"), selected)
+    }
+
+    @Test
+    fun `visible refresh returns empty list when no active targets exist`() {
+        val selected = selectActiveTrackedRefreshTargetIds(
+            requestedTrackIds = listOf("one", "two"),
+            validTrackIds = emptySet()
+        )
+
+        assertEquals(emptyList(), selected)
+    }
 }

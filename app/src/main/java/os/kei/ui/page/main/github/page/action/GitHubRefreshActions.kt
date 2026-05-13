@@ -73,14 +73,22 @@ internal class GitHubRefreshActions(
         if (state.refreshAllJob?.isActive != true) return
         state.refreshAllJob?.cancel()
         state.refreshAllJob = null
-        val trackedCount = state.trackedItems.size
+        val activeRefreshIds = state.refreshTargetIds.takeIf { it.isNotEmpty() }
+            ?: state.trackedItems.mapTo(HashSet()) { it.id }
+        val trackedCount = activeRefreshIds.size
         if (trackedCount > 0) {
             val checkedCount = (state.refreshProgress * trackedCount.toFloat()).toInt()
                 .coerceIn(0, trackedCount)
-            val updatableCount = state.trackedItems.count { state.checkStates[it.id]?.hasUpdate == true }
+            val updatableCount = state.trackedItems.count {
+                it.id in activeRefreshIds && state.checkStates[it.id]?.hasUpdate == true
+            }
             val preReleaseUpdateCount =
-                state.trackedItems.count { state.checkStates[it.id]?.hasPreReleaseUpdate == true }
-            val failedCount = state.trackedItems.count { state.checkStates[it.id]?.failed == true }
+                state.trackedItems.count {
+                    it.id in activeRefreshIds && state.checkStates[it.id]?.hasPreReleaseUpdate == true
+                }
+            val failedCount = state.trackedItems.count {
+                it.id in activeRefreshIds && state.checkStates[it.id]?.failed == true
+            }
             scope.launch {
                 repository.notifyRefreshCancelled(
                     context = context,
@@ -102,6 +110,7 @@ internal class GitHubRefreshActions(
             OverviewRefreshState.Idle
         }
         state.refreshProgress = 0f
+        state.refreshTargetIds = emptySet()
         env.toast(reason)
     }
 
@@ -430,27 +439,72 @@ internal class GitHubRefreshActions(
         forceRefresh: Boolean = false,
         onFinished: (() -> Unit)? = null
     ) {
-        val snapshot = state.trackedItems.toList()
+        refreshTrackedBatchInternal(
+            requestedTargetIds = state.trackedItems.map { it.id },
+            showToast = showToast,
+            forceRefresh = forceRefresh,
+            clearAllCheckCache = true,
+            updateGlobalRefreshTimestamp = true,
+            onFinished = onFinished
+        )
+    }
+
+    fun refreshTrackedBatch(
+        targets: List<GitHubTrackedApp>,
+        showToast: Boolean = true,
+        forceRefresh: Boolean = false,
+        onFinished: (() -> Unit)? = null
+    ) {
+        refreshTrackedBatchInternal(
+            requestedTargetIds = targets.map { it.id },
+            showToast = showToast,
+            forceRefresh = forceRefresh,
+            clearAllCheckCache = false,
+            updateGlobalRefreshTimestamp = false,
+            onFinished = onFinished
+        )
+    }
+
+    private fun refreshTrackedBatchInternal(
+        requestedTargetIds: List<String>,
+        showToast: Boolean,
+        forceRefresh: Boolean,
+        clearAllCheckCache: Boolean,
+        updateGlobalRefreshTimestamp: Boolean,
+        onFinished: (() -> Unit)? = null
+    ) {
+        val activeItemsById = state.trackedItems.associateBy { it.id }
+        val targetIds = selectActiveTrackedRefreshTargetIds(
+            requestedTrackIds = requestedTargetIds,
+            validTrackIds = activeItemsById.keys
+        )
+        val snapshot = targetIds.mapNotNull { activeItemsById[it] }
         if (snapshot.isEmpty()) {
             if (showToast) {
                 env.toast(R.string.github_toast_no_checkable_item)
             }
-            state.overviewRefreshState = OverviewRefreshState.Idle
-            state.refreshProgress = 0f
-            repository.cancelRefreshNotification(context)
+            if (clearAllCheckCache && state.trackedItems.isEmpty()) {
+                state.overviewRefreshState = OverviewRefreshState.Idle
+                state.refreshProgress = 0f
+                state.refreshTargetIds = emptySet()
+                repository.cancelRefreshNotification(context)
+            }
             return
         }
         state.refreshAllJob?.cancel()
         state.refreshAllJob = scope.launch {
             val previousCheckStatesById = state.checkStates.toMap()
+            state.refreshTargetIds = targetIds.toSet()
             assetActions.clearApkAssetCachesForTargetsNow(
                 targets = snapshot.map { item ->
                     item to (previousCheckStatesById[item.id] ?: VersionCheckUi())
                 },
                 allowLatestReleaseFallback = true
             )
-            repository.clearCheckCache()
-            state.lastRefreshMs = 0L
+            if (clearAllCheckCache) {
+                repository.clearCheckCache()
+                state.lastRefreshMs = 0L
+            }
             state.overviewRefreshState = OverviewRefreshState.Refreshing
             state.refreshProgress = 0f
             val totalCount = snapshot.size
@@ -582,7 +636,9 @@ internal class GitHubRefreshActions(
             } else {
                 OverviewRefreshState.Completed
             }
-            state.lastRefreshMs = System.currentTimeMillis()
+            if (updateGlobalRefreshTimestamp) {
+                state.lastRefreshMs = System.currentTimeMillis()
+            }
             state.refreshProgress = 1f
             persistCheckCacheNow(state.lastRefreshMs)
             onFinished?.invoke()
@@ -593,6 +649,7 @@ internal class GitHubRefreshActions(
                 updatableCount = updatableCount,
                 failedCount = failedCount
             )
+            state.refreshTargetIds = emptySet()
             state.refreshAllJob = null
         }
     }
@@ -862,5 +919,18 @@ internal fun selectImmediateTrackMutationRefreshIds(
         .filter { it.isNotBlank() && it in validTrackIds }
         .distinct()
         .take(limit)
+        .toList()
+}
+
+internal fun selectActiveTrackedRefreshTargetIds(
+    requestedTrackIds: Iterable<String>,
+    validTrackIds: Set<String>
+): List<String> {
+    if (validTrackIds.isEmpty()) return emptyList()
+    return requestedTrackIds
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() && it in validTrackIds }
+        .distinct()
         .toList()
 }

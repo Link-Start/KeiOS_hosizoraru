@@ -3,15 +3,16 @@
 [中文版本 (CN)](FEATURES_CN.md)
 
 KeiOS is built as a daily Android utility console. The app brings together system inspection, MCP
-service management, GitHub Releases / Actions tracking, GitHub Star import, repository discovery,
-Blue Archive office reminders, and a Student Guide media browser in one phone-first interface.
+service management, GitHub Releases / Actions tracking, direct APK tracking, GitHub Star import,
+repository discovery, Blue Archive office reminders, JSON data migration, local issue feedback, and
+a Student Guide media browser in one phone-first interface.
 
 ## Home
 
-Home is the status hub. It summarizes MCP runtime state, GitHub stable/prerelease update counts,
-cache status, Actions/share-import readiness, BA AP values, cafe AP, AP headroom, active BA server,
-Shizuku status, and the currently visible page/card layout. Users can adjust bottom-page visibility
-and Home summary cards from the top action area.
+Home is the status hub. It summarizes MCP runtime state, GitHub stable/prerelease/direct-source
+update state, cache status, Actions/share-import readiness, BA AP values, cafe AP, AP headroom,
+active BA server, Shizuku status, and the currently visible page/card layout. Users can adjust
+bottom-page visibility and Home summary cards from the top action area.
 
 ## OS
 
@@ -21,6 +22,7 @@ The OS page focuses on device and system inspection:
 - Search across OS parameters and activity entries.
 - Configurable activity shortcut cards, including a Google System Service sample card.
 - Separate import/export flows for activity cards and shell cards with preview and merge handling.
+- Background shortcut action execution for refresh and page-entry flows.
 - Shizuku-powered shell runner with command history, formatted output, timeout controls, dangerous-command confirmation, and save-to-card support.
 - Cached system snapshots for faster return visits.
 - v2 liquid floating dock controls for add, refresh, search, and page actions.
@@ -40,24 +42,44 @@ The MCP page manages a local KeiOS MCP server:
 
 ## GitHub
 
-The GitHub page tracks APK releases from GitHub projects:
+The GitHub page tracks APK updates from GitHub projects and direct APK links:
 
-- Stable and prerelease update checks for tracked repositories.
+- Stable and prerelease update checks for tracked repositories, plus remote-version checks for
+  direct APK sources.
 - GitHub API strategy configuration with optional token support shared by Releases and Actions.
-- Release asset reading, APK download routing, and latest-release download actions.
+- Release asset reading, APK download routing, app-managed install routing, and latest-release
+  download actions.
 - GitHub Actions browser for branches, workflows, runs, and artifacts, with nightly.link public lookup and token-backed GitHub API lookup.
+- Actions recommended-run update checks, app-icon notifications, debug notification testing, and
+  notification deep links into the tracked project's Actions sheet.
 - Branch recommendation that considers the default branch, recent activity, successful runs, and artifact availability.
 - Artifact ranking that highlights Android packages, build types, universal packages, recency, and previous download history.
 - Tracked-item editing with app package linkage, installed-app matching, package-name scanning from
-  latest stable release APKs, and reverse repository scanning from package name plus app label.
-- Share-import flow for repository, release, tag, and direct APK links with window dimming support.
+  latest stable release APKs, reverse repository scanning from package name plus app label, source
+  mode switching, and direct-link import/export compatibility.
+- Deep repository profiles, health scoring, archived/fork signals, release-note parsing,
+  release-note translation, precise APK version modes, and runtime cache freshness checks.
+- Share-import flow for repository, release, tag, and direct APK links with transparent window
+  handling, notification-first/sheet-first routing, external installer handoff, and app-managed
+  Shizuku delivery.
+- Managed install surfaces with remote/local APK comparison, manifest inspection, ABI/SDK/package
+  hints, versionName/versionCode display, install confirmation notifications, and Shizuku
+  PackageInstaller session handling.
 - Star List import from authenticated stars, public user stars, and public Star List URLs, with list
   discovery, search, multi-select filters, Android/APK quality classification, release APK
   verification, and import confirmation.
 - Strategy diagnostics that compare Atom and API behavior for release checks, package-name scans,
   and reverse repository scans.
-- Expandable overview cards, refresh notifications, local cache summaries, and self-track shortcut
-  for KeiOS.
+- Expandable overview cards, refresh notifications, local cache summaries, source filters, tracked
+  item focus/auto-scroll, and self-track shortcut for KeiOS.
+
+## Import, Feedback, And Migration
+
+- JSON import activity for KeiOS data migration with preview, metric tiles, result navigation, and
+  multi-schema routing for OS card transfer data.
+- Local GitHub issue assistant with structured log levels, issue markdown generation, and
+  telemetry-free diagnostics.
+- Shared import/export services for OS cards, shell cards, GitHub tracks, and student-guide data.
 
 ## BA Office
 
@@ -66,6 +88,7 @@ The BA page acts as a Blue Archive office dashboard:
 - AP and cafe AP tracking with server-aware timing.
 - AP threshold notifications, cafe visit reminders, arena refresh reminders, and BA-specific Super
   Island presentation using progress and countdown templates.
+- Shortcut-triggered AP and cafe AP Super Island notifications.
 - Server-specific nickname and friend-code ID cards, plus friend code copy and office overview
   cards.
 - Server, cafe level, AP threshold, media rotation, and custom media save-location settings.
@@ -95,6 +118,7 @@ Settings collect the runtime controls in one place:
 - Notification permission, battery optimization, OEM autostart, app-list access, and Shizuku status.
 - Super Island notification style, HyperOS compatibility bypass, and restore-delay tuning.
 - Copy/text-selection mode, cache diagnostics, debug logs, exportable log ZIPs, and clear-cache actions.
+- Local GitHub issue feedback and structured log-level controls.
 - Debug component lab and liquid catalog for checking shared chrome, buttons, dropdowns, sliders,
   progress bars, and dock behavior.
 - Simplified Chinese, English, and Japanese resources, with BA terms, Android settings, GitHub, shell, and MCP skill text localized for display surfaces.
@@ -106,5 +130,5 @@ Settings collect the runtime controls in one place:
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
 - UI stack: Jetpack Compose `1.11.1`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
   chrome, MMKV-backed preferences.
-- Build baseline: Java 21, Kotlin `2.3.21`, Android Gradle Plugin `9.2.1`, and Gradle project
-  tooling.
+- Build baseline: Java 21, Kotlin `2.3.21`, Android Gradle Plugin `9.2.1`, generated Baseline
+  Profiles, and Gradle project tooling.

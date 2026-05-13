@@ -3,13 +3,12 @@
 [English Version](FEATURES.md)
 
 KeiOS 是一个面向日常使用的 Android 工具台。它把系统参数查看、MCP 服务管理、GitHub Releases / Actions
-追踪、GitHub Star 导入、仓库发现、Blue Archive 办公室提醒和学生图鉴媒体浏览放在同一个移动端界面里。
+追踪、直链 APK 追踪、GitHub Star 导入、仓库发现、Blue Archive 办公室提醒、JSON 数据迁移、本地 Issue 反馈和学生图鉴媒体浏览放在同一个移动端界面里。
 
 ## Home
 
-Home 是状态入口，集中展示 MCP 运行状态、GitHub 稳定版/预发版更新数、缓存状态、Actions / 分享导入状态、BA
-AP、咖啡厅 AP、AP 余量、当前 BA 服务器、Shizuku 状态，以及当前底栏板块和 Home 卡片配置。顶部操作区可以调整底栏板块显示和
-Home 摘要卡片。
+Home 是状态入口，集中展示 MCP 运行状态、GitHub 稳定版 / 预发版 / 直链来源更新状态、缓存状态、Actions / 分享导入状态、BA
+AP、咖啡厅 AP、AP 余量、当前 BA 服务器、Shizuku 状态，以及当前底栏板块和 Home 卡片配置。顶部操作区可以调整底栏板块显示和 Home 摘要卡片。
 
 ## OS
 
@@ -19,6 +18,7 @@ OS 页面聚焦设备与系统信息：
 - 支持搜索 OS 参数和活动入口。
 - 可配置活动快捷卡片，内置 Google 系统服务示例卡。
 - 活动卡片和 Shell 卡片提供独立导入导出入口，导入前会预览并合并变化。
+- 后台快捷方式动作支持刷新与页面入口类流程。
 - 基于 Shizuku 的 Shell 运行器，支持命令历史、格式化输出、超时控制、高风险命令确认和保存到卡片。
 - 系统快照缓存用于提升回访速度。
 - v2 液态浮动 dock 承载添加、刷新、搜索和页面动作。
@@ -37,20 +37,29 @@ MCP 页面用于管理本地 KeiOS MCP Server：
 
 ## GitHub
 
-GitHub 页面用于追踪 GitHub 项目的 APK 发布：
+GitHub 页面用于追踪 GitHub 项目与直链 APK 的更新：
 
-- 支持稳定版和预发版更新检查。
+- 支持 GitHub 仓库的稳定版 / 预发版检查，也支持直链 APK 的远端版本检查。
 - 支持 GitHub API 抓取方案配置，Token 可同时服务 Releases 与 Actions。
-- 支持读取 Release 资源、APK 下载路由和最新发布下载。
+- 支持读取 Release 资源、APK 下载路由、本 App 托管安装路由和最新发布下载。
 - 支持 GitHub Actions 的分支、workflow、run、artifact 浏览，可走 nightly.link 公开链路或 GitHub API Token 链路。
+- Actions 推荐 run 更新检查、应用图标通知、调试通知测试，并支持从通知深链进入对应追踪项目的 Actions sheet。
 - 分支推荐会综合默认分支、近期活跃度、成功 run 与 artifact 可用性。
 - Artifact 排序会突出 Android 包、构建类型、universal 包、更新时间和历史下载记录。
-- 跟踪项可关联包名，并与本机已安装应用匹配；支持从最新稳定 release APK 扫描包名，也支持按包名和应用名反扫仓库。
-- 支持从仓库、Release、Tag、直链 APK 分享导入，提供窗口背景变暗以增强聚焦。
+- 跟踪项可关联包名，并与本机已安装应用匹配；支持从最新稳定 release APK 扫描包名、按包名和应用名反扫仓库、切换来源模式，并保持直链导入导出兼容。
+- 深度仓库画像、健康评分、归档 / fork 信号、发行日志解析、发行日志翻译、精确 APK 版本模式和运行时缓存新鲜度检查。
+- 支持从仓库、Release、Tag、直链 APK 分享导入，提供透明窗口处理、通知优先 / Sheet 优先路由、外部安装器联动和本 App Shizuku 交付。
+- 托管安装界面提供远端 / 本机 APK 对比、Manifest 检查、ABI / SDK / 包名提示、versionName / versionCode 展示、安装确认通知和 Shizuku PackageInstaller Session。
 - 支持从自己的 stars、他人的公开 stars、公开 Star List 链接导入项目，导入页提供分类发现、搜索、多选筛选、Android/APK
   质量分类、release APK 验证和确认弹窗。
 - 抓取方案诊断可对比 Atom 与 API 在 release 检查、包名扫描、仓库反扫上的表现。
-- 支持可展开总览卡、刷新通知、本地缓存摘要和 KeiOS 自追踪快捷入口。
+- 支持可展开总览卡、刷新通知、本地缓存摘要、来源过滤、追踪卡聚焦 / 自动滚动和 KeiOS 自追踪快捷入口。
+
+## 导入、反馈与迁移
+
+- JSON 导入 Activity 支持 KeiOS 数据迁移，提供预览、指标卡片、结果跳转，并为 OS 卡片迁移数据提供多 schema 路由。
+- 本地 GitHub Issue 助手支持结构化日志等级、Issue Markdown 生成和无遥测诊断。
+- OS 卡片、Shell 卡片、GitHub 追踪和学生图鉴数据共享导入导出服务。
 
 ## BA 办公室
 
@@ -58,6 +67,7 @@ BA 页面是 Blue Archive 办公室仪表盘：
 
 - 追踪 AP 与咖啡厅 AP，并按不同服务器时区计算。
 - 支持进度与倒计时模板的 BA 专用超级岛显示。
+- 支持从快捷方式触发 AP 与咖啡厅 AP 超级岛通知。
 - 支持按服务器独立的昵称 / 好友码 ID 卡、好友码复制和办公室总览卡。
 - 支持服务器、咖啡厅等级、AP 阈值、媒体旋转、自定义媒体保存位置等配置。
 - 活动日历与卡池卡片带服务器上下文和紧凑时间布局，可配置通知并跳转到对应学生图鉴。
@@ -82,6 +92,7 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - 通知权限、电池优化、OEM 自启动、应用列表访问和 Shizuku 状态。
 - 超级岛通知样式、HyperOS 兼容绕过和恢复延迟调节。
 - 复制/文本选择模式、缓存诊断、调试日志、日志 ZIP 导出和一键清理缓存。
+- 本地 GitHub Issue 反馈与结构化日志等级控制。
 - 调试组件实验室与 Liquid 组件样张用于检查共享 chrome、按钮、下拉菜单、滑杆、进度条和 dock 行为。
 - 简体中文、English、日本語 资源已覆盖主要显示面，并针对 BA 术语、Android 设置、GitHub、Shell 与 MCP Skill 做本地化。
 
@@ -92,4 +103,4 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - Android 基线：Android 15+（`minSdk 35`），`targetSdk=37`。
 - UI 技术栈：Jetpack Compose `1.11.1`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
   Chrome、MMKV 偏好存储。
-- 构建基线：Java 21、Kotlin `2.3.21`、Android Gradle Plugin `9.2.1` 与 Gradle 项目工具链。
+- 构建基线：Java 21、Kotlin `2.3.21`、Android Gradle Plugin `9.2.1`、已生成的 Baseline Profiles 与 Gradle 项目工具链。

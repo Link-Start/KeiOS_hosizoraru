@@ -5,7 +5,7 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14)。
+- 当前公开标签基线为 [KeiOS v1.5.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.5.0)。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -19,6 +19,7 @@
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。
 - Kotlin 插件：`2.3.21`；Android Gradle Plugin：`9.2.1`；Compose 运行库：`1.11.1`。
+- Release 与 Benchmark APK 会合入 `app/src/main/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
 
 ### 版本号规则

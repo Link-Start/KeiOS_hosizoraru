@@ -22,10 +22,10 @@
 </p>
 
 KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
-Releases / Actions workflows, GitHub Star import, and Blue Archive helper tools. It combines a
-Compose + Miuix interface with v2 liquid-glass chrome, dense status cards, import/export tools,
-localized MCP skills, notification helpers, repository discovery,
-and cache diagnostics.
+Releases / Actions workflows, GitHub Star import, direct APK tracking, and Blue Archive helper
+tools. It combines a Compose + Miuix interface with v2 liquid-glass chrome, dense status cards,
+import/export tools, localized MCP skills, notification helpers, repository discovery, feedback
+issue drafting, cache diagnostics, and generated Baseline Profiles.
 
 ## Project Signals
 
@@ -38,7 +38,7 @@ and cache diagnostics.
 | UI stack             | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack        | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages            | Simplified Chinese, English, Japanese                |
-| Current tag baseline | `v1.4.1`                                             |
+| Current tag baseline | `v1.5.0`                                             |
 
 ## Quick Links
 
@@ -60,17 +60,44 @@ and cache diagnostics.
   discovery/tracking, and BA cache inspection.
 - GitHub tracking for Releases and Actions artifacts, with Atom/API strategy comparison,
   package-name scanning from release APKs, reverse repository scanning from installed packages,
-  share-import links, app linkage, and Star List import.
+  direct APK source tracking, share-import links, app linkage, and Star List import.
 - GitHub Star import activity for authenticated stars, public user stars, and public Star List URLs,
   with list discovery, quality filters, multi-select import, APK verification, and exit
   confirmation.
+- GitHub managed install and share-import handoff paths for Shizuku-backed APK delivery, with
+  notification/Super Island progress, manifest inspection, versionCode display, and install
+  confirmation surfaces.
+- GitHub Actions update notifications with tracked-app icons, deep links into the Actions sheet,
+  recommended run targeting, and debug notification testing.
+- JSON import for multi-schema KeiOS data migration, including OS card transfer data and routed
+  result screens.
 - BA office helpers for AP, cafe visit, arena refresh reminders, server-aware calendar/pool data,
-  per-server ID cards, media settings, Super Island notifications, and student-guide entry points.
+  per-server ID cards, media settings, AP/cafe Super Island notifications, and student-guide entry
+  points.
 - Student Guide catalog with full-page search, sorting, media cache, voice-language labels, BGM
   favorites, gallery viewing, media export, liquid bottom dock, and import/export for favorites.
 - Settings for theme, motion, v2 liquid-glass components, bottom-bar effect policy, search focus
   behavior, grip-aware floating docks, background images, app language, permissions, cache
-  diagnostics, logs, and notification compatibility.
+  diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
+  notification compatibility.
+
+## v1.5.0 Highlights
+
+- GitHub tracking now supports direct APK URLs alongside GitHub repositories, with separate source
+  modes, import/export compatibility, filters, fair refresh scheduling, and remote version wording
+  for direct-link cards.
+- Repository intelligence was rebuilt around deep repository profiles, health scoring, archived/fork
+  signals, release-note parsing, release-note translation, precise APK version modes, and richer
+  cache freshness checks.
+- Share import keeps the original external-installer handoff and adds app-managed Shizuku delivery,
+  live progress, package-scoped notification actions, manifest metadata, and versionCode-aware
+  tracking.
+- Actions tracking gained recommended-run checks, app-icon notifications, Super Island refinements,
+  debug notification testing, and notification taps that open the tracked project's Actions sheet.
+- Performance work added a Baseline Profile module, committed generated profiles, background
+  Markdown parsing, immutable UI snapshots, Lazy-list tuning, and a Compose audit gate.
+- The app now includes JSON import, local GitHub issue feedback, background shortcut execution, BA
+  cafe/AP notification upgrades, refined liquid action menus, and stricter lint/R8/resource hygiene.
 
 Read the full feature tour:
 - [Feature Overview (EN)](readme/FEATURES.md)
@@ -79,7 +106,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.4.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.4.1).
+- Current stable tag: [v1.5.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.5.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Kotlin `2.3.21`, Compose `1.11.1`, Android
   Gradle Plugin `9.2.1`.

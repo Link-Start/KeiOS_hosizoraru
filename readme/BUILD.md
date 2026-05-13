@@ -6,7 +6,7 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.3.14](https://github.com/hosizoraru/KeiOS/releases/tag/v1.3.14).
+  is [KeiOS v1.5.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.5.0).
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -20,6 +20,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
 - Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.1`; Compose runtime: `1.11.1`.
+- Release and benchmark APKs include generated Baseline Profiles from
+  `app/src/main/generated/baselineProfiles/`.
 - Keep local JDK paths and tokens in untracked local config files.
 
 ### Versioning

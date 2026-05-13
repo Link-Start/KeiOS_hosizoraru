@@ -20,6 +20,8 @@
 - Default config resource: `{{RESOURCE_CONFIG_URI}}`
 - Mode config template: `{{RESOURCE_CONFIG_TEMPLATE_URI}}`
 - Bootstrap prompt: `{{PROMPT_BOOTSTRAP}}`
+- Workflow prompt: `{{PROMPT_WORKFLOW_PLAN}}`
+- Workflow blueprints: `{{RESOURCE_WORKFLOWS_URI}}`
 - Claw onboarding: `keios.mcp.claw.skill.guide(mode=auto)`
 - Use `mode=local` for same-device clients and `mode=lan` for cross-device debugging.
 
@@ -30,6 +32,7 @@
 
 - `keios.health.ping`, `keios.app.info`, `keios.app.version`, `keios.shizuku.status`
 - `keios.mcp.runtime.status`, `keios.mcp.runtime.logs`, `keios.mcp.runtime.config`
+- `keios.mcp.workflow.blueprints`
 - `keios.home.overview.snapshot`
 
 ## OS And System
@@ -86,10 +89,22 @@
 10. BA cache audit: `keios.ba.snapshot` -> `keios.ba.calendar.cache` or `keios.ba.pool.cache` ->
    `keios.ba.guide.cache.inspect`
 
+## Claw Workflows
+
+- Read `{{RESOURCE_WORKFLOWS_URI}}` for scheduled-task and composed-skill blueprints.
+- Read `{{RESOURCE_WORKFLOW_TEMPLATE_URI}}` for a single blueprint by id.
+- Use prompt `{{PROMPT_WORKFLOW_PLAN}}` with `goal`, `cadence`, `workflow`, and `delivery` when
+  creating a Claw task or reusable skill.
+- Use `keios.mcp.workflow.blueprints(mode=list|detail|skill, workflow=...)` when the client can
+  call tools more easily than reading resources.
+- Schedule storage belongs to the client. KeiOS MCP tools should run only when the scheduled task
+  fires.
+
 ## Output Contract
 
 - Tools return compact `key=value` lines and fixed list rows.
 - Import tools preview by default; writes require `apply=true`.
+- Workflow tools are read-only planning helpers; write tools still need explicit `apply=true`.
 - Start `limit` at 20 to 80 for audits.
 - `repoFilter` accepts owner/repo, package name, or app label.
 - `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.

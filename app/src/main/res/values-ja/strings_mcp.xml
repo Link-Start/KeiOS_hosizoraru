@@ -9,8 +9,8 @@
     <string name="mcp_skill_section_default_content">内容</string>
     <string name="mcp_skill_section_empty_content">内容なし</string>
     <string name="mcp_skill_claw_card_title">Claw Skill クイック設定</string>
-    <string name="mcp_skill_claw_card_summary">下のプロンプトを Claw に送ってください。`keios.mcp.claw.skill.guide` を呼び出し、返された SKILL.md を Claw Skill として登録します。</string>
-    <string name="mcp_skill_claw_prompt">現在の KeiOS MCP サービスに接続し、keios.mcp.claw.skill.guide(mode=auto) を呼び出してください。レスポンス内の SKILL.md 内容を “KeiOS MCP Skill” という名前の Claw Skill として登録し、その後 keios.health.ping と keios.mcp.runtime.status を実行して接続を確認してください。</string>
+    <string name="mcp_skill_claw_card_summary">下のプロンプトを Claw に送ってください。SKILL.md を登録し、定期タスクや複合 skill 用の workflow blueprint を読み取ります。</string>
+    <string name="mcp_skill_claw_prompt">現在の KeiOS MCP サービスに接続し、keios.mcp.claw.skill.guide(mode=auto) を呼び出してください。レスポンス内の SKILL.md 内容を “KeiOS MCP Skill” という名前の Claw Skill として登録し、その後 keios.health.ping と keios.mcp.runtime.status を実行して接続を確認してください。定期タスクや複合 skill を作成する場合は keios://skill/workflows.md を読み取り、keios.mcp.workflow.plan または keios.mcp.workflow.blueprints を使用してください。</string>
     <string name="mcp_skill_action_copy_claw_prompt">プロンプトをコピー</string>
     <string name="mcp_skill_toast_claw_prompt_copied">Claw プロンプトをコピーしました</string>
     <string name="page_mcp_title">MCP</string>

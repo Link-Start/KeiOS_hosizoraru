@@ -27,7 +27,8 @@ internal object McpToolCatalog {
         "keios.mcp.runtime.status",
         "keios.mcp.runtime.logs",
         "keios.mcp.runtime.config",
-        "keios.mcp.claw.skill.guide"
+        "keios.mcp.claw.skill.guide",
+        "keios.mcp.workflow.blueprints"
     )
 
     val homeToolNames = listOf(
@@ -176,6 +177,10 @@ internal object McpToolCatalog {
             McpSchema.string("mode"),
             McpSchema.string("endpoint"),
             McpSchema.string("serverName")
+        ),
+        "keios.mcp.workflow.blueprints" to listOf(
+            McpSchema.string("mode"),
+            McpSchema.string("workflow")
         ),
         "keios.system.topinfo.query" to listOf(McpSchema.string("query"), McpSchema.integer("limit")),
         "keios.os.activity.cards" to listOf(
@@ -362,6 +367,7 @@ internal object McpToolCatalog {
         "keios.mcp.runtime.logs" to "Read MCP runtime logs. Args: limit=1..200.",
         "keios.mcp.runtime.config" to "Generate streamable HTTP client config. Args: mode=auto|local|lan, endpoint, serverName.",
         "keios.mcp.claw.skill.guide" to "Generate Claw onboarding with config JSON, resource URIs, and SKILL.md.",
+        "keios.mcp.workflow.blueprints" to "List or read Claw workflow blueprints for scheduled tasks and composed skills. Args: mode=list|detail|skill, workflow.",
         "keios.home.overview.snapshot" to "Read Home overview data for MCP, GitHub, and Blue Archive.",
         "keios.system.topinfo.query" to "Query cached system TopInfo values. Args: query, limit.",
         "keios.os.cards.snapshot" to "Read OS page visibility, expansion state, cache footprint, and card counts.",
@@ -409,6 +415,7 @@ internal object McpToolCatalog {
         "keios.mcp.runtime.logs" to "读取 MCP 运行日志。参数：limit=1..200。",
         "keios.mcp.runtime.config" to "生成 streamable HTTP 客户端配置。参数：mode=auto|local|lan、endpoint、serverName。",
         "keios.mcp.claw.skill.guide" to "生成 Claw 接入指南，包含配置 JSON、资源 URI 与 SKILL.md。",
+        "keios.mcp.workflow.blueprints" to "列出或读取 Claw 工作流蓝图，用于定时任务与组合技能。参数：mode=list|detail|skill、workflow。",
         "keios.home.overview.snapshot" to "读取主页概览数据，包含 MCP、GitHub 与 Blue Archive。",
         "keios.system.topinfo.query" to "查询已缓存的系统 TopInfo 值。参数：query、limit。",
         "keios.os.cards.snapshot" to "读取 OS 页可见性、展开状态、缓存占用与卡片数量。",
@@ -456,6 +463,7 @@ internal object McpToolCatalog {
         "keios.mcp.runtime.logs" to "MCP 実行ログを読み取ります。引数: limit=1..200。",
         "keios.mcp.runtime.config" to "streamable HTTP クライアント設定を生成します。引数: mode=auto|local|lan、endpoint、serverName。",
         "keios.mcp.claw.skill.guide" to "Claw 導入ガイドを生成します。設定 JSON、resource URI、SKILL.md を含みます。",
+        "keios.mcp.workflow.blueprints" to "Claw の定期タスクと複合 skill 向け workflow blueprint を一覧または取得します。引数: mode=list|detail|skill、workflow。",
         "keios.home.overview.snapshot" to "MCP、GitHub、Blue Archive を含む Home 概要データを読み取ります。",
         "keios.system.topinfo.query" to "キャッシュ済み system TopInfo 値を検索します。引数: query、limit。",
         "keios.os.cards.snapshot" to "OS ページの表示状態、展開状態、キャッシュ容量、カード数を読み取ります。",

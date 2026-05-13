@@ -39,6 +39,7 @@ class LocalMcpService(
     )
     private val runtimeTools = McpRuntimeTools(environment)
     private val skillContent = McpSkillContent(environment, runtimeTools::buildRuntimeConfigJson)
+    private val workflowContent = McpWorkflowContent(environment)
     private val homeTools = McpHomeTools(environment)
     private val systemOsTools = McpSystemOsTools(environment)
     private val githubTrackingTools = McpGitHubTrackingTools(environment)
@@ -102,6 +103,7 @@ class LocalMcpService(
 
         runtimeTools.register(server)
         skillContent.registerClawGuideTool(server)
+        workflowContent.registerTools(server)
         homeTools.register(server)
         systemOsTools.register(server)
         githubTrackingTools.register(server)
@@ -109,7 +111,9 @@ class LocalMcpService(
         githubActionsTools.register(server)
         baTools.register(server)
         skillContent.registerResources(server)
+        workflowContent.registerResources(server)
         skillContent.registerPrompt(server)
+        workflowContent.registerPrompts(server)
         return server
     }
 

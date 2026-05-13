@@ -29,6 +29,11 @@ class McpToolRegistrationTest {
         val service = createService()
         val server = service.createRuntimeServer()
 
+        assertTrue("keios.mcp.workflow.blueprints" in server.tools.keys)
+        assertTrue(WORKFLOW_PLAN_PROMPT in server.prompts.keys)
+        assertTrue(WORKFLOW_RESOURCE_URI in server.resources.keys)
+        assertTrue(server.resourceTemplates.any { it.uriTemplate == WORKFLOW_TEMPLATE_URI })
+
         val listTool = server.tools.getValue("keios.github.tracks.list").tool
         val listProperties = listTool.inputSchema.properties.orEmpty()
         assertTrue("filterMode" in listProperties.keys)
@@ -51,6 +56,10 @@ class McpToolRegistrationTest {
         val actionsTool = server.tools.getValue("keios.github.actions.recommended").tool
         assertFalse(actionsTool.annotations?.readOnlyHint ?: true)
         assertTrue(actionsTool.annotations?.openWorldHint ?: false)
+
+        val workflowTool = server.tools.getValue("keios.mcp.workflow.blueprints").tool
+        assertTrue(workflowTool.annotations?.readOnlyHint ?: false)
+        assertFalse(workflowTool.annotations?.openWorldHint ?: true)
     }
 
     @Test
@@ -65,6 +74,9 @@ class McpToolRegistrationTest {
         assertTrue(markdown.contains("actionsUpdateIntervalMode"))
         assertTrue(markdown.contains("follow_global"))
         assertTrue(markdown.contains("3h"))
+        assertTrue(markdown.contains(WORKFLOW_PLAN_PROMPT))
+        assertTrue(markdown.contains(WORKFLOW_RESOURCE_URI))
+        assertTrue(markdown.contains("keios.mcp.workflow.blueprints"))
     }
 
     private fun createService(): LocalMcpService {

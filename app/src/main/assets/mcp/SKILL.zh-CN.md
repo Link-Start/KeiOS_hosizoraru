@@ -20,6 +20,8 @@
 - 默认配置资源：`{{RESOURCE_CONFIG_URI}}`
 - mode 配置模板：`{{RESOURCE_CONFIG_TEMPLATE_URI}}`
 - 初始化 Prompt：`{{PROMPT_BOOTSTRAP}}`
+- 工作流 Prompt：`{{PROMPT_WORKFLOW_PLAN}}`
+- 工作流蓝图：`{{RESOURCE_WORKFLOWS_URI}}`
 - Claw 接入：`keios.mcp.claw.skill.guide(mode=auto)`
 - 同设备客户端用 `mode=local`，跨设备联调用 `mode=lan`。
 
@@ -30,6 +32,7 @@
 
 - `keios.health.ping`、`keios.app.info`、`keios.app.version`、`keios.shizuku.status`
 - `keios.mcp.runtime.status`、`keios.mcp.runtime.logs`、`keios.mcp.runtime.config`
+- `keios.mcp.workflow.blueprints`
 - `keios.home.overview.snapshot`
 
 ## OS 与系统
@@ -84,10 +87,20 @@
 10. BA 缓存巡检：`keios.ba.snapshot` -> `keios.ba.calendar.cache` 或 `keios.ba.pool.cache` ->
    `keios.ba.guide.cache.inspect`
 
+## Claw 工作流
+
+- 读取 `{{RESOURCE_WORKFLOWS_URI}}` 获取定时任务与组合技能蓝图。
+- 读取 `{{RESOURCE_WORKFLOW_TEMPLATE_URI}}` 获取单个蓝图详情。
+- 创建 Claw 任务或复用技能时，使用 `{{PROMPT_WORKFLOW_PLAN}}`，参数为 `goal`、`cadence`、
+  `workflow`、`delivery`。
+- 客户端更适合调用工具时，使用 `keios.mcp.workflow.blueprints(mode=list|detail|skill, workflow=...)`。
+- 定时规则由客户端保存。KeiOS MCP tools 在任务触发时执行。
+
 ## 输出约定
 
 - 工具输出使用紧凑 `key=value` 与固定列表行。
 - 导入类工具默认预览；写入必须显式传 `apply=true`。
+- 工作流工具是只读计划助手；写入类工具依旧需要显式 `apply=true`。
 - 审计任务的 `limit` 建议从 20 到 80 开始。
 - `repoFilter` 支持 owner/repo、包名或应用名。
 - `sourceMode` 支持 `github_repository`、`direct_apk`，留空表示全部追踪来源。

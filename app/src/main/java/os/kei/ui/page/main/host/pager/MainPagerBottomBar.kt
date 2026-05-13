@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -26,6 +27,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 
@@ -55,7 +57,11 @@ internal fun MainPagerBottomBar(
                         selected = selected,
                         tabIndex = index,
                         onClick = { onPageSelected(index) },
-                        modifier = Modifier
+                        modifier = if (page == BottomPage.GitHub) {
+                            Modifier.testTag(KeiOsTestTags.MainBottomTabGitHub)
+                        } else {
+                            Modifier
+                        }
                     ) {
                         val tabIconModifier = Modifier
                             .size(20.dp)

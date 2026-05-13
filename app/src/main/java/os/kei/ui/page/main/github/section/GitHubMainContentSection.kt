@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,7 @@ import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
@@ -163,7 +165,11 @@ internal fun GitHubMainContent(
         OverviewRefreshState.Cached -> AppFloatingRefreshStatus.Cached
         OverviewRefreshState.Idle -> AppFloatingRefreshStatus.Idle
     }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag(KeiOsTestTags.GitHubPageRoot)
+    ) {
         AppScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {

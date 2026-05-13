@@ -33,6 +33,7 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -143,7 +144,8 @@ internal fun GitHubTopBarActions(
             LiquidActionItem(
                 icon = moreIcon,
                 contentDescription = moreContentDescription,
-                onClick = { onShowActionMenuPopupChange(!showActionMenuPopup) }
+                onClick = { onShowActionMenuPopupChange(!showActionMenuPopup) },
+                testTag = KeiOsTestTags.GitHubImportMenuButton
             )
         )
     }
@@ -207,6 +209,7 @@ internal fun GitHubTopBarActions(
                                     icon = importTracksIcon,
                                     label = importTracksLabel,
                                     enabled = transferActionEnabled,
+                                    testTag = KeiOsTestTags.GitHubImportTracks,
                                     onClick = onImportTrackedItems
                                 ),
                                 LiquidGlassActionMenuQuickAction(
@@ -214,6 +217,7 @@ internal fun GitHubTopBarActions(
                                     icon = importStarsIcon,
                                     label = importStarsLabel,
                                     enabled = transferActionEnabled,
+                                    testTag = KeiOsTestTags.GitHubImportStars,
                                     onClick = onOpenStarImport
                                 )
                             ),

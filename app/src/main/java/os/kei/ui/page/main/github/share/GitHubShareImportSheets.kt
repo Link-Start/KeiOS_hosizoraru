@@ -24,7 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -50,6 +53,7 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -63,6 +67,7 @@ private const val shareImportInfoLabelWeight = 0.24f
 private fun Modifier.shareImportSheetSafeArea(): Modifier {
     return this
         .fillMaxWidth()
+        .semantics { testTagsAsResourceId = true }
         .navigationBarsPadding()
         .imePadding()
         .padding(bottom = 12.dp)
@@ -281,7 +286,9 @@ internal fun GitHubShareImportSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(KeiOsTestTags.GitHubShareImportCancel),
                     text = stringResource(R.string.common_cancel),
                     leadingIcon = appLucideCloseIcon(),
                     containerColor = GitHubShareImportActionStyle.cancelContainerColor,
@@ -289,7 +296,9 @@ internal fun GitHubShareImportSheet(
                     onClick = onCancel
                 )
                 AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(KeiOsTestTags.GitHubShareImportConfirm),
                     text = if (managedInstallRunning) {
                         stringResource(R.string.common_processing)
                     } else if (managedInstallProgress?.phase == GitHubShareImportPhase.InstallReady) {
@@ -562,13 +571,17 @@ internal fun GitHubShareImportPendingSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(KeiOsTestTags.GitHubShareImportPendingClose),
                     text = stringResource(R.string.common_close),
                     leadingIcon = appLucideCloseIcon(),
                     onClick = onClose
                 )
                 AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(KeiOsTestTags.GitHubShareImportPendingCancel),
                     text = stringResource(R.string.github_share_import_pending_action_cancel),
                     leadingIcon = appLucideCloseIcon(),
                     containerColor = GitHubShareImportActionStyle.cancelContainerColor,
@@ -661,7 +674,9 @@ internal fun GitHubShareImportAttachConfirmSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     AppLiquidDialogActionButton(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag(KeiOsTestTags.GitHubShareImportAttachClose),
                         text = stringResource(R.string.common_close),
                         leadingIcon = appLucideCloseIcon(),
                         containerColor = GitHubStatusPalette.Active,
@@ -675,7 +690,9 @@ internal fun GitHubShareImportAttachConfirmSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     AppLiquidDialogActionButton(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag(KeiOsTestTags.GitHubShareImportAttachCancel),
                         text = stringResource(R.string.common_cancel),
                         leadingIcon = appLucideCloseIcon(),
                         containerColor = GitHubShareImportActionStyle.cancelContainerColor,
@@ -684,7 +701,9 @@ internal fun GitHubShareImportAttachConfirmSheet(
                         enabled = !submitting
                     )
                     AppLiquidDialogActionButton(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag(KeiOsTestTags.GitHubShareImportAttachConfirm),
                         text = if (submitting && !submittingAndOpen) {
                             stringResource(R.string.common_processing)
                         } else {
@@ -698,7 +717,9 @@ internal fun GitHubShareImportAttachConfirmSheet(
                 }
                 if (onConfirmAndOpenGitHub != null) {
                     AppLiquidDialogActionButton(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(KeiOsTestTags.GitHubShareImportAttachConfirmOpenGitHub),
                         text = if (submitting && submittingAndOpen) {
                             stringResource(R.string.common_processing)
                         } else {

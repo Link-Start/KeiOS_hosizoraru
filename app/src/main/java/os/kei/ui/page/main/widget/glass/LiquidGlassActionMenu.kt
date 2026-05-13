@@ -31,7 +31,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -61,6 +64,7 @@ data class LiquidGlassActionMenuQuickAction(
     val contentDescription: String = label,
     val enabled: Boolean = true,
     val variant: GlassVariant = GlassVariant.SheetAction,
+    val testTag: String? = null,
     val onClick: () -> Unit
 )
 
@@ -176,19 +180,21 @@ fun LiquidGlassActionMenu(
         }
     }
     AppLiquidGlassDropdownColumn(
-        modifier = modifier.animateContentSize(
-            animationSpec = tween(
-                durationMillis = if (transitionAnimationsEnabled) {
-                    if (expandedSubmenu == null) {
-                        AppMotionTokens.expandSizeOutMs
+        modifier = modifier
+            .animateContentSize(
+                animationSpec = tween(
+                    durationMillis = if (transitionAnimationsEnabled) {
+                        if (expandedSubmenu == null) {
+                            AppMotionTokens.expandSizeOutMs
+                        } else {
+                            AppMotionTokens.expandSizeInMs
+                        }
                     } else {
-                        AppMotionTokens.expandSizeInMs
+                        AppMotionTokens.disabledDurationMs
                     }
-                } else {
-                    AppMotionTokens.disabledDurationMs
-                }
+                )
             )
-        ),
+            .semantics { testTagsAsResourceId = true },
         minWidth = minWidth,
         maxWidth = maxWidth,
         maxHeight = maxHeight,
@@ -440,6 +446,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
     val shape = RoundedCornerShape(18.dp)
     Column(
         modifier = modifier
+            .testTag(action.testTag ?: "liquid_action_menu_quick_${action.id}")
             .defaultMinSize(minHeight = ActionMenuQuickActionMinHeight)
             .graphicsLayer {
                 scaleX = scale

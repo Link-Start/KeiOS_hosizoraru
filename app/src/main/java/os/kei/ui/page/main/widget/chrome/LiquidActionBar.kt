@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.chrome
 
-import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
@@ -36,6 +35,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -63,7 +63,8 @@ data class LiquidActionItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val contentDescription: String,
     val onClick: () -> Unit,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val testTag: String? = null
 )
 
 @Composable
@@ -147,6 +148,7 @@ internal fun RowScope.LiquidActionItemSlot(
     Box(
         modifier = Modifier
             .clip(ContinuousCapsule)
+            .then(item.testTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier)
             .then(clickModifier)
             .fillMaxHeight()
             .weight(1f)

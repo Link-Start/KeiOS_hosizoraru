@@ -414,6 +414,7 @@ internal class GitHubPageRepository(
                 }
             }
             val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(payload.items)
+            val sourceCounts = GitHubTrackStore.calculateTrackedItemsSourceCounts(payload.items)
             GitHubTrackImportPreview(
                 payload = payload,
                 fileItemCount = payload.sourceCount,
@@ -424,6 +425,8 @@ internal class GitHubPageRepository(
                 updatedCount = updatedCount,
                 unchangedCount = unchangedCount,
                 mergedCount = existingItems.size + newCount,
+                githubRepositoryCount = sourceCounts.githubRepositoryCount,
+                directApkCount = sourceCounts.directApkCount,
                 preferPreReleaseCount = optionCounts.preferPreReleaseCount,
                 latestReleaseDownloadCount = optionCounts.latestReleaseDownloadCount,
                 actionsUpdateCount = optionCounts.actionsUpdateCount,

@@ -1,18 +1,22 @@
 package os.kei.feature.github.domain
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.yield
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.isDirectApkTrack
 import java.util.concurrent.atomic.AtomicInteger
 
 private const val DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY = 4
@@ -88,6 +92,10 @@ internal object GitHubTrackedRefreshBatchRunner {
 
         val batchStartNs = System.nanoTime()
         val concurrency = trackedItems.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
+        val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(trackedItems)
+        val directApkPermits = Semaphore(
+            permits = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
+        )
         val nextIndex = AtomicInteger(0)
         val progressMutex = Mutex()
         var completedCount = 0
@@ -100,12 +108,21 @@ internal object GitHubTrackedRefreshBatchRunner {
                 async(dispatcher) {
                     while (true) {
                         val index = nextIndex.getAndIncrement()
-                        if (index >= trackedItems.size) break
-                        val item = trackedItems[index]
+                        if (index >= workItems.size) break
+                        val workItem = workItems[index]
+                        val item = workItem.item
                         val itemStartNs = System.nanoTime()
-                        val check = runCatching { evaluator(item) }
-                            .getOrElse { error -> failedCheck(error) }
-                        results[index] = GitHubTrackedRefreshItemResult(
+                        val check = runCatching {
+                            if (item.isDirectApkTrack()) {
+                                directApkPermits.withPermit { evaluator(item) }
+                            } else {
+                                evaluator(item)
+                            }
+                        }.getOrElse { error ->
+                            if (error is CancellationException) throw error
+                            failedCheck(error)
+                        }
+                        results[workItem.originalIndex] = GitHubTrackedRefreshItemResult(
                             item = item,
                             check = check,
                             elapsedMs = elapsedMsSince(itemStartNs)

@@ -2,6 +2,8 @@ package os.kei.ui.page.main.github.page
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
@@ -52,5 +54,36 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(false, item.preferPreRelease)
         assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, item.checkActionsUpdates)
+    }
+
+    @Test
+    fun `import preview summarizes github and direct apk source counts`() = runBlocking {
+        val preview = repository.buildTrackedItemsImportPreview(
+            payload = GitHubTrackedItemsImportPayload(
+                items = listOf(
+                    GitHubTrackedApp(
+                        repoUrl = "https://github.com/demo/app",
+                        owner = "demo",
+                        repo = "app",
+                        packageName = "com.demo.app",
+                        appLabel = "Demo"
+                    ),
+                    GitHubTrackedApp(
+                        repoUrl = "https://telegram.org/dl/android/apk",
+                        owner = "telegram.org",
+                        repo = "dl-android-apk",
+                        packageName = "org.telegram.messenger",
+                        appLabel = "Telegram",
+                        sourceMode = GitHubTrackedSourceMode.DirectApk
+                    )
+                ),
+                sourceCount = 2
+            ),
+            existingItems = emptyList()
+        )
+
+        assertEquals(1, preview.githubRepositoryCount)
+        assertEquals(1, preview.directApkCount)
+        assertEquals(true, preview.hasSourceBreakdown)
     }
 }

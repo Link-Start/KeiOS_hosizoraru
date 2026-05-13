@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.local
 
+import org.json.JSONObject
 import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
@@ -82,8 +83,11 @@ class GitHubTrackStoreTrackedItemJsonTest {
             listOf(item),
             exportedAtMillis = 3000L
         )
+        val sourceCounts = JSONObject(exported).getJSONObject("sourceCounts")
         val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
 
+        assertEquals(0, sourceCounts.getInt("githubRepository"))
+        assertEquals(1, sourceCounts.getInt("directApk"))
         assertEquals(GitHubTrackedSourceMode.DirectApk, imported.sourceMode)
         assertEquals("telegram.org", imported.owner)
         assertEquals("dl-android-apk-public-beta", imported.repo)
@@ -201,5 +205,31 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(1, counts.latestReleaseDownloadCount)
         assertEquals(1, counts.actionsUpdateCount)
         assertEquals(1, counts.preciseApkVersionOverrideCount)
+    }
+
+    @Test
+    fun `source counts summarize github and direct apk items`() {
+        val counts = GitHubTrackStore.calculateTrackedItemsSourceCounts(
+            listOf(
+                GitHubTrackedApp(
+                    repoUrl = "https://github.com/demo/app",
+                    owner = "demo",
+                    repo = "app",
+                    packageName = "com.demo.app",
+                    appLabel = "Demo"
+                ),
+                GitHubTrackedApp(
+                    repoUrl = "https://telegram.org/dl/android/apk",
+                    owner = "telegram.org",
+                    repo = "dl-android-apk",
+                    packageName = "org.telegram.messenger",
+                    appLabel = "Telegram",
+                    sourceMode = GitHubTrackedSourceMode.DirectApk
+                )
+            )
+        )
+
+        assertEquals(1, counts.githubRepositoryCount)
+        assertEquals(1, counts.directApkCount)
     }
 }

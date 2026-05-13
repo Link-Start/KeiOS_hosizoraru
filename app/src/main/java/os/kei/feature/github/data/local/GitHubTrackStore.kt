@@ -20,6 +20,8 @@ import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
+import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.requiredCapabilities
 import os.kei.feature.github.model.withSourceModeConstraints
 
@@ -51,6 +53,11 @@ data class GitHubTrackedItemsOptionCounts(
     val actionsUpdateCount: Int = 0,
     val preciseApkVersionOverrideCount: Int = 0,
     val archivedOrForkCount: Int = 0
+)
+
+data class GitHubTrackedItemsSourceCounts(
+    val githubRepositoryCount: Int = 0,
+    val directApkCount: Int = 0
 )
 
 data class GitHubPendingShareImportTrackRecord(
@@ -297,11 +304,13 @@ object GitHubTrackStore {
             array.put(trackedItemToJson(item))
         }
         val optionCounts = calculateTrackedItemsOptionCounts(items)
+        val sourceCounts = calculateTrackedItemsSourceCounts(items)
         return JSONObject()
             .put("format", TRACK_EXPORT_FORMAT)
             .put("schemaVersion", TRACK_EXPORT_SCHEMA_VERSION)
             .put("exportedAtMillis", exportedAtMillis)
             .put("itemCount", items.size)
+            .put("sourceCounts", sourceCounts.toJson())
             .put("optionCounts", optionCounts.toJson())
             .put("items", array)
             .toString(2)
@@ -370,6 +379,16 @@ object GitHubTrackStore {
                 it.preciseApkVersionMode != GitHubTrackedPreciseApkVersionMode.FollowGlobal
             },
             archivedOrForkCount = normalizedItems.count { it.repositoryArchived || it.repositoryFork }
+        )
+    }
+
+    fun calculateTrackedItemsSourceCounts(
+        items: List<GitHubTrackedApp>
+    ): GitHubTrackedItemsSourceCounts {
+        val normalizedItems = items.map { it.withSourceModeConstraints() }
+        return GitHubTrackedItemsSourceCounts(
+            githubRepositoryCount = normalizedItems.count { it.isGitHubRepositoryTrack() },
+            directApkCount = normalizedItems.count { it.isDirectApkTrack() }
         )
     }
 
@@ -923,6 +942,12 @@ object GitHubTrackStore {
             .put("actionsUpdate", actionsUpdateCount)
             .put("preciseApkVersionOverride", preciseApkVersionOverrideCount)
             .put("archivedOrFork", archivedOrForkCount)
+    }
+
+    private fun GitHubTrackedItemsSourceCounts.toJson(): JSONObject {
+        return JSONObject()
+            .put("githubRepository", githubRepositoryCount)
+            .put("directApk", directApkCount)
     }
 
     private fun parseRemoteApkVersionInfo(obj: JSONObject?): GitHubRemoteApkVersionInfo? {

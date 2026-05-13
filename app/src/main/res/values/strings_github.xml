@@ -249,6 +249,8 @@
     <string name="github_sort_name_asc">名称 A-Z</string>
     <string name="github_sort_prerelease_first">预发行优先</string>
     <string name="github_filter_all">全部</string>
+    <string name="github_filter_github_repository">GitHub 项目</string>
+    <string name="github_filter_direct_apk">APK 直链</string>
     <string name="github_filter_prerelease_tracked">预发追踪</string>
     <string name="github_filter_update_available">可更新</string>
     <string name="github_filter_installed">已安装</string>
@@ -268,6 +270,7 @@
     <string name="github_item_value_local_version_uninstalled">未安装 App</string>
     <string name="github_item_value_check_pending">待检查</string>
     <string name="github_item_label_stable_version">稳定版本</string>
+    <string name="github_item_label_remote_version">远端版本</string>
     <string name="github_item_label_prerelease_version">预发版本</string>
     <string name="github_item_label_releases">Releases</string>
     <string name="github_item_label_stable_release">稳定发布</string>
@@ -704,6 +707,8 @@
     <string name="github_import_dialog_label_updated_items">将更新</string>
     <string name="github_import_dialog_label_unchanged_items">保持不变</string>
     <string name="github_import_dialog_label_merged_items">导入后总数</string>
+    <string name="github_import_dialog_label_github_items">GitHub 项目</string>
+    <string name="github_import_dialog_label_direct_apk_items">APK 直链</string>
     <string name="github_import_dialog_label_project_options">项目设置</string>
     <string name="github_import_dialog_label_pre_release_items">预发行优先</string>
     <string name="github_import_dialog_label_actions_items">Actions 检查</string>

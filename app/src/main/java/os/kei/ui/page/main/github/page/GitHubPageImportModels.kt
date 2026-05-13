@@ -23,6 +23,8 @@ internal data class GitHubTrackImportPreview(
     val updatedCount: Int,
     val unchangedCount: Int,
     val mergedCount: Int,
+    val githubRepositoryCount: Int = 0,
+    val directApkCount: Int = 0,
     val preferPreReleaseCount: Int = 0,
     val latestReleaseDownloadCount: Int = 0,
     val actionsUpdateCount: Int = 0,
@@ -39,4 +41,7 @@ internal data class GitHubTrackImportPreview(
 
     val hasImportedProjectOptions: Boolean
         get() = importedProjectOptionCount > 0
+
+    val hasSourceBreakdown: Boolean
+        get() = githubRepositoryCount > 0 || directApkCount > 0
 }

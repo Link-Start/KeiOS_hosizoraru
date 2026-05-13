@@ -6,6 +6,7 @@ import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -142,13 +143,75 @@ class GitHubTrackedRefreshBatchRunnerTest {
         }
     }
 
-    private fun tracked(index: Int): GitHubTrackedApp {
+    @Test
+    fun `scheduler interleaves github and direct apk sources fairly`() {
+        val items = listOf(
+            tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
+            tracked(2, sourceMode = GitHubTrackedSourceMode.DirectApk),
+            tracked(3),
+            tracked(4, sourceMode = GitHubTrackedSourceMode.DirectApk),
+            tracked(5)
+        )
+
+        val order = GitHubTrackedRefreshBatchScheduler
+            .buildFairRefreshOrder(items)
+            .map { it.item.packageName }
+
+        assertEquals(
+            listOf("demo.repo3", "demo.repo1", "demo.repo5", "demo.repo2", "demo.repo4"),
+            order
+        )
+    }
+
+    @Test
+    fun `run limits direct apk manifest checks inside mixed refresh batches`() = runBlocking {
+        val directActive = AtomicInteger(0)
+        val maxDirectActive = AtomicInteger(0)
+        val items = (1..8).map { index ->
+            tracked(
+                index = index,
+                sourceMode = if (index % 2 == 0) {
+                    GitHubTrackedSourceMode.DirectApk
+                } else {
+                    GitHubTrackedSourceMode.GitHubRepository
+                }
+            )
+        }
+
+        GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = items,
+            maxConcurrency = 4,
+            dispatcher = Dispatchers.Default,
+            refreshTimestampMs = NOW_MS
+        ) { item ->
+            if (item.sourceMode == GitHubTrackedSourceMode.DirectApk) {
+                val current = directActive.incrementAndGet()
+                maxDirectActive.updateAndGet { old -> maxOf(old, current) }
+                Thread.sleep(30)
+                directActive.decrementAndGet()
+            } else {
+                Thread.sleep(5)
+            }
+            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+        }
+
+        assertTrue(maxDirectActive.get() <= 2)
+    }
+
+    private fun tracked(
+        index: Int,
+        sourceMode: GitHubTrackedSourceMode = GitHubTrackedSourceMode.GitHubRepository
+    ): GitHubTrackedApp {
         return GitHubTrackedApp(
-            repoUrl = "https://github.com/demo/repo-$index",
+            repoUrl = when (sourceMode) {
+                GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo-$index"
+                GitHubTrackedSourceMode.DirectApk -> "https://example.com/download/repo-$index.apk"
+            },
             owner = "demo",
             repo = "repo-$index",
             packageName = "demo.repo$index",
-            appLabel = "Repo $index"
+            appLabel = "Repo $index",
+            sourceMode = sourceMode
         )
     }
 

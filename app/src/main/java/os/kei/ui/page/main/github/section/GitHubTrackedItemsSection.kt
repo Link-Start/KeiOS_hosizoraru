@@ -26,6 +26,7 @@ import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
@@ -323,7 +324,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         )
                         val stableExpanded = trackedStableVersionExpanded[item.id] == true
                         GitHubReleaseVersionCard(
-                            label = stringResource(R.string.github_item_label_stable_version),
+                            label = stringResource(
+                                if (item.isDirectApkTrack()) {
+                                    R.string.github_item_label_remote_version
+                                } else {
+                                    R.string.github_item_label_stable_version
+                                }
+                            ),
                             value = formatApkVersionValue(
                                 preciseInfo = state.latestStableApkVersion.takeIf {
                                     itemLookupConfig.preciseApkVersionEnabled

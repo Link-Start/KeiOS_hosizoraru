@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -153,6 +154,40 @@ class GitHubPageContentStateDeriverTest {
         assertEquals(
             listOf("demo.actions"),
             derived.trackedUi.filteredTracked.map { it.packageName })
+    }
+
+    @Test
+    fun `source filters split github repositories and direct apk tracks`() = runBlocking {
+        val items = sampleTrackedItems() + GitHubTrackedApp(
+            repoUrl = "https://telegram.org/dl/android/apk",
+            owner = "telegram.org",
+            repo = "dl-android-apk",
+            packageName = "org.telegram.messenger",
+            appLabel = "Telegram",
+            sourceMode = GitHubTrackedSourceMode.DirectApk
+        )
+
+        val githubDerived = GitHubPageContentStateDeriver().build(
+            baseInput(
+                trackedItems = items,
+                trackedFilterMode = GitHubTrackedFilterMode.GitHubRepository
+            )
+        )
+        val directDerived = GitHubPageContentStateDeriver().build(
+            baseInput(
+                trackedItems = items,
+                trackedFilterMode = GitHubTrackedFilterMode.DirectApk
+            )
+        )
+
+        assertEquals(
+            listOf("demo.stable", "demo.pre", "demo.actions"),
+            githubDerived.trackedUi.filteredTracked.map { it.packageName }
+        )
+        assertEquals(
+            listOf("org.telegram.messenger"),
+            directDerived.trackedUi.filteredTracked.map { it.packageName }
+        )
     }
 
     private fun baseInput(

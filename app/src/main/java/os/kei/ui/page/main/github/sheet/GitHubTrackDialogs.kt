@@ -165,6 +165,24 @@ internal fun GitHubTrackImportDialog(
                     ),
                     valueColor = GitHubStatusPalette.Stable
                 )
+                if (preview.hasSourceBreakdown) {
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_github_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.githubRepositoryCount
+                        ),
+                        valueColor = GitHubStatusPalette.Cache
+                    )
+                    MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_direct_apk_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.directApkCount
+                        ),
+                        valueColor = GitHubStatusPalette.Active
+                    )
+                }
             }
             if (preview.hasImportedProjectOptions) {
                 SheetSectionCard(

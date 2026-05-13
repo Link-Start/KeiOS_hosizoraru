@@ -95,6 +95,8 @@ internal enum class GitHubTrackedFilterMode(
     @get:StringRes val labelRes: Int
 ) {
     All(R.string.github_filter_all),
+    GitHubRepository(R.string.github_filter_github_repository),
+    DirectApk(R.string.github_filter_direct_apk),
     PreReleaseTracked(R.string.github_filter_prerelease_tracked),
     UpdateAvailable(R.string.github_filter_update_available),
     Installed(R.string.github_filter_installed),

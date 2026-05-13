@@ -6,6 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -53,6 +55,12 @@ internal class GitHubPageContentStateDeriver(
                 .toSet()
             val filteredTracked = when (input.trackedFilterMode) {
                 GitHubTrackedFilterMode.All -> searchedTracked
+                GitHubTrackedFilterMode.GitHubRepository ->
+                    searchedTracked.filter { item -> item.isGitHubRepositoryTrack() }
+
+                GitHubTrackedFilterMode.DirectApk ->
+                    searchedTracked.filter { item -> item.isDirectApkTrack() }
+
                 GitHubTrackedFilterMode.PreReleaseTracked ->
                     searchedTracked.filter { item -> input.checkStates[item.id]?.isPreRelease == true }
 

@@ -162,7 +162,7 @@ internal fun GitHubLinkedInfoCard(
     onClick: () -> Unit
 ) {
     val backdrop = rememberLayerBackdrop()
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme()
     val surfaceColor = if (isDark) {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
     } else {
@@ -248,7 +248,7 @@ private fun GitHubInlineLiquidSurface(
 
 @Composable
 internal fun gitHubPreReleaseCardTextColor(): Color {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme()
     return if (isDark) {
         Color(0xFF93C5FD)
     } else {
@@ -262,7 +262,7 @@ internal fun GitHubHealthPreviewBlock(
     onClick: () -> Unit
 ) {
     val backdrop = rememberLayerBackdrop()
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme()
     val color = health.level.repositoryHealthStatusColor()
     val surfaceColor = if (isDark) {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
@@ -476,7 +476,7 @@ internal fun GitHubAssetCountBubble(
     modifier: Modifier = Modifier,
     loading: Boolean = false
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme()
     val localBackdrop = rememberLayerBackdrop()
     val activeBackdrop = localBackdrop.takeIf { LocalLiquidControlsEnabled.current }
     val shape = CircleShape

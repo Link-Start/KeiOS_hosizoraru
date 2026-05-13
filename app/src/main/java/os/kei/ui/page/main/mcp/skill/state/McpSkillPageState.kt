@@ -5,5 +5,6 @@ import os.kei.ui.page.main.mcp.skill.model.SkillSection
 
 @Stable
 internal data class McpSkillPageContentState(
+    val markdown: String = "",
     val sections: List<SkillSection> = emptyList()
 )

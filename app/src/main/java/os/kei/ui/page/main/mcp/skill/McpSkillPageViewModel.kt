@@ -22,13 +22,12 @@ internal class McpSkillPageViewModel : ViewModel() {
         manager: McpServerManager,
         request: McpSkillPageContentRequest
     ) {
-        if (lastRequest == request && _contentState.value.sections.isNotEmpty()) return
+        if (lastRequest == request && _contentState.value.markdown.isNotBlank()) return
         if (lastRequest == request && loadJob?.isActive == true) return
         lastRequest = request
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            val sections = repository.loadSections(manager, request)
-            _contentState.value = McpSkillPageContentState(sections = sections)
+            _contentState.value = repository.loadContent(manager, request)
         }
     }
 }

@@ -1,21 +1,26 @@
 package os.kei.ui.page.main.mcp.skill.page
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.core.ui.resource.resolveString
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.mcp.skill.McpSkillPageContentRequest
 import os.kei.ui.page.main.mcp.skill.McpSkillPageViewModel
 import os.kei.ui.page.main.mcp.skill.component.McpSkillContentList
 import os.kei.ui.page.main.mcp.skill.state.rememberMcpSkillPageTextBundle
+import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -28,6 +33,7 @@ fun McpSkillPage(
     mcpServerManager: McpServerManager,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val textBundle = rememberMcpSkillPageTextBundle()
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -52,6 +58,15 @@ fun McpSkillPage(
         )
     }
     val contentState by viewModel.contentState.collectAsStateWithLifecycle()
+    val copyCurrentConfig: () -> Unit = {
+        val json = mcpServerManager.buildConfigJson()
+        copyToClipboard(context, "mcp-config", json)
+        Toast.makeText(
+            context,
+            context.resolveString(R.string.mcp_toast_config_copied),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 
     AppPageScaffold(
         title = textBundle.pageTitle,
@@ -73,11 +88,8 @@ fun McpSkillPage(
             listState = listState,
             nestedScrollConnection = scrollBehavior.nestedScrollConnection,
             contentState = contentState,
-            clawCardTitle = textBundle.clawCardTitle,
-            clawCardSummary = textBundle.clawCardSummary,
-            clawPrompt = textBundle.clawPrompt,
-            copyClawPromptText = textBundle.copyClawPromptText,
-            clawPromptCopiedToast = textBundle.clawPromptCopiedToast,
+            textBundle = textBundle,
+            onCopyCurrentConfig = copyCurrentConfig,
             emptyItemText = textBundle.emptyItemText,
             titleColor = titleColor,
             subtitleColor = subtitleColor,

@@ -4,7 +4,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.mcp.server.McpServerManager
-import os.kei.ui.page.main.mcp.skill.model.SkillSection
+import os.kei.ui.page.main.mcp.skill.state.McpSkillPageContentState
 import os.kei.ui.page.main.mcp.skill.support.buildSkillSections
 import os.kei.ui.page.main.mcp.skill.support.parseMarkdownBlocks
 
@@ -20,15 +20,15 @@ internal class McpSkillPageRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    suspend fun loadSections(
+    suspend fun loadContent(
         manager: McpServerManager,
         request: McpSkillPageContentRequest
-    ): List<SkillSection> {
+    ): McpSkillPageContentState {
         val markdown = withContext(ioDispatcher) {
             manager.getSkillMarkdown()
-        }
-        return withContext(defaultDispatcher) {
-            val blocks = parseMarkdownBlocks(markdown.ifBlank { request.emptyMarkdown })
+        }.ifBlank { request.emptyMarkdown }
+        val sections = withContext(defaultDispatcher) {
+            val blocks = parseMarkdownBlocks(markdown)
             buildSkillSections(
                 blocks = blocks,
                 defaultRootTitle = request.defaultRootTitle,
@@ -37,5 +37,9 @@ internal class McpSkillPageRepository(
                 emptyContentText = request.emptyContentText
             )
         }
+        return McpSkillPageContentState(
+            markdown = markdown,
+            sections = sections
+        )
     }
 }

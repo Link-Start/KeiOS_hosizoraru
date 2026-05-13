@@ -108,6 +108,42 @@ internal fun McpServiceControlSection(
                 )
             }
         )
+        Spacer(modifier = Modifier.height(6.dp))
+        McpServiceControlHint(
+            title = stringResource(R.string.mcp_action_copy_skill_resource),
+            summary = stringResource(R.string.mcp_action_copy_skill_resource_summary)
+        )
+        McpServiceControlHint(
+            title = stringResource(R.string.mcp_action_copy_workflow_resource),
+            summary = stringResource(R.string.mcp_action_copy_workflow_resource_summary)
+        )
+    }
+}
+
+@Composable
+private fun McpServiceControlHint(
+    title: String,
+    summary: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = title,
+            color = MiuixTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            lineHeight = 19.sp
+        )
+        Text(
+            text = summary,
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.88f),
+            fontSize = 13.sp,
+            lineHeight = 18.sp
+        )
     }
 }
 

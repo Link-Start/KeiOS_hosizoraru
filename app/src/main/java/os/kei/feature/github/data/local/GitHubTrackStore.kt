@@ -1032,7 +1032,8 @@ object GitHubTrackStore {
             packageName = obj.optString("packageName").trim(),
             versionName = obj.optString("versionName").trim(),
             versionCode = obj.optString("versionCode").trim(),
-            fetchSource = obj.optString("fetchSource").trim()
+            fetchSource = obj.optString("fetchSource").trim(),
+            releaseNotes = obj.optString("releaseNotes").trim()
         )
         return info.takeIf { it.hasVersion() || it.releaseLabel().isNotBlank() }
     }
@@ -1054,5 +1055,6 @@ object GitHubTrackStore {
             .put("versionName", info.versionName)
             .put("versionCode", info.versionCode)
             .put("fetchSource", info.fetchSource)
+            .put("releaseNotes", info.releaseNotes)
     }
 }

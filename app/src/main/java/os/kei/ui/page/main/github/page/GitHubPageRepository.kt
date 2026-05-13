@@ -19,6 +19,8 @@ import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
+import os.kei.feature.github.data.remote.GitHubDirectApkJsonFallbackResolver
+import os.kei.feature.github.data.remote.GitHubDirectApkVersionedDirectoryResolver
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
@@ -591,8 +593,29 @@ internal class GitHubPageRepository(
                 )
                 val asset = GitHubDirectApkReleaseCheckSource.buildDirectApkAsset(item)
                     ?: error("invalid direct APK URL")
+                val jsonFallbackResolver = GitHubDirectApkJsonFallbackResolver()
+                val jsonResolution = if (identity.url.endsWith(".json", ignoreCase = true)) {
+                    jsonFallbackResolver.resolve(identity.url).getOrNull()
+                } else {
+                    null
+                }
+                val versionedDirectoryResolution = GitHubDirectApkVersionedDirectoryResolver()
+                    .resolve(identity.url)
+                    .getOrNull()
+                val companionJsonResolution = if (
+                    jsonResolution == null &&
+                    versionedDirectoryResolution == null
+                ) {
+                    jsonFallbackResolver.resolve(identity.url).getOrNull()
+                } else {
+                    null
+                }
+                val scanAsset = jsonResolution?.toAsset()
+                    ?: versionedDirectoryResolution?.toAsset(asset.name)
+                    ?: companionJsonResolution?.toAsset()
+                    ?: asset
                 val manifest = GitHubApkInfoRepository().inspectAsync(
-                    asset = asset,
+                    asset = scanAsset,
                     lookupConfig = lookupConfig.copy(
                         selectedStrategy = GitHubLookupStrategyOption.AtomFeed,
                         apiToken = "",
@@ -604,9 +627,13 @@ internal class GitHubPageRepository(
                 GitHubApkPackageNameScanResult(
                     owner = identity.owner,
                     repo = identity.repo,
-                    releaseTag = manifest.versionName.ifBlank { manifest.versionCode },
+                    releaseTag = manifest.versionName
+                        .ifBlank { jsonResolution?.versionName.orEmpty() }
+                        .ifBlank { companionJsonResolution?.versionName.orEmpty() }
+                        .ifBlank { versionedDirectoryResolution?.version.orEmpty() }
+                        .ifBlank { manifest.versionCode },
                     releaseUrl = identity.url,
-                    assetName = manifest.assetName.ifBlank { identity.assetName },
+                    assetName = manifest.assetName.ifBlank { scanAsset.name.ifBlank { identity.assetName } },
                     packageName = manifest.packageName
                 )
             }

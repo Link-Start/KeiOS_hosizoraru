@@ -797,6 +797,7 @@ private fun releaseNotesSourceLabel(source: String): String {
     return when (source) {
         "api" -> stringResource(R.string.github_release_notes_source_api)
         "html" -> stringResource(R.string.github_release_notes_source_atom)
+        "subscription" -> stringResource(R.string.github_release_notes_source_subscription)
         else -> stringResource(R.string.common_unknown)
     }
 }

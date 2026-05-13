@@ -4,7 +4,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class GitHubDirectApkJsonFallbackResolverTest {
     @Test
@@ -42,14 +41,69 @@ class GitHubDirectApkJsonFallbackResolverTest {
     }
 
     @Test
-    fun `resolve skips urls already pointing to json`() {
+    fun `resolve reads json feed url directly`() {
         MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        {
+                          "version_name": "4.7.5",
+                          "version_code": "71",
+                          "download_url": "${server.url("/downloads/AuroraStore-4.7.5.apk")}",
+                          "changelog": "No commits today."
+                        }
+                        """.trimIndent()
+                    )
+            )
+
             val result = GitHubDirectApkJsonFallbackResolver()
-                .resolve(server.url("/dl/android/apk-public-beta.json").toString())
+                .resolve(server.url("/downloads/AuroraStore/Feeds/release_feed.json").toString())
                 .getOrThrow()
 
-            assertNull(result)
-            assertEquals(0, server.requestCount)
+            assertEquals(
+                "/downloads/AuroraStore/Feeds/release_feed.json",
+                server.takeRequest().path
+            )
+            assertEquals("4.7.5", result?.versionName)
+            assertEquals("71", result?.versionCode)
+            assertEquals("AuroraStore-4.7.5.apk", result?.toAsset()?.name)
+            assertEquals("No commits today.", result?.changelog)
+        }
+    }
+
+    @Test
+    fun `resolve reads nested release array`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        {
+                          "releases": [
+                            {
+                              "versionName": "1.2.0",
+                              "versionCode": 120,
+                              "apk_url": "${server.url("/files/app.apk")}",
+                              "release_notes": "Nested notes"
+                            }
+                          ]
+                        }
+                        """.trimIndent()
+                    )
+            )
+
+            val result = GitHubDirectApkJsonFallbackResolver()
+                .resolve(server.url("/feeds/app.json").toString())
+                .getOrThrow()
+
+            assertEquals("1.2.0", result?.versionName)
+            assertEquals("120", result?.versionCode)
+            assertEquals("Nested notes", result?.changelog)
         }
     }
 }

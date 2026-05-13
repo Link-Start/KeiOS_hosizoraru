@@ -14,7 +14,8 @@ data class GitHubApkManifestInfo(
     val features: List<String> = emptyList(),
     val metadata: List<GitHubApkManifestMetadata> = emptyList(),
     val manifestNodes: List<GitHubApkManifestNode> = emptyList(),
-    val signatureInfo: GitHubApkSignatureInfo? = null
+    val signatureInfo: GitHubApkSignatureInfo? = null,
+    val releaseNotes: String = ""
 )
 
 data class GitHubRemoteApkVersionInfo(
@@ -25,7 +26,8 @@ data class GitHubRemoteApkVersionInfo(
     val packageName: String = "",
     val versionName: String = "",
     val versionCode: String = "",
-    val fetchSource: String = ""
+    val fetchSource: String = "",
+    val releaseNotes: String = ""
 ) {
     val versionCodeLong: Long?
         get() = versionCode.trim().toLongOrNull()

@@ -478,6 +478,36 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
+    fun `direct apk manifest release notes propagate into cache entry`() {
+        val item = directApkTrackedApp()
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            manifest = GitHubApkManifestInfo(
+                assetName = "apk.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.1.0",
+                versionCode = "101",
+                releaseNotes = "Fixed media playback\nImproved push reliability"
+            )
+        )
+        val restored = GitHubReleaseCheckService.fromCacheEntry(
+            GitHubReleaseCheckService.run { result.toCacheEntry() }
+        )
+
+        assertEquals(
+            "Fixed media playback\nImproved push reliability",
+            result.preciseStableApkVersion?.releaseNotes
+        )
+        assertEquals(
+            "Fixed media playback\nImproved push reliability",
+            restored.preciseStableApkVersion?.releaseNotes
+        )
+    }
+
+    @Test
     fun `direct apk manifest package mismatch fails before version comparison`() {
         val item = directApkTrackedApp()
 

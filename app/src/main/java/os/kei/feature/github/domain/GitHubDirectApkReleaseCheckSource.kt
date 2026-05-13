@@ -54,22 +54,32 @@ internal class GitHubDirectApkReleaseCheckSource(
             preciseApkVersionEnabled = true
         )
         // Direct APK URLs often keep the same URL and filename while serving a newer APK.
+        val jsonPrimaryResolution = if (asset.downloadUrl.endsWith(".json", ignoreCase = true)) {
+            jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
+        } else {
+            null
+        }
         val versionedDirectoryResolution = versionedDirectoryResolver
             .resolve(asset.downloadUrl)
             .getOrNull()
-        val primaryAsset = versionedDirectoryResolution?.toAsset(asset.name) ?: asset
+        val primaryAsset = jsonPrimaryResolution?.toAsset()
+            ?: versionedDirectoryResolution?.toAsset(asset.name)
+            ?: asset
         val manifestResult = apkInfoRepository.inspectAsync(
             asset = primaryAsset,
             lookupConfig = directLookupConfig,
             forceRefresh = true
         ).map { manifest ->
-            versionedDirectoryResolution?.let { resolution ->
+            jsonPrimaryResolution?.let { resolution ->
+                manifest.withJsonFallback(resolution)
+            } ?: versionedDirectoryResolution?.let { resolution ->
                 manifest.withVersionedDirectoryResolution(resolution, primaryAsset)
             } ?: manifest
         }
         val manifest = manifestResult.getOrElse { directError ->
             val originalAsset = asset.takeIf { primaryAsset.downloadUrl != asset.downloadUrl }
-            val jsonFallback = jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
+            val jsonFallback = jsonPrimaryResolution
+                ?: jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
             val fallbackTargets = buildList {
                 originalAsset?.let { fallbackAsset ->
                     add(DirectApkFallbackTarget(asset = fallbackAsset))
@@ -161,7 +171,8 @@ internal class GitHubDirectApkReleaseCheckSource(
                 assetName = assetName.ifBlank { fallback.toAsset().name },
                 versionName = versionName.ifBlank { fallback.versionName },
                 versionCode = versionCode.ifBlank { fallback.versionCode },
-                fetchSource = fallback.fileUrl
+                fetchSource = fallback.fileUrl,
+                releaseNotes = releaseNotes.ifBlank { fallback.changelog }
             )
         }
 
@@ -211,7 +222,8 @@ internal class GitHubDirectApkReleaseCheckSource(
                 packageName = remotePackage,
                 versionName = manifest.versionName,
                 versionCode = manifest.versionCode,
-                fetchSource = manifest.fetchSource.ifBlank { DIRECT_APK_STRATEGY_ID }
+                fetchSource = manifest.fetchSource.ifBlank { DIRECT_APK_STRATEGY_ID },
+                releaseNotes = manifest.releaseNotes
             )
             val displayVersion = preciseInfo.versionLabel()
                 .ifBlank { preciseInfo.releaseLabel() }

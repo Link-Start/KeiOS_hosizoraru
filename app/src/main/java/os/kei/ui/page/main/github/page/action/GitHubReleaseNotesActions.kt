@@ -7,11 +7,13 @@ import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.data.remote.directApkFileNameFromUrl
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.releaseNotesApkVersionKey
 import os.kei.ui.page.main.github.statusActionUrl
@@ -61,6 +63,24 @@ internal class GitHubReleaseNotesActions(
     ) {
         val cachedTargets = state.releaseNotesTargets[item.id].orEmpty()
         val cachedSelected = state.releaseNotesSelectedTargets[item.id]
+        directApkReleaseNotesTarget(item, itemState)?.let { directTarget ->
+            val directTargets = listOf(directTarget)
+            val selectedTarget = selectRefreshedReleaseNotesTarget(
+                previousTarget = cachedSelected,
+                targets = directTargets,
+                preferPreRelease = item.preferPreRelease
+            ) ?: directTarget
+            state.releaseNotesTargets[item.id] = directTargets
+            state.releaseNotesTargetsLoadedAtMs[item.id] = System.currentTimeMillis()
+            state.releaseNotesSelectedTargets[item.id] = selectedTarget
+            state.releaseNotesErrors.remove(item.id)
+            loadReleaseNotesBundle(
+                item = item,
+                target = selectedTarget,
+                clearCache = forceRefresh
+            )
+            return
+        }
         if (
             !forceRefresh &&
             cachedTargets.isNotEmpty() &&
@@ -128,6 +148,18 @@ internal class GitHubReleaseNotesActions(
         target: GitHubReleaseNotesTarget,
         clearCache: Boolean
     ) {
+        directApkReleaseNotesBundle(item, target)?.let { bundle ->
+            val key = releaseNotesApkVersionKey(item.id, target)
+            state.releaseNotesLoading[item.id] = false
+            state.releaseNotesErrors.remove(item.id)
+            state.releaseNotesBundles[item.id] = bundle
+            state.releaseNotesBundleLoadedAtMs[item.id] = System.currentTimeMillis()
+            state.checkStates[item.id]
+                ?.latestStableApkVersion
+                ?.takeIf { it.hasVersion() }
+                ?.let { state.releaseNotesApkVersions[key] = it }
+            return
+        }
         val lookupConfig = state.lookupConfig.forTrackedItem(item)
         val cachedBundle = state.releaseNotesBundles[item.id]
         if (
@@ -241,6 +273,7 @@ internal class GitHubReleaseNotesActions(
         itemState: VersionCheckUi
     ): List<GitHubReleaseNotesTarget> {
         return buildList {
+            directApkReleaseNotesTarget(item, itemState)?.let(::add)
             itemState.latestStableRawTag.trim().takeIf { it.isNotBlank() }?.let { tag ->
                 add(
                     GitHubReleaseNotesTarget(
@@ -272,6 +305,69 @@ internal class GitHubReleaseNotesActions(
                 )
             }
         }.distinctBy { it.id.lowercase() }
+    }
+
+    private fun directApkReleaseNotesTarget(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi
+    ): GitHubReleaseNotesTarget? {
+        if (!item.isDirectApkTrack()) return null
+        val info = itemState.latestStableApkVersion
+            ?.takeIf { it.releaseNotes.isNotBlank() }
+            ?: return null
+        val tag = info.versionLabel()
+            .ifBlank { info.releaseTag.trim() }
+            .ifBlank { itemState.latestStableRawTag.trim() }
+            .ifBlank { itemState.latestTag.trim() }
+            .ifBlank { info.assetName.trim() }
+            .ifBlank { item.repo.trim() }
+        return GitHubReleaseNotesTarget(
+            releaseName = info.releaseName.trim()
+                .ifBlank { itemState.latestStableName.trim() }
+                .ifBlank { item.appLabel.trim() }
+                .ifBlank { item.repo.trim() },
+            tagName = tag,
+            htmlUrl = info.releaseUrl.trim().ifBlank { item.repoUrl.trim() },
+            prerelease = false,
+            latestInChannel = true,
+            updatedAtMillis = itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+        )
+    }
+
+    private fun directApkReleaseNotesBundle(
+        item: GitHubTrackedApp,
+        target: GitHubReleaseNotesTarget
+    ): GitHubReleaseAssetBundle? {
+        if (!item.isDirectApkTrack()) return null
+        val itemState = state.checkStates[item.id] ?: return null
+        val info = itemState.latestStableApkVersion
+            ?.takeIf { it.releaseNotes.isNotBlank() }
+            ?: return null
+        val assetUrl = info.fetchSource.trim()
+            .ifBlank { info.releaseUrl.trim() }
+            .ifBlank { item.repoUrl.trim() }
+        val assetName = info.assetName.trim()
+            .ifBlank { directApkFileNameFromUrl(assetUrl) }
+            .ifBlank { "remote.apk" }
+        return GitHubReleaseAssetBundle(
+            releaseName = target.releaseName,
+            tagName = target.tagName,
+            htmlUrl = target.htmlUrl.ifBlank { item.repoUrl },
+            releaseUpdatedAtMillis = itemState.latestStableUpdatedAtMillis.takeIf { it > 0L },
+            releaseNotesBody = info.releaseNotes,
+            assets = listOf(
+                GitHubReleaseAssetFile(
+                    name = assetName,
+                    downloadUrl = assetUrl,
+                    sizeBytes = 0L,
+                    downloadCount = 0,
+                    contentType = "application/vnd.android.package-archive",
+                    updatedAtMillis = itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+                )
+            ),
+            showingAllAssets = true,
+            fetchSource = DIRECT_APK_RELEASE_NOTES_FETCH_SOURCE
+        )
     }
 
     private fun resolveReleaseNotesApkVersionIfNeeded(
@@ -388,6 +484,7 @@ internal class GitHubReleaseNotesActions(
     }
 
     private companion object {
+        const val DIRECT_APK_RELEASE_NOTES_FETCH_SOURCE = "subscription"
         const val MAX_RELEASE_NOTES_APK_VERSION_CANDIDATES = 4
         const val MAX_RELEASE_NOTES_APK_VERSION_PARALLEL = 2
     }

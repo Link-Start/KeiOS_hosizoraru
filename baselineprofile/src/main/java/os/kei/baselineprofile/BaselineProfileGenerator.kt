@@ -81,7 +81,7 @@ private fun targetAppId(): String {
 }
 
 private fun MacrobenchmarkScope.testTagSelector(tag: String): BySelector {
-    return By.res("${targetAppId()}:id/$tag")
+    return By.res(tag)
 }
 
 private fun MacrobenchmarkScope.waitForTestTag(tag: String, timeoutMs: Long = 5_000) {

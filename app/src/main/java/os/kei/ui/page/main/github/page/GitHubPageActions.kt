@@ -15,7 +15,6 @@ import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -89,16 +88,16 @@ internal class GitHubPageActions(
         env.state.debugActionsUpdateNotificationLoading = true
         env.scope.launch {
             try {
-                val item = env.state.trackedItems.firstOrNull { it.isKeiOsSelfTrack() }
-                if (item == null) {
+                val target = selectKeiOsActionsDebugNotificationTarget(env.state.trackedItems)
+                if (target == null) {
                     env.toast(R.string.github_actions_update_debug_toast_track_missing)
                     return@launch
                 }
-                val previous = GitHubActionsRecommendedRunStore.load(item.id)
-                    ?: env.state.actionsRecommendedRunSnapshots[item.id]
+                val previous = GitHubActionsRecommendedRunStore.load(target.uiItem.id)
+                    ?: env.state.actionsRecommendedRunSnapshots[target.uiItem.id]
                 val snapshot = GitHubActionsUpdateCheckService()
                     .fetchRecommendedRunSnapshot(
-                        item = item,
+                        item = target.lookupItem,
                         lookupConfig = env.state.lookupConfig,
                         previousWorkflowId = previous?.workflowId
                     )
@@ -109,13 +108,17 @@ internal class GitHubPageActions(
                         )
                         return@launch
                     }
-                if (env.state.trackedItems.any { it.id == item.id }) {
-                    GitHubActionsRecommendedRunStore.save(snapshot)
-                    env.state.actionsRecommendedRunSnapshots[item.id] = snapshot
+                val routedSnapshot = snapshot.copy(
+                    trackId = target.uiItem.id,
+                    appLabel = target.uiItem.appLabel.ifBlank { snapshot.appLabel }
+                )
+                if (env.state.trackedItems.any { it.id == target.uiItem.id }) {
+                    GitHubActionsRecommendedRunStore.save(routedSnapshot)
+                    env.state.actionsRecommendedRunSnapshots[target.uiItem.id] = routedSnapshot
                 }
                 val sent = GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
                     context = env.context,
-                    snapshot = snapshot
+                    snapshot = routedSnapshot
                 )
                 env.toast(
                     if (sent) {

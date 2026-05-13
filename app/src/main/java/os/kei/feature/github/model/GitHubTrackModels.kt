@@ -8,6 +8,7 @@ private const val keiOsTrackOwner = "hosizoraru"
 private const val keiOsTrackRepo = "KeiOS"
 private const val keiOsTrackRepoUrl = "https://github.com/$keiOsTrackOwner/$keiOsTrackRepo"
 private const val keiOsTrackAppLabel = "KeiOS"
+internal const val KEI_OS_RELEASE_PACKAGE_NAME = "os.kei"
 
 data class GitHubTrackedApp(
     val repoUrl: String,
@@ -207,9 +208,30 @@ internal fun defaultKeiOsTrackedApp(): GitHubTrackedApp {
     )
 }
 
+internal fun GitHubTrackedApp.asKeiOsActionsRunLookupItem(): GitHubTrackedApp {
+    return copy(
+        repoUrl = keiOsTrackRepoUrl,
+        owner = keiOsTrackOwner,
+        repo = keiOsTrackRepo,
+        packageName = KEI_OS_RELEASE_PACKAGE_NAME,
+        appLabel = appLabel.ifBlank { keiOsTrackAppLabel },
+        sourceMode = GitHubTrackedSourceMode.GitHubRepository
+    ).withSourceModeConstraints()
+}
+
+internal fun GitHubTrackedApp.isKeiOsRepositoryTrack(): Boolean {
+    return sourceMode == GitHubTrackedSourceMode.GitHubRepository &&
+            owner.equals(keiOsTrackOwner, ignoreCase = true) &&
+            repo.equals(keiOsTrackRepo, ignoreCase = true)
+}
+
+internal fun GitHubTrackedApp.isKeiOsReleaseTrack(): Boolean {
+    return isKeiOsRepositoryTrack() &&
+            packageName.equals(KEI_OS_RELEASE_PACKAGE_NAME, ignoreCase = true)
+}
+
 internal fun GitHubTrackedApp.isKeiOsSelfTrack(): Boolean {
-    return owner.equals(keiOsTrackOwner, ignoreCase = true) &&
-        repo.equals(keiOsTrackRepo, ignoreCase = true) &&
+    return isKeiOsRepositoryTrack() &&
         packageName.equals(BuildConfig.APPLICATION_ID, ignoreCase = true)
 }
 

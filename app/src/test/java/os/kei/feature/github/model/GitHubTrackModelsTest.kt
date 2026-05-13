@@ -25,6 +25,18 @@ class GitHubTrackModelsTest {
     }
 
     @Test
+    fun `kei os actions lookup target uses release package name`() {
+        val item = defaultKeiOsTrackedApp()
+        val lookupItem = item.asKeiOsActionsRunLookupItem()
+
+        assertEquals("hosizoraru", lookupItem.owner)
+        assertEquals("KeiOS", lookupItem.repo)
+        assertEquals(KEI_OS_RELEASE_PACKAGE_NAME, lookupItem.packageName)
+        assertEquals("hosizoraru/KeiOS|os.kei", lookupItem.id)
+        assertTrue(lookupItem.isKeiOsReleaseTrack())
+    }
+
+    @Test
     fun `direct apk identity preserves host and full path`() {
         val identity =
             buildDirectApkTrackIdentity("https://telegram.org/dl/android/apk-public-beta")

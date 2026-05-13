@@ -47,6 +47,22 @@ internal fun GitHubTrackAppPickerSortMode.showsInstallSourcePill(): Boolean {
     return this == GitHubTrackAppPickerSortMode.InstallSource
 }
 
+internal fun gitHubTrackAppCandidateInitialScrollIndex(
+    candidates: List<InstalledAppItem>,
+    selectedPackageName: String?
+): Int {
+    val normalizedSelectedPackage = selectedPackageName
+        ?.normalizedGitHubTrackAppPackageNameOrNull()
+        ?: return 0
+    val selectedIndex = candidates.indexOfFirst { candidate ->
+        candidate.packageName.normalizedGitHubTrackAppPackageNameOrNull() == normalizedSelectedPackage
+    }
+    return when {
+        selectedIndex <= 0 -> 0
+        else -> selectedIndex - 1
+    }
+}
+
 internal fun filterAndSortGitHubTrackAppCandidates(
     apps: List<InstalledAppItem>,
     query: String,

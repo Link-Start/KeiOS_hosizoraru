@@ -107,6 +107,40 @@ class GitHubTrackAppPickerModelsTest {
         }
     }
 
+    @Test
+    fun `initial scroll index keeps selected app near the viewport`() {
+        val candidates = listOf(
+            InstalledAppItem(label = "One", packageName = "com.demo.one"),
+            InstalledAppItem(label = "Two", packageName = "com.demo.two"),
+            InstalledAppItem(label = "Three", packageName = "com.demo.three"),
+            InstalledAppItem(label = "Four", packageName = "com.demo.four")
+        )
+
+        assertEquals(
+            1,
+            gitHubTrackAppCandidateInitialScrollIndex(
+                candidates = candidates,
+                selectedPackageName = "com.demo.three"
+            )
+        )
+    }
+
+    @Test
+    fun `initial scroll index falls back to top when selected app is missing`() {
+        val candidates = listOf(
+            InstalledAppItem(label = "One", packageName = "com.demo.one"),
+            InstalledAppItem(label = "Two", packageName = "com.demo.two")
+        )
+
+        assertEquals(
+            0,
+            gitHubTrackAppCandidateInitialScrollIndex(
+                candidates = candidates,
+                selectedPackageName = "com.demo.missing"
+            )
+        )
+    }
+
     private companion object {
         private val apps = listOf(
             InstalledAppItem(

@@ -715,6 +715,9 @@ private fun GitHubTrackAppPickerContent(
             GitHubTrackAppPickerSortDirection.fromStorageId(savedPreferences.sortDirectionId)
         )
     }
+    var initialAppFocusApplied by remember(selectedApp?.packageName) {
+        mutableStateOf(false)
+    }
     val showInstallSourcePill = sortMode.showsInstallSourcePill()
     val filteredApps =
         remember(
@@ -762,15 +765,15 @@ private fun GitHubTrackAppPickerContent(
         }
     }
 
-    LaunchedEffect(
-        appSearch,
-        includeUserApps,
-        includeSystemApps,
-        includeTrackedApps,
-        sortMode,
-        sortDirection
-    ) {
-        listState.scrollToItem(0)
+    LaunchedEffect(filteredApps, selectedApp?.packageName, initialAppFocusApplied) {
+        if (initialAppFocusApplied || filteredApps.isEmpty()) return@LaunchedEffect
+        listState.scrollToItem(
+            gitHubTrackAppCandidateInitialScrollIndex(
+                candidates = filteredApps,
+                selectedPackageName = selectedApp?.packageName
+            )
+        )
+        initialAppFocusApplied = true
     }
 
     SheetContentColumn(
@@ -824,7 +827,10 @@ private fun GitHubTrackAppPickerContent(
             }
             AppLiquidSearchField(
                 value = appSearch,
-                onValueChange = onAppSearchChange,
+                onValueChange = { value ->
+                    onAppSearchChange(value)
+                    scrollAppListToTop()
+                },
                 label = stringResource(R.string.github_track_sheet_input_app_filter),
                 backdrop = backdrop,
                 variant = GlassVariant.SheetInput,

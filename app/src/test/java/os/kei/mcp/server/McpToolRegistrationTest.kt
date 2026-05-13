@@ -31,8 +31,10 @@ class McpToolRegistrationTest {
 
         assertTrue("keios.mcp.workflow.blueprints" in server.tools.keys)
         assertTrue(WORKFLOW_PLAN_PROMPT in server.prompts.keys)
+        assertTrue(DIAGNOSTICS_PLAN_PROMPT in server.prompts.keys)
         assertTrue(WORKFLOW_RESOURCE_URI in server.resources.keys)
         assertTrue(server.resourceTemplates.any { it.uriTemplate == WORKFLOW_TEMPLATE_URI })
+        assertTrue(server.resourceTemplates.any { it.uriTemplate == SKILL_DOMAIN_TEMPLATE_URI })
 
         val listTool = server.tools.getValue("keios.github.tracks.list").tool
         val listProperties = listTool.inputSchema.properties.orEmpty()
@@ -42,6 +44,9 @@ class McpToolRegistrationTest {
         assertTrue(filterModeSchema.contains("pre_release_tracked"))
         assertTrue(filterModeSchema.contains("default"))
         assertTrue(listTool.meta.toString().contains("keios/group"))
+        assertTrue(listTool.meta.toString().contains("keios/visibility"))
+        assertTrue(listTool.meta.toString().contains("keios/maturity"))
+        assertTrue(listTool.meta.toString().contains("keios/recommendedFor"))
         assertTrue(listTool.meta.toString().contains("keios/arguments"))
 
         val importTool = server.tools.getValue("keios.github.tracks.import").tool
@@ -66,7 +71,12 @@ class McpToolRegistrationTest {
         assertTrue(workflowTool.annotations?.readOnlyHint ?: false)
         assertFalse(workflowTool.annotations?.openWorldHint ?: true)
         assertTrue(workflowTool.meta.toString().contains("keios/entrypoint"))
+        assertTrue(workflowTool.meta.toString().contains("keios/visibility"))
+        assertTrue(workflowTool.meta.toString().contains("workflow"))
         assertTrue(workflowTool.meta.toString().contains("true"))
+
+        val pingTool = server.tools.getValue("keios.health.ping").tool
+        assertEquals(listOf("format", "text"), pingTool.outputSchema?.required?.sorted())
     }
 
     @Test
@@ -82,9 +92,11 @@ class McpToolRegistrationTest {
         assertTrue(markdown.contains("follow_global"))
         assertTrue(markdown.contains("3h"))
         assertTrue(markdown.contains(WORKFLOW_PLAN_PROMPT))
+        assertTrue(markdown.contains(DIAGNOSTICS_PLAN_PROMPT))
         assertTrue(markdown.contains(WORKFLOW_RESOURCE_URI))
+        assertTrue(markdown.contains(SKILL_DOMAIN_TEMPLATE_URI))
         assertTrue(markdown.contains("keios.mcp.workflow.blueprints"))
-        assertTrue(markdown.indexOf("Entry Points") < markdown.indexOf("Full Tool Reference"))
+        assertTrue(markdown.indexOf("Recommended Entry Points") < markdown.indexOf("Full Tool Index"))
     }
 
     private fun createService(): LocalMcpService {
@@ -104,7 +116,7 @@ class McpToolRegistrationTest {
                     tools = service.listLocalTools()
                 )
             }
-            service.bindToolCallLogger { _, _, _, _ -> }
+            service.bindToolCallLogger { _, _, _, _, _ -> }
         }
     }
 }

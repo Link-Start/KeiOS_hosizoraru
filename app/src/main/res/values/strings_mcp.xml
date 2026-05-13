@@ -41,6 +41,8 @@
     <string name="mcp_action_edit_service_params">编辑服务参数</string>
     <string name="mcp_action_open_skill_md">查看 SKILL.md</string>
     <string name="mcp_action_copy_current_config">复制当前配置</string>
+    <string name="mcp_action_copy_skill_resource">复制 Skill URI</string>
+    <string name="mcp_action_copy_workflow_resource">复制工作流 URI</string>
     <string name="mcp_action_send_test_notification">发送测试通知</string>
     <string name="mcp_action_reset_service_config">重置配置</string>
     <string name="mcp_action_clear_logs">清空日志</string>
@@ -52,6 +54,15 @@
     <string name="mcp_section_service_control_subtitle">通知与连接调试</string>
     <string name="mcp_section_tools_title">工具</string>
     <string name="mcp_section_tools_subtitle">%1$d 个工具</string>
+    <string name="mcp_section_tool_surface_title">MCP 工具入口</string>
+    <string name="mcp_section_tool_surface_subtitle">入口 %1$d · 工作流 %2$d · 高级 %3$d</string>
+    <string name="mcp_tools_search_hint">搜索工具、领域或说明</string>
+    <string name="mcp_tools_entrypoints_title">推荐入口</string>
+    <string name="mcp_tools_workflows_title">工作流工具</string>
+    <string name="mcp_tools_advanced_title">高级工具</string>
+    <string name="mcp_tools_empty_group">当前没有匹配工具</string>
+    <string name="mcp_tools_expand_advanced">展开其余 %1$d 个高级工具</string>
+    <string name="mcp_tools_collapse_advanced">收起高级工具</string>
     <string name="mcp_section_logs_title">MCP Logs</string>
     <string name="mcp_section_logs_subtitle">%1$d 条</string>
     <string name="mcp_sheet_edit_service_title">编辑 MCP 服务</string>
@@ -64,6 +75,7 @@
     <string name="mcp_toast_service_started">MCP 服务已启动</string>
     <string name="mcp_toast_start_failed">启动失败: %1$s</string>
     <string name="mcp_toast_config_copied">MCP 配置已复制</string>
+    <string name="mcp_toast_resource_copied">MCP 资源 URI 已复制</string>
     <string name="mcp_toast_test_notification_sent">已发送 MCP 测试通知</string>
     <string name="mcp_toast_config_reset">MCP 服务配置已重置为默认值</string>
     <string name="mcp_toast_config_reset_requires_restart">MCP 服务配置已重置为默认值，运行中的端口与网络模式会在重启服务后生效</string>

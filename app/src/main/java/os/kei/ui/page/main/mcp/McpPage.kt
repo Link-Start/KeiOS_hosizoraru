@@ -35,6 +35,8 @@ import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.mcp.server.McpServerManager
+import os.kei.mcp.server.SKILL_RESOURCE_URI
+import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.mcp.dialog.McpResetConfigDialog
@@ -77,6 +79,7 @@ fun McpPage(
     val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
     val openSkillContentDescription = stringResource(R.string.mcp_action_open_skill_md)
     val copyConfigContentDescription = stringResource(R.string.mcp_action_copy_current_config)
+    val resourceCopiedText = stringResource(R.string.mcp_toast_resource_copied)
     val refreshContentDescription = stringResource(R.string.common_refresh)
     val unknownText = stringResource(R.string.common_unknown)
     val runtimePendingText = stringResource(R.string.mcp_runtime_pending)
@@ -242,6 +245,14 @@ fun McpPage(
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+    val copySkillResource: () -> Unit = {
+        copyToClipboard(context, "mcp-skill-resource", SKILL_RESOURCE_URI)
+        Toast.makeText(context, resourceCopiedText, Toast.LENGTH_SHORT).show()
+    }
+    val copyWorkflowResource: () -> Unit = {
+        copyToClipboard(context, "mcp-workflow-resource", WORKFLOW_RESOURCE_URI)
+        Toast.makeText(context, resourceCopiedText, Toast.LENGTH_SHORT).show()
     }
     val refreshMcpNow: () -> Unit = {
         if (!refreshRunning) {
@@ -496,7 +507,13 @@ fun McpPage(
                         expanded = pageUiState.controlExpanded,
                         onExpandedChange = mcpPageViewModel::updateControlExpanded,
                         onSendTestNotification = sendTestNotification,
-                        onShowResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(true) }
+                        onShowResetConfigConfirm = {
+                            mcpPageViewModel.updateResetConfigConfirmVisible(
+                                true
+                            )
+                        },
+                        onCopySkillResource = copySkillResource,
+                        onCopyWorkflowResource = copyWorkflowResource
                     )
                 }
                 item {
@@ -504,7 +521,11 @@ fun McpPage(
                         backdrop = backdrops.content,
                         expanded = pageUiState.configExpanded,
                         onExpandedChange = mcpPageViewModel::updateConfigExpanded,
-                        uiState = uiState
+                        uiState = uiState,
+                        searchQuery = pageUiState.toolsSearchQuery,
+                        onSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
+                        advancedExpanded = pageUiState.advancedToolsExpanded,
+                        onAdvancedExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded
                     )
                 }
                 item {

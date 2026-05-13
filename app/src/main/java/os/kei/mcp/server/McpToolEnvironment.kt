@@ -12,7 +12,13 @@ internal class McpToolEnvironment(
     val appPackageName: String,
     val appLabel: String,
     private val stateProvider: () -> McpServerUiState?,
-    private val toolCallLogger: (name: String, elapsedMs: Long, success: Boolean, error: String?) -> Unit
+    private val toolCallLogger: (
+        name: String,
+        profile: McpToolExecutionProfile,
+        elapsedMs: Long,
+        success: Boolean,
+        error: String?
+    ) -> Unit
 ) {
     fun currentState(): McpServerUiState? = stateProvider()
 
@@ -23,10 +29,11 @@ internal class McpToolEnvironment(
 
     fun recordToolCall(
         name: String,
+        profile: McpToolExecutionProfile,
         elapsedMs: Long,
         success: Boolean,
         error: String?
     ) {
-        toolCallLogger(name, elapsedMs, success, error)
+        toolCallLogger(name, profile, elapsedMs, success, error)
     }
 }

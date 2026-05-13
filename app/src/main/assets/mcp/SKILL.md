@@ -7,13 +7,13 @@
 - Local endpoint: {{LOCAL_ENDPOINT}}
 - LAN endpoints: {{LAN_ENDPOINTS}}
 
-## Start Here
+## Quick Start
 
-1. Call `keios.health.ping`.
-2. Call `keios.mcp.runtime.status`.
-3. Read `{{RESOURCE_WORKFLOWS_URI}}` for scheduled tasks or composed skills.
-4. Call `keios.mcp.workflow.blueprints(mode=list)` when choosing a workflow by tools.
-5. Read `{{RESOURCE_OVERVIEW_URI}}` or `keios://skill/tool/{tool}` only for low-level detail.
+1. Call `keios.health.ping` to verify connectivity.
+2. Call `keios.mcp.runtime.status` for server, token, and endpoint state.
+3. Read `{{RESOURCE_WORKFLOWS_URI}}` to choose a scheduled task or composed-skill blueprint.
+4. Read `{{RESOURCE_DOMAIN_TEMPLATE_URI}}` for a domain guide.
+5. Read `{{RESOURCE_SKILL_URI}}` for the complete guide.
 
 ## Client Config
 
@@ -21,112 +21,66 @@
 - Mode config template: `{{RESOURCE_CONFIG_TEMPLATE_URI}}`
 - Bootstrap prompt: `{{PROMPT_BOOTSTRAP}}`
 - Workflow prompt: `{{PROMPT_WORKFLOW_PLAN}}`
-- Workflow blueprints: `{{RESOURCE_WORKFLOWS_URI}}`
-- Claw onboarding: `keios.mcp.claw.skill.guide(mode=auto)`
-- Use `mode=local` for same-device clients and `mode=lan` for cross-device debugging.
+- Diagnostics prompt: `{{PROMPT_DIAGNOSTICS_PLAN}}`
+- Claw onboarding tool: `keios.mcp.claw.skill.guide(mode=auto)`
 
-## Entry Points
+## Recommended Entry Points
 
-- `keios.health.ping`: connectivity probe.
-- `keios.mcp.runtime.status`: server, token, endpoint, and client status.
-- `keios.mcp.workflow.blueprints`: workflow chooser for scheduled tasks and composed skills.
-- `keios.github.config.snapshot`: GitHub settings and tracking context.
-- `keios.ba.snapshot`: Blue Archive AP, Cafe, notification, and server context.
+{{ENTRYPOINT_TOOLS}}
 
-Use these entry points first. Read `keios://skill/tool/{tool}` before calling a lower-level tool.
+Entry points explain the current state. Read `{{RESOURCE_DOMAIN_TEMPLATE_URI}}` or
+`{{RESOURCE_TOOL_TEMPLATE_URI}}` before lower-level tools.
 
-## Runtime And Home
+## Workflows
 
-- `keios.health.ping`, `keios.app.info`, `keios.app.version`, `keios.shizuku.status`
-- `keios.mcp.runtime.status`, `keios.mcp.runtime.logs`, `keios.mcp.runtime.config`
-- `keios.mcp.workflow.blueprints`
-- `keios.home.overview.snapshot`
+- Workflow overview: `{{RESOURCE_WORKFLOWS_URI}}`
+- Single workflow: `{{RESOURCE_WORKFLOW_TEMPLATE_URI}}`
+- Tool entry: `keios.mcp.workflow.blueprints(mode=list|detail|skill, workflow=...)`
+- Planning prompt: `{{PROMPT_WORKFLOW_PLAN}}`
 
-## OS And System
+{{WORKFLOW_TOOLS}}
 
-- `keios.system.topinfo.query`
-- `keios.os.cards.snapshot`
-- `keios.os.activity.cards`
-- `keios.os.shell.cards`
-- `keios.os.cards.export`
-- `keios.os.cards.import`
+The client stores schedules. KeiOS MCP supplies query, check, export, and preview capabilities when
+a task fires.
 
-## GitHub
+## Domain Resources
 
-- Config: `keios.github.config.snapshot`
-- Tracking: `keios.github.tracks.snapshot`, `keios.github.tracks.list`, `keios.github.tracks.check`,
-  `keios.github.tracks.summary`, `keios.github.tracks.export`, `keios.github.tracks.import`
-- Actions: `keios.github.actions.recommended`
-- Links: `keios.github.link.parse`, `keios.github.link.resolve`, `keios.github.link.pending`
-- Discovery: `keios.github.discovery.search`, `keios.github.repo.package.scan`,
-  `keios.github.direct_apk.inspect`, `keios.github.package.repo.scan`
-- Star import: `keios.github.stars.lists`, `keios.github.stars.preview`,
-  `keios.github.stars.import`, `keios.github.stars.apk.verify`
-- Cache: `keios.github.cache.clear`
+- Runtime: `keios://skill/domain/runtime`
+- GitHub: `keios://skill/domain/github`
+- OS: `keios://skill/domain/os`
+- BA: `keios://skill/domain/ba`
+- Single tool help: `{{RESOURCE_TOOL_TEMPLATE_URI}}`
 
-## Blue Archive
-
-- `keios.ba.snapshot`
-- `keios.ba.calendar.cache`
-- `keios.ba.pool.cache`
-- `keios.ba.guide.catalog.cache`
-- `keios.ba.guide.cache.overview`
-- `keios.ba.guide.cache.inspect`
-- `keios.ba.guide.media.list`
-- `keios.ba.guide.bgm.favorites`
-- `keios.ba.cache.clear`
-
-## Recommended Flows
+## Common Flows
 
 1. Runtime diagnostics: `keios.health.ping` -> `keios.mcp.runtime.status` ->
-   `keios.mcp.runtime.logs`
+   `keios.mcp.runtime.logs(limit=80)`
 2. GitHub update audit: `keios.github.config.snapshot` ->
    `keios.github.tracks.summary(mode=cache)` -> `keios.github.tracks.check(onlyUpdates=true)`
-3. GitHub source split: use `sourceMode=github_repository` or `sourceMode=direct_apk` on
-   track list, export, check, and summary tools. `direct_apk` is the argument and storage id for
-   subscription projects.
-4. Repo to package: `keios.github.repo.package.scan(repoUrl=..., expectedPackageName=...)`
-5. Direct APK check: `keios.github.direct_apk.inspect(url=..., expectedPackageName=...)`
-6. Actions audit: `keios.github.actions.recommended(refresh=false)` then
-   `keios.github.actions.recommended(refresh=true, onlyEnabled=true)` when network refresh is
-   needed.
-7. Package to repo: `keios.github.package.repo.scan(packageName=..., appLabel=...)`
-8. Star import: `keios.github.stars.lists` -> `keios.github.stars.preview` ->
+3. Actions audit: `keios.github.tracks.list(filterMode=actions_check_enabled)` ->
+   `keios.github.actions.recommended(refresh=true, onlyEnabled=true)`
+4. StarList import: `keios.github.stars.lists` -> `keios.github.stars.preview` ->
    `keios.github.stars.apk.verify` -> `keios.github.stars.import(apply=true)`
-9. Shared link intake: `keios.github.link.parse` -> `keios.github.link.resolve`
-10. BA cache audit: `keios.ba.snapshot` -> `keios.ba.calendar.cache` or `keios.ba.pool.cache` ->
-   `keios.ba.guide.cache.inspect`
+5. OS card backup: `keios.os.cards.snapshot` -> `keios.os.cards.export(target=all)`
+6. BA daily brief: `keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
 
-## Claw Workflows
-
-- Read `{{RESOURCE_WORKFLOWS_URI}}` for scheduled-task and composed-skill blueprints.
-- Read `{{RESOURCE_WORKFLOW_TEMPLATE_URI}}` for a single blueprint by id.
-- Use prompt `{{PROMPT_WORKFLOW_PLAN}}` with `goal`, `cadence`, `workflow`, and `delivery` when
-  creating a Claw task or reusable skill.
-- Use `keios.mcp.workflow.blueprints(mode=list|detail|skill, workflow=...)` when the client can
-  call tools more easily than reading resources.
-- Schedule storage belongs to the client. KeiOS MCP tools should run only when the scheduled task
-  fires.
-
-## Full Tool Reference
+## Full Tool Index
 
 {{TOOL_LIST}}
 
-## Output Contract
+## Output And Safety Contract
 
-- Tools return compact `key=value` lines and fixed list rows.
-- Import tools preview by default; writes require `apply=true`.
-- Workflow tools are read-only planning helpers; write tools still need explicit `apply=true`.
-- Start `limit` at 20 to 80 for audits.
+- Tools keep compact `key=value` lines and fixed list rows.
+- `structuredContent.text` mirrors text output on entrypoint tools for clients that read structured
+  fields.
+- Import tools preview by default; writes require explicit `apply=true`.
+- Network and deep-scan tools have timeouts and limit arguments; scheduled audits should start with
+  20 to 80 rows.
 - `repoFilter` accepts owner/repo, package name, or app label.
 - `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.
 - `filterMode` accepts `all`, `github_repository`, `direct_apk`, `pre_release_tracked`,
   `update_available`, `installed`, `failed_checks`, or `actions_check_enabled`.
-- GitHub tracking `sortMode` accepts `update`, `name`, `pre_release`, `changed`, or
-  `added`; `sortDirection` accepts `forward` or `reverse`.
-- GitHub tracked export uses `format=keios.github.tracked/v3`.
+- GitHub tracking `sortMode` accepts `update`, `name`, `pre_release`, `changed`, or `added`;
+  `sortDirection` accepts `forward` or `reverse`.
+- GitHub tracked export uses `keios.github.tracked/v3`.
 - `actionsUpdateIntervalMode` accepts `follow_global`, `15m`, `30m`, `1h`, `2h`, or `3h`.
-- Repository APK scans accept `expectedPackageName` for multi-package releases.
-- Actions refresh writes the recommended-run cache, uses bounded parallel network checks, and
-  returns `actionsIntervalMode` plus `actionsIntervalMinutes` per row.
-- `serverIndex` accepts 0 to 2 and defaults to the current BA server.

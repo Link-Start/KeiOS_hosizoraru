@@ -99,4 +99,29 @@ internal object McpSchema {
             required = arguments.filter { it.required }.map { it.name }.ifEmpty { null }
         )
     }
+
+    fun textOutputSchema(): ToolSchema {
+        return ToolSchema(
+            properties = buildJsonObject {
+                put(
+                    "text",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put(
+                            "description",
+                            JsonPrimitive("The same text returned in the tool content block.")
+                        )
+                    }
+                )
+                put(
+                    "format",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("KeiOS output contract id."))
+                    }
+                )
+            },
+            required = listOf("text", "format")
+        )
+    }
 }

@@ -7,11 +7,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 internal class McpSkillContent(
     private val environment: McpToolEnvironment,
     private val runtimeConfigBuilder: (McpServerUiState?, String, String, String) -> String
 ) {
+    private val skillTemplateCache = ConcurrentHashMap<String, String>()
+
     fun registerClawGuideTool(server: Server) {
         server.addMcpTextTool(environment, name = "keios.mcp.claw.skill.guide") { request ->
             val state = environment.currentState()
@@ -68,6 +71,24 @@ internal class McpSkillContent(
                 uri = SKILL_TOOL_TEMPLATE_URI.replace("{tool}", tool),
                 mimeType = MIME_MARKDOWN,
                 text = buildToolHelp(tool)
+            )
+        }
+        server.addResourceTemplate(
+            uriTemplate = SKILL_DOMAIN_TEMPLATE_URI,
+            name = "keios-mcp-domain-guide",
+            description = localText(
+                locale,
+                "KeiOS MCP 领域指南",
+                "KeiOS MCP domain guide",
+                "KeiOS MCP domain guide"
+            ),
+            mimeType = MIME_MARKDOWN
+        ) { _, params ->
+            val domain = params["domain"].orEmpty()
+            callResource(
+                uri = SKILL_DOMAIN_TEMPLATE_URI.replace("{domain}", domain),
+                mimeType = MIME_MARKDOWN,
+                text = buildDomainGuide(domain)
             )
         }
         server.addResource(
@@ -132,6 +153,39 @@ internal class McpSkillContent(
                 )
             )
         }
+        server.addPrompt(
+            name = DIAGNOSTICS_PLAN_PROMPT,
+            description = localText(
+                locale,
+                "生成 KeiOS MCP 连接、权限与工具失败排查流程。",
+                "Generate a KeiOS MCP diagnostics flow for connection, permission, and tool failures.",
+                "Generate a KeiOS MCP diagnostics flow for connection, permission, and tool failures."
+            ),
+            arguments = listOf(
+                PromptArgument(
+                    name = "symptom",
+                    description = localText(locale, "现象", "Symptom", "Symptom"),
+                    required = false,
+                    title = localText(locale, "现象", "Symptom", "Symptom")
+                )
+            )
+        ) { request ->
+            val symptom = request.arguments?.get("symptom").orEmpty().trim()
+            GetPromptResult(
+                description = localText(
+                    locale,
+                    "KeiOS MCP 排障计划",
+                    "KeiOS MCP diagnostics plan",
+                    "KeiOS MCP diagnostics plan"
+                ),
+                messages = listOf(
+                    PromptMessage(
+                        role = Role.User,
+                        content = TextContent(buildDiagnosticsPromptText(symptom, currentLocale()))
+                    )
+                )
+            )
+        }
     }
 
     fun buildServerInstructions(): String {
@@ -149,18 +203,23 @@ internal class McpSkillContent(
             appendLine("- overview=$SKILL_OVERVIEW_URI")
             appendLine("- skill=$SKILL_RESOURCE_URI")
             appendLine("- toolHelp=$SKILL_TOOL_TEMPLATE_URI")
+            appendLine("- domainHelp=$SKILL_DOMAIN_TEMPLATE_URI")
             appendLine("- workflows=$WORKFLOW_RESOURCE_URI")
             appendLine("- workflowPrompt=$WORKFLOW_PLAN_PROMPT")
+            appendLine("- diagnosticsPrompt=$DIAGNOSTICS_PLAN_PROMPT")
             appendLine("- config=$CONFIG_RESOURCE_URI")
         }.trim()
     }
 
     fun loadSkillMarkdown(): String {
         val locale = currentLocale()
+        val path = localizedSkillAssetPath(locale)
         return runCatching {
-            environment.appContext.assets.open(localizedSkillAssetPath(locale))
-                .bufferedReader()
-                .use { it.readText() }
+            skillTemplateCache.getOrPut(path) {
+                environment.appContext.assets.open(path)
+                    .bufferedReader()
+                    .use { it.readText() }
+            }
         }.map { template ->
             renderSkillTemplate(template, locale)
         }.getOrElse {
@@ -170,9 +229,8 @@ internal class McpSkillContent(
 
     private fun renderSkillTemplate(template: String, locale: Locale): String {
         val state = environment.currentState()
-        val toolList = McpToolCatalog.forLocale(locale).joinToString("\n") { meta ->
-            "- `${meta.name}`: ${meta.description}"
-        }
+        val tools = McpToolCatalog.forLocale(locale)
+        val toolList = tools.joinToString("\n") { meta -> "- `${meta.name}`: ${meta.description}" }
         return template
             .replace("{{APP_LABEL}}", environment.appLabel)
             .replace("{{APP_PACKAGE}}", environment.appPackageName)
@@ -188,12 +246,21 @@ internal class McpSkillContent(
             )
             .replace("{{RESOURCE_SKILL_URI}}", SKILL_RESOURCE_URI)
             .replace("{{RESOURCE_OVERVIEW_URI}}", SKILL_OVERVIEW_URI)
+            .replace("{{RESOURCE_TOOL_TEMPLATE_URI}}", SKILL_TOOL_TEMPLATE_URI)
+            .replace("{{RESOURCE_DOMAIN_TEMPLATE_URI}}", SKILL_DOMAIN_TEMPLATE_URI)
             .replace("{{RESOURCE_WORKFLOWS_URI}}", WORKFLOW_RESOURCE_URI)
             .replace("{{RESOURCE_WORKFLOW_TEMPLATE_URI}}", WORKFLOW_TEMPLATE_URI)
             .replace("{{PROMPT_BOOTSTRAP}}", BOOTSTRAP_PROMPT)
             .replace("{{PROMPT_WORKFLOW_PLAN}}", WORKFLOW_PLAN_PROMPT)
+            .replace("{{PROMPT_DIAGNOSTICS_PLAN}}", DIAGNOSTICS_PLAN_PROMPT)
             .replace("{{RESOURCE_CONFIG_URI}}", CONFIG_RESOURCE_URI)
             .replace("{{RESOURCE_CONFIG_TEMPLATE_URI}}", CONFIG_TEMPLATE_URI)
+            .replace(
+                "{{ENTRYPOINT_TOOLS}}",
+                buildToolSectionList(tools, McpToolVisibility.Entrypoint)
+            )
+            .replace("{{WORKFLOW_TOOLS}}", buildToolSectionList(tools, McpToolVisibility.Workflow))
+            .replace("{{ADVANCED_TOOLS}}", buildToolSectionList(tools, McpToolVisibility.Advanced))
             .replace("{{TOOL_LIST}}", toolList)
     }
 
@@ -215,10 +282,12 @@ internal class McpSkillContent(
             appendLine("skillResource=$SKILL_RESOURCE_URI")
             appendLine("skillOverviewResource=$SKILL_OVERVIEW_URI")
             appendLine("skillToolTemplate=$SKILL_TOOL_TEMPLATE_URI")
+            appendLine("skillDomainTemplate=$SKILL_DOMAIN_TEMPLATE_URI")
             appendLine("bootstrapPrompt=$BOOTSTRAP_PROMPT")
             appendLine("workflowResource=$WORKFLOW_RESOURCE_URI")
             appendLine("workflowTemplate=$WORKFLOW_TEMPLATE_URI")
             appendLine("workflowPrompt=$WORKFLOW_PLAN_PROMPT")
+            appendLine("diagnosticsPrompt=$DIAGNOSTICS_PLAN_PROMPT")
             appendLine("language=${locale.toLanguageTag()}")
             appendLine("configResource=$CONFIG_RESOURCE_URI")
             appendLine("configTemplate=$CONFIG_TEMPLATE_URI")
@@ -233,6 +302,7 @@ internal class McpSkillContent(
             appendLine("githubTools=${McpToolCatalog.githubToolNames.joinToString(",")}")
             appendLine("baTools=${McpToolCatalog.baToolNames.joinToString(",")}")
             appendLine("entrypointTools=${McpToolCatalog.entrypointToolNames.joinToString(",")}")
+            appendLine("domainGuides=${listOf("runtime", "github", "os", "ba").joinToString(",")}")
             appendLine("toolCount=${McpToolCatalog.all.size}")
             appendLine("tools=${McpToolCatalog.all.joinToString(",") { it.name }}")
         }.trim()
@@ -249,13 +319,21 @@ internal class McpSkillContent(
             appendLine()
             appendLine(hit.description)
             appendLine()
-            appendLine("group=${toolGroup(hit.name)}")
-            appendLine("output=key_value_text")
+            appendLine("group=${hit.group}")
+            appendLine("visibility=${hit.visibility.wireName}")
+            appendLine("maturity=${hit.maturity.wireName}")
+            appendLine("output=${hit.outputContract.wireName}")
             appendLine("writeRequiresApply=${hit.name.endsWith(".import")}")
             appendLine("readOnly=${hit.readOnly}")
             appendLine("openWorld=${hit.openWorld}")
             appendLine("executionProfile=${hit.executionProfile.name}")
             appendLine("entrypoint=${hit.name in MCP_ENTRYPOINT_TOOLS}")
+            if (hit.recommendedFor.isNotEmpty()) {
+                appendLine("recommendedFor=${hit.recommendedFor.joinToString(",")}")
+            }
+            if (hit.workflowTags.isNotEmpty()) {
+                appendLine("workflowTags=${hit.workflowTags.joinToString(",")}")
+            }
             if (hit.arguments.isNotEmpty()) {
                 appendLine("arguments=${hit.arguments.joinToString(",") { argument -> argument.name }}")
                 appendLine("required=${hit.requiredArguments.joinToString(",")}")
@@ -305,8 +383,31 @@ internal class McpSkillContent(
             appendLine("3) keios.github.config.snapshot")
             appendLine("4) $SKILL_OVERVIEW_URI")
             appendLine("5) $SKILL_RESOURCE_URI")
+            appendLine("6) $WORKFLOW_RESOURCE_URI")
             if (task.isNotBlank()) {
                 appendLine("task=$task")
+            }
+        }.trim()
+    }
+
+    private fun buildDiagnosticsPromptText(symptom: String, locale: Locale): String {
+        return buildString {
+            appendLine(
+                localText(
+                    locale,
+                    "请为 KeiOS MCP 生成一套排障步骤。",
+                    "Create a diagnostics flow for KeiOS MCP.",
+                    "Create a diagnostics flow for KeiOS MCP."
+                )
+            )
+            appendLine("1) keios.health.ping")
+            appendLine("2) keios.mcp.runtime.status")
+            appendLine("3) keios.mcp.runtime.logs(limit=80)")
+            appendLine("4) keios.shizuku.status")
+            appendLine("5) $SKILL_DOMAIN_TEMPLATE_URI")
+            appendLine("6) $SKILL_TOOL_TEMPLATE_URI")
+            if (symptom.isNotBlank()) {
+                appendLine("symptom=$symptom")
             }
         }.trim()
     }
@@ -325,10 +426,12 @@ internal class McpSkillContent(
             appendLine("skillResource=$SKILL_RESOURCE_URI")
             appendLine("skillOverviewResource=$SKILL_OVERVIEW_URI")
             appendLine("skillToolTemplate=$SKILL_TOOL_TEMPLATE_URI")
+            appendLine("skillDomainTemplate=$SKILL_DOMAIN_TEMPLATE_URI")
             appendLine("bootstrapPrompt=$BOOTSTRAP_PROMPT")
             appendLine("workflowResource=$WORKFLOW_RESOURCE_URI")
             appendLine("workflowTemplate=$WORKFLOW_TEMPLATE_URI")
             appendLine("workflowPrompt=$WORKFLOW_PLAN_PROMPT")
+            appendLine("diagnosticsPrompt=$DIAGNOSTICS_PLAN_PROMPT")
             appendLine()
             appendLine("## MCP Config")
             appendLine("```json")
@@ -342,8 +445,48 @@ internal class McpSkillContent(
         }.trim()
     }
 
-    private fun toolGroup(name: String): String {
-        return McpToolCatalog.metaForName(name, currentLocale())?.group ?: "unknown"
+    private fun buildDomainGuide(domain: String): String {
+        val locale = currentLocale()
+        val normalized = domain.trim().lowercase(Locale.ROOT)
+        val tools = McpToolCatalog.forLocale(locale).filter { it.group == normalized }
+        if (tools.isEmpty()) {
+            return buildString {
+                appendLine(localText(locale, "# 未知领域", "# Unknown Domain", "# Unknown Domain"))
+                appendLine("domain=$domain")
+                appendLine("available=runtime,home,system,os,github,ba")
+            }.trim()
+        }
+        return buildString {
+            appendLine("# KeiOS MCP ${normalized.replaceFirstChar { it.uppercase(Locale.ROOT) }}")
+            appendLine()
+            appendLine("domain=$normalized")
+            appendLine("toolCount=${tools.size}")
+            appendLine(
+                "entrypoints=${
+                    tools.filter { it.visibility == McpToolVisibility.Entrypoint }
+                        .joinToString(",") { it.name }
+                }"
+            )
+            appendLine()
+            appendLine("## Recommended")
+            tools.filter { it.visibility == McpToolVisibility.Entrypoint || it.recommendedFor.isNotEmpty() }
+                .forEach { meta -> appendLine("- `${meta.name}`: ${meta.description}") }
+            appendLine()
+            appendLine("## Tools")
+            tools.forEach { meta ->
+                appendLine("- `${meta.name}` (${meta.visibility.wireName}, ${meta.executionProfile.name}): ${meta.description}")
+            }
+        }.trim()
+    }
+
+    private fun buildToolSectionList(
+        tools: List<McpToolMeta>,
+        visibility: McpToolVisibility
+    ): String {
+        return tools
+            .filter { it.visibility == visibility }
+            .joinToString("\n") { meta -> "- `${meta.name}`: ${meta.description}" }
+            .ifBlank { "- N/A" }
     }
 
     private fun localizedSkillAssetPath(locale: Locale): String {

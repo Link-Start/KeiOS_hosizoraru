@@ -105,10 +105,13 @@ class McpServerManager(
 
     init {
         localMcpService.bindMcpStateProvider { _uiState.value }
-        localMcpService.bindToolCallLogger { name, elapsedMs, success, error ->
+        localMcpService.bindToolCallLogger { name, profile, elapsedMs, success, error ->
             val status = if (success) "ok" else "error"
             val suffix = error?.takeIf { it.isNotBlank() }?.let { " reason=$it" }.orEmpty()
-            appendLog("INFO", "Tool call $status: name=$name elapsedMs=$elapsedMs$suffix")
+            appendLog(
+                "INFO",
+                "Tool call $status: name=$name profile=${profile.name} elapsedMs=$elapsedMs$suffix"
+            )
         }
     }
 

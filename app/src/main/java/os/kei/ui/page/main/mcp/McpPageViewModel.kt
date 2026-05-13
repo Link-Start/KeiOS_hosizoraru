@@ -22,6 +22,8 @@ internal data class McpPageUiState(
     val showEditSheet: Boolean = false,
     val controlExpanded: Boolean = true,
     val configExpanded: Boolean = false,
+    val advancedToolsExpanded: Boolean = false,
+    val toolsSearchQuery: String = "",
     val logsExpanded: Boolean = false,
     val logsExporting: Boolean = false,
     val pendingLogsExport: McpLogsExportRequest? = null,
@@ -77,6 +79,14 @@ internal class McpPageViewModel : ViewModel() {
 
     fun updateConfigExpanded(value: Boolean) {
         _uiState.update { state -> state.copy(configExpanded = value) }
+    }
+
+    fun updateAdvancedToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(advancedToolsExpanded = value) }
+    }
+
+    fun updateToolsSearchQuery(value: String) {
+        _uiState.update { state -> state.copy(toolsSearchQuery = value.take(80)) }
     }
 
     fun updateLogsExpanded(value: Boolean) {

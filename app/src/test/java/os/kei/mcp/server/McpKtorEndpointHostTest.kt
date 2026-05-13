@@ -1,11 +1,16 @@
 package os.kei.mcp.server
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
+import io.modelcontextprotocol.kotlin.sdk.types.GetPromptResult
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
+import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -13,7 +18,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.robolectric.annotation.Config
 import java.net.ServerSocket
 import kotlin.test.assertEquals
@@ -68,6 +72,66 @@ class McpKtorEndpointHostTest {
         assertEquals(1, toolArray.length())
         assertTrue(body.contains("keios.health.ping"))
         tools.close()
+
+        val prompts = postMcp(
+            port = port,
+            token = "secret",
+            sessionId = sessionId,
+            protocolVersion = "2025-11-25",
+            body = """{"jsonrpc":"2.0","id":3,"method":"prompts/list","params":{}}"""
+        )
+        val promptsBody = prompts.body.string()
+        assertEquals(200, prompts.code)
+        assertTrue(promptsBody.contains("keios.mcp.bootstrap"))
+        prompts.close()
+
+        val prompt = postMcp(
+            port = port,
+            token = "secret",
+            sessionId = sessionId,
+            protocolVersion = "2025-11-25",
+            body = """{"jsonrpc":"2.0","id":4,"method":"prompts/get","params":{"name":"keios.mcp.bootstrap","arguments":{}}}"""
+        )
+        val promptBody = prompt.body.string()
+        assertEquals(200, prompt.code)
+        assertTrue(promptBody.contains("keios.health.ping"))
+        prompt.close()
+
+        val resources = postMcp(
+            port = port,
+            token = "secret",
+            sessionId = sessionId,
+            protocolVersion = "2025-11-25",
+            body = """{"jsonrpc":"2.0","id":5,"method":"resources/list","params":{}}"""
+        )
+        val resourcesBody = resources.body.string()
+        assertEquals(200, resources.code)
+        assertTrue(resourcesBody.contains("keios://skill/overview.txt"))
+        resources.close()
+
+        val templates = postMcp(
+            port = port,
+            token = "secret",
+            sessionId = sessionId,
+            protocolVersion = "2025-11-25",
+            body = """{"jsonrpc":"2.0","id":6,"method":"resources/templates/list","params":{}}"""
+        )
+        val templatesBody = templates.body.string()
+        assertEquals(200, templates.code)
+        assertTrue(templatesBody.contains("keios://skill/tool/{tool}"))
+        templates.close()
+
+        val resource = postMcp(
+            port = port,
+            token = "secret",
+            sessionId = sessionId,
+            protocolVersion = "2025-11-25",
+            body = """{"jsonrpc":"2.0","id":7,"method":"resources/read","params":{"uri":"keios://skill/overview.txt"}}"""
+        )
+        val resourceBody = resource.body.string()
+        assertEquals(200, resource.code)
+        assertTrue(resourceBody.contains("ok=true"))
+        resource.close()
     }
 
     private fun withRunningEndpoint(block: (port: Int) -> Unit) {
@@ -135,7 +199,9 @@ class McpKtorEndpointHostTest {
             serverInfo = Implementation(name = "test", version = "1"),
             options = ServerOptions(
                 capabilities = ServerCapabilities(
-                    tools = ServerCapabilities.Tools(listChanged = false)
+                    tools = ServerCapabilities.Tools(listChanged = false),
+                    prompts = ServerCapabilities.Prompts(listChanged = false),
+                    resources = ServerCapabilities.Resources(listChanged = false, subscribe = false)
                 )
             )
         ) {
@@ -144,6 +210,40 @@ class McpKtorEndpointHostTest {
                 name = "keios.health.ping"
             ) {
                 "pong"
+            }
+            addPrompt(
+                name = "keios.mcp.bootstrap",
+                description = "Bootstrap"
+            ) { _ ->
+                GetPromptResult(
+                    description = "Bootstrap",
+                    messages = listOf(
+                        PromptMessage(
+                            role = Role.User,
+                            content = TextContent("keios.health.ping")
+                        )
+                    )
+                )
+            }
+            addResource(
+                uri = "keios://skill/overview.txt",
+                name = "overview",
+                description = "Overview",
+                mimeType = MIME_TEXT
+            ) { _ ->
+                callResource("keios://skill/overview.txt", MIME_TEXT, "ok=true")
+            }
+            addResourceTemplate(
+                uriTemplate = "keios://skill/tool/{tool}",
+                name = "tool-help",
+                description = "Tool help",
+                mimeType = MIME_MARKDOWN
+            ) { _, params ->
+                callResource(
+                    "keios://skill/tool/${params["tool"].orEmpty()}",
+                    MIME_MARKDOWN,
+                    "# tool"
+                )
             }
         }
     }
@@ -157,7 +257,7 @@ class McpKtorEndpointHostTest {
             appPackageName = "os.kei.test",
             appLabel = "KeiOS",
             stateProvider = { McpServerUiState(authToken = "secret") },
-            toolCallLogger = { _, _, _, _ -> }
+            toolCallLogger = { _, _, _, _, _ -> }
         )
     }
 

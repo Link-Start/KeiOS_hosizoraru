@@ -3,10 +3,12 @@ package os.kei.mcp.server
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.TaskSupport
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolAnnotations
+import io.modelcontextprotocol.kotlin.sdk.types.ToolExecution
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import io.modelcontextprotocol.kotlin.sdk.types.error
-import io.modelcontextprotocol.kotlin.sdk.types.success
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +46,7 @@ internal fun Server.addMcpTextTool(
         name = name,
         description = meta?.description ?: name,
         inputSchema = inputSchema.withRequired(meta?.requiredArguments.orEmpty()),
+        outputSchema = meta?.outputSchema,
         toolAnnotations = ToolAnnotations(
             title = meta?.title,
             readOnlyHint = meta?.readOnly,
@@ -51,12 +54,15 @@ internal fun Server.addMcpTextTool(
             idempotentHint = meta?.idempotent,
             openWorldHint = meta?.openWorld
         ),
+        execution = ToolExecution(TaskSupport.Forbidden),
         meta = meta?.toProtocolMeta()
     ) { request ->
         executeMcpTextTool(
             environment = environment,
             name = name,
             profile = profile,
+            outputContract = meta?.outputContract ?: McpToolOutputContract.KeyValueText,
+            structuredOutputEnabled = meta?.outputSchema != null,
             request = request,
             handler = handler
         )
@@ -65,10 +71,28 @@ internal fun Server.addMcpTextTool(
 
 private fun McpToolMeta.toProtocolMeta() = buildJsonObject {
     put("keios/group", group)
+    put("keios/visibility", visibility.wireName)
+    put("keios/maturity", maturity.wireName)
     put("keios/executionProfile", executionProfile.name)
-    put("keios/output", "key_value_text")
+    put("keios/output", outputContract.wireName)
     put("keios/entrypoint", name in MCP_ENTRYPOINT_TOOLS)
     put("keios/writeRequiresApply", name.endsWith(".import"))
+    if (workflowTags.isNotEmpty()) {
+        put(
+            "keios/workflowTags",
+            buildJsonArray {
+                workflowTags.forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+        )
+    }
+    if (recommendedFor.isNotEmpty()) {
+        put(
+            "keios/recommendedFor",
+            buildJsonArray {
+                recommendedFor.forEach { value -> add(JsonPrimitive(value)) }
+            }
+        )
+    }
     put(
         "keios/arguments",
         buildJsonArray {
@@ -103,6 +127,8 @@ internal suspend fun executeMcpTextTool(
     environment: McpToolEnvironment,
     name: String,
     profile: McpToolExecutionProfile,
+    outputContract: McpToolOutputContract,
+    structuredOutputEnabled: Boolean,
     request: CallToolRequest,
     handler: suspend (CallToolRequest) -> String
 ): CallToolResult {
@@ -117,20 +143,33 @@ internal suspend fun executeMcpTextTool(
         }
     } catch (error: TimeoutCancellationException) {
         val text = buildMcpToolErrorText(name, "timeout_${profile.timeout.inWholeMilliseconds}ms")
-        environment.recordToolCall(name = name, elapsedMs = profile.timeout.inWholeMilliseconds, success = false, error = "timeout")
+        environment.recordToolCall(
+            name = name,
+            profile = profile,
+            elapsedMs = profile.timeout.inWholeMilliseconds,
+            success = false,
+            error = "timeout"
+        )
         return CallToolResult.error(text)
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
         val reason = error.message ?: error.javaClass.simpleName
         val text = buildMcpToolErrorText(name, reason)
-        environment.recordToolCall(name = name, elapsedMs = 0L, success = false, error = reason)
+        environment.recordToolCall(
+            name = name,
+            profile = profile,
+            elapsedMs = 0L,
+            success = false,
+            error = reason
+        )
         return CallToolResult.error(text)
     }
 
     val businessError = output.isMcpBusinessErrorText()
     environment.recordToolCall(
         name = name,
+        profile = profile,
         elapsedMs = elapsedMs,
         success = !businessError,
         error = if (businessError) output.lineSequence().firstOrNull().orEmpty() else null
@@ -138,7 +177,17 @@ internal suspend fun executeMcpTextTool(
     return if (businessError) {
         CallToolResult.error(output)
     } else {
-        CallToolResult.success(output)
+        CallToolResult(
+            content = listOf(TextContent(output)),
+            structuredContent = if (structuredOutputEnabled) {
+                buildJsonObject {
+                    put("text", output)
+                    put("format", outputContract.wireName)
+                }
+            } else {
+                null
+            }
+        )
     }
 }
 

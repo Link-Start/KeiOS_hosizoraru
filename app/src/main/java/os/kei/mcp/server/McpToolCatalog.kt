@@ -1,6 +1,7 @@
 package os.kei.mcp.server
 
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 data class McpToolMeta(
     val name: String,
@@ -12,7 +13,13 @@ data class McpToolMeta(
     val destructive: Boolean = false,
     val idempotent: Boolean = true,
     val openWorld: Boolean = false,
-    val executionProfile: McpToolExecutionProfile = McpToolExecutionProfile.CacheRead
+    val executionProfile: McpToolExecutionProfile = McpToolExecutionProfile.CacheRead,
+    val visibility: McpToolVisibility = McpToolVisibility.Advanced,
+    val maturity: McpToolMaturity = McpToolMaturity.Stable,
+    val outputContract: McpToolOutputContract = McpToolOutputContract.KeyValueText,
+    val workflowTags: List<String> = emptyList(),
+    val recommendedFor: List<String> = emptyList(),
+    val outputSchema: io.modelcontextprotocol.kotlin.sdk.types.ToolSchema? = null
 ) {
     val requiredArguments: List<String>
         get() = arguments.filter { it.required }.map { it.name }
@@ -94,6 +101,17 @@ internal object McpToolCatalog {
         get() = englishTools
 
     fun forLocale(locale: Locale): List<McpToolMeta> {
+        val cacheKey = when {
+            locale.language.equals("zh", ignoreCase = true) -> "zh"
+            locale.language.equals("ja", ignoreCase = true) -> "ja"
+            else -> "en"
+        }
+        return localizedTools.getOrPut(cacheKey) {
+            buildToolsForLocale(locale)
+        }
+    }
+
+    private fun buildToolsForLocale(locale: Locale): List<McpToolMeta> {
         val descriptions = when {
             locale.language.equals("zh", ignoreCase = true) -> zhDescriptions
             locale.language.equals("ja", ignoreCase = true) -> jaDescriptions
@@ -106,12 +124,18 @@ internal object McpToolCatalog {
                 description = descriptions[name] ?: enDescriptions[name].orEmpty(),
                 group = definition.group,
                 title = titleForName(name),
-                arguments = definition.arguments,
+                arguments = argumentsFor(name),
                 readOnly = definition.readOnly,
                 destructive = definition.destructive,
                 idempotent = definition.idempotent,
                 openWorld = definition.openWorld,
-                executionProfile = definition.executionProfile
+                executionProfile = definition.executionProfile,
+                visibility = definition.visibility,
+                maturity = definition.maturity,
+                outputContract = definition.outputContract,
+                workflowTags = definition.workflowTags,
+                recommendedFor = definition.recommendedFor,
+                outputSchema = definition.outputSchema
             )
         }
     }
@@ -121,7 +145,7 @@ internal object McpToolCatalog {
     }
 
     fun schemaFor(name: String): io.modelcontextprotocol.kotlin.sdk.types.ToolSchema {
-        return McpSchema.toolSchema(definitions[name]?.arguments.orEmpty())
+        return McpSchema.toolSchema(argumentsFor(name))
     }
 
     fun descriptionFor(name: String, locale: Locale): String {
@@ -135,6 +159,24 @@ internal object McpToolCatalog {
     private val englishTools: List<McpToolMeta>
         get() = forLocale(Locale.ENGLISH)
 
+    private val localizedTools = ConcurrentHashMap<String, List<McpToolMeta>>()
+
+    private fun argumentsFor(name: String): List<McpToolArgumentSpec> {
+        return definitions[name]?.arguments.orEmpty().map { argument ->
+            if (argument.description.isNotBlank()) {
+                argument
+            } else {
+                argument.copy(
+                    description = if (argument.required) {
+                        "Required argument for $name."
+                    } else {
+                        "Optional argument for $name."
+                    }
+                )
+            }
+        }
+    }
+
     private data class ToolDefinition(
         val group: String,
         val arguments: List<McpToolArgumentSpec> = emptyList(),
@@ -142,7 +184,13 @@ internal object McpToolCatalog {
         val destructive: Boolean = false,
         val idempotent: Boolean = true,
         val openWorld: Boolean = false,
-        val executionProfile: McpToolExecutionProfile = McpToolExecutionProfile.CacheRead
+        val executionProfile: McpToolExecutionProfile = McpToolExecutionProfile.CacheRead,
+        val visibility: McpToolVisibility = McpToolVisibility.Advanced,
+        val maturity: McpToolMaturity = McpToolMaturity.Stable,
+        val outputContract: McpToolOutputContract = McpToolOutputContract.KeyValueText,
+        val workflowTags: List<String> = emptyList(),
+        val recommendedFor: List<String> = emptyList(),
+        val outputSchema: io.modelcontextprotocol.kotlin.sdk.types.ToolSchema? = null
     )
 
     private val writeTools = setOf(
@@ -395,7 +443,13 @@ internal object McpToolCatalog {
             destructive = name.endsWith(".clear") || name == "keios.github.link.pending",
             idempotent = name !in networkTools && name !in writeTools,
             openWorld = name in networkTools,
-            executionProfile = profile
+            executionProfile = profile,
+            visibility = visibilityForName(name),
+            maturity = maturityForName(name),
+            outputContract = outputContractForName(name),
+            workflowTags = workflowTagsForName(name),
+            recommendedFor = recommendedUseCasesForName(name),
+            outputSchema = outputSchemaForName(name)
         )
     }
 
@@ -464,13 +518,94 @@ internal object McpToolCatalog {
 
     private fun groupForName(name: String): String {
         return when (name) {
-            in runtimeToolNames -> "runtime"
-            in homeToolNames -> "home"
-            in systemToolNames -> "system"
-            in osToolNames -> "os"
-            in githubToolNames -> "github"
-            in baToolNames -> "ba"
+            in runtimeToolNames -> McpToolDomains.RUNTIME
+            in homeToolNames -> McpToolDomains.HOME
+            in systemToolNames -> McpToolDomains.SYSTEM
+            in osToolNames -> McpToolDomains.OS
+            in githubToolNames -> McpToolDomains.GITHUB
+            in baToolNames -> McpToolDomains.BA
             else -> "unknown"
+        }
+    }
+
+    private fun visibilityForName(name: String): McpToolVisibility {
+        return when {
+            name == "keios.mcp.workflow.blueprints" -> McpToolVisibility.Workflow
+            name in entrypointToolNames -> McpToolVisibility.Entrypoint
+            name.endsWith(".cache.clear") ||
+                    name == "keios.github.cache.clear" ||
+                    name == "keios.github.link.pending" ||
+                    name == "keios.github.package.repo.scan" ||
+                    name == "keios.system.topinfo.query" -> McpToolVisibility.Advanced
+
+            else -> McpToolVisibility.Advanced
+        }
+    }
+
+    private fun maturityForName(name: String): McpToolMaturity {
+        return when {
+            name == "keios.github.package.repo.scan" ||
+                    name == "keios.github.stars.import" ||
+                    name == "keios.github.stars.apk.verify" -> McpToolMaturity.Preview
+
+            name == "keios.github.direct_apk.inspect" -> McpToolMaturity.Preview
+            else -> McpToolMaturity.Stable
+        }
+    }
+
+    private fun outputContractForName(name: String): McpToolOutputContract {
+        return when {
+            name == "keios.mcp.runtime.config" ||
+                    name == "keios.os.cards.export" ||
+                    name == "keios.github.tracks.export" -> McpToolOutputContract.JsonText
+
+            name == "keios.mcp.claw.skill.guide" ||
+                    name == "keios.mcp.workflow.blueprints" -> McpToolOutputContract.Markdown
+
+            else -> McpToolOutputContract.KeyValueText
+        }
+    }
+
+    private fun workflowTagsForName(name: String): List<String> {
+        return when {
+            name.startsWith("keios.github.actions") -> listOf("github-actions-watch")
+            name.startsWith("keios.github") -> listOf("github-update-watch")
+            name.startsWith("keios.ba") -> listOf("ba-daily-brief")
+            name.startsWith("keios.os") -> listOf("os-card-backup")
+            name.startsWith("keios.mcp") || name == "keios.health.ping" -> listOf("runtime-diagnostics")
+            else -> emptyList()
+        }
+    }
+
+    private fun recommendedUseCasesForName(name: String): List<String> {
+        return when (name) {
+            "keios.health.ping",
+            "keios.mcp.runtime.status",
+            "keios.mcp.runtime.logs" -> listOf("connectivity", "diagnostics")
+
+            "keios.mcp.workflow.blueprints" -> listOf("scheduled_tasks", "composed_skills")
+            "keios.github.config.snapshot",
+            "keios.github.tracks.list",
+            "keios.github.tracks.summary",
+            "keios.github.tracks.check" -> listOf("github_update_audit")
+
+            "keios.github.actions.recommended" -> listOf("github_actions_audit")
+            "keios.ba.snapshot",
+            "keios.ba.calendar.cache",
+            "keios.ba.pool.cache" -> listOf("ba_daily_brief")
+
+            "keios.os.cards.export",
+            "keios.os.cards.import" -> listOf("os_card_backup")
+
+            else -> emptyList()
+        }
+    }
+
+    private fun outputSchemaForName(name: String): io.modelcontextprotocol.kotlin.sdk.types.ToolSchema? {
+        return if (name in entrypointToolNames || name == "keios.mcp.runtime.config") {
+            McpSchema.textOutputSchema()
+        } else {
+            null
         }
     }
 

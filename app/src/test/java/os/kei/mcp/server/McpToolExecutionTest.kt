@@ -24,6 +24,8 @@ class McpToolExecutionTest {
             environment = testEnvironment(logs),
             name = "test.timeout",
             profile = McpToolExecutionProfile.CacheRead,
+            outputContract = McpToolOutputContract.KeyValueText,
+            structuredOutputEnabled = false,
             request = CallToolRequest(CallToolRequestParams(name = "test.timeout"))
         ) {
             delay(4_500)
@@ -42,6 +44,8 @@ class McpToolExecutionTest {
             environment = testEnvironment(mutableListOf()),
             name = "test.business",
             profile = McpToolExecutionProfile.CacheRead,
+            outputContract = McpToolOutputContract.KeyValueText,
+            structuredOutputEnabled = false,
             request = CallToolRequest(CallToolRequestParams(name = "test.business"))
         ) {
             "ok=false\nmessage=query_required"
@@ -59,7 +63,7 @@ class McpToolExecutionTest {
             appPackageName = "os.kei.test",
             appLabel = "KeiOS",
             stateProvider = { McpServerUiState(authToken = "token") },
-            toolCallLogger = { name, _, success, _ ->
+            toolCallLogger = { name, _, _, success, _ ->
                 logs += "$name:$success"
             }
         )

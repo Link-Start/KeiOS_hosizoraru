@@ -1,14 +1,24 @@
 package os.kei.ui.page.main.mcp.section
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.mcp.server.McpServerUiState
+import os.kei.mcp.server.McpToolMeta
+import os.kei.mcp.server.McpToolVisibility
 import os.kei.ui.page.main.os.appLucideAppWindowIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
@@ -17,11 +27,12 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.core.MiuixInfoItem
+import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
+import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
-import os.kei.ui.page.main.widget.core.MiuixInfoItem
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,6 +45,8 @@ internal fun McpServiceControlSection(
     onExpandedChange: (Boolean) -> Unit,
     onSendTestNotification: () -> Unit,
     onShowResetConfigConfirm: () -> Unit,
+    onCopySkillResource: () -> Unit,
+    onCopyWorkflowResource: () -> Unit,
 ) {
     AppLiquidExpandableSection(
         backdrop = backdrop,
@@ -71,6 +84,30 @@ internal fun McpServiceControlSection(
                 )
             }
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        AppDualActionRow(
+            spacing = CardLayoutRhythm.infoRowGap,
+            first = { modifier ->
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.Compact,
+                    text = stringResource(R.string.mcp_action_copy_skill_resource),
+                    modifier = modifier,
+                    textColor = MiuixTheme.colorScheme.primary,
+                    onClick = onCopySkillResource
+                )
+            },
+            second = { modifier ->
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.Compact,
+                    text = stringResource(R.string.mcp_action_copy_workflow_resource),
+                    modifier = modifier,
+                    textColor = MiuixTheme.colorScheme.primary,
+                    onClick = onCopyWorkflowResource
+                )
+            }
+        )
     }
 }
 
@@ -80,11 +117,40 @@ internal fun McpToolsSection(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     uiState: McpServerUiState,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    advancedExpanded: Boolean,
+    onAdvancedExpandedChange: (Boolean) -> Unit,
 ) {
+    val filteredTools = remember(uiState.tools, searchQuery) {
+        val query = searchQuery.trim().lowercase(Locale.ROOT)
+        if (query.isBlank()) {
+            uiState.tools
+        } else {
+            uiState.tools.filter { tool ->
+                tool.name.lowercase(Locale.ROOT).contains(query) ||
+                        tool.description.lowercase(Locale.ROOT).contains(query) ||
+                        tool.group.lowercase(Locale.ROOT).contains(query)
+            }
+        }
+    }
+    val entrypointTools = filteredTools.filter { it.visibility == McpToolVisibility.Entrypoint }
+    val workflowTools = filteredTools.filter { it.visibility == McpToolVisibility.Workflow }
+    val advancedTools = filteredTools.filter { it.visibility == McpToolVisibility.Advanced }
+    val shownAdvancedTools = if (advancedExpanded || searchQuery.isNotBlank()) {
+        advancedTools
+    } else {
+        advancedTools.take(6)
+    }
     AppLiquidExpandableSection(
         backdrop = backdrop,
-        title = stringResource(R.string.mcp_section_tools_title),
-        subtitle = stringResource(R.string.mcp_section_tools_subtitle, uiState.tools.size),
+        title = stringResource(R.string.mcp_section_tool_surface_title),
+        subtitle = stringResource(
+            R.string.mcp_section_tool_surface_subtitle,
+            entrypointTools.size,
+            workflowTools.size,
+            advancedTools.size
+        ),
         expanded = expanded,
         onExpandedChange = onExpandedChange,
         headerStartAction = {
@@ -94,11 +160,94 @@ internal fun McpToolsSection(
             )
         }
     ) {
-        uiState.tools.forEach { tool ->
-            MiuixInfoItem(
-                key = tool.name,
-                value = tool.description
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AppLiquidSearchField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                label = stringResource(R.string.mcp_tools_search_hint),
+                backdrop = backdrop
             )
+            McpToolGroupRows(
+                title = stringResource(R.string.mcp_tools_entrypoints_title),
+                tools = entrypointTools
+            )
+            McpToolGroupRows(
+                title = stringResource(R.string.mcp_tools_workflows_title),
+                tools = workflowTools
+            )
+            McpToolGroupRows(
+                title = stringResource(R.string.mcp_tools_advanced_title),
+                tools = shownAdvancedTools
+            )
+            if (advancedTools.size > shownAdvancedTools.size && searchQuery.isBlank()) {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.Compact,
+                    text = stringResource(
+                        R.string.mcp_tools_expand_advanced,
+                        advancedTools.size - shownAdvancedTools.size
+                    ),
+                    textColor = MiuixTheme.colorScheme.primary,
+                    onClick = { onAdvancedExpandedChange(true) }
+                )
+            } else if (advancedExpanded && searchQuery.isBlank()) {
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.Compact,
+                    text = stringResource(R.string.mcp_tools_collapse_advanced),
+                    onClick = { onAdvancedExpandedChange(false) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun McpToolGroupRows(
+    title: String,
+    tools: List<McpToolMeta>
+) {
+    Text(
+        text = title,
+        color = MiuixTheme.colorScheme.onBackground,
+        fontWeight = FontWeight.SemiBold
+    )
+    if (tools.isEmpty()) {
+        MiuixInfoItem(
+            key = title,
+            value = stringResource(R.string.mcp_tools_empty_group)
+        )
+    } else {
+        tools.forEach { tool ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = tool.name,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp
+                )
+                Text(
+                    text = tool.description,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = 15.sp,
+                    lineHeight = 21.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "${tool.group} · ${tool.executionProfile.name} · ${tool.outputContract.wireName}",
+                    color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.82f),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
         }
     }
 }

@@ -44,6 +44,8 @@
     <string name="mcp_action_edit_service_params">サービスパラメータを編集</string>
     <string name="mcp_action_open_skill_md">SKILL.md を表示</string>
     <string name="mcp_action_copy_current_config">現在の設定をコピー</string>
+    <string name="mcp_action_copy_skill_resource">Skill URI をコピー</string>
+    <string name="mcp_action_copy_workflow_resource">Workflow URI をコピー</string>
     <string name="mcp_action_send_test_notification">テスト通知を送信</string>
     <string name="mcp_action_reset_service_config">設定をリセット</string>
     <string name="mcp_action_clear_logs">ログをクリア</string>
@@ -55,6 +57,15 @@
     <string name="mcp_section_service_control_subtitle">通知と接続デバッグ</string>
     <string name="mcp_section_tools_title">ツール</string>
     <string name="mcp_section_tools_subtitle">%1$d 個のツール</string>
+    <string name="mcp_section_tool_surface_title">MCP ツール入口</string>
+    <string name="mcp_section_tool_surface_subtitle">入口 %1$d · Workflow %2$d · Advanced %3$d</string>
+    <string name="mcp_tools_search_hint">ツール、領域、説明を検索</string>
+    <string name="mcp_tools_entrypoints_title">推奨入口</string>
+    <string name="mcp_tools_workflows_title">Workflow ツール</string>
+    <string name="mcp_tools_advanced_title">Advanced ツール</string>
+    <string name="mcp_tools_empty_group">一致するツールはありません</string>
+    <string name="mcp_tools_expand_advanced">残り %1$d 個の Advanced ツールを展開</string>
+    <string name="mcp_tools_collapse_advanced">Advanced ツールを折りたたむ</string>
     <string name="mcp_section_logs_title">MCP ログ</string>
     <string name="mcp_section_logs_subtitle">%1$d 件</string>
     <string name="mcp_sheet_edit_service_title">MCP サービスを編集</string>
@@ -67,6 +78,7 @@
     <string name="mcp_toast_service_started">MCP サービスを開始しました</string>
     <string name="mcp_toast_start_failed">開始に失敗しました: %1$s</string>
     <string name="mcp_toast_config_copied">MCP 設定をコピーしました</string>
+    <string name="mcp_toast_resource_copied">MCP resource URI をコピーしました</string>
     <string name="mcp_toast_test_notification_sent">MCP テスト通知を送信しました</string>
     <string name="mcp_toast_config_reset">MCP サービス設定を既定値に戻しました</string>
     <string name="mcp_toast_config_reset_requires_restart">MCP サービス設定を既定値に戻しました。実行中のポートとネットワークモードはサービス再起動後に反映されます。</string>

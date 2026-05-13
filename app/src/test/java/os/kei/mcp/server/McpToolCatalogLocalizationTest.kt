@@ -47,6 +47,32 @@ class McpToolCatalogLocalizationTest {
     }
 
     @Test
+    fun catalogDescriptorsExposeProductInformationArchitecture() {
+        val tools = McpToolCatalog.forLocale(Locale.ENGLISH)
+
+        assertEquals(
+            true,
+            tools.any { it.visibility == McpToolVisibility.Entrypoint }
+        )
+        assertEquals(
+            true,
+            tools.any { it.visibility == McpToolVisibility.Workflow }
+        )
+        tools.forEach { tool ->
+            assertEquals(true, tool.title?.isNotBlank() == true, "${tool.name} needs a title")
+            assertEquals(true, tool.group.isNotBlank(), "${tool.name} needs a group")
+            assertEquals(true, tool.description.isNotBlank(), "${tool.name} needs a description")
+            tool.arguments.forEach { argument ->
+                assertEquals(
+                    true,
+                    argument.description.isNotBlank() || !argument.required,
+                    "${tool.name}.${argument.name} required arguments need descriptions"
+                )
+            }
+        }
+    }
+
+    @Test
     fun githubTrackingDescriptionsDocumentCurrentOptions() {
         val english = McpToolCatalog.descriptionFor(
             "keios.github.tracks.list",

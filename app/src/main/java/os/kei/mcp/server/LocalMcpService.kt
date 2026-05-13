@@ -25,7 +25,13 @@ class LocalMcpService(
     private var mcpStateProvider: (() -> McpServerUiState)? = null
 
     @Volatile
-    private var toolCallLogger: ((name: String, elapsedMs: Long, success: Boolean, error: String?) -> Unit)? = null
+    private var toolCallLogger: ((
+        name: String,
+        profile: McpToolExecutionProfile,
+        elapsedMs: Long,
+        success: Boolean,
+        error: String?
+    ) -> Unit)? = null
 
     private val environment = McpToolEnvironment(
         appContext = appContext,
@@ -35,8 +41,8 @@ class LocalMcpService(
         appPackageName = appPackageName,
         appLabel = appLabel,
         stateProvider = { mcpStateProvider?.invoke() },
-        toolCallLogger = { name, elapsedMs, success, error ->
-            toolCallLogger?.invoke(name, elapsedMs, success, error)
+        toolCallLogger = { name, profile, elapsedMs, success, error ->
+            toolCallLogger?.invoke(name, profile, elapsedMs, success, error)
         }
     )
     private val runtimeTools = McpRuntimeTools(environment)
@@ -54,7 +60,13 @@ class LocalMcpService(
     }
 
     fun bindToolCallLogger(
-        logger: (name: String, elapsedMs: Long, success: Boolean, error: String?) -> Unit
+        logger: (
+            name: String,
+            profile: McpToolExecutionProfile,
+            elapsedMs: Long,
+            success: Boolean,
+            error: String?
+        ) -> Unit
     ) {
         toolCallLogger = logger
     }
@@ -98,8 +110,10 @@ class LocalMcpService(
                         "os.kei.mcp" to buildJsonObject {
                             put("skillResource", SKILL_RESOURCE_URI)
                             put("skillOverviewResource", SKILL_OVERVIEW_URI)
+                            put("skillDomainTemplate", SKILL_DOMAIN_TEMPLATE_URI)
                             put("workflowResource", WORKFLOW_RESOURCE_URI)
                             put("workflowPrompt", WORKFLOW_PLAN_PROMPT)
+                            put("diagnosticsPrompt", DIAGNOSTICS_PLAN_PROMPT)
                             put("configResource", CONFIG_RESOURCE_URI)
                         }
                     )

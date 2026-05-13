@@ -309,6 +309,9 @@ internal fun GitHubPageSheetHost(
         appList = state.appList,
         trackedPackageNames = state.trackedItems.map { it.packageName }.toSet(),
         appListRefreshing = state.appListRefreshing,
+        addAppPickerRememberedFirstVisibleItemIndex = state.addTrackAppPickerFirstVisibleItemIndex,
+        addAppPickerRememberedFirstVisibleItemScrollOffset =
+            state.addTrackAppPickerFirstVisibleItemScrollOffset,
         sourceModeInput = state.trackSourceModeInput,
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
@@ -349,6 +352,10 @@ internal fun GitHubPageSheetHost(
         onRepoScanCandidateSelected = actions::selectRepoScanCandidate,
         onPickerExpandedChange = actions::setTrackAppPickerExpanded,
         onRefreshAppList = actions::refreshTrackAppList,
+        onAddAppPickerScrollPositionChange = { index, offset ->
+            state.addTrackAppPickerFirstVisibleItemIndex = index
+            state.addTrackAppPickerFirstVisibleItemScrollOffset = offset
+        },
         onSelectedAppChange = { app ->
             state.selectedApp = app
             state.repoScanCandidates = emptyList()

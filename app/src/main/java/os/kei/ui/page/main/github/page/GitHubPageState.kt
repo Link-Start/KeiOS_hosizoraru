@@ -69,6 +69,8 @@ internal class GitHubPageState(
     var packageNameInput by mutableStateOf("")
     var repoScanCandidates by mutableStateOf<List<GitHubPackageRepositoryScanCandidate>>(emptyList())
     var appSearch by mutableStateOf("")
+    var addTrackAppPickerFirstVisibleItemIndex by mutableIntStateOf(0)
+    var addTrackAppPickerFirstVisibleItemScrollOffset by mutableIntStateOf(0)
     var pickerExpanded by mutableStateOf(false)
     var showAddSheet by mutableStateOf(false)
     var showStrategySheet by mutableStateOf(false)

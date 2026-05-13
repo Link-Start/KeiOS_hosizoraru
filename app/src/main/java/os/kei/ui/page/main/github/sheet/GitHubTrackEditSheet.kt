@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
@@ -88,6 +90,8 @@ internal fun GitHubTrackEditSheet(
     appList: List<InstalledAppItem>,
     trackedPackageNames: Set<String>,
     appListRefreshing: Boolean,
+    addAppPickerRememberedFirstVisibleItemIndex: Int,
+    addAppPickerRememberedFirstVisibleItemScrollOffset: Int,
     sourceModeInput: GitHubTrackedSourceMode,
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
@@ -105,6 +109,7 @@ internal fun GitHubTrackEditSheet(
     onRepoScanCandidateSelected: (GitHubPackageRepositoryScanCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
+    onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
@@ -171,9 +176,14 @@ internal fun GitHubTrackEditSheet(
                     trackedPackageNames = trackedPackageNames,
                     editingPackageName = editingTrackedItem?.packageName.orEmpty(),
                     appListRefreshing = appListRefreshing,
+                    rememberAddPickerScroll = editingTrackedItem == null,
+                    rememberedFirstVisibleItemIndex = addAppPickerRememberedFirstVisibleItemIndex,
+                    rememberedFirstVisibleItemScrollOffset =
+                        addAppPickerRememberedFirstVisibleItemScrollOffset,
                     onAppSearchChange = onAppSearchChange,
                     onPickerExpandedChange = onPickerExpandedChange,
                     onRefreshAppList = onRefreshAppList,
+                    onAddAppPickerScrollPositionChange = onAddAppPickerScrollPositionChange,
                     onSelectedAppChange = onSelectedAppChange
                 )
             } else {
@@ -688,9 +698,13 @@ private fun GitHubTrackAppPickerContent(
     trackedPackageNames: Set<String>,
     editingPackageName: String,
     appListRefreshing: Boolean,
+    rememberAddPickerScroll: Boolean,
+    rememberedFirstVisibleItemIndex: Int,
+    rememberedFirstVisibleItemScrollOffset: Int,
     onAppSearchChange: (String) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
+    onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit
 ) {
     val configuration = LocalConfiguration.current
@@ -765,15 +779,40 @@ private fun GitHubTrackAppPickerContent(
         }
     }
 
-    LaunchedEffect(filteredApps, selectedApp?.packageName, initialAppFocusApplied) {
+    LaunchedEffect(
+        filteredApps,
+        selectedApp?.packageName,
+        rememberAddPickerScroll,
+        rememberedFirstVisibleItemIndex,
+        rememberedFirstVisibleItemScrollOffset,
+        initialAppFocusApplied
+    ) {
         if (initialAppFocusApplied || filteredApps.isEmpty()) return@LaunchedEffect
-        listState.scrollToItem(
-            gitHubTrackAppCandidateInitialScrollIndex(
-                candidates = filteredApps,
-                selectedPackageName = selectedApp?.packageName
+        if (rememberAddPickerScroll && selectedApp == null) {
+            listState.scrollToItem(
+                rememberedFirstVisibleItemIndex.coerceIn(filteredApps.indices),
+                rememberedFirstVisibleItemScrollOffset.coerceAtLeast(0)
             )
-        )
+        } else {
+            listState.scrollToItem(
+                gitHubTrackAppCandidateInitialScrollIndex(
+                    candidates = filteredApps,
+                    selectedPackageName = selectedApp?.packageName
+                )
+            )
+        }
         initialAppFocusApplied = true
+    }
+
+    LaunchedEffect(rememberAddPickerScroll, listState) {
+        if (!rememberAddPickerScroll) return@LaunchedEffect
+        snapshotFlow {
+            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+        }
+            .distinctUntilChanged()
+            .collect { (index, offset) ->
+                onAddAppPickerScrollPositionChange(index, offset)
+            }
     }
 
     SheetContentColumn(

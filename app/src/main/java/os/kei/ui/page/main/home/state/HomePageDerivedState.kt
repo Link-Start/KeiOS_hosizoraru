@@ -53,7 +53,6 @@ internal data class HomePageHeroMotionState(
 @Immutable
 internal data class HomePageOverviewCardState(
     val homeHeaderStatusPills: List<HomeHeaderStatusPillState>,
-    val overviewStats: List<HomeCardStatItem>,
     val mcpOverviewStats: List<HomeCardStatItem>,
     val githubOverviewStats: List<HomeCardStatItem>,
     val baOverviewStats: List<HomeCardStatItem>
@@ -305,43 +304,6 @@ internal fun rememberHomePageOverviewCardState(
             )
         )
     }
-    val overviewStats = remember(
-        homeStatusShizuku,
-        shizukuStatusLine,
-        homeStatusMcp,
-        mcpFocusLine,
-        homeStatusGitHub,
-        githubFocusLine,
-        homeStatusBa,
-        baFocusLine,
-        shizukuGranted,
-        mcpRunning,
-        githubPendingShareImport,
-        baActivated
-    ) {
-        listOf(
-            HomeCardStatItem(
-                label = homeStatusShizuku,
-                value = shizukuStatusLine,
-                emphasize = shizukuGranted
-            ),
-            HomeCardStatItem(
-                label = homeStatusMcp,
-                value = mcpFocusLine,
-                emphasize = mcpRunning
-            ),
-            HomeCardStatItem(
-                label = homeStatusGitHub,
-                value = githubFocusLine,
-                emphasize = githubPendingShareImport || githubFocusLine.any(Char::isDigit)
-            ),
-            HomeCardStatItem(
-                label = homeStatusBa,
-                value = baFocusLine,
-                emphasize = baActivated
-            )
-        )
-    }
     val mcpOverviewStats = remember(
         homeStatStatus,
         mcpStatusText,
@@ -457,14 +419,12 @@ internal fun rememberHomePageOverviewCardState(
 
     return remember(
         homeHeaderStatusPills,
-        overviewStats,
         mcpOverviewStats,
         githubOverviewStats,
         baOverviewStats
     ) {
         HomePageOverviewCardState(
             homeHeaderStatusPills = homeHeaderStatusPills,
-            overviewStats = overviewStats,
             mcpOverviewStats = mcpOverviewStats,
             githubOverviewStats = githubOverviewStats,
             baOverviewStats = baOverviewStats

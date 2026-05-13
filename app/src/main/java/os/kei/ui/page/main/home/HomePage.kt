@@ -341,8 +341,6 @@ fun HomePage(
                                 homeCardBackdrop = homeCardBackdrop,
                                 blurEnabled = blurEnabled && fullBackdropEffectsEnabled,
                                 homeNa = contentState.homeNa,
-                                homeCardOverview = contentState.homeCardOverview,
-                                overviewStats = overviewCardState.overviewStats,
                                 homeCardMcp = contentState.homeCardMcp,
                                 mcpStats = overviewCardState.mcpOverviewStats,
                                 homeCardGitHub = contentState.homeCardGitHub,

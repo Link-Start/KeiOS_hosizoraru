@@ -102,7 +102,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(GitHubTrackedSourceMode.DirectApk, imported.sourceMode)
         assertEquals("telegram.org", imported.owner)
         assertEquals("dl-android-apk-public-beta", imported.repo)
-        assertEquals(false, imported.preferPreRelease)
+        assertEquals(true, imported.preferPreRelease)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
         assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, imported.preciseApkVersionMode)
@@ -134,7 +134,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals("telegram.org", imported.owner)
         assertEquals("dl-android-apk", imported.repo)
         assertEquals("org.telegram.messenger", imported.appLabel)
-        assertEquals(false, imported.preferPreRelease)
+        assertEquals(true, imported.preferPreRelease)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
     }

@@ -396,10 +396,9 @@ internal fun GitHubTrackedItemMoreActions(
     val showActionsAction = item.isGitHubRepositoryTrack()
     val normalizedShowReleaseNotesAction = when {
         item.isGitHubRepositoryTrack() -> showReleaseNotesAction
-        item.isDirectApkTrack() -> state.latestStableApkVersion
-            ?.releaseNotes
-            .orEmpty()
-            .isNotBlank()
+        item.isDirectApkTrack() ->
+            state.latestStableApkVersion?.releaseNotes.orEmpty().isNotBlank() ||
+                    state.latestPreApkVersion?.releaseNotes.orEmpty().isNotBlank()
 
         else -> false
     }

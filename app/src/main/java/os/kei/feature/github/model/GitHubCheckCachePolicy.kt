@@ -17,7 +17,8 @@ internal fun GitHubTrackedApp.directApkCheckSourceSignature(): String {
     return listOf(
         GITHUB_DIRECT_APK_STRATEGY_ID,
         repoUrl.trim().lowercase(Locale.ROOT),
-        packageName.trim().lowercase(Locale.ROOT)
+        packageName.trim().lowercase(Locale.ROOT),
+        if (preferPreRelease) "pre" else "stable"
     ).joinToString("|")
 }
 
@@ -33,7 +34,8 @@ internal fun GitHubCheckCacheEntry.isValidForTrackedItem(
         sourceConfigSignature.isNotBlank() ->
             sourceConfigSignature == item.checkSourceSignature(lookupConfig)
 
-        item.isDirectApkTrack() -> sourceId == GITHUB_DIRECT_APK_STRATEGY_ID
+        item.isDirectApkTrack() ->
+            sourceId == GITHUB_DIRECT_APK_STRATEGY_ID && !item.preferPreRelease
         lookupConfig.preciseApkVersionEnabled -> false
         else -> sourceId == activeStrategyId
     }

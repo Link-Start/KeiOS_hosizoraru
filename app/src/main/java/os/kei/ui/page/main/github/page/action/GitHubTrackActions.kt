@@ -214,10 +214,7 @@ internal class GitHubTrackActions(
             sourceMode = state.trackSourceModeInput,
             repoUrl = state.repoUrlInput,
             packageName = state.packageNameInput,
-            preferPreRelease = when (state.trackSourceModeInput) {
-                GitHubTrackedSourceMode.GitHubRepository -> state.preferPreReleaseInput
-                GitHubTrackedSourceMode.DirectApk -> false
-            },
+            preferPreRelease = state.preferPreReleaseInput,
             alwaysShowLatestReleaseDownloadButton = when (state.trackSourceModeInput) {
                 GitHubTrackedSourceMode.GitHubRepository ->
                     state.alwaysShowLatestReleaseDownloadButtonInput

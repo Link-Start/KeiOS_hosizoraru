@@ -508,6 +508,31 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
+    fun `direct apk pre-release manifest reports pre-release update`() {
+        val item = directApkTrackedApp(preferPreRelease = true)
+
+        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
+            item = item,
+            localVersion = "10.0.0",
+            localVersionCode = 100L,
+            manifest = GitHubApkManifestInfo(
+                assetName = "apk-alpha.apk",
+                packageName = "org.telegram.messenger",
+                versionName = "10.1.0 Alpha1",
+                versionCode = "101"
+            ),
+            releaseChannel = GitHubReleaseChannel.ALPHA
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+        assertEquals(true, result.hasPreReleaseUpdate)
+        assertEquals("10.1.0 Alpha1", result.precisePreApkVersion?.versionName)
+        assertEquals(null, result.preciseStableApkVersion)
+        assertEquals(GitHubReleaseChannel.ALPHA, result.preRelease?.channel)
+    }
+
+    @Test
     fun `direct apk manifest package mismatch fails before version comparison`() {
         val item = directApkTrackedApp()
 
@@ -538,14 +563,15 @@ class GitHubReleaseCheckServiceTest {
         )
     }
 
-    private fun directApkTrackedApp(): GitHubTrackedApp {
+    private fun directApkTrackedApp(preferPreRelease: Boolean = false): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = "https://telegram.org/dl/android/apk",
             owner = "telegram.org",
             repo = "dl-android-apk",
             packageName = "org.telegram.messenger",
             appLabel = "Telegram",
-            sourceMode = GitHubTrackedSourceMode.DirectApk
+            sourceMode = GitHubTrackedSourceMode.DirectApk,
+            preferPreRelease = preferPreRelease
         )
     }
 

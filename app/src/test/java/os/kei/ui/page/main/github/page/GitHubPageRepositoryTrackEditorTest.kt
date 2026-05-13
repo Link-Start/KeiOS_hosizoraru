@@ -51,7 +51,7 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals("telegram.org", item.owner)
         assertEquals("dl-android-apk-public-beta", item.repo)
         assertEquals("org.telegram.messenger.beta", item.packageName)
-        assertEquals(false, item.preferPreRelease)
+        assertEquals(true, item.preferPreRelease)
         assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, item.checkActionsUpdates)
     }

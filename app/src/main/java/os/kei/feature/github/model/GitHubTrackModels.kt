@@ -69,7 +69,6 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
     return when (sourceMode) {
         GitHubTrackedSourceMode.GitHubRepository -> this
         GitHubTrackedSourceMode.DirectApk -> copy(
-            preferPreRelease = false,
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false
         )

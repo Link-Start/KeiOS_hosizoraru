@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
@@ -9,8 +10,12 @@ import kotlin.time.Duration.Companion.seconds
 internal data class GitHubDirectApkVersionedDirectoryResolution(
     val indexUrl: String,
     val version: String,
-    val downloadUrl: String
+    val downloadUrl: String,
+    val channel: GitHubReleaseChannel
 ) {
+    val isPreRelease: Boolean
+        get() = channel.isPreRelease
+
     fun toAsset(fallbackName: String): GitHubReleaseAssetFile {
         return GitHubReleaseAssetFile(
             name = directApkFileNameFromUrl(downloadUrl).ifBlank { fallbackName },
@@ -25,7 +30,10 @@ internal data class GitHubDirectApkVersionedDirectoryResolution(
 internal class GitHubDirectApkVersionedDirectoryResolver(
     private val client: OkHttpClient = defaultClient
 ) {
-    fun resolve(directApkUrl: String): Result<GitHubDirectApkVersionedDirectoryResolution?> =
+    fun resolve(
+        directApkUrl: String,
+        preferPreRelease: Boolean = false
+    ): Result<GitHubDirectApkVersionedDirectoryResolution?> =
         runCatching {
             val pattern = DirectApkVersionedDirectoryPattern.from(directApkUrl)
                 ?: return@runCatching null
@@ -45,11 +53,16 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
                 check(html.length <= MAX_INDEX_HTML_CHARS) {
                     "direct APK version directory is too large"
                 }
-                val latest = parseVersionDirectories(
+                val candidates = parseVersionDirectories(
                     indexUri = pattern.indexUri,
                     indexPath = pattern.indexPath,
                     html = html
-                ).maxWithOrNull(VersionDirectoryCandidateComparator)
+                )
+                val channelCandidates = candidates
+                    .preferredReleaseChannelCandidates(preferPreRelease)
+                    .takeIf { it.isNotEmpty() }
+                    ?: candidates
+                val latest = channelCandidates.maxWithOrNull(VersionDirectoryCandidateComparator)
                     ?: return@use null
                 val downloadUrl = latest.uri.ensureDirectoryUri()
                     .resolve(pattern.suffixPath)
@@ -57,7 +70,8 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
                 GitHubDirectApkVersionedDirectoryResolution(
                     indexUrl = pattern.indexUrl,
                     version = latest.version.raw,
-                    downloadUrl = downloadUrl
+                    downloadUrl = downloadUrl,
+                    channel = latest.version.channel
                 )
             }
         }
@@ -135,7 +149,9 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
     private data class DirectApkDirectoryVersion(
         val raw: String,
         val numbers: List<Int>,
-        val suffixRank: Int
+        val suffixRank: Int,
+        val suffixNumber: Int,
+        val channel: GitHubReleaseChannel
     ) {
         companion object {
             fun parse(segment: String): DirectApkDirectoryVersion? {
@@ -146,16 +162,29 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
                 if (numbers.size < 2) return null
                 val suffix = match.groupValues.getOrNull(2).orEmpty().lowercase(Locale.ROOT)
                 val suffixRank = when {
-                    suffix.isBlank() -> 4
-                    suffix.startsWith("rc") -> 3
-                    suffix.startsWith("beta") -> 2
-                    suffix.startsWith("alpha") -> 1
+                    suffix.isBlank() -> 6
+                    suffix.startsWith("rc") -> 5
+                    suffix.startsWith("beta") -> 4
+                    suffix.startsWith("alpha") -> 3
+                    suffix.startsWith("preview") || suffix.startsWith("pre") -> 2
+                    suffix.startsWith("nightly") ||
+                            suffix.startsWith("canary") ||
+                            suffix.startsWith("snapshot") ||
+                            suffix.startsWith("unstable") ||
+                            suffix.startsWith("dev") -> 1
                     else -> 0
                 }
+                val suffixNumber = suffixNumberRegex.find(suffix)
+                    ?.value
+                    ?.toIntOrNull()
+                    ?: 0
+                val channel = suffix.toVersionDirectoryReleaseChannel()
                 return DirectApkDirectoryVersion(
                     raw = segment,
                     numbers = numbers,
-                    suffixRank = suffixRank
+                    suffixRank = suffixRank,
+                    suffixNumber = suffixNumber,
+                    channel = channel
                 )
             }
         }
@@ -172,7 +201,18 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
                 val rightNumber = right.version.numbers.getOrElse(index) { 0 }
                 if (leftNumber != rightNumber) return leftNumber.compareTo(rightNumber)
             }
-            return left.version.suffixRank.compareTo(right.version.suffixRank)
+            if (left.version.suffixRank != right.version.suffixRank) {
+                return left.version.suffixRank.compareTo(right.version.suffixRank)
+            }
+            return left.version.suffixNumber.compareTo(right.version.suffixNumber)
+        }
+    }
+
+    private fun List<VersionDirectoryCandidate>.preferredReleaseChannelCandidates(
+        preferPreRelease: Boolean
+    ): List<VersionDirectoryCandidate> {
+        return filter { candidate ->
+            candidate.version.channel.isPreRelease == preferPreRelease
         }
     }
 
@@ -182,6 +222,7 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
         val hrefRegex = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val versionSegmentRegex =
             Regex("""^[vV]?(\d+(?:\.\d+){1,4})(?:[-_]?([A-Za-z][A-Za-z0-9._-]*))?/?$""")
+        val suffixNumberRegex = Regex("""\d+$""")
         val defaultClient: OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(12.seconds)
             .readTimeout(20.seconds)
@@ -189,5 +230,23 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
             .followRedirects(true)
             .followSslRedirects(true)
             .build()
+    }
+}
+
+private fun String.toVersionDirectoryReleaseChannel(): GitHubReleaseChannel {
+    return when {
+        isBlank() -> GitHubReleaseChannel.STABLE
+        startsWith("rc") -> GitHubReleaseChannel.RC
+        startsWith("beta") -> GitHubReleaseChannel.BETA
+        startsWith("alpha") -> GitHubReleaseChannel.ALPHA
+        startsWith("preview") || startsWith("pre") -> GitHubReleaseChannel.PREVIEW
+        startsWith("nightly") ||
+                startsWith("canary") ||
+                startsWith("snapshot") ||
+                startsWith("unstable") ||
+                startsWith("dev") ->
+            GitHubReleaseChannel.DEV
+
+        else -> GitHubReleaseChannel.UNKNOWN
     }
 }

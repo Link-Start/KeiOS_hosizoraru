@@ -64,13 +64,17 @@ internal class GitHubDirectApkReleaseCheckSource(
             null
         }
         val versionedDirectoryResolution = versionedDirectoryResolver
-            .resolve(asset.downloadUrl)
+            .resolve(
+                directApkUrl = asset.downloadUrl,
+                preferPreRelease = item.preferPreRelease
+            )
             .getOrNull()
         val directoryIndexResolution = if (versionedDirectoryResolution == null) {
             directoryIndexResolver
                 .resolve(
                     rawUrl = asset.downloadUrl,
-                    localVersion = localVersion
+                    localVersion = localVersion,
+                    preferPreRelease = item.preferPreRelease
                 )
                 .getOrNull()
         } else {
@@ -123,6 +127,7 @@ internal class GitHubDirectApkReleaseCheckSource(
                         manifest = target.jsonFallback?.let { fallback ->
                             fallbackManifest.withJsonFallback(fallback)
                         } ?: fallbackManifest,
+                        releaseChannel = GitHubReleaseChannel.STABLE,
                         sourceConfigSignature = directApkSourceSignature(item)
                     )
                 }
@@ -139,6 +144,9 @@ internal class GitHubDirectApkReleaseCheckSource(
             localVersion = localVersion,
             localVersionCode = localVersionCode,
             manifest = manifest,
+            releaseChannel = versionedDirectoryResolution?.channel
+                ?: directoryIndexResolution?.channel
+                ?: GitHubReleaseChannel.STABLE,
             sourceConfigSignature = directApkSourceSignature(item)
         )
     }
@@ -220,6 +228,7 @@ internal class GitHubDirectApkReleaseCheckSource(
             localVersion: String,
             localVersionCode: Long,
             manifest: GitHubApkManifestInfo,
+            releaseChannel: GitHubReleaseChannel = GitHubReleaseChannel.STABLE,
             sourceConfigSignature: String = directApkSourceSignature(item)
         ): GitHubTrackedReleaseCheck {
             val trackedPackage = item.packageName.trim()
@@ -261,23 +270,24 @@ internal class GitHubDirectApkReleaseCheckSource(
                 GitHubVersionCandidateSource.Title to manifest.versionCode,
                 GitHubVersionCandidateSource.Link to item.repoUrl
             )
-            val stableSignal = GitHubReleaseVersionSignals(
+            val releaseSignal = GitHubReleaseVersionSignals(
                 displayVersion = displayVersion,
                 rawTag = manifest.versionName.ifBlank { manifest.versionCode },
                 rawName = manifest.appLabel.ifBlank { manifest.assetName },
                 link = item.repoUrl,
                 versionCandidates = candidates,
                 source = GitHubReleaseSignalSource.AtomFallback,
-                channel = GitHubReleaseChannel.STABLE
+                channel = releaseChannel
             )
             val entry = GitHubAtomReleaseEntry(
-                tag = stableSignal.rawTag,
-                title = stableSignal.rawName.ifBlank { stableSignal.displayVersion },
+                tag = releaseSignal.rawTag,
+                title = releaseSignal.rawName.ifBlank { releaseSignal.displayVersion },
                 link = item.repoUrl,
                 versionCandidates = candidates,
-                channel = GitHubReleaseChannel.STABLE,
-                isLikelyPreRelease = false
+                channel = releaseChannel,
+                isLikelyPreRelease = releaseChannel.isPreRelease
             )
+            val hasStableRelease = !releaseChannel.isPreRelease
             val snapshot = GitHubRepositoryReleaseSnapshot(
                 strategyId = DIRECT_APK_STRATEGY_ID,
                 feed = GitHubAtomFeed(
@@ -285,8 +295,9 @@ internal class GitHubDirectApkReleaseCheckSource(
                     feedUrl = item.repoUrl,
                     entries = listOf(entry)
                 ),
-                latestStable = stableSignal,
-                hasStableRelease = true
+                latestStable = releaseSignal,
+                hasStableRelease = hasStableRelease,
+                latestPreRelease = releaseSignal.takeIf { releaseChannel.isPreRelease }
             )
             return GitHubReleaseCheckService.evaluateSnapshot(
                 item = item,
@@ -294,7 +305,8 @@ internal class GitHubDirectApkReleaseCheckSource(
                 localVersionCode = localVersionCode,
                 snapshot = snapshot,
                 checkAllTrackedPreReleases = false,
-                preciseStableApkVersion = preciseInfo,
+                preciseStableApkVersion = preciseInfo.takeIf { hasStableRelease },
+                precisePreReleaseApkVersion = preciseInfo.takeIf { releaseChannel.isPreRelease },
                 sourceConfigSignature = sourceConfigSignature
             ).copy(
                 directApkRemoteHealth = GitHubDirectApkRemoteHealth.Available,

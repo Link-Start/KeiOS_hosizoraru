@@ -672,11 +672,12 @@
     <string name="github_track_sheet_section_check_option">Check options</string>
     <string name="github_track_sheet_label_prefer_prerelease">Prefer pre-release version</string>
     <string name="github_track_sheet_summary_prefer_prerelease">Checks pre-release versions for this project and prefers them when available. The global switch remains unchanged.</string>
+    <string name="github_track_sheet_summary_prefer_prerelease_direct_apk">When enabled, directory indexes prefer Alpha, Beta, RC, Preview, Nightly, and similar APKs. When disabled, stable APKs are preferred.</string>
     <string name="github_track_sheet_label_always_show_latest_release_download">Always show latest release download</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
     <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
-    <string name="github_track_sheet_summary_direct_apk_check_options">Subscription projects always read the remote APK Manifest for version comparison. Pre-release, latest Release download, and Actions checks are closed for this mode.</string>
+    <string name="github_track_sheet_summary_direct_apk_check_options">Subscription projects always read the remote APK Manifest for version comparison. Latest Release downloads and Actions checks are closed for this mode.</string>
     <string name="github_item_label_actions_run">Actions Run</string>
     <string name="github_item_actions_run_value">%1$s · recorded at %2$s</string>
     <string name="github_item_actions_run_not_recorded">Not recorded yet</string>

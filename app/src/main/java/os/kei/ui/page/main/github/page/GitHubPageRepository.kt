@@ -515,10 +515,7 @@ internal class GitHubPageRepository(
                     packageName = resolvedPackageName,
                     appLabel = resolvedAppLabel,
                     sourceMode = draft.sourceMode,
-                    preferPreRelease = when (draft.sourceMode) {
-                        GitHubTrackedSourceMode.GitHubRepository -> draft.preferPreRelease
-                        GitHubTrackedSourceMode.DirectApk -> false
-                    },
+                    preferPreRelease = draft.preferPreRelease,
                     alwaysShowLatestReleaseDownloadButton = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository ->
                             draft.alwaysShowLatestReleaseDownloadButton

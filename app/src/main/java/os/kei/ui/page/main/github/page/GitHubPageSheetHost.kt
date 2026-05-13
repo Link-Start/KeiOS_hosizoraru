@@ -328,7 +328,6 @@ internal fun GitHubPageSheetHost(
             state.trackSourceModeInput = mode
             state.repoScanCandidates = emptyList()
             if (mode == GitHubTrackedSourceMode.DirectApk) {
-                state.preferPreReleaseInput = false
                 state.alwaysShowLatestReleaseDownloadButtonInput = false
                 state.checkActionsUpdatesInput = false
             }

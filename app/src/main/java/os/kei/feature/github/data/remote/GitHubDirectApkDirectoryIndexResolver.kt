@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
@@ -9,8 +10,12 @@ import kotlin.time.Duration.Companion.seconds
 internal data class GitHubDirectApkDirectoryIndexResolution(
     val indexUrl: String,
     val version: String,
-    val downloadUrl: String
+    val downloadUrl: String,
+    val channel: GitHubReleaseChannel
 ) {
+    val isPreRelease: Boolean
+        get() = channel.isPreRelease
+
     fun toAsset(fallbackName: String): GitHubReleaseAssetFile {
         return GitHubReleaseAssetFile(
             name = directApkFileNameFromUrl(downloadUrl).ifBlank { fallbackName },
@@ -27,7 +32,8 @@ internal class GitHubDirectApkDirectoryIndexResolver(
 ) {
     fun resolve(
         rawUrl: String,
-        localVersion: String = ""
+        localVersion: String = "",
+        preferPreRelease: Boolean = false
     ): Result<GitHubDirectApkDirectoryIndexResolution?> = runCatching {
         val pattern = DirectApkDirectoryIndexPattern.from(rawUrl)
             ?: return@runCatching null
@@ -67,12 +73,17 @@ internal class GitHubDirectApkDirectoryIndexResolver(
                 .preferredCandidates(familyCandidates)
                 .takeIf { it.isNotEmpty() }
                 ?: familyCandidates
-            val latest = variantCandidates.maxWithOrNull(ApkFileCandidateComparator)
+            val channelCandidates = variantCandidates
+                .preferredReleaseChannelCandidates(preferPreRelease)
+                .takeIf { it.isNotEmpty() }
+                ?: variantCandidates
+            val latest = channelCandidates.maxWithOrNull(ApkFileCandidateComparator)
                 ?: return@use null
             GitHubDirectApkDirectoryIndexResolution(
                 indexUrl = pattern.indexUrl,
                 version = latest.version.raw,
-                downloadUrl = latest.uri.toString()
+                downloadUrl = latest.uri.toString(),
+                channel = latest.version.channel
             )
         }
     }
@@ -156,7 +167,8 @@ internal class GitHubDirectApkDirectoryIndexResolver(
         val familyKey: String,
         val numbers: List<Int>,
         val suffixRank: Int,
-        val suffixNumber: Int
+        val suffixNumber: Int,
+        val channel: GitHubReleaseChannel
     ) {
         companion object {
             fun parse(fileName: String): DirectApkFileVersion? {
@@ -178,10 +190,13 @@ internal class GitHubDirectApkDirectoryIndexResolver(
                     suffix.startsWith("preview") || suffix == "pre" -> 2
                     suffix.startsWith("nightly") ||
                             suffix.startsWith("canary") ||
+                            suffix.startsWith("snapshot") ||
+                            suffix.startsWith("unstable") ||
                             suffix.startsWith("dev") -> 1
 
                     else -> 0
                 }
+                val channel = suffix.toReleaseChannel()
                 val suffixNumber = match.groupValues.getOrNull(3)
                     ?.toIntOrNull()
                     ?: 0
@@ -193,7 +208,8 @@ internal class GitHubDirectApkDirectoryIndexResolver(
                     familyKey = familyKey,
                     numbers = numbers,
                     suffixRank = suffixRank,
-                    suffixNumber = suffixNumber
+                    suffixNumber = suffixNumber,
+                    channel = channel
                 )
             }
         }
@@ -265,12 +281,20 @@ internal class GitHubDirectApkDirectoryIndexResolver(
         }
     }
 
+    private fun List<ApkFileCandidate>.preferredReleaseChannelCandidates(
+        preferPreRelease: Boolean
+    ): List<ApkFileCandidate> {
+        return filter { candidate ->
+            candidate.version.channel.isPreRelease == preferPreRelease
+        }
+    }
+
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
         const val MAX_INDEX_HTML_CHARS = 512 * 1024
         val hrefRegex = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val versionInFileRegex = Regex(
-            """(?i)(\d+(?:\.\d+){1,4})(?:[\s._-]*(alpha|beta|rc|preview|pre|nightly|canary|dev)\s*([0-9]+)?)?"""
+            """(?i)(\d+(?:\.\d+){1,4})(?:[\s._-]*(alpha|beta|rc|preview|pre|nightly|canary|snapshot|unstable|dev)\s*([0-9]+)?)?"""
         )
         val defaultClient: OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(12.seconds)
@@ -279,6 +303,24 @@ internal class GitHubDirectApkDirectoryIndexResolver(
             .followRedirects(true)
             .followSslRedirects(true)
             .build()
+    }
+}
+
+private fun String.toReleaseChannel(): GitHubReleaseChannel {
+    return when {
+        isBlank() -> GitHubReleaseChannel.STABLE
+        startsWith("rc") -> GitHubReleaseChannel.RC
+        startsWith("beta") -> GitHubReleaseChannel.BETA
+        startsWith("alpha") -> GitHubReleaseChannel.ALPHA
+        startsWith("preview") || startsWith("pre") -> GitHubReleaseChannel.PREVIEW
+        startsWith("nightly") ||
+                startsWith("canary") ||
+                startsWith("snapshot") ||
+                startsWith("unstable") ||
+                startsWith("dev") ->
+            GitHubReleaseChannel.DEV
+
+        else -> GitHubReleaseChannel.UNKNOWN
     }
 }
 

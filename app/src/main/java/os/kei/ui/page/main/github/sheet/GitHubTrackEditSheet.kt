@@ -609,6 +609,17 @@ private fun GitHubTrackEditFormContent(
         SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
         SheetSectionCard {
             if (directApkMode) {
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
+                    summary = stringResource(
+                        R.string.github_track_sheet_summary_prefer_prerelease_direct_apk
+                    )
+                ) {
+                    AppSwitch(
+                        checked = preferPreReleaseInput,
+                        onCheckedChange = onPreferPreReleaseInputChange
+                    )
+                }
                 SheetDescriptionText(
                     text = stringResource(R.string.github_track_sheet_summary_direct_apk_check_options)
                 )

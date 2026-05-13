@@ -57,6 +57,32 @@ class GitHubCheckCachePolicyTest {
     }
 
     @Test
+    fun `direct apk cache signature changes with pre-release preference`() {
+        val stableItem = tracked(
+            sourceMode = GitHubTrackedSourceMode.DirectApk,
+            preferPreRelease = false
+        )
+        val preItem = tracked(
+            sourceMode = GitHubTrackedSourceMode.DirectApk,
+            preferPreRelease = true
+        )
+
+        assertTrue(stableItem.directApkCheckSourceSignature().endsWith("|stable"))
+        assertTrue(preItem.directApkCheckSourceSignature().endsWith("|pre"))
+        assertFalse(stableItem.directApkCheckSourceSignature() == preItem.directApkCheckSourceSignature())
+        assertFalse(
+            GitHubCheckCacheEntry(
+                sourceStrategyId = GITHUB_DIRECT_APK_STRATEGY_ID,
+                latestStableRawTag = "10.1.0"
+            ).isValidForTrackedItem(
+                item = preItem,
+                lookupConfig = GitHubLookupConfig().forTrackedItem(preItem),
+                activeStrategyId = GitHubLookupConfig().selectedStrategy.storageId
+            )
+        )
+    }
+
+    @Test
     fun `github repository cache keeps global check source signature`() {
         val item = tracked(sourceMode = GitHubTrackedSourceMode.GitHubRepository)
         val lookupConfig = GitHubLookupConfig()
@@ -76,7 +102,10 @@ class GitHubCheckCachePolicyTest {
         )
     }
 
-    private fun tracked(sourceMode: GitHubTrackedSourceMode): GitHubTrackedApp {
+    private fun tracked(
+        sourceMode: GitHubTrackedSourceMode,
+        preferPreRelease: Boolean = false
+    ): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = when (sourceMode) {
                 GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo"
@@ -86,7 +115,8 @@ class GitHubCheckCachePolicyTest {
             repo = "repo",
             packageName = "demo.app",
             appLabel = "Demo",
-            sourceMode = sourceMode
+            sourceMode = sourceMode,
+            preferPreRelease = preferPreRelease
         )
     }
 }

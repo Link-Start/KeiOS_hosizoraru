@@ -813,7 +813,6 @@ object GitHubTrackStore {
             directIdentity?.displayName ?: "$owner/$repo"
         }
         val preferPreRelease = when {
-            sourceMode == GitHubTrackedSourceMode.DirectApk -> false
             settings?.has("preferPreRelease") == true ->
                 settings.optBoolean("preferPreRelease", false)
 

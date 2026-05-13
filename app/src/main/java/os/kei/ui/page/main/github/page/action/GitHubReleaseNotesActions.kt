@@ -312,25 +312,39 @@ internal class GitHubReleaseNotesActions(
         itemState: VersionCheckUi
     ): GitHubReleaseNotesTarget? {
         if (!item.isDirectApkTrack()) return null
-        val info = itemState.latestStableApkVersion
-            ?.takeIf { it.releaseNotes.isNotBlank() }
+        val preInfo = itemState.latestPreApkVersion
+            ?.takeIf { info -> info.releaseNotes.isNotBlank() }
+        val stableInfo = itemState.latestStableApkVersion
+            ?.takeIf { info -> info.releaseNotes.isNotBlank() }
+        val info = preInfo ?: stableInfo
             ?: return null
+        val prerelease = preInfo != null
         val tag = info.versionLabel()
             .ifBlank { info.releaseTag.trim() }
-            .ifBlank { itemState.latestStableRawTag.trim() }
-            .ifBlank { itemState.latestTag.trim() }
+            .ifBlank {
+                if (prerelease) itemState.latestPreRawTag.trim() else itemState.latestStableRawTag.trim()
+            }
+            .ifBlank {
+                if (prerelease) itemState.preReleaseInfo.trim() else itemState.latestTag.trim()
+            }
             .ifBlank { info.assetName.trim() }
             .ifBlank { item.repo.trim() }
         return GitHubReleaseNotesTarget(
             releaseName = info.releaseName.trim()
-                .ifBlank { itemState.latestStableName.trim() }
+                .ifBlank {
+                    if (prerelease) itemState.latestPreName.trim() else itemState.latestStableName.trim()
+                }
                 .ifBlank { item.appLabel.trim() }
                 .ifBlank { item.repo.trim() },
             tagName = tag,
             htmlUrl = info.releaseUrl.trim().ifBlank { item.repoUrl.trim() },
-            prerelease = false,
+            prerelease = prerelease,
             latestInChannel = true,
-            updatedAtMillis = itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+            updatedAtMillis = if (prerelease) {
+                itemState.latestPreUpdatedAtMillis.takeIf { it > 0L }
+            } else {
+                itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+            }
         )
     }
 
@@ -340,9 +354,18 @@ internal class GitHubReleaseNotesActions(
     ): GitHubReleaseAssetBundle? {
         if (!item.isDirectApkTrack()) return null
         val itemState = state.checkStates[item.id] ?: return null
-        val info = itemState.latestStableApkVersion
-            ?.takeIf { it.releaseNotes.isNotBlank() }
+        val info = if (target.prerelease) {
+            itemState.latestPreApkVersion
+        } else {
+            itemState.latestStableApkVersion
+        }
+            ?.takeIf { version -> version.releaseNotes.isNotBlank() }
             ?: return null
+        val updatedAtMillis = if (target.prerelease) {
+            itemState.latestPreUpdatedAtMillis.takeIf { it > 0L }
+        } else {
+            itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+        }
         val assetUrl = info.fetchSource.trim()
             .ifBlank { info.releaseUrl.trim() }
             .ifBlank { item.repoUrl.trim() }
@@ -353,7 +376,7 @@ internal class GitHubReleaseNotesActions(
             releaseName = target.releaseName,
             tagName = target.tagName,
             htmlUrl = target.htmlUrl.ifBlank { item.repoUrl },
-            releaseUpdatedAtMillis = itemState.latestStableUpdatedAtMillis.takeIf { it > 0L },
+            releaseUpdatedAtMillis = updatedAtMillis,
             releaseNotesBody = info.releaseNotes,
             assets = listOf(
                 GitHubReleaseAssetFile(
@@ -362,7 +385,7 @@ internal class GitHubReleaseNotesActions(
                     sizeBytes = 0L,
                     downloadCount = 0,
                     contentType = "application/vnd.android.package-archive",
-                    updatedAtMillis = itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+                    updatedAtMillis = updatedAtMillis
                 )
             ),
             showingAllAssets = true,

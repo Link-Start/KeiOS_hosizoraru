@@ -321,7 +321,8 @@ internal class GitHubPackageRepositoryResolver(
         val scanResult = packageNameScanner.scan(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
-                lookupConfig = lookupConfig
+                lookupConfig = lookupConfig,
+                expectedPackageName = packageName
             )
         )
         return scanResult.fold(

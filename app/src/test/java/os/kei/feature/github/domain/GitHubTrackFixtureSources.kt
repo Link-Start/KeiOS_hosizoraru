@@ -116,13 +116,22 @@ internal object GitHubTrackFixtureSources {
     }
 
     fun releaseAsset(item: GitHubTrackedApp): GitHubReleaseAssetFile {
+        val assetName = releaseAssetName(item)
         return GitHubReleaseAssetFile(
-            name = "${item.repo}.apk",
-            downloadUrl = "${item.repoUrl}/releases/download/v-fixture/${item.repo}.apk",
-            apiAssetUrl = "https://api.github.com/repos/${item.owner}/${item.repo}/releases/assets/1",
+            name = assetName,
+            downloadUrl = "${item.repoUrl}/releases/download/v-fixture/$assetName",
+            apiAssetUrl = "https://api.github.com/repos/${item.owner}/${item.repo}/releases/assets/${
+                item.packageName.hashCode().toUInt()
+            }",
             sizeBytes = 1024L,
             downloadCount = 1
         )
+    }
+
+    private fun releaseAssetName(item: GitHubTrackedApp): String {
+        val repoName = item.repo.replace(Regex("""[^A-Za-z0-9_.-]+"""), "-")
+        val packageName = item.packageName.replace(Regex("""[^A-Za-z0-9_.-]+"""), "-")
+        return "$repoName-$packageName.apk"
     }
 
     fun actionsArtifacts(items: List<GitHubTrackedApp>): List<GitHubActionsArtifact> {
@@ -308,8 +317,11 @@ internal object GitHubTrackFixtureSources {
     private class ExportTrackPackageScanSource(
         items: List<GitHubTrackedApp>
     ) : GitHubApkPackageNameScanSource {
-        private val byRepo = items.associateBy { item ->
+        private val byRepo = items.groupBy { item ->
             "${item.owner.lowercase()}/${item.repo.lowercase()}"
+        }
+        private val byDownloadUrl = items.associateBy { item ->
+            releaseAsset(item).downloadUrl
         }
 
         override fun loadLatestStableRelease(
@@ -332,7 +344,7 @@ internal object GitHubTrackFixtureSources {
             release: GitHubStableReleaseTarget,
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> {
-            return Result.success(listOf(releaseAsset(requireTrack(owner, repo))))
+            return Result.success(requireTracks(owner, repo).map(::releaseAsset))
         }
 
         override fun readAndroidManifestBytes(
@@ -343,7 +355,9 @@ internal object GitHubTrackFixtureSources {
                 .substringAfter("https://github.com/")
                 .substringBefore("/releases/")
                 .lowercase()
-            val item = byRepo[repoKey] ?: error("No exported track fixture for $repoKey")
+            val item = byDownloadUrl[asset.downloadUrl]
+                ?: byRepo[repoKey]?.singleOrNull()
+                ?: error("No exported track fixture for ${asset.name}")
             BinaryManifestFixture.build(item.packageName)
         }
 
@@ -351,8 +365,17 @@ internal object GitHubTrackFixtureSources {
             owner: String,
             repo: String
         ): GitHubTrackedApp {
+            return requireTracks(owner, repo).first()
+        }
+
+        private fun requireTracks(
+            owner: String,
+            repo: String
+        ): List<GitHubTrackedApp> {
             val key = "${owner.lowercase()}/${repo.lowercase()}"
-            return byRepo[key] ?: error("No exported track fixture for $key")
+            return byRepo[key].orEmpty().ifEmpty {
+                error("No exported track fixture for $key")
+            }
         }
     }
 }

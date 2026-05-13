@@ -81,7 +81,8 @@ internal class GitHubApkPackageNameScanner(
         val assets = releaseAssets.assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
         val scannedAsset = scanApkAssets(
             assets = assets,
-            lookupConfig = request.lookupConfig
+            lookupConfig = request.lookupConfig,
+            expectedPackageName = request.expectedPackageName
         )
             ?: error("The latest stable release contains no APK asset")
         GitHubApkPackageNameScanResult(
@@ -120,7 +121,8 @@ internal class GitHubApkPackageNameScanner(
 
     private fun scanApkAssets(
         assets: List<GitHubReleaseAssetFile>,
-        lookupConfig: GitHubLookupConfig
+        lookupConfig: GitHubLookupConfig,
+        expectedPackageName: String = ""
     ): ScannedApkAsset? {
         val scanTargets = assets.take(MAX_APK_ASSET_SCAN_CANDIDATES)
         if (scanTargets.isEmpty()) return null
@@ -129,6 +131,14 @@ internal class GitHubApkPackageNameScanner(
                 asset = scanTargets.single(),
                 lookupConfig = lookupConfig
             ).getOrThrow()
+        }
+        val normalizedExpectedPackageName = expectedPackageName.trim()
+        if (normalizedExpectedPackageName.isNotEmpty()) {
+            return scanApkAssetsForExpectedPackage(
+                assets = scanTargets,
+                lookupConfig = lookupConfig,
+                expectedPackageName = normalizedExpectedPackageName
+            )
         }
 
         return GitHubExecution.firstSuccessBoundedBlocking(
@@ -142,6 +152,41 @@ internal class GitHubApkPackageNameScanner(
         }.getOrElse { error ->
             throw error
         }
+    }
+
+    private fun scanApkAssetsForExpectedPackage(
+        assets: List<GitHubReleaseAssetFile>,
+        lookupConfig: GitHubLookupConfig,
+        expectedPackageName: String
+    ): ScannedApkAsset {
+        var firstError: Throwable? = null
+        val results = GitHubExecution.mapOrderedBoundedBlocking(
+            items = assets,
+            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS
+        ) { asset ->
+            scanApkAsset(
+                asset = asset,
+                lookupConfig = lookupConfig
+            )
+        }
+        val scannedAssets = results.mapNotNull { result ->
+            result.fold(
+                onSuccess = { it },
+                onFailure = { error ->
+                    if (firstError == null) firstError = error
+                    null
+                }
+            )
+        }
+        scannedAssets.firstOrNull { scanned ->
+            scanned.packageName.equals(expectedPackageName, ignoreCase = true)
+        }?.let { matched ->
+            return matched
+        }
+        scannedAssets.firstOrNull()?.let { fallback ->
+            return fallback
+        }
+        throw firstError ?: IllegalStateException("No APK asset manifest could be parsed")
     }
 
     private fun scanApkAsset(
@@ -174,8 +219,8 @@ internal class GitHubApkPackageNameScanner(
     }
 
     companion object {
-        private const val MAX_APK_ASSET_SCAN_CANDIDATES = 6
-        private const val MAX_PARALLEL_APK_ASSET_SCANS = 3
+        private const val MAX_APK_ASSET_SCAN_CANDIDATES = 12
+        private const val MAX_PARALLEL_APK_ASSET_SCANS = 4
     }
 }
 

@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 class GitHubActionsArtifactManifestProbeFixturePerformanceTest {
     @Test
-    fun `probe keeps nested apk manifest scan bounded for exported 30-track fixture`() {
+    fun `probe keeps nested apk manifest scan bounded for exported track fixture`() {
         val items = GitHubTrackExportFixture.trackedItems
         val expectedCount = GitHubTrackExportFixture.expectedItemCount
         val selectedItem = items.first()
@@ -43,7 +43,7 @@ class GitHubActionsArtifactManifestProbeFixturePerformanceTest {
             val packageName = probe.readPackageName(
                 artifact = GitHubActionsArtifact(
                     id = expectedCount.toLong(),
-                    name = "fixture-30-track-artifact",
+                    name = "fixture-track-artifact",
                     sizeBytes = artifactBytes.size.toLong()
                 ),
                 resolvedDownloadUrl = server.url("/download/artifact.zip").toString(),

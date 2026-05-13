@@ -79,10 +79,10 @@ class GitHubPackageRepositoryResolverTest {
         assertEquals("LibChecker.apk", result.matchedCandidates.single().assetName)
         assertEquals(1, result.mismatchedCandidateCount)
         assertEquals(1, result.failedCandidateCount)
-        assertEquals(
-            List(result.scannedCandidateCount) { GitHubLookupStrategyOption.GitHubApiToken },
-            scanSource.scannedStrategies
-        )
+        assertTrue(scanSource.scannedStrategies.isNotEmpty())
+        assertTrue(scanSource.scannedStrategies.all {
+            it == GitHubLookupStrategyOption.GitHubApiToken
+        })
         assertTrue(discovery.queries.any { it.contains("com.absinthe.libchecker") })
     }
 
@@ -128,6 +128,46 @@ class GitHubPackageRepositoryResolverTest {
             result.matchedCandidates.map { it.repository.fullName }
         )
         assertTrue(result.matchedCandidates[1].repository.fork)
+    }
+
+    @Test
+    fun `resolver verifies target package when release publishes multiple app variants`() {
+        val project = candidate(
+            owner = "hosizoraru",
+            repo = "KeiOS",
+            description = "KeiOS android os.kei",
+            stars = 100
+        )
+        val discovery = FakeDiscoverySource(listOf(project))
+        val scanSource = FakePackageScanSource(
+            packagesByRepo = emptyMap(),
+            packageVariantsByRepo = mapOf(
+                "hosizoraru/keios" to listOf(
+                    "os.kei",
+                    "os.kei.benchmark",
+                    "os.kei.debug"
+                )
+            )
+        )
+        val resolver = GitHubPackageRepositoryResolver(
+            discoverySource = discovery,
+            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
+        )
+
+        val result = resolver.scanRepositoriesForPackage(
+            GitHubPackageRepositoryScanRequest(
+                packageName = "os.kei.benchmark",
+                appLabel = "KeiOS Benchmark",
+                preferredRepoUrl = "https://github.com/hosizoraru/KeiOS",
+                lookupConfig = GitHubLookupConfig()
+            )
+        ).getOrThrow()
+
+        val matched = result.matchedCandidates.single()
+        assertEquals("hosizoraru", matched.repository.owner)
+        assertEquals("KeiOS", matched.repository.repo)
+        assertEquals("os.kei.benchmark", matched.trackedApp.packageName)
+        assertEquals("KeiOS-os.kei.benchmark.apk", matched.assetName)
     }
 
     @Test
@@ -527,7 +567,9 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     private class FakePackageScanSource(
-        private val packagesByRepo: Map<String, String>
+        packagesByRepo: Map<String, String>,
+        private val packageVariantsByRepo: Map<String, List<String>> =
+            packagesByRepo.mapValues { (_, packageName) -> listOf(packageName) }
     ) : GitHubApkPackageNameScanSource {
         val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
             Collections.synchronizedList(mutableListOf())
@@ -551,16 +593,23 @@ class GitHubPackageRepositoryResolverTest {
             release: GitHubStableReleaseTarget,
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> {
+            val repoKey = "${owner.lowercase()}/${repo.lowercase()}"
+            val packages = packageVariantsByRepo[repoKey].orEmpty()
             return Result.success(
-                listOf(
+                packages.mapIndexed { index, packageName ->
+                    val assetName = if (packages.size == 1) {
+                        "$repo.apk"
+                    } else {
+                        "$repo-$packageName.apk"
+                    }
                     GitHubReleaseAssetFile(
-                        name = "${repo}.apk",
-                        downloadUrl = "https://github.com/$owner/$repo/releases/download/${release.tag}/${repo}.apk",
-                        apiAssetUrl = "https://api.github.com/repos/$owner/$repo/releases/assets/1",
+                        name = assetName,
+                        downloadUrl = "https://github.com/$owner/$repo/releases/download/${release.tag}/$assetName",
+                        apiAssetUrl = "https://api.github.com/repos/$owner/$repo/releases/assets/${index + 1}",
                         sizeBytes = 1024L,
                         downloadCount = 1
                     )
-                )
+                }
             )
         }
 
@@ -573,8 +622,15 @@ class GitHubPackageRepositoryResolverTest {
                 .substringAfter("https://github.com/")
                 .substringBefore("/releases/")
                 .lowercase()
-            val packageName = packagesByRepo[repoKey]
-                ?: error("No package fixture for $repoKey")
+            val repoName = repoKey.substringAfter('/')
+            val packages = packageVariantsByRepo[repoKey].orEmpty()
+            val packageName = when (packages.size) {
+                1 -> packages.single()
+                else -> packages.firstOrNull { packageName ->
+                    asset.name.equals("$repoName-$packageName.apk", ignoreCase = true)
+                }
+            }
+                ?: error("No package fixture for ${asset.name}")
             BinaryManifestFixture.build(packageName)
         }
     }

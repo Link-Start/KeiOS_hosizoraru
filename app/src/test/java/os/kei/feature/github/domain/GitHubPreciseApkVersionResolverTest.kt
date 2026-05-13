@@ -51,13 +51,17 @@ class GitHubPreciseApkVersionResolverTest {
     }
 
     @Test
-    fun `resolver inspects at most four apk assets`() {
-        val assets = (1..6).map { index -> asset("demo-$index.apk") }
+    fun `resolver inspects enough apk assets for multi package releases`() {
+        val assets = (1..14).map { index -> asset("demo-$index.apk") }
         val source = FakePreciseSource(
             assets = assets,
             manifests = assets.withIndex().associate { (index, asset) ->
                 asset.name to manifest(
-                    packageName = "other.${asset.name.removeSuffix(".apk").replace('-', '.')}",
+                    packageName = if (index == 10) {
+                        "demo.target"
+                    } else {
+                        "other.${asset.name.removeSuffix(".apk").replace('-', '.')}"
+                    },
                     versionName = "1.0.${index + 1}",
                     versionCode = index + 1L
                 )
@@ -70,13 +74,16 @@ class GitHubPreciseApkVersionResolverTest {
                 owner = "demo",
                 repo = "app",
                 release = release("v1.0.0"),
-                packageName = "missing.app",
+                packageName = "demo.target",
                 lookupConfig = GitHubLookupConfig()
             )
             )
-        }.getOrThrow()
+        }.getOrThrow().also { result ->
+            assertEquals("demo-11.apk", result.assetName)
+            assertEquals("demo.target", result.packageName)
+        }
 
-        assertEquals(4, source.inspectCount)
+        assertEquals(12, source.inspectCount)
     }
 
     private fun release(

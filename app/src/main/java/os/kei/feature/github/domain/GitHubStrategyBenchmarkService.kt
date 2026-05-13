@@ -22,6 +22,7 @@ import os.kei.feature.github.model.GitHubStrategyBenchmarkSample
 import os.kei.feature.github.model.GitHubStrategyBenchmarkTestType
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.isGitHubRepositoryTrack
 import java.util.concurrent.ConcurrentHashMap
 
 object GitHubStrategyBenchmarkService {
@@ -37,6 +38,7 @@ object GitHubStrategyBenchmarkService {
         limit: Int = DEFAULT_TARGET_LIMIT
     ): List<GitHubRepoTarget> {
         return trackedItems
+            .filter { item -> item.isGitHubRepositoryTrack() }
             .groupBy { item ->
                 "${item.owner.lowercase()}/${item.repo.lowercase()}"
             }
@@ -472,7 +474,8 @@ object GitHubStrategyBenchmarkService {
                 scanner.scan(
                     GitHubApkPackageNameScanRequest(
                         repoUrl = target.normalizedRepoUrl,
-                        lookupConfig = lookupConfig
+                        lookupConfig = lookupConfig,
+                        expectedPackageName = target.packageName
                     )
                 ).getOrThrow().packageName
             }

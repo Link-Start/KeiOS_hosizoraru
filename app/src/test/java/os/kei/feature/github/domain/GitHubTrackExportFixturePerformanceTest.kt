@@ -46,29 +46,43 @@ import kotlin.test.assertTrue
 
 class GitHubTrackExportFixturePerformanceTest {
     @Test
-    fun `exported 30-track fixture exercises github local chains with performance report`() =
+    fun `exported track fixture exercises github local chains with performance report`() =
         runBlocking {
             val items = GitHubTrackExportFixture.trackedItems
+            val gitHubItems = GitHubTrackExportFixture.gitHubRepositoryItems
             val expectedCount = GitHubTrackExportFixture.expectedItemCount
+            val expectedGitHubCount = GitHubTrackExportFixture.expectedGitHubRepositoryCount
             assertEquals(expectedCount, items.size)
+            assertEquals(expectedGitHubCount, gitHubItems.size)
             val lookupConfig = GitHubLookupConfig()
             val apiLookupConfig = GitHubLookupConfig(
                 selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
                 apiToken = "token-123"
             )
-            val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
+            val scanSource = GitHubTrackFixtureSources.packageScanSource(gitHubItems)
             val scanner = GitHubApkPackageNameScanner(scanSource)
-            val discoverySource = GitHubTrackFixtureSources.discoverySource(items)
+            val discoverySource = GitHubTrackFixtureSources.discoverySource(gitHubItems)
             val resolver = GitHubPackageRepositoryResolver(
                 discoverySource = discoverySource,
                 packageNameScanner = scanner
             )
             val discoveryService = GitHubRepositoryDiscoveryService(discoverySource)
-            val importCandidates = GitHubTrackFixtureSources.importCandidates(items)
-            val releaseSnapshots = items.mapIndexed { index, item ->
-                GitHubTrackFixtureSources.releaseSnapshot(item, index)
+            val importCandidates = GitHubTrackFixtureSources.importCandidates(gitHubItems)
+            val repoFixtureIndexByKey = gitHubItems
+                .distinctBy { item -> "${item.owner.lowercase()}/${item.repo.lowercase()}" }
+                .mapIndexed { index, item ->
+                    "${item.owner.lowercase()}/${item.repo.lowercase()}" to index
+                }
+                .toMap()
+            val releaseSnapshots = gitHubItems.map { item ->
+                GitHubTrackFixtureSources.releaseSnapshot(
+                    item = item,
+                    index = requireNotNull(
+                        repoFixtureIndexByKey["${item.owner.lowercase()}/${item.repo.lowercase()}"]
+                    )
+                )
             }
-            val preciseSource = FixturePreciseApkVersionSource(items)
+            val preciseSource = FixturePreciseApkVersionSource(gitHubItems)
             val preciseResolver = GitHubPreciseApkVersionResolver(preciseSource)
             val metrics = mutableListOf<FixturePerformanceMetric>()
 
@@ -86,9 +100,9 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "release-snapshot-evaluate",
                 repeatCount = 10,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEachIndexed { index, item ->
+                gitHubItems.forEachIndexed { index, item ->
                     val result = GitHubReleaseCheckService.evaluateSnapshot(
                         item = item,
                         localVersion = GitHubTrackFixtureSources.localVersion(index),
@@ -103,9 +117,9 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "precise-apk-version-resolver-cached",
                 repeatCount = 5,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEachIndexed { index, item ->
+                gitHubItems.forEachIndexed { index, item ->
                     val result = preciseResolver.resolve(
                         GitHubPreciseApkVersionRequest(
                             owner = item.owner,
@@ -118,19 +132,20 @@ class GitHubTrackExportFixturePerformanceTest {
                     assertEquals(item.packageName, result.packageName)
                     assertTrue(result.versionLabel().isNotBlank())
                 }
-                assertTrue(preciseSource.inspectCount <= expectedCount)
+                assertTrue(preciseSource.inspectCount <= expectedGitHubCount)
             }
 
             metrics += measureFixtureChain(
                 name = "package-name-scan-atom",
                 repeatCount = 5,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEach { item ->
+                gitHubItems.forEach { item ->
                     val result = scanner.scan(
                         GitHubApkPackageNameScanRequest(
                             repoUrl = item.repoUrl,
-                            lookupConfig = lookupConfig
+                            lookupConfig = lookupConfig,
+                            expectedPackageName = item.packageName
                         )
                     ).getOrThrow()
                     assertEquals(item.packageName, result.packageName)
@@ -140,13 +155,14 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "package-name-scan-api",
                 repeatCount = 5,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEach { item ->
+                gitHubItems.forEach { item ->
                     val result = scanner.scan(
                         GitHubApkPackageNameScanRequest(
                             repoUrl = item.repoUrl,
-                            lookupConfig = apiLookupConfig
+                            lookupConfig = apiLookupConfig,
+                            expectedPackageName = item.packageName
                         )
                     ).getOrThrow()
                     assertEquals(item.packageName, result.packageName)
@@ -156,17 +172,17 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "repository-resolver-preferred",
                 repeatCount = 3,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEach { item ->
+                gitHubItems.forEach { item ->
                     val result = resolver.scanRepositoriesForPackage(
                         GitHubPackageRepositoryScanRequest(
                             packageName = item.packageName,
                             appLabel = item.appLabel,
                             preferredRepoUrl = item.repoUrl,
                             lookupConfig = apiLookupConfig,
-                            candidateLimit = items.size,
-                            verificationLimit = items.size
+                            candidateLimit = gitHubItems.size,
+                            verificationLimit = gitHubItems.size
                         )
                     ).getOrThrow()
                     assertNotNull(result.matchedCandidates.firstOrNull())
@@ -176,16 +192,16 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "repository-resolver-discovery",
                 repeatCount = 3,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEach { item ->
+                gitHubItems.forEach { item ->
                     val result = resolver.scanRepositoriesForPackage(
                         GitHubPackageRepositoryScanRequest(
                             packageName = item.packageName,
                             appLabel = item.appLabel,
                             lookupConfig = apiLookupConfig,
-                            candidateLimit = items.size,
-                            verificationLimit = items.size
+                            candidateLimit = gitHubItems.size,
+                            verificationLimit = gitHubItems.size
                         )
                     ).getOrThrow()
                     assertNotNull(result.matchedCandidates.firstOrNull())
@@ -195,7 +211,7 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "star-import-apk-verifier",
                 repeatCount = 5,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
                 val verifier = GitHubStarImportApkVerifier(scanSource)
                 importCandidates.forEach { candidate ->
@@ -212,33 +228,36 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "star-list-import-preview",
                 repeatCount = 10,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
+                val expectedRepositoryCandidateCount = gitHubItems
+                    .distinctBy { item -> "${item.owner.lowercase()}/${item.repo.lowercase()}" }
+                    .size
                 val preview = discoveryService.previewStarredRepositoryImport(
                     request = GitHubStarredRepositoryImportRequest(
                         source = GitHubStarredRepositoryImportSource.StarListUrl,
                         starListUrl = "https://github.com/stars/fixture",
-                        limit = items.size
+                        limit = gitHubItems.size
                     ),
                     existingItems = emptyList()
                 ).getOrThrow()
-                assertEquals(expectedCount, preview.totalFetchedCount)
-                assertEquals(expectedCount, preview.importableCount)
+                assertEquals(expectedGitHubCount, preview.totalFetchedCount)
+                assertEquals(expectedRepositoryCandidateCount, preview.importableCount)
             }
 
             metrics += measureFixtureChain(
                 name = "installed-app-repository-search",
                 repeatCount = 3,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                items.forEach { item ->
+                gitHubItems.forEach { item ->
                     val result = discoveryService.searchRepositoriesForApp(
                         request = GitHubAppRepositorySearchRequest(
                             app = InstalledAppItem(
                                 label = item.appLabel,
                                 packageName = item.packageName
                             ),
-                            limit = items.size
+                            limit = gitHubItems.size
                         ),
                         existingItems = emptyList()
                     ).getOrThrow()
@@ -249,10 +268,10 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "actions-artifact-selector",
                 repeatCount = 20,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
                 val matches = GitHubActionsArtifactSelector.selectDisplayArtifacts(
-                    artifacts = GitHubTrackFixtureSources.actionsArtifacts(items),
+                    artifacts = GitHubTrackFixtureSources.actionsArtifacts(gitHubItems),
                     options = GitHubActionsArtifactSelectionOptions(
                         preferredAbis = listOf("arm64-v8a")
                     )
@@ -299,19 +318,22 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "strategy-benchmark-fixture",
                 repeatCount = 3,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
                 val targets = GitHubStrategyBenchmarkService.buildTargets(
                     trackedItems = items,
                     limit = items.size
                 )
+                val expectedTargetCount = gitHubItems
+                    .distinctBy { item -> "${item.owner.lowercase()}/${item.repo.lowercase()}" }
+                    .size
                 val result = GitHubStrategyBenchmarkService.compareTargetsWithRunners(
                     targets = targets,
                     runners = listOf(fixtureBenchmarkRunner()),
                     maxConcurrency = 4
                 ).results.single()
-                assertEquals(expectedCount, result.totalTargets)
-                assertEquals(expectedCount, result.warmSamples.size)
+                assertEquals(expectedTargetCount, result.totalTargets)
+                assertEquals(expectedTargetCount, result.warmSamples.size)
                 assertEquals(
                     3,
                     result.samplesFor(GitHubStrategyBenchmarkTestType.ReleaseAssets).size
@@ -325,12 +347,12 @@ class GitHubTrackExportFixturePerformanceTest {
             metrics += measureFixtureChain(
                 name = "actions-nested-manifest-probe",
                 repeatCount = 3,
-                itemCount = items.size
+                itemCount = gitHubItems.size
             ) {
-                val selectedItem = items.first()
+                val selectedItem = gitHubItems.first()
                 val artifactBytes = zipWithStoredEntries(
                     GitHubTrackFixtureSources.actionArtifactEntryNames(
-                        items = items,
+                        items = gitHubItems,
                         selectedItem = selectedItem
                     ).map { (entryName, item) ->
                         entryName to zipWithManifest(
@@ -348,7 +370,7 @@ class GitHubTrackExportFixturePerformanceTest {
                     val packageName = probe.readPackageName(
                         artifact = GitHubActionsArtifact(
                             id = expectedCount.toLong(),
-                            name = "fixture-30-track-artifact",
+                            name = "fixture-track-artifact",
                             sizeBytes = artifactBytes.size.toLong()
                         ),
                         resolvedDownloadUrl = server.url("/download/artifact.zip").toString(),
@@ -473,7 +495,9 @@ class GitHubTrackExportFixturePerformanceTest {
     private class FixturePreciseApkVersionSource(
         items: List<os.kei.feature.github.model.GitHubTrackedApp>
     ) : GitHubPreciseApkVersionSource {
-        private val itemByRepo = items.associateBy { item -> "${item.owner}/${item.repo}" }
+        private val itemsByRepo = items.groupBy { item ->
+            "${item.owner.lowercase()}/${item.repo.lowercase()}"
+        }
         private val itemByAssetName =
             ConcurrentHashMap<String, os.kei.feature.github.model.GitHubTrackedApp>()
         private val manifestCache = ConcurrentHashMap<String, GitHubApkManifestInfo>()
@@ -489,21 +513,22 @@ class GitHubTrackExportFixturePerformanceTest {
             releaseUrl: String,
             lookupConfig: GitHubLookupConfig
         ): Result<GitHubReleaseAssetBundle> = runCatching {
-            val item = requireNotNull(itemByRepo["$owner/$repo"])
-            val assetName = "${repo}-${rawTag}.apk"
-            itemByAssetName[assetName] = item
+            val repoItems = itemsByRepo["${owner.lowercase()}/${repo.lowercase()}"].orEmpty()
+            check(repoItems.isNotEmpty()) { "Missing fixture repo $owner/$repo" }
             GitHubReleaseAssetBundle(
-                releaseName = "${item.appLabel} $rawTag",
+                releaseName = "${repoItems.first().appLabel} $rawTag",
                 tagName = rawTag,
                 htmlUrl = releaseUrl,
-                assets = listOf(
+                assets = repoItems.map { item ->
+                    val assetName = "${repo}-${item.packageName}-$rawTag.apk"
+                    itemByAssetName[assetName] = item
                     GitHubReleaseAssetFile(
                         name = assetName,
                         downloadUrl = "${item.repoUrl}/releases/download/$rawTag/$assetName",
                         sizeBytes = 1024L,
                         downloadCount = 1
                     )
-                )
+                }
             )
         }
 
@@ -537,7 +562,7 @@ class GitHubTrackExportFixturePerformanceTest {
         }
         val reportDir = File(appDir, "build/reports/github-fixture-performance")
         reportDir.mkdirs()
-        val report = File(reportDir, "github-30-fixture-performance.md")
+        val report = File(reportDir, "github-track-fixture-performance.md")
         report.writeText(buildPerformanceMarkdown(metrics))
         return report
     }
@@ -546,7 +571,7 @@ class GitHubTrackExportFixturePerformanceTest {
         metrics: List<FixturePerformanceMetric>
     ): String {
         return buildString {
-            appendLine("# GitHub 30-Track Fixture Performance")
+            appendLine("# GitHub Track Fixture Performance")
             appendLine()
             appendLine("| chain | repeats | items | avg run ms | avg item ms | min run ms | max run ms |")
             appendLine("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")

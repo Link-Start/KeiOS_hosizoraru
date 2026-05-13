@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -18,6 +19,14 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
 
         assertEquals(expectedCount, payload.sourceCount)
         assertEquals(expectedCount, payload.items.size)
+        assertEquals(
+            GitHubTrackExportFixture.expectedGitHubRepositoryCount,
+            payload.items.count { it.sourceMode == GitHubTrackedSourceMode.GitHubRepository }
+        )
+        assertEquals(
+            GitHubTrackExportFixture.expectedDirectApkCount,
+            payload.items.count { it.sourceMode == GitHubTrackedSourceMode.DirectApk }
+        )
         assertEquals(0, payload.invalidCount)
         assertEquals(0, payload.duplicateCount)
         assertNotNull(payload.items.firstOrNull { item ->
@@ -30,11 +39,16 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
                     item.repo == "PackageInstaller" &&
                     item.packageName == "io.github.vvb2060.packageinstaller"
         })
+        assertNotNull(payload.items.firstOrNull { item ->
+            item.sourceMode == GitHubTrackedSourceMode.DirectApk &&
+                    item.repoUrl == "https://telegram.org/dl/android/apk-public-beta" &&
+                    item.packageName == "org.telegram.messenger.beta"
+        })
     }
 
     @Test
     fun `project address to package scanner resolves every exported tracked app`() {
-        val items = GitHubTrackExportFixture.trackedItems
+        val items = GitHubTrackExportFixture.gitHubRepositoryItems
         val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val scanner = GitHubApkPackageNameScanner(scanSource)
 
@@ -45,7 +59,8 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
                     lookupConfig = GitHubLookupConfig(
                         selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
                         apiToken = "token-123"
-                    )
+                    ),
+                    expectedPackageName = item.packageName
                 )
             ).getOrThrow()
             val atomResult = scanner.scan(
@@ -53,7 +68,8 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
                     repoUrl = item.repoUrl,
                     lookupConfig = GitHubLookupConfig(
                         selectedStrategy = GitHubLookupStrategyOption.AtomFeed
-                    )
+                    ),
+                    expectedPackageName = item.packageName
                 )
             ).getOrThrow()
 
@@ -66,7 +82,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
 
     @Test
     fun `package to repository resolver confirms every exported tracked app from preferred repository`() {
-        val items = GitHubTrackExportFixture.trackedItems
+        val items = GitHubTrackExportFixture.gitHubRepositoryItems
         val discovery = GitHubTrackFixtureSources.discoverySource(items)
         val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val resolver = GitHubPackageRepositoryResolver(
@@ -94,7 +110,8 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
             }
 
             assertNotNull(matched, "Expected reverse scan to find ${item.owner}/${item.repo}")
-            assertEquals(item.repoUrl, matched.trackedApp.repoUrl)
+            assertEquals(item.owner, matched.trackedApp.owner)
+            assertEquals(item.repo, matched.trackedApp.repo)
             assertEquals(item.packageName, matched.trackedApp.packageName)
             assertEquals(item.appLabel, matched.trackedApp.appLabel)
             assertTrue(result.scannedCandidateCount >= result.matchedCandidates.size)
@@ -103,7 +120,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
 
     @Test
     fun `package to repository resolver discovers every exported tracked app from package and label`() {
-        val items = GitHubTrackExportFixture.trackedItems
+        val items = GitHubTrackExportFixture.gitHubRepositoryItems
         val discovery = GitHubTrackFixtureSources.discoverySource(items)
         val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val resolver = GitHubPackageRepositoryResolver(

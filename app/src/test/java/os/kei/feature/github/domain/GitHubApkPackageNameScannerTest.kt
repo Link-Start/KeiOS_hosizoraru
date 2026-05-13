@@ -176,6 +176,33 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
+    fun `scanner selects expected package from release with multiple app variants`() {
+        val source = FakeScanSource(
+            manifestBytes = BinaryManifestFixture.build("os.kei"),
+            assetNames = listOf("KeiOS-release.apk", "KeiOS-benchmark.apk", "KeiOS-debug.apk"),
+            manifestBytesByAsset = mapOf(
+                "KeiOS-release.apk" to BinaryManifestFixture.build("os.kei"),
+                "KeiOS-benchmark.apk" to BinaryManifestFixture.build("os.kei.benchmark"),
+                "KeiOS-debug.apk" to BinaryManifestFixture.build("os.kei.debug")
+            )
+        )
+        val scanner = GitHubApkPackageNameScanner(source)
+
+        val result = scanner.scan(
+            GitHubApkPackageNameScanRequest(
+                repoUrl = "https://github.com/hosizoraru/KeiOS",
+                lookupConfig = GitHubLookupConfig(),
+                expectedPackageName = "os.kei.benchmark"
+            )
+        ).getOrThrow()
+
+        assertEquals("KeiOS-benchmark.apk", result.assetName)
+        assertEquals("os.kei.benchmark", result.packageName)
+        assertTrue(source.scannedAssetNames.contains("KeiOS-release.apk"))
+        assertTrue(source.scannedAssetNames.contains("KeiOS-benchmark.apk"))
+    }
+
+    @Test
     fun `scanner reports invalid repository url before network work`() {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.scanned")

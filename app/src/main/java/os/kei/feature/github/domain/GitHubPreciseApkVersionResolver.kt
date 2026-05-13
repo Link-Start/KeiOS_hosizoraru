@@ -105,8 +105,8 @@ internal class GitHubPreciseApkVersionResolver(
     }
 
     private companion object {
-        const val MAX_APK_INSPECT_CANDIDATES = 4
-        const val MAX_PARALLEL_APK_INSPECTS = 2
+        const val MAX_APK_INSPECT_CANDIDATES = 12
+        const val MAX_PARALLEL_APK_INSPECTS = 4
     }
 }
 

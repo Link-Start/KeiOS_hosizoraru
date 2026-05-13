@@ -1,0 +1,2786 @@
+{
+  "format": "keios.github.tracked\/v2",
+  "schemaVersion": 2,
+  "exportedAtMillis": 1778672250911,
+  "itemCount": 71,
+  "sourceCounts": {
+    "githubRepository": 70,
+    "directApk": 1
+  },
+  "optionCounts": {
+    "preferPreRelease": 1,
+    "latestReleaseDownload": 0,
+    "actionsUpdate": 3,
+    "preciseApkVersionOverride": 0,
+    "archivedOrFork": 0
+  },
+  "items": [
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/hosizoraru\/KeiOS",
+      "packageName": "os.kei",
+      "appLabel": "KeiOS",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/hosizoraru\/KeiOS",
+        "owner": "hosizoraru",
+        "repo": "KeiOS"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": true,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": true,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "hosizoraru",
+      "repo": "KeiOS"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/wxxsfxyzm\/InstallerX-Revived",
+      "packageName": "com.rosan.installer.x.revived",
+      "appLabel": "InstallerX Revived",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/wxxsfxyzm\/InstallerX-Revived",
+        "owner": "wxxsfxyzm",
+        "repo": "InstallerX-Revived"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": true,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": true,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": true,
+      "checkPreRelease": true,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": true,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "wxxsfxyzm",
+      "repo": "InstallerX-Revived"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/AChep\/keyguard-app",
+      "packageName": "com.artemchep.keyguard",
+      "appLabel": "Keyguard",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/AChep\/keyguard-app",
+        "owner": "AChep",
+        "repo": "keyguard-app"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "AChep",
+      "repo": "keyguard-app"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/monogram-android\/monogram",
+      "packageName": "org.monogram",
+      "appLabel": "MonoGram",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/monogram-android\/monogram",
+        "owner": "monogram-android",
+        "repo": "monogram"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "monogram-android",
+      "repo": "monogram"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Moriafly\/SaltPlayerSource",
+      "packageName": "com.salt.music",
+      "appLabel": "Salt Player",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Moriafly\/SaltPlayerSource",
+        "owner": "Moriafly",
+        "repo": "SaltPlayerSource"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Moriafly",
+      "repo": "SaltPlayerSource"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/compose-miuix-ui\/miuix",
+      "packageName": "top.yukonga.miuix.uitest",
+      "appLabel": "Miuix",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/compose-miuix-ui\/miuix",
+        "owner": "compose-miuix-ui",
+        "repo": "miuix"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": true,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": true,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "compose-miuix-ui",
+      "repo": "miuix"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/YuKongA\/Updater-KMP",
+      "packageName": "top.yukonga.updater.kmp",
+      "appLabel": "Updater",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/YuKongA\/Updater-KMP",
+        "owner": "YuKongA",
+        "repo": "Updater-KMP"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "YuKongA",
+      "repo": "Updater-KMP"
+    },
+    {
+      "sourceMode": "direct_apk",
+      "repoUrl": "https:\/\/telegram.org\/dl\/android\/apk-public-beta",
+      "packageName": "org.telegram.messenger.beta",
+      "appLabel": "Telegram Beta",
+      "source": {
+        "mode": "direct_apk",
+        "url": "https:\/\/telegram.org\/dl\/android\/apk-public-beta",
+        "owner": "telegram.org",
+        "repo": "dl-android-apk-public-beta"
+      },
+      "settings": {
+        "sourceMode": "direct_apk",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Miuzarte\/ScrcpyForAndroid",
+      "packageName": "io.github.miuzarte.scrcpyforandroid",
+      "appLabel": "Scrcpy for Android",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Miuzarte\/ScrcpyForAndroid",
+        "owner": "Miuzarte",
+        "repo": "ScrcpyForAndroid"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Miuzarte",
+      "repo": "ScrcpyForAndroid"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/OpenHub-Store\/GitHub-Store",
+      "packageName": "zed.rainxch.githubstore",
+      "appLabel": "GitHub Store",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/OpenHub-Store\/GitHub-Store",
+        "owner": "OpenHub-Store",
+        "repo": "GitHub-Store"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "OpenHub-Store",
+      "repo": "GitHub-Store"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/amir1376\/ab-download-manager",
+      "packageName": "com.abdownloadmanager",
+      "appLabel": "AB DM",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/amir1376\/ab-download-manager",
+        "owner": "amir1376",
+        "repo": "ab-download-manager"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "amir1376",
+      "repo": "ab-download-manager"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/getpaseo\/paseo",
+      "packageName": "sh.paseo",
+      "appLabel": "Paseo",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/getpaseo\/paseo",
+        "owner": "getpaseo",
+        "repo": "paseo"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "getpaseo",
+      "repo": "paseo"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Itosang\/BatteryRecorder",
+      "packageName": "yangfentuozi.batteryrecorder",
+      "appLabel": "BatteryRecorder",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Itosang\/BatteryRecorder",
+        "owner": "Itosang",
+        "repo": "BatteryRecorder"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Itosang",
+      "repo": "BatteryRecorder"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/LanRhyme\/MicYou",
+      "packageName": "com.lanrhyme.micyou",
+      "appLabel": "MicYou",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/LanRhyme\/MicYou",
+        "owner": "LanRhyme",
+        "repo": "MicYou"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "LanRhyme",
+      "repo": "MicYou"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/roro2239\/Stellar",
+      "packageName": "roro.stellar.manager",
+      "appLabel": "Stellar",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/roro2239\/Stellar",
+        "owner": "roro2239",
+        "repo": "Stellar"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "roro2239",
+      "repo": "Stellar"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/NEORUAA\/WeType_UI_Enhanced",
+      "packageName": "com.xposed.wetypehook",
+      "appLabel": "WeType 美化",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/NEORUAA\/WeType_UI_Enhanced",
+        "owner": "NEORUAA",
+        "repo": "WeType_UI_Enhanced"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "NEORUAA",
+      "repo": "WeType_UI_Enhanced"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/jay3-yy\/BiliPai",
+      "packageName": "com.android.purebilibili",
+      "appLabel": "BiliPai",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/jay3-yy\/BiliPai",
+        "owner": "jay3-yy",
+        "repo": "BiliPai"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "jay3-yy",
+      "repo": "BiliPai"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/open-ani\/animeko",
+      "packageName": "me.him188.ani",
+      "appLabel": "Animeko",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/open-ani\/animeko",
+        "owner": "open-ani",
+        "repo": "animeko"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "open-ani",
+      "repo": "animeko"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/bggRGjQaUbCoE\/PiliPlus",
+      "packageName": "com.example.piliplus",
+      "appLabel": "PiliPlus",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/bggRGjQaUbCoE\/PiliPlus",
+        "owner": "bggRGjQaUbCoE",
+        "repo": "PiliPlus"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "bggRGjQaUbCoE",
+      "repo": "PiliPlus"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/imknown\/AndroidLowLevelDetector",
+      "packageName": "net.imknown.android.forefrontinfo",
+      "appLabel": "底层探测器",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/imknown\/AndroidLowLevelDetector",
+        "owner": "imknown",
+        "repo": "AndroidLowLevelDetector"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "imknown",
+      "repo": "AndroidLowLevelDetector"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/LibChecker\/LibChecker",
+      "packageName": "com.absinthe.libchecker",
+      "appLabel": "LibChecker",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/LibChecker\/LibChecker",
+        "owner": "LibChecker",
+        "repo": "LibChecker"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "LibChecker",
+      "repo": "LibChecker"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/JanYoStudio\/WhatAnime",
+      "packageName": "pw.janyo.whatanime",
+      "appLabel": "WhatAnime",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/JanYoStudio\/WhatAnime",
+        "owner": "JanYoStudio",
+        "repo": "WhatAnime"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "JanYoStudio",
+      "repo": "WhatAnime"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/anilbeesetti\/nextplayer",
+      "packageName": "dev.anilbeesetti.nextplayer",
+      "appLabel": "Next Player",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/anilbeesetti\/nextplayer",
+        "owner": "anilbeesetti",
+        "repo": "nextplayer"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "anilbeesetti",
+      "repo": "nextplayer"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/bitwarden\/android",
+      "packageName": "com.x8bit.bitwarden",
+      "appLabel": "Bitwarden",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/bitwarden\/android",
+        "owner": "bitwarden",
+        "repo": "android"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "bitwarden",
+      "repo": "android"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/rcmiku\/Payload-Dumper-Compose",
+      "packageName": "com.rcmiku.payload.dumper.compose",
+      "appLabel": "Payload Dumper",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/rcmiku\/Payload-Dumper-Compose",
+        "owner": "rcmiku",
+        "repo": "Payload-Dumper-Compose"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "rcmiku",
+      "repo": "Payload-Dumper-Compose"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/venera-app\/venera",
+      "packageName": "com.github.wgh136.venera",
+      "appLabel": "venera",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/venera-app\/venera",
+        "owner": "venera-app",
+        "repo": "venera"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "venera-app",
+      "repo": "venera"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/SukiSU-Ultra\/SukiSU-Ultra",
+      "packageName": "com.sukisu.ultra",
+      "appLabel": "SukiSU Ultra",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/SukiSU-Ultra\/SukiSU-Ultra",
+        "owner": "SukiSU-Ultra",
+        "repo": "SukiSU-Ultra"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "SukiSU-Ultra",
+      "repo": "SukiSU-Ultra"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/vvb2060\/EhViewer",
+      "packageName": "org.moedog.ehviewer",
+      "appLabel": "EhViewer",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/vvb2060\/EhViewer",
+        "owner": "vvb2060",
+        "repo": "EhViewer"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "vvb2060",
+      "repo": "EhViewer"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/vvb2060\/KeyAttestation",
+      "packageName": "io.github.vvb2060.keyattestation",
+      "appLabel": "密钥认证",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/vvb2060\/KeyAttestation",
+        "owner": "vvb2060",
+        "repo": "KeyAttestation"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "vvb2060",
+      "repo": "KeyAttestation"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/vvb2060\/PackageInstaller",
+      "packageName": "io.github.vvb2060.packageinstaller",
+      "appLabel": "Shizuku 安装器",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/vvb2060\/PackageInstaller",
+        "owner": "vvb2060",
+        "repo": "PackageInstaller"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "vvb2060",
+      "repo": "PackageInstaller"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/darshanparajuli\/LogcatReader",
+      "packageName": "com.dp.logcatapp",
+      "appLabel": "Logcat Reader",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/darshanparajuli\/LogcatReader",
+        "owner": "darshanparajuli",
+        "repo": "LogcatReader"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "darshanparajuli",
+      "repo": "LogcatReader"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/T8RIN\/ImageToolbox",
+      "packageName": "ru.tech.imageresizershrinker",
+      "appLabel": "Image Toolbox",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/T8RIN\/ImageToolbox",
+        "owner": "T8RIN",
+        "repo": "ImageToolbox"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "T8RIN",
+      "repo": "ImageToolbox"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/D4vidDf\/HyperBridge",
+      "packageName": "com.d4viddf.hyperbridge",
+      "appLabel": "Hyper Bridge",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/D4vidDf\/HyperBridge",
+        "owner": "D4vidDf",
+        "repo": "HyperBridge"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "D4vidDf",
+      "repo": "HyperBridge"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/YumeRiMoe\/YumeBox",
+      "packageName": "com.github.yumelira.yumebox",
+      "appLabel": "YumeBox",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/YumeRiMoe\/YumeBox",
+        "owner": "YumeRiMoe",
+        "repo": "YumeBox"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "YumeRiMoe",
+      "repo": "YumeBox"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/FrancoGiudans\/Capsulyric",
+      "packageName": "com.franco.capsulyric",
+      "appLabel": "Capsulyric",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/FrancoGiudans\/Capsulyric",
+        "owner": "FrancoGiudans",
+        "repo": "Capsulyric"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "FrancoGiudans",
+      "repo": "Capsulyric"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Notsfsssf\/pixez-flutter",
+      "packageName": "com.perol.pixez",
+      "appLabel": "PixEz",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Notsfsssf\/pixez-flutter",
+        "owner": "Notsfsssf",
+        "repo": "pixez-flutter"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Notsfsssf",
+      "repo": "pixez-flutter"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/JingMatrix\/LSPatch",
+      "packageName": "org.lsposed.lspatch",
+      "appLabel": "LSPatch",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/JingMatrix\/LSPatch",
+        "owner": "JingMatrix",
+        "repo": "LSPatch"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "JingMatrix",
+      "repo": "LSPatch"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/AhmetCanArslan\/ShizuWall",
+      "packageName": "com.arslan.shizuwall",
+      "appLabel": "ShizuWall",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/AhmetCanArslan\/ShizuWall",
+        "owner": "AhmetCanArslan",
+        "repo": "ShizuWall"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "AhmetCanArslan",
+      "repo": "ShizuWall"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/termux\/termux-app",
+      "packageName": "com.termux",
+      "appLabel": "Termux",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/termux\/termux-app",
+        "owner": "termux",
+        "repo": "termux-app"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "termux",
+      "repo": "termux-app"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/badnng\/Hyper-pick-up-code",
+      "packageName": "com.Badnng.moe",
+      "appLabel": "澎湃记",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/badnng\/Hyper-pick-up-code",
+        "owner": "badnng",
+        "repo": "Hyper-pick-up-code"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "badnng",
+      "repo": "Hyper-pick-up-code"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/YuKongA\/Font_Weight_Test-KMP",
+      "packageName": "top.yukonga.fontWeightTest",
+      "appLabel": "字体字重测试",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/YuKongA\/Font_Weight_Test-KMP",
+        "owner": "YuKongA",
+        "repo": "Font_Weight_Test-KMP"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "YuKongA",
+      "repo": "Font_Weight_Test-KMP"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/rikkahub\/rikkahub",
+      "packageName": "me.rerere.rikkahub",
+      "appLabel": "RikkaHub",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/rikkahub\/rikkahub",
+        "owner": "rikkahub",
+        "repo": "rikkahub"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "rikkahub",
+      "repo": "rikkahub"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/F0x1d\/LogFox",
+      "packageName": "com.f0x1d.logfox",
+      "appLabel": "LogFox",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/F0x1d\/LogFox",
+        "owner": "F0x1d",
+        "repo": "LogFox"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "F0x1d",
+      "repo": "LogFox"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/xororz\/local-dream",
+      "packageName": "io.github.xororz.localdream",
+      "appLabel": "Local Dream",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/xororz\/local-dream",
+        "owner": "xororz",
+        "repo": "local-dream"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "xororz",
+      "repo": "local-dream"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/mihonapp\/mihon",
+      "packageName": "app.mihon",
+      "appLabel": "Mihon",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/mihonapp\/mihon",
+        "owner": "mihonapp",
+        "repo": "mihon"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "mihonapp",
+      "repo": "mihon"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Leaf-lsgtky\/IslandRecoder",
+      "packageName": "com.island.recorder",
+      "appLabel": "Island Recorder",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Leaf-lsgtky\/IslandRecoder",
+        "owner": "Leaf-lsgtky",
+        "repo": "IslandRecoder"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Leaf-lsgtky",
+      "repo": "IslandRecoder"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/alibaba\/MNN\/releases",
+      "packageName": "com.alibaba.mnnllm.android",
+      "appLabel": "MNN Chat",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/alibaba\/MNN\/releases",
+        "owner": "alibaba",
+        "repo": "MNN"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "alibaba",
+      "repo": "MNN"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/eltavine\/Duck-Detector-Refactoring",
+      "packageName": "com.eltavine.duckdetector",
+      "appLabel": "Duck Detector",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/eltavine\/Duck-Detector-Refactoring",
+        "owner": "eltavine",
+        "repo": "Duck-Detector-Refactoring"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "eltavine",
+      "repo": "Duck-Detector-Refactoring"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/ImranR98\/Obtainium",
+      "packageName": "dev.imranr.obtainium",
+      "appLabel": "Obtainium",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/ImranR98\/Obtainium",
+        "owner": "ImranR98",
+        "repo": "Obtainium"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "ImranR98",
+      "repo": "Obtainium"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Droid-ify\/client",
+      "packageName": "com.looker.droidify",
+      "appLabel": "Droid-ify",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Droid-ify\/client",
+        "owner": "Droid-ify",
+        "repo": "client"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Droid-ify",
+      "repo": "client"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/GtxFury\/FlyClash-Android",
+      "packageName": "com.gtxfury.flyclash.meta",
+      "appLabel": "FlyClash",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/GtxFury\/FlyClash-Android",
+        "owner": "GtxFury",
+        "repo": "FlyClash-Android"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "GtxFury",
+      "repo": "FlyClash-Android"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/ThIsLinked\/AuroraStoreCrxmson",
+      "packageName": "com.aurora.store.nightly",
+      "appLabel": "Aurora Store",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/ThIsLinked\/AuroraStoreCrxmson",
+        "owner": "ThIsLinked",
+        "repo": "AuroraStoreCrxmson"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "ThIsLinked",
+      "repo": "AuroraStoreCrxmson"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/MorpheApp\/morphe-manager",
+      "packageName": "app.morphe.manager",
+      "appLabel": "Morphe",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/MorpheApp\/morphe-manager",
+        "owner": "MorpheApp",
+        "repo": "morphe-manager"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "MorpheApp",
+      "repo": "morphe-manager"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/mi-g-alex\/Telegram-Monet",
+      "packageName": "com.c3r5b8.telegram_monet",
+      "appLabel": "TgMonet Theme",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/mi-g-alex\/Telegram-Monet",
+        "owner": "mi-g-alex",
+        "repo": "Telegram-Monet"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "mi-g-alex",
+      "repo": "Telegram-Monet"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/zly2006\/zhihu-plus-plus",
+      "packageName": "com.github.zly2006.zhplus",
+      "appLabel": "知乎++",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/zly2006\/zhihu-plus-plus",
+        "owner": "zly2006",
+        "repo": "zhihu-plus-plus"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "zly2006",
+      "repo": "zhihu-plus-plus"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/YuKongA\/HQ-ICON_Compose",
+      "packageName": "top.yukonga.hq_icon",
+      "appLabel": "HQ ICON",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/YuKongA\/HQ-ICON_Compose",
+        "owner": "YuKongA",
+        "repo": "HQ-ICON_Compose"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "YuKongA",
+      "repo": "HQ-ICON_Compose"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/parallelcc\/MiCTS",
+      "packageName": "com.parallelc.micts",
+      "appLabel": "MiCTS",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/parallelcc\/MiCTS",
+        "owner": "parallelcc",
+        "repo": "MiCTS"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "parallelcc",
+      "repo": "MiCTS"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/parallelcc\/MiCTS",
+      "packageName": "com.parallelc.vistrigger",
+      "appLabel": "VISTrigger",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/parallelcc\/MiCTS",
+        "owner": "parallelcc",
+        "repo": "MiCTS"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "parallelcc",
+      "repo": "MiCTS"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/5ec1cff\/FuseFixer",
+      "packageName": "io.github.a13e300.fusefixer",
+      "appLabel": "FuseFixer",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/5ec1cff\/FuseFixer",
+        "owner": "5ec1cff",
+        "repo": "FuseFixer"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "5ec1cff",
+      "repo": "FuseFixer"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/zhanghai\/MaterialFiles",
+      "packageName": "me.zhanghai.android.files",
+      "appLabel": "质感文件",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/zhanghai\/MaterialFiles",
+        "owner": "zhanghai",
+        "repo": "MaterialFiles"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "zhanghai",
+      "repo": "MaterialFiles"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Aefyr\/SAI",
+      "packageName": "com.aefyr.sai",
+      "appLabel": "SAI",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Aefyr\/SAI",
+        "owner": "Aefyr",
+        "repo": "SAI"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Aefyr",
+      "repo": "SAI"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/GoldenglowSusie\/MiRearScreenSwitcher",
+      "packageName": "com.tgwgroup.MiRearScreenSwitcher",
+      "appLabel": "MRSS",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/GoldenglowSusie\/MiRearScreenSwitcher",
+        "owner": "GoldenglowSusie",
+        "repo": "MiRearScreenSwitcher"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "GoldenglowSusie",
+      "repo": "MiRearScreenSwitcher"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/localsend\/localsend",
+      "packageName": "org.localsend.localsend_app",
+      "appLabel": "LocalSend",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/localsend\/localsend",
+        "owner": "localsend",
+        "repo": "localsend"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "localsend",
+      "repo": "localsend"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/RikkaApps\/Shizuku",
+      "packageName": "moe.shizuku.privileged.api",
+      "appLabel": "Shizuku",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/RikkaApps\/Shizuku",
+        "owner": "RikkaApps",
+        "repo": "Shizuku"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "RikkaApps",
+      "repo": "Shizuku"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/maxim-saplin\/CrossPlatformDiskTest",
+      "packageName": "com.Saplin.CPDT",
+      "appLabel": "Cross Platform Disk Test",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/maxim-saplin\/CrossPlatformDiskTest",
+        "owner": "maxim-saplin",
+        "repo": "CrossPlatformDiskTest"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "maxim-saplin",
+      "repo": "CrossPlatformDiskTest"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/Parseus\/codecinfo",
+      "packageName": "com.parseus.codecinfo",
+      "appLabel": "Codec Info",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/Parseus\/codecinfo",
+        "owner": "Parseus",
+        "repo": "codecinfo"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "Parseus",
+      "repo": "codecinfo"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/nordicsemi\/Android-nRF-Connect",
+      "packageName": "no.nordicsemi.android.mcp",
+      "appLabel": "nRF Connect",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/nordicsemi\/Android-nRF-Connect",
+        "owner": "nordicsemi",
+        "repo": "Android-nRF-Connect"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "nordicsemi",
+      "repo": "Android-nRF-Connect"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/xjunz\/AutoSkip",
+      "packageName": "top.xjunz.automator",
+      "appLabel": "自动跳过",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/xjunz\/AutoSkip",
+        "owner": "xjunz",
+        "repo": "AutoSkip"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "xjunz",
+      "repo": "AutoSkip"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/lz233\/Tarnhelm",
+      "packageName": "cn.ac.lz233.tarnhelm",
+      "appLabel": "Tarnhelm",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/lz233\/Tarnhelm",
+        "owner": "lz233",
+        "repo": "Tarnhelm"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "lz233",
+      "repo": "Tarnhelm"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/zhaobozhen\/Anywhere-",
+      "packageName": "com.absinthe.anywhere_",
+      "appLabel": "Anywhere-",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/zhaobozhen\/Anywhere-",
+        "owner": "zhaobozhen",
+        "repo": "Anywhere-"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "zhaobozhen",
+      "repo": "Anywhere-"
+    },
+    {
+      "sourceMode": "github_repository",
+      "repoUrl": "https:\/\/github.com\/JunkFood02\/Seal",
+      "packageName": "com.junkfood.seal.preview",
+      "appLabel": "Seal Preview",
+      "source": {
+        "mode": "github_repository",
+        "url": "https:\/\/github.com\/JunkFood02\/Seal",
+        "owner": "JunkFood02",
+        "repo": "Seal"
+      },
+      "settings": {
+        "sourceMode": "github_repository",
+        "preferPreRelease": false,
+        "alwaysShowLatestReleaseDownloadButton": false,
+        "checkActionsUpdates": false,
+        "preciseApkVersionMode": "follow_global",
+        "localAppType": "user"
+      },
+      "local": {
+        "appType": "user",
+        "isSystemApp": false
+      },
+      "preferPreRelease": false,
+      "checkPreRelease": false,
+      "alwaysShowLatestReleaseDownloadButton": false,
+      "alwaysShowLatestReleaseDownload": false,
+      "checkActionsUpdates": false,
+      "preciseApkVersionMode": "follow_global",
+      "localAppType": "user",
+      "repository": {
+        "archived": false,
+        "fork": false
+      },
+      "repositoryArchived": false,
+      "repositoryFork": false,
+      "owner": "JunkFood02",
+      "repo": "Seal"
+    }
+  ]
+}

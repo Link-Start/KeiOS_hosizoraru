@@ -83,9 +83,20 @@ class GitHubTrackStoreTrackedItemJsonTest {
             listOf(item),
             exportedAtMillis = 3000L
         )
+        val exportedItem = JSONObject(exported)
+            .getJSONArray("items")
+            .getJSONObject(0)
         val sourceCounts = JSONObject(exported).getJSONObject("sourceCounts")
         val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
 
+        assertEquals(false, exportedItem.has("owner"))
+        assertEquals(false, exportedItem.has("repo"))
+        assertEquals("direct_apk", exportedItem.getJSONObject("source").getString("mode"))
+        assertEquals("telegram.org", exportedItem.getJSONObject("source").getString("owner"))
+        assertEquals(
+            "dl-android-apk-public-beta",
+            exportedItem.getJSONObject("source").getString("repo")
+        )
         assertEquals(0, sourceCounts.getInt("githubRepository"))
         assertEquals(1, sourceCounts.getInt("directApk"))
         assertEquals(GitHubTrackedSourceMode.DirectApk, imported.sourceMode)

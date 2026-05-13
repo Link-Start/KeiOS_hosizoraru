@@ -725,6 +725,7 @@ object GitHubTrackStore {
 
     private fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {
         val settings = obj.optJSONObject("settings")
+        val source = obj.optJSONObject("source")
         val repository = obj.optJSONObject("repository")
         val repoUrl = obj.optString("repoUrl").trim()
         val sourceMode = parseTrackedSourceMode(obj)
@@ -734,9 +735,13 @@ object GitHubTrackStore {
             null
         }
         val owner = obj.optString("owner").trim().ifBlank {
+            source?.optString("owner").orEmpty().trim()
+        }.ifBlank {
             directIdentity?.owner.orEmpty()
         }
         val repo = obj.optString("repo").trim().ifBlank {
+            source?.optString("repo").orEmpty().trim()
+        }.ifBlank {
             directIdentity?.repo.orEmpty()
         }
         val packageName = obj.optString("packageName").trim()
@@ -901,17 +906,18 @@ object GitHubTrackStore {
             .put("localAppType", normalizedItem.localAppType.storageId)
         val source = JSONObject()
             .put("mode", normalizedItem.sourceMode.storageId)
+            .put("url", normalizedItem.repoUrl)
+            .put("owner", normalizedItem.owner)
+            .put("repo", normalizedItem.repo)
         val repository = JSONObject()
             .put("archived", normalizedItem.repositoryArchived)
             .put("fork", normalizedItem.repositoryFork)
         val local = JSONObject()
             .put("appType", normalizedItem.localAppType.storageId)
             .put("isSystemApp", normalizedItem.localAppType == GitHubTrackedLocalAppType.System)
-        return JSONObject()
+        val payload = JSONObject()
             .put("sourceMode", normalizedItem.sourceMode.storageId)
             .put("repoUrl", normalizedItem.repoUrl)
-            .put("owner", normalizedItem.owner)
-            .put("repo", normalizedItem.repo)
             .put("packageName", normalizedItem.packageName)
             .put("appLabel", normalizedItem.appLabel)
             .put("source", source)
@@ -933,6 +939,12 @@ object GitHubTrackStore {
             .put("repository", repository)
             .put("repositoryArchived", normalizedItem.repositoryArchived)
             .put("repositoryFork", normalizedItem.repositoryFork)
+        if (normalizedItem.sourceMode == GitHubTrackedSourceMode.GitHubRepository) {
+            payload
+                .put("owner", normalizedItem.owner)
+                .put("repo", normalizedItem.repo)
+        }
+        return payload
     }
 
     private fun GitHubTrackedItemsOptionCounts.toJson(): JSONObject {

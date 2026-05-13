@@ -394,7 +394,15 @@ internal fun GitHubTrackedItemMoreActions(
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
     val showActionsAction = item.isGitHubRepositoryTrack()
-    val normalizedShowReleaseNotesAction = showReleaseNotesAction && showActionsAction
+    val normalizedShowReleaseNotesAction = when {
+        item.isGitHubRepositoryTrack() -> showReleaseNotesAction
+        item.isDirectApkTrack() -> state.latestStableApkVersion
+            ?.releaseNotes
+            .orEmpty()
+            .isNotBlank()
+
+        else -> false
+    }
     val optionSize = 2 +
             if (showActionsAction) 1 else 0 +
                     if (normalizedShowReleaseNotesAction) 1 else 0

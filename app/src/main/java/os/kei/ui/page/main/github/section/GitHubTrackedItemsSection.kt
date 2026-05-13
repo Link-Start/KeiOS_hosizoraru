@@ -327,14 +327,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             releaseName = state.latestStableName.ifBlank { state.latestTag },
                             rawTag = state.latestStableRawTag
                         )
-                        val directReleaseNotes = state.latestStableApkVersion
-                            ?.releaseNotes
-                            .orEmpty()
-                            .takeIf { item.isDirectApkTrack() }
-                            .orEmpty()
-                            .compactDirectReleaseNotes()
-                        val showStableDetails = stableReleaseMeta.isNotBlank() ||
-                                directReleaseNotes.isNotBlank()
                         val stableExpanded = trackedStableVersionExpanded[item.id] == true
                         GitHubReleaseVersionCard(
                             label = stringResource(
@@ -360,7 +352,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             }
                         )
                         AnimatedVisibility(
-                            visible = stableExpanded && showStableDetails,
+                            visible = stableExpanded && stableReleaseMeta.isNotBlank(),
                             enter = appExpandIn(),
                             exit = appExpandOut()
                         ) {
@@ -368,42 +360,26 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
                             ) {
-                                if (stableReleaseMeta.isNotBlank()) {
-                                    GitHubLinkedInfoCard(
-                                        label = stringResource(
-                                            if (item.isDirectApkTrack()) {
-                                                R.string.github_item_label_remote_release
-                                            } else {
-                                                R.string.github_item_label_stable_release
-                                            }
-                                        ),
-                                        value = stableReleaseMeta,
-                                        valueColor = MiuixTheme.colorScheme.primary,
-                                        valueMaxLines = 2,
-                                        onClick = {
-                                            onOpenExternalUrl(
-                                                state.githubStableReleaseLinkUrl(
-                                                    item.owner,
-                                                    item.repo
-                                                )
-                                            )
+                                GitHubLinkedInfoCard(
+                                    label = stringResource(
+                                        if (item.isDirectApkTrack()) {
+                                            R.string.github_item_label_remote_release
+                                        } else {
+                                            R.string.github_item_label_stable_release
                                         }
-                                    )
-                                }
-                                if (item.isDirectApkTrack() && directReleaseNotes.isNotBlank()) {
-                                    GitHubLinkedInfoCard(
-                                        label = stringResource(R.string.github_release_notes_title),
-                                        value = directReleaseNotes,
-                                        valueColor = MiuixTheme.colorScheme.onBackground,
-                                        valueMaxLines = 3,
-                                        onClick = {
-                                            onOpenDecisionAssistDetail(
-                                                GitHubDecisionAssistDetailType.ReleaseNotes,
-                                                item
+                                    ),
+                                    value = stableReleaseMeta,
+                                    valueColor = MiuixTheme.colorScheme.primary,
+                                    valueMaxLines = 2,
+                                    onClick = {
+                                        onOpenExternalUrl(
+                                            state.githubStableReleaseLinkUrl(
+                                                item.owner,
+                                                item.repo
                                             )
-                                        }
-                                    )
-                                }
+                                        )
+                                    }
+                                )
                             }
                         }
                     }
@@ -509,13 +485,4 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
             }
         }
     }
-}
-
-private fun String.compactDirectReleaseNotes(): String {
-    return lineSequence()
-        .map { it.trim().trimStart('-', '*', '•').trim() }
-        .filter { it.isNotBlank() }
-        .joinToString(" · ")
-        .take(240)
-        .trim()
 }

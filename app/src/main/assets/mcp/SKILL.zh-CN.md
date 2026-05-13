@@ -11,9 +11,9 @@
 
 1. 调用 `keios.health.ping`。
 2. 调用 `keios.mcp.runtime.status`。
-3. GitHub 相关任务先调用 `keios.github.config.snapshot`。
-4. 读取 `{{RESOURCE_OVERVIEW_URI}}` 获取工具分组。
-5. 读取 `{{RESOURCE_SKILL_URI}}` 或 `keios://skill/tool/{tool}` 获取任务帮助。
+3. 定时任务或组合技能先读取 `{{RESOURCE_WORKFLOWS_URI}}`。
+4. 需要从工具选择工作流时调用 `keios.mcp.workflow.blueprints(mode=list)`。
+5. 需要底层细节时再读取 `{{RESOURCE_OVERVIEW_URI}}` 或 `keios://skill/tool/{tool}`。
 
 ## 客户端配置
 
@@ -25,8 +25,15 @@
 - Claw 接入：`keios.mcp.claw.skill.guide(mode=auto)`
 - 同设备客户端用 `mode=local`，跨设备联调用 `mode=lan`。
 
-## 工具目录
-{{TOOL_LIST}}
+## 入口工具
+
+- `keios.health.ping`：连通性探测。
+- `keios.mcp.runtime.status`：服务、Token、endpoint 与客户端状态。
+- `keios.mcp.workflow.blueprints`：定时任务与组合技能的工作流选择器。
+- `keios.github.config.snapshot`：GitHub 设置与追踪上下文。
+- `keios.ba.snapshot`：Blue Archive AP、咖啡厅、通知与服务器上下文。
+
+优先使用这些入口工具。调用更底层工具前先读取 `keios://skill/tool/{tool}`。
 
 ## 运行与 Home
 
@@ -95,6 +102,10 @@
   `workflow`、`delivery`。
 - 客户端更适合调用工具时，使用 `keios.mcp.workflow.blueprints(mode=list|detail|skill, workflow=...)`。
 - 定时规则由客户端保存。KeiOS MCP tools 在任务触发时执行。
+
+## 完整工具参考
+
+{{TOOL_LIST}}
 
 ## 输出约定
 

@@ -19,6 +19,14 @@ data class McpToolMeta(
 }
 
 internal object McpToolCatalog {
+    val entrypointToolNames = listOf(
+        "keios.health.ping",
+        "keios.mcp.runtime.status",
+        "keios.mcp.workflow.blueprints",
+        "keios.github.config.snapshot",
+        "keios.ba.snapshot"
+    )
+
     val runtimeToolNames = listOf(
         "keios.health.ping",
         "keios.app.info",
@@ -169,18 +177,42 @@ internal object McpToolCatalog {
     private val toolArguments: Map<String, List<McpToolArgumentSpec>> = mapOf(
         "keios.mcp.runtime.logs" to listOf(McpSchema.integer("limit")),
         "keios.mcp.runtime.config" to listOf(
-            McpSchema.string("mode"),
-            McpSchema.string("endpoint"),
-            McpSchema.string("serverName")
+            McpSchema.string(
+                name = "mode",
+                description = "Connection template mode.",
+                enumValues = listOf("auto", "local", "lan"),
+                defaultValue = "auto"
+            ),
+            McpSchema.string("endpoint", description = "Optional endpoint override."),
+            McpSchema.string("serverName", description = "Optional client display name override.")
         ),
         "keios.mcp.claw.skill.guide" to listOf(
-            McpSchema.string("mode"),
-            McpSchema.string("endpoint"),
-            McpSchema.string("serverName")
+            McpSchema.string(
+                name = "mode",
+                description = "Connection template mode for the generated Claw config.",
+                enumValues = listOf("auto", "local", "lan"),
+                defaultValue = "auto"
+            ),
+            McpSchema.string("endpoint", description = "Optional endpoint override."),
+            McpSchema.string("serverName", description = "Optional client display name override.")
         ),
         "keios.mcp.workflow.blueprints" to listOf(
-            McpSchema.string("mode"),
-            McpSchema.string("workflow")
+            McpSchema.string(
+                name = "mode",
+                description = "Blueprint output mode.",
+                enumValues = listOf("list", "detail", "skill"),
+                defaultValue = "list"
+            ),
+            McpSchema.string(
+                name = "workflow",
+                description = "Blueprint id.",
+                enumValues = listOf(
+                    "github-update-watch",
+                    "github-actions-watch",
+                    "ba-daily-brief",
+                    "os-card-backup"
+                )
+            )
         ),
         "keios.system.topinfo.query" to listOf(McpSchema.string("query"), McpSchema.integer("limit")),
         "keios.os.activity.cards" to listOf(
@@ -196,50 +228,92 @@ internal object McpToolCatalog {
         ),
         "keios.os.cards.export" to listOf(McpSchema.string("target")),
         "keios.os.cards.import" to listOf(
-            McpSchema.string("target", required = true),
-            McpSchema.string("json", required = true),
-            McpSchema.boolean("apply")
+            McpSchema.string(
+                name = "target",
+                required = true,
+                description = "OS card domain to import.",
+                enumValues = listOf("activity", "shell", "all")
+            ),
+            McpSchema.string("json", required = true, description = "Exported KeiOS OS card JSON."),
+            McpSchema.boolean(
+                "apply",
+                description = "Apply the import after preview.",
+                defaultValue = "false"
+            )
         ),
         "keios.github.tracks.list" to listOf(
-            McpSchema.string("repoFilter"),
-            McpSchema.string("sourceMode"),
-            McpSchema.string("filterMode"),
-            McpSchema.string("sortMode"),
-            McpSchema.string("sortDirection"),
+            McpSchema.string(
+                "repoFilter",
+                description = "Owner/repo, package name, or app label filter."
+            ),
+            githubSourceModeArgument(),
+            githubFilterModeArgument(),
+            githubSortModeArgument(),
+            githubSortDirectionArgument(),
             McpSchema.integer("limit")
         ),
         "keios.github.tracks.export" to listOf(
-            McpSchema.string("repoFilter"),
-            McpSchema.string("sourceMode"),
-            McpSchema.string("filterMode"),
-            McpSchema.string("sortMode"),
-            McpSchema.string("sortDirection")
+            McpSchema.string(
+                "repoFilter",
+                description = "Owner/repo, package name, or app label filter."
+            ),
+            githubSourceModeArgument(),
+            githubFilterModeArgument(),
+            githubSortModeArgument(),
+            githubSortDirectionArgument()
         ),
         "keios.github.tracks.import" to listOf(
-            McpSchema.string("json", required = true),
-            McpSchema.boolean("apply")
+            McpSchema.string("json", required = true, description = "Tracked-item export JSON."),
+            McpSchema.boolean(
+                "apply",
+                description = "Apply the import after preview.",
+                defaultValue = "false"
+            )
         ),
         "keios.github.tracks.check" to listOf(
-            McpSchema.string("repoFilter"),
-            McpSchema.string("sourceMode"),
-            McpSchema.string("filterMode"),
-            McpSchema.string("sortMode"),
-            McpSchema.string("sortDirection"),
-            McpSchema.boolean("onlyUpdates"),
+            McpSchema.string(
+                "repoFilter",
+                description = "Owner/repo, package name, or app label filter."
+            ),
+            githubSourceModeArgument(),
+            githubFilterModeArgument(),
+            githubSortModeArgument(),
+            githubSortDirectionArgument(),
+            McpSchema.boolean(
+                "onlyUpdates",
+                description = "Return update rows only.",
+                defaultValue = "false"
+            ),
             McpSchema.integer("limit")
         ),
         "keios.github.tracks.summary" to listOf(
-            McpSchema.string("mode"),
-            McpSchema.string("repoFilter"),
-            McpSchema.string("sourceMode"),
-            McpSchema.string("filterMode"),
-            McpSchema.string("sortMode"),
-            McpSchema.string("sortDirection")
+            McpSchema.string(
+                name = "mode",
+                description = "Summary source.",
+                enumValues = listOf("cache", "network"),
+                defaultValue = "cache"
+            ),
+            McpSchema.string(
+                "repoFilter",
+                description = "Owner/repo, package name, or app label filter."
+            ),
+            githubSourceModeArgument(),
+            githubFilterModeArgument(),
+            githubSortModeArgument(),
+            githubSortDirectionArgument()
         ),
         "keios.github.actions.recommended" to listOf(
             McpSchema.string("repoFilter"),
-            McpSchema.boolean("refresh"),
-            McpSchema.boolean("onlyEnabled"),
+            McpSchema.boolean(
+                "refresh",
+                description = "Refresh network data before returning.",
+                defaultValue = "false"
+            ),
+            McpSchema.boolean(
+                "onlyEnabled",
+                description = "Only include tracks with Actions checks enabled.",
+                defaultValue = "true"
+            ),
             McpSchema.integer("limit")
         ),
         "keios.github.link.parse" to listOf(McpSchema.string("text", required = true)),
@@ -260,7 +334,11 @@ internal object McpToolCatalog {
             McpSchema.string("url", required = true),
             McpSchema.string("expectedPackageName"),
             McpSchema.string("appLabel"),
-            McpSchema.boolean("forceRefresh")
+            McpSchema.boolean(
+                "forceRefresh",
+                description = "Bypass cached manifest data.",
+                defaultValue = "false"
+            )
         ),
         "keios.github.package.repo.scan" to listOf(
             McpSchema.string("packageName", required = true),
@@ -337,6 +415,50 @@ internal object McpToolCatalog {
             McpSchema.integer("limit"),
             McpSchema.string("quality"),
             McpSchema.boolean("apply")
+        )
+    }
+
+    private fun githubSourceModeArgument(): McpToolArgumentSpec {
+        return McpSchema.string(
+            name = "sourceMode",
+            description = "Tracked source filter.",
+            enumValues = listOf("github_repository", "direct_apk")
+        )
+    }
+
+    private fun githubFilterModeArgument(): McpToolArgumentSpec {
+        return McpSchema.string(
+            name = "filterMode",
+            description = "Temporary tracking filter.",
+            enumValues = listOf(
+                "all",
+                "github_repository",
+                "direct_apk",
+                "pre_release_tracked",
+                "update_available",
+                "installed",
+                "failed_checks",
+                "actions_check_enabled"
+            ),
+            defaultValue = "all"
+        )
+    }
+
+    private fun githubSortModeArgument(): McpToolArgumentSpec {
+        return McpSchema.string(
+            name = "sortMode",
+            description = "Tracking sort rule.",
+            enumValues = listOf("update", "name", "pre_release", "changed", "added"),
+            defaultValue = "update"
+        )
+    }
+
+    private fun githubSortDirectionArgument(): McpToolArgumentSpec {
+        return McpSchema.string(
+            name = "sortDirection",
+            description = "Tracking sort direction.",
+            enumValues = listOf("forward", "reverse"),
+            defaultValue = "forward"
         )
     }
 
@@ -502,3 +624,5 @@ internal object McpToolCatalog {
         "keios.ba.cache.clear" to "Blue Archive と GitHub のキャッシュデータを削除します。引数: scope、url。"
     )
 }
+
+internal val MCP_ENTRYPOINT_TOOLS: Set<String> = McpToolCatalog.entrypointToolNames.toSet()

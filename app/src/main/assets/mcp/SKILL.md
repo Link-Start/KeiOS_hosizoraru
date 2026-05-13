@@ -11,9 +11,9 @@
 
 1. Call `keios.health.ping`.
 2. Call `keios.mcp.runtime.status`.
-3. Call `keios.github.config.snapshot` when the task touches GitHub features.
-4. Read `{{RESOURCE_OVERVIEW_URI}}` for grouped tool names.
-5. Read `{{RESOURCE_SKILL_URI}}` or `keios://skill/tool/{tool}` for task help.
+3. Read `{{RESOURCE_WORKFLOWS_URI}}` for scheduled tasks or composed skills.
+4. Call `keios.mcp.workflow.blueprints(mode=list)` when choosing a workflow by tools.
+5. Read `{{RESOURCE_OVERVIEW_URI}}` or `keios://skill/tool/{tool}` only for low-level detail.
 
 ## Client Config
 
@@ -25,8 +25,15 @@
 - Claw onboarding: `keios.mcp.claw.skill.guide(mode=auto)`
 - Use `mode=local` for same-device clients and `mode=lan` for cross-device debugging.
 
-## Tool Catalog
-{{TOOL_LIST}}
+## Entry Points
+
+- `keios.health.ping`: connectivity probe.
+- `keios.mcp.runtime.status`: server, token, endpoint, and client status.
+- `keios.mcp.workflow.blueprints`: workflow chooser for scheduled tasks and composed skills.
+- `keios.github.config.snapshot`: GitHub settings and tracking context.
+- `keios.ba.snapshot`: Blue Archive AP, Cafe, notification, and server context.
+
+Use these entry points first. Read `keios://skill/tool/{tool}` before calling a lower-level tool.
 
 ## Runtime And Home
 
@@ -100,6 +107,10 @@
   call tools more easily than reading resources.
 - Schedule storage belongs to the client. KeiOS MCP tools should run only when the scheduled task
   fires.
+
+## Full Tool Reference
+
+{{TOOL_LIST}}
 
 ## Output Contract
 

@@ -38,6 +38,11 @@ class McpToolRegistrationTest {
         val listProperties = listTool.inputSchema.properties.orEmpty()
         assertTrue("filterMode" in listProperties.keys)
         assertTrue("sortDirection" in listProperties.keys)
+        val filterModeSchema = listProperties.getValue("filterMode").toString()
+        assertTrue(filterModeSchema.contains("pre_release_tracked"))
+        assertTrue(filterModeSchema.contains("default"))
+        assertTrue(listTool.meta.toString().contains("keios/group"))
+        assertTrue(listTool.meta.toString().contains("keios/arguments"))
 
         val importTool = server.tools.getValue("keios.github.tracks.import").tool
         assertEquals(listOf("json"), importTool.inputSchema.required)
@@ -60,6 +65,8 @@ class McpToolRegistrationTest {
         val workflowTool = server.tools.getValue("keios.mcp.workflow.blueprints").tool
         assertTrue(workflowTool.annotations?.readOnlyHint ?: false)
         assertFalse(workflowTool.annotations?.openWorldHint ?: true)
+        assertTrue(workflowTool.meta.toString().contains("keios/entrypoint"))
+        assertTrue(workflowTool.meta.toString().contains("true"))
     }
 
     @Test
@@ -77,6 +84,7 @@ class McpToolRegistrationTest {
         assertTrue(markdown.contains(WORKFLOW_PLAN_PROMPT))
         assertTrue(markdown.contains(WORKFLOW_RESOURCE_URI))
         assertTrue(markdown.contains("keios.mcp.workflow.blueprints"))
+        assertTrue(markdown.indexOf("Entry Points") < markdown.indexOf("Full Tool Reference"))
     }
 
     private fun createService(): LocalMcpService {

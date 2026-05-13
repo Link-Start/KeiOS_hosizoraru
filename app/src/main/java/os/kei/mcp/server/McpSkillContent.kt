@@ -232,6 +232,7 @@ internal class McpSkillContent(
             appendLine("osTools=${McpToolCatalog.osToolNames.joinToString(",")}")
             appendLine("githubTools=${McpToolCatalog.githubToolNames.joinToString(",")}")
             appendLine("baTools=${McpToolCatalog.baToolNames.joinToString(",")}")
+            appendLine("entrypointTools=${McpToolCatalog.entrypointToolNames.joinToString(",")}")
             appendLine("toolCount=${McpToolCatalog.all.size}")
             appendLine("tools=${McpToolCatalog.all.joinToString(",") { it.name }}")
         }.trim()
@@ -254,9 +255,27 @@ internal class McpSkillContent(
             appendLine("readOnly=${hit.readOnly}")
             appendLine("openWorld=${hit.openWorld}")
             appendLine("executionProfile=${hit.executionProfile.name}")
+            appendLine("entrypoint=${hit.name in MCP_ENTRYPOINT_TOOLS}")
             if (hit.arguments.isNotEmpty()) {
                 appendLine("arguments=${hit.arguments.joinToString(",") { argument -> argument.name }}")
                 appendLine("required=${hit.requiredArguments.joinToString(",")}")
+                hit.arguments.forEach { argument ->
+                    appendLine(
+                        buildString {
+                            append("argument.${argument.name}=type:${argument.type.wireName}")
+                            append(" | required:${argument.required}")
+                            if (argument.defaultValue.isNotBlank()) {
+                                append(" | default:${argument.defaultValue}")
+                            }
+                            if (argument.enumValues.isNotEmpty()) {
+                                append(" | enum:${argument.enumValues.joinToString("|")}")
+                            }
+                            if (argument.description.isNotBlank()) {
+                                append(" | description:${argument.description}")
+                            }
+                        }
+                    )
+                }
             }
             appendLine()
             appendLine("See $SKILL_RESOURCE_URI for grouped flows.")

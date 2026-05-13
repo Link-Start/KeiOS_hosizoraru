@@ -5,6 +5,8 @@ import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import os.kei.core.system.ShizukuApiUtils
 import java.util.Locale
 
@@ -46,10 +48,6 @@ class LocalMcpService(
     private val githubDiscoveryTools = McpGitHubDiscoveryTools(environment)
     private val githubActionsTools = McpGitHubActionsTools(environment)
     private val baTools = McpBaTools(environment)
-
-    private val serverInstructions: String by lazy {
-        skillContent.buildServerInstructions()
-    }
 
     fun bindMcpStateProvider(provider: () -> McpServerUiState) {
         mcpStateProvider = provider
@@ -95,10 +93,19 @@ class LocalMcpService(
                 capabilities = ServerCapabilities(
                     tools = ServerCapabilities.Tools(listChanged = false),
                     resources = ServerCapabilities.Resources(listChanged = false, subscribe = false),
-                    prompts = ServerCapabilities.Prompts(listChanged = false)
+                    prompts = ServerCapabilities.Prompts(listChanged = false),
+                    extensions = mapOf(
+                        "os.kei.mcp" to buildJsonObject {
+                            put("skillResource", SKILL_RESOURCE_URI)
+                            put("skillOverviewResource", SKILL_OVERVIEW_URI)
+                            put("workflowResource", WORKFLOW_RESOURCE_URI)
+                            put("workflowPrompt", WORKFLOW_PLAN_PROMPT)
+                            put("configResource", CONFIG_RESOURCE_URI)
+                        }
+                    )
                 )
             ),
-            instructions = serverInstructions
+            instructionsProvider = { skillContent.buildServerInstructions() }
         )
 
         runtimeTools.register(server)

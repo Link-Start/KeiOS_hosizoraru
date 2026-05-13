@@ -13,6 +13,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -46,7 +50,8 @@ internal fun Server.addMcpTextTool(
             destructiveHint = meta?.destructive,
             idempotentHint = meta?.idempotent,
             openWorldHint = meta?.openWorld
-        )
+        ),
+        meta = meta?.toProtocolMeta()
     ) { request ->
         executeMcpTextTool(
             environment = environment,
@@ -56,6 +61,42 @@ internal fun Server.addMcpTextTool(
             handler = handler
         )
     }
+}
+
+private fun McpToolMeta.toProtocolMeta() = buildJsonObject {
+    put("keios/group", group)
+    put("keios/executionProfile", executionProfile.name)
+    put("keios/output", "key_value_text")
+    put("keios/entrypoint", name in MCP_ENTRYPOINT_TOOLS)
+    put("keios/writeRequiresApply", name.endsWith(".import"))
+    put(
+        "keios/arguments",
+        buildJsonArray {
+            arguments.forEach { argument ->
+                add(
+                    buildJsonObject {
+                        put("name", argument.name)
+                        put("type", argument.type.wireName)
+                        put("required", argument.required)
+                        if (argument.description.isNotBlank()) {
+                            put("description", argument.description)
+                        }
+                        if (argument.defaultValue.isNotBlank()) {
+                            put("default", argument.defaultValue)
+                        }
+                        if (argument.enumValues.isNotEmpty()) {
+                            put(
+                                "enum",
+                                buildJsonArray {
+                                    argument.enumValues.forEach { value -> add(JsonPrimitive(value)) }
+                                }
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    )
 }
 
 internal suspend fun executeMcpTextTool(

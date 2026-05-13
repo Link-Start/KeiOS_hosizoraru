@@ -22,7 +22,7 @@ internal object GitHubStatusPalette {
     val PreRelease = AppStatusColors.Cached
     val Cache = AppStatusColors.Cached
     val Error = AppStatusColors.Failed
-    val Install = Color(0xFF8B5CF6)
+    val Install = Color(0xFF93C5FD)
 
     fun tonedSurface(color: Color, isDark: Boolean): Color {
         return color.copy(alpha = if (isDark) 0.20f else 0.11f)

@@ -70,6 +70,7 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
     trackedItems: List<GitHubTrackedApp>,
     filteredTracked: List<GitHubTrackedApp>,
     sortedTracked: List<GitHubTrackedApp>,
+    installedAppLabelsByPackage: Map<String, String>,
     appLastUpdatedAtByTrackId: Map<String, Long>,
     checkStates: SnapshotStateMap<String, VersionCheckUi>,
     itemRefreshLoading: SnapshotStateMap<String, Boolean>,
@@ -126,7 +127,11 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
             val expanded = trackedCardExpanded[item.id] == true
             val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
             val itemLookupConfig = lookupConfig.forTrackedItem(item)
-            val displayTitle = item.githubTrackedDisplayTitle(state)
+            val installedAppLabel = installedAppLabelsByPackage[item.packageName.trim()].orEmpty()
+            val displayTitle = item.githubTrackedDisplayTitle(
+                state = state,
+                installedAppLabel = installedAppLabel
+            )
             val displaySubtitle = item.githubTrackedDisplaySubtitle(state, displayTitle)
             AppLiquidAccordionCard(
                 backdrop = contentBackdrop,
@@ -247,11 +252,6 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                 ) {
                     GitHubRepositoryLinkCard(
                         item = item,
-                        onOpenExternalUrl = onOpenExternalUrl
-                    )
-                    GitHubDirectApkRemoteHealthCard(
-                        item = item,
-                        state = state,
                         onOpenExternalUrl = onOpenExternalUrl
                     )
                     val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
@@ -458,6 +458,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                     item
                                 )
                             }
+                        )
+                    }
+                    if (item.isDirectApkTrack()) {
+                        GitHubDirectApkRemoteHealthCard(
+                            item = item,
+                            state = state,
+                            onOpenExternalUrl = onOpenExternalUrl
                         )
                     }
                     if (item.isGitHubRepositoryTrack()) {

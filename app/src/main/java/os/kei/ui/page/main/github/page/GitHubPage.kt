@@ -275,6 +275,7 @@ fun GitHubPage(
             lookupConfig = state.lookupConfig,
             overviewVisibleEntries = state.overviewVisibleEntries,
             overviewMetrics = contentDerivedState.trackedUi.overviewMetrics,
+            appList = state.appList,
             trackedItems = state.trackedItems,
             filteredTracked = contentDerivedState.trackedUi.filteredTracked,
             sortedTracked = contentDerivedState.trackedUi.sortedTracked,

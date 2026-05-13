@@ -109,6 +109,29 @@ class GitHubPageModelsTest {
     }
 
     @Test
+    fun `installed generated track uses installed app display label`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://buildbot.libretro.com/stable/1.22.2/android/RetroArch_aarch64.apk",
+            owner = "buildbot.libretro.com",
+            repo = "stable-1.22.2-android-retroarch-aarch64-apk",
+            packageName = "com.retroarch.aarch64",
+            appLabel = "com.retroarch.aarch64"
+        )
+        val state = VersionCheckUi(
+            localVersion = "1.22.0_GIT",
+            localVersionCode = 1763168090L
+        )
+
+        val title = item.githubTrackedDisplayTitle(
+            state = state,
+            installedAppLabel = "RetroArch"
+        )
+
+        assertEquals("RetroArch", title)
+        assertEquals("com.retroarch.aarch64", item.githubTrackedDisplaySubtitle(state, title))
+    }
+
+    @Test
     fun `release link urls prefer explicit release urls and fall back to tags`() {
         val state = VersionCheckUi(
             latestStableRawTag = "v1.2.3",

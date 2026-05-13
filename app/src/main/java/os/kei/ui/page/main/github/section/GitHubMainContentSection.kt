@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +26,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -81,6 +83,7 @@ internal fun GitHubMainContent(
     lookupConfig: GitHubLookupConfig,
     overviewVisibleEntries: Set<GitHubOverviewEntry>,
     overviewMetrics: GitHubOverviewMetrics,
+    appList: List<InstalledAppItem>,
     trackedItems: List<GitHubTrackedApp>,
     filteredTracked: List<GitHubTrackedApp>,
     sortedTracked: List<GitHubTrackedApp>,
@@ -145,6 +148,13 @@ internal fun GitHubMainContent(
 ) {
     val context = LocalContext.current
     val supportedAbis = Build.SUPPORTED_ABIS?.toList().orEmpty()
+    val installedAppLabelsByPackage = remember(appList) {
+        appList
+            .asSequence()
+            .map { it.packageName.trim() to it.label.trim() }
+            .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
+            .toMap()
+    }
     val bottomBarOffset = if (bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
     val searchDockBottom by animateDpAsState(
         targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
@@ -280,6 +290,7 @@ internal fun GitHubMainContent(
                         trackedItems = trackedItems,
                         filteredTracked = filteredTracked,
                         sortedTracked = sortedTracked,
+                        installedAppLabelsByPackage = installedAppLabelsByPackage,
                         appLastUpdatedAtByTrackId = appLastUpdatedAtByTrackId,
                         checkStates = checkStates,
                         itemRefreshLoading = itemRefreshLoading,

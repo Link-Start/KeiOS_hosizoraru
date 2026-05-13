@@ -4,13 +4,22 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 
-internal fun GitHubTrackedApp.githubTrackedDisplayTitle(state: VersionCheckUi?): String {
+internal fun GitHubTrackedApp.githubTrackedDisplayTitle(
+    state: VersionCheckUi?,
+    installedAppLabel: String = ""
+): String {
     val localLabel = appLabel.trim()
+    val installedLabel = installedAppLabel.trim()
+        .takeUnless { isGeneratedTrackingLabel(it) }
+        .orEmpty()
     val remoteName = state.githubRemoteDisplayName(repo)
+    val shouldUseInstalledLabel = installedLabel.isNotBlank() &&
+            isGeneratedTrackingLabel(localLabel)
     val shouldUseRemoteName = state?.isLocalAppUninstalled() == true &&
             remoteName.isNotBlank() &&
             isGeneratedTrackingLabel(localLabel)
     return when {
+        shouldUseInstalledLabel -> installedLabel
         shouldUseRemoteName -> remoteName
         localLabel.isNotBlank() -> localLabel
         remoteName.isNotBlank() -> remoteName

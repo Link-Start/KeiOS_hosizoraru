@@ -715,6 +715,7 @@ private fun GitHubTrackAppPickerContent(
             GitHubTrackAppPickerSortDirection.fromStorageId(savedPreferences.sortDirectionId)
         )
     }
+    val showInstallSourcePill = sortMode.showsInstallSourcePill()
     val filteredApps =
         remember(
             appList,
@@ -871,7 +872,10 @@ private fun GitHubTrackAppPickerContent(
                 )
             )
             selectedApp?.let { app ->
-                GitHubSelectedAppCard(selectedApp = app)
+                GitHubSelectedAppCard(
+                    selectedApp = app,
+                    showInstallSource = showInstallSourcePill
+                )
             }
             if (filteredApps.isEmpty()) {
                 MiuixInfoItem(
@@ -895,6 +899,7 @@ private fun GitHubTrackAppPickerContent(
                         GitHubAppCandidateRow(
                             app = app,
                             selected = selectedApp?.packageName == app.packageName,
+                            showInstallSource = showInstallSourcePill,
                             onClick = {
                                 onSelectedAppChange(app)
                                 onPickerExpandedChange(false)

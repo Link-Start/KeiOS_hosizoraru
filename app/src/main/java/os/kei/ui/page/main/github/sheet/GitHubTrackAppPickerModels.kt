@@ -43,6 +43,10 @@ internal fun GitHubTrackAppPickerSortMode.isTimeSort(): Boolean {
             this == GitHubTrackAppPickerSortMode.RecentlyInstalled
 }
 
+internal fun GitHubTrackAppPickerSortMode.showsInstallSourcePill(): Boolean {
+    return this == GitHubTrackAppPickerSortMode.InstallSource
+}
+
 internal fun filterAndSortGitHubTrackAppCandidates(
     apps: List<InstalledAppItem>,
     query: String,

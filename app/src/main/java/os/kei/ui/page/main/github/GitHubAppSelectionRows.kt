@@ -42,7 +42,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GitHubSelectedAppCard(
-    selectedApp: InstalledAppItem
+    selectedApp: InstalledAppItem,
+    showInstallSource: Boolean = false
 ) {
     SheetSurfaceCard(
         modifier = Modifier.fillMaxWidth(),
@@ -81,7 +82,9 @@ internal fun GitHubSelectedAppCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            InstallSourcePill(label = selectedApp.installSourceDisplayLabel())
+            if (showInstallSource) {
+                InstallSourcePill(label = selectedApp.installSourceDisplayLabel())
+            }
         }
     }
 }
@@ -90,6 +93,7 @@ internal fun GitHubSelectedAppCard(
 internal fun GitHubAppCandidateRow(
     app: InstalledAppItem,
     selected: Boolean,
+    showInstallSource: Boolean,
     onClick: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
@@ -137,10 +141,12 @@ internal fun GitHubAppCandidateRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            InstallSourcePill(
-                label = app.installSourceDisplayLabel(),
-                selected = selected
-            )
+            if (showInstallSource) {
+                InstallSourcePill(
+                    label = app.installSourceDisplayLabel(),
+                    selected = selected
+                )
+            }
         }
     }
 }

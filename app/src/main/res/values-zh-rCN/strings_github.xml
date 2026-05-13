@@ -663,8 +663,8 @@
     <string name="github_track_sheet_label_app_list">App 列表</string>
     <string name="github_track_sheet_app_result_count_format">显示 %1$d / %2$d 个</string>
     <string name="github_track_sheet_app_filter_scope_label">App 类型</string>
-    <string name="github_track_sheet_app_filter_user_apps">用户 App</string>
-    <string name="github_track_sheet_app_filter_system_apps">系统 App</string>
+    <string name="github_track_sheet_app_filter_user_apps">用户</string>
+    <string name="github_track_sheet_app_filter_system_apps">系统</string>
     <string name="github_track_sheet_app_filter_tracked_apps">已追踪</string>
     <string name="github_track_sheet_app_sort_label">排序</string>
     <string name="github_track_sheet_app_sort_dropdown_format">按 %1$s</string>

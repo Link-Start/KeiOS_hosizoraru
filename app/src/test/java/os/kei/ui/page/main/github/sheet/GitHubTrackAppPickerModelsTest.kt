@@ -96,6 +96,17 @@ class GitHubTrackAppPickerModelsTest {
         )
     }
 
+    @Test
+    fun `install source pill is only shown for install source sort`() {
+        GitHubTrackAppPickerSortMode.entries.forEach { mode ->
+            assertEquals(
+                mode == GitHubTrackAppPickerSortMode.InstallSource,
+                mode.showsInstallSourcePill(),
+                mode.name
+            )
+        }
+    }
+
     private companion object {
         private val apps = listOf(
             InstalledAppItem(

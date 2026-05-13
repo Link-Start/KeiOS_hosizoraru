@@ -676,8 +676,8 @@
     <string name="github_track_sheet_label_app_list">App list</string>
     <string name="github_track_sheet_app_result_count_format">Showing %1$d / %2$d</string>
     <string name="github_track_sheet_app_filter_scope_label">App type</string>
-    <string name="github_track_sheet_app_filter_user_apps">User apps</string>
-    <string name="github_track_sheet_app_filter_system_apps">System apps</string>
+    <string name="github_track_sheet_app_filter_user_apps">User</string>
+    <string name="github_track_sheet_app_filter_system_apps">System</string>
     <string name="github_track_sheet_app_filter_tracked_apps">Tracked</string>
     <string name="github_track_sheet_app_sort_label">Sort</string>
     <string name="github_track_sheet_app_sort_dropdown_format">By %1$s</string>

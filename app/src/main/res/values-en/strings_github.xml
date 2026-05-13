@@ -286,6 +286,7 @@
     <string name="github_item_label_prerelease_version">Pre-release version</string>
     <string name="github_item_label_releases">Releases</string>
     <string name="github_item_label_stable_release">Stable release</string>
+    <string name="github_item_label_remote_release">Remote release</string>
     <string name="github_item_label_prerelease_release">Pre-release</string>
     <string name="github_release_meta_prefix_stable">Stable</string>
     <string name="github_release_meta_prefix_prerelease">Pre-release</string>

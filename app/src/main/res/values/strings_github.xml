@@ -286,6 +286,7 @@
     <string name="github_item_label_prerelease_version">预发版本</string>
     <string name="github_item_label_releases">Releases</string>
     <string name="github_item_label_stable_release">稳定发布</string>
+    <string name="github_item_label_remote_release">远端发布</string>
     <string name="github_item_label_prerelease_release">预发发布</string>
     <string name="github_release_meta_prefix_stable">稳定</string>
     <string name="github_release_meta_prefix_prerelease">预发</string>

@@ -361,7 +361,13 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                 verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
                             ) {
                                 GitHubLinkedInfoCard(
-                                    label = stringResource(R.string.github_item_label_stable_release),
+                                    label = stringResource(
+                                        if (item.isDirectApkTrack()) {
+                                            R.string.github_item_label_remote_release
+                                        } else {
+                                            R.string.github_item_label_stable_release
+                                        }
+                                    ),
                                     value = stableReleaseMeta,
                                     valueColor = MiuixTheme.colorScheme.primary,
                                     valueMaxLines = 2,

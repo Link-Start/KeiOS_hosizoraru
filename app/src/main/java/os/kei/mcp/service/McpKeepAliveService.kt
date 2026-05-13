@@ -15,12 +15,14 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 import kotlin.time.Duration.Companion.milliseconds
 
 class McpKeepAliveService : Service() {
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val serviceScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
     private val notificationManager by lazy { NotificationManagerCompat.from(this) }
     private var heartbeatJob: Job? = null
     private var islandRefreshJob: Job? = null
@@ -173,8 +175,9 @@ class McpKeepAliveService : Service() {
         if (!currentRunning || !currentHeartbeatEnabled) return
         heartbeatJob = serviceScope.launch {
             while (true) {
-                delay(18_000.milliseconds)
+                delay(resolveHeartbeatDelay())
                 if (!currentRunning || !currentHeartbeatEnabled) continue
+                yield()
                 McpNotificationHelper.refreshForegroundPulse(
                     context = this@McpKeepAliveService,
                     notificationId = currentNotificationId,
@@ -186,6 +189,12 @@ class McpKeepAliveService : Service() {
                 )
             }
         }
+    }
+
+    private fun resolveHeartbeatDelay() = if (currentClients > 0) {
+        HEARTBEAT_ACTIVE_DELAY
+    } else {
+        HEARTBEAT_IDLE_DELAY
     }
 
     private fun stopHeartbeat() {
@@ -292,6 +301,8 @@ class McpKeepAliveService : Service() {
         private const val EXTRA_SERVER_NAME = "server_name"
         private const val EXTRA_CLIENTS = "clients"
         private const val EXTRA_HEARTBEAT_ENABLED = "heartbeat_enabled"
+        private val HEARTBEAT_ACTIVE_DELAY = 90_000.milliseconds
+        private val HEARTBEAT_IDLE_DELAY = 300_000.milliseconds
 
         fun startOrUpdate(
             context: Context,

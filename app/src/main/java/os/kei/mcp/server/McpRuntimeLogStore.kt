@@ -14,19 +14,24 @@ internal class McpRuntimeLogStore(
     private val maxEntries: Int = 120,
     private val onChanged: (List<McpLogEntry>) -> Unit
 ) {
-    private var entries: List<McpLogEntry> = emptyList()
+    private val entries = ArrayDeque<McpLogEntry>(maxEntries)
 
-    fun snapshot(): List<McpLogEntry> = entries
+    @Synchronized
+    fun snapshot(): List<McpLogEntry> = entries.toList()
 
+    @Synchronized
     fun append(level: String, message: String) {
         val now = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        entries = (entries + McpLogEntry(time = now, level = level, message = message))
-            .takeLast(maxEntries)
-        onChanged(entries)
+        if (entries.size >= maxEntries) {
+            entries.removeFirst()
+        }
+        entries.addLast(McpLogEntry(time = now, level = level, message = message))
+        onChanged(entries.toList())
     }
 
+    @Synchronized
     fun clear() {
-        entries = emptyList()
-        onChanged(entries)
+        entries.clear()
+        onChanged(emptyList())
     }
 }

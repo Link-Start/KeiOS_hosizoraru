@@ -1,6 +1,7 @@
 package os.kei.mcp.server
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.service.McpKeepAliveService
@@ -43,9 +45,13 @@ data class McpServerUiState(
 
 class McpServerManager(
     private val appContext: Context,
-    private val localMcpService: LocalMcpService
+    private val localMcpService: LocalMcpService,
+    monitorDispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 ) {
     companion object {
+        private val SESSION_MONITOR_IDLE_DELAY = 15_000.milliseconds
+        private val SESSION_MONITOR_ACTIVE_DELAY = 5_000.milliseconds
+
         fun loadSavedCacheSummary(context: Context): String {
             val snapshot = McpServerPrefs.loadSnapshot()
             val tokenState = context.getString(
@@ -84,7 +90,7 @@ class McpServerManager(
     private var endpointSession: McpEndpointSession? = null
     private var monitorJob: Job? = null
     private var lastConnectedCount: Int = 0
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + monitorDispatcher)
     private val endpointHost = McpKtorEndpointHost(::appendLog)
     private val logStore by lazy {
         McpRuntimeLogStore { logs ->
@@ -143,7 +149,11 @@ class McpServerManager(
                 path = McpServerDefaults.ENDPOINT_PATH,
                 expectedTokenProvider = { _uiState.value.authToken },
                 allowedHosts = buildAllowedHosts(port = port, allowExternal = allowExternal, addresses = addresses),
-                serverFactory = { localMcpService.createRuntimeServer() }
+                serverFactory = {
+                    localMcpService.createRuntimeServer { server ->
+                        updateConnectedClientCountAsync(server)
+                    }
+                }
             )
             endpointSession = session
             McpServerRuntimeRegistry.registerRunning(this)
@@ -342,21 +352,33 @@ class McpServerManager(
         monitorJob?.cancel()
         monitorJob = scope.launch {
             while (true) {
-                val count = runCatching { session.server.sessions.size }.getOrDefault(0)
-                if (count != lastConnectedCount) {
-                    val old = lastConnectedCount
-                    lastConnectedCount = count
-                    _uiState.value = _uiState.value.copy(connectedClients = count)
-                    syncKeepAliveNotification(forceStart = false)
-                    if (count > old) {
-                        appendLog("INFO", "Client connected, online=$count")
-                    } else {
-                        appendLog("INFO", "Client disconnected, online=$count")
-                    }
-                }
-                delay(1_200.milliseconds)
+                val count = updateConnectedClientCount(session.server)
+                yield()
+                delay(if (count > 0) SESSION_MONITOR_ACTIVE_DELAY else SESSION_MONITOR_IDLE_DELAY)
             }
         }
+    }
+
+    private fun updateConnectedClientCountAsync(server: io.modelcontextprotocol.kotlin.sdk.server.Server) {
+        scope.launch {
+            updateConnectedClientCount(server)
+        }
+    }
+
+    @Synchronized
+    private fun updateConnectedClientCount(server: io.modelcontextprotocol.kotlin.sdk.server.Server): Int {
+        val count = runCatching { server.sessions.size }.getOrDefault(0)
+        if (count == lastConnectedCount) return count
+        val old = lastConnectedCount
+        lastConnectedCount = count
+        _uiState.value = _uiState.value.copy(connectedClients = count)
+        syncKeepAliveNotification(forceStart = false)
+        if (count > old) {
+            appendLog("INFO", "Client connected, online=$count")
+        } else {
+            appendLog("INFO", "Client disconnected, online=$count")
+        }
+        return count
     }
 
     private fun appendLog(level: String, message: String) {

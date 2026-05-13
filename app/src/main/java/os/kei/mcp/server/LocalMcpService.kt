@@ -71,8 +71,11 @@ class LocalMcpService(
         toolCallLogger = logger
     }
 
-    fun createRuntimeServer(): Server {
+    fun createRuntimeServer(onSessionStarted: ((Server) -> Unit)? = null): Server {
         val server = createServer()
+        if (onSessionStarted != null) {
+            server.onConnect { onSessionStarted(server) }
+        }
         activeServer = server
         return server
     }

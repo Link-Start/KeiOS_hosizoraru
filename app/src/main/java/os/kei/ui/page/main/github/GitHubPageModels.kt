@@ -86,13 +86,18 @@ internal data class GitHubRecommendedTokenGuide(
 internal enum class GitHubSortMode(
     @get:StringRes val labelRes: Int
 ) {
-    UpdateFirst(R.string.github_sort_update_first),
-    NameAsc(R.string.github_sort_name_asc),
-    PreReleaseFirst(R.string.github_sort_prerelease_first),
-    ChangedNewest(R.string.github_sort_changed_newest),
-    ChangedOldest(R.string.github_sort_changed_oldest),
-    AddedNewest(R.string.github_sort_added_newest),
-    AddedOldest(R.string.github_sort_added_oldest)
+    Update(R.string.github_sort_rule_update),
+    Name(R.string.github_sort_rule_name),
+    PreRelease(R.string.github_sort_rule_prerelease),
+    Changed(R.string.github_sort_rule_changed),
+    Added(R.string.github_sort_rule_added)
+}
+
+internal enum class GitHubSortDirection(
+    @get:StringRes val labelRes: Int
+) {
+    Forward(R.string.github_sort_direction_forward),
+    Reverse(R.string.github_sort_direction_reverse)
 }
 
 internal enum class GitHubTrackedFilterMode(

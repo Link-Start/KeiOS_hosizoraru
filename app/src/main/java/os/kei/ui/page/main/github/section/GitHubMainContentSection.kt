@@ -25,6 +25,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -64,6 +65,7 @@ internal fun GitHubMainContent(
     searchExpanded: Boolean,
     trackedSearch: String,
     sortMode: GitHubSortMode,
+    sortDirection: GitHubSortDirection,
     trackedFilterMode: GitHubTrackedFilterMode,
     refreshIntervalHours: Int,
     showActionMenuPopup: Boolean,
@@ -105,6 +107,7 @@ internal fun GitHubMainContent(
     onSearchExpandedChange: (Boolean) -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
+    onSortDirectionChange: (GitHubSortDirection) -> Unit,
     onTrackedFilterModeChange: (GitHubTrackedFilterMode) -> Unit,
     onRefreshIntervalHoursChange: (Int) -> Unit,
     onExportTrackedItems: () -> Unit,
@@ -347,6 +350,7 @@ internal fun GitHubMainContent(
                 backdrop = topBarBackdrop,
                 liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 sortMode = sortMode,
+                sortDirection = sortDirection,
                 trackedFilterMode = trackedFilterMode,
                 refreshIntervalHours = refreshIntervalHours,
                 showActionMenuPopup = showActionMenuPopup,
@@ -356,6 +360,7 @@ internal fun GitHubMainContent(
                 onOpenCheckLogicSheet = onOpenCheckLogicSheet,
                 onShowActionMenuPopupChange = onShowActionMenuPopupChange,
                 onSortModeChange = onSortModeChange,
+                onSortDirectionChange = onSortDirectionChange,
                 onTrackedFilterModeChange = onTrackedFilterModeChange,
                 onRefreshIntervalHoursChange = onRefreshIntervalHoursChange,
                 onExportTrackedItems = onExportTrackedItems,

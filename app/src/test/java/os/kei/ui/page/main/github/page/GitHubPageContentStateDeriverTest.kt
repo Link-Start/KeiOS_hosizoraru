@@ -5,6 +5,7 @@ import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -196,7 +197,8 @@ class GitHubPageContentStateDeriverTest {
         val derived = GitHubPageContentStateDeriver().build(
             baseInput(
                 trackedItems = items,
-                sortMode = GitHubSortMode.ChangedNewest,
+                sortMode = GitHubSortMode.Changed,
+                sortDirection = GitHubSortDirection.Forward,
                 trackedAddedAtById = mapOf(
                     items[0].id to 100L,
                     items[1].id to 200L,
@@ -221,7 +223,8 @@ class GitHubPageContentStateDeriverTest {
         val derived = GitHubPageContentStateDeriver().build(
             baseInput(
                 trackedItems = items,
-                sortMode = GitHubSortMode.AddedOldest,
+                sortMode = GitHubSortMode.Added,
+                sortDirection = GitHubSortDirection.Reverse,
                 trackedAddedAtById = mapOf(
                     items[0].id to 300L,
                     items[1].id to 100L,
@@ -240,7 +243,8 @@ class GitHubPageContentStateDeriverTest {
         trackedItems: List<GitHubTrackedApp> = emptyList(),
         trackedSearch: String = "",
         trackedFilterMode: GitHubTrackedFilterMode = GitHubTrackedFilterMode.All,
-        sortMode: GitHubSortMode = GitHubSortMode.UpdateFirst,
+        sortMode: GitHubSortMode = GitHubSortMode.Update,
+        sortDirection: GitHubSortDirection = GitHubSortDirection.Forward,
         checkStates: Map<String, VersionCheckUi> = emptyMap(),
         appList: List<InstalledAppItem> = emptyList(),
         trackedAddedAtById: Map<String, Long> = emptyMap(),
@@ -253,6 +257,7 @@ class GitHubPageContentStateDeriverTest {
             trackedSearch = trackedSearch,
             trackedFilterMode = trackedFilterMode,
             sortMode = sortMode,
+            sortDirection = sortDirection,
             checkStates = checkStates,
             appList = appList,
             trackedFirstInstallAtByPackage = emptyMap(),

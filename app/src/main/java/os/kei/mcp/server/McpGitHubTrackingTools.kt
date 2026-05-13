@@ -15,6 +15,7 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import java.util.Locale
 
@@ -34,6 +35,11 @@ internal class McpGitHubTrackingTools(
         val modifiedAtMillis: Long
     )
 
+    private data class GitHubSortSelection(
+        val mode: GitHubSortMode,
+        val direction: GitHubSortDirection
+    )
+
     private val appContext get() = environment.appContext
 
     fun register(server: Server) {
@@ -44,7 +50,10 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.list") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
-            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
+            val sortSelection = parseGitHubSortSelection(
+                modeRaw = argString(request.arguments?.get("sortMode")),
+                directionRaw = argString(request.arguments?.get("sortDirection"))
+            )
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
                 MAX_TRACK_LIMIT
@@ -52,7 +61,8 @@ internal class McpGitHubTrackingTools(
             buildGitHubTrackedListText(
                 repoFilter = repoFilter,
                 sourceMode = sourceMode,
-                sortMode = sortMode,
+                sortMode = sortSelection.mode,
+                sortDirection = sortSelection.direction,
                 limit = limit
             )
         }
@@ -60,11 +70,15 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.export") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
-            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
+            val sortSelection = parseGitHubSortSelection(
+                modeRaw = argString(request.arguments?.get("sortMode")),
+                directionRaw = argString(request.arguments?.get("sortDirection"))
+            )
             buildGitHubTrackedExportText(
                 repoFilter = repoFilter,
                 sourceMode = sourceMode,
-                sortMode = sortMode
+                sortMode = sortSelection.mode,
+                sortDirection = sortSelection.direction
             )
         }
 
@@ -77,7 +91,10 @@ internal class McpGitHubTrackingTools(
         server.addMcpTextTool(environment, name = "keios.github.tracks.check") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
-            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
+            val sortSelection = parseGitHubSortSelection(
+                modeRaw = argString(request.arguments?.get("sortMode")),
+                directionRaw = argString(request.arguments?.get("sortDirection"))
+            )
             val onlyUpdates = argBoolean(request.arguments?.get("onlyUpdates"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(
                 1,
@@ -86,7 +103,8 @@ internal class McpGitHubTrackingTools(
             val rows = checkTrackedGitHub(
                 repoFilter = repoFilter,
                 sourceMode = sourceMode,
-                sortMode = sortMode
+                sortMode = sortSelection.mode,
+                sortDirection = sortSelection.direction
             )
                 .let { data -> if (onlyUpdates) data.filter { it.hasUpdate } else data }
                 .take(limit)
@@ -108,18 +126,23 @@ internal class McpGitHubTrackingTools(
             val mode = argString(request.arguments?.get("mode")).trim().lowercase(Locale.ROOT)
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
             val sourceMode = argString(request.arguments?.get("sourceMode")).trim()
-            val sortMode = parseGitHubSortMode(argString(request.arguments?.get("sortMode")))
+            val sortSelection = parseGitHubSortSelection(
+                modeRaw = argString(request.arguments?.get("sortMode")),
+                directionRaw = argString(request.arguments?.get("sortDirection"))
+            )
             if (mode == "network") {
                 buildGitHubTrackedSummaryFromNetwork(
                     repoFilter = repoFilter,
                     sourceMode = sourceMode,
-                    sortMode = sortMode
+                    sortMode = sortSelection.mode,
+                    sortDirection = sortSelection.direction
                 )
             } else {
                 buildGitHubTrackedSummaryFromCache(
                     repoFilter = repoFilter,
                     sourceMode = sourceMode,
-                    sortMode = sortMode
+                    sortMode = sortSelection.mode,
+                    sortDirection = sortSelection.direction
                 )
             }
         }
@@ -204,6 +227,7 @@ internal class McpGitHubTrackingTools(
         repoFilter: String,
         sourceMode: String,
         sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection,
         limit: Int
     ): String {
         val snapshot = GitHubTrackStore.loadSnapshot()
@@ -214,7 +238,8 @@ internal class McpGitHubTrackingTools(
                 sourceMode = sourceMode
             ),
             snapshot = snapshot,
-            sortMode = sortMode
+            sortMode = sortMode,
+            sortDirection = sortDirection
         ).take(limit)
         if (items.isEmpty()) return "No tracked GitHub apps."
         return items.joinToString("\n") { item ->
@@ -230,7 +255,8 @@ internal class McpGitHubTrackingTools(
     private fun buildGitHubTrackedExportText(
         repoFilter: String,
         sourceMode: String,
-        sortMode: GitHubSortMode
+        sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection
     ): String {
         val snapshot = GitHubTrackStore.loadSnapshot()
         val items = sortTrackedItems(
@@ -240,7 +266,8 @@ internal class McpGitHubTrackingTools(
                 sourceMode = sourceMode
             ),
             snapshot = snapshot,
-            sortMode = sortMode
+            sortMode = sortMode,
+            sortDirection = sortDirection
         )
         return GitHubTrackStore.buildTrackedItemsExportJson(items)
     }
@@ -327,7 +354,8 @@ internal class McpGitHubTrackingTools(
     private fun buildGitHubTrackedSummaryFromCache(
         repoFilter: String,
         sourceMode: String,
-        sortMode: GitHubSortMode
+        sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection
     ): String {
         val snapshot = GitHubTrackStore.loadSnapshot()
         val tracked = sortTrackedItems(
@@ -337,7 +365,8 @@ internal class McpGitHubTrackingTools(
                 sourceMode = sourceMode
             ),
             snapshot = snapshot,
-            sortMode = sortMode
+            sortMode = sortMode,
+            sortDirection = sortDirection
         )
         if (tracked.isEmpty()) {
             return "mode=cache\ntracked=0\nmatched=0"
@@ -373,12 +402,14 @@ internal class McpGitHubTrackingTools(
     private fun buildGitHubTrackedSummaryFromNetwork(
         repoFilter: String,
         sourceMode: String,
-        sortMode: GitHubSortMode
+        sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection
     ): String {
         val rows = checkTrackedGitHub(
             repoFilter = repoFilter,
             sourceMode = sourceMode,
-            sortMode = sortMode
+            sortMode = sortMode,
+            sortDirection = sortDirection
         )
         val hasUpdate = rows.count { it.hasUpdate }
         val preRelease = rows.count {
@@ -401,7 +432,8 @@ internal class McpGitHubTrackingTools(
     private fun checkTrackedGitHub(
         repoFilter: String,
         sourceMode: String,
-        sortMode: GitHubSortMode
+        sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection
     ): List<GitHubCheckRow> {
         val snapshot = GitHubTrackStore.loadSnapshot()
         val filtered = filterTrackedItems(
@@ -429,7 +461,7 @@ internal class McpGitHubTrackingTools(
                 )
             }
         }
-        return sortCheckRows(rows, sortMode)
+        return sortCheckRows(rows, sortMode, sortDirection)
     }
 
     private fun parseTrackedSourceModeFilter(raw: String): GitHubTrackedSourceMode? {
@@ -442,35 +474,39 @@ internal class McpGitHubTrackingTools(
         }
     }
 
+    private fun parseGitHubSortSelection(
+        modeRaw: String,
+        directionRaw: String
+    ): GitHubSortSelection {
+        return GitHubSortSelection(
+            mode = parseGitHubSortMode(modeRaw),
+            direction = parseGitHubSortDirection(directionRaw)
+        )
+    }
+
     private fun parseGitHubSortMode(raw: String): GitHubSortMode {
         return when (raw.trim().lowercase(Locale.ROOT)) {
-            "", "update", "updates", "update_first", "updates_first" ->
-                GitHubSortMode.UpdateFirst
+            "", "update" -> GitHubSortMode.Update
+            "name" -> GitHubSortMode.Name
+            "prerelease" -> GitHubSortMode.PreRelease
+            "changed" -> GitHubSortMode.Changed
+            "added" -> GitHubSortMode.Added
+            else -> GitHubSortMode.Update
+        }
+    }
 
-            "name", "name_asc", "az", "a_z" -> GitHubSortMode.NameAsc
-            "pre", "prerelease", "pre_release", "prerelease_first", "pre_release_first" ->
-                GitHubSortMode.PreReleaseFirst
-
-            "changed", "changed_newest", "modified", "modified_newest", "recently_changed" ->
-                GitHubSortMode.ChangedNewest
-
-            "changed_oldest", "modified_oldest", "oldest_changed" ->
-                GitHubSortMode.ChangedOldest
-
-            "added", "added_newest", "created", "created_newest", "recently_added" ->
-                GitHubSortMode.AddedNewest
-
-            "added_oldest", "created_oldest", "oldest_added" ->
-                GitHubSortMode.AddedOldest
-
-            else -> GitHubSortMode.UpdateFirst
+    private fun parseGitHubSortDirection(raw: String): GitHubSortDirection {
+        return when (raw.trim().lowercase(Locale.ROOT)) {
+            "reverse" -> GitHubSortDirection.Reverse
+            else -> GitHubSortDirection.Forward
         }
     }
 
     private fun sortTrackedItems(
         items: List<GitHubTrackedApp>,
         snapshot: GitHubTrackSnapshot,
-        sortMode: GitHubSortMode
+        sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection
     ): List<GitHubTrackedApp> {
         val titleForSort: (GitHubTrackedApp) -> String = { item ->
             item.appLabel.ifBlank { item.repo }
@@ -494,48 +530,79 @@ internal class McpGitHubTrackingTools(
                 ?: Long.MAX_VALUE
         }
         return when (sortMode) {
-            GitHubSortMode.UpdateFirst -> items.sortedWith(
-                compareByDescending<GitHubTrackedApp> {
-                    snapshot.checkCache[it.id]?.hasUpdate == true
-                }
-                    .thenByDescending { snapshot.checkCache[it.id]?.hasPreReleaseUpdate == true }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.Update -> when (sortDirection) {
+                GitHubSortDirection.Forward -> items.sortedWith(
+                    compareByDescending<GitHubTrackedApp> {
+                        snapshot.checkCache[it.id]?.hasUpdate == true
+                    }
+                        .thenByDescending {
+                            snapshot.checkCache[it.id]?.hasPreReleaseUpdate == true
+                        }
+                        .thenBy { titleForSort(it) }
+                )
 
-            GitHubSortMode.NameAsc -> items.sortedBy { titleForSort(it) }
-            GitHubSortMode.PreReleaseFirst -> items.sortedWith(
-                compareByDescending<GitHubTrackedApp> {
-                    snapshot.checkCache[it.id]?.isPreRelease == true
-                }
-                    .thenByDescending { snapshot.checkCache[it.id]?.hasUpdate == true }
-                    .thenBy { titleForSort(it) }
-            )
+                GitHubSortDirection.Reverse -> items.sortedWith(
+                    compareBy<GitHubTrackedApp> {
+                        snapshot.checkCache[it.id]?.hasUpdate == true
+                    }
+                        .thenBy { snapshot.checkCache[it.id]?.hasPreReleaseUpdate == true }
+                        .thenByDescending { titleForSort(it) }
+                )
+            }
 
-            GitHubSortMode.ChangedNewest -> items.sortedWith(
-                compareByDescending<GitHubTrackedApp> { modifiedNewest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.Name -> when (sortDirection) {
+                GitHubSortDirection.Forward -> items.sortedBy { titleForSort(it) }
+                GitHubSortDirection.Reverse -> items.sortedByDescending { titleForSort(it) }
+            }
 
-            GitHubSortMode.ChangedOldest -> items.sortedWith(
-                compareBy<GitHubTrackedApp> { modifiedOldest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.PreRelease -> when (sortDirection) {
+                GitHubSortDirection.Forward -> items.sortedWith(
+                    compareByDescending<GitHubTrackedApp> {
+                        snapshot.checkCache[it.id]?.isPreRelease == true
+                    }
+                        .thenByDescending { snapshot.checkCache[it.id]?.hasUpdate == true }
+                        .thenBy { titleForSort(it) }
+                )
 
-            GitHubSortMode.AddedNewest -> items.sortedWith(
-                compareByDescending<GitHubTrackedApp> { addedNewest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+                GitHubSortDirection.Reverse -> items.sortedWith(
+                    compareBy<GitHubTrackedApp> {
+                        snapshot.checkCache[it.id]?.isPreRelease == true
+                    }
+                        .thenBy { snapshot.checkCache[it.id]?.hasUpdate == true }
+                        .thenByDescending { titleForSort(it) }
+                )
+            }
 
-            GitHubSortMode.AddedOldest -> items.sortedWith(
-                compareBy<GitHubTrackedApp> { addedOldest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.Changed -> when (sortDirection) {
+                GitHubSortDirection.Forward -> items.sortedWith(
+                    compareByDescending<GitHubTrackedApp> { modifiedNewest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortDirection.Reverse -> items.sortedWith(
+                    compareBy<GitHubTrackedApp> { modifiedOldest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+            }
+
+            GitHubSortMode.Added -> when (sortDirection) {
+                GitHubSortDirection.Forward -> items.sortedWith(
+                    compareByDescending<GitHubTrackedApp> { addedNewest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortDirection.Reverse -> items.sortedWith(
+                    compareBy<GitHubTrackedApp> { addedOldest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+            }
         }
     }
 
     private fun sortCheckRows(
         rows: List<GitHubCheckRow>,
-        sortMode: GitHubSortMode
+        sortMode: GitHubSortMode,
+        sortDirection: GitHubSortDirection
     ): List<GitHubCheckRow> {
         val titleForSort: (GitHubCheckRow) -> String = { row ->
             row.item.appLabel.ifBlank { row.item.repo }
@@ -559,38 +626,62 @@ internal class McpGitHubTrackingTools(
                 ?: Long.MAX_VALUE
         }
         return when (sortMode) {
-            GitHubSortMode.UpdateFirst -> rows.sortedWith(
-                compareByDescending<GitHubCheckRow> { it.hasUpdate }
-                    .thenByDescending { it.hasPreReleaseUpdate }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.Update -> when (sortDirection) {
+                GitHubSortDirection.Forward -> rows.sortedWith(
+                    compareByDescending<GitHubCheckRow> { it.hasUpdate }
+                        .thenByDescending { it.hasPreReleaseUpdate }
+                        .thenBy { titleForSort(it) }
+                )
 
-            GitHubSortMode.NameAsc -> rows.sortedBy { titleForSort(it) }
-            GitHubSortMode.PreReleaseFirst -> rows.sortedWith(
-                compareByDescending<GitHubCheckRow> { it.isPreRelease }
-                    .thenByDescending { it.hasUpdate }
-                    .thenBy { titleForSort(it) }
-            )
+                GitHubSortDirection.Reverse -> rows.sortedWith(
+                    compareBy<GitHubCheckRow> { it.hasUpdate }
+                        .thenBy { it.hasPreReleaseUpdate }
+                        .thenByDescending { titleForSort(it) }
+                )
+            }
 
-            GitHubSortMode.ChangedNewest -> rows.sortedWith(
-                compareByDescending<GitHubCheckRow> { modifiedNewest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.Name -> when (sortDirection) {
+                GitHubSortDirection.Forward -> rows.sortedBy { titleForSort(it) }
+                GitHubSortDirection.Reverse -> rows.sortedByDescending { titleForSort(it) }
+            }
 
-            GitHubSortMode.ChangedOldest -> rows.sortedWith(
-                compareBy<GitHubCheckRow> { modifiedOldest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.PreRelease -> when (sortDirection) {
+                GitHubSortDirection.Forward -> rows.sortedWith(
+                    compareByDescending<GitHubCheckRow> { it.isPreRelease }
+                        .thenByDescending { it.hasUpdate }
+                        .thenBy { titleForSort(it) }
+                )
 
-            GitHubSortMode.AddedNewest -> rows.sortedWith(
-                compareByDescending<GitHubCheckRow> { addedNewest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+                GitHubSortDirection.Reverse -> rows.sortedWith(
+                    compareBy<GitHubCheckRow> { it.isPreRelease }
+                        .thenBy { it.hasUpdate }
+                        .thenByDescending { titleForSort(it) }
+                )
+            }
 
-            GitHubSortMode.AddedOldest -> rows.sortedWith(
-                compareBy<GitHubCheckRow> { addedOldest(it) }
-                    .thenBy { titleForSort(it) }
-            )
+            GitHubSortMode.Changed -> when (sortDirection) {
+                GitHubSortDirection.Forward -> rows.sortedWith(
+                    compareByDescending<GitHubCheckRow> { modifiedNewest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortDirection.Reverse -> rows.sortedWith(
+                    compareBy<GitHubCheckRow> { modifiedOldest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+            }
+
+            GitHubSortMode.Added -> when (sortDirection) {
+                GitHubSortDirection.Forward -> rows.sortedWith(
+                    compareByDescending<GitHubCheckRow> { addedNewest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+
+                GitHubSortDirection.Reverse -> rows.sortedWith(
+                    compareBy<GitHubCheckRow> { addedOldest(it) }
+                        .thenBy { titleForSort(it) }
+                )
+            }
         }
     }
 

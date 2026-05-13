@@ -223,6 +223,7 @@ internal class GitHubPageViewModel : ViewModel() {
                         trackedSearch = state.trackedSearch,
                         trackedFilterMode = state.trackedFilterMode,
                         sortMode = state.sortMode,
+                        sortDirection = state.sortDirection,
                         checkStates = state.checkStates.toMap(),
                         appList = state.appList.toList(),
                         trackedFirstInstallAtByPackage = state.trackedFirstInstallAtByPackage.toMap(),

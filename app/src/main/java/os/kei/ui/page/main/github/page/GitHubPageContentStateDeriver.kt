@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -23,6 +24,7 @@ internal data class GitHubPageContentInput(
     val trackedSearch: String,
     val trackedFilterMode: GitHubTrackedFilterMode,
     val sortMode: GitHubSortMode,
+    val sortDirection: GitHubSortDirection,
     val checkStates: Map<String, VersionCheckUi>,
     val appList: List<InstalledAppItem>,
     val trackedFirstInstallAtByPackage: Map<String, Long>,
@@ -105,42 +107,73 @@ internal class GitHubPageContentStateDeriver(
                 displayTitleById[item.id].orEmpty().lowercase(Locale.ROOT)
             }
             val sortedTracked = when (input.sortMode) {
-                GitHubSortMode.UpdateFirst -> filteredTracked.sortedWith(
-                    compareByDescending<GitHubTrackedApp> { isSortUpdatable(it) }
-                        .thenByDescending { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
-                        .thenBy { titleForSort(it) }
-                )
+                GitHubSortMode.Update -> when (input.sortDirection) {
+                    GitHubSortDirection.Forward -> filteredTracked.sortedWith(
+                        compareByDescending<GitHubTrackedApp> { isSortUpdatable(it) }
+                            .thenByDescending {
+                                input.checkStates[it.id]?.hasPreReleaseUpdate == true
+                            }
+                            .thenBy { titleForSort(it) }
+                    )
 
-                GitHubSortMode.NameAsc -> filteredTracked.sortedBy {
-                    titleForSort(it)
+                    GitHubSortDirection.Reverse -> filteredTracked.sortedWith(
+                        compareBy<GitHubTrackedApp> { isSortUpdatable(it) }
+                            .thenBy { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
+                            .thenByDescending { titleForSort(it) }
+                    )
                 }
-                GitHubSortMode.PreReleaseFirst -> filteredTracked.sortedWith(
-                    compareByDescending<GitHubTrackedApp> {
-                        input.checkStates[it.id]?.isPreRelease == true
+
+                GitHubSortMode.Name -> when (input.sortDirection) {
+                    GitHubSortDirection.Forward -> filteredTracked.sortedBy {
+                        titleForSort(it)
                     }
-                        .thenByDescending { isSortUpdatable(it) }
-                        .thenBy { titleForSort(it) }
-                )
 
-                GitHubSortMode.ChangedNewest -> filteredTracked.sortedWith(
-                    compareByDescending<GitHubTrackedApp> { modifiedAtForSortNewest(it) }
-                        .thenBy { titleForSort(it) }
-                )
+                    GitHubSortDirection.Reverse -> filteredTracked.sortedByDescending {
+                        titleForSort(it)
+                    }
+                }
 
-                GitHubSortMode.ChangedOldest -> filteredTracked.sortedWith(
-                    compareBy<GitHubTrackedApp> { modifiedAtForSortOldest(it) }
-                        .thenBy { titleForSort(it) }
-                )
+                GitHubSortMode.PreRelease -> when (input.sortDirection) {
+                    GitHubSortDirection.Forward -> filteredTracked.sortedWith(
+                        compareByDescending<GitHubTrackedApp> {
+                            input.checkStates[it.id]?.isPreRelease == true
+                        }
+                            .thenByDescending { isSortUpdatable(it) }
+                            .thenBy { titleForSort(it) }
+                    )
 
-                GitHubSortMode.AddedNewest -> filteredTracked.sortedWith(
-                    compareByDescending<GitHubTrackedApp> { addedAtForSortNewest(it) }
-                        .thenBy { titleForSort(it) }
-                )
+                    GitHubSortDirection.Reverse -> filteredTracked.sortedWith(
+                        compareBy<GitHubTrackedApp> {
+                            input.checkStates[it.id]?.isPreRelease == true
+                        }
+                            .thenBy { isSortUpdatable(it) }
+                            .thenByDescending { titleForSort(it) }
+                    )
+                }
 
-                GitHubSortMode.AddedOldest -> filteredTracked.sortedWith(
-                    compareBy<GitHubTrackedApp> { addedAtForSortOldest(it) }
-                        .thenBy { titleForSort(it) }
-                )
+                GitHubSortMode.Changed -> when (input.sortDirection) {
+                    GitHubSortDirection.Forward -> filteredTracked.sortedWith(
+                        compareByDescending<GitHubTrackedApp> { modifiedAtForSortNewest(it) }
+                            .thenBy { titleForSort(it) }
+                    )
+
+                    GitHubSortDirection.Reverse -> filteredTracked.sortedWith(
+                        compareBy<GitHubTrackedApp> { modifiedAtForSortOldest(it) }
+                            .thenBy { titleForSort(it) }
+                    )
+                }
+
+                GitHubSortMode.Added -> when (input.sortDirection) {
+                    GitHubSortDirection.Forward -> filteredTracked.sortedWith(
+                        compareByDescending<GitHubTrackedApp> { addedAtForSortNewest(it) }
+                            .thenBy { titleForSort(it) }
+                    )
+
+                    GitHubSortDirection.Reverse -> filteredTracked.sortedWith(
+                        compareBy<GitHubTrackedApp> { addedAtForSortOldest(it) }
+                            .thenBy { titleForSort(it) }
+                    )
+                }
             }
             val pendingShareImportRepoOverlapCount = input.pendingShareImportTrack?.let { pending ->
                 input.trackedItems.count { item ->

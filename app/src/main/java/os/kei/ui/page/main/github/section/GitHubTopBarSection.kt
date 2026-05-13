@@ -9,6 +9,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.RefreshIntervalOption
@@ -64,6 +65,7 @@ internal fun GitHubTopBarActions(
     backdrop: LayerBackdrop,
     liquidActionBarLayeredStyleEnabled: Boolean,
     sortMode: GitHubSortMode,
+    sortDirection: GitHubSortDirection,
     trackedFilterMode: GitHubTrackedFilterMode,
     refreshIntervalHours: Int,
     showActionMenuPopup: Boolean,
@@ -73,6 +75,7 @@ internal fun GitHubTopBarActions(
     onOpenCheckLogicSheet: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
+    onSortDirectionChange: (GitHubSortDirection) -> Unit,
     onTrackedFilterModeChange: (GitHubTrackedFilterMode) -> Unit,
     onRefreshIntervalHoursChange: (Int) -> Unit,
     onExportTrackedItems: () -> Unit,
@@ -93,6 +96,7 @@ internal fun GitHubTopBarActions(
     val editStrategyContentDescription = stringResource(R.string.github_topbar_cd_edit_strategy)
     val checkLogicContentDescription = stringResource(R.string.github_topbar_cd_check_logic)
     val sortContentDescription = stringResource(R.string.github_topbar_cd_sort)
+    val sortDirectionLabel = stringResource(R.string.github_topbar_cd_sort_direction)
     val filterLabel = stringResource(R.string.github_topbar_cd_filter)
     val refreshIntervalLabel = stringResource(R.string.github_check_sheet_label_refresh_interval)
     val moreContentDescription = stringResource(R.string.github_item_cd_more_actions)
@@ -174,6 +178,15 @@ internal fun GitHubTopBarActions(
                         val selectedSortLabel = sortLabels.getOrElse(modes.indexOf(sortMode)) {
                             stringResource(sortMode.labelRes)
                         }
+                        val directions = GitHubSortDirection.entries
+                        val directionLabels = directions.map { direction ->
+                            stringResource(direction.labelRes)
+                        }
+                        val selectedDirectionLabel = directionLabels.getOrElse(
+                            directions.indexOf(sortDirection)
+                        ) {
+                            stringResource(sortDirection.labelRes)
+                        }
                         val filterModes = GitHubTrackedFilterMode.entries
                         val filterLabels = filterModes.map { mode -> stringResource(mode.labelRes) }
                         val selectedFilterLabel =
@@ -235,6 +248,22 @@ internal fun GitHubTopBarActions(
                                             selected = sortMode == mode,
                                             leadingIcon = sortIcon,
                                             onClick = { onSortModeChange(mode) }
+                                        )
+                                    }
+                                ),
+                                LiquidGlassActionMenuSubmenuRow(
+                                    id = "sort_direction",
+                                    text = sortDirectionLabel,
+                                    subtitle = selectedDirectionLabel,
+                                    leadingIcon = sortIcon,
+                                    trailingIcon = chevronRightIcon,
+                                    submenuItems = directions.mapIndexed { index, direction ->
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = direction.name,
+                                            text = directionLabels[index],
+                                            selected = sortDirection == direction,
+                                            leadingIcon = sortIcon,
+                                            onClick = { onSortDirectionChange(direction) }
                                         )
                                     }
                                 ),

@@ -43,6 +43,7 @@ import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
+import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -140,7 +141,8 @@ internal class GitHubPageState(
     var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
     var managedInstallConfirmRequest by mutableStateOf<GitHubManagedInstallConfirmRequest?>(null)
     var shareImportResolving by mutableStateOf(false)
-    var sortMode by mutableStateOf(GitHubSortMode.UpdateFirst)
+    var sortMode by mutableStateOf(GitHubSortMode.Update)
+    var sortDirection by mutableStateOf(GitHubSortDirection.Forward)
     var overviewExpanded by mutableStateOf(overviewUiState.expanded)
     var overviewVisibleEntries by mutableStateOf(overviewUiState.visibleEntries)
     var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)

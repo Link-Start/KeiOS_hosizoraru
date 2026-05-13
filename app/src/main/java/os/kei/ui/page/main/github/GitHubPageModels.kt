@@ -88,33 +88,54 @@ internal data class GitHubRecommendedTokenGuide(
 )
 
 internal enum class GitHubSortMode(
+    val storageId: String,
     @get:StringRes val labelRes: Int
 ) {
-    Update(R.string.github_sort_rule_update),
-    Name(R.string.github_sort_rule_name),
-    PreRelease(R.string.github_sort_rule_prerelease),
-    Changed(R.string.github_sort_rule_changed),
-    Added(R.string.github_sort_rule_added)
+    Update("update", R.string.github_sort_rule_update),
+    Name("name", R.string.github_sort_rule_name),
+    PreRelease("pre_release", R.string.github_sort_rule_prerelease),
+    Changed("changed", R.string.github_sort_rule_changed),
+    Added("added", R.string.github_sort_rule_added);
+
+    companion object {
+        fun fromStorageId(value: String): GitHubSortMode? {
+            return entries.firstOrNull { it.storageId == value }
+        }
+    }
 }
 
 internal enum class GitHubSortDirection(
+    val storageId: String,
     @get:StringRes val labelRes: Int
 ) {
-    Forward(R.string.github_sort_direction_forward),
-    Reverse(R.string.github_sort_direction_reverse)
+    Forward("forward", R.string.github_sort_direction_forward),
+    Reverse("reverse", R.string.github_sort_direction_reverse);
+
+    companion object {
+        fun fromStorageId(value: String): GitHubSortDirection? {
+            return entries.firstOrNull { it.storageId == value }
+        }
+    }
 }
 
 internal enum class GitHubTrackedFilterMode(
+    val storageId: String,
     @get:StringRes val labelRes: Int
 ) {
-    All(R.string.github_filter_all),
-    GitHubRepository(R.string.github_filter_github_repository),
-    DirectApk(R.string.github_filter_direct_apk),
-    PreReleaseTracked(R.string.github_filter_prerelease_tracked),
-    UpdateAvailable(R.string.github_filter_update_available),
-    Installed(R.string.github_filter_installed),
-    FailedChecks(R.string.github_filter_failed_checks),
-    ActionsCheckEnabled(R.string.github_filter_actions_check_enabled)
+    All("all", R.string.github_filter_all),
+    GitHubRepository("github_repository", R.string.github_filter_github_repository),
+    DirectApk("direct_apk", R.string.github_filter_direct_apk),
+    PreReleaseTracked("pre_release_tracked", R.string.github_filter_prerelease_tracked),
+    UpdateAvailable("update_available", R.string.github_filter_update_available),
+    Installed("installed", R.string.github_filter_installed),
+    FailedChecks("failed_checks", R.string.github_filter_failed_checks),
+    ActionsCheckEnabled("actions_check_enabled", R.string.github_filter_actions_check_enabled);
+
+    companion object {
+        fun fromStorageId(value: String): GitHubTrackedFilterMode? {
+            return entries.firstOrNull { it.storageId == value }
+        }
+    }
 }
 
 internal enum class OverviewRefreshState {

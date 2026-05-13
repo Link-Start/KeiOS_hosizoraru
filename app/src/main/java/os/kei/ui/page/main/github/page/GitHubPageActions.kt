@@ -17,6 +17,8 @@ import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
+import os.kei.ui.page.main.github.GitHubSortDirection
+import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
@@ -171,6 +173,31 @@ internal class GitHubPageActions(
     fun setTrackedPreReleaseVersionExpanded(itemId: String, value: Boolean) {
         env.state.trackedPreReleaseVersionExpanded[itemId] = value
         GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)
+    }
+
+    fun setSortMode(value: GitHubSortMode) {
+        env.state.sortMode = value
+        GitHubPageUiStateStore.setSortMode(value)
+    }
+
+    fun setSortDirection(value: GitHubSortDirection) {
+        env.state.sortDirection = value
+        GitHubPageUiStateStore.setSortDirection(value)
+    }
+
+    fun setTrackedFilterMode(value: GitHubTrackedFilterMode) {
+        env.state.trackedFilterMode = value
+        GitHubPageUiStateStore.setTrackedFilterMode(value)
+    }
+
+    fun setFailedFilterEnabled(enabled: Boolean) {
+        setTrackedFilterMode(
+            if (enabled) {
+                GitHubTrackedFilterMode.FailedChecks
+            } else {
+                GitHubTrackedFilterMode.All
+            }
+        )
     }
 
     fun openOverviewEntrySheet() {
@@ -472,7 +499,7 @@ internal class GitHubPageActions(
 
     fun focusShareImportResult() {
         val result = env.state.pendingShareImportResult ?: return
-        env.state.trackedFilterMode = GitHubTrackedFilterMode.All
+        setTrackedFilterMode(GitHubTrackedFilterMode.All)
         val query = result.appDisplayLabel
             .ifBlank { result.packageName }
             .ifBlank { result.repo }

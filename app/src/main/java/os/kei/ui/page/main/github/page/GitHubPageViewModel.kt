@@ -76,6 +76,7 @@ internal class GitHubPageViewModel : ViewModel() {
         if (current != null) return current
         return GitHubPageState(
             searchBarHideThresholdPx = searchBarHideThresholdPx,
+            pageUiState = GitHubPageUiStateStore.load(),
             actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
             overviewUiState = GitHubOverviewUiStateStore.load(),
             trackedReleaseExpansionState = GitHubTrackedReleaseUiStateStore.load()

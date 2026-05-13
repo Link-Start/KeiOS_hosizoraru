@@ -29,7 +29,6 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.isKeiOsSelfTrack
-import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
@@ -303,9 +302,9 @@ fun GitHubPage(
                 searchExpanded = enableSearchBar && expanded
             },
             onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
-            onSortModeChange = { state.sortMode = it },
-            onSortDirectionChange = { state.sortDirection = it },
-            onTrackedFilterModeChange = { state.trackedFilterMode = it },
+            onSortModeChange = actions::setSortMode,
+            onSortDirectionChange = actions::setSortDirection,
+            onTrackedFilterModeChange = actions::setTrackedFilterMode,
             onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
             onExportTrackedItems = transferCallbacks.onExportTrackedItems,
             onImportTrackedItems = transferCallbacks.onImportTrackedItems,
@@ -324,13 +323,7 @@ fun GitHubPage(
                 )
             },
             onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
-            onFailedFilterToggle = { enabled ->
-                state.trackedFilterMode = if (enabled) {
-                    GitHubTrackedFilterMode.FailedChecks
-                } else {
-                    GitHubTrackedFilterMode.All
-                }
-            },
+            onFailedFilterToggle = actions::setFailedFilterEnabled,
             onRefreshTrackedItem = { actions.refreshTrackedItem(it, showToastOnError = true) },
             onOpenActionsSheet = actions::openActionsSheet,
             onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,

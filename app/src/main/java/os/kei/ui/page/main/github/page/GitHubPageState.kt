@@ -43,9 +43,6 @@ import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
-import os.kei.ui.page.main.github.GitHubSortDirection
-import os.kei.ui.page.main.github.GitHubSortMode
-import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
@@ -60,12 +57,13 @@ import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 @Stable
 internal class GitHubPageState(
     private val searchBarHideThresholdPx: Float,
+    pageUiState: GitHubPageUiState = GitHubPageUiState(),
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
     overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
     trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState()
 ) {
     var trackedSearch by mutableStateOf("")
-    var trackedFilterMode by mutableStateOf(GitHubTrackedFilterMode.All)
+    var trackedFilterMode by mutableStateOf(pageUiState.trackedFilterMode)
     var repoUrlInput by mutableStateOf("")
     var packageNameInput by mutableStateOf("")
     var repoScanCandidates by mutableStateOf<List<GitHubPackageRepositoryScanCandidate>>(emptyList())
@@ -141,8 +139,8 @@ internal class GitHubPageState(
     var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
     var managedInstallConfirmRequest by mutableStateOf<GitHubManagedInstallConfirmRequest?>(null)
     var shareImportResolving by mutableStateOf(false)
-    var sortMode by mutableStateOf(GitHubSortMode.Update)
-    var sortDirection by mutableStateOf(GitHubSortDirection.Forward)
+    var sortMode by mutableStateOf(pageUiState.sortMode)
+    var sortDirection by mutableStateOf(pageUiState.sortDirection)
     var overviewExpanded by mutableStateOf(overviewUiState.expanded)
     var overviewVisibleEntries by mutableStateOf(overviewUiState.visibleEntries)
     var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)

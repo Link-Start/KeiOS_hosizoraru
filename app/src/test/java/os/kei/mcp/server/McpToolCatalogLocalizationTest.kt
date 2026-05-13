@@ -45,4 +45,24 @@ class McpToolCatalogLocalizationTest {
             McpToolCatalog.descriptionFor("keios.mcp.runtime.status", Locale.JAPANESE)
         )
     }
+
+    @Test
+    fun githubTrackingDescriptionsDocumentCurrentOptions() {
+        val english = McpToolCatalog.descriptionFor(
+            "keios.github.tracks.list",
+            Locale.ENGLISH
+        )
+        assertEquals(
+            true,
+            english.contains("filterMode=all|github_repository|direct_apk")
+        )
+        assertEquals(true, english.contains("sortMode=update|name|pre_release|changed|added"))
+
+        val chinese = McpToolCatalog.descriptionFor(
+            "keios.github.tracks.export",
+            Locale.SIMPLIFIED_CHINESE
+        )
+        assertEquals(true, chinese.contains("keios.github.tracked/v3"))
+        assertEquals(true, chinese.contains("订阅项目"))
+    }
 }

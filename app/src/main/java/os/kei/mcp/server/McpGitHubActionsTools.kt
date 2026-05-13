@@ -7,6 +7,7 @@ import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 
 internal class McpGitHubActionsTools(
@@ -63,6 +64,7 @@ internal class McpGitHubActionsTools(
                         ActionsRunRow(
                             item = item,
                             snapshot = current,
+                            globalRefreshIntervalHours = snapshot.refreshIntervalHours,
                             cacheState = "refreshed",
                             newerThanCache = previous?.let(current::isNewerThan) ?: false
                         )
@@ -71,6 +73,7 @@ internal class McpGitHubActionsTools(
                         ActionsRunRow(
                             item = item,
                             snapshot = previous,
+                            globalRefreshIntervalHours = snapshot.refreshIntervalHours,
                             cacheState = if (previous != null) "stale" else "failed",
                             errorMessage = error.message.orEmpty()
                                 .ifBlank { error.javaClass.simpleName }
@@ -84,6 +87,7 @@ internal class McpGitHubActionsTools(
                 ActionsRunRow(
                     item = item,
                     snapshot = cached,
+                    globalRefreshIntervalHours = snapshot.refreshIntervalHours,
                     cacheState = if (cached != null) "cache" else "missing"
                 )
             }
@@ -94,6 +98,7 @@ internal class McpGitHubActionsTools(
             appendLine("refresh=$refresh")
             appendLine("onlyEnabled=$onlyEnabled")
             appendLine("matched=${targets.size}")
+            appendLine("globalRefreshIntervalHours=${snapshot.refreshIntervalHours}")
             appendLine("snapshotCount=${rows.count { it.snapshot != null }}")
             appendLine("missingCount=${rows.count { it.snapshot == null }}")
             appendLine("newerCount=${rows.count { it.newerThanCache }}")
@@ -113,16 +118,20 @@ internal class McpGitHubActionsTools(
     private data class ActionsRunRow(
         val item: GitHubTrackedApp,
         val snapshot: GitHubActionsRecommendedRunSnapshot?,
+        val globalRefreshIntervalHours: Int,
         val cacheState: String,
         val newerThanCache: Boolean = false,
         val errorMessage: String = ""
     ) {
         fun toMcpLine(prefix: String): String {
             val current = snapshot
+            val intervalMinutes = item.actionsUpdateIntervalMs(globalRefreshIntervalHours) / 60_000L
+            val schedule =
+                "actionsIntervalMode:${item.actionsUpdateIntervalMode.storageId} | actionsIntervalMinutes:$intervalMinutes"
             if (current == null) {
-                return "$prefix=repo:${item.owner}/${item.repo} | label:${item.appLabel} | enabled:${item.checkActionsUpdates} | cache:$cacheState | error:$errorMessage"
+                return "$prefix=repo:${item.owner}/${item.repo} | label:${item.appLabel} | enabled:${item.checkActionsUpdates} | $schedule | cache:$cacheState | error:$errorMessage"
             }
-            return "$prefix=repo:${current.owner}/${current.repo} | label:${current.appLabel} | enabled:${item.checkActionsUpdates} | cache:$cacheState | newer:$newerThanCache | workflow:${current.workflowName.ifBlank { current.workflowPath }} | run:${current.runLabel} | status:${current.status} | conclusion:${current.conclusion} | branch:${current.headBranch} | artifacts:${current.androidArtifactCount}/${current.artifactCount} | checkedAtMillis:${current.checkedAtMillis} | url:${current.htmlUrl}"
+            return "$prefix=repo:${current.owner}/${current.repo} | label:${current.appLabel} | enabled:${item.checkActionsUpdates} | $schedule | cache:$cacheState | newer:$newerThanCache | workflow:${current.workflowName.ifBlank { current.workflowPath }} | run:${current.runLabel} | status:${current.status} | conclusion:${current.conclusion} | branch:${current.headBranch} | artifacts:${current.androidArtifactCount}/${current.artifactCount} | checkedAtMillis:${current.checkedAtMillis} | url:${current.htmlUrl}"
         }
     }
 

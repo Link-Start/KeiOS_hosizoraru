@@ -73,7 +73,8 @@
 2. GitHub update audit: `keios.github.config.snapshot` ->
    `keios.github.tracks.summary(mode=cache)` -> `keios.github.tracks.check(onlyUpdates=true)`
 3. GitHub source split: use `sourceMode=github_repository` or `sourceMode=direct_apk` on
-   track list, export, check, and summary tools.
+   track list, export, check, and summary tools. `direct_apk` is the argument and storage id for
+   subscription projects.
 4. Repo to package: `keios.github.repo.package.scan(repoUrl=..., expectedPackageName=...)`
 5. Direct APK check: `keios.github.direct_apk.inspect(url=..., expectedPackageName=...)`
 6. Actions audit: `keios.github.actions.recommended(refresh=false)` then
@@ -93,8 +94,13 @@
 - Start `limit` at 20 to 80 for audits.
 - `repoFilter` accepts owner/repo, package name, or app label.
 - `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.
-- GitHub tracking `sortMode` accepts `update`, `name`, `prerelease`, `changed`, or
+- `filterMode` accepts `all`, `github_repository`, `direct_apk`, `pre_release_tracked`,
+  `update_available`, `installed`, `failed_checks`, or `actions_check_enabled`.
+- GitHub tracking `sortMode` accepts `update`, `name`, `pre_release`, `changed`, or
   `added`; `sortDirection` accepts `forward` or `reverse`.
+- GitHub tracked export uses `format=keios.github.tracked/v3`.
+- `actionsUpdateIntervalMode` accepts `follow_global`, `15m`, `30m`, `1h`, `2h`, or `3h`.
 - Repository APK scans accept `expectedPackageName` for multi-package releases.
-- Actions refresh writes the recommended-run cache and uses bounded parallel network checks.
+- Actions refresh writes the recommended-run cache, uses bounded parallel network checks, and
+  returns `actionsIntervalMode` plus `actionsIntervalMinutes` per row.
 - `serverIndex` accepts 0 to 2 and defaults to the current BA server.

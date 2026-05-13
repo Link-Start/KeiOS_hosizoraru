@@ -72,7 +72,7 @@
 2. GitHub 更新巡检：`keios.github.config.snapshot` -> `keios.github.tracks.summary(mode=cache)` ->
    `keios.github.tracks.check(onlyUpdates=true)`
 3. GitHub 来源拆分：在列表、导出、检查和汇总工具里使用 `sourceMode=github_repository`
-   或 `sourceMode=direct_apk`。
+   或 `sourceMode=direct_apk`。`direct_apk` 是订阅项目的参数与存储 id。
 4. 仓库扫包名：`keios.github.repo.package.scan(repoUrl=..., expectedPackageName=...)`
 5. 直链 APK 检查：`keios.github.direct_apk.inspect(url=..., expectedPackageName=...)`
 6. Actions 巡检：先用 `keios.github.actions.recommended(refresh=false)` 读缓存；
@@ -91,8 +91,13 @@
 - 审计任务的 `limit` 建议从 20 到 80 开始。
 - `repoFilter` 支持 owner/repo、包名或应用名。
 - `sourceMode` 支持 `github_repository`、`direct_apk`，留空表示全部追踪来源。
-- GitHub 追踪工具的 `sortMode` 支持 `update`、`name`、`prerelease`、`changed`、`added`；
+- `filterMode` 支持 `all`、`github_repository`、`direct_apk`、`pre_release_tracked`、
+  `update_available`、`installed`、`failed_checks`、`actions_check_enabled`。
+- GitHub 追踪工具的 `sortMode` 支持 `update`、`name`、`pre_release`、`changed`、`added`；
   `sortDirection` 支持 `forward`、`reverse`。
+- GitHub 追踪导出使用 `format=keios.github.tracked/v3`。
+- `actionsUpdateIntervalMode` 支持 `follow_global`、`15m`、`30m`、`1h`、`2h`、`3h`。
 - 仓库 APK 扫描支持 `expectedPackageName`，用于同 release 多包名 APK。
-- Actions 刷新会写入推荐 run 缓存，并使用有界并发联网检查。
+- Actions 刷新会写入推荐 run 缓存，使用有界并发联网检查，并在每行输出
+  `actionsIntervalMode` 与 `actionsIntervalMinutes`。
 - `serverIndex` 范围 0 到 2，留空使用当前 BA 服务器。

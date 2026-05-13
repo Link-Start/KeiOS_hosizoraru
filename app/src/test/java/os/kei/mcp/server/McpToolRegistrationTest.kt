@@ -29,6 +29,11 @@ class McpToolRegistrationTest {
         val service = createService()
         val server = service.createRuntimeServer()
 
+        val listTool = server.tools.getValue("keios.github.tracks.list").tool
+        val listProperties = listTool.inputSchema.properties.orEmpty()
+        assertTrue("filterMode" in listProperties.keys)
+        assertTrue("sortDirection" in listProperties.keys)
+
         val importTool = server.tools.getValue("keios.github.tracks.import").tool
         assertEquals(listOf("json"), importTool.inputSchema.required)
         assertFalse(importTool.annotations?.readOnlyHint ?: true)
@@ -46,6 +51,20 @@ class McpToolRegistrationTest {
         val actionsTool = server.tools.getValue("keios.github.actions.recommended").tool
         assertFalse(actionsTool.annotations?.readOnlyHint ?: true)
         assertTrue(actionsTool.annotations?.openWorldHint ?: false)
+    }
+
+    @Test
+    fun skillMarkdownDocumentsCurrentGitHubTrackingOptions() {
+        val service = createService()
+
+        val markdown = service.getSkillMarkdownForUi()
+
+        assertTrue(markdown.contains("filterMode"))
+        assertTrue(markdown.contains("pre_release"))
+        assertTrue(markdown.contains("keios.github.tracked/v3"))
+        assertTrue(markdown.contains("actionsUpdateIntervalMode"))
+        assertTrue(markdown.contains("follow_global"))
+        assertTrue(markdown.contains("3h"))
     }
 
     private fun createService(): LocalMcpService {

@@ -360,6 +360,7 @@ class AppDesignSystemScreenshotTest {
                             showApkTrustCheck = true,
                             managedInstallEnabled = false,
                             managedInstallRunning = false,
+                            installActionColor = MiuixTheme.colorScheme.primary,
                             context = ApplicationProvider.getApplicationContext(),
                             onOpenApkInfo = {},
                             onOpenApkInDownloader = {},

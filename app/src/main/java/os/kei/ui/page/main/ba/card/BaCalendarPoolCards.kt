@@ -30,6 +30,7 @@ import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.poolProgress
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
+import os.kei.ui.page.main.ba.support.studentGuideOpenUrl
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
@@ -512,7 +513,7 @@ internal fun BaPoolEntryPanel(
         modifier = Modifier.fillMaxWidth(),
         accentColor = statusColor,
         effectsEnabled = effectsEnabled,
-        onClick = { onOpenPoolStudentGuide(pool.linkUrl) },
+        onClick = { onOpenPoolStudentGuide(pool.studentGuideOpenUrl) },
         onLongClick = { onOpenCalendarLink(pool.linkUrl) },
     ) {
         Row(

@@ -177,6 +177,7 @@ internal fun parseBaPoolEntriesFromAllApiBody(
             isRunning || isUpcoming -> BA_POOL_FALLBACK_ACTIVE_TAG_ID
             else -> null
         } ?: continue
+        val linkUrl = normalizeGameKeeLink(item.optString("link_url"))
         entries += BaPoolEntry(
             id = item.optInt("id", 0),
             name = name,
@@ -184,9 +185,10 @@ internal fun parseBaPoolEntriesFromAllApiBody(
             tagName = "",
             startAtMs = startAtMs,
             endAtMs = endAtMs,
-            linkUrl = normalizeGameKeeLink(item.optString("link_url")),
+            linkUrl = linkUrl,
             imageUrl = extractGameKeeImageLink(item),
-            isRunning = isRunning
+            isRunning = isRunning,
+            studentGuideUrl = canonicalBaPoolStudentGuideUrlOrBlank(linkUrl)
         )
     }
     return entries

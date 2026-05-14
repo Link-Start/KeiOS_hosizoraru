@@ -17,7 +17,7 @@ internal const val BA_CALENDAR_MAX_ITEMS = 10
 internal const val BA_CALENDAR_CACHE_SCHEMA_VERSION = 3
 internal const val BA_POOL_ENDPOINT = "/v1/cardPool/query-list"
 internal const val BA_POOL_MAX_ITEMS = 10
-internal const val BA_POOL_CACHE_SCHEMA_VERSION = 5
+internal const val BA_POOL_CACHE_SCHEMA_VERSION = 6
 
 internal val BA_POOL_TAG_IDS = listOf(5, 6, 7, 8, 9, 92)
 internal val BA_POOL_TAG_ID_SET = BA_POOL_TAG_IDS.toSet()
@@ -77,7 +77,8 @@ internal data class BaPoolEntry(
     val endAtMs: Long,
     val linkUrl: String,
     val imageUrl: String,
-    val isRunning: Boolean
+    val isRunning: Boolean,
+    val studentGuideUrl: String = ""
 )
 
 internal fun encodeBaCalendarEntries(entries: List<BaCalendarEntry>): String {
@@ -144,6 +145,7 @@ internal fun encodeBaPoolEntries(entries: List<BaPoolEntry>): String {
                 put("endAtMs", item.endAtMs)
                 put("linkUrl", item.linkUrl)
                 put("imageUrl", item.imageUrl)
+                put("studentGuideUrl", item.studentGuideUrl)
             }
         )
     }
@@ -161,6 +163,7 @@ internal fun decodeBaPoolEntries(raw: String, nowMs: Long = System.currentTimeMi
         val startAtMs = obj.optLong("startAtMs", 0L)
         val endAtMs = obj.optLong("endAtMs", 0L)
         if (startAtMs <= 0L || endAtMs <= 0L) continue
+        val linkUrl = normalizeGameKeeLink(obj.optString("linkUrl"))
         parsed += BaPoolEntry(
             id = obj.optInt("id", 0),
             name = name,
@@ -168,9 +171,12 @@ internal fun decodeBaPoolEntries(raw: String, nowMs: Long = System.currentTimeMi
             tagName = normalizeBaPoolTagFallback(obj.optString("tagName")),
             startAtMs = startAtMs,
             endAtMs = endAtMs,
-            linkUrl = normalizeGameKeeLink(obj.optString("linkUrl")),
+            linkUrl = linkUrl,
             imageUrl = normalizeGameKeeImageLink(obj.optString("imageUrl")),
-            isRunning = nowMs in startAtMs until endAtMs
+            isRunning = nowMs in startAtMs until endAtMs,
+            studentGuideUrl = canonicalBaPoolStudentGuideUrlOrBlank(
+                obj.optString("studentGuideUrl").ifBlank { linkUrl }
+            )
         )
     }
     return normalizeBaPoolEntries(parsed, nowMs)

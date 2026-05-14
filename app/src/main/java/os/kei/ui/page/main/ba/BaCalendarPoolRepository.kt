@@ -8,6 +8,7 @@ import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_CALENDAR_CACHE_SCHEMA_VERSION
 import os.kei.ui.page.main.ba.support.BA_POOL_CACHE_SCHEMA_VERSION
+import os.kei.ui.page.main.ba.support.BaPoolStudentGuideUrlResolver
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.decodeBaCalendarEntries
@@ -15,6 +16,9 @@ import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
 import os.kei.ui.page.main.ba.support.fetchBaCalendarRemoteResult
 import os.kei.ui.page.main.ba.support.fetchBaPoolRemoteResult
 import os.kei.ui.page.main.ba.support.runWithHardTimeout
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
 
 @Immutable
 internal data class BaCalendarSyncSnapshot(
@@ -192,11 +196,16 @@ internal object BaCalendarPoolRepository {
             refreshIntervalHours = calendarRefreshIntervalHours
         )
         val now = plan.nowMs
-        val cachedEntries = if (hasCache) {
+        val decodedCachedEntries = if (hasCache) {
             runCatching { decodeBaPoolEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
         } else {
             emptyList()
         }
+        val cachedEntries = resolvePoolStudentGuideUrls(
+            serverIndex = serverIndex,
+            entries = decodedCachedEntries,
+            allowCatalogNetwork = false
+        )
         val cachedEntriesWithLocalImages = BaCalendarPoolCacheWriter.hydratePoolImages(
             context = context,
             serverIndex = serverIndex,
@@ -243,7 +252,11 @@ internal object BaCalendarPoolRepository {
             }
         }
         if (result.isSuccess) {
-            val entries = result.getOrThrow().entries
+            val entries = resolvePoolStudentGuideUrls(
+                serverIndex = serverIndex,
+                entries = result.getOrThrow().entries,
+                allowCatalogNetwork = true
+            )
             if (entries.isNotEmpty()) {
                 val entriesWithLocalImages = BaCalendarPoolCacheWriter.savePoolAndHydrateImages(
                     context = context,
@@ -289,5 +302,35 @@ internal object BaCalendarPoolRepository {
             },
             lastSyncMs = cacheSnapshot.syncMs
         )
+    }
+
+    private suspend fun resolvePoolStudentGuideUrls(
+        serverIndex: Int,
+        entries: List<BaPoolEntry>,
+        allowCatalogNetwork: Boolean,
+    ): List<BaPoolEntry> {
+        if (entries.isEmpty()) return entries
+        val directlyResolved = entries.map { BaPoolStudentGuideUrlResolver.Empty.resolve(it) }
+        if (serverIndex != 0 || directlyResolved.all { it.studentGuideUrl.isNotBlank() }) {
+            return directlyResolved
+        }
+
+        val cachedCatalogEntries = withContext(Dispatchers.IO) {
+            loadCachedBaGuideCatalogBundle()?.entries(BaGuideCatalogTab.Student).orEmpty()
+        }
+        val cachedResolver = BaPoolStudentGuideUrlResolver.fromCatalogEntries(cachedCatalogEntries)
+        val resolvedFromCache = directlyResolved.map(cachedResolver::resolve)
+        if (!allowCatalogNetwork || resolvedFromCache.all { it.studentGuideUrl.isNotBlank() }) {
+            return resolvedFromCache
+        }
+
+        val networkCatalogEntries = withContext(Dispatchers.IO) {
+            runCatching {
+                fetchBaGuideCatalogBundle(forceRefresh = false)
+                    .entries(BaGuideCatalogTab.Student)
+            }.getOrDefault(emptyList())
+        }
+        val networkResolver = BaPoolStudentGuideUrlResolver.fromCatalogEntries(networkCatalogEntries)
+        return resolvedFromCache.map(networkResolver::resolve)
     }
 }

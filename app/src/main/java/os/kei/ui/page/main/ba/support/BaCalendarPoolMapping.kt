@@ -210,7 +210,10 @@ internal fun normalizeBaPoolEntries(
                 endAtMs = endAtMs,
                 isRunning = nowMs in startAtMs until endAtMs,
                 linkUrl = normalizeGameKeeLink(entry.linkUrl),
-                imageUrl = normalizeGameKeeImageLink(entry.imageUrl)
+                imageUrl = normalizeGameKeeImageLink(entry.imageUrl),
+                studentGuideUrl = canonicalBaPoolStudentGuideUrlOrBlank(
+                    entry.studentGuideUrl.ifBlank { entry.linkUrl }
+                )
             )
         }
         .toList()

@@ -4,7 +4,11 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -33,8 +37,18 @@ internal fun BindSettingsPageEffects(
 ) {
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
     val latestShizukuStatus = rememberUpdatedState(shizukuStatus)
+    var pageActive by remember(lifecycleOwner) {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+    }
     DisposableEffect(lifecycleOwner, batteryOptimizationController, permissionKeepAliveController) {
         val observer = LifecycleEventObserver { _, event ->
+            pageActive = when (event) {
+                Lifecycle.Event.ON_START,
+                Lifecycle.Event.ON_RESUME -> true
+                Lifecycle.Event.ON_STOP,
+                Lifecycle.Event.ON_DESTROY -> false
+                else -> pageActive
+            }
             if (event == Lifecycle.Event.ON_RESUME) {
                 batteryOptimizationController.refresh()
                 scope.launch {
@@ -56,16 +70,12 @@ internal fun BindSettingsPageEffects(
             shizukuStatus = shizukuStatus
         )
     }
-    LaunchedEffect(context, cacheDiagnosticsEnabled) {
-        settingsPageViewModel.bindCacheDiagnostics(
+    LaunchedEffect(context, pageActive, cacheDiagnosticsEnabled, logLevel) {
+        settingsPageViewModel.bindDiagnostics(
             context = context,
-            enabled = cacheDiagnosticsEnabled
-        )
-    }
-    LaunchedEffect(context, logLevel) {
-        settingsPageViewModel.bindLogStats(
-            context = context,
-            logLevel = logLevel
+            active = pageActive,
+            cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
+            logLevel = logLevel,
         )
     }
     LaunchedEffect(shizukuRefreshToken) {

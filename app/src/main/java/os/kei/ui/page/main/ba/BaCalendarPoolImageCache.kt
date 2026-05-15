@@ -4,15 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -24,8 +19,6 @@ import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import java.io.File
 import java.security.MessageDigest
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.time.Duration.Companion.milliseconds
 
 internal object BaCalendarPoolImageCache {
     private const val ROOT_DIR = "ba_calendar_pool_media"
@@ -34,8 +27,6 @@ internal object BaCalendarPoolImageCache {
     private const val KEY_INDEX_VERSION = "index_version"
 
     private val indexStore: MMKV by lazy { MMKV.mmkvWithID(INDEX_KV_ID) }
-    private val warmScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val warmJobs = ConcurrentHashMap<String, Job>()
 
     private enum class Category(val folderName: String) {
         Calendar("calendar"),
@@ -107,33 +98,41 @@ internal object BaCalendarPoolImageCache {
         )
     }
 
-    fun scheduleCalendarWarm(
+    suspend fun warmAndPruneCalendar(
         context: Context,
         serverIndex: Int,
         entries: List<BaCalendarEntry>,
-        delayMs: Long = UiPerformanceBudget.baCalendarPoolDeferredWarmDelayMs
     ) {
-        scheduleWarm(
+        prefetchForCategory(
             context = context,
             category = Category.Calendar,
             serverIndex = serverIndex,
-            rawUrls = entries.map { it.imageUrl },
-            delayMs = delayMs
+            rawUrls = entries.map { it.imageUrl }
+        )
+        pruneCategoryStale(
+            context = context,
+            category = Category.Calendar,
+            serverIndex = serverIndex,
+            rawUrls = entries.map { it.imageUrl }
         )
     }
 
-    fun schedulePoolWarm(
+    suspend fun warmAndPrunePool(
         context: Context,
         serverIndex: Int,
         entries: List<BaPoolEntry>,
-        delayMs: Long = UiPerformanceBudget.baCalendarPoolDeferredWarmDelayMs
     ) {
-        scheduleWarm(
+        prefetchForCategory(
             context = context,
             category = Category.Pool,
             serverIndex = serverIndex,
-            rawUrls = entries.map { it.imageUrl },
-            delayMs = delayMs
+            rawUrls = entries.map { it.imageUrl }
+        )
+        pruneCategoryStale(
+            context = context,
+            category = Category.Pool,
+            serverIndex = serverIndex,
+            rawUrls = entries.map { it.imageUrl }
         )
     }
 
@@ -171,34 +170,6 @@ internal object BaCalendarPoolImageCache {
             }.awaitAll()
         }
         rebuildScopeIndex(context, category, serverIndex)
-    }
-
-    private fun scheduleWarm(
-        context: Context,
-        category: Category,
-        serverIndex: Int,
-        rawUrls: List<String>,
-        delayMs: Long
-    ) {
-        val key = "${category.folderName}:$serverIndex"
-        warmJobs.remove(key)?.cancel()
-        warmJobs[key] = warmScope.launch {
-            if (delayMs > 0L) {
-                delay(delayMs.milliseconds)
-            }
-            prefetchForCategory(
-                context = context.applicationContext,
-                category = category,
-                serverIndex = serverIndex,
-                rawUrls = rawUrls
-            )
-            pruneCategoryStale(
-                context = context.applicationContext,
-                category = category,
-                serverIndex = serverIndex,
-                rawUrls = rawUrls
-            )
-        }
     }
 
     suspend fun pruneCalendarStale(

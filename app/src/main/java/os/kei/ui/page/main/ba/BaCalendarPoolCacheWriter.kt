@@ -8,7 +8,6 @@ import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.encodeBaCalendarEntries
 import os.kei.ui.page.main.ba.support.encodeBaPoolEntries
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 
 internal object BaCalendarPoolCacheWriter {
     suspend fun hydrateCalendarImages(
@@ -57,11 +56,6 @@ internal object BaCalendarPoolCacheWriter {
                 encodeBaCalendarEntries(entries),
                 nowMs
             )
-            BaCalendarPoolImageCache.prefetchForCalendar(
-                context = context,
-                serverIndex = serverIndex,
-                entries = entries.take(UiPerformanceBudget.baCalendarPoolPriorityPrefetchCount)
-            )
             BaCalendarPoolImageCache.applyCachedCalendarImageUrls(
                 context = context,
                 serverIndex = serverIndex,
@@ -83,11 +77,6 @@ internal object BaCalendarPoolCacheWriter {
                 encodeBaPoolEntries(entries),
                 nowMs
             )
-            BaCalendarPoolImageCache.prefetchForPool(
-                context = context,
-                serverIndex = serverIndex,
-                entries = entries.take(UiPerformanceBudget.baCalendarPoolPriorityPrefetchCount)
-            )
             BaCalendarPoolImageCache.applyCachedPoolImageUrls(
                 context = context,
                 serverIndex = serverIndex,
@@ -95,29 +84,5 @@ internal object BaCalendarPoolCacheWriter {
                 localOnly = false
             )
         }
-    }
-
-    fun scheduleCalendarWarm(
-        context: Context,
-        serverIndex: Int,
-        entries: List<BaCalendarEntry>
-    ) {
-        BaCalendarPoolImageCache.scheduleCalendarWarm(
-            context = context,
-            serverIndex = serverIndex,
-            entries = entries
-        )
-    }
-
-    fun schedulePoolWarm(
-        context: Context,
-        serverIndex: Int,
-        entries: List<BaPoolEntry>
-    ) {
-        BaCalendarPoolImageCache.schedulePoolWarm(
-            context = context,
-            serverIndex = serverIndex,
-            entries = entries
-        )
     }
 }

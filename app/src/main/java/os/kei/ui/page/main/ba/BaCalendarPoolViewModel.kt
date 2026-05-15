@@ -59,6 +59,10 @@ internal class BaCalendarPoolViewModel(
     private var poolJob: Job? = null
     private var lastCalendarRequestKey: BaCalendarRequestKey? = null
     private var lastPoolRequestKey: BaPoolRequestKey? = null
+    private val imageWarmCoordinator = BaCalendarPoolImageWarmCoordinator(
+        scope = viewModelScope,
+        context = appContext
+    )
 
     fun syncCalendar(
         isPageActive: Boolean,
@@ -98,6 +102,12 @@ internal class BaCalendarPoolViewModel(
                 error = snapshot.error,
                 lastSyncMs = snapshot.lastSyncMs
             )
+            if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
+                imageWarmCoordinator.scheduleCalendar(
+                    serverIndex = serverIndex,
+                    entries = snapshot.imageWarmEntries
+                )
+            }
         }
     }
 
@@ -139,6 +149,12 @@ internal class BaCalendarPoolViewModel(
                 error = snapshot.error,
                 lastSyncMs = snapshot.lastSyncMs
             )
+            if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
+                imageWarmCoordinator.schedulePool(
+                    serverIndex = serverIndex,
+                    entries = snapshot.imageWarmEntries
+                )
+            }
         }
     }
 }

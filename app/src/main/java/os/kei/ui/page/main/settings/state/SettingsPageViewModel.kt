@@ -5,8 +5,6 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,9 +14,6 @@ import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.core.prefs.CacheEntrySummary
-import kotlin.time.Duration.Companion.milliseconds
-
-private const val SETTINGS_LOG_STATS_REFRESH_MS = 1_200L
 
 @Immutable
 internal data class SettingsCacheUiState(
@@ -37,9 +32,6 @@ internal data class SettingsLogUiState(
 
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
-    private var cacheLoadJob: Job? = null
-    private var logStatsJob: Job? = null
-    private var boundLogLevel: AppLogLevel? = null
 
     private val _cacheState = MutableStateFlow(SettingsCacheUiState())
     val cacheState: StateFlow<SettingsCacheUiState> = _cacheState.asStateFlow()
@@ -47,83 +39,44 @@ internal class SettingsPageViewModel : ViewModel() {
     private val _logState = MutableStateFlow(SettingsLogUiState())
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
 
-    fun bindCacheDiagnostics(
+    private val diagnosticsCoordinator = SettingsDiagnosticsCoordinator(
+        repository = repository,
+        scope = viewModelScope,
+        cacheState = _cacheState,
+        logState = _logState,
+    )
+
+    fun bindDiagnostics(
         context: Context,
-        enabled: Boolean
+        active: Boolean,
+        cacheDiagnosticsEnabled: Boolean,
+        logLevel: AppLogLevel,
     ) {
-        val appContext = context.applicationContext
-        if (!enabled) {
-            cacheLoadJob?.cancel()
-            _cacheState.value = SettingsCacheUiState()
-            return
-        }
-        reloadCacheEntries(appContext)
+        diagnosticsCoordinator.bind(
+            context = context,
+            active = active,
+            cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
+            logLevel = logLevel,
+        )
     }
 
     fun reloadCacheEntries(context: Context) {
-        val appContext = context.applicationContext
-        cacheLoadJob?.cancel()
-        cacheLoadJob = viewModelScope.launch {
-            _cacheState.update { state ->
-                state.copy(cacheEntriesLoading = state.cacheEntries == null)
-            }
-            val entries = repository.listCacheEntries(appContext)
-            _cacheState.update { state ->
-                state.copy(
-                    cacheEntries = entries,
-                    cacheEntriesLoading = false
-                )
-            }
-        }
+        diagnosticsCoordinator.reloadCacheEntries(context)
     }
 
     suspend fun clearAllCaches(context: Context): Result<Unit> {
-        val appContext = context.applicationContext
-        _cacheState.update { state -> state.copy(clearingAllCaches = true) }
-        val result = repository.clearAllCaches(appContext)
-        _cacheState.update { state -> state.copy(clearingAllCaches = false) }
-        reloadCacheEntries(appContext)
-        return result
+        return diagnosticsCoordinator.clearAllCaches(context)
     }
 
     suspend fun clearCache(
         context: Context,
         cacheId: String
     ): Result<Unit> {
-        val appContext = context.applicationContext
-        _cacheState.update { state -> state.copy(clearingCacheId = cacheId) }
-        val result = repository.clearCache(appContext, cacheId)
-        _cacheState.update { state -> state.copy(clearingCacheId = null) }
-        reloadCacheEntries(appContext)
-        return result
-    }
-
-    fun bindLogStats(
-        context: Context,
-        logLevel: AppLogLevel
-    ) {
-        val appContext = context.applicationContext
-        if (boundLogLevel == logLevel && logStatsJob?.isActive == true) return
-        boundLogLevel = logLevel
-        logStatsJob?.cancel()
-        logStatsJob = viewModelScope.launch {
-            do {
-                _logState.update { state ->
-                    state.copy(logStats = repository.loadLogStats(appContext))
-                }
-                if (logLevel == AppLogLevel.Off) break
-                delay(SETTINGS_LOG_STATS_REFRESH_MS.milliseconds)
-            } while (true)
-        }
+        return diagnosticsCoordinator.clearCache(context, cacheId)
     }
 
     fun reloadLogStats(context: Context) {
-        val appContext = context.applicationContext
-        viewModelScope.launch {
-            _logState.update { state ->
-                state.copy(logStats = repository.loadLogStats(appContext))
-            }
-        }
+        diagnosticsCoordinator.reloadLogStats(context)
     }
 
     fun beginLogExport() {
@@ -165,14 +118,6 @@ internal class SettingsPageViewModel : ViewModel() {
     }
 
     suspend fun clearLogs(context: Context): Result<Unit> {
-        val appContext = context.applicationContext
-        if (_logState.value.exportingLogZip || _logState.value.clearingLogs) {
-            return Result.success(Unit)
-        }
-        _logState.update { state -> state.copy(clearingLogs = true) }
-        val result = repository.clearLogs(appContext)
-        _logState.update { state -> state.copy(clearingLogs = false) }
-        reloadLogStats(appContext)
-        return result
+        return diagnosticsCoordinator.clearLogs(context)
     }
 }

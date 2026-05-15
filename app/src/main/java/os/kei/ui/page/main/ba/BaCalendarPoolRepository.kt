@@ -8,7 +8,6 @@ import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_CALENDAR_CACHE_SCHEMA_VERSION
 import os.kei.ui.page.main.ba.support.BA_POOL_CACHE_SCHEMA_VERSION
-import os.kei.ui.page.main.ba.support.BaPoolStudentGuideUrlResolver
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.decodeBaCalendarEntries
@@ -16,16 +15,14 @@ import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
 import os.kei.ui.page.main.ba.support.fetchBaCalendarRemoteResult
 import os.kei.ui.page.main.ba.support.fetchBaPoolRemoteResult
 import os.kei.ui.page.main.ba.support.runWithHardTimeout
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
 
 @Immutable
 internal data class BaCalendarSyncSnapshot(
     val entries: List<BaCalendarEntry>,
     val loading: Boolean,
     val error: String?,
-    val lastSyncMs: Long
+    val lastSyncMs: Long,
+    val imageWarmEntries: List<BaCalendarEntry> = entries,
 )
 
 @Immutable
@@ -33,10 +30,13 @@ internal data class BaPoolSyncSnapshot(
     val entries: List<BaPoolEntry>,
     val loading: Boolean,
     val error: String?,
-    val lastSyncMs: Long
+    val lastSyncMs: Long,
+    val imageWarmEntries: List<BaPoolEntry> = entries,
 )
 
 internal object BaCalendarPoolRepository {
+    private val poolStudentGuideUrlRepository = BaPoolStudentGuideUrlRepository()
+
     suspend fun syncCalendar(
         context: Context,
         isPageActive: Boolean,
@@ -84,7 +84,8 @@ internal object BaCalendarPoolRepository {
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
                 error = null,
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -93,7 +94,8 @@ internal object BaCalendarPoolRepository {
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
                 error = null,
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -106,7 +108,8 @@ internal object BaCalendarPoolRepository {
                 } else {
                     context.getString(R.string.ba_calendar_pool_error_offline_no_cache)
                 },
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -134,23 +137,20 @@ internal object BaCalendarPoolRepository {
                     nowMs = now,
                     hadCache = plan.hasCache
                 )
-                BaCalendarPoolCacheWriter.scheduleCalendarWarm(
-                    context = context,
-                    serverIndex = serverIndex,
-                    entries = entries
-                )
                 return BaCalendarSyncSnapshot(
                     entries = entriesWithLocalImages,
                     loading = false,
                     error = null,
-                    lastSyncMs = now
+                    lastSyncMs = now,
+                    imageWarmEntries = entries,
                 )
             }
             return BaCalendarSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
                 error = if (plan.hasCache) context.getString(R.string.ba_calendar_pool_error_empty_keep_cached) else null,
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -162,7 +162,8 @@ internal object BaCalendarPoolRepository {
             } else {
                 context.getString(R.string.ba_calendar_error_sync_failed)
             },
-            lastSyncMs = cacheSnapshot.syncMs
+            lastSyncMs = cacheSnapshot.syncMs,
+            imageWarmEntries = cachedEntries,
         )
     }
 
@@ -201,7 +202,7 @@ internal object BaCalendarPoolRepository {
         } else {
             emptyList()
         }
-        val cachedEntries = resolvePoolStudentGuideUrls(
+        val cachedEntries = poolStudentGuideUrlRepository.resolve(
             serverIndex = serverIndex,
             entries = decodedCachedEntries,
             allowCatalogNetwork = false
@@ -218,7 +219,8 @@ internal object BaCalendarPoolRepository {
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
                 error = null,
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -227,7 +229,8 @@ internal object BaCalendarPoolRepository {
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
                 error = null,
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -240,7 +243,8 @@ internal object BaCalendarPoolRepository {
                 } else {
                     context.getString(R.string.ba_calendar_pool_error_offline_no_cache)
                 },
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -252,7 +256,7 @@ internal object BaCalendarPoolRepository {
             }
         }
         if (result.isSuccess) {
-            val entries = resolvePoolStudentGuideUrls(
+            val entries = poolStudentGuideUrlRepository.resolve(
                 serverIndex = serverIndex,
                 entries = result.getOrThrow().entries,
                 allowCatalogNetwork = true
@@ -272,23 +276,20 @@ internal object BaCalendarPoolRepository {
                     nowMs = now,
                     hadCache = plan.hasCache
                 )
-                BaCalendarPoolCacheWriter.schedulePoolWarm(
-                    context = context,
-                    serverIndex = serverIndex,
-                    entries = entries
-                )
                 return BaPoolSyncSnapshot(
                     entries = entriesWithLocalImages,
                     loading = false,
                     error = null,
-                    lastSyncMs = now
+                    lastSyncMs = now,
+                    imageWarmEntries = entries,
                 )
             }
             return BaPoolSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
                 error = if (plan.hasCache) context.getString(R.string.ba_calendar_pool_error_empty_keep_cached) else null,
-                lastSyncMs = cacheSnapshot.syncMs
+                lastSyncMs = cacheSnapshot.syncMs,
+                imageWarmEntries = cachedEntries,
             )
         }
 
@@ -300,37 +301,9 @@ internal object BaCalendarPoolRepository {
             } else {
                 context.getString(R.string.ba_pool_error_sync_failed)
             },
-            lastSyncMs = cacheSnapshot.syncMs
+            lastSyncMs = cacheSnapshot.syncMs,
+            imageWarmEntries = cachedEntries,
         )
     }
 
-    private suspend fun resolvePoolStudentGuideUrls(
-        serverIndex: Int,
-        entries: List<BaPoolEntry>,
-        allowCatalogNetwork: Boolean,
-    ): List<BaPoolEntry> {
-        if (entries.isEmpty()) return entries
-        val directlyResolved = entries.map { BaPoolStudentGuideUrlResolver.Empty.resolve(it) }
-        if (serverIndex != 0 || directlyResolved.all { it.studentGuideUrl.isNotBlank() }) {
-            return directlyResolved
-        }
-
-        val cachedCatalogEntries = withContext(Dispatchers.IO) {
-            loadCachedBaGuideCatalogBundle()?.entries(BaGuideCatalogTab.Student).orEmpty()
-        }
-        val cachedResolver = BaPoolStudentGuideUrlResolver.fromCatalogEntries(cachedCatalogEntries)
-        val resolvedFromCache = directlyResolved.map(cachedResolver::resolve)
-        if (!allowCatalogNetwork || resolvedFromCache.all { it.studentGuideUrl.isNotBlank() }) {
-            return resolvedFromCache
-        }
-
-        val networkCatalogEntries = withContext(Dispatchers.IO) {
-            runCatching {
-                fetchBaGuideCatalogBundle(forceRefresh = false)
-                    .entries(BaGuideCatalogTab.Student)
-            }.getOrDefault(emptyList())
-        }
-        val networkResolver = BaPoolStudentGuideUrlResolver.fromCatalogEntries(networkCatalogEntries)
-        return resolvedFromCache.map(networkResolver::resolve)
-    }
 }

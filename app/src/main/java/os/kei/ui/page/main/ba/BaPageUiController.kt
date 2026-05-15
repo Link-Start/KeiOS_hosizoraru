@@ -58,6 +58,7 @@ internal data class BaPageRouteState(
     val popupState: BaPagePopupState,
     val serverIndex: Int,
     val uiNowMs: Long,
+    val uiMinuteMs: Long,
     val baCalendarReloadSignal: Int,
     val baPoolReloadSignal: Int,
     val calendarUiState: BaCalendarUiState,
@@ -90,6 +91,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var showCalendarIntervalPopup by mutableStateOf(false)
     var serverIndex by mutableIntStateOf(snapshot.serverIndex)
     var uiNowMs by mutableLongStateOf(System.currentTimeMillis())
+    var uiMinuteMs by mutableLongStateOf(System.currentTimeMillis())
     var baCalendarReloadSignal by mutableIntStateOf(0)
     var baPoolReloadSignal by mutableIntStateOf(0)
     var showEndedPools by mutableStateOf(snapshot.showEndedPools)
@@ -136,6 +138,7 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             popupState = popupState(),
             serverIndex = serverIndex,
             uiNowMs = uiNowMs,
+            uiMinuteMs = uiMinuteMs,
             baCalendarReloadSignal = baCalendarReloadSignal,
             baPoolReloadSignal = baPoolReloadSignal,
             calendarUiState = calendarUiState,

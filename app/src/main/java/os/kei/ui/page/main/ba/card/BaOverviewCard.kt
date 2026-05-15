@@ -60,6 +60,7 @@ internal fun BaOverviewCard(
     onIdFriendCodeInputChange: (String) -> Unit,
     onSaveIdFriendCode: () -> Unit,
     uiNowMs: Long,
+    uiMinuteMs: Long,
     apSyncMs: Long,
     apLimit: Int,
     apCurrent: Double,
@@ -93,13 +94,13 @@ internal fun BaOverviewCard(
         apLimit = apLimit,
         apCurrent = apCurrent,
         apRegenBaseMs = apRegenBaseMs,
-        nowMs = uiNowMs,
+        nowMs = uiMinuteMs,
     )
-    val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs)
+    val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs, includeSeconds = true)
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val apSyncTimeText =
         if (apSyncMs > 0L) formatBaDateTimeNoSeconds(apSyncMs, notSyncedText) else notSyncedText
-    val apFullText = formatBaRemainingTime(apFullAt, uiNowMs)
+    val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
     val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
     val accentBlue = AppStatusColors.Cached
     val accentGreen = AppStatusColors.Fresh

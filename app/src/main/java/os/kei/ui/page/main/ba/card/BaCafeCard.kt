@@ -50,7 +50,7 @@ internal fun BaCafeCard(
     val nextHeadpatAt = calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)
     val nextStudentRefreshAt = nextCafeStudentRefreshMs(uiNowMs, serverIndex)
     val nextArenaRefreshAt = nextArenaRefreshMs(uiNowMs, serverIndex)
-    val nextHeadpatText = if (coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs) "0s" else formatBaRemainingTime(
+    val nextHeadpatText = if (coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs) "0m" else formatBaRemainingTime(
         nextHeadpatAt,
         uiNowMs
     )
@@ -62,8 +62,8 @@ internal fun BaCafeCard(
     val invite2Ready = coffeeInvite2UsedMs <= 0L || invite2AvailableAt <= uiNowMs
     val invite1Color = accentPink
     val invite2Color = accentPink
-    val invite1Text = if (invite1Ready) "0s" else formatBaRemainingTime(invite1AvailableAt, uiNowMs)
-    val invite2Text = if (invite2Ready) "0s" else formatBaRemainingTime(invite2AvailableAt, uiNowMs)
+    val invite1Text = if (invite1Ready) "0m" else formatBaRemainingTime(invite1AvailableAt, uiNowMs)
+    val invite2Text = if (invite2Ready) "0m" else formatBaRemainingTime(invite2AvailableAt, uiNowMs)
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val invite1TimeText =
         formatBaDateTimeNoSeconds(if (invite1Ready) uiNowMs else invite1AvailableAt, notSyncedText)

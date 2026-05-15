@@ -169,13 +169,6 @@ internal fun calculateInviteTicketAvailableMs(lastUsedMs: Long): Long {
     return lastUsedMs + BA_INVITE_COOLDOWN_MS
 }
 
-internal fun formatBaDateTime(epochMillis: Long, fallbackText: String): String {
-    if (epochMillis <= 0L) return fallbackText
-    return runCatching {
-        SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date(epochMillis))
-    }.getOrDefault(fallbackText)
-}
-
 internal fun formatBaDateTimeNoSeconds(epochMillis: Long, fallbackText: String): String {
     if (epochMillis <= 0L) return fallbackText
     return runCatching {
@@ -183,8 +176,25 @@ internal fun formatBaDateTimeNoSeconds(epochMillis: Long, fallbackText: String):
     }.getOrDefault(fallbackText)
 }
 
-internal fun formatBaRemainingTime(targetMs: Long, nowMs: Long = System.currentTimeMillis()): String {
+internal fun formatBaRemainingTime(
+    targetMs: Long,
+    nowMs: Long = System.currentTimeMillis(),
+    includeSeconds: Boolean = false,
+): String {
     val remainMs = (targetMs - nowMs).coerceAtLeast(0L)
+    if (!includeSeconds) {
+        val totalMinutes = (remainMs + 59_999L) / 60_000L
+        val days = totalMinutes / 1_440L
+        val hours = (totalMinutes % 1_440L) / 60L
+        val minutes = totalMinutes % 60L
+
+        val parts = mutableListOf<String>()
+        if (days > 0L) parts += "${days}d"
+        if (hours > 0L) parts += "${hours}h"
+        if (minutes > 0L || parts.isEmpty()) parts += "${minutes}m"
+        return parts.joinToString(" ")
+    }
+
     var totalSeconds = (remainMs + 999L) / 1000L
     val days = totalSeconds / 86_400L
     totalSeconds %= 86_400L

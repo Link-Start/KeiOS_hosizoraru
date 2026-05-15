@@ -31,6 +31,7 @@ internal fun BaPageCommonEffects(
     onDisposeActionBarInteraction: () -> Unit,
     office: BaOfficeController,
     onUiNowMsChange: (Long) -> Unit,
+    onUiMinuteMsChange: (Long) -> Unit,
     serverIndex: Int,
     onServerChanged: suspend () -> Unit,
     context: Context,
@@ -103,12 +104,27 @@ internal fun BaPageCommonEffects(
             onUiNowMsChange(System.currentTimeMillis())
         }
     }
+
+    LaunchedEffect(isPageActive, listState) {
+        while (true) {
+            if (isPageActive && listState.isScrollInProgress) {
+                delay(1_000.milliseconds)
+                continue
+            }
+            delay((if (isPageActive) 60_000L else 5_000L).milliseconds)
+            if (isPageActive && listState.isScrollInProgress) continue
+            onUiMinuteMsChange(System.currentTimeMillis())
+        }
+    }
+
     LaunchedEffect(isPageActive, listState) {
         snapshotFlow { listState.isScrollInProgress }
             .distinctUntilChanged()
             .collectLatest { scrolling ->
                 if (isPageActive && !scrolling) {
-                    onUiNowMsChange(System.currentTimeMillis())
+                    val nowMs = System.currentTimeMillis()
+                    onUiNowMsChange(nowMs)
+                    onUiMinuteMsChange(nowMs)
                 }
             }
     }

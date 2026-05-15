@@ -58,6 +58,7 @@ internal fun buildBaPageContentState(
         officeOverviewTitle = officeOverviewTitle,
         officeState = office.state(),
         uiNowMs = routeState.uiNowMs,
+        uiMinuteMs = routeState.uiMinuteMs,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
         serverIndex = routeState.serverIndex,

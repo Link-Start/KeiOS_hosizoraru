@@ -247,6 +247,7 @@ fun BAPage(
         onDisposeActionBarInteraction = { onActionBarInteractingChanged(false) },
         office = office,
         onUiNowMsChange = { ui.uiNowMs = it },
+        onUiMinuteMsChange = { ui.uiMinuteMs = it },
         serverIndex = ui.serverIndex,
         onServerChanged = {
             ui.calendarHydrationReady = false

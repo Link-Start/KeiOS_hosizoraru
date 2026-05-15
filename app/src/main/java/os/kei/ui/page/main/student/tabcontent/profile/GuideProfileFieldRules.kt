@@ -51,6 +51,15 @@ internal fun shouldUseFullWidthProfileInfoRow(key: String): Boolean {
     return normalizeProfileFieldKey(key) in profileFullWidthInfoRowKeys
 }
 
+internal fun shouldStackProfileInfoRow(
+    key: String,
+    value: String
+): Boolean {
+    if (!shouldUseFullWidthProfileInfoRow(key)) return false
+    val compactValue = value.trim()
+    return compactValue.contains('\n') || compactValue.length > 18
+}
+
 internal fun shouldUseProfileValueCapsule(
     key: String,
     value: String,

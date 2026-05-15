@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.tabcontent.profile
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import os.kei.ui.page.main.student.BaGuideRow
 
@@ -10,6 +11,14 @@ class GuideProfileFieldRulesTest {
     fun `momotalk rows use full width layout`() {
         assertTrue(shouldUseFullWidthProfileInfoRow("MomoTalk状态消息"))
         assertTrue(shouldUseFullWidthProfileInfoRow("MomoTalk解锁等级"))
+        assertFalse(shouldStackProfileInfoRow("MomoTalk解锁等级", "2 / 3 / 5 / 6"))
+        assertFalse(shouldStackProfileInfoRow("MomoTalk状态消息", "-"))
+        assertTrue(
+            shouldStackProfileInfoRow(
+                key = "MomoTalk状态消息",
+                value = "为了参加派对换上了礼服裙，所属于格黑娜学园的风纪委员长。"
+            )
+        )
     }
 
     @Test

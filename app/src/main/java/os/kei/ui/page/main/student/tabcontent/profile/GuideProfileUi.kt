@@ -117,7 +117,8 @@ internal fun GuideProfileInfoItem(
                 value = displayValue,
                 containerWidth = maxWidth
             )
-            if (shouldUseFullWidthProfileInfoRow(key)) {
+            val usesFullWidthKey = shouldUseFullWidthProfileInfoRow(key)
+            if (shouldStackProfileInfoRow(key, displayValue)) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -160,9 +161,17 @@ internal fun GuideProfileInfoItem(
                     Text(
                         text = displayKey,
                         color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        modifier = Modifier.widthIn(min = 52.dp, max = keyMaxWidth),
+                        modifier = if (usesFullWidthKey) {
+                            Modifier
+                        } else {
+                            Modifier.widthIn(min = 52.dp, max = keyMaxWidth)
+                        },
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = if (usesFullWidthKey) {
+                            TextOverflow.Clip
+                        } else {
+                            TextOverflow.Ellipsis
+                        }
                     )
                     Box(
                         modifier = Modifier.weight(1f),
@@ -547,7 +556,7 @@ internal fun GuideGiftPreferenceGrid(
                                     .height(emojiBubbleSize),
                                 shape = ContinuousCapsule,
                                 surfaceColor = if (isDark) Color(0x663B82F6) else Color(0xCCEFF6FF),
-                                contentPadding = PaddingValues(horizontal = 3.dp, vertical = 3.dp)
+                                contentAlignment = Alignment.Center
                             ) {
                                 GuideRemoteIcon(
                                     imageUrl = item.emojiImageUrl,

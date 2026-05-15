@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,8 +68,9 @@ private fun BaGuideCatalogEntryAvatarImage(
         BaGuideCatalogEntryAvatarFallback(iconRes = fallbackRes, size = size)
         return
     }
+    val imageBitmap = remember(rendered) { rendered.asImageBitmap() }
     Image(
-        bitmap = rendered.asImageBitmap(),
+        bitmap = imageBitmap,
         contentDescription = null,
         contentScale = ContentScale.Fit,
         modifier = Modifier

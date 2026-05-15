@@ -83,7 +83,15 @@ fun GuideRemoteImage(
     val context = LocalContext.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) return
-    val bitmap by produceState<Bitmap?>(initialValue = null, target) {
+    val bitmap by produceState<Bitmap?>(
+        initialValue = BaGuideImageCache.peekBitmap(
+            source = target,
+            maxDecodeDimension = maxDecodeDimension
+        ),
+        target,
+        maxDecodeDimension
+    ) {
+        if (value != null) return@produceState
         value = runCatching {
             GameKeeMediaImageLoader.loadGuideBitmap(
                 context = context,
@@ -93,8 +101,9 @@ fun GuideRemoteImage(
         }.getOrNull()
     }
     val rendered = bitmap ?: return
+    val imageBitmap = remember(rendered) { rendered.asImageBitmap() }
     Image(
-        bitmap = rendered.asImageBitmap(),
+        bitmap = imageBitmap,
         contentDescription = null,
         contentScale = ContentScale.Crop,
         alignment = cropAlignment,
@@ -212,7 +221,7 @@ fun GuideRemoteImageAdaptive(
         stableRatio = ratio
     }
     Image(
-        bitmap = rendered.asImageBitmap(),
+        bitmap = remember(rendered) { rendered.asImageBitmap() },
         contentDescription = null,
         contentScale = ContentScale.Fit,
         modifier = modifier
@@ -302,8 +311,9 @@ fun GuideRemoteIcon(
         }
     }
     val rendered = bitmap ?: return
+    val imageBitmap = remember(rendered) { rendered.asImageBitmap() }
     Image(
-        bitmap = rendered.asImageBitmap(),
+        bitmap = imageBitmap,
         contentDescription = null,
         contentScale = ContentScale.Fit,
         modifier = modifier

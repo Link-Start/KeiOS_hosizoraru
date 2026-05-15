@@ -56,6 +56,7 @@ internal class GitHubPageViewModel : ViewModel() {
     private var onlineShareTargetsJob: Job? = null
     private var downloaderOptionsJob: Job? = null
     private val snapshotFlowManager = AppSnapshotFlowManager()
+    private val pendingShareImportPageActive = MutableStateFlow(false)
     private val pendingShareImportNowMillis = MutableStateFlow(System.currentTimeMillis())
 
     private val _contentDerivedState = MutableStateFlow(GitHubPageContentDerivedState())
@@ -122,6 +123,11 @@ internal class GitHubPageViewModel : ViewModel() {
                     }
             }
         }
+    }
+
+    fun setPageDataActive(active: Boolean) {
+        if (pendingShareImportPageActive.value == active) return
+        pendingShareImportPageActive.value = active
     }
 
     suspend fun beginTrackedExport(
@@ -208,7 +214,13 @@ internal class GitHubPageViewModel : ViewModel() {
         contentStateJob?.cancel()
         pendingShareImportClockJob?.cancel()
         pendingShareImportClockJob = viewModelScope.launch {
-            snapshotFlowManager.snapshotFlow { state.pendingShareImportTrack?.armedAtMillis }
+            combine(
+                snapshotFlowManager.snapshotFlow { state.pendingShareImportTrack?.armedAtMillis }
+                    .distinctUntilChanged(),
+                pendingShareImportPageActive
+            ) { armedAtMillis, pageActive ->
+                armedAtMillis.takeIf { pageActive }
+            }
                 .distinctUntilChanged()
                 .collectLatest { armedAtMillis ->
                     pendingShareImportNowMillis.value = System.currentTimeMillis()

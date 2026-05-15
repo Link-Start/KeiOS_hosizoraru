@@ -50,7 +50,10 @@ internal fun AppMarkdownContent(
         preserveLineBreaks,
         sourceKey
     ) {
-        value = emptyList()
+        if (markdown.isBlank()) {
+            value = emptyList()
+            return@produceState
+        }
         value = parseCachedAppMarkdownBlocks(
             markdown = markdown,
             preserveLineBreaks = preserveLineBreaks,

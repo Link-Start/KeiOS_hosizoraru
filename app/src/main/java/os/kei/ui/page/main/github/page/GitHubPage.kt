@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
@@ -81,6 +82,13 @@ fun GitHubPage(
     val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsStateWithLifecycle()
     val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsStateWithLifecycle()
     val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsStateWithLifecycle()
+    val isGitHubPageDataActive = runtime.contentReady && runtime.isDataActive
+    LaunchedEffect(isGitHubPageDataActive) {
+        githubPageViewModel.setPageDataActive(isGitHubPageDataActive)
+    }
+    DisposableEffect(githubPageViewModel) {
+        onDispose { githubPageViewModel.setPageDataActive(false) }
+    }
     LaunchedEffect(isListScrolling) {
         if (!isListScrolling) {
             state.settleScrollChromeVisibility()
@@ -215,7 +223,7 @@ fun GitHubPage(
         listState = listState,
         scrollToTopSignal = runtime.scrollToTopSignal,
         isPageWarmActive = runtime.hasActivated && runtime.isWarmDataActive,
-        isPageDataActive = runtime.contentReady && runtime.isDataActive,
+        isPageDataActive = isGitHubPageDataActive,
         state = state,
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,

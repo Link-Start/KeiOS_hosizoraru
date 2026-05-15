@@ -45,15 +45,33 @@ class LocalMcpService(
             toolCallLogger?.invoke(name, profile, elapsedMs, success, error)
         }
     )
-    private val runtimeTools = McpRuntimeTools(environment)
-    private val skillContent = McpSkillContent(environment, runtimeTools::buildRuntimeConfigJson)
-    private val workflowContent = McpWorkflowContent(environment)
-    private val homeTools = McpHomeTools(environment)
-    private val systemOsTools = McpSystemOsTools(environment)
-    private val githubTrackingTools = McpGitHubTrackingTools(environment)
-    private val githubDiscoveryTools = McpGitHubDiscoveryTools(environment)
-    private val githubActionsTools = McpGitHubActionsTools(environment)
-    private val baTools = McpBaTools(environment)
+    private val runtimeTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpRuntimeTools(environment)
+    }
+    private val skillContent by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpSkillContent(environment, runtimeTools::buildRuntimeConfigJson)
+    }
+    private val workflowContent by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpWorkflowContent(environment)
+    }
+    private val homeTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpHomeTools(environment)
+    }
+    private val systemOsTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpSystemOsTools(environment)
+    }
+    private val githubTrackingTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpGitHubTrackingTools(environment)
+    }
+    private val githubDiscoveryTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpGitHubDiscoveryTools(environment)
+    }
+    private val githubActionsTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpGitHubActionsTools(environment)
+    }
+    private val baTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpBaTools(environment)
+    }
 
     fun bindMcpStateProvider(provider: () -> McpServerUiState) {
         mcpStateProvider = provider

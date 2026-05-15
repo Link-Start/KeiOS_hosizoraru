@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +36,7 @@ internal data class GuideBgmFavoriteImportPreview(
 )
 
 internal object GuideBgmFavoriteStore {
-    private val store: MMKV by lazy { MMKV.mmkvWithID(BA_GUIDE_BGM_FAVORITES_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_BGM_FAVORITES_KV_ID) }
     private val lock = Any()
     private val favoritesState = MutableStateFlow<List<GuideBgmFavoriteItem>>(emptyList())
 

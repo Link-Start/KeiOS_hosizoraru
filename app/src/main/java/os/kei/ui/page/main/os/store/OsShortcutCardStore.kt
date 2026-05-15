@@ -4,6 +4,7 @@ import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
 import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtraType
 import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -24,7 +25,7 @@ internal object OsShortcutCardStore {
     private const val KEY_EXTRA_KEY = "key"
     private const val KEY_EXTRA_TYPE = "type"
     private const val KEY_EXTRA_VALUE = "value"
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun loadGoogleSystemServiceConfig(
         defaults: OsGoogleSystemServiceConfig = OsGoogleSystemServiceConfig()

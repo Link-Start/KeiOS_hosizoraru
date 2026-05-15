@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.log.AppLogger
@@ -349,20 +349,22 @@ class GitHubShizukuPackageInstaller(
             session.closeQuietly()
             session = null
 
-            val commitResult = runCatching {
-                withTimeout(5.minutes) { deferred.await() }
-            }.getOrElse { error ->
+            val commitResult = try {
+                withTimeoutOrNull(5.minutes) { deferred.await() }
+            } catch (error: CancellationException) {
                 GitHubShizukuInstallCommitRegistry.unregister(request.requestId)
                 abandonSession(packageInstaller, sessionId)
-                if (error is CancellationException) {
-                    return@withContext GitHubApkInstallResult.Cancelled(
-                        request.requestId,
-                        sessionId
-                    )
-                }
+                return@withContext GitHubApkInstallResult.Cancelled(
+                    request.requestId,
+                    sessionId
+                )
+            }
+            if (commitResult == null) {
+                GitHubShizukuInstallCommitRegistry.unregister(request.requestId)
+                abandonSession(packageInstaller, sessionId)
                 return@withContext GitHubApkInstallResult.Failed(
                     reason = GitHubApkInstallFailureReason.ResultTimeout,
-                    message = error.installMessage("Install result timed out"),
+                    message = "Install result timed out",
                     sessionId = sessionId
                 )
             }

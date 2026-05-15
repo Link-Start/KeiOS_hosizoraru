@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.importer
 
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.github.model.GitHubStarImportQuality
 
 @Immutable
@@ -28,7 +29,7 @@ internal object GitHubStarImportDraftStore {
     private const val KEY_SELECTED_IDS = "selected_ids"
     private const val LIST_SEPARATOR = "\u001F"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun load(): GitHubStarImportDraft {
         return GitHubStarImportDraft(

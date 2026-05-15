@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.section
 
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONObject
 
 @Immutable
@@ -18,7 +19,7 @@ internal object GitHubTrackedReleaseUiStateStore {
     private const val JSON_STABLE = "stable"
     private const val JSON_PRE_RELEASE = "preRelease"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun load(): GitHubTrackedReleaseExpansionState {
         return decodeExpansionState(store.decodeString(KEY_EXPANSION_STATE).orEmpty())

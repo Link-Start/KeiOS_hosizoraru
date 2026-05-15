@@ -2,8 +2,8 @@ package os.kei.mcp.server
 
 import android.content.Intent
 import android.net.Uri
-import com.tencent.mmkv.MMKV
 import os.kei.R
+import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsInfoCache
 import os.kei.ui.page.main.os.OsSectionCard
@@ -343,8 +343,8 @@ internal class McpSystemOsResponseBuilder(
         maxCount: Int,
         query: String?
     ): List<InfoRow> {
-        val kv = MMKV.mmkvWithID(OS_CACHE_KV_ID)
-        val legacyKv = MMKV.mmkvWithID(LEGACY_SYSTEM_CACHE_KV_ID)
+        val kv = KeiMmkv.byId(OS_CACHE_KV_ID)
+        val legacyKv = KeiMmkv.byId(LEGACY_SYSTEM_CACHE_KV_ID)
         val readRaw: (String, String) -> String? = { newKey, legacyKey ->
             val newRaw = kv.decodeString(newKey)
             if (!newRaw.isNullOrBlank()) newRaw else legacyKv.decodeString(legacyKey)

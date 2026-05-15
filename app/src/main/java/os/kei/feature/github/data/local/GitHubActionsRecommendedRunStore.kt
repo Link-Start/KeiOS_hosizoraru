@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 
@@ -8,7 +9,7 @@ object GitHubActionsRecommendedRunStore {
     private const val KV_ID = "github_actions_recommended_runs"
     private const val KEY_SNAPSHOTS = "snapshots"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun load(trackId: String): GitHubActionsRecommendedRunSnapshot? {
         val normalizedTrackId = trackId.trim()

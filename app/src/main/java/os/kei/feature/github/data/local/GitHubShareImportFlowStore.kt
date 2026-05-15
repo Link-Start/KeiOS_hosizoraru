@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -96,7 +97,7 @@ object GitHubShareImportFlowStore {
     private const val KEY_ACTIVE_RESULT = "github_active_share_import_result"
 
     private val store: MMKV by lazy {
-        MMKV.mmkvWithID(KV_ID, MMKV.MULTI_PROCESS_MODE)
+        KeiMmkv.byId(KV_ID, MMKV.MULTI_PROCESS_MODE)
     }
 
     fun loadActivePreview(nowMillis: Long = System.currentTimeMillis()): GitHubPendingShareImportPreviewRecord? {

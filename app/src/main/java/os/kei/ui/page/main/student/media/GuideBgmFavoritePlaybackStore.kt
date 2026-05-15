@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONObject
 import kotlin.math.abs
 
@@ -40,7 +41,7 @@ internal data class GuideBgmFavoritePlaybackSnapshot(
 }
 
 internal object GuideBgmFavoritePlaybackStore {
-    private val store: MMKV by lazy { MMKV.mmkvWithID(BA_GUIDE_BGM_PLAYBACK_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_BGM_PLAYBACK_KV_ID) }
     private val lock = Any()
 
     @Volatile

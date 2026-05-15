@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
 import java.security.MessageDigest
@@ -11,7 +12,7 @@ object GitHubActionsDownloadHistoryStore {
     private const val KEY_INDEX = "entry_index"
     private const val MAX_RECORDS = 80
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     private fun kv(): MMKV = store
 

@@ -10,7 +10,6 @@ import io.ktor.server.request.path
 import io.ktor.server.response.respond
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 
 internal data class McpEndpointSession(
@@ -47,13 +46,15 @@ internal class McpKtorEndpointHost(
         return McpEndpointSession(engine = engine, server = server)
     }
 
-    fun stop(session: McpEndpointSession?) {
+    fun stopEngine(session: McpEndpointSession?) {
         val current = session ?: return
         runCatching { current.engine.stop(gracePeriodMillis = 500, timeoutMillis = 2_000) }
-        runBlocking {
-            withTimeoutOrNull(1_500) {
-                current.server.close()
-            }
+    }
+
+    suspend fun closeServer(session: McpEndpointSession?) {
+        val current = session ?: return
+        withTimeoutOrNull(1_500) {
+            current.server.close()
         }
     }
 }

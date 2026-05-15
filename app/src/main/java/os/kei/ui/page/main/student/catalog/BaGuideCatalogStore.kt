@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.catalog
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -13,7 +14,7 @@ private const val KEY_RELEASE_DATE_INDEX_RAW = "catalog_release_date_index_raw"
 private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 2
 
 internal object BaGuideCatalogStore {
-    private val store: MMKV by lazy { MMKV.mmkvWithID(BA_GUIDE_CATALOG_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_CATALOG_KV_ID) }
 
     private fun kv(): MMKV = store
 

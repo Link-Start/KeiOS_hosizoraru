@@ -1,6 +1,7 @@
 package os.kei.feature.home.data
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.defaultHomeOverviewCards
 
@@ -57,7 +58,7 @@ internal object HomeOverviewPrefs {
     }
 
     private fun mmkvStore(): HomeOverviewKeyValueStore {
-        return MmkvHomeOverviewKeyValueStore(MMKV.mmkvWithID(KV_ID))
+        return MmkvHomeOverviewKeyValueStore(KeiMmkv.byId(KV_ID))
     }
 }
 

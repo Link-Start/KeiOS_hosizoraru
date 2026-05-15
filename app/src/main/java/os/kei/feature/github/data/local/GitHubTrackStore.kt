@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -124,7 +125,7 @@ object GitHubTrackStore {
 
     @Volatile
     private var didAutoRefreshInSession: Boolean = false
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     private fun kv(): MMKV = store
 

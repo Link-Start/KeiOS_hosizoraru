@@ -146,7 +146,6 @@ class MainActivity : ComponentActivity() {
         shizukuApiUtils.attach { status ->
             shizukuStatus.value = status
         }
-        runCatching { localMcpService.getSkillMarkdownForUi() }
 
         setContent {
             val appThemeMode = appThemeModeState.value

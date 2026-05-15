@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.os
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 
 internal object OsUiStateStore {
     private const val KV_ID = "os_ui_state"
@@ -29,8 +30,8 @@ internal object OsUiStateStore {
     private const val LEGACY_KEY_ANDROID_PROPS = "expanded_android_props"
     private const val LEGACY_KEY_JAVA_PROPS = "expanded_java_props"
     private const val LEGACY_KEY_LINUX_ENV = "expanded_linux_env"
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
-    private val legacyStore: MMKV by lazy { MMKV.mmkvWithID(LEGACY_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
+    private val legacyStore: MMKV by lazy { KeiMmkv.byId(LEGACY_KV_ID) }
 
     private fun readBool(kv: MMKV, legacyKv: MMKV, key: String, legacyKey: String, defaultValue: Boolean): Boolean {
         if (kv.containsKey(key)) return kv.decodeBool(key, defaultValue)

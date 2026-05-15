@@ -1,6 +1,7 @@
 package os.kei.mcp.server
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.service.McpKeepAliveService
@@ -49,7 +49,6 @@ class McpServerManager(
     monitorDispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 ) {
     companion object {
-        private val SESSION_MONITOR_IDLE_DELAY = 15_000.milliseconds
         private val SESSION_MONITOR_ACTIVE_DELAY = 5_000.milliseconds
 
         fun loadSavedCacheSummary(context: Context): String {
@@ -158,7 +157,6 @@ class McpServerManager(
             endpointSession = session
             McpServerRuntimeRegistry.registerRunning(this)
             lastConnectedCount = 0
-            startSessionMonitor(session)
             _uiState.value = _uiState.value.copy(
                 running = true,
                 runningSinceEpochMs = System.currentTimeMillis(),
@@ -299,6 +297,9 @@ class McpServerManager(
         if (running) {
             val sessions = endpointSession?.server?.sessions?.size ?: 0
             _uiState.value = _uiState.value.copy(connectedClients = sessions)
+            if (sessions > 0) {
+                endpointSession?.let(::ensureActiveSessionMonitor)
+            }
             syncKeepAliveNotification(forceStart = false)
             appendLog("INFO", "Snapshot refreshed: clients=$sessions")
         } else {
@@ -342,26 +343,43 @@ class McpServerManager(
         monitorJob = null
         lastConnectedCount = 0
         val current = endpointSession ?: return
-        endpointHost.stop(current)
+        endpointHost.stopEngine(current)
+        scope.launch {
+            endpointHost.closeServer(current)
+        }
         localMcpService.clearRuntimeServer(current.server)
         endpointSession = null
         McpServerRuntimeRegistry.clearRunning(this)
     }
 
-    private fun startSessionMonitor(session: McpEndpointSession) {
-        monitorJob?.cancel()
-        monitorJob = scope.launch {
-            while (true) {
-                val count = updateConnectedClientCount(session.server)
-                yield()
-                delay(if (count > 0) SESSION_MONITOR_ACTIVE_DELAY else SESSION_MONITOR_IDLE_DELAY)
+    @Synchronized
+    private fun ensureActiveSessionMonitor(session: McpEndpointSession) {
+        if (monitorJob?.isActive == true) return
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            try {
+                while (true) {
+                    val count = updateConnectedClientCount(session.server)
+                    if (count <= 0) break
+                    delay(SESSION_MONITOR_ACTIVE_DELAY)
+                }
+            } finally {
+                synchronized(this@McpServerManager) {
+                    if (monitorJob === this.coroutineContext[Job]) {
+                        monitorJob = null
+                    }
+                }
             }
         }
+        monitorJob = job
+        job.start()
     }
 
     private fun updateConnectedClientCountAsync(server: io.modelcontextprotocol.kotlin.sdk.server.Server) {
         scope.launch {
-            updateConnectedClientCount(server)
+            val count = updateConnectedClientCount(server)
+            if (count > 0) {
+                endpointSession?.takeIf { it.server === server }?.let { ensureActiveSessionMonitor(it) }
+            }
         }
     }
 

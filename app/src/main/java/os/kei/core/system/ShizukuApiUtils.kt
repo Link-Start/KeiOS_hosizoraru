@@ -3,18 +3,21 @@ package os.kei.core.system
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.log.AppLogger
 import rikka.shizuku.Shizuku
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.util.Locale
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class ShizukuApiUtils(
-    private val requestCode: Int = DEFAULT_REQUEST_CODE
+    private val requestCode: Int = DEFAULT_REQUEST_CODE,
+    private val commandDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private enum class CommandIdentity(val label: String) {
         ROOT("root"),
@@ -242,28 +245,7 @@ class ShizukuApiUtils(
                 cancelled = false
             )
 
-        return suspendCancellableCoroutine { continuation ->
-            val worker = Thread(
-                {
-                    val result =
-                        runCatching { executeProcess(process = process, timeoutMs = timeoutMs) }
-                    if (!continuation.isActive) return@Thread
-                    result.onSuccess { output ->
-                        continuation.resume(output)
-                    }.onFailure { throwable ->
-                        continuation.resumeWithException(throwable)
-                    }
-                },
-                "KeiOS-ShizukuExec"
-            ).apply { isDaemon = true }
-            worker.start()
-
-            continuation.invokeOnCancellation {
-                runCatching { process.destroy() }
-                runCatching { process.destroyForcibly() }
-                runCatching { worker.interrupt() }
-            }
-        }
+        return executeProcessCancellable(process = process, timeoutMs = timeoutMs)
     }
 
     suspend fun execCommandCancellable(command: String, timeoutMs: Long = 2000L): String? {
@@ -373,6 +355,62 @@ class ShizukuApiUtils(
             stdout = stdout.text().trim(),
             stderr = stderr.text().trim(),
             exitCode = process.exitValue(),
+            timedOut = false,
+            cancelled = false,
+            stdoutTruncated = stdout.truncated,
+            stderrTruncated = stderr.truncated
+        )
+    }
+
+    private suspend fun executeProcessCancellable(
+        process: Process,
+        timeoutMs: Long
+    ): AppCommandResult = withContext(commandDispatcher) {
+        val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
+        val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
+        val stdoutReader = startStreamCollector(
+            name = "KeiOS-ShizukuStdout",
+            stream = process.inputStream,
+            sink = stdout
+        )
+        val stderrReader = startStreamCollector(
+            name = "KeiOS-ShizukuStderr",
+            stream = process.errorStream,
+            sink = stderr
+        )
+
+        val exitCode = runCatching {
+            withTimeoutOrNull(timeoutMs.coerceAtLeast(1L)) {
+                runInterruptible { process.waitFor() }
+            }
+        }.onFailure {
+            runCatching { process.destroy() }
+            runCatching { process.destroyForcibly() }
+            throw it
+        }.getOrNull()
+
+        if (exitCode == null) {
+            runCatching { process.destroy() }
+            runCatching { process.destroyForcibly() }
+            stdoutReader.join(300)
+            stderrReader.join(300)
+            return@withContext AppCommandResult(
+                stdout = stdout.text().trim(),
+                stderr = stderr.text().trim(),
+                exitCode = null,
+                timedOut = true,
+                cancelled = false,
+                stdoutTruncated = stdout.truncated,
+                stderrTruncated = stderr.truncated
+            )
+        }
+
+        stdoutReader.join(600)
+        stderrReader.join(600)
+        AppCommandResult(
+            stdout = stdout.text().trim(),
+            stderr = stderr.text().trim(),
+            exitCode = exitCode,
             timedOut = false,
             cancelled = false,
             stdoutTruncated = stdout.truncated,

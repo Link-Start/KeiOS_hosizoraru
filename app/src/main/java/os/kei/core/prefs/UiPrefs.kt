@@ -68,7 +68,7 @@ object UiPrefs {
     const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50
     const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350
     private val DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES = setOf("Os", "Mcp", "GitHub", "Ba")
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
     private val textCopyCapabilityExpandedState = MutableStateFlow(
         kv().decodeBool(KEY_TEXT_COPY_CAPABILITY_EXPANDED, false)
     )

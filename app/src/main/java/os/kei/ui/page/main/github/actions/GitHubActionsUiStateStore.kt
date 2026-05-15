@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.actions
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 
 internal data class GitHubActionsSectionExpansionState(
     val branchesExpanded: Boolean = false,
@@ -14,7 +15,7 @@ internal object GitHubActionsUiStateStore {
     private const val KEY_WORKFLOWS_EXPANDED = "workflows_expanded"
     private const val KEY_RUNS_EXPANDED = "runs_expanded"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun loadSectionExpansionState(): GitHubActionsSectionExpansionState {
         return GitHubActionsSectionExpansionState(

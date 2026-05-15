@@ -123,7 +123,7 @@ fun GuideRemoteImageAdaptive(
         return
     }
     val fallbackRatio = remember(target) { detectMediaRatioFromUrl(target) ?: (16f / 9f) }
-    var stableRatio by remember { mutableStateOf(fallbackRatio.coerceIn(0.4f, 4f)) }
+    var stableRatio by remember(target) { mutableStateOf(fallbackRatio.coerceIn(0.4f, 4f)) }
     val isGifSource = remember(target) { isGifMediaSource(target) }
     if (isGifSource) {
         val resolvedGifTarget by produceState(
@@ -165,7 +165,7 @@ fun GuideRemoteImageAdaptive(
         )
         return
     }
-    var retainedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var retainedBitmap by remember(target) { mutableStateOf<Bitmap?>(null) }
     val bitmap by produceState<Bitmap?>(initialValue = retainedBitmap, target) {
         progressState?.value = 0f
         onLoadingChanged?.invoke(true)

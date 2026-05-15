@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os
 
 import android.net.Uri
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 
 internal object OsInfoCache {
     private const val KV_ID = "os_info_cache"
@@ -20,8 +21,8 @@ internal object OsInfoCache {
     private const val LEGACY_KEY_ANDROID = "section_android_properties"
     private const val LEGACY_KEY_JAVA = "section_java_properties"
     private const val LEGACY_KEY_LINUX = "section_linux_environment"
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
-    private val legacyStore: MMKV by lazy { MMKV.mmkvWithID(LEGACY_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
+    private val legacyStore: MMKV by lazy { KeiMmkv.byId(LEGACY_KV_ID) }
 
     private fun encodeRows(rows: List<InfoRow>): String {
         return rows.joinToString("\n") { row ->

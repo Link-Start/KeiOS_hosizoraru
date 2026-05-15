@@ -622,7 +622,7 @@ internal object CacheStores {
     }
 
     private object CacheEventStore {
-        private val store: MMKV by lazy { MMKV.mmkvWithID(CACHE_EVENT_KV_ID) }
+        private val store: MMKV by lazy { KeiMmkv.byId(CACHE_EVENT_KV_ID) }
 
         fun loadClearedAt(id: String): Long {
             return store.decodeLong("cleared_$id", 0L)

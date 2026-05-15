@@ -7,8 +7,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
+import coil3.memory.MemoryCache
+import coil3.request.allowHardware
 import com.tencent.mmkv.MMKV
+import okio.Path.Companion.toOkioPath
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.log.AppLogger
 import os.kei.core.perf.Android17AnomalyProfiler
@@ -17,6 +21,10 @@ import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
+
+private const val COIL_MEMORY_CACHE_PERCENT = 0.25
+private const val COIL_DISK_CACHE_BYTES = 192L * 1024L * 1024L
+private const val COIL_DISK_CACHE_DIR = "coil_image_cache"
 
 class KeiOSApp : Application() {
     companion object {
@@ -59,6 +67,18 @@ class KeiOSApp : Application() {
         instance = this
         SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
+                .memoryCache {
+                    MemoryCache.Builder()
+                        .maxSizePercent(context, COIL_MEMORY_CACHE_PERCENT)
+                        .build()
+                }
+                .diskCache {
+                    DiskCache.Builder()
+                        .directory(context.cacheDir.resolve(COIL_DISK_CACHE_DIR).toOkioPath())
+                        .maxSizeBytes(COIL_DISK_CACHE_BYTES)
+                        .build()
+                }
+                .allowHardware(true)
                 .components {
                     add(AnimatedImageDecoder.Factory())
                 }

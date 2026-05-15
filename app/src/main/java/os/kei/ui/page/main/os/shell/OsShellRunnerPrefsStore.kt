@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.os.shell
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 
 internal val shellRunnerTimeoutOptionsSeconds = listOf(30, 60, 120, 300, 600)
 internal val shellRunnerOutputLimitOptionsChars = listOf(20_000, 60_000, 120_000, 300_000)
@@ -60,7 +61,7 @@ internal object OsShellRunnerPrefsStore {
     private const val KEY_SAVED_INPUT = "os_shell_runner_saved_input_v1"
     private const val KEY_SAVED_OUTPUT = "os_shell_runner_saved_output_v1"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun loadSettings(): OsShellRunnerSettings {
         val timeoutSeconds = normalizeTimeoutSeconds(

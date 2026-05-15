@@ -4,7 +4,7 @@ import java.lang.reflect.Method
 
 private inline fun <T> safeOf(default: T, block: () -> T): T = runCatching(block).getOrDefault(default)
 
-private const val PROP_SNAPSHOT_TTL_NANOS = 15_000_000_000L
+private const val PROP_SNAPSHOT_TTL_NANOS = 60_000_000_000L
 
 private val systemPropertiesGetMethod: Method? by lazy(LazyThreadSafetyMode.PUBLICATION) {
     runCatching {
@@ -32,6 +32,15 @@ private object PropSnapshotStore {
 
     private val systemLock = Any()
     private val javaLock = Any()
+
+    fun invalidate() {
+        synchronized(systemLock) {
+            systemPropertiesSnapshot = null
+        }
+        synchronized(javaLock) {
+            javaPropertiesSnapshot = null
+        }
+    }
 
     fun freshSystemProperties(): Map<String, String>? {
         val now = System.nanoTime()
@@ -119,6 +128,10 @@ fun getAllSystemPropertiesSnapshot(forceRefresh: Boolean = false): Map<String, S
 
 val getAllSystemProperties: Map<String, String>
     get() = getAllSystemPropertiesSnapshot()
+
+fun invalidatePropertySnapshots() {
+    PropSnapshotStore.invalidate()
+}
 
 private fun readAllJavaProperties(): Map<String, String> {
     return safeOf(emptyMap()) {

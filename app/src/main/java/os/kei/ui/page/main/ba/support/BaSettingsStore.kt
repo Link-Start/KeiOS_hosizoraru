@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba.support
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 
 internal object BASettingsStore {
@@ -68,7 +69,7 @@ internal object BASettingsStore {
     private fun poolSyncKey(serverIndex: Int): String = "$KEY_POOL_SYNC_PREFIX${serverIndex.coerceIn(0, 2)}"
     private fun poolCacheVersionKey(serverIndex: Int): String = "$KEY_POOL_CACHE_VERSION_PREFIX${serverIndex.coerceIn(0, 2)}"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
     private fun kv(): MMKV = store
     private fun notifyChanged(notifyHomeOverview: Boolean = true) {
         BASettingsStoreSignals.notifyChanged(notifyHomeOverview = notifyHomeOverview)

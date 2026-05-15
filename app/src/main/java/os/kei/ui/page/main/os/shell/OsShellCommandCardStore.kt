@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os.shell
 
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.ui.page.main.os.transfer.OS_CARD_EXPORT_SCHEMA_VERSION
@@ -79,7 +80,7 @@ internal object OsShellCommandCardStore {
     private const val LEGACY_KEY_SHELL_COMMAND_SUBTITLE = "shell_runner_saved_command_subtitle"
     private const val LEGACY_KEY_SHELL_COMMAND_SAVED_AT = "shell_runner_saved_command_saved_at"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
     private val storeLock = Any()
     private var cachedCards: List<OsShellCommandCard>? = null
 

@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -21,7 +22,7 @@ data class BaStudentGuideCacheSnapshot(
 }
 
 object BaStudentGuideStore {
-    private val store: MMKV by lazy { MMKV.mmkvWithID(BA_GUIDE_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_KV_ID) }
 
     private val memoryCache = object : LinkedHashMap<String, BaStudentGuideInfo>(
         BA_GUIDE_MEMORY_CACHE_LIMIT,

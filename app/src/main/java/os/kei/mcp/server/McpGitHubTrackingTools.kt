@@ -1,6 +1,7 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
@@ -20,6 +21,8 @@ import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import java.util.Locale
+
+private const val MCP_GITHUB_CHECK_PARALLELISM = 4
 
 internal class McpGitHubTrackingTools(
     private val environment: McpToolEnvironment
@@ -482,7 +485,7 @@ internal class McpGitHubTrackingTools(
         }.trim()
     }
 
-    private fun buildGitHubTrackedSummaryFromNetwork(
+    private suspend fun buildGitHubTrackedSummaryFromNetwork(
         repoFilter: String,
         sourceMode: String,
         filterMode: GitHubTrackedFilterMode,
@@ -514,7 +517,7 @@ internal class McpGitHubTrackingTools(
         }.trim()
     }
 
-    private fun checkTrackedGitHub(
+    private suspend fun checkTrackedGitHub(
         repoFilter: String,
         sourceMode: String,
         filterMode: GitHubTrackedFilterMode,
@@ -530,7 +533,10 @@ internal class McpGitHubTrackingTools(
             filterMode = filterMode,
             cacheDependentFilters = false
         )
-        val rows = filtered.map { item ->
+        val rows = GitHubExecution.mapOrderedBounded(
+            items = filtered,
+            maxConcurrency = MCP_GITHUB_CHECK_PARALLELISM
+        ) { item ->
             runCatching { evaluateTrackedApp(item, snapshot) }.getOrElse { err ->
                 GitHubCheckRow(
                     item = item,
@@ -824,11 +830,11 @@ internal class McpGitHubTrackingTools(
         }
     }
 
-    private fun evaluateTrackedApp(
+    private suspend fun evaluateTrackedApp(
         item: GitHubTrackedApp,
         snapshot: GitHubTrackSnapshot
     ): GitHubCheckRow {
-        val check = GitHubReleaseCheckService.evaluateTrackedAppBlocking(appContext, item)
+        val check = GitHubReleaseCheckService.evaluateTrackedApp(appContext, item)
         return GitHubCheckRow(
             item = item,
             localVersion = check.localVersion,

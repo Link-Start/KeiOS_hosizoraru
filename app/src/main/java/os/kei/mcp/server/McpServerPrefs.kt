@@ -1,6 +1,7 @@
 package os.kei.mcp.server
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import java.security.SecureRandom
 
 internal data class McpPrefsSnapshot(
@@ -23,7 +24,7 @@ internal object McpServerPrefs {
     private const val KEY_PORT = "port"
     private const val KEY_ALLOW_EXTERNAL = "allow_external"
     private val random = SecureRandom()
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun loadSnapshot(): McpPrefsSnapshot {
         val port = store.decodeInt(KEY_PORT, McpServerDefaults.PORT).let { value ->

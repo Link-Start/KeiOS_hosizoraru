@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -65,7 +66,7 @@ object BaGuideTempMediaCache {
     private const val KEY_INDEX_VERSION = "index_version"
     private const val KEY_SESSION_IDS = "session_ids"
 
-    private val indexStore: MMKV by lazy { MMKV.mmkvWithID(INDEX_KV_ID) }
+    private val indexStore: MMKV by lazy { KeiMmkv.byId(INDEX_KV_ID) }
     private val downloadLocks = ConcurrentHashMap<String, DownloadLock>()
 
     private data class DownloadLock(

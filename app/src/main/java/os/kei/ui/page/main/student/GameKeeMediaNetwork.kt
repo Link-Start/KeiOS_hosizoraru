@@ -12,6 +12,7 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -65,7 +66,7 @@ internal data class GameKeeMediaCacheDiagnostics(
 private object GameKeeMediaPlayerCache {
     @Volatile
     private var simpleCache: SimpleCache? = null
-    private val cleanupStore: MMKV by lazy { MMKV.mmkvWithID(GAMEKEE_MEDIA_CACHE_META_KV_ID) }
+    private val cleanupStore: MMKV by lazy { KeiMmkv.byId(GAMEKEE_MEDIA_CACHE_META_KV_ID) }
     private val cleanupRunning = AtomicBoolean(false)
 
     private data class DiskSummary(

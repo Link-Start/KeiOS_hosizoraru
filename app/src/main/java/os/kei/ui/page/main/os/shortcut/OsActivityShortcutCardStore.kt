@@ -2,6 +2,7 @@ package os.kei.ui.page.main.os.shortcut
 
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
@@ -52,8 +53,8 @@ internal object OsActivityShortcutCardStore {
     private const val LEGACY_GOOGLE_SETTINGS_ACTIVITY_CLASS =
         "com.google.android.gms.app.settings.GoogleSettingsActivity"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
-    private val legacyStore: MMKV by lazy { MMKV.mmkvWithID(LEGACY_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
+    private val legacyStore: MMKV by lazy { KeiMmkv.byId(LEGACY_KV_ID) }
 
     fun loadCards(
         defaults: OsGoogleSystemServiceConfig = OsGoogleSystemServiceConfig(),

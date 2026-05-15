@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -26,7 +27,7 @@ internal object BaCalendarPoolImageCache {
     private const val INDEX_VERSION = 1
     private const val KEY_INDEX_VERSION = "index_version"
 
-    private val indexStore: MMKV by lazy { MMKV.mmkvWithID(INDEX_KV_ID) }
+    private val indexStore: MMKV by lazy { KeiMmkv.byId(INDEX_KV_ID) }
 
     private enum class Category(val folderName: String) {
         Calendar("calendar"),

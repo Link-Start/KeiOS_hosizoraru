@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.ui.snapshot.AppSnapshotFlowManager
@@ -100,7 +101,7 @@ internal class GitHubPageViewModel : ViewModel() {
                             state.onlineShareTargetPackageInput.isNotBlank(),
                         appList = state.appList.toList()
                     )
-                }.collectLatest { input ->
+                }.distinctUntilChanged().collectLatest { input ->
                     _installedOnlineShareTargets.value = repository.queryOnlineShareTargets(
                         context = appContext,
                         input = input
@@ -111,6 +112,7 @@ internal class GitHubPageViewModel : ViewModel() {
         if (downloaderOptionsJob?.isActive != true) {
             downloaderOptionsJob = viewModelScope.launch {
                 snapshotFlowManager.snapshotFlow { state.showCheckLogicSheet }
+                    .distinctUntilChanged()
                     .collectLatest { showCheckLogicSheet ->
                         _checkLogicDownloaderOptions.value = if (showCheckLogicSheet) {
                             repository.queryDownloaders(appContext)
@@ -207,6 +209,7 @@ internal class GitHubPageViewModel : ViewModel() {
         pendingShareImportClockJob?.cancel()
         pendingShareImportClockJob = viewModelScope.launch {
             snapshotFlowManager.snapshotFlow { state.pendingShareImportTrack?.armedAtMillis }
+                .distinctUntilChanged()
                 .collectLatest { armedAtMillis ->
                     pendingShareImportNowMillis.value = System.currentTimeMillis()
                     if (armedAtMillis == null) return@collectLatest
@@ -231,7 +234,7 @@ internal class GitHubPageViewModel : ViewModel() {
                         trackedAddedAtById = state.trackedAddedAtById.toMap(),
                         trackedModifiedAtById = state.trackedModifiedAtById.toMap(),
                         pendingShareImportTrack = state.pendingShareImportTrack,
-                        nowMillis = pendingShareImportNowMillis.value
+                        nowMillis = 0L
                     )
                 },
                 pendingShareImportNowMillis

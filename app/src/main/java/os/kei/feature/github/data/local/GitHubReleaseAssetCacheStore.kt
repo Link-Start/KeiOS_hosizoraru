@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -11,7 +12,7 @@ internal object GitHubReleaseAssetCacheStore {
     private const val KV_ID = "github_release_asset_cache"
     private const val KEY_INDEX = "entry_index"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     private fun kv(): MMKV = store
 

@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.feature.github.domain.GitHubStarImportApkVerificationCache
@@ -14,7 +15,7 @@ internal object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkV
     private const val KEY_INDEX = "entry_index"
     private const val MAX_ENTRIES = 200
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     override fun load(
         owner: String,

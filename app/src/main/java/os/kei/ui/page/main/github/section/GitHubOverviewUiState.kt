@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.section
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import os.kei.R
 
 @Immutable
@@ -42,7 +43,7 @@ internal object GitHubOverviewUiStateStore {
     private const val KV_ID = "github_overview_ui_state"
     private const val KEY_EXPANDED = "overview_expanded"
     private const val KEY_VISIBLE_ENTRIES = "overview_visible_entries"
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun load(): GitHubOverviewUiState {
         return GitHubOverviewUiState(

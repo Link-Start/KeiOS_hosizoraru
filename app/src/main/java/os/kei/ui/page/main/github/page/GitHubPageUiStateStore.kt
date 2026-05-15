@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.page
 
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -19,7 +20,7 @@ internal object GitHubPageUiStateStore {
     private const val KEY_SORT_DIRECTION = "sort_direction"
     private const val KEY_TRACKED_FILTER_MODE = "tracked_filter_mode"
 
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun load(): GitHubPageUiState {
         return GitHubPageUiState(

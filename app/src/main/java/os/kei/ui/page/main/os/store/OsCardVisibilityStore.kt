@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.os
 
 import com.tencent.mmkv.MMKV
+import os.kei.core.prefs.KeiMmkv
 
 internal object OsCardVisibilityStore {
     private const val KV_ID = "os_card_visibility_state"
@@ -11,8 +12,8 @@ internal object OsCardVisibilityStore {
         OsSectionCard.LINUX,
         OsSectionCard.GOOGLE_SYSTEM_SERVICE
     )
-    private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
-    private val legacyStore: MMKV by lazy { MMKV.mmkvWithID(LEGACY_KV_ID) }
+    private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
+    private val legacyStore: MMKV by lazy { KeiMmkv.byId(LEGACY_KV_ID) }
 
     private fun resolveVisibleCards(raw: String): Set<OsSectionCard> {
         if (raw.isBlank()) return emptySet()

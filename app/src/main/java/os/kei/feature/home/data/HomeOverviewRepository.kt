@@ -53,7 +53,7 @@ internal class HomeOverviewRepository(
         val storedOverviewFlow = buildHomeOverviewStoreRefreshFlow(
             refreshRequests = refreshRequests,
             githubVersions = GitHubTrackStoreSignals.version,
-            baVersions = BASettingsStoreSignals.version
+            baHomeOverviewVersions = BASettingsStoreSignals.homeOverviewVersion
         )
             .onStart { emit("initial") }
             .map { reason ->
@@ -170,14 +170,14 @@ private fun buildTokenPreview(token: String): String {
 internal fun buildHomeOverviewStoreRefreshFlow(
     refreshRequests: Flow<String>,
     githubVersions: Flow<Long>,
-    baVersions: Flow<Long>
+    baHomeOverviewVersions: Flow<Long>
 ): Flow<String> {
     return merge(
         refreshRequests,
         githubVersions
             .drop(1)
             .map { version -> "github_store_$version" },
-        baVersions
+        baHomeOverviewVersions
             .drop(1)
             .map { version -> "ba_store_$version" }
     )

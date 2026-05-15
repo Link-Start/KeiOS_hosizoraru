@@ -243,7 +243,7 @@ internal class BaOfficeController(
         )
         if (nextAp != apCurrent) {
             apCurrent = nextAp
-            BASettingsStore.saveApCurrent(nextAp)
+            BASettingsStore.saveApCurrent(nextAp, notifyHomeOverview = false)
         }
         if (nextBase != apRegenBaseMs) {
             apRegenBaseMs = nextBase
@@ -260,7 +260,7 @@ internal class BaOfficeController(
         )
         if (nextStoredAp != cafeStoredAp) {
             cafeStoredAp = nextStoredAp
-            BASettingsStore.saveCafeStoredAp(nextStoredAp)
+            BASettingsStore.saveCafeStoredAp(nextStoredAp, notifyHomeOverview = false)
         }
         if (nextHour != cafeLastHourMs) {
             cafeLastHourMs = nextHour

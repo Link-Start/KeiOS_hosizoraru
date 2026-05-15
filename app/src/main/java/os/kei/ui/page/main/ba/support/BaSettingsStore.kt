@@ -70,8 +70,8 @@ internal object BASettingsStore {
 
     private val store: MMKV by lazy { MMKV.mmkvWithID(KV_ID) }
     private fun kv(): MMKV = store
-    private fun notifyChanged() {
-        BASettingsStoreSignals.notifyChanged()
+    private fun notifyChanged(notifyHomeOverview: Boolean = true) {
+        BASettingsStoreSignals.notifyChanged(notifyHomeOverview = notifyHomeOverview)
     }
 
     private fun idSettings(): BaIdSettingsAccessor =
@@ -332,15 +332,18 @@ internal object BASettingsStore {
         return normalizeAp(raw?.toDoubleOrNull() ?: DEFAULT_CAFE_STORED_AP)
     }
 
-    fun saveCafeStoredAp(storedAp: Double) {
+    fun saveCafeStoredAp(
+        storedAp: Double,
+        notifyHomeOverview: Boolean = true,
+    ) {
         kv().encode(KEY_CAFE_STORED_AP, normalizeAp(storedAp).toString())
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = notifyHomeOverview)
     }
 
     fun loadCafeLastHourMs(): Long = kv().decodeLong(KEY_CAFE_LAST_HOUR_MS, 0L)
     fun saveCafeLastHourMs(epochMs: Long) {
         kv().encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCafeApNotifyEnabled(): Boolean = kv().decodeBool(KEY_CAFE_AP_NOTIFY_ENABLED, false)
@@ -363,7 +366,7 @@ internal object BASettingsStore {
 
     fun saveCafeApLastNotifiedLevel(level: Int) {
         kv().encode(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadIdIndependentByServerEnabled(): Boolean =
@@ -419,7 +422,7 @@ internal object BASettingsStore {
 
     fun saveApLastNotifiedLevel(level: Int) {
         kv().encode(KEY_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadArenaRefreshNotifyEnabled(): Boolean = kv().decodeBool(KEY_ARENA_REFRESH_NOTIFY_ENABLED, false)
@@ -584,41 +587,44 @@ internal object BASettingsStore {
         return normalizeAp(value.coerceIn(0.0, BA_AP_MAX.toDouble()))
     }
 
-    fun saveApCurrent(current: Double) {
+    fun saveApCurrent(
+        current: Double,
+        notifyHomeOverview: Boolean = true,
+    ) {
         val normalized = normalizeAp(current)
         kv().encode(KEY_AP_CURRENT_EXACT, normalized.toString())
         kv().encode(KEY_AP_CURRENT, displayAp(normalized))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = notifyHomeOverview)
     }
 
     fun loadApRegenBaseMs(): Long = kv().decodeLong(KEY_AP_REGEN_BASE_MS, 0L)
     fun saveApRegenBaseMs(epochMs: Long) {
         kv().encode(KEY_AP_REGEN_BASE_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadApSyncMs(): Long = kv().decodeLong(KEY_AP_SYNC_MS, 0L)
     fun saveApSyncMs(epochMs: Long) {
         kv().encode(KEY_AP_SYNC_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)
     fun saveCoffeeHeadpatMs(epochMs: Long) {
         kv().encode(KEY_COFFEE_HEADPAT_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeInvite1UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE1_USED_MS, 0L)
     fun saveCoffeeInvite1UsedMs(epochMs: Long) {
         kv().encode(KEY_COFFEE_INVITE1_USED_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeInvite2UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE2_USED_MS, 0L)
     fun saveCoffeeInvite2UsedMs(epochMs: Long) {
         kv().encode(KEY_COFFEE_INVITE2_USED_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged()
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun clearCalendarAndPoolCaches() {

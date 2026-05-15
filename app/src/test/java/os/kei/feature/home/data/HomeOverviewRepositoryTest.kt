@@ -12,7 +12,7 @@ class HomeOverviewRepositoryTest {
         val reasons = buildHomeOverviewStoreRefreshFlow(
             refreshRequests = flowOf("manual"),
             githubVersions = flowOf(0L, 10L),
-            baVersions = flowOf(0L, 20L)
+            baHomeOverviewVersions = flowOf(0L, 20L)
         ).toList()
 
         assertEquals(

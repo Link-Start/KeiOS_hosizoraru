@@ -164,6 +164,14 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `scheduler increases refresh concurrency for larger batches`() {
+        assertEquals(1, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(1))
+        assertEquals(4, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(8))
+        assertEquals(6, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16))
+        assertEquals(8, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(48))
+    }
+
+    @Test
     fun `run limits direct apk manifest checks inside mixed refresh batches`() = runBlocking {
         val directActive = AtomicInteger(0)
         val maxDirectActive = AtomicInteger(0)

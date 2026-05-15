@@ -9,10 +9,11 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import os.kei.R
+import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
-import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
 import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
@@ -22,7 +23,6 @@ import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isValidForTrackedItem
-import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -34,8 +34,8 @@ import os.kei.ui.page.main.github.share.toShareImportTrack
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
-private const val GITHUB_REFRESH_ALL_PARALLELISM = 4
 private const val GITHUB_REFRESH_UI_BATCH_SIZE = 4
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_BATCH_SIZE = 2
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
@@ -61,6 +61,7 @@ internal class GitHubRefreshActions(
     private val state get() = env.state
     private val repository get() = env.repository
     private val appListReloadMutex = Mutex()
+    private val actionsRunRefreshCoordinator = GitHubActionsRecommendedRunRefreshCoordinator(env)
 
     fun persistCheckCache(refreshTimestamp: Long = state.lastRefreshMs) {
         val states = buildCheckCacheEntries()
@@ -70,6 +71,7 @@ internal class GitHubRefreshActions(
     }
 
     fun cancelRefreshAll(reason: String? = null) {
+        actionsRunRefreshCoordinator.cancel()
         if (state.refreshAllJob?.isActive != true) return
         state.refreshAllJob?.cancel()
         state.refreshAllJob = null
@@ -430,7 +432,7 @@ internal class GitHubRefreshActions(
         }
         state.checkStates[item.id] = itemState
         persistCheckCacheNow()
-        refreshActionsRunSnapshotForItem(item)
+        actionsRunRefreshCoordinator.refreshItem(item)
         onUpdated?.invoke(itemState)
     }
 
@@ -491,6 +493,7 @@ internal class GitHubRefreshActions(
             }
             return
         }
+        actionsRunRefreshCoordinator.cancel()
         state.refreshAllJob?.cancel()
         state.refreshAllJob = scope.launch {
             val previousCheckStatesById = state.checkStates.toMap()
@@ -525,20 +528,37 @@ internal class GitHubRefreshActions(
                     message = context.getString(R.string.github_msg_checking)
                 )
             }
+            val refreshStartNs = System.nanoTime()
             val progressMutex = Mutex()
-            val semaphore = Semaphore(GITHUB_REFRESH_ALL_PARALLELISM)
+            val concurrency = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(snapshot.size)
+            val directApkConcurrency = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
+            val directApkSemaphore = Semaphore(directApkConcurrency)
+            val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(snapshot)
+            val nextWorkIndex = AtomicInteger(0)
             var completedCount = 0
             var lastProgressNotifyAtMs = System.currentTimeMillis()
             val pendingUiResults = mutableListOf<Pair<GitHubTrackedApp, VersionCheckUi>>()
             supervisorScope {
-                snapshot.map { item ->
+                List(concurrency) {
                     launch {
-                        val itemState = semaphore.withPermit {
+                        while (true) {
+                            val workIndex = nextWorkIndex.getAndIncrement()
+                            if (workIndex >= workItems.size) break
+                            val item = workItems[workIndex].item
                             val resolved = runCatching {
-                                resolveItemState(
-                                    item = item,
-                                    forceRefresh = forceRefresh
-                                )
+                                if (item.isDirectApkTrack()) {
+                                    directApkSemaphore.withPermit {
+                                        resolveItemState(
+                                            item = item,
+                                            forceRefresh = forceRefresh
+                                        )
+                                    }
+                                } else {
+                                    resolveItemState(
+                                        item = item,
+                                        forceRefresh = forceRefresh
+                                    )
+                                }
                             }.getOrElse { throwable ->
                                 VersionCheckUi(
                                     failed = true,
@@ -551,82 +571,78 @@ internal class GitHubRefreshActions(
                                 resolvedState = resolved,
                                 previousState = previousState
                             )
-                            if (item.checkActionsUpdates) {
-                                refreshActionsRunSnapshotForItem(item)
-                            }
-                            itemState
-                        }
-                        var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
-                        var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
-                        progressMutex.withLock {
-                            if (itemState.hasUpdate == true) {
-                                updatableCount += 1
-                            }
-                            if (itemState.hasPreReleaseUpdate) {
-                                preReleaseUpdateCount += 1
-                            }
-                            if (itemState.failed) {
-                                failedCount += 1
-                            }
-                            completedCount += 1
-                            pendingUiResults += item to itemState
-                            val nowMs = System.currentTimeMillis()
-                            val progressNotifyAgeMs = nowMs - lastProgressNotifyAtMs
-                            val shouldNotifyProgress =
-                                completedCount < totalCount &&
-                                    (
-                                        progressNotifyAgeMs >= GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS ||
-                                            (
-                                                completedCount % GITHUB_REFRESH_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&
-                                                    progressNotifyAgeMs >=
-                                                    GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS
+                            var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
+                            var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
+                            progressMutex.withLock {
+                                if (itemState.hasUpdate == true) {
+                                    updatableCount += 1
+                                }
+                                if (itemState.hasPreReleaseUpdate) {
+                                    preReleaseUpdateCount += 1
+                                }
+                                if (itemState.failed) {
+                                    failedCount += 1
+                                }
+                                completedCount += 1
+                                pendingUiResults += item to itemState
+                                val nowMs = System.currentTimeMillis()
+                                val progressNotifyAgeMs = nowMs - lastProgressNotifyAtMs
+                                val shouldNotifyProgress =
+                                    completedCount < totalCount &&
+                                        (
+                                            progressNotifyAgeMs >= GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS ||
+                                                (
+                                                    completedCount % GITHUB_REFRESH_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&
+                                                        progressNotifyAgeMs >=
+                                                        GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS
+                                                    )
                                                 )
-                                        )
-                            if (shouldNotifyProgress) {
-                                lastProgressNotifyAtMs = nowMs
-                                progressNotifySnapshot = GitHubRefreshProgressSnapshot(
-                                    current = completedCount,
-                                    total = totalCount,
-                                    preReleaseUpdateCount = preReleaseUpdateCount,
-                                    updatableCount = updatableCount,
-                                    failedCount = failedCount
+                                if (shouldNotifyProgress) {
+                                    lastProgressNotifyAtMs = nowMs
+                                    progressNotifySnapshot = GitHubRefreshProgressSnapshot(
+                                        current = completedCount,
+                                        total = totalCount,
+                                        preReleaseUpdateCount = preReleaseUpdateCount,
+                                        updatableCount = updatableCount,
+                                        failedCount = failedCount
+                                    )
+                                }
+                                val shouldFlushUi = pendingUiResults.size >= GITHUB_REFRESH_UI_BATCH_SIZE ||
+                                    completedCount == totalCount
+                                if (shouldFlushUi) {
+                                    val activeTrackIds = state.trackedItems.mapTo(HashSet()) { it.id }
+                                    pendingUiResults.forEach { (pendingItem, pendingState) ->
+                                        if (pendingItem.id in activeTrackIds) {
+                                            state.checkStates[pendingItem.id] = pendingState
+                                        }
+                                    }
+                                    state.refreshProgress = completedCount.toFloat() / snapshot.size.toFloat()
+                                    if (showToast) {
+                                        failedToasts = pendingUiResults.filter { (_, pendingState) ->
+                                            pendingState.failed
+                                        }
+                                    }
+                                    pendingUiResults.clear()
+                                }
+                            }
+                            progressNotifySnapshot?.let { progress ->
+                                repository.notifyRefreshProgress(
+                                    context = context,
+                                    current = progress.current,
+                                    total = progress.total,
+                                    preReleaseUpdateCount = progress.preReleaseUpdateCount,
+                                    updatableCount = progress.updatableCount,
+                                    failedCount = progress.failedCount
                                 )
                             }
-                            val shouldFlushUi = pendingUiResults.size >= GITHUB_REFRESH_UI_BATCH_SIZE ||
-                                completedCount == totalCount
-                            if (shouldFlushUi) {
-                                val activeTrackIds = state.trackedItems.mapTo(HashSet()) { it.id }
-                                pendingUiResults.forEach { (pendingItem, pendingState) ->
-                                    if (pendingItem.id in activeTrackIds) {
-                                        state.checkStates[pendingItem.id] = pendingState
-                                    }
-                                }
-                                state.refreshProgress = completedCount.toFloat() / snapshot.size.toFloat()
-                                if (showToast) {
-                                    failedToasts = pendingUiResults.filter { (_, pendingState) ->
-                                        pendingState.failed
-                                    }
-                                }
-                                pendingUiResults.clear()
+                            failedToasts.forEach { (failedItem, failedState) ->
+                                env.toast(
+                                    R.string.github_toast_repo_message,
+                                    failedItem.owner,
+                                    failedItem.repo,
+                                    failedState.message
+                                )
                             }
-                        }
-                        progressNotifySnapshot?.let { progress ->
-                            repository.notifyRefreshProgress(
-                                context = context,
-                                current = progress.current,
-                                total = progress.total,
-                                preReleaseUpdateCount = progress.preReleaseUpdateCount,
-                                updatableCount = progress.updatableCount,
-                                failedCount = progress.failedCount
-                            )
-                        }
-                        failedToasts.forEach { (failedItem, failedState) ->
-                            env.toast(
-                                R.string.github_toast_repo_message,
-                                failedItem.owner,
-                                failedItem.repo,
-                                failedState.message
-                            )
                         }
                     }
                 }.joinAll()
@@ -649,8 +665,16 @@ internal class GitHubRefreshActions(
                 updatableCount = updatableCount,
                 failedCount = failedCount
             )
+            AppLogger.i(
+                "GitHubRefreshActions",
+                "github page refresh completed total=$totalCount " +
+                        "elapsed=${elapsedMsSince(refreshStartNs)}ms " +
+                        "concurrency=$concurrency directConcurrency=$directApkConcurrency " +
+                        "updatable=$updatableCount prerelease=$preReleaseUpdateCount failed=$failedCount"
+            )
             state.refreshTargetIds = emptySet()
             state.refreshAllJob = null
+            actionsRunRefreshCoordinator.refreshItems(snapshot)
         }
     }
 
@@ -741,6 +765,10 @@ internal class GitHubRefreshActions(
                 latestStableRawTag.isNotBlank() ||
                 latestTag.isNotBlank() ||
                 latestStableName.isNotBlank()
+    }
+
+    private fun elapsedMsSince(startNs: Long): Long {
+        return ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
     }
 
     private suspend fun resolveItemState(
@@ -884,27 +912,6 @@ internal class GitHubRefreshActions(
         }
     }
 
-    private suspend fun refreshActionsRunSnapshotForItem(item: GitHubTrackedApp) {
-        if (!item.checkActionsUpdates) {
-            GitHubActionsRecommendedRunStore.remove(item.id)
-            state.actionsRecommendedRunSnapshots.remove(item.id)
-            return
-        }
-        val previous = GitHubActionsRecommendedRunStore.load(item.id)
-        val current = GitHubActionsUpdateCheckService().fetchRecommendedRunSnapshot(
-            item = item,
-            lookupConfig = state.lookupConfig,
-            previousWorkflowId = previous?.workflowId
-        ).getOrNull() ?: return
-        GitHubActionsRecommendedRunStore.save(current)
-        state.actionsRecommendedRunSnapshots[item.id] = current
-        if (previous != null && current.isNewerThan(previous)) {
-            GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
-                context = context,
-                snapshot = current
-            )
-        }
-    }
 }
 
 internal fun selectImmediateTrackMutationRefreshIds(

@@ -5,6 +5,11 @@ import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 
 private const val DEFAULT_DIRECT_APK_REFRESH_CONCURRENCY = 2
+private const val SMALL_BATCH_REFRESH_CONCURRENCY = 4
+private const val MEDIUM_BATCH_REFRESH_CONCURRENCY = 6
+private const val LARGE_BATCH_REFRESH_CONCURRENCY = 8
+private const val MEDIUM_BATCH_THRESHOLD = 16
+private const val LARGE_BATCH_THRESHOLD = 48
 
 internal data class GitHubTrackedRefreshWorkItem(
     val originalIndex: Int,
@@ -53,5 +58,15 @@ internal object GitHubTrackedRefreshBatchScheduler {
         return maxConcurrency
             .coerceAtLeast(1)
             .coerceAtMost(DEFAULT_DIRECT_APK_REFRESH_CONCURRENCY)
+    }
+
+    fun refreshConcurrency(itemCount: Int): Int {
+        if (itemCount <= 0) return 1
+        val target = when {
+            itemCount >= LARGE_BATCH_THRESHOLD -> LARGE_BATCH_REFRESH_CONCURRENCY
+            itemCount >= MEDIUM_BATCH_THRESHOLD -> MEDIUM_BATCH_REFRESH_CONCURRENCY
+            else -> SMALL_BATCH_REFRESH_CONCURRENCY
+        }
+        return target.coerceAtMost(itemCount)
     }
 }

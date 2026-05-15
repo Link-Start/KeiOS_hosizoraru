@@ -19,8 +19,6 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
 import java.util.concurrent.atomic.AtomicInteger
 
-private const val DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY = 4
-
 internal data class GitHubTrackedRefreshBatchResult(
     val totalCount: Int,
     val cacheEntries: Map<String, GitHubCheckCacheEntry>,
@@ -54,7 +52,7 @@ internal object GitHubTrackedRefreshBatchRunner {
         context: Context,
         items: List<GitHubTrackedApp>,
         refreshTimestampMs: Long = System.currentTimeMillis(),
-        maxConcurrency: Int = DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY,
+        maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size),
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         evaluator: suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck =
@@ -73,7 +71,7 @@ internal object GitHubTrackedRefreshBatchRunner {
     suspend fun run(
         trackedItems: List<GitHubTrackedApp>,
         refreshTimestampMs: Long = System.currentTimeMillis(),
-        maxConcurrency: Int = DEFAULT_GITHUB_TRACKED_REFRESH_CONCURRENCY,
+        maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(trackedItems.size),
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck

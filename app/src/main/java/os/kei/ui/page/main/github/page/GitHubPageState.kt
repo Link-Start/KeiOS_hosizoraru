@@ -180,6 +180,7 @@ internal class GitHubPageState(
     var recommendedTokenGuideExpanded by mutableStateOf(false)
     var assetSourceSignature by mutableStateOf("")
     var refreshAllJob by mutableStateOf<Job?>(null)
+    var actionsRecommendedRunRefreshJob by mutableStateOf<Job?>(null)
     var refreshTargetIds by mutableStateOf<Set<String>>(emptySet())
     var deleteInProgress by mutableStateOf(false)
     var showSearchBar by mutableStateOf(true)

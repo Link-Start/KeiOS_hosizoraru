@@ -14,7 +14,6 @@ import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
-import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -42,7 +41,6 @@ private const val GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
 private const val GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS = 850L
 internal const val GITHUB_TRACK_MUTATION_IMMEDIATE_REFRESH_LIMIT = 8
 private const val GITHUB_TRACK_MUTATION_REFRESH_PARALLELISM = 2
-private const val GITHUB_MISSING_CHECK_STATE_REFRESH_PARALLELISM = 4
 
 private data class GitHubRefreshProgressSnapshot(
     val current: Int,
@@ -62,6 +60,22 @@ internal class GitHubRefreshActions(
     private val repository get() = env.repository
     private val appListReloadMutex = Mutex()
     private val actionsRunRefreshCoordinator = GitHubActionsRecommendedRunRefreshCoordinator(env)
+    private val backgroundRefreshCoordinator = GitHubBackgroundRefreshCoordinator(
+        env = env,
+        actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
+        refreshItem = { request ->
+            refreshItemNow(
+                item = request.item,
+                showToastOnError = false,
+                keepCurrentVisualWhileRefreshing = true,
+                profilePurposeOverride = request.profilePurposeOverride,
+                forceRefresh = request.forceRefresh,
+                persistAfterUpdate = false,
+                refreshActionsAfterUpdate = false
+            )
+        },
+        persistCheckCache = { persistCheckCacheNow() }
+    )
 
     fun persistCheckCache(refreshTimestamp: Long = state.lastRefreshMs) {
         val states = buildCheckCacheEntries()
@@ -71,6 +85,7 @@ internal class GitHubRefreshActions(
     }
 
     fun cancelRefreshAll(reason: String? = null) {
+        backgroundRefreshCoordinator.cancel()
         actionsRunRefreshCoordinator.cancel()
         if (state.refreshAllJob?.isActive != true) return
         state.refreshAllJob?.cancel()
@@ -223,8 +238,10 @@ internal class GitHubRefreshActions(
             refreshAllTracked(showToast = false)
             return
         }
-        val refreshedRequestedTracks = refreshRequestedTracksIfNeeded()
-        val refreshedMissingTracks = refreshPartialMissingCheckStatesIfNeeded()
+        val refreshedRequestedTracks =
+            backgroundRefreshCoordinator.refreshRequestedTracksIfNeeded()
+        val refreshedMissingTracks =
+            backgroundRefreshCoordinator.refreshPartialMissingCheckStatesIfNeeded()
         when {
             refreshedRequestedTracks || refreshedMissingTracks ->
                 state.overviewRefreshState = OverviewRefreshState.Cached
@@ -247,10 +264,10 @@ internal class GitHubRefreshActions(
             reloadApps(forceRefresh = true)
         }
         if (consumeRequestedRefreshes) {
-            refreshRequestedTracksIfNeeded()
+            backgroundRefreshCoordinator.refreshRequestedTracksIfNeeded()
         }
         val refreshedMissingTracks = if (forceRefreshApps) {
-            refreshPartialMissingCheckStatesIfNeeded()
+            backgroundRefreshCoordinator.refreshPartialMissingCheckStatesIfNeeded()
         } else {
             false
         }
@@ -405,6 +422,8 @@ internal class GitHubRefreshActions(
         keepCurrentVisualWhileRefreshing: Boolean = false,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false,
+        persistAfterUpdate: Boolean = true,
+        refreshActionsAfterUpdate: Boolean = true,
         onUpdated: ((VersionCheckUi) -> Unit)? = null
     ) {
         val previousState = state.checkStates[item.id] ?: VersionCheckUi()
@@ -436,8 +455,8 @@ internal class GitHubRefreshActions(
             env.toast(itemState.message)
         }
         state.checkStates[item.id] = itemState
-        persistCheckCacheNow()
-        actionsRunRefreshCoordinator.refreshItemInBackground(item)
+        if (persistAfterUpdate) persistCheckCacheNow()
+        if (refreshActionsAfterUpdate) actionsRunRefreshCoordinator.refreshItemInBackground(item)
         onUpdated?.invoke(itemState)
     }
 
@@ -498,6 +517,7 @@ internal class GitHubRefreshActions(
             }
             return
         }
+        backgroundRefreshCoordinator.cancel()
         actionsRunRefreshCoordinator.cancel()
         state.refreshAllJob?.cancel()
         state.refreshAllJob = scope.launch {
@@ -697,90 +717,6 @@ internal class GitHubRefreshActions(
         val pending = state.deferredTrackStoreSyncAfterRefresh
         state.deferredTrackStoreSyncAfterRefresh = false
         return pending
-    }
-
-    private suspend fun refreshRequestedTracksIfNeeded(): Boolean {
-        val trackedById = state.trackedItems.associateBy { it.id }
-        if (trackedById.isEmpty()) return false
-        val requestedIds = repository.consumeTrackRefreshRequests(trackedById.keys)
-        if (requestedIds.isEmpty()) return false
-        val requestedItems = requestedIds.mapNotNull { trackId -> trackedById[trackId] }
-        requestedItems.forEach(::markItemChecking)
-        refreshItemsInBackground(
-            items = requestedItems,
-            forceRefresh = true,
-            maxConcurrency = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(requestedItems.size)
-        )
-        return true
-    }
-
-    private fun refreshPartialMissingCheckStatesIfNeeded(): Boolean {
-        val missingItems = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
-            trackedItems = state.trackedItems.toList(),
-            cachedTrackIds = state.checkStates.keys
-        )
-        if (missingItems.isEmpty()) return false
-        missingItems.forEach(::markItemChecking)
-        refreshItemsInBackground(
-            items = missingItems,
-            profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast,
-            maxConcurrency = missingItems.size.coerceAtMost(GITHUB_MISSING_CHECK_STATE_REFRESH_PARALLELISM)
-        )
-        return true
-    }
-
-    private fun refreshItemsInBackground(
-        items: List<GitHubTrackedApp>,
-        forceRefresh: Boolean = false,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size)
-    ) {
-        if (items.isEmpty()) return
-        scope.launch {
-            val concurrency = items.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
-            val directApkSemaphore = Semaphore(
-                GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
-            )
-            val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(items)
-            val nextWorkIndex = AtomicInteger(0)
-            supervisorScope {
-                List(concurrency) {
-                    launch {
-                        while (true) {
-                            val workIndex = nextWorkIndex.getAndIncrement()
-                            if (workIndex >= workItems.size) break
-                            val item = workItems[workIndex].item
-                            if (item.isDirectApkTrack()) {
-                                directApkSemaphore.withPermit {
-                                    refreshItemNow(
-                                        item = item,
-                                        showToastOnError = false,
-                                        keepCurrentVisualWhileRefreshing = true,
-                                        profilePurposeOverride = profilePurposeOverride,
-                                        forceRefresh = forceRefresh
-                                    )
-                                }
-                            } else {
-                                refreshItemNow(
-                                    item = item,
-                                    showToastOnError = false,
-                                    keepCurrentVisualWhileRefreshing = true,
-                                    profilePurposeOverride = profilePurposeOverride,
-                                    forceRefresh = forceRefresh
-                                )
-                            }
-                        }
-                    }
-                }.joinAll()
-            }
-        }
-    }
-
-    private fun markItemChecking(item: GitHubTrackedApp) {
-        state.checkStates[item.id] = (state.checkStates[item.id] ?: VersionCheckUi()).copy(
-            loading = true,
-            message = context.getString(R.string.github_msg_checking)
-        )
     }
 
     private suspend fun persistCheckCacheNow(refreshTimestamp: Long = state.lastRefreshMs) {

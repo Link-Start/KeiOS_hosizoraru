@@ -3,6 +3,7 @@ package os.kei.feature.github.data.local
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 object GitHubTrackStoreSignals {
     private val _version = MutableStateFlow(0L)
@@ -11,7 +12,9 @@ object GitHubTrackStoreSignals {
     private val _pendingTrackRefreshIds = MutableStateFlow<Set<String>>(emptySet())
 
     fun notifyChanged(atMillis: Long = System.currentTimeMillis()) {
-        _version.value = atMillis
+        _version.update { previous ->
+            atMillis.coerceAtLeast(previous + 1L)
+        }
     }
 
     fun requestTrackRefresh(

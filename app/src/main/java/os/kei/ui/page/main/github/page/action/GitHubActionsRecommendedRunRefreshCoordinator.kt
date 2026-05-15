@@ -11,6 +11,7 @@ import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 private const val GITHUB_ACTIONS_RECOMMENDED_RUN_REFRESH_PARALLELISM = 2
@@ -21,16 +22,22 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
     private val context get() = env.context
     private val scope get() = env.scope
     private val state get() = env.state
+    private val itemJobs = ConcurrentHashMap<String, Job>()
 
     fun cancel() {
         state.actionsRecommendedRunRefreshJob?.cancel()
         state.actionsRecommendedRunRefreshJob = null
+        itemJobs.values.forEach { it.cancel() }
+        itemJobs.clear()
     }
 
     fun refreshItems(items: List<GitHubTrackedApp>) {
-        val targets = items.filter { it.checkActionsUpdates }
-        if (targets.isEmpty()) return
         cancel()
+        val activeItemsById = state.trackedItems.associateBy { it.id }
+        val targets = items.mapNotNull { item ->
+            activeItemsById[item.id]?.takeIf { it.checkActionsUpdates }
+        }
+        if (targets.isEmpty()) return
         val lookupConfig = state.lookupConfig
         val job = scope.launch {
             val service = GitHubActionsUpdateCheckService()
@@ -64,8 +71,17 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
     }
 
     fun refreshItemInBackground(item: GitHubTrackedApp) {
-        scope.launch {
-            refreshItem(item)
+        val trackId = item.id
+        val activeItem = state.trackedItems.firstOrNull { it.id == trackId } ?: return
+        itemJobs.remove(trackId)?.cancel()
+        val job = scope.launch {
+            refreshItem(activeItem)
+        }
+        itemJobs[trackId] = job
+        job.invokeOnCompletion {
+            if (itemJobs[trackId] === job) {
+                itemJobs.remove(trackId)
+            }
         }
     }
 
@@ -89,6 +105,8 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
             lookupConfig = lookupConfig,
             previousWorkflowId = previous?.workflowId
         ).getOrNull() ?: return
+        val activeItem = state.trackedItems.firstOrNull { it.id == item.id } ?: return
+        if (!activeItem.checkActionsUpdates) return
         withContext(Dispatchers.IO) {
             GitHubActionsRecommendedRunStore.save(current)
         }

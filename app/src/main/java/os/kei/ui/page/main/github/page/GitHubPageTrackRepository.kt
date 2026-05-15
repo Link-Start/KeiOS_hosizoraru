@@ -77,7 +77,9 @@ internal class GitHubPageTrackRepository(
                 GitHubTrackStoreSignals.notifyChanged()
             }
         }
-        AppBackgroundScheduler.scheduleGitHubRefresh(context)
+        if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
+            AppBackgroundScheduler.scheduleGitHubRefresh(context)
+        }
     }
 
     suspend fun saveCheckCache(

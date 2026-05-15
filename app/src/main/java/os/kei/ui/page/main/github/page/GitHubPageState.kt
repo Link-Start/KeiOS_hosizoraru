@@ -126,6 +126,7 @@ internal class GitHubPageState(
     var hasInitialized by mutableStateOf(false)
     var hasActiveInitialized by mutableStateOf(false)
     var lastTrackStoreSignalVersion by mutableStateOf(0L)
+    var deferredTrackStoreSyncAfterRefresh by mutableStateOf(false)
     var showActionMenuPopup by mutableStateOf(false)
     var showOnlineShareTargetPopup by mutableStateOf(false)
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)

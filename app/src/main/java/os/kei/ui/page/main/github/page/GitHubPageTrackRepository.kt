@@ -59,7 +59,8 @@ internal class GitHubPageTrackRepository(
         trackedFirstInstallAtByPackage: Map<String, Long>,
         trackedAddedAtById: Map<String, Long>,
         trackedModifiedAtById: Map<String, Long>,
-        refreshTrackIds: Set<String> = emptySet()
+        refreshTrackIds: Set<String> = emptySet(),
+        emitStoreSignal: Boolean = true
     ) {
         withContext(ioDispatcher) {
             GitHubTrackStore.save(items)
@@ -72,7 +73,9 @@ internal class GitHubPageTrackRepository(
                     notifyChangeSignal = false
                 )
             }
-            GitHubTrackStoreSignals.notifyChanged()
+            if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
+                GitHubTrackStoreSignals.notifyChanged()
+            }
         }
         AppBackgroundScheduler.scheduleGitHubRefresh(context)
     }

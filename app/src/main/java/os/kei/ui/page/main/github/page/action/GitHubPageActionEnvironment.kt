@@ -32,7 +32,10 @@ internal class GitHubPageActionEnvironment(
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    fun saveTrackedItems(refreshTrackIds: Set<String> = emptySet()) {
+    fun saveTrackedItems(
+        refreshTrackIds: Set<String> = emptySet(),
+        emitStoreSignal: Boolean = true
+    ) {
         state.retainTrackedFirstInstallAtByTrackedItems()
         state.retainTrackedAddedAtByTrackedItems()
         state.retainTrackedModifiedAtByTrackedItems()
@@ -47,7 +50,8 @@ internal class GitHubPageActionEnvironment(
                 trackedFirstInstallAtByPackage = trackedFirstInstallAtByPackage,
                 trackedAddedAtById = trackedAddedAtById,
                 trackedModifiedAtById = trackedModifiedAtById,
-                refreshTrackIds = refreshTrackIds
+                refreshTrackIds = refreshTrackIds,
+                emitStoreSignal = emitStoreSignal
             )
         }
     }

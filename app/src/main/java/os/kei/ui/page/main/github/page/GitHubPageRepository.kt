@@ -131,14 +131,16 @@ internal class GitHubPageRepository(
         trackedFirstInstallAtByPackage: Map<String, Long>,
         trackedAddedAtById: Map<String, Long>,
         trackedModifiedAtById: Map<String, Long>,
-        refreshTrackIds: Set<String> = emptySet()
+        refreshTrackIds: Set<String> = emptySet(),
+        emitStoreSignal: Boolean = true
     ) = trackRepository.saveTrackedItems(
         context = context,
         items = items,
         trackedFirstInstallAtByPackage = trackedFirstInstallAtByPackage,
         trackedAddedAtById = trackedAddedAtById,
         trackedModifiedAtById = trackedModifiedAtById,
-        refreshTrackIds = refreshTrackIds
+        refreshTrackIds = refreshTrackIds,
+        emitStoreSignal = emitStoreSignal
     )
 
     suspend fun saveCheckCache(

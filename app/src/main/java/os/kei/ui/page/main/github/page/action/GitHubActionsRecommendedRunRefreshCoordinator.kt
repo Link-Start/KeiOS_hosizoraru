@@ -63,6 +63,12 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         state.actionsRecommendedRunRefreshJob = job
     }
 
+    fun refreshItemInBackground(item: GitHubTrackedApp) {
+        scope.launch {
+            refreshItem(item)
+        }
+    }
+
     suspend fun refreshItem(
         item: GitHubTrackedApp,
         lookupConfig: GitHubLookupConfig = state.lookupConfig,

@@ -106,12 +106,17 @@ internal class BaGuideBgmPlaybackCoordinator(
         val favorites = nextFavorites
             .filter { it.audioUrl.isNotBlank() }
             .distinctBy { it.audioUrl }
+        val currentState = _uiState.value
+        val selectedAudioUrl = currentState.selectedAudioUrl.ifBlank {
+            favorites.firstOrNull()?.audioUrl.orEmpty()
+        }
+        if (currentState.favorites == favorites && currentState.selectedAudioUrl == selectedAudioUrl) {
+            return
+        }
         _uiState.update { state ->
             state.copy(
                 favorites = favorites,
-                selectedAudioUrl = state.selectedAudioUrl.ifBlank {
-                    favorites.firstOrNull()?.audioUrl.orEmpty()
-                }
+                selectedAudioUrl = selectedAudioUrl
             )
         }
         syncActiveQueue()
@@ -122,6 +127,12 @@ internal class BaGuideBgmPlaybackCoordinator(
             nextQueue = nextQueue,
             currentSelectedAudioUrl = selectedAudioUrl
         )
+        val currentState = _uiState.value
+        if (currentState.queue == selection.queue &&
+            currentState.selectedAudioUrl == selection.selectedAudioUrl
+        ) {
+            return
+        }
         _uiState.update { state ->
             state.copy(
                 queue = selection.queue,

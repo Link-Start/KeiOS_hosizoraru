@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.catalog.page
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -41,15 +40,11 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import os.kei.R
-import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
-import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackRuntimeState
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
@@ -184,8 +179,6 @@ fun BaGuideCatalogPage(
     )
     val playbackUiState by playbackCoordinator.uiState.collectAsStateWithLifecycle()
     var playbackSliderPreview by remember { mutableStateOf<Float?>(null) }
-    var bgmCacheRevision by remember { mutableIntStateOf(0) }
-    var bgmCacheSnapshot by remember { mutableStateOf(BaGuideFavoriteBgmCacheSnapshot()) }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchInputActive by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
@@ -222,17 +215,10 @@ fun BaGuideCatalogPage(
         ?.resolvePlaybackArtworkImageUrl()
         .orEmpty()
     val chromePlaybackProgress = playbackSliderPreview ?: playbackUiState.runtimeState.progress
-    LaunchedEffect(favoriteBgms, bgmCacheRevision, showTransferSheet) {
-        bgmCacheSnapshot = loadFavoriteBgmCacheSnapshotAsync(
-            context = appContext,
-            favorites = favoriteBgms
-        )
-    }
-    val bgmCacheSummary = stringResource(
-        R.string.ba_catalog_bgm_cache_summary,
-        bgmCacheSnapshot.cachedAudioUrls.size,
-        favoriteBgms.size,
-        formatBgmCacheBytes(bgmCacheSnapshot.bytes)
+    val bgmCacheState = rememberBaGuideCatalogBgmCacheState(
+        context = context,
+        favorites = favoriteBgms,
+        refreshWhenVisible = showTransferSheet
     )
     val transferExportAction = rememberBaGuideCatalogJsonExportAction(
         context, pageScope, exportDoneText, exportFailedText
@@ -243,36 +229,6 @@ fun BaGuideCatalogPage(
         filterSortState = filterSortState,
         onPreviewStateChange = { importPreviewState = it }
     )
-
-    fun cacheAllFavoriteBgms() {
-        pageScope.launch {
-            val targetCount = cacheMissingFavoriteBgmsAsync(
-                context = appContext,
-                favorites = favoriteBgms
-            )
-            bgmCacheRevision += 1
-            Toast.makeText(
-                context,
-                context.resolveString(R.string.ba_catalog_bgm_cache_batch_done, targetCount),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
-    fun cleanInvalidFavoriteBgmCache() {
-        pageScope.launch {
-            val cleaned = cleanInvalidFavoriteBgmCacheAsync(
-                context = appContext,
-                favorites = favoriteBgms
-            )
-            bgmCacheRevision += 1
-            Toast.makeText(
-                context,
-                context.resolveString(R.string.ba_catalog_bgm_cache_cleaned, cleaned),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
 
     LaunchedEffect(pagerState.settledPage) {
         if (selectedTabIndex != pagerState.settledPage) {
@@ -496,14 +452,14 @@ fun BaGuideCatalogPage(
                         )
                     )
                 },
-                bgmCacheSummary = bgmCacheSummary,
+                bgmCacheSummary = bgmCacheState.summary,
                 onCacheAllBgm = {
                     showTransferSheet = false
-                    cacheAllFavoriteBgms()
+                    bgmCacheState.onCacheAllBgm()
                 },
                 onCleanInvalidBgmCache = {
                     showTransferSheet = false
-                    cleanInvalidFavoriteBgmCache()
+                    bgmCacheState.onCleanInvalidBgmCache()
                 }
             )
             BaGuideCatalogImportPreviewSheet(
@@ -647,33 +603,6 @@ private fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
             BaGuideBgmDockTab(BaGuideCatalogPageTab.Bgm.name, playbackIcon, bgmLabel)
         )
     }
-}
-
-private fun saveFavoriteProgress(
-    favorite: GuideBgmFavoriteItem,
-    state: BaGuideBgmPlaybackRuntimeState
-) {
-    if (state.durationMs > 0L || state.positionMs > 0L || state.isPlaying) {
-        GuideBgmFavoritePlaybackStore.saveProgress(
-            audioUrl = favorite.audioUrl,
-            positionMs = state.positionMs,
-            durationMs = state.durationMs,
-            isPlaying = state.isPlaying
-        )
-    }
-}
-
-private fun formatBgmCacheBytes(bytes: Long): String {
-    val safeBytes = bytes.coerceAtLeast(0L)
-    if (safeBytes < 1024L) return "$safeBytes B"
-    val units = listOf("KB", "MB", "GB")
-    var value = safeBytes / 1024.0
-    var unitIndex = 0
-    while (value >= 1024.0 && unitIndex < units.lastIndex) {
-        value /= 1024.0
-        unitIndex += 1
-    }
-    return String.format(java.util.Locale.US, "%.1f %s", value, units[unitIndex])
 }
 
 private fun catalogPagerSwitchDurationMillis(distance: Int): Int {

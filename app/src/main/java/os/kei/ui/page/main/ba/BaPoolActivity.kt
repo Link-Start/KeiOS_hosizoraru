@@ -322,7 +322,7 @@ private fun BaPoolListContent(
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
-    val nowMs = rememberBaStandaloneTickMs(enabled = !loading && error.isNullOrBlank())
+    val nowMs = rememberBaMinuteTickMs(enabled = !loading && error.isNullOrBlank())
     val visibleEntries = remember(
         entries,
         showEndedPools,

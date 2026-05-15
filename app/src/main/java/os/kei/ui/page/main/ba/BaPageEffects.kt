@@ -94,24 +94,34 @@ internal fun BaPageCommonEffects(
     }
 
     LaunchedEffect(isPageActive, listState) {
+        if (isPageActive) onUiNowMsChange(System.currentTimeMillis())
         while (true) {
+            if (!isPageActive) {
+                delay(3_000.milliseconds)
+                continue
+            }
             if (isPageActive && listState.isScrollInProgress) {
                 delay(250.milliseconds)
                 continue
             }
-            delay((if (isPageActive) 1_000L else 3_000L).milliseconds)
+            delay(BA_UI_SECOND_TICK_MS.milliseconds)
             if (isPageActive && listState.isScrollInProgress) continue
             onUiNowMsChange(System.currentTimeMillis())
         }
     }
 
     LaunchedEffect(isPageActive, listState) {
+        if (isPageActive) onUiMinuteMsChange(System.currentTimeMillis())
         while (true) {
-            if (isPageActive && listState.isScrollInProgress) {
-                delay(1_000.milliseconds)
+            if (!isPageActive) {
+                delay(30_000.milliseconds)
                 continue
             }
-            delay((if (isPageActive) 60_000L else 5_000L).milliseconds)
+            if (isPageActive && listState.isScrollInProgress) {
+                delay(BA_UI_SECOND_TICK_MS.milliseconds)
+                continue
+            }
+            delay(baUiMinuteTickDelayMs().milliseconds)
             if (isPageActive && listState.isScrollInProgress) continue
             onUiMinuteMsChange(System.currentTimeMillis())
         }

@@ -56,6 +56,16 @@ class ShizukuApiUtils(
             }
     }
 
+    private data class CachedRuntimeState(
+        val state: RuntimeState,
+        val capturedAtNanos: Long
+    ) {
+        fun isFresh(nowNanos: Long): Boolean {
+            val age = nowNanos - capturedAtNanos
+            return age in 0..RUNTIME_STATE_CACHE_TTL_NANOS
+        }
+    }
+
     private data class InteractiveCommandRewriteResult(
         val command: String,
         val adaptedTopOnce: Boolean = false
@@ -69,19 +79,24 @@ class ShizukuApiUtils(
 
     private var statusCallback: ((String) -> Unit)? = null
     private var cachedNewProcessMethod: Method? = null
+    @Volatile
+    private var cachedRuntimeState: CachedRuntimeState? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener {
+        invalidateRuntimeStateCache()
         publishStatus(currentStatus())
     }
 
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
+        invalidateRuntimeStateCache()
         publishStatus("Shizuku service disconnected")
         cachedNewProcessMethod = null
     }
 
     private val permissionResultListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
         if (code != requestCode) return@OnRequestPermissionResultListener
+        invalidateRuntimeStateCache()
         if (grantResult == PackageManager.PERMISSION_GRANTED) {
             publishStatus(currentStatus())
         } else {
@@ -134,7 +149,7 @@ class ShizukuApiUtils(
     }
 
     fun currentStatus(): String {
-        return resolveRuntimeState().statusText
+        return resolveRuntimeState(forceRefresh = true).statusText
     }
 
     fun canUseCommand(): Boolean {
@@ -152,10 +167,11 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        if (!canUseCommand()) {
+        val state = resolveRuntimeState()
+        if (!state.commandReady) {
             return AppCommandResult(
                 stdout = "",
-                stderr = currentStatus(),
+                stderr = state.statusText,
                 exitCode = null,
                 timedOut = false,
                 cancelled = false
@@ -207,10 +223,11 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        if (!canUseCommand()) {
+        val state = resolveRuntimeState()
+        if (!state.commandReady) {
             return AppCommandResult(
                 stdout = "",
-                stderr = currentStatus(),
+                stderr = state.statusText,
                 exitCode = null,
                 timedOut = false,
                 cancelled = false
@@ -511,7 +528,17 @@ class ShizukuApiUtils(
         return rows.filter { it.first.isNotBlank() && it.second.isNotBlank() }
     }
 
-    private fun resolveRuntimeState(): RuntimeState {
+    private fun resolveRuntimeState(forceRefresh: Boolean = false): RuntimeState {
+        val now = System.nanoTime()
+        if (!forceRefresh) {
+            cachedRuntimeState?.takeIf { it.isFresh(now) }?.let { return it.state }
+        }
+        val state = readRuntimeState()
+        cachedRuntimeState = CachedRuntimeState(state = state, capturedAtNanos = now)
+        return state
+    }
+
+    private fun readRuntimeState(): RuntimeState {
         val binderAlive = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
         if (!binderAlive) {
             return RuntimeState(
@@ -557,6 +584,10 @@ class ShizukuApiUtils(
         )
     }
 
+    private fun invalidateRuntimeStateCache() {
+        cachedRuntimeState = null
+    }
+
     private fun reflectAny(methodName: String): Any? {
         return runCatching {
             val method = Shizuku::class.java.methods.firstOrNull {
@@ -579,6 +610,7 @@ class ShizukuApiUtils(
 
     companion object {
         private const val TAG = "ShizukuApiUtils"
+        private const val RUNTIME_STATE_CACHE_TTL_NANOS = 750_000_000L
         const val DEFAULT_REQUEST_CODE = 1001
         const val API_VERSION = "13.1.5"
     }

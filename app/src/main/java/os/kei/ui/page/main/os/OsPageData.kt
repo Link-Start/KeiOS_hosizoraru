@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import org.json.JSONArray
 import org.json.JSONObject
-import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropertiesSnapshot
 import os.kei.core.system.getAllSystemPropertiesSnapshot
@@ -86,90 +85,6 @@ internal fun cleanRows(rows: List<InfoRow>): List<InfoRow> {
         }
         .filter { it.key.isNotBlank() && !isInvalidValue(it.value) }
         .filter { seen.add("${it.key}\u0000${it.value}") }
-}
-
-internal fun execRuntimeCommand(command: String): String? {
-    return RuntimeCommandExecutor.execute(command).stdout.ifBlank { null }
-}
-
-internal fun parseKeyValueLines(raw: String?): List<InfoRow> {
-    if (raw.isNullOrBlank()) return emptyList()
-    return raw.lineSequence()
-        .map { it.trim() }
-        .filter { it.isNotBlank() && it.contains("=") }
-        .mapNotNull { line ->
-            val index = line.indexOf('=')
-            if (index <= 0) return@mapNotNull null
-            InfoRow(
-                key = line.substring(0, index).trim(),
-                value = line.substring(index + 1).trim()
-            )
-        }
-        .toList()
-}
-
-internal fun commandRows(command: String, shizukuApiUtils: ShizukuApiUtils): List<InfoRow> {
-    val shizuku = shizukuApiUtils.execCommand(command)
-    val runtime = if (shizuku.isNullOrBlank()) execRuntimeCommand(command) else null
-    return parseKeyValueLines(shizuku ?: runtime)
-}
-
-private val linuxProbeCommand = listOf(
-    "printf 'uname-a=%s\\n' \"\$(uname -a 2>/dev/null | head -n 1)\"",
-    "printf 'getenforce=%s\\n' \"\$(getenforce 2>/dev/null | head -n 1)\"",
-    "printf 'proc.version=%s\\n' \"\$(cat /proc/version 2>/dev/null | head -n 1)\"",
-    "printf 'toybox --version=%s\\n' \"\$(toybox --version 2>/dev/null | head -n 1)\""
-).joinToString(separator = "; ")
-
-internal data class OsLinuxCommandSnapshot(
-    val uname: String = "",
-    val getenforce: String = "",
-    val procVersion: String = "",
-    val toyboxVersion: String = ""
-)
-
-internal data class OsLinuxProbeSnapshot(
-    val runtime: OsLinuxCommandSnapshot,
-    val shizuku: OsLinuxCommandSnapshot
-)
-
-internal data class OsPageDataSnapshot(
-    val systemProperties: Map<String, String>? = null,
-    val javaProperties: Map<String, String>? = null,
-    val linuxProbe: OsLinuxProbeSnapshot? = null
-) {
-    companion object {
-        fun loadForExport(shizukuApiUtils: ShizukuApiUtils): OsPageDataSnapshot {
-            return OsPageDataSnapshot(
-                systemProperties = getAllSystemPropertiesSnapshot(forceRefresh = true),
-                javaProperties = getAllJavaPropertiesSnapshot(forceRefresh = true),
-                linuxProbe = loadLinuxProbeSnapshot(shizukuApiUtils)
-            )
-        }
-    }
-}
-
-private fun parseLinuxCommandSnapshot(raw: String?): OsLinuxCommandSnapshot {
-    val rows = parseKeyValueLines(raw).associate { it.key to it.value }
-    return OsLinuxCommandSnapshot(
-        uname = rows["uname-a"].orEmpty(),
-        getenforce = rows["getenforce"].orEmpty(),
-        procVersion = rows["proc.version"].orEmpty(),
-        toyboxVersion = rows["toybox --version"].orEmpty()
-    )
-}
-
-private fun loadLinuxProbeSnapshot(shizukuApiUtils: ShizukuApiUtils): OsLinuxProbeSnapshot {
-    return OsLinuxProbeSnapshot(
-        runtime = parseLinuxCommandSnapshot(execRuntimeCommand(linuxProbeCommand)),
-        shizuku = parseLinuxCommandSnapshot(shizukuApiUtils.execCommand(linuxProbeCommand))
-    )
-}
-
-private fun OsLinuxProbeSnapshot.preferredValue(
-    selector: OsLinuxCommandSnapshot.() -> String
-): String {
-    return shizuku.selector().ifBlank { runtime.selector() }
 }
 
 internal fun decodeVulkanApiVersion(version: Int): String {
@@ -287,9 +202,12 @@ internal fun buildSectionRows(
     dataSnapshot: OsPageDataSnapshot? = null
 ): List<InfoRow> {
     return when (section) {
-        SectionKind.SYSTEM -> cleanRows(commandRows("settings list system", shizukuApiUtils))
-        SectionKind.SECURE -> cleanRows(commandRows("settings list secure", shizukuApiUtils))
-        SectionKind.GLOBAL -> cleanRows(commandRows("settings list global", shizukuApiUtils))
+        SectionKind.SYSTEM,
+        SectionKind.SECURE,
+        SectionKind.GLOBAL -> {
+            val snapshotRows = dataSnapshot?.settingsSections?.rowsFor(section)
+            cleanRows(snapshotRows ?: settingsRowsForSection(section, shizukuApiUtils))
+        }
         SectionKind.ANDROID -> {
             val systemProperties = dataSnapshot?.systemProperties
                 ?: getAllSystemPropertiesSnapshot(forceRefresh = forceRefresh)

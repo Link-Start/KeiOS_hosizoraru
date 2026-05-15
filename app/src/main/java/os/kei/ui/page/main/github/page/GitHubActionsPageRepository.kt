@@ -94,25 +94,23 @@ internal class GitHubActionsPageRepository(
         excludePullRequests: Boolean = false,
         resolveNightlyRunDetail: Boolean = true
     ): GitHubStrategyLoadTrace<GitHubActionsWorkflowArtifactsSnapshot> {
-        return withContext(ioDispatcher) {
-            GitHubActionsRepository.fromLookupConfig(lookupConfig)
-                .fetchWorkflowArtifactSnapshot(
-                    owner = owner,
-                    repo = repo,
-                    workflowId = workflowId,
-                    runLimit = runLimit,
-                    artifactsPerRun = artifactsPerRun,
-                    artifactRunLimit = artifactRunLimit,
-                    branch = branch,
-                    event = event,
-                    status = status,
-                    actor = actor,
-                    created = created,
-                    headSha = headSha,
-                    excludePullRequests = excludePullRequests,
-                    resolveNightlyRunDetail = resolveNightlyRunDetail
-                )
-        }
+        return GitHubActionsRepository.fromLookupConfig(lookupConfig)
+            .fetchWorkflowArtifactSnapshotAsync(
+                owner = owner,
+                repo = repo,
+                workflowId = workflowId,
+                runLimit = runLimit,
+                artifactsPerRun = artifactsPerRun,
+                artifactRunLimit = artifactRunLimit,
+                branch = branch,
+                event = event,
+                status = status,
+                actor = actor,
+                created = created,
+                headSha = headSha,
+                excludePullRequests = excludePullRequests,
+                resolveNightlyRunDetail = resolveNightlyRunDetail
+            )
     }
 
     suspend fun fetchGitHubActionsWorkflowRun(
@@ -135,16 +133,14 @@ internal class GitHubActionsPageRepository(
         artifactsLimit: Int = 100,
         includeArtifactsWhenCompleted: Boolean = true
     ): GitHubStrategyLoadTrace<GitHubActionsRunStatusSnapshot> {
-        return withContext(ioDispatcher) {
-            GitHubActionsRepository.fromLookupConfig(lookupConfig)
-                .fetchRunStatusSnapshot(
-                    owner = owner,
-                    repo = repo,
-                    runId = runId,
-                    artifactsLimit = artifactsLimit,
-                    includeArtifactsWhenCompleted = includeArtifactsWhenCompleted
-                )
-        }
+        return GitHubActionsRepository.fromLookupConfig(lookupConfig)
+            .fetchRunStatusSnapshotAsync(
+                owner = owner,
+                repo = repo,
+                runId = runId,
+                artifactsLimit = artifactsLimit,
+                includeArtifactsWhenCompleted = includeArtifactsWhenCompleted
+            )
     }
 
     suspend fun buildGitHubActionsRunTrackingPlan(
@@ -179,7 +175,7 @@ internal class GitHubActionsPageRepository(
                     async(ioDispatcher) {
                         val workflowId = workflowLookupId(workflow, lookupConfig)
                         val primaryBranch = if (useNightlyLink) defaultBranch else ""
-                        val recentSnapshot = actionsRepository.fetchWorkflowArtifactSnapshot(
+                        val recentSnapshot = actionsRepository.fetchWorkflowArtifactSnapshotAsync(
                             owner = owner,
                             repo = repo,
                             workflowId = workflowId,
@@ -248,7 +244,7 @@ internal class GitHubActionsPageRepository(
         return coroutineScope {
             branches.map { branch ->
                 async(ioDispatcher) {
-                    actionsRepository.fetchWorkflowArtifactSnapshot(
+                    actionsRepository.fetchWorkflowArtifactSnapshotAsync(
                         owner = owner,
                         repo = repo,
                         workflowId = workflowId,

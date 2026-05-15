@@ -1,5 +1,8 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
@@ -13,16 +16,34 @@ import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.min
 import kotlin.math.sqrt
 
 internal class GitHubPackageRepositoryResolver(
     private val discoverySource: GitHubRepositoryDiscoverySource,
-    private val packageNameScanner: GitHubApkPackageNameScanner
+    private val packageNameScanner: GitHubApkPackageNameScanner,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     fun scanRepositoriesForPackage(
         request: GitHubPackageRepositoryScanRequest
-    ): Result<GitHubPackageRepositoryScanResult> = runCatching {
+    ): Result<GitHubPackageRepositoryScanResult> {
+        return GitHubExecution.runBlockingIo {
+            scanRepositoriesForPackageAsync(request)
+        }
+    }
+
+    suspend fun scanRepositoriesForPackageAsync(
+        request: GitHubPackageRepositoryScanRequest
+    ): Result<GitHubPackageRepositoryScanResult> = withContext(ioDispatcher) {
+        cancellableResult {
+            scanRepositoriesForPackageInternal(request)
+        }
+    }
+
+    private suspend fun scanRepositoriesForPackageInternal(
+        request: GitHubPackageRepositoryScanRequest
+    ): GitHubPackageRepositoryScanResult {
         val packageName = request.packageName.trim()
         check(packageName.isNotBlank()) { "Package name is required." }
         check(GitHubPackageNameValidator.isValid(packageName)) {
@@ -53,7 +74,7 @@ internal class GitHubPackageRepositoryResolver(
             ).filter { (candidate, _) ->
                 scannedRepoKeys.add(candidate.repoKey())
             }
-            val batchResult = scanCandidates(
+            val batchResult = scanCandidatesAsync(
                 targets = preferredTargets,
                 packageName = packageName,
                 appLabel = appLabel,
@@ -63,7 +84,7 @@ internal class GitHubPackageRepositoryResolver(
             mismatchedCount += batchResult.mismatchedCount
             failedCount += batchResult.failedCount
             if (matchedCandidates.isNotEmpty()) {
-                return@runCatching buildScanResult(
+                return buildScanResult(
                     packageName = packageName,
                     appLabel = appLabel,
                     queryCount = executedQueryCount,
@@ -112,7 +133,7 @@ internal class GitHubPackageRepositoryResolver(
                     val repoKey = candidate.repoKey()
                     scannedRepoKeys.add(repoKey)
                 }
-            val batchResult = scanCandidates(
+            val batchResult = scanCandidatesAsync(
                 targets = scanTargets,
                 packageName = packageName,
                 appLabel = appLabel,
@@ -129,7 +150,7 @@ internal class GitHubPackageRepositoryResolver(
             throw firstSearchFailure
         }
 
-        buildScanResult(
+        return buildScanResult(
             packageName = packageName,
             appLabel = appLabel,
             queryCount = executedQueryCount,
@@ -271,7 +292,7 @@ internal class GitHubPackageRepositoryResolver(
         return "${owner.lowercase()}/${repo.lowercase()}"
     }
 
-    private fun scanCandidates(
+    private suspend fun scanCandidatesAsync(
         targets: List<Pair<GitHubRepositoryCandidate, Int>>,
         packageName: String,
         appLabel: String,
@@ -282,7 +303,7 @@ internal class GitHubPackageRepositoryResolver(
             val (candidate, score) = targets.single()
             return PackageRepositoryVerificationBatch.fromOutcomes(
                 listOf(
-                    verifyCandidate(
+                    verifyCandidateAsync(
                         candidate = candidate,
                         score = score,
                         packageName = packageName,
@@ -293,11 +314,12 @@ internal class GitHubPackageRepositoryResolver(
             )
         }
         val workerCount = min(MAX_PARALLEL_VERIFICATIONS, targets.size)
-        val outcomes = GitHubExecution.mapOrderedBoundedBlocking(
+        val outcomes = GitHubExecution.mapOrderedBounded(
             items = targets,
-            maxConcurrency = workerCount
+            maxConcurrency = workerCount,
+            dispatcher = ioDispatcher
         ) { (candidate, score) ->
-            verifyCandidate(
+            verifyCandidateAsync(
                 candidate = candidate,
                 score = score,
                 packageName = packageName,
@@ -308,7 +330,7 @@ internal class GitHubPackageRepositoryResolver(
         return PackageRepositoryVerificationBatch.fromOutcomes(outcomes)
     }
 
-    private fun verifyCandidate(
+    private suspend fun verifyCandidateAsync(
         candidate: GitHubRepositoryCandidate,
         score: Int,
         packageName: String,
@@ -318,7 +340,7 @@ internal class GitHubPackageRepositoryResolver(
         val repoUrl = candidate.repoUrl.ifBlank {
             "https://github.com/${candidate.owner}/${candidate.repo}"
         }
-        val scanResult = packageNameScanner.scan(
+        val scanResult = packageNameScanner.scanAsync(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
                 lookupConfig = lookupConfig,
@@ -354,6 +376,15 @@ internal class GitHubPackageRepositoryResolver(
                 PackageRepositoryVerification(failed = true)
             }
         )
+    }
+
+    private suspend inline fun <T> cancellableResult(crossinline block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            Result.failure(error)
+        }
     }
 
     private fun searchLimitForQuery(

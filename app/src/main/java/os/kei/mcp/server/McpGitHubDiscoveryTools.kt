@@ -1,6 +1,8 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
@@ -132,12 +134,14 @@ internal class McpGitHubDiscoveryTools(
         }.trim()
     }
 
-    private fun buildRepositorySearchText(query: String, limit: Int): String {
+    private suspend fun buildRepositorySearchText(query: String, limit: Int): String {
         if (query.isBlank()) return "ok=false\nmessage=query_required"
         val source = GitHubRepositoryDiscoveryRepository(
             apiToken = GitHubTrackStore.loadLookupConfig().apiToken
         )
-        return source.searchRepositories(query, limit).fold(
+        return withContext(Dispatchers.IO) {
+            source.searchRepositories(query, limit)
+        }.fold(
             onSuccess = { repositories ->
                 buildString {
                     appendLine("ok=true")
@@ -154,10 +158,10 @@ internal class McpGitHubDiscoveryTools(
         )
     }
 
-    private fun buildRepoPackageScanText(repoUrl: String, expectedPackageName: String): String {
+    private suspend fun buildRepoPackageScanText(repoUrl: String, expectedPackageName: String): String {
         if (repoUrl.isBlank()) return "ok=false\nmessage=repoUrl_required"
         val scanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
-        return scanner.scan(
+        return scanner.scanAsync(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
                 lookupConfig = GitHubTrackStore.loadLookupConfig(),
@@ -250,7 +254,7 @@ internal class McpGitHubDiscoveryTools(
         )
     }
 
-    private fun buildPackageRepoScanText(
+    private suspend fun buildPackageRepoScanText(
         packageName: String,
         appLabel: String,
         preferredRepoUrl: String,
@@ -265,7 +269,7 @@ internal class McpGitHubDiscoveryTools(
             discoverySource = GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken),
             packageNameScanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
         )
-        return resolver.scanRepositoriesForPackage(
+        return resolver.scanRepositoriesForPackageAsync(
             GitHubPackageRepositoryScanRequest(
                 packageName = packageName,
                 appLabel = appLabel,
@@ -342,7 +346,7 @@ internal class McpGitHubDiscoveryTools(
         val service = GitHubRepositoryDiscoveryService(
             GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken)
         )
-        return service.previewStarredRepositoryImport(
+        return service.previewStarredRepositoryImportAsync(
             request = request,
             existingItems = GitHubTrackStore.load()
         ).fold(

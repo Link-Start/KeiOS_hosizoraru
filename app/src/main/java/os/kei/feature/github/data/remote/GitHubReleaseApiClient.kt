@@ -1,5 +1,8 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -8,15 +11,35 @@ import org.json.JSONObject
 import os.kei.feature.github.GitHubExecution
 import java.io.IOException
 import java.net.URLEncoder
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class GitHubReleaseApiClient(
     private val client: OkHttpClient,
-    private val apiBaseUrl: String = DEFAULT_GITHUB_API_BASE_URL
+    private val apiBaseUrl: String = DEFAULT_GITHUB_API_BASE_URL,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     fun resolveApiAssetDownloadUrl(
         apiAssetUrl: String,
         apiToken: String
-    ): Result<String> = runCatching {
+    ): Result<String> {
+        return GitHubExecution.runBlockingIo {
+            resolveApiAssetDownloadUrlAsync(apiAssetUrl, apiToken)
+        }
+    }
+
+    suspend fun resolveApiAssetDownloadUrlAsync(
+        apiAssetUrl: String,
+        apiToken: String
+    ): Result<String> = withContext(ioDispatcher) {
+        cancellableResult {
+            resolveApiAssetDownloadUrlInternal(apiAssetUrl, apiToken)
+        }
+    }
+
+    private fun resolveApiAssetDownloadUrlInternal(
+        apiAssetUrl: String,
+        apiToken: String
+    ): String {
         val request = Request.Builder()
             .url(apiAssetUrl)
             .get()
@@ -29,7 +52,7 @@ internal class GitHubReleaseApiClient(
             .header("Connection", "close")
             .build()
 
-        client.newCall(request).execute().use { response ->
+        return client.newCall(request).execute().use { response ->
             val redirectedUrl = response.request.url.toString()
             when {
                 response.isSuccessful && redirectedUrl.isNotBlank() -> redirectedUrl
@@ -47,10 +70,101 @@ internal class GitHubReleaseApiClient(
         repo: String,
         rawTag: String,
         apiToken: String
-    ): Result<String> = runCatching {
+    ): Result<String> {
+        return GitHubExecution.runBlockingIo {
+            resolveShortCommitShaAsync(owner, repo, rawTag, apiToken)
+        }
+    }
+
+    suspend fun resolveShortCommitShaAsync(
+        owner: String,
+        repo: String,
+        rawTag: String,
+        apiToken: String
+    ): Result<String> = withContext(ioDispatcher) {
+        try {
+            Result.success(resolveShortCommitShaInternal(owner, repo, rawTag, apiToken))
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            Result.success("")
+        }
+    }
+
+    fun fetchReleaseByTag(
+        owner: String,
+        repo: String,
+        rawTag: String,
+        apiToken: String
+    ): Result<JSONObject> {
+        return GitHubExecution.runBlockingIo {
+            fetchReleaseByTagAsync(owner, repo, rawTag, apiToken)
+        }
+    }
+
+    suspend fun fetchReleaseByTagAsync(
+        owner: String,
+        repo: String,
+        rawTag: String,
+        apiToken: String
+    ): Result<JSONObject> = withContext(ioDispatcher) {
+        cancellableResult {
+            val encodedTag = urlEncode(rawTag)
+            val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases/tags/$encodedTag"
+            JSONObject(fetchJsonAsync(url, apiToken))
+        }
+    }
+
+    fun fetchReleaseList(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<JSONArray> {
+        return GitHubExecution.runBlockingIo {
+            fetchReleaseListAsync(owner, repo, apiToken)
+        }
+    }
+
+    suspend fun fetchReleaseListAsync(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<JSONArray> = withContext(ioDispatcher) {
+        cancellableResult {
+            val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
+            JSONArray(fetchJsonAsync(url, apiToken))
+        }
+    }
+
+    fun fetchLatestRelease(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<JSONObject> {
+        return GitHubExecution.runBlockingIo {
+            fetchLatestReleaseAsync(owner, repo, apiToken)
+        }
+    }
+
+    suspend fun fetchLatestReleaseAsync(
+        owner: String,
+        repo: String,
+        apiToken: String
+    ): Result<JSONObject> = withContext(ioDispatcher) {
+        cancellableResult {
+            val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases/latest"
+            JSONObject(fetchJsonAsync(url, apiToken, noStore = true))
+        }
+    }
+
+    private suspend fun resolveShortCommitShaInternal(
+        owner: String,
+        repo: String,
+        rawTag: String,
+        apiToken: String
+    ): String {
         val encodedTag = urlEncode(rawTag)
         val refUrl = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/git/ref/tags/$encodedTag"
-        val refObject = JSONObject(fetchJson(refUrl, apiToken)).optJSONObject("object")
+        val refObject = JSONObject(fetchJsonAsync(refUrl, apiToken)).optJSONObject("object")
             ?: error("Git tag ref response is missing object")
         val refType = refObject.optString("type").trim()
         val refSha = refObject.optString("sha").trim()
@@ -58,7 +172,7 @@ internal class GitHubReleaseApiClient(
             refType.equals("commit", ignoreCase = true) -> refSha
             refType.equals("tag", ignoreCase = true) && refSha.isNotBlank() -> {
                 val tagUrl = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/git/tags/$refSha"
-                val tagObject = JSONObject(fetchJson(tagUrl, apiToken)).optJSONObject("object")
+                val tagObject = JSONObject(fetchJsonAsync(tagUrl, apiToken)).optJSONObject("object")
                     ?: error("Annotated tag response is missing object")
                 if (tagObject.optString("type").trim().equals("commit", ignoreCase = true)) {
                     tagObject.optString("sha").trim()
@@ -69,45 +183,16 @@ internal class GitHubReleaseApiClient(
 
             else -> ""
         }
-        commitSha.take(7)
-    }.getOrElse { "" }.let { Result.success(it) }
-
-    fun fetchReleaseByTag(
-        owner: String,
-        repo: String,
-        rawTag: String,
-        apiToken: String
-    ): Result<JSONObject> = runCatching {
-        val encodedTag = urlEncode(rawTag)
-        val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases/tags/$encodedTag"
-        JSONObject(fetchJson(url, apiToken))
+        return commitSha.take(7)
     }
 
-    fun fetchReleaseList(
-        owner: String,
-        repo: String,
-        apiToken: String
-    ): Result<JSONArray> = runCatching {
-        val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
-        JSONArray(fetchJson(url, apiToken))
-    }
-
-    fun fetchLatestRelease(
-        owner: String,
-        repo: String,
-        apiToken: String
-    ): Result<JSONObject> = runCatching {
-        val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases/latest"
-        JSONObject(fetchJson(url, apiToken, noStore = true))
-    }
-
-    private fun fetchJson(
+    private suspend fun fetchJsonAsync(
         url: String,
         apiToken: String,
         noStore: Boolean = false
     ): String {
         val token = apiToken.trim()
-        val result = GitHubExecution.retryOnceBlocking(
+        val result = GitHubExecution.retryOnce(
             shouldRetry = { error -> error is IOException }
         ) {
             val requestBuilder = Request.Builder()
@@ -144,6 +229,15 @@ internal class GitHubReleaseApiClient(
             error("GitHub connection closed unexpectedly. Try again later.")
         }
         throw lastError ?: IllegalStateException("GitHub release request failed")
+    }
+
+    private suspend inline fun <T> cancellableResult(crossinline block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            Result.failure(error)
+        }
     }
 
     private fun buildJsonErrorMessage(

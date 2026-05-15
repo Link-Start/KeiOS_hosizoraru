@@ -118,8 +118,11 @@ internal class GitHubStarImportPageRepository(
                 apiToken = lookupConfig.apiToken,
                 limit = STAR_IMPORT_PREVIEW_LIMIT
             )
-            val preview = GitHubRepositoryDiscoveryService(source)
-                .previewStarredRepositoryImport(
+            val preview = GitHubRepositoryDiscoveryService(
+                source = source,
+                ioDispatcher = ioDispatcher
+            )
+                .previewStarredRepositoryImportAsync(
                     request = importRequest,
                     existingItems = snapshot.items
                 )

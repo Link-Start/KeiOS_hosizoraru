@@ -1,5 +1,8 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
@@ -14,6 +17,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.min
 import kotlin.math.sqrt
 
@@ -39,12 +43,37 @@ internal interface GitHubRepositoryDiscoverySource {
 }
 
 internal class GitHubRepositoryDiscoveryService(
-    private val source: GitHubRepositoryDiscoverySource
+    private val source: GitHubRepositoryDiscoverySource,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     fun previewStarredRepositoryImport(
         request: GitHubStarredRepositoryImportRequest,
         existingItems: List<GitHubTrackedApp>
-    ): Result<GitHubStarredRepositoryImportPreview> = runCatching {
+    ): Result<GitHubStarredRepositoryImportPreview> {
+        return GitHubExecution.runBlockingIo {
+            previewStarredRepositoryImportAsync(
+                request = request,
+                existingItems = existingItems
+            )
+        }
+    }
+
+    suspend fun previewStarredRepositoryImportAsync(
+        request: GitHubStarredRepositoryImportRequest,
+        existingItems: List<GitHubTrackedApp>
+    ): Result<GitHubStarredRepositoryImportPreview> = withContext(ioDispatcher) {
+        cancellableResult {
+            previewStarredRepositoryImportInternal(
+                request = request,
+                existingItems = existingItems
+            )
+        }
+    }
+
+    private fun previewStarredRepositoryImportInternal(
+        request: GitHubStarredRepositoryImportRequest,
+        existingItems: List<GitHubTrackedApp>
+    ): GitHubStarredRepositoryImportPreview {
         val limit = request.limit.coerceIn(1, MAX_IMPORT_LIMIT)
         val username = request.username.trim()
         val starListUrl = request.starListUrl.trim()
@@ -84,7 +113,7 @@ internal class GitHubRepositoryDiscoveryService(
                     .thenBy { it.repository.fullName.lowercase() }
             )
 
-        GitHubStarredRepositoryImportPreview(
+        return GitHubStarredRepositoryImportPreview(
             sourceLabel = when (resolvedSource) {
                 GitHubStarredRepositoryImportSource.AuthenticatedUser -> "authenticated"
                 GitHubStarredRepositoryImportSource.PublicUser -> username
@@ -101,12 +130,36 @@ internal class GitHubRepositoryDiscoveryService(
     fun searchRepositoriesForApp(
         request: GitHubAppRepositorySearchRequest,
         existingItems: List<GitHubTrackedApp>
-    ): Result<GitHubAppRepositorySearchResult> = runCatching {
+    ): Result<GitHubAppRepositorySearchResult> {
+        return GitHubExecution.runBlockingIo {
+            searchRepositoriesForAppAsync(
+                request = request,
+                existingItems = existingItems
+            )
+        }
+    }
+
+    suspend fun searchRepositoriesForAppAsync(
+        request: GitHubAppRepositorySearchRequest,
+        existingItems: List<GitHubTrackedApp>
+    ): Result<GitHubAppRepositorySearchResult> = withContext(ioDispatcher) {
+        cancellableResult {
+            searchRepositoriesForAppInternal(
+                request = request,
+                existingItems = existingItems
+            )
+        }
+    }
+
+    private suspend fun searchRepositoriesForAppInternal(
+        request: GitHubAppRepositorySearchRequest,
+        existingItems: List<GitHubTrackedApp>
+    ): GitHubAppRepositorySearchResult {
         val limit = request.limit.coerceIn(1, MAX_SEARCH_LIMIT)
         val searchContext = AppRepositorySearchContext.create(request.app)
         val queries = searchContext.queries
         val existingIndex = TrackedRepoIndex.from(existingItems)
-        val fetched = fetchAppSearchCandidates(searchContext, limit)
+        val fetched = fetchAppSearchCandidatesAsync(searchContext, limit)
         val candidates = fetched
             .dedupeByRepo()
             .map { candidate ->
@@ -126,14 +179,14 @@ internal class GitHubRepositoryDiscoveryService(
             )
             .take(limit)
 
-        GitHubAppRepositorySearchResult(
+        return GitHubAppRepositorySearchResult(
             app = request.app,
             queryCount = queries.size,
             candidates = candidates
         )
     }
 
-    private fun fetchAppSearchCandidates(
+    private suspend fun fetchAppSearchCandidatesAsync(
         searchContext: AppRepositorySearchContext,
         limit: Int
     ): List<GitHubRepositoryCandidate> {
@@ -162,19 +215,20 @@ internal class GitHubRepositoryDiscoveryService(
                 compareBy<RepositorySearchQuery> { it.priority }
                     .thenBy { it.originalIndex }
             )
-        return fetchQueriesConcurrently(
+        return fetchQueriesConcurrentlyAsync(
             scheduledQueries = scheduledQueries,
             limit = limit
         )
     }
 
-    private fun fetchQueriesConcurrently(
+    private suspend fun fetchQueriesConcurrentlyAsync(
         scheduledQueries: List<RepositorySearchQuery>,
         limit: Int
     ): List<GitHubRepositoryCandidate> {
-        val outcomes = GitHubExecution.mapOrderedBoundedBlocking(
+        val outcomes = GitHubExecution.mapOrderedBounded(
             items = scheduledQueries,
-            maxConcurrency = MAX_PARALLEL_SEARCH_QUERIES
+            maxConcurrency = MAX_PARALLEL_SEARCH_QUERIES,
+            dispatcher = ioDispatcher
         ) { scheduledQuery ->
             fetchSearchOutcome(
                 query = scheduledQuery.query,
@@ -183,6 +237,15 @@ internal class GitHubRepositoryDiscoveryService(
             )
         }
         return collectSearchOutcomes(outcomes.sortedBy { it.originalIndex })
+    }
+
+    private suspend inline fun <T> cancellableResult(crossinline block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            Result.failure(error)
+        }
     }
 
     private fun fetchSearchOutcome(

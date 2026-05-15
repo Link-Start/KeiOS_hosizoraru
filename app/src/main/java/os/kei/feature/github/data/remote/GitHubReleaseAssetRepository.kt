@@ -12,6 +12,7 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.time.Instant
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToLong
 import kotlin.time.Duration.Companion.seconds
 
@@ -173,7 +174,7 @@ object GitHubReleaseAssetRepository {
         }
     }
 
-    private fun fetchApkAssetsUnshared(
+    private suspend fun fetchApkAssetsUnshared(
         owner: String,
         repo: String,
         rawTag: String,
@@ -224,10 +225,13 @@ object GitHubReleaseAssetRepository {
             else -> Result.failure(primary.exceptionOrNull() ?: IllegalStateException("release fetch failed"))
         }
 
-        return resolvedRelease.mapCatching { release ->
+        val release = resolvedRelease.getOrElse { error ->
+            return Result.failure(error)
+        }
+        return cancellableResult {
             parseReleaseBundle(release)
                 .copy(fetchSource = resolvedSource)
-                .withResolvedShortCommitSha(owner, repo, normalizedTag, apiToken)
+                .withResolvedShortCommitShaAsync(owner, repo, normalizedTag, apiToken)
                 .selectDisplayAssets(
                     aggressiveFiltering = aggressiveFiltering,
                     includeAllAssets = includeAllAssets
@@ -269,8 +273,8 @@ object GitHubReleaseAssetRepository {
             apiToken = apiToken
         )
         return runInFlightAssetFetch(inFlightKey) {
-            runCatching {
-                val release = apiClient.fetchLatestRelease(owner, repo, apiToken).getOrThrow()
+            cancellableResult {
+                val release = apiClient.fetchLatestReleaseAsync(owner, repo, apiToken).getOrThrow()
                 parseReleaseBundle(release)
                     .copy(fetchSource = GitHubReleaseAssetFetchSources.API)
                     .selectDisplayAssets(
@@ -302,12 +306,26 @@ object GitHubReleaseAssetRepository {
         useApiAssetUrl: Boolean,
         apiToken: String = ""
     ): Result<String> {
+        return GitHubExecution.runBlockingIo {
+            resolvePreferredDownloadUrlAsync(
+                asset = asset,
+                useApiAssetUrl = useApiAssetUrl,
+                apiToken = apiToken
+            )
+        }
+    }
+
+    suspend fun resolvePreferredDownloadUrlAsync(
+        asset: GitHubReleaseAssetFile,
+        useApiAssetUrl: Boolean,
+        apiToken: String = ""
+    ): Result<String> {
         val token = apiToken.trim()
         val apiAssetUrl = asset.apiAssetUrl.trim()
         if (!useApiAssetUrl || token.isBlank() || apiAssetUrl.isBlank()) {
             return Result.success(asset.downloadUrl)
         }
-        return apiClient.resolveApiAssetDownloadUrl(apiAssetUrl, token).recoverCatching {
+        return apiClient.resolveApiAssetDownloadUrlAsync(apiAssetUrl, token).recoverCatching {
             asset.downloadUrl
         }
     }
@@ -335,7 +353,7 @@ object GitHubReleaseAssetRepository {
         return GitHubReleaseAssetSelector.run { filterNonSourceAssets() }
     }
 
-    private fun GitHubReleaseAssetBundle.withResolvedShortCommitSha(
+    private suspend fun GitHubReleaseAssetBundle.withResolvedShortCommitShaAsync(
         owner: String,
         repo: String,
         rawTag: String,
@@ -343,7 +361,7 @@ object GitHubReleaseAssetRepository {
     ): GitHubReleaseAssetBundle {
         val token = apiToken.trim()
         if (token.isBlank()) return copy(shortCommitSha = "")
-        val commitSha = apiClient.resolveShortCommitSha(owner, repo, rawTag, token).getOrDefault("")
+        val commitSha = apiClient.resolveShortCommitShaAsync(owner, repo, rawTag, token).getOrDefault("")
         return copy(shortCommitSha = commitSha)
     }
 
@@ -360,12 +378,13 @@ object GitHubReleaseAssetRepository {
 
     private suspend fun runInFlightAssetFetch(
         key: String,
-        block: () -> Result<GitHubReleaseAssetBundle>
+        block: suspend () -> Result<GitHubReleaseAssetBundle>
     ): Result<GitHubReleaseAssetBundle> {
         return inFlightAssetFetches.run(key) {
             try {
                 block()
             } catch (error: Throwable) {
+                if (error is CancellationException) throw error
                 Result.failure(error)
             }
         }
@@ -402,17 +421,20 @@ object GitHubReleaseAssetRepository {
         return GitHubReleaseAssetSelector.run { sortForDisplay() }
     }
 
-    private fun fetchReleaseByTagWithFallback(
+    private suspend fun fetchReleaseByTagWithFallback(
         owner: String,
         repo: String,
         rawTag: String,
         releaseUrl: String,
         apiToken: String
     ): Result<JSONObject> {
-        val byTag = apiClient.fetchReleaseByTag(owner, repo, rawTag, apiToken)
+        val byTag = apiClient.fetchReleaseByTagAsync(owner, repo, rawTag, apiToken)
         if (byTag.isSuccess) return byTag
 
-        val fallback = apiClient.fetchReleaseList(owner, repo, apiToken).mapCatching { releases ->
+        val releases = apiClient.fetchReleaseListAsync(owner, repo, apiToken).getOrElse {
+            return byTag
+        }
+        val fallback = cancellableResult {
             findMatchingRelease(releases, rawTag)
                 ?: buildReleaseStub(
                     releaseName = rawTag,
@@ -423,13 +445,13 @@ object GitHubReleaseAssetRepository {
         return fallback.takeIf { it.isSuccess } ?: byTag
     }
 
-    private fun <T> withReleaseList(
+    private suspend fun <T> withReleaseList(
         owner: String,
         repo: String,
         apiToken: String,
         block: (JSONArray) -> T
-    ): Result<T> = runCatching {
-        val releases = apiClient.fetchReleaseList(owner, repo, apiToken).getOrThrow()
+    ): Result<T> = cancellableResult {
+        val releases = apiClient.fetchReleaseListAsync(owner, repo, apiToken).getOrThrow()
         block(releases)
     }
 
@@ -472,13 +494,13 @@ object GitHubReleaseAssetRepository {
             .sortedByDescending { it.updatedAtMillis ?: 0L }
     }
 
-    private fun fetchReleaseFromHtml(
+    private suspend fun fetchReleaseFromHtml(
         owner: String,
         repo: String,
         rawTag: String,
         releaseUrl: String,
         apiToken: String
-    ): Result<JSONObject> = runCatching {
+    ): Result<JSONObject> = cancellableResult {
         val normalizedReleaseUrl = releaseUrl.trim().ifBlank {
             GitHubVersionUtils.buildReleaseTagUrl(owner, repo, rawTag)
         }
@@ -486,12 +508,13 @@ object GitHubReleaseAssetRepository {
         val metadata = parseReleaseMetadataFromHtml(releaseHtml, rawTag, normalizedReleaseUrl)
         val expandedAssetsUrl = parseExpandedAssetsUrl(releaseHtml).orEmpty()
             .ifBlank { buildExpandedAssetsUrl(owner, repo, rawTag) }
-        val assets = runCatching {
+        val assets = try {
             val expandedAssetsHtml = fetchHtml(expandedAssetsUrl, apiToken)
             parseAssetsFromExpandedHtml(expandedAssetsHtml, owner, repo, rawTag)
-        }.recoverCatching {
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             parseAssetsFromReleaseHtml(releaseHtml, owner, repo, rawTag)
-        }.getOrThrow()
+        }
         buildReleaseStub(
             releaseName = metadata.releaseName,
             rawTag = metadata.tagName,
@@ -502,9 +525,9 @@ object GitHubReleaseAssetRepository {
         )
     }
 
-    private fun fetchHtml(url: String, apiToken: String): String {
+    private suspend fun fetchHtml(url: String, apiToken: String): String {
         val token = apiToken.trim()
-        val result = GitHubExecution.retryOnceBlocking(
+        val result = GitHubExecution.retryOnce(
             shouldRetry = { error -> error is IOException }
         ) {
             val requestBuilder = Request.Builder()
@@ -531,6 +554,15 @@ object GitHubReleaseAssetRepository {
             error("GitHub page connection closed unexpectedly. Try again later.")
         }
         throw lastError ?: IllegalStateException("GitHub release page request failed")
+    }
+
+    private suspend inline fun <T> cancellableResult(crossinline block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            Result.failure(error)
+        }
     }
 
     private fun parseAssetsFromReleaseHtml(

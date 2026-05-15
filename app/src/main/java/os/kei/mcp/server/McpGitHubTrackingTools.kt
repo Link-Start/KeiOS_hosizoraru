@@ -872,9 +872,9 @@ internal class McpGitHubTrackingTools(
         }.trim()
     }
 
-    private fun buildGitHubShareResolveText(text: String, limit: Int): String {
+    private suspend fun buildGitHubShareResolveText(text: String, limit: Int): String {
         val lookupConfig = GitHubTrackStore.loadLookupConfig()
-        return GitHubShareImportResolver.resolve(
+        return GitHubShareImportResolver.resolveAsync(
             sharedText = text,
             lookupConfig = lookupConfig
         ).fold(

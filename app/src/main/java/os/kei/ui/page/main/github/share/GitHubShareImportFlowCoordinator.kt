@@ -49,12 +49,10 @@ internal object GitHubShareImportFlowCoordinator {
                 GitHubShareImportFlowStore.clearActiveFlow()
             }
             GitHubTrackStoreSignals.notifyChanged()
-            val plan = withContext(Dispatchers.IO) {
-                GitHubShareImportResolver.resolve(
-                    sharedText = parsedIncoming.sourceUrl,
-                    lookupConfig = resolvedLookupConfig
-                ).getOrThrow()
-            }
+            val plan = GitHubShareImportResolver.resolveAsync(
+                sharedText = parsedIncoming.sourceUrl,
+                lookupConfig = resolvedLookupConfig
+            ).getOrThrow()
             if (plan.assets.isEmpty()) {
                 val reason = appContext.getString(R.string.github_toast_share_import_no_apk)
                 withContext(Dispatchers.IO) {

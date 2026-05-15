@@ -146,28 +146,26 @@ internal class GitHubPageDiscoveryRepository(
         request: GitHubStarredRepositoryImportRequest,
         existingItems: List<GitHubTrackedApp>
     ): Result<GitHubStarredRepositoryImportPreview> {
-        return withContext(ioDispatcher) {
-            GitHubRepositoryDiscoveryService(
-                GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken)
-            ).previewStarredRepositoryImport(
-                request = request,
-                existingItems = existingItems
-            )
-        }
+        return GitHubRepositoryDiscoveryService(
+            source = GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken),
+            ioDispatcher = ioDispatcher
+        ).previewStarredRepositoryImportAsync(
+            request = request,
+            existingItems = existingItems
+        )
     }
 
     suspend fun searchRepositoriesForApp(
         request: GitHubAppRepositorySearchRequest,
         existingItems: List<GitHubTrackedApp>
     ): Result<GitHubAppRepositorySearchResult> {
-        return withContext(ioDispatcher) {
-            GitHubRepositoryDiscoveryService(
-                GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken)
-            ).searchRepositoriesForApp(
-                request = request,
-                existingItems = existingItems
-            )
-        }
+        return GitHubRepositoryDiscoveryService(
+            source = GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken),
+            ioDispatcher = ioDispatcher
+        ).searchRepositoriesForAppAsync(
+            request = request,
+            existingItems = existingItems
+        )
     }
 
     suspend fun scanPackageNameFromLatestStableApk(
@@ -265,8 +263,9 @@ internal class GitHubPageDiscoveryRepository(
                 ),
                 packageNameScanner = GitHubApkPackageNameScanner(
                     GitHubApkPackageNameScanRepository()
-                )
-            ).scanRepositoriesForPackage(request)
+                ),
+                ioDispatcher = ioDispatcher
+            ).scanRepositoriesForPackageAsync(request)
         }
     }
 }

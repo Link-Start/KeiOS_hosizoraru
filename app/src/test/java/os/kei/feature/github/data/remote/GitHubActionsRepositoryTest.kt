@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.OkHttpClient
@@ -115,6 +116,38 @@ class GitHubActionsRepositoryTest {
             assertEquals("42", snapshot.workflowId)
             assertEquals(2, snapshot.runs.size)
             assertEquals(listOf(101L, 100L), snapshot.runs.map { it.run.id })
+            assertEquals(4, snapshot.artifacts.size)
+            val requestPaths = List(3) { server.takeRequest().path }
+            assertEquals("/repos/demo/app/actions/workflows/42/runs?per_page=2", requestPaths.first())
+            assertEquals(
+                setOf(
+                    "/repos/demo/app/actions/runs/101/artifacts?per_page=100",
+                    "/repos/demo/app/actions/runs/100/artifacts?per_page=100"
+                ),
+                requestPaths.drop(1).toSet()
+            )
+        }
+    }
+
+    @Test
+    fun `async workflow artifact snapshot fetches run artifacts`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(200).setBody(sampleWorkflowRunsJson()))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 101)))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 100)))
+            val repository = GitHubActionsRepository(
+                apiToken = "",
+                apiBaseUrl = server.url("/").toString()
+            )
+
+            val snapshot = repository.fetchWorkflowArtifactSnapshotAsync(
+                owner = "demo",
+                repo = "app",
+                workflowId = "42",
+                runLimit = 2
+            ).result.getOrThrow()
+
+            assertEquals(2, snapshot.runs.size)
             assertEquals(4, snapshot.artifacts.size)
             val requestPaths = List(3) { server.takeRequest().path }
             assertEquals("/repos/demo/app/actions/workflows/42/runs?per_page=2", requestPaths.first())

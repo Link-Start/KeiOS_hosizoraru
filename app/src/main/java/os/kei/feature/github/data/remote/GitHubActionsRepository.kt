@@ -1,6 +1,10 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactDownloadResolution
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -13,6 +17,7 @@ import os.kei.feature.github.model.GitHubActionsWorkflowRun
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 
 class GitHubActionsRepository(
@@ -22,7 +27,8 @@ class GitHubActionsRepository(
     private val actionsStrategy: GitHubActionsLookupStrategyOption = GitHubActionsLookupStrategyOption.GitHubApiToken,
     private val requireApiTokenForApiStrategy: Boolean = false,
     private val githubHtmlBaseUrl: String = DEFAULT_GITHUB_HTML_BASE_URL,
-    private val nightlyLinkBaseUrl: String = DEFAULT_NIGHTLY_LINK_BASE_URL
+    private val nightlyLinkBaseUrl: String = DEFAULT_NIGHTLY_LINK_BASE_URL,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val sanitizedToken: String = apiToken.trim()
     private val useNightlyLink: Boolean
@@ -53,7 +59,8 @@ class GitHubActionsRepository(
         )
     }
     private val runArtifactFetcher = GitHubActionsRunArtifactFetcher(
-        maxConcurrency = MAX_ARTIFACT_FETCH_CONCURRENCY
+        maxConcurrency = MAX_ARTIFACT_FETCH_CONCURRENCY,
+        ioDispatcher = ioDispatcher
     ) { fetchOwner, fetchRepo, runId, limit ->
         fetchRunArtifacts(
             owner = fetchOwner,
@@ -251,6 +258,40 @@ class GitHubActionsRepository(
         artifactsLimit: Int = DEFAULT_ARTIFACT_LIMIT,
         includeArtifactsWhenCompleted: Boolean = true
     ): GitHubStrategyLoadTrace<GitHubActionsRunStatusSnapshot> {
+        return GitHubExecution.runBlockingIo {
+            fetchRunStatusSnapshotAsync(
+                owner = owner,
+                repo = repo,
+                runId = runId,
+                artifactsLimit = artifactsLimit,
+                includeArtifactsWhenCompleted = includeArtifactsWhenCompleted
+            )
+        }
+    }
+
+    suspend fun fetchRunStatusSnapshotAsync(
+        owner: String,
+        repo: String,
+        runId: Long,
+        artifactsLimit: Int = DEFAULT_ARTIFACT_LIMIT,
+        includeArtifactsWhenCompleted: Boolean = true
+    ): GitHubStrategyLoadTrace<GitHubActionsRunStatusSnapshot> = withContext(ioDispatcher) {
+        fetchRunStatusSnapshotOnCurrentDispatcher(
+            owner = owner,
+            repo = repo,
+            runId = runId,
+            artifactsLimit = artifactsLimit,
+            includeArtifactsWhenCompleted = includeArtifactsWhenCompleted
+        )
+    }
+
+    private fun fetchRunStatusSnapshotOnCurrentDispatcher(
+        owner: String,
+        repo: String,
+        runId: Long,
+        artifactsLimit: Int = DEFAULT_ARTIFACT_LIMIT,
+        includeArtifactsWhenCompleted: Boolean = true
+    ): GitHubStrategyLoadTrace<GitHubActionsRunStatusSnapshot> {
         val startedAt = System.currentTimeMillis()
         if (useNightlyLink) {
             val result = nightlyRepository.fetchRunStatusSnapshot(
@@ -294,6 +335,76 @@ class GitHubActionsRepository(
     }
 
     fun fetchWorkflowArtifactSnapshot(
+        owner: String,
+        repo: String,
+        workflowId: String,
+        runLimit: Int = DEFAULT_RUN_LIMIT,
+        artifactsPerRun: Int = DEFAULT_ARTIFACT_LIMIT,
+        artifactRunLimit: Int = Int.MAX_VALUE,
+        branch: String = "",
+        event: String = "",
+        status: String = "",
+        actor: String = "",
+        created: String = "",
+        headSha: String = "",
+        excludePullRequests: Boolean = false,
+        resolveNightlyRunDetail: Boolean = true
+    ): GitHubStrategyLoadTrace<GitHubActionsWorkflowArtifactsSnapshot> {
+        return GitHubExecution.runBlockingIo {
+            fetchWorkflowArtifactSnapshotAsync(
+                owner = owner,
+                repo = repo,
+                workflowId = workflowId,
+                runLimit = runLimit,
+                artifactsPerRun = artifactsPerRun,
+                artifactRunLimit = artifactRunLimit,
+                branch = branch,
+                event = event,
+                status = status,
+                actor = actor,
+                created = created,
+                headSha = headSha,
+                excludePullRequests = excludePullRequests,
+                resolveNightlyRunDetail = resolveNightlyRunDetail
+            )
+        }
+    }
+
+    suspend fun fetchWorkflowArtifactSnapshotAsync(
+        owner: String,
+        repo: String,
+        workflowId: String,
+        runLimit: Int = DEFAULT_RUN_LIMIT,
+        artifactsPerRun: Int = DEFAULT_ARTIFACT_LIMIT,
+        artifactRunLimit: Int = Int.MAX_VALUE,
+        branch: String = "",
+        event: String = "",
+        status: String = "",
+        actor: String = "",
+        created: String = "",
+        headSha: String = "",
+        excludePullRequests: Boolean = false,
+        resolveNightlyRunDetail: Boolean = true
+    ): GitHubStrategyLoadTrace<GitHubActionsWorkflowArtifactsSnapshot> = withContext(ioDispatcher) {
+        fetchWorkflowArtifactSnapshotOnCurrentDispatcher(
+            owner = owner,
+            repo = repo,
+            workflowId = workflowId,
+            runLimit = runLimit,
+            artifactsPerRun = artifactsPerRun,
+            artifactRunLimit = artifactRunLimit,
+            branch = branch,
+            event = event,
+            status = status,
+            actor = actor,
+            created = created,
+            headSha = headSha,
+            excludePullRequests = excludePullRequests,
+            resolveNightlyRunDetail = resolveNightlyRunDetail
+        )
+    }
+
+    private suspend fun fetchWorkflowArtifactSnapshotOnCurrentDispatcher(
         owner: String,
         repo: String,
         workflowId: String,
@@ -399,14 +510,15 @@ class GitHubActionsRepository(
             return Result.failure<GitHubActionsWorkflowArtifactsSnapshot>(error).toTrace(startedAt)
         }
         val artifactRuns = runs.take(artifactRunLimit.coerceAtLeast(0))
-        val artifactsByRun = runCatching {
-            runArtifactFetcher.fetchForRuns(
+        val artifactsByRun = try {
+            runArtifactFetcher.fetchForRunsAsync(
                 owner = owner,
                 repo = repo,
                 runs = artifactRuns,
                 limit = artifactsPerRun
             )
-        }.getOrElse { error ->
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             return Result.failure<GitHubActionsWorkflowArtifactsSnapshot>(error).toTrace(startedAt)
         }
         val artifactsByRunId = mutableMapOf<Long, List<GitHubActionsArtifact>>()

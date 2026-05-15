@@ -1,9 +1,13 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 internal data class GitHubShareImportAssetPlan(
     val parsedLink: GitHubSharedReleaseLink,
@@ -28,49 +32,63 @@ internal object GitHubShareImportResolver {
     fun resolve(
         sharedText: String,
         lookupConfig: GitHubLookupConfig
-    ): Result<GitHubShareImportAssetPlan> = runCatching {
-        val parsedLink = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
-            ?: error("No valid GitHub link was detected")
-
-        val attempt = resolveWithFallbackStrategies(
-            parsedLink = parsedLink,
-            lookupConfig = lookupConfig
-        )
-
-        val apkAssets = attempt.fetchedBundle.assets
-            .filter { asset ->
-                asset.name.endsWith(".apk", ignoreCase = true) &&
-                    !asset.name.contains("metadata", ignoreCase = true)
-            }
-
-        val mergedAssets = mergeDirectSharedAssetIfNeeded(
-            strategy = lookupConfig.selectedStrategy,
-            parsedLink = parsedLink,
-            fetchedAssets = apkAssets
-        )
-
-        val finalAssets = when {
-            mergedAssets.isNotEmpty() -> mergedAssets
-            else -> {
-                val fallbackAsset = buildDirectSharedAsset(parsedLink)
-                if (fallbackAsset != null) {
-                    listOf(fallbackAsset)
-                } else {
-                    error("The target release contains no usable APK")
-                }
-            }
+    ): Result<GitHubShareImportAssetPlan> {
+        return GitHubExecution.runBlockingIo {
+            resolveAsync(
+                sharedText = sharedText,
+                lookupConfig = lookupConfig
+            )
         }
-
-        GitHubShareImportAssetPlan(
-            parsedLink = parsedLink,
-            resolvedReleaseTag = attempt.target.tag,
-            resolvedReleaseUrl = attempt.target.releaseUrl,
-            assets = finalAssets,
-            preferredAssetName = attempt.target.preferredAssetName
-        )
     }
 
-    private fun resolveWithFallbackStrategies(
+    suspend fun resolveAsync(
+        sharedText: String,
+        lookupConfig: GitHubLookupConfig
+    ): Result<GitHubShareImportAssetPlan> = withContext(Dispatchers.IO) {
+        cancellableResult {
+            val parsedLink = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
+                ?: error("No valid GitHub link was detected")
+
+            val attempt = resolveWithFallbackStrategiesAsync(
+                parsedLink = parsedLink,
+                lookupConfig = lookupConfig
+            )
+
+            val apkAssets = attempt.fetchedBundle.assets
+                .filter { asset ->
+                    asset.name.endsWith(".apk", ignoreCase = true) &&
+                        !asset.name.contains("metadata", ignoreCase = true)
+                }
+
+            val mergedAssets = mergeDirectSharedAssetIfNeeded(
+                strategy = lookupConfig.selectedStrategy,
+                parsedLink = parsedLink,
+                fetchedAssets = apkAssets
+            )
+
+            val finalAssets = when {
+                mergedAssets.isNotEmpty() -> mergedAssets
+                else -> {
+                    val fallbackAsset = buildDirectSharedAsset(parsedLink)
+                    if (fallbackAsset != null) {
+                        listOf(fallbackAsset)
+                    } else {
+                        error("The target release contains no usable APK")
+                    }
+                }
+            }
+
+            GitHubShareImportAssetPlan(
+                parsedLink = parsedLink,
+                resolvedReleaseTag = attempt.target.tag,
+                resolvedReleaseUrl = attempt.target.releaseUrl,
+                assets = finalAssets,
+                preferredAssetName = attempt.target.preferredAssetName
+            )
+        }
+    }
+
+    private suspend fun resolveWithFallbackStrategiesAsync(
         parsedLink: GitHubSharedReleaseLink,
         lookupConfig: GitHubLookupConfig
     ): ShareImportResolveAttempt {
@@ -85,8 +103,8 @@ internal object GitHubShareImportResolver {
             } else {
                 lookupConfig.copy(selectedStrategy = strategy)
             }
-            val attemptResult = runCatching {
-                resolveOnce(
+            val attemptResult = cancellableResult {
+                resolveOnceAsync(
                     parsedLink = parsedLink,
                     lookupConfig = strategyConfig
                 )
@@ -105,14 +123,14 @@ internal object GitHubShareImportResolver {
         throw lastError ?: IllegalStateException("Share import resolution failed")
     }
 
-    private fun resolveOnce(
+    private suspend fun resolveOnceAsync(
         parsedLink: GitHubSharedReleaseLink,
         lookupConfig: GitHubLookupConfig
     ): ShareImportResolveAttempt {
         val strategy = lookupConfig.selectedStrategy
         val target = resolveReleaseTarget(parsedLink, lookupConfig)
         val preferHtml = strategy == GitHubLookupStrategyOption.AtomFeed
-        val fetchedBundle = GitHubReleaseAssetRepository.fetchApkAssets(
+        val fetchedBundle = GitHubReleaseAssetRepository.fetchApkAssetsAsync(
             owner = parsedLink.owner,
             repo = parsedLink.repo,
             rawTag = target.tag,
@@ -341,5 +359,14 @@ internal object GitHubShareImportResolver {
             depth += 1
         }
         return false
+    }
+
+    private suspend inline fun <T> cancellableResult(crossinline block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            Result.failure(error)
+        }
     }
 }

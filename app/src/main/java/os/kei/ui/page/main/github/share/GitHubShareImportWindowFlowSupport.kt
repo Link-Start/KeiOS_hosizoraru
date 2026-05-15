@@ -154,7 +154,7 @@ internal suspend fun resolvePreferredAssetUrl(
     val token = lookupConfig.apiToken.trim()
     val preferApiAsset = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
     return withContext(Dispatchers.IO) {
-        GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
+        GitHubReleaseAssetRepository.resolvePreferredDownloadUrlAsync(
             asset = asset,
             useApiAssetUrl = preferApiAsset,
             apiToken = token

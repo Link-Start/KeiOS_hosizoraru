@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -13,7 +14,8 @@ import java.util.Locale
 
 internal class GitHubActionsProfileSource(
     private val client: okhttp3.OkHttpClient,
-    private val apiBaseUrl: String
+    private val apiBaseUrl: String,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     suspend fun fetch(
         request: GitHubRepositoryProfileRequest,
@@ -25,16 +27,17 @@ internal class GitHubActionsProfileSource(
             client = client,
             apiBaseUrl = apiBaseUrl,
             actionsStrategy = GitHubActionsLookupStrategyOption.GitHubApiToken,
-            requireApiTokenForApiStrategy = false
+            requireApiTokenForApiStrategy = false,
+            ioDispatcher = ioDispatcher
         )
-        val runsDeferred = async(Dispatchers.IO) {
+        val runsDeferred = async(ioDispatcher) {
             actionsRepository.fetchRecentRepositoryWorkflowRuns(
                 owner = request.owner,
                 repo = request.repo,
                 limit = ACTIONS_PROFILE_RUN_LIMIT
             ).result
         }
-        val artifactsDeferred = async(Dispatchers.IO) {
+        val artifactsDeferred = async(ioDispatcher) {
             actionsRepository.fetchRecentRepositoryArtifacts(
                 owner = request.owner,
                 repo = request.repo,

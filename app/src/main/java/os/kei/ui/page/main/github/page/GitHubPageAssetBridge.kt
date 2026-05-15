@@ -117,7 +117,7 @@ internal class GitHubPageAssetBridge(
         apiToken: String
     ): String {
         return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
+            GitHubReleaseAssetRepository.resolvePreferredDownloadUrlAsync(
                 asset = asset,
                 useApiAssetUrl = useApiAssetUrl,
                 apiToken = apiToken

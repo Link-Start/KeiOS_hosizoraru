@@ -32,16 +32,14 @@ import com.github.panpf.zoomimage.CoilZoomAsyncImage
 import com.github.panpf.zoomimage.rememberCoilZoomState
 import com.github.panpf.zoomimage.zoom.ContinuousTransformType
 import com.github.panpf.zoomimage.zoom.GestureType
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_GESTURE_COOLDOWN_MS
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_SCALE_EPSILON
 import os.kei.ui.page.main.student.detectMediaRatioFromUrl
 import os.kei.ui.page.main.student.isGifMediaSource
-import os.kei.ui.page.main.student.loadGuideBitmapSource
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.rememberDeviceRotationDegrees
 import os.kei.ui.page.main.student.rememberSystemAutoRotateEnabled
@@ -90,15 +88,13 @@ internal fun GuideImageFullscreenDialog(
             )
             return@produceState
         }
-        val bitmap = withContext(Dispatchers.IO) {
-            runCatching {
-                loadGuideBitmapSource(
-                    context = context,
-                    source = normalizedImageUrl,
-                    maxDecodeDimension = 2048
-                )
-            }.getOrNull()
-        }
+        val bitmap = runCatching {
+            GameKeeMediaImageLoader.loadGuideBitmap(
+                context = context,
+                source = normalizedImageUrl,
+                maxDecodeDimension = 2048
+            )
+        }.getOrNull()
         value = GuideFullscreenImageState(
             sampledBitmap = bitmap,
             loading = false,

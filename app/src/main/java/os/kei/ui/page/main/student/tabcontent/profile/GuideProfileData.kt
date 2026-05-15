@@ -1,6 +1,9 @@
 package os.kei.ui.page.main.student.tabcontent.profile
 
 import androidx.core.net.toUri
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.feature.ba.data.remote.GameKeeRepository
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
@@ -47,6 +50,17 @@ internal fun resolveProfileLinkTitle(url: String): String {
     val title = runCatching { fetchProfileLinkTitle(url) }.getOrDefault("")
     profileLinkTitleCache[url] = title
     return title
+}
+
+internal suspend fun resolveProfileLinkTitleAsync(
+    url: String,
+    networkDispatcher: CoroutineDispatcher = Dispatchers.IO
+): String {
+    if (url.isBlank()) return ""
+    profileLinkTitleCache[url]?.let { return it }
+    return withContext(networkDispatcher) {
+        resolveProfileLinkTitle(url)
+    }
 }
 
 internal fun fetchProfileLinkTitle(url: String): String {

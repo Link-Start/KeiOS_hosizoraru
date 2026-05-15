@@ -4,21 +4,36 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import kotlin.coroutines.cancellation.CancellationException
+
+private const val BGM_CACHE_PREWARM_BATCH_SIZE = 32
 
 internal class BaGuideStudentBgmLookupCoordinator(
     private val scope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val cachedLoader: (BaGuideCatalogEntry) -> BaGuideStudentBgmResolvedItem? =
-        ::loadCachedStudentBgmFavorite,
-    private val networkLoader: (BaGuideCatalogEntry) -> BaGuideStudentBgmResolvedItem? =
-        ::fetchStudentBgmFavorite
+    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val cachedLoader: suspend (BaGuideCatalogEntry) -> BaGuideStudentBgmResolvedItem? = { entry ->
+        withContext(ioDispatcher) {
+            loadCachedStudentBgmFavorite(entry)
+        }
+    },
+    private val networkLoader: suspend (BaGuideCatalogEntry) -> BaGuideStudentBgmResolvedItem? = { entry ->
+        fetchStudentBgmFavoriteAsync(
+            entry = entry,
+            networkDispatcher = ioDispatcher,
+            parseDispatcher = parseDispatcher
+        )
+    }
 ) {
     private val _states = MutableStateFlow<Map<Long, BaGuideStudentBgmLookupState>>(emptyMap())
     val states: StateFlow<Map<Long, BaGuideStudentBgmLookupState>> = _states.asStateFlow()
@@ -44,16 +59,19 @@ internal class BaGuideStudentBgmLookupCoordinator(
         if (pendingEntries.isEmpty()) return
         cachePrewarmJob?.cancel()
         cachePrewarmJob = scope.launch {
-            val cached = withContext(ioDispatcher) {
-                pendingEntries.mapNotNull { entry ->
+            pendingEntries.chunked(BGM_CACHE_PREWARM_BATCH_SIZE).forEach { batch ->
+                currentCoroutineContext().ensureActive()
+                val cached = batch.mapNotNull { entry ->
                     cachedLoader(entry)?.let { item -> entry.contentId to item }
                 }
-            }
-            if (cached.isEmpty()) return@launch
-            _states.update { states ->
-                states + cached.associate { (contentId, item) ->
-                    contentId to BaGuideStudentBgmLookupState.Ready(item)
+                if (cached.isNotEmpty()) {
+                    _states.update { states ->
+                        states + cached.associate { (contentId, item) ->
+                            contentId to BaGuideStudentBgmLookupState.Ready(item)
+                        }
+                    }
                 }
+                yield()
             }
         }
     }
@@ -73,15 +91,13 @@ internal class BaGuideStudentBgmLookupCoordinator(
             states + (entry.contentId to BaGuideStudentBgmLookupState.Loading)
         }
         scope.launch {
-            val resolved = withContext(ioDispatcher) {
-                runCatching {
-                    if (allowNetwork) {
-                        networkLoader(entry)
-                    } else {
-                        cachedLoader(entry)
-                    }
-                }.getOrNull()
-            }
+            val resolved = runCatchingCancellable {
+                if (allowNetwork) {
+                    networkLoader(entry)
+                } else {
+                    cachedLoader(entry)
+                }
+            }.getOrNull()
             if (allowNetwork || resolved != null) {
                 _states.update { states ->
                     states + (
@@ -96,6 +112,16 @@ internal class BaGuideStudentBgmLookupCoordinator(
                 _states.update { states -> states - entry.contentId }
             }
             onResolved(resolved)
+        }
+    }
+
+    private suspend fun <T> runCatchingCancellable(block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            Result.failure(error)
         }
     }
 }

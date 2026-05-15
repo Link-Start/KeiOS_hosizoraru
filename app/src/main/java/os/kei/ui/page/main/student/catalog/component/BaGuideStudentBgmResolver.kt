@@ -1,11 +1,15 @@
 package os.kei.ui.page.main.student.catalog.component
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.fetchGuideInfo
+import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.isGuideBgmFavoriteCandidateTitle
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 
@@ -29,6 +33,27 @@ internal fun fetchStudentBgmFavorite(
     if (cached != null) return cached
     val info = fetchGuideInfo(entry.detailUrl)
     BaStudentGuideStore.saveInfo(info)
+    return info.toStudentBgmFavorite(entry = entry, fromCache = false)
+}
+
+internal suspend fun fetchStudentBgmFavoriteAsync(
+    entry: BaGuideCatalogEntry,
+    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    parseDispatcher: CoroutineDispatcher = Dispatchers.Default
+): BaGuideStudentBgmResolvedItem? {
+    val cached = withContext(networkDispatcher) {
+        loadCachedStudentBgmFavorite(entry)
+    }
+    if (cached != null) return cached
+
+    val info = fetchGuideInfoAsync(
+        sourceUrl = entry.detailUrl,
+        networkDispatcher = networkDispatcher,
+        parseDispatcher = parseDispatcher
+    )
+    withContext(networkDispatcher) {
+        BaStudentGuideStore.saveInfo(info)
+    }
     return info.toStudentBgmFavorite(entry = entry, fromCache = false)
 }
 

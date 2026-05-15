@@ -24,11 +24,9 @@ import os.kei.ui.page.main.student.tabcontent.profile.fallbackProfileLinkTitle
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
 import os.kei.ui.page.main.student.tabcontent.profile.profileLinkTitleCache
 import os.kei.ui.page.main.student.tabcontent.profile.profileRoleReferenceFieldKey
-import os.kei.ui.page.main.student.tabcontent.profile.resolveProfileLinkTitle
+import os.kei.ui.page.main.student.tabcontent.profile.resolveProfileLinkTitleAsync
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -117,9 +115,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
                         value = if (externalLink.isBlank()) {
                             ""
                         } else {
-                            withContext(Dispatchers.IO) {
-                                resolveProfileLinkTitle(externalLink)
-                            }
+                            resolveProfileLinkTitleAsync(externalLink)
                         }
                     }
                     val displayValue = when {

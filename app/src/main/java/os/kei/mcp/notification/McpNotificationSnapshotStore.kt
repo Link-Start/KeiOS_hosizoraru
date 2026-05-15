@@ -52,6 +52,13 @@ internal object McpNotificationSnapshotStore {
         }
     }
 
+    fun putIfChanged(notificationId: Int, snapshot: McpNotificationSnapshot): Boolean {
+        val previous = get(notificationId)
+        if (previous == snapshot) return false
+        put(notificationId, snapshot)
+        return true
+    }
+
     fun clear(notificationId: Int) {
         when (notificationId) {
             McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = null
@@ -62,3 +69,49 @@ internal object McpNotificationSnapshotStore {
         }
     }
 }
+
+internal object McpNotificationActiveStateCache {
+    private const val ACTIVE_CACHE_TTL_MS = 1_200L
+    private val lock = Any()
+    private val cachedActiveById = mutableMapOf<Int, McpNotificationActiveCacheEntry>()
+
+    fun isActive(
+        notificationId: Int,
+        nowMs: Long = System.currentTimeMillis(),
+        probe: () -> Boolean
+    ): Boolean {
+        synchronized(lock) {
+            cachedActiveById[notificationId]
+                ?.takeIf { nowMs - it.checkedAtMs <= ACTIVE_CACHE_TTL_MS }
+                ?.let { return it.active }
+        }
+        val active = probe()
+        synchronized(lock) {
+            cachedActiveById[notificationId] = McpNotificationActiveCacheEntry(
+                active = active,
+                checkedAtMs = nowMs
+            )
+        }
+        return active
+    }
+
+    fun markActive(notificationId: Int, active: Boolean) {
+        synchronized(lock) {
+            cachedActiveById[notificationId] = McpNotificationActiveCacheEntry(
+                active = active,
+                checkedAtMs = System.currentTimeMillis()
+            )
+        }
+    }
+
+    fun clear(notificationId: Int) {
+        synchronized(lock) {
+            cachedActiveById.remove(notificationId)
+        }
+    }
+}
+
+private data class McpNotificationActiveCacheEntry(
+    val active: Boolean,
+    val checkedAtMs: Long
+)

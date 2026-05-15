@@ -186,6 +186,7 @@ fun BaGuideCatalogPage(
         favorites = favoriteBgms,
         nativeMediaNotificationEnabled = nativeBgmMediaNotificationEnabled
     )
+    val playbackUiState by playbackCoordinator.uiState.collectAsStateWithLifecycle()
     var playbackSliderPreview by remember { mutableStateOf<Float?>(null) }
     var bgmCacheRevision by remember { mutableIntStateOf(0) }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
@@ -219,11 +220,11 @@ fun BaGuideCatalogPage(
             BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
         }
     )
-    val chromePlaybackFavorite = playbackCoordinator.selectedFavorite
+    val chromePlaybackFavorite = playbackUiState.selectedFavorite
     val chromeArtworkImageUrl = chromePlaybackFavorite
         ?.resolvePlaybackArtworkImageUrl()
         .orEmpty()
-    val chromePlaybackProgress = playbackSliderPreview ?: playbackCoordinator.runtimeState.progress
+    val chromePlaybackProgress = playbackSliderPreview ?: playbackUiState.runtimeState.progress
     val bgmCachedCount = remember(favoriteBgms, bgmCacheRevision) {
         favoriteBgms.count { favorite -> isFavoriteBgmCached(appContext, favorite) }
     }
@@ -387,6 +388,7 @@ fun BaGuideCatalogPage(
                             pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> BaGuideStudentBgmTabContent(
                                 catalog = catalogDataState.catalog,
                                 playbackCoordinator = playbackCoordinator,
+                                playbackState = playbackUiState,
                                 searchQuery = pageSearchQuery,
                                 loading = catalogDataState.loading,
                                 innerPadding = PaddingValues(
@@ -406,6 +408,7 @@ fun BaGuideCatalogPage(
                             pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> BaGuideFavoriteBgmMusicContent(
                                 catalog = catalogDataState.catalog,
                                 playbackCoordinator = playbackCoordinator,
+                                playbackState = playbackUiState,
                                 searchQuery = pageSearchQuery,
                                 accent = accent,
                                 bottomBarScrollConnection = chromeScrollState,
@@ -552,7 +555,7 @@ fun BaGuideCatalogPage(
                 ?.ifBlank { chromeCurrentTitle }
                 ?: chromeCurrentTitle,
             artworkImageUrl = chromeArtworkImageUrl,
-            isPlaying = playbackCoordinator.runtimeState.isPlaying,
+            isPlaying = playbackUiState.runtimeState.isPlaying,
             playbackProgress = chromePlaybackProgress,
             onPlaybackProgressChange = { progress ->
                 playbackSliderPreview = progress

@@ -323,7 +323,7 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        McpNotificationSnapshotStore.put(notificationId, snapshot)
+        McpNotificationSnapshotStore.putIfChanged(notificationId, snapshot)
         notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
@@ -369,7 +369,8 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        McpNotificationSnapshotStore.put(notificationId, snapshot)
+        val changed = McpNotificationSnapshotStore.putIfChanged(notificationId, snapshot)
+        if (!changed) return true
         notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
@@ -485,13 +486,15 @@ object McpNotificationHelper {
             secondaryActionMode = secondaryActionModeFor(notificationId),
             notificationId = notificationId
         )
-        McpNotificationSnapshotStore.put(
-            notificationId = notificationId,
-            snapshot = snapshot.copy(
-                style = buildResult.style,
-                useXiaomiMagic = buildResult.useXiaomiMagic
-            )
+        val nextSnapshot = snapshot.copy(
+            style = buildResult.style,
+            useXiaomiMagic = buildResult.useXiaomiMagic
         )
+        val changed = McpNotificationSnapshotStore.putIfChanged(
+            notificationId = notificationId,
+            snapshot = nextSnapshot
+        )
+        if (!changed) return
         notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
@@ -501,9 +504,11 @@ object McpNotificationHelper {
     }
 
     private fun isNotificationActive(manager: NotificationManager, notificationId: Int): Boolean {
-        return runCatching {
-            manager.activeNotifications.any { it.id == notificationId }
-        }.getOrDefault(false)
+        return McpNotificationActiveStateCache.isActive(notificationId) {
+            runCatching {
+                manager.activeNotifications.any { it.id == notificationId }
+            }.getOrDefault(false)
+        }
     }
 
     private fun secondaryActionModeFor(notificationId: Int): SecondaryActionMode {
@@ -523,18 +528,23 @@ object McpNotificationHelper {
         notification: Notification,
         useXiaomiMagic: Boolean
     ): Boolean {
-        if (useXiaomiMagic) {
-            return McpXiaomiMagicDispatcher.notify(
+        val dispatched = if (useXiaomiMagic) {
+            McpXiaomiMagicDispatcher.notify(
                 context = context,
                 notificationId = notificationId,
                 notification = notification
             )
+        } else {
+            val notificationManager = NotificationManagerCompat.from(context)
+            if (McpXiaomiMagicDispatcher.canUseCommand()) {
+                restoreXiaomiNetworkIfNeeded(context)
+            }
+            notifySafely(context, notificationManager, notificationId, notification)
         }
-        val notificationManager = NotificationManagerCompat.from(context)
-        if (McpXiaomiMagicDispatcher.canUseCommand()) {
-            restoreXiaomiNetworkIfNeeded(context)
+        if (dispatched) {
+            McpNotificationActiveStateCache.markActive(notificationId, active = true)
         }
-        return notifySafely(context, notificationManager, notificationId, notification)
+        return dispatched
     }
 
     fun dispatchNotification(
@@ -556,6 +566,7 @@ object McpNotificationHelper {
         notificationId: Int
     ) {
         McpNotificationSnapshotStore.clear(notificationId)
+        McpNotificationActiveStateCache.markActive(notificationId, active = false)
         if (McpXiaomiMagicDispatcher.canUseCommand()) {
             restoreXiaomiNetworkIfNeeded(context)
         }

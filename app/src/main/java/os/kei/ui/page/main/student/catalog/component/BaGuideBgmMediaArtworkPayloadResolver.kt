@@ -2,10 +2,11 @@ package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
 import android.graphics.Bitmap
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
+import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import java.io.ByteArrayOutputStream
 
 internal object BaGuideBgmMediaArtworkPayloadResolver {
@@ -27,29 +28,32 @@ internal object BaGuideBgmMediaArtworkPayloadResolver {
         artworkUrlResolver: (GuideBgmFavoriteItem) -> String = { item ->
             item.resolvePlaybackArtworkImageUrl()
         },
-        bitmapLoader: (Context, String) -> Bitmap? = { ctx, url ->
-            BaGuideCatalogIconCache.getOrLoad(ctx, url)
-        }
+        bitmapLoader: (suspend (Context, String) -> Bitmap?) = { ctx, url ->
+            GameKeeMediaImageLoader.loadCatalogIcon(ctx, url)
+        },
+        defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
     ): ByteArray? {
         return resolveUrl(
             context = context,
             artworkUrl = artworkUrlResolver(favorite),
-            bitmapLoader = bitmapLoader
+            bitmapLoader = bitmapLoader,
+            defaultDispatcher = defaultDispatcher
         )
     }
 
     suspend fun resolveUrl(
         context: Context,
         artworkUrl: String,
-        bitmapLoader: (Context, String) -> Bitmap?
+        bitmapLoader: suspend (Context, String) -> Bitmap? = { ctx, url ->
+            GameKeeMediaImageLoader.loadCatalogIcon(ctx, url)
+        },
+        defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
     ): ByteArray? {
         val key = artworkUrl.trim()
         if (key.isBlank()) return null
         getCached(key)?.let { return it }
-        val bitmap = withContext(Dispatchers.IO) {
-            bitmapLoader(context.applicationContext, key)
-        } ?: return null
-        val payload = withContext(Dispatchers.Default) {
+        val bitmap = bitmapLoader(context.applicationContext, key) ?: return null
+        val payload = withContext(defaultDispatcher) {
             bitmap.toPngByteArray()
         } ?: return null
         synchronized(payloadCache) {

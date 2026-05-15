@@ -9,8 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
 
 @Composable
@@ -28,9 +27,7 @@ internal fun BaGuideBgmArtworkImage(
             value = cached
             return@produceState
         }
-        value = withContext(Dispatchers.IO) {
-            BaGuideCatalogIconCache.getOrLoad(context, imageUrl)
-        }
+        value = GameKeeMediaImageLoader.loadCatalogIcon(context, imageUrl)
     }
     val rendered = bitmap ?: return
     Image(

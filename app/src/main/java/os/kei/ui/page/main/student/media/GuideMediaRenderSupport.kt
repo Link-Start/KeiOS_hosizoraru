@@ -27,9 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 
 internal fun normalizeGuideMediaSource(raw: String): String {
@@ -86,15 +84,13 @@ fun GuideRemoteImage(
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) return
     val bitmap by produceState<Bitmap?>(initialValue = null, target) {
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                loadGuideBitmapSource(
-                    context = context,
-                    source = target,
-                    maxDecodeDimension = maxDecodeDimension
-                )
-            }.getOrNull()
-        }
+        value = runCatching {
+            GameKeeMediaImageLoader.loadGuideBitmap(
+                context = context,
+                source = target,
+                maxDecodeDimension = maxDecodeDimension
+            )
+        }.getOrNull()
     }
     val rendered = bitmap ?: return
     Image(
@@ -140,36 +136,7 @@ fun GuideRemoteImageAdaptive(
             }
             progressState?.value = 0f
             onLoadingChanged?.invoke(true)
-            val warmed = withContext(Dispatchers.IO) {
-                runCatching {
-                    BaGuideTempMediaCache.prefetchForGuide(
-                        context = context,
-                        sourceUrl = GUIDE_INLINE_GIF_CACHE_SCOPE,
-                        rawUrls = listOf(target)
-                    )
-                }
-                var resolved = BaGuideTempMediaCache.resolveCachedUrl(
-                    context = context,
-                    sourceUrl = GUIDE_INLINE_GIF_CACHE_SCOPE,
-                    rawUrl = target
-                )
-                if (!isFileMediaSource(resolved)) {
-                    runCatching {
-                        BaGuideTempMediaCache.prefetchForGuide(
-                            context = context,
-                            sourceUrl = GUIDE_INLINE_GIF_CACHE_SCOPE,
-                            rawUrls = listOf(target),
-                            forceReDownload = true
-                        )
-                    }
-                    resolved = BaGuideTempMediaCache.resolveCachedUrl(
-                        context = context,
-                        sourceUrl = GUIDE_INLINE_GIF_CACHE_SCOPE,
-                        rawUrl = target
-                    )
-                }
-                resolved
-            }
+            val warmed = GameKeeMediaImageLoader.resolveInlineGifTarget(context, target)
             value = warmed.ifBlank { target }
         }
         val ratio = remember(resolvedGifTarget, target) {
@@ -202,20 +169,18 @@ fun GuideRemoteImageAdaptive(
     val bitmap by produceState<Bitmap?>(initialValue = retainedBitmap, target) {
         progressState?.value = 0f
         onLoadingChanged?.invoke(true)
-        val loadedBitmap = withContext(Dispatchers.IO) {
-            runCatching {
-                loadGuideBitmapSource(
-                    context = context,
-                    source = target,
-                    maxDecodeDimension = maxDecodeDimension
-                ) { downloadedBytes, totalBytes ->
-                    if (totalBytes > 0L) {
-                        progressState?.value =
-                            (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                    }
+        val loadedBitmap = runCatching {
+            GameKeeMediaImageLoader.loadGuideBitmap(
+                context = context,
+                source = target,
+                maxDecodeDimension = maxDecodeDimension
+            ) { downloadedBytes, totalBytes ->
+                if (totalBytes > 0L) {
+                    progressState?.value =
+                        (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
                 }
-            }.getOrNull()
-        }
+            }
+        }.getOrNull()
         if (loadedBitmap != null) {
             retainedBitmap = loadedBitmap
             value = loadedBitmap
@@ -327,15 +292,13 @@ fun GuideRemoteIcon(
         iconDecodeDimension
     ) {
         if (value == null) {
-            value = withContext(Dispatchers.IO) {
-                runCatching {
-                    loadGuideBitmapSource(
-                        context = context,
-                        source = target,
-                        maxDecodeDimension = iconDecodeDimension
-                    )
-                }.getOrNull()
-            }
+            value = runCatching {
+                GameKeeMediaImageLoader.loadGuideBitmap(
+                    context = context,
+                    source = target,
+                    maxDecodeDimension = iconDecodeDimension
+                )
+            }.getOrNull()
         }
     }
     val rendered = bitmap ?: return

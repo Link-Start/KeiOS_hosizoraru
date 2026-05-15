@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.ba.support.BA_AP_REGEN_TICK_MS
 import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
 import os.kei.ui.page.main.widget.chrome.isPageSettledAtTop
@@ -39,6 +38,7 @@ internal fun BaPageCommonEffects(
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    val runtimeTickerCoordinator = rememberBaRuntimeTickerCoordinator()
 
     DisposableEffect(Unit) {
         onDispose { onDisposeActionBarInteraction() }
@@ -80,53 +80,28 @@ internal fun BaPageCommonEffects(
             }
     }
 
-    LaunchedEffect(isPageActive) {
+    LaunchedEffect(isPageActive, listState, office, runtimeTickerCoordinator) {
         office.ensureRegenBase()
         office.ensureCafeHourBase()
         office.clampCafeStoredToCap()
-        runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
-        while (true) {
-            if (isPageActive) {
-                delay(BA_AP_REGEN_TICK_MS.milliseconds)
-                runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
-            } else {
-                // Keep background overhead low on offscreen pager pages.
-                delay(5_000.milliseconds)
-            }
+        if (isPageActive) {
+            val nowMs = System.currentTimeMillis()
+            onUiNowMsChange(nowMs)
+            onUiMinuteMsChange(nowMs)
         }
-    }
-
-    LaunchedEffect(isPageActive, listState) {
-        if (isPageActive) onUiNowMsChange(System.currentTimeMillis())
-        while (true) {
-            if (!isPageActive) {
-                delay(3_000.milliseconds)
-                continue
+        runtimeTickerCoordinator.run(
+            isPageActive = { isPageActive },
+            isScrollInProgress = { listState.isScrollInProgress },
+        ) { frame ->
+            if (frame.applyRuntimeTick) {
+                runtimePersistenceCoordinator.submit(office.applyRuntimeTick(frame.nowMs))
             }
-            if (isPageActive && listState.isScrollInProgress) {
-                delay(250.milliseconds)
-                continue
+            if (frame.updateUiNow) {
+                onUiNowMsChange(frame.nowMs)
             }
-            delay(BA_UI_SECOND_TICK_MS.milliseconds)
-            if (isPageActive && listState.isScrollInProgress) continue
-            onUiNowMsChange(System.currentTimeMillis())
-        }
-    }
-
-    LaunchedEffect(isPageActive, listState) {
-        if (isPageActive) onUiMinuteMsChange(System.currentTimeMillis())
-        while (true) {
-            if (!isPageActive) {
-                delay(30_000.milliseconds)
-                continue
+            if (frame.updateUiMinute) {
+                onUiMinuteMsChange(frame.nowMs)
             }
-            if (isPageActive && listState.isScrollInProgress) {
-                delay(BA_UI_SECOND_TICK_MS.milliseconds)
-                continue
-            }
-            delay(baUiMinuteTickDelayMs().milliseconds)
-            if (isPageActive && listState.isScrollInProgress) continue
-            onUiMinuteMsChange(System.currentTimeMillis())
         }
     }
 

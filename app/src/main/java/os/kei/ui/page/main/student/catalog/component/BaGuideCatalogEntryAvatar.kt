@@ -18,9 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -61,7 +60,7 @@ private fun BaGuideCatalogEntryAvatarImage(
             return@produceState
         }
         if (!loadEnabled) return@produceState
-        value = withContext(Dispatchers.IO) { BaGuideCatalogIconCache.getOrLoad(context, imageUrl) }
+        value = GameKeeMediaImageLoader.loadCatalogIcon(context, imageUrl)
     }
     val rendered = bitmap
     if (rendered == null) {

@@ -62,6 +62,7 @@ private const val STUDENT_BGM_LOAD_MORE_THRESHOLD = 10
 internal fun BaGuideStudentBgmTabContent(
     catalog: BaGuideCatalogBundle,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
+    playbackState: BaGuideBgmPlaybackUiState,
     searchQuery: String,
     loading: Boolean,
     innerPadding: PaddingValues,
@@ -87,9 +88,9 @@ internal fun BaGuideStudentBgmTabContent(
     var nowPlayingExpanded by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
     var seekPreviewProgress by remember { mutableStateOf<Float?>(null) }
-    val selectedAudioUrl = playbackCoordinator.selectedAudioUrl
-    val playbackRuntimeState = playbackCoordinator.runtimeState
-    val queueMode = playbackCoordinator.queueMode
+    val selectedAudioUrl = playbackState.selectedAudioUrl
+    val playbackRuntimeState = playbackState.runtimeState
+    val queueMode = playbackState.queueMode
     val bgmMissingText = stringResource(R.string.ba_catalog_student_bgm_toast_missing)
     val bgmResolveFailedText = stringResource(R.string.ba_catalog_student_bgm_toast_resolve_failed)
     val favoriteAddedText = stringResource(R.string.guide_bgm_toast_favorite_added)

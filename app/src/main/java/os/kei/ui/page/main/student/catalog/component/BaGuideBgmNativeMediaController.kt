@@ -10,6 +10,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,10 +22,13 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 
-internal class BaGuideBgmNativeMediaController(context: Context) {
+internal class BaGuideBgmNativeMediaController(
+    context: Context,
+    artworkDispatcher: CoroutineDispatcher = Dispatchers.Default
+) {
     private val appContext = context.applicationContext
     private val mainExecutor = ContextCompat.getMainExecutor(appContext)
-    private val artworkScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val artworkScope = CoroutineScope(SupervisorJob() + artworkDispatcher)
     private val lock = Any()
     private val pendingCommands = ArrayDeque<(MediaController) -> Unit>()
 

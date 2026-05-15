@@ -30,6 +30,7 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
@@ -45,6 +46,7 @@ import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 internal fun BaGuideFavoriteBgmMusicContent(
     catalog: BaGuideCatalogBundle,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
+    playbackState: BaGuideBgmPlaybackUiState,
     searchQuery: String,
     accent: Color,
     bottomBarScrollConnection: NestedScrollConnection,
@@ -73,8 +75,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
             playbackCoordinator.updateQueue(displayedFavorites)
         }
     }
-    val selectedFavorite = playbackCoordinator.selectedFavorite
-        ?: displayedFavorites.firstOrNull { it.audioUrl == playbackCoordinator.selectedAudioUrl }
+    val selectedFavorite = playbackState.selectedFavorite
+        ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
         ?: displayedFavorites.firstOrNull()
     val tracks = remember(displayedFavorites, cacheRevision) {
         displayedFavorites.map { favorite -> favorite.toBaGuideBgmTrack() }
@@ -149,9 +151,9 @@ internal fun BaGuideFavoriteBgmMusicContent(
             accent = accent,
             tracks = tracks,
             currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
-            isPlaying = playbackCoordinator.runtimeState.isPlaying,
-            repeatEnabled = playbackCoordinator.queueMode == BaGuideBgmQueueMode.SingleLoop,
-            playbackVolume = playbackCoordinator.runtimeState.volume,
+            isPlaying = playbackState.runtimeState.isPlaying,
+            repeatEnabled = playbackState.queueMode == BaGuideBgmQueueMode.SingleLoop,
+            playbackVolume = playbackState.runtimeState.volume,
             isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
             onRepeatClick = { playbackCoordinator.toggleQueueMode() },
             onPlayPauseClick = {
@@ -178,12 +180,12 @@ internal fun BaGuideFavoriteBgmMusicContent(
             onSliderInteractionChanged = onSliderInteractionChanged,
             onTrackClick = { id ->
                 favoritesByTrackId[id]?.let { favorite ->
-                    playFavorite(favorite, restart = id == playbackCoordinator.selectedAudioUrl)
+                    playFavorite(favorite, restart = id == playbackState.selectedAudioUrl)
                 }
             },
             onTrackFavoriteClick = { id ->
                 GuideBgmFavoriteStore.removeFavorite(id)
-                if (playbackCoordinator.selectedAudioUrl == id) playbackCoordinator.select("")
+                if (playbackState.selectedAudioUrl == id) playbackCoordinator.select("")
             },
             onTrackOfflineClick = { id ->
                 favoritesByTrackId[id]?.let(::toggleFavoriteCache)

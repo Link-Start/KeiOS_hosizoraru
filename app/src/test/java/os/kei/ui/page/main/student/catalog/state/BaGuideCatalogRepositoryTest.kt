@@ -16,7 +16,7 @@ class BaGuideCatalogRepositoryTest {
             ioDispatcher = Dispatchers.Unconfined,
             refreshIntervalLoader = { 1 },
             cachedBundleLoader = { cached },
-            catalogFetcher = { error("blocked") },
+            catalogFetcher = { _, _, _ -> error("blocked") },
             completeChecker = { it === cached },
             expiredChecker = { _, _, _ -> true }
         )
@@ -41,7 +41,7 @@ class BaGuideCatalogRepositoryTest {
             ioDispatcher = Dispatchers.Unconfined,
             refreshIntervalLoader = { 12 },
             cachedBundleLoader = { cached },
-            catalogFetcher = {
+            catalogFetcher = { _, _, _ ->
                 fetchCalled = true
                 BaGuideCatalogBundle.EMPTY
             },

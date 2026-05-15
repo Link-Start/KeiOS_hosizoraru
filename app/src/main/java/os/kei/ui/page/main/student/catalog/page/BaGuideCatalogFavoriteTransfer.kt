@@ -81,7 +81,16 @@ internal fun previewCatalogFavoritesImport(
     raw: String,
     currentFavorites: Map<Long, Long>
 ): CatalogFavoritesImportPreview {
-    val imported = parseCatalogFavoritesExport(raw)
+    return previewCatalogFavoritesImport(
+        imported = parseCatalogFavoritesExport(raw),
+        currentFavorites = currentFavorites
+    )
+}
+
+internal fun previewCatalogFavoritesImport(
+    imported: Map<Long, Long>,
+    currentFavorites: Map<Long, Long>
+): CatalogFavoritesImportPreview {
     if (imported.isEmpty()) {
         return CatalogFavoritesImportPreview(
             importedCount = 0,

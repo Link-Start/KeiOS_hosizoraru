@@ -7,14 +7,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
-import os.kei.core.io.readTextFromUriLimited
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 
 internal data class BaGuideCatalogImportActions(
@@ -38,20 +34,30 @@ internal fun rememberBaGuideCatalogImportActions(
     ) {
         if (uri == null) return
         pageScope.launch {
-            val preview = buildBaGuideCatalogImportPreview(
-                context = context,
-                uri = uri,
-                kind = kind,
-                currentFavorites = filterSortState.favoriteCatalogEntries
-            )
-            if (preview == null || !preview.hasImportableData) {
+            try {
+                val preview = buildBaGuideCatalogImportPreviewAsync(
+                    context = context,
+                    uri = uri,
+                    kind = kind,
+                    currentFavorites = filterSortState.favoriteCatalogEntries
+                )
+                if (preview.hasImportableData) {
+                    onPreviewStateChange(preview)
+                } else {
+                    Toast.makeText(
+                        context,
+                        context.getString(failureMessageRes),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
                 Toast.makeText(
                     context,
                     context.getString(failureMessageRes),
                     Toast.LENGTH_SHORT
                 ).show()
-            } else {
-                onPreviewStateChange(preview)
             }
         }
     }
@@ -107,113 +113,44 @@ private fun confirmFavoritesImport(
     onPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit
 ) {
     pageScope.launch {
-        val result = runCatching {
-            val studentFavorites = if (
-                preview.kind == BaGuideCatalogImportKind.All ||
-                preview.kind == BaGuideCatalogImportKind.Student
-            ) {
-                withContext(Dispatchers.Default) {
-                    parseCatalogFavoritesExport(preview.raw)
-                }
-            } else {
-                emptyMap()
+        try {
+            val importResult = applyBaGuideCatalogFavoritesImportAsync(preview)
+            val studentFavorites = importResult.studentFavorites
+            val bgmResult = importResult.bgmResult
+            if (studentFavorites.isNotEmpty()) {
+                filterSortState.replaceFavorites(
+                    filterSortState.favoriteCatalogEntries + studentFavorites
+                )
             }
-            val bgmResult = if (
-                preview.kind == BaGuideCatalogImportKind.All ||
-                preview.kind == BaGuideCatalogImportKind.Bgm
-            ) {
-                withContext(Dispatchers.IO) {
-                    GuideBgmFavoriteStore.importFavoritesJsonMerged(preview.raw)
-                }
-            } else {
-                null
+            val message = when (preview.kind) {
+                BaGuideCatalogImportKind.All -> context.getString(
+                    R.string.ba_catalog_transfer_all_import_success,
+                    studentFavorites.size,
+                    bgmResult?.addedCount ?: 0,
+                    bgmResult?.updatedCount ?: 0
+                )
+
+                BaGuideCatalogImportKind.Student -> context.getString(
+                    R.string.ba_catalog_transfer_student_import_success,
+                    studentFavorites.size
+                )
+
+                BaGuideCatalogImportKind.Bgm -> context.getString(
+                    R.string.ba_catalog_bgm_import_success,
+                    bgmResult?.addedCount ?: 0,
+                    bgmResult?.updatedCount ?: 0
+                )
             }
-            studentFavorites to bgmResult
+            onPreviewStateChange(null)
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.ba_catalog_transfer_import_failed),
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        result
-            .onSuccess { (studentFavorites, bgmResult) ->
-                if (studentFavorites.isNotEmpty()) {
-                    filterSortState.replaceFavorites(
-                        filterSortState.favoriteCatalogEntries + studentFavorites
-                    )
-                }
-                val message = when (preview.kind) {
-                    BaGuideCatalogImportKind.All -> context.getString(
-                        R.string.ba_catalog_transfer_all_import_success,
-                        studentFavorites.size,
-                        bgmResult?.addedCount ?: 0,
-                        bgmResult?.updatedCount ?: 0
-                    )
-
-                    BaGuideCatalogImportKind.Student -> context.getString(
-                        R.string.ba_catalog_transfer_student_import_success,
-                        studentFavorites.size
-                    )
-
-                    BaGuideCatalogImportKind.Bgm -> context.getString(
-                        R.string.ba_catalog_bgm_import_success,
-                        bgmResult?.addedCount ?: 0,
-                        bgmResult?.updatedCount ?: 0
-                    )
-                }
-                onPreviewStateChange(null)
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            }
-            .onFailure {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_catalog_transfer_import_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
     }
-}
-
-private suspend fun buildBaGuideCatalogImportPreview(
-    context: Context,
-    uri: Uri,
-    kind: BaGuideCatalogImportKind,
-    currentFavorites: Map<Long, Long>
-): BaGuideCatalogImportPreviewState? {
-    return runCatching {
-        val raw = readBaGuideCatalogImportText(context, uri)
-        withContext(Dispatchers.Default) {
-            when (kind) {
-                BaGuideCatalogImportKind.Student -> BaGuideCatalogImportPreviewState(
-                    kind = kind,
-                    raw = raw,
-                    studentPreview = previewCatalogFavoritesImport(
-                        raw = raw,
-                        currentFavorites = currentFavorites
-                    ),
-                    bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport("")
-                )
-
-                BaGuideCatalogImportKind.Bgm -> BaGuideCatalogImportPreviewState(
-                    kind = kind,
-                    raw = raw,
-                    studentPreview = CatalogFavoritesImportPreview(0, 0, 0),
-                    bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
-                )
-
-                BaGuideCatalogImportKind.All -> BaGuideCatalogImportPreviewState(
-                    kind = kind,
-                    raw = raw,
-                    studentPreview = previewCatalogFavoritesImport(
-                        raw = raw,
-                        currentFavorites = currentFavorites
-                    ),
-                    bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
-                )
-            }
-        }
-    }.getOrNull()
-}
-
-private suspend fun readBaGuideCatalogImportText(context: Context, uri: Uri): String {
-    return context.contentResolver.readTextFromUriLimited(
-        uri = uri,
-        maxBytes = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES,
-        ioDispatcher = Dispatchers.IO
-    ).text
 }

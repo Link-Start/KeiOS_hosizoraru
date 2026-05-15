@@ -591,6 +591,21 @@ internal fun createUniqueDocumentInTree(
     return null
 }
 
+internal suspend fun createUniqueDocumentUriInTreeAsync(
+    context: Context,
+    treeUri: Uri,
+    mimeType: String,
+    fileName: String,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+): Uri? = withContext(ioDispatcher) {
+    val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
+    createUniqueDocumentInTree(
+        tree = treeDoc,
+        mimeType = mimeType,
+        fileName = fileName
+    )?.uri
+}
+
 @Composable
 internal fun rememberGuideSyncProgress(
     loading: Boolean,

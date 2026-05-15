@@ -460,11 +460,8 @@ fun BaGuideCatalogPage(
                 onPickMediaSaveLocation = transferExportAction.saveLocationState.onPickMediaSaveLocation,
                 onExportAllFavorites = {
                     showTransferSheet = false
-                    transferExportAction.exportJson(
-                        buildCatalogAllFavoritesExportJson(
-                            favorites = filterSortState.favoriteCatalogEntries,
-                            bgmFavoritesJson = GuideBgmFavoriteStore.buildFavoritesExportJson()
-                        ),
+                    transferExportAction.exportJsonFrom(
+                        { buildCatalogAllFavoritesExportJsonAsync(filterSortState.favoriteCatalogEntries) },
                         "keios-ba-favorites.json",
                         allExportSuccessText
                     )
@@ -481,8 +478,8 @@ fun BaGuideCatalogPage(
                 },
                 onExportStudentFavorites = {
                     showTransferSheet = false
-                    transferExportAction.exportJson(
-                        buildCatalogFavoritesExportJson(filterSortState.favoriteCatalogEntries),
+                    transferExportAction.exportJsonFrom(
+                        { buildCatalogFavoritesExportJsonAsync(filterSortState.favoriteCatalogEntries) },
                         "keios-ba-student-favorites.json", studentExportSuccessText
                     )
                 },
@@ -498,8 +495,8 @@ fun BaGuideCatalogPage(
                 },
                 onExportBgmFavorites = {
                     showTransferSheet = false
-                    transferExportAction.exportJson(
-                        GuideBgmFavoriteStore.buildFavoritesExportJson(),
+                    transferExportAction.exportJsonFrom(
+                        { buildBgmFavoritesExportJsonAsync() },
                         "keios-ba-bgm-favorites.json", bgmExportSuccessText
                     )
                 },

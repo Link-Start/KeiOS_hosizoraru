@@ -11,6 +11,7 @@ import os.kei.ui.page.main.student.catalog.hydrateBaGuideCatalogReleaseDateIndex
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
 import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
+import kotlin.coroutines.cancellation.CancellationException
 
 internal data class BaGuideCatalogLoadResult(
     val catalog: BaGuideCatalogBundle,
@@ -22,7 +23,11 @@ internal class BaGuideCatalogRepository(
     private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val refreshIntervalLoader: () -> Int = BASettingsStore::loadCalendarRefreshIntervalHours,
     private val cachedBundleLoader: () -> BaGuideCatalogBundle? = ::loadCachedBaGuideCatalogBundle,
-    private val catalogFetcher: suspend (forceRefresh: Boolean) -> BaGuideCatalogBundle =
+    private val catalogFetcher: suspend (
+        forceRefresh: Boolean,
+        networkDispatcher: CoroutineDispatcher,
+        parseDispatcher: CoroutineDispatcher
+    ) -> BaGuideCatalogBundle =
         ::fetchBaGuideCatalogBundle,
     private val completeChecker: (BaGuideCatalogBundle?) -> Boolean =
         ::isBaGuideCatalogBundleComplete,
@@ -53,8 +58,18 @@ internal class BaGuideCatalogRepository(
             )
         }
 
-        val result = withContext(ioDispatcher) {
-            runCatching { catalogFetcher(true) }
+        val result = try {
+            Result.success(
+                catalogFetcher(
+                    true,
+                    ioDispatcher,
+                    parseDispatcher
+                )
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            Result.failure(error)
         }
         return result.fold(
             onSuccess = { latest ->

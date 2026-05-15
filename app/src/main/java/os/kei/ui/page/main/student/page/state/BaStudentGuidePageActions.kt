@@ -13,12 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import androidx.media3.common.MediaItem
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.ui.resource.resolveString
@@ -32,7 +29,7 @@ import os.kei.ui.page.main.student.page.support.buildGuideMediaPackSaveRequest
 import os.kei.ui.page.main.student.page.support.buildGuideMediaSaveRequest
 import os.kei.ui.page.main.student.page.support.copyGuideMediaPackToUriAsync
 import os.kei.ui.page.main.student.page.support.copyGuideMediaToUriAsync
-import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
+import os.kei.ui.page.main.student.page.support.createUniqueDocumentUriInTreeAsync
 import os.kei.ui.page.main.student.page.support.normalizeGuidePlaybackSource
 
 internal data class BaStudentGuidePageActions(
@@ -103,15 +100,12 @@ internal fun rememberBaStudentGuideMediaSaveAction(
         BASettingsStore.saveMediaSaveFixedTreeUri(treeUri.toString())
         pendingFixedSaveRequest = null
         pageScope.launch {
-            val targetUri = withContext(Dispatchers.IO) {
-                val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
-                val targetDoc = createUniqueDocumentInTree(
-                    tree = treeDoc,
-                    mimeType = request.mimeType,
-                    fileName = request.fileName
-                ) ?: return@withContext null
-                targetDoc.uri
-            }
+            val targetUri = createUniqueDocumentUriInTreeAsync(
+                context = context,
+                treeUri = treeUri,
+                mimeType = request.mimeType,
+                fileName = request.fileName
+            )
             val success = targetUri?.let { uri ->
                 copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
             } == true
@@ -161,16 +155,12 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                     }
                     if (fixedTreeUri != null) {
                         pageScope.launch {
-                            val targetUri = withContext(Dispatchers.IO) {
-                                val treeDoc = DocumentFile.fromTreeUri(context, fixedTreeUri)
-                                    ?: return@withContext null
-                                val targetDoc = createUniqueDocumentInTree(
-                                    tree = treeDoc,
-                                    mimeType = request.mimeType,
-                                    fileName = request.fileName
-                                ) ?: return@withContext null
-                                targetDoc.uri
-                            }
+                            val targetUri = createUniqueDocumentUriInTreeAsync(
+                                context = context,
+                                treeUri = fixedTreeUri,
+                                mimeType = request.mimeType,
+                                fileName = request.fileName
+                            )
                             val success = targetUri?.let { uri ->
                                 copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
                             } == true
@@ -283,15 +273,12 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
         BASettingsStore.saveMediaSaveFixedTreeUri(treeUri.toString())
         pendingFixedPackSaveRequest = null
         pageScope.launch {
-            val targetUri = withContext(Dispatchers.IO) {
-                val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
-                val targetDoc = createUniqueDocumentInTree(
-                    tree = treeDoc,
-                    mimeType = "application/zip",
-                    fileName = request.fileName
-                ) ?: return@withContext null
-                targetDoc.uri
-            }
+            val targetUri = createUniqueDocumentUriInTreeAsync(
+                context = context,
+                treeUri = treeUri,
+                mimeType = "application/zip",
+                fileName = request.fileName
+            )
             val result = targetUri?.let { uri ->
                 copyGuideMediaPackToUriAsync(
                     context = context,
@@ -345,16 +332,12 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                     }
                     if (fixedTreeUri != null) {
                         pageScope.launch {
-                            val targetUri = withContext(Dispatchers.IO) {
-                                val treeDoc = DocumentFile.fromTreeUri(context, fixedTreeUri)
-                                    ?: return@withContext null
-                                val targetDoc = createUniqueDocumentInTree(
-                                    tree = treeDoc,
-                                    mimeType = "application/zip",
-                                    fileName = request.fileName
-                                ) ?: return@withContext null
-                                targetDoc.uri
-                            }
+                            val targetUri = createUniqueDocumentUriInTreeAsync(
+                                context = context,
+                                treeUri = fixedTreeUri,
+                                mimeType = "application/zip",
+                                fileName = request.fileName
+                            )
                             val result = targetUri?.let { uri ->
                                 copyGuideMediaPackToUriAsync(
                                     context = context,

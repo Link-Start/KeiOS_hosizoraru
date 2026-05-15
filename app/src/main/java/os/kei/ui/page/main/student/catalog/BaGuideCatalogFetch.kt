@@ -149,34 +149,46 @@ internal fun clearBaGuideCatalogCache(context: Context? = null) {
     BaGuideCatalogIconCache.clear(context)
 }
 
-internal suspend fun fetchBaGuideCatalogBundle(forceRefresh: Boolean = false): BaGuideCatalogBundle {
+internal suspend fun fetchBaGuideCatalogBundle(
+    forceRefresh: Boolean = false,
+    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    parseDispatcher: CoroutineDispatcher = Dispatchers.Default
+): BaGuideCatalogBundle {
     if (!forceRefresh) {
-        val cached = loadCachedBaGuideCatalogBundle()
+        val cached = withContext(networkDispatcher) {
+            loadCachedBaGuideCatalogBundle()
+        }
         if (isBaGuideCatalogBundleComplete(cached)) {
             return cached!!
         }
     }
     val now = System.currentTimeMillis()
-    val releaseDateIndex = BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
+    val releaseDateIndex = withContext(networkDispatcher) {
+        BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
+    }
 
     val (studentRaw, npcSatelliteRaw) = coroutineScope {
-        val studentDeferred = async { fetchRawEntriesByPid(BA_GUIDE_STUDENT_PID) }
-        val npcSatelliteDeferred = async { fetchRawEntriesByPid(BA_GUIDE_NPC_SATELLITE_PID) }
+        val studentDeferred = async(networkDispatcher) { fetchRawEntriesByPid(BA_GUIDE_STUDENT_PID) }
+        val npcSatelliteDeferred = async(networkDispatcher) {
+            fetchRawEntriesByPid(BA_GUIDE_NPC_SATELLITE_PID)
+        }
         studentDeferred.await() to npcSatelliteDeferred.await()
     }
 
-    val studentEntries = studentRaw.map { raw ->
-        raw.toCatalogEntry(
-            tab = BaGuideCatalogTab.Student,
-            releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L
-        )
-    }
-
-    val npcSatelliteEntries = npcSatelliteRaw.map { raw ->
-        raw.toCatalogEntry(
-            tab = BaGuideCatalogTab.NpcSatellite,
-            releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L
-        )
+    val (studentEntries, npcSatelliteEntries) = withContext(parseDispatcher) {
+        val studentEntries = studentRaw.map { raw ->
+            raw.toCatalogEntry(
+                tab = BaGuideCatalogTab.Student,
+                releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L
+            )
+        }
+        val npcSatelliteEntries = npcSatelliteRaw.map { raw ->
+            raw.toCatalogEntry(
+                tab = BaGuideCatalogTab.NpcSatellite,
+                releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L
+            )
+        }
+        studentEntries to npcSatelliteEntries
     }
 
     val bundle = BaGuideCatalogBundle(
@@ -187,7 +199,9 @@ internal suspend fun fetchBaGuideCatalogBundle(forceRefresh: Boolean = false): B
         syncedAtMs = now
     )
     cachedCatalogBundle = bundle
-    BaGuideCatalogStore.saveBundle(bundle)
+    withContext(networkDispatcher) {
+        BaGuideCatalogStore.saveBundle(bundle)
+    }
     return bundle
 }
 

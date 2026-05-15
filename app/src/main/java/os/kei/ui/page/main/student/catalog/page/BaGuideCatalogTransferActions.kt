@@ -15,13 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.ba.support.BASettingsStore
-import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
 
 internal data class BaGuideCatalogTransferSaveLocationState(
     val mediaSaveCustomEnabled: Boolean,
@@ -32,14 +29,15 @@ internal data class BaGuideCatalogTransferSaveLocationState(
 
 internal data class BaGuideCatalogJsonExportAction(
     val saveLocationState: BaGuideCatalogTransferSaveLocationState,
-    val exportJson: (payload: String, fileName: String, successToast: String) -> Unit
+    val exportJson: (payload: String, fileName: String, successToast: String) -> Unit,
+    val exportJsonFrom: (
+        payloadBuilder: BaGuideCatalogJsonExportPayloadBuilder,
+        fileName: String,
+        successToast: String
+    ) -> Unit
 )
 
-private data class BaGuideCatalogJsonExportRequest(
-    val payload: String,
-    val fileName: String,
-    val successToast: String
-)
+internal typealias BaGuideCatalogJsonExportPayloadBuilder = suspend () -> String
 
 @Composable
 internal fun rememberBaGuideCatalogJsonExportAction(
@@ -48,8 +46,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
     exportDoneText: String,
     exportFailedText: String
 ): BaGuideCatalogJsonExportAction {
-    var pendingSafExportPayload by remember { mutableStateOf("") }
-    var pendingSafExportToast by remember { mutableStateOf("") }
+    var pendingSafExportRequest by remember { mutableStateOf<BaGuideCatalogJsonExportRequest?>(null) }
     var pendingFixedExportRequest by remember { mutableStateOf<BaGuideCatalogJsonExportRequest?>(null) }
     var mediaSaveCustomEnabled by rememberSaveable {
         mutableStateOf(BASettingsStore.loadMediaSaveCustomEnabled())
@@ -61,24 +58,20 @@ internal fun rememberBaGuideCatalogJsonExportAction(
     val safExportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
-        val payload = pendingSafExportPayload
-        val toast = pendingSafExportToast
-        pendingSafExportPayload = ""
-        pendingSafExportToast = ""
-        if (uri == null || payload.isBlank()) return@rememberLauncherForActivityResult
+        val request = pendingSafExportRequest
+        pendingSafExportRequest = null
+        if (uri == null || request == null || request.payload.isBlank()) {
+            return@rememberLauncherForActivityResult
+        }
         pageScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openOutputStream(uri)?.bufferedWriter().use { writer ->
-                        if (writer == null) return@runCatching false
-                        writer.write(payload)
-                        true
-                    }
-                }.getOrDefault(false)
-            }
+            val success = writeBaGuideCatalogJsonExportAsync(
+                context = context,
+                uri = uri,
+                request = request
+            )
             Toast.makeText(
                 context,
-                if (success) toast.ifBlank { exportDoneText } else exportFailedText,
+                if (success) request.successToast.ifBlank { exportDoneText } else exportFailedText,
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -116,9 +109,11 @@ internal fun rememberBaGuideCatalogJsonExportAction(
         mediaSaveFixedTreeUri = treeUri.toString()
         pendingFixedExportRequest = null
         pageScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                writeBaGuideCatalogJsonExportToTree(context, treeUri, request)
-            }
+            val success = writeBaGuideCatalogJsonExportToTreeAsync(
+                context = context,
+                treeUri = treeUri,
+                request = request
+            )
             Toast.makeText(
                 context,
                 if (success) request.successToast.ifBlank { exportDoneText } else exportFailedText,
@@ -145,7 +140,47 @@ internal fun rememberBaGuideCatalogJsonExportAction(
         fixedExportFolderLauncher.launch(pickerIntent)
     }
 
-    val exportJson: (String, String, String) -> Unit = remember(
+    fun dispatchExportRequest(request: BaGuideCatalogJsonExportRequest) {
+        if (request.payload.isBlank()) return
+        if (!mediaSaveCustomEnabled) {
+            pendingSafExportRequest = request
+            safExportLauncher.launch(request.fileName)
+            return
+        }
+        val fixedTreeUri = mediaSaveFixedTreeUri
+            .takeIf { it.isNotBlank() }
+            ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
+        if (fixedTreeUri == null) {
+            pendingFixedExportRequest = request
+            launchFixedExportFolderPicker()
+            return
+        }
+        pageScope.launch {
+            val success = writeBaGuideCatalogJsonExportToTreeAsync(
+                context = context,
+                treeUri = fixedTreeUri,
+                request = request
+            )
+            if (success) {
+                Toast.makeText(
+                    context,
+                    request.successToast.ifBlank { exportDoneText },
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                BASettingsStore.saveMediaSaveFixedTreeUri("")
+                mediaSaveFixedTreeUri = ""
+                pendingFixedExportRequest = request
+                launchFixedExportFolderPicker()
+            }
+        }
+    }
+
+    val exportJsonFrom: (
+        BaGuideCatalogJsonExportPayloadBuilder,
+        String,
+        String
+    ) -> Unit = remember(
         context,
         pageScope,
         mediaSaveCustomEnabled,
@@ -155,44 +190,31 @@ internal fun rememberBaGuideCatalogJsonExportAction(
         exportDoneText,
         exportFailedText
     ) {
-        export@{ payload, fileName, successToast ->
-            if (payload.isBlank()) return@export
-            val request = BaGuideCatalogJsonExportRequest(
-                payload = payload,
-                fileName = fileName,
-                successToast = successToast
-            )
-            if (!mediaSaveCustomEnabled) {
-                pendingSafExportPayload = payload
-                pendingSafExportToast = successToast
-                safExportLauncher.launch(fileName)
-                return@export
-            }
-            val fixedTreeUri = mediaSaveFixedTreeUri
-                .takeIf { it.isNotBlank() }
-                ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
-            if (fixedTreeUri == null) {
-                pendingFixedExportRequest = request
-                launchFixedExportFolderPicker()
-                return@export
-            }
+        export@{ payloadBuilder, fileName, successToast ->
             pageScope.launch {
-                val success = withContext(Dispatchers.IO) {
-                    writeBaGuideCatalogJsonExportToTree(context, fixedTreeUri, request)
+                val request = try {
+                    BaGuideCatalogJsonExportRequest(
+                        payload = payloadBuilder(),
+                        fileName = fileName,
+                        successToast = successToast
+                    )
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Throwable) {
+                    Toast.makeText(context, exportFailedText, Toast.LENGTH_SHORT).show()
+                    return@launch
                 }
-                if (success) {
-                    Toast.makeText(
-                        context,
-                        successToast.ifBlank { exportDoneText },
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-                    BASettingsStore.saveMediaSaveFixedTreeUri("")
-                    mediaSaveFixedTreeUri = ""
-                    pendingFixedExportRequest = request
-                    launchFixedExportFolderPicker()
+                if (request.payload.isBlank()) {
+                    Toast.makeText(context, exportFailedText, Toast.LENGTH_SHORT).show()
+                    return@launch
                 }
+                dispatchExportRequest(request)
             }
+        }
+    }
+    val exportJson: (String, String, String) -> Unit = remember(exportJsonFrom) {
+        { payload, fileName, successToast ->
+            exportJsonFrom({ payload }, fileName, successToast)
         }
     }
     val saveLocationState = remember(mediaSaveCustomEnabled, mediaSaveFixedTreeUri) {
@@ -209,35 +231,13 @@ internal fun rememberBaGuideCatalogJsonExportAction(
             }
         )
     }
-    return remember(saveLocationState, exportJson) {
+    return remember(saveLocationState, exportJson, exportJsonFrom) {
         BaGuideCatalogJsonExportAction(
             saveLocationState = saveLocationState,
-            exportJson = exportJson
+            exportJson = exportJson,
+            exportJsonFrom = exportJsonFrom
         )
     }
 }
 
 private fun Int?.orZero(): Int = this ?: 0
-
-private fun writeBaGuideCatalogJsonExportToTree(
-    context: Context,
-    treeUri: Uri,
-    request: BaGuideCatalogJsonExportRequest
-): Boolean {
-    if (request.payload.isBlank() || request.fileName.isBlank()) return false
-    return runCatching {
-        val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@runCatching false
-        val targetDoc = createUniqueDocumentInTree(
-            tree = treeDoc,
-            mimeType = "application/json",
-            fileName = request.fileName
-        ) ?: return@runCatching false
-        val output = context.contentResolver.openOutputStream(targetDoc.uri) ?: return@runCatching false
-        output.use { stream ->
-            stream.bufferedWriter().use { writer ->
-                writer.write(request.payload)
-            }
-        }
-        true
-    }.getOrDefault(false)
-}

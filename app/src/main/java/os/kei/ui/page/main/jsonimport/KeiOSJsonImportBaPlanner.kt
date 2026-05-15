@@ -23,7 +23,7 @@ internal class KeiOSJsonImportBaPlanner(
         val current = withContext(ioDispatcher) { BaGuideCatalogStore.loadFavorites() }
         val (imported, result) = withContext(defaultDispatcher) {
             val imported = parseCatalogFavoritesExport(file.raw)
-            imported to previewCatalogFavoritesImport(file.raw, current)
+            imported to previewCatalogFavoritesImport(imported, current)
         }
         val preview = buildJsonImportBaPreview(
             context = context,
@@ -45,7 +45,7 @@ internal class KeiOSJsonImportBaPlanner(
             }
             val (nextImported, nextPreview) = withContext(defaultDispatcher) {
                 val parsed = parseCatalogFavoritesExport(file.raw)
-                parsed to previewCatalogFavoritesImport(file.raw, currentFavorites)
+                parsed to previewCatalogFavoritesImport(parsed, currentFavorites)
             }
             if (nextImported.isNotEmpty()) {
                 withContext(ioDispatcher) {
@@ -99,7 +99,7 @@ internal class KeiOSJsonImportBaPlanner(
         val (catalogPreview, bgmPreview) = coroutineScope {
             val catalogDeferred = async(defaultDispatcher) {
                 val imported = parseCatalogFavoritesExport(file.raw)
-                imported to previewCatalogFavoritesImport(file.raw, currentCatalog)
+                imported to previewCatalogFavoritesImport(imported, currentCatalog)
             }
             val bgmDeferred = async(defaultDispatcher) {
                 GuideBgmFavoriteStore.previewFavoritesJsonImport(file.raw) to
@@ -138,7 +138,7 @@ internal class KeiOSJsonImportBaPlanner(
             }
             val (imported, catalogApplyPreview) = withContext(defaultDispatcher) {
                 val parsed = parseCatalogFavoritesExport(file.raw)
-                parsed to previewCatalogFavoritesImport(file.raw, currentFavorites)
+                parsed to previewCatalogFavoritesImport(parsed, currentFavorites)
             }
             if (imported.isNotEmpty()) {
                 withContext(ioDispatcher) {

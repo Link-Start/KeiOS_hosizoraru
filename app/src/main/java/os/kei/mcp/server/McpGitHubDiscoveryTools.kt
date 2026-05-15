@@ -372,7 +372,7 @@ internal class McpGitHubDiscoveryTools(
         )
     }
 
-    private fun buildStarApkVerificationText(repoUrls: String, limit: Int): String {
+    private suspend fun buildStarApkVerificationText(repoUrls: String, limit: Int): String {
         val lookupConfig = GitHubTrackStore.loadSnapshot().lookupConfig
         val refreshIntervalHours = GitHubTrackStore.loadSnapshot().refreshIntervalHours
         val verifier = GitHubStarImportApkVerifier(
@@ -383,20 +383,20 @@ internal class McpGitHubDiscoveryTools(
             .mapNotNull { url -> url.toSyntheticGitHubImportCandidate() }
             .take(limit)
         if (candidates.isEmpty()) return "ok=false\nmessage=repoUrls_required"
-        return buildString {
-            appendLine("ok=true")
-            appendLine("requested=${candidates.size}")
-            candidates.forEachIndexed { index, candidate ->
-                val verification = verifier.verify(
-                    candidate = candidate,
-                    lookupConfig = lookupConfig,
-                    refreshIntervalHours = refreshIntervalHours
-                )
-                appendLine(
-                    "repo[$index]=${candidate.repository.fullName} | status:${verification.status.name} | tag:${verification.releaseTag} | apkCount:${verification.apkAssetCount} | asset:${verification.sampleAssetName} | cache:${verification.fromCache} | error:${verification.errorMessage}"
-                )
-            }
-        }.trim()
+        val output = StringBuilder()
+        output.appendLine("ok=true")
+        output.appendLine("requested=${candidates.size}")
+        candidates.forEachIndexed { index, candidate ->
+            val verification = verifier.verifyAsync(
+                candidate = candidate,
+                lookupConfig = lookupConfig,
+                refreshIntervalHours = refreshIntervalHours
+            )
+            output.appendLine(
+                "repo[$index]=${candidate.repository.fullName} | status:${verification.status.name} | tag:${verification.releaseTag} | apkCount:${verification.apkAssetCount} | asset:${verification.sampleAssetName} | cache:${verification.fromCache} | error:${verification.errorMessage}"
+            )
+        }
+        return output.toString().trim()
     }
 
     private fun normalizeStarImportSource(raw: String): GitHubStarredRepositoryImportSource {

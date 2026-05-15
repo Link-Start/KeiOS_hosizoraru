@@ -148,7 +148,7 @@ internal class GitHubStarImportPageRepository(
                 items = uniqueTargets,
                 maxConcurrency = MAX_PARALLEL_APK_VERIFICATIONS
             ) { candidate ->
-                candidate.trackedApp.id to verifier.verify(
+                candidate.trackedApp.id to verifier.verifyAsync(
                     candidate = candidate,
                     lookupConfig = snapshot.lookupConfig,
                     refreshIntervalHours = snapshot.refreshIntervalHours

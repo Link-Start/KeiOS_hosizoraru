@@ -192,12 +192,10 @@ internal suspend fun scanShareImportAssetManifestInfo(
     ).getOrNull()?.let { info ->
         return Result.success(info)
     }
-    return withContext(Dispatchers.IO) {
-        scanner.scanAssetManifestInfo(
-            asset = asset,
-            lookupConfig = lookupConfig
-        )
-    }
+    return scanner.scanAssetManifestInfoAsync(
+        asset = asset,
+        lookupConfig = lookupConfig
+    )
 }
 
 internal fun enqueueWithSystemDownloadManager(

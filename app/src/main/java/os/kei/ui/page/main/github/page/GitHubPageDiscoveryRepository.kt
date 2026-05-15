@@ -176,7 +176,7 @@ internal class GitHubPageDiscoveryRepository(
         return withContext(ioDispatcher) {
             GitHubApkPackageNameScanner(
                 GitHubApkPackageNameScanRepository()
-            ).scan(request)
+            ).scanAsync(request)
         }
     }
 

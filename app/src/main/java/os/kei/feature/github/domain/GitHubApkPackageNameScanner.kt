@@ -1,5 +1,8 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -9,6 +12,7 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import kotlin.coroutines.cancellation.CancellationException
 
 internal data class GitHubStableReleaseTarget(
     val tag: String,
@@ -63,23 +67,34 @@ internal interface GitHubApkPackageNameScanSource {
 }
 
 internal class GitHubApkPackageNameScanner(
-    private val source: GitHubApkPackageNameScanSource
+    private val source: GitHubApkPackageNameScanSource,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     fun scan(
+        request: GitHubApkPackageNameScanRequest
+    ): Result<GitHubApkPackageNameScanResult> {
+        return GitHubExecution.runBlockingIo {
+            scanAsync(request)
+        }
+    }
+
+    suspend fun scanAsync(
         request: GitHubApkPackageNameScanRequest
     ): Result<GitHubApkPackageNameScanResult> = runCatching {
         val parsed = GitHubVersionUtils.parseOwnerRepo(request.repoUrl)
             ?: error("Invalid GitHub repository URL")
         val owner = parsed.first
         val repo = parsed.second
-        val releaseAssets = source.loadLatestStableApkAssets(
-            owner = owner,
-            repo = repo,
-            lookupConfig = request.lookupConfig
-        ).getOrThrow()
+        val releaseAssets = withContext(ioDispatcher) {
+            source.loadLatestStableApkAssets(
+                owner = owner,
+                repo = repo,
+                lookupConfig = request.lookupConfig
+            )
+        }.getOrThrow()
         val release = releaseAssets.release
         val assets = releaseAssets.assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
-        val scannedAsset = scanApkAssets(
+        val scannedAsset = scanApkAssetsAsync(
             assets = assets,
             lookupConfig = request.lookupConfig,
             expectedPackageName = request.expectedPackageName
@@ -93,13 +108,22 @@ internal class GitHubApkPackageNameScanner(
             assetName = scannedAsset.asset.name,
             packageName = scannedAsset.packageName
         )
-    }
+    }.preserveCancellation()
 
     fun scanAssetPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<String> {
-        return scanAssetManifestInfo(
+        return GitHubExecution.runBlockingIo {
+            scanAssetPackageNameAsync(asset, lookupConfig)
+        }
+    }
+
+    suspend fun scanAssetPackageNameAsync(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): Result<String> {
+        return scanAssetManifestInfoAsync(
             asset = asset,
             lookupConfig = lookupConfig
         ).map { info ->
@@ -111,7 +135,16 @@ internal class GitHubApkPackageNameScanner(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> {
-        return scanApkAsset(
+        return GitHubExecution.runBlockingIo {
+            scanAssetManifestInfoAsync(asset, lookupConfig)
+        }
+    }
+
+    suspend fun scanAssetManifestInfoAsync(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): Result<GitHubApkManifestInfo> {
+        return scanApkAssetAsync(
             asset = asset,
             lookupConfig = lookupConfig
         ).map { scannedAsset ->
@@ -119,7 +152,7 @@ internal class GitHubApkPackageNameScanner(
         }
     }
 
-    private fun scanApkAssets(
+    private suspend fun scanApkAssetsAsync(
         assets: List<GitHubReleaseAssetFile>,
         lookupConfig: GitHubLookupConfig,
         expectedPackageName: String = ""
@@ -127,25 +160,26 @@ internal class GitHubApkPackageNameScanner(
         val scanTargets = assets.take(MAX_APK_ASSET_SCAN_CANDIDATES)
         if (scanTargets.isEmpty()) return null
         if (scanTargets.size == 1) {
-            return scanApkAsset(
+            return scanApkAssetAsync(
                 asset = scanTargets.single(),
                 lookupConfig = lookupConfig
             ).getOrThrow()
         }
         val normalizedExpectedPackageName = expectedPackageName.trim()
         if (normalizedExpectedPackageName.isNotEmpty()) {
-            return scanApkAssetsForExpectedPackage(
+            return scanApkAssetsForExpectedPackageAsync(
                 assets = scanTargets,
                 lookupConfig = lookupConfig,
                 expectedPackageName = normalizedExpectedPackageName
             )
         }
 
-        return GitHubExecution.firstSuccessBoundedBlocking(
+        return GitHubExecution.firstSuccessBounded(
             items = scanTargets,
-            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS
+            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS,
+            dispatcher = ioDispatcher
         ) { asset ->
-            scanApkAsset(
+            scanApkAssetAsync(
                 asset = asset,
                 lookupConfig = lookupConfig
             )
@@ -154,17 +188,18 @@ internal class GitHubApkPackageNameScanner(
         }
     }
 
-    private fun scanApkAssetsForExpectedPackage(
+    private suspend fun scanApkAssetsForExpectedPackageAsync(
         assets: List<GitHubReleaseAssetFile>,
         lookupConfig: GitHubLookupConfig,
         expectedPackageName: String
     ): ScannedApkAsset {
         var firstError: Throwable? = null
-        val results = GitHubExecution.mapOrderedBoundedBlocking(
+        val results = GitHubExecution.mapOrderedBounded(
             items = assets,
-            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS
+            maxConcurrency = MAX_PARALLEL_APK_ASSET_SCANS,
+            dispatcher = ioDispatcher
         ) { asset ->
-            scanApkAsset(
+            scanApkAssetAsync(
                 asset = asset,
                 lookupConfig = lookupConfig
             )
@@ -189,14 +224,16 @@ internal class GitHubApkPackageNameScanner(
         throw firstError ?: IllegalStateException("No APK asset manifest could be parsed")
     }
 
-    private fun scanApkAsset(
+    private suspend fun scanApkAssetAsync(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ScannedApkAsset> = runCatching {
-        val manifestBytes = source.readAndroidManifestBytes(
-            asset = asset,
-            lookupConfig = lookupConfig
-        ).getOrThrow()
+        val manifestBytes = withContext(ioDispatcher) {
+            source.readAndroidManifestBytes(
+                asset = asset,
+                lookupConfig = lookupConfig
+            )
+        }.getOrThrow()
         val manifestInfo = AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifestBytes)
             .getOrThrow()
             .copy(assetName = asset.name)
@@ -208,6 +245,13 @@ internal class GitHubApkPackageNameScanner(
             asset = asset,
             manifestInfo = manifestInfo
         )
+    }.preserveCancellation()
+
+    private fun <T> Result<T>.preserveCancellation(): Result<T> {
+        exceptionOrNull()?.let { error ->
+            if (error is CancellationException) throw error
+        }
+        return this
     }
 
     private data class ScannedApkAsset(

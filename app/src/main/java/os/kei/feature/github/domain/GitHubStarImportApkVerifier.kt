@@ -1,10 +1,15 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
 import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
+import kotlin.coroutines.cancellation.CancellationException
 
 internal interface GitHubStarImportApkVerificationCache {
     fun load(
@@ -27,9 +32,26 @@ internal class GitHubStarImportApkVerifier(
     private val source: GitHubApkPackageNameScanSource,
     private val cache: GitHubStarImportApkVerificationCache? = null,
     private val packageNameScanner: GitHubApkPackageNameScanner =
-        GitHubApkPackageNameScanner(source)
+        GitHubApkPackageNameScanner(source),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     fun verify(
+        candidate: GitHubRepositoryImportCandidate,
+        lookupConfig: GitHubLookupConfig,
+        refreshIntervalHours: Int = DEFAULT_REFRESH_INTERVAL_HOURS,
+        nowMillis: Long = System.currentTimeMillis()
+    ): GitHubStarImportApkVerification {
+        return GitHubExecution.runBlockingIo {
+            verifyAsync(
+                candidate = candidate,
+                lookupConfig = lookupConfig,
+                refreshIntervalHours = refreshIntervalHours,
+                nowMillis = nowMillis
+            )
+        }
+    }
+
+    suspend fun verifyAsync(
         candidate: GitHubRepositoryImportCandidate,
         lookupConfig: GitHubLookupConfig,
         refreshIntervalHours: Int = DEFAULT_REFRESH_INTERVAL_HOURS,
@@ -38,75 +60,84 @@ internal class GitHubStarImportApkVerifier(
         val repository = candidate.repository
         val owner = repository.owner.trim()
         val repo = repository.repo.trim()
-        cache?.load(
-            owner = owner,
-            repo = repo,
-            lookupConfig = lookupConfig,
-            refreshIntervalHours = refreshIntervalHours,
-            nowMillis = nowMillis
-        )?.let { return it.copy(fromCache = true) }
+        withContext(ioDispatcher) {
+            cache?.load(
+                owner = owner,
+                repo = repo,
+                lookupConfig = lookupConfig,
+                refreshIntervalHours = refreshIntervalHours,
+                nowMillis = nowMillis
+            )
+        }?.let { return it.copy(fromCache = true) }
 
-        val verification = source.loadLatestStableApkAssets(
-            owner = owner,
-            repo = repo,
-            lookupConfig = lookupConfig
-        ).fold(
-            onSuccess = { releaseAssets ->
-                val apkAssets = releaseAssets.assets.filter { asset ->
-                    asset.name.endsWith(".apk", ignoreCase = true)
-                }
-                if (apkAssets.isNotEmpty()) {
-                    val scannedPackage = scanFirstPackageName(
-                        assets = apkAssets,
-                        lookupConfig = lookupConfig
-                    )
-                    GitHubStarImportApkVerification(
-                        owner = owner,
-                        repo = repo,
-                        status = GitHubStarImportApkVerificationStatus.HasApk,
-                        releaseTag = releaseAssets.release.tag,
-                        releaseUrl = releaseAssets.release.releaseUrl,
-                        apkAssetCount = apkAssets.size,
-                        sampleAssetName = scannedPackage?.first?.name ?: apkAssets.first().name,
-                        packageName = scannedPackage?.second.orEmpty(),
-                        checkedAtMillis = nowMillis
-                    )
-                } else {
-                    GitHubStarImportApkVerification(
-                        owner = owner,
-                        repo = repo,
-                        status = GitHubStarImportApkVerificationStatus.NoApk,
-                        releaseTag = releaseAssets.release.tag,
-                        releaseUrl = releaseAssets.release.releaseUrl,
-                        checkedAtMillis = nowMillis
-                    )
-                }
-            },
-            onFailure = { error ->
+        val releaseAssetsResult = withContext(ioDispatcher) {
+            source.loadLatestStableApkAssets(
+                owner = owner,
+                repo = repo,
+                lookupConfig = lookupConfig
+            )
+        }
+        releaseAssetsResult.exceptionOrNull()?.let { error ->
+            if (error is CancellationException) throw error
+        }
+        val verification = releaseAssetsResult.getOrNull()?.let { releaseAssets ->
+            val apkAssets = releaseAssets.assets.filter { asset ->
+                asset.name.endsWith(".apk", ignoreCase = true)
+            }
+            if (apkAssets.isNotEmpty()) {
+                val scannedPackage = scanFirstPackageNameAsync(
+                    assets = apkAssets,
+                    lookupConfig = lookupConfig
+                )
                 GitHubStarImportApkVerification(
                     owner = owner,
                     repo = repo,
-                    status = GitHubStarImportApkVerificationStatus.Failed,
-                    checkedAtMillis = nowMillis,
-                    errorMessage = error.message.orEmpty().ifBlank { error.javaClass.simpleName }
+                    status = GitHubStarImportApkVerificationStatus.HasApk,
+                    releaseTag = releaseAssets.release.tag,
+                    releaseUrl = releaseAssets.release.releaseUrl,
+                    apkAssetCount = apkAssets.size,
+                    sampleAssetName = scannedPackage?.first?.name ?: apkAssets.first().name,
+                    packageName = scannedPackage?.second.orEmpty(),
+                    checkedAtMillis = nowMillis
+                )
+            } else {
+                GitHubStarImportApkVerification(
+                    owner = owner,
+                    repo = repo,
+                    status = GitHubStarImportApkVerificationStatus.NoApk,
+                    releaseTag = releaseAssets.release.tag,
+                    releaseUrl = releaseAssets.release.releaseUrl,
+                    checkedAtMillis = nowMillis
                 )
             }
-        )
-        cache?.save(
-            owner = owner,
-            repo = repo,
-            lookupConfig = lookupConfig,
-            verification = verification
-        )
+        } ?: releaseAssetsResult.exceptionOrNull().let { error ->
+            GitHubStarImportApkVerification(
+                owner = owner,
+                repo = repo,
+                status = GitHubStarImportApkVerificationStatus.Failed,
+                checkedAtMillis = nowMillis,
+                errorMessage = error?.message.orEmpty().ifBlank {
+                    error?.javaClass?.simpleName ?: "Unknown"
+                }
+            )
+        }
+        withContext(ioDispatcher) {
+            cache?.save(
+                owner = owner,
+                repo = repo,
+                lookupConfig = lookupConfig,
+                verification = verification
+            )
+        }
         return verification
     }
 
-    private fun scanFirstPackageName(
+    private suspend fun scanFirstPackageNameAsync(
         assets: List<GitHubReleaseAssetFile>,
         lookupConfig: GitHubLookupConfig
     ): Pair<GitHubReleaseAssetFile, String>? {
         assets.take(MAX_PACKAGE_SCAN_ASSETS).forEach { asset ->
-            val packageName = packageNameScanner.scanAssetPackageName(
+            val packageName = packageNameScanner.scanAssetPackageNameAsync(
                 asset = asset,
                 lookupConfig = lookupConfig
             ).getOrDefault("").trim()

@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.githubAssetSourceSignature
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class GitHubApkInfoRepository(
     private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
@@ -40,6 +41,7 @@ internal class GitHubApkInfoRepository(
             val result = runCatching {
                 manifestReader.inspect(asset = asset, lookupConfig = lookupConfig)
             }.getOrElse { error ->
+                if (error is CancellationException) throw error
                 Result.failure(error)
             }
             result.getOrNull()?.let { info ->

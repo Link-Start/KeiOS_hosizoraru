@@ -35,6 +35,8 @@ internal class OsShellRunnerRepository(
 ) {
     private val persistentState = MutableStateFlow(OsShellRunnerPersistentState())
     private val chromePrefs = MutableStateFlow(OsShellRunnerChromePrefs())
+    private var lastPersistedInput = ""
+    private var lastPersistedOutput = ""
 
     fun observePersistentState(): StateFlow<OsShellRunnerPersistentState> = persistentState.asStateFlow()
 
@@ -57,6 +59,8 @@ internal class OsShellRunnerRepository(
             } else {
                 ""
             }
+            lastPersistedInput = OsShellRunnerPrefsStore.normalizeSavedInput(commandInput)
+            lastPersistedOutput = OsShellRunnerPrefsStore.normalizeSavedOutput(savedOutputText)
             OsShellRunnerPersistentState(
                 commandInput = commandInput,
                 settings = settings,
@@ -167,14 +171,20 @@ internal class OsShellRunnerRepository(
     suspend fun setPersistInput(enabled: Boolean) {
         updateSettingsAndPersist({ copy(persistInput = enabled) }) {
             OsShellRunnerPrefsStore.savePersistInput(enabled)
-            if (!enabled) OsShellRunnerPrefsStore.clearSavedInput()
+            if (!enabled) {
+                OsShellRunnerPrefsStore.clearSavedInput()
+                lastPersistedInput = ""
+            }
         }
     }
 
     suspend fun setPersistOutput(enabled: Boolean) {
         updateSettingsAndPersist({ copy(persistOutput = enabled) }) {
             OsShellRunnerPrefsStore.savePersistOutput(enabled)
-            if (!enabled) OsShellRunnerPrefsStore.clearSavedOutput()
+            if (!enabled) {
+                OsShellRunnerPrefsStore.clearSavedOutput()
+                lastPersistedOutput = ""
+            }
         }
     }
 
@@ -265,26 +275,34 @@ internal class OsShellRunnerRepository(
     }
 
     suspend fun persistInput(value: String) {
+        val normalized = OsShellRunnerPrefsStore.normalizeSavedInput(value)
+        if (normalized == lastPersistedInput) return
         withContext(ioDispatcher) {
-            OsShellRunnerPrefsStore.saveInput(value)
+            OsShellRunnerPrefsStore.saveInput(normalized)
+            lastPersistedInput = normalized
         }
     }
 
     suspend fun persistOutput(value: String) {
+        val normalized = OsShellRunnerPrefsStore.normalizeSavedOutput(value)
+        if (normalized == lastPersistedOutput) return
         withContext(ioDispatcher) {
-            OsShellRunnerPrefsStore.saveOutput(value)
+            OsShellRunnerPrefsStore.saveOutput(normalized)
+            lastPersistedOutput = normalized
         }
     }
 
     suspend fun clearSavedInput() {
         withContext(ioDispatcher) {
             OsShellRunnerPrefsStore.clearSavedInput()
+            lastPersistedInput = ""
         }
     }
 
     suspend fun clearSavedOutput() {
         withContext(ioDispatcher) {
             OsShellRunnerPrefsStore.clearSavedOutput()
+            lastPersistedOutput = ""
         }
     }
 

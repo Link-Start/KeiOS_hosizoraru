@@ -4,8 +4,9 @@ import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import os.kei.R
+import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
 
-internal const val KEIOS_JSON_IMPORT_MAX_BYTES: Long = 5L * 1024L * 1024L
+internal const val KEIOS_JSON_IMPORT_MAX_BYTES: Long = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
 internal const val KEIOS_JSON_IMPORT_SAMPLE_LIMIT = 6
 
 internal enum class KeiOSJsonImportStage {

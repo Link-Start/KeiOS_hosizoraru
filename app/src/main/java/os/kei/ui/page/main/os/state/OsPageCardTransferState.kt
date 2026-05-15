@@ -9,6 +9,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import os.kei.R
+import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
+import os.kei.core.io.readTextFromUriLimited
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -129,19 +131,20 @@ internal fun rememberOsPageCardTransferState(
         }
         scope.launch {
             runCatching {
-                val raw = withContext(Dispatchers.IO) {
-                    context.contentResolver.openInputStream(uri)?.bufferedReader().use { reader ->
-                        reader?.readText().orEmpty()
-                    }
+                val raw = context.contentResolver.readTextFromUriLimited(
+                    uri = uri,
+                    maxBytes = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
+                ).text
+                withContext(Dispatchers.Default) {
+                    OsCardTransferService.buildImportPreview(
+                        raw = raw,
+                        target = target,
+                        activityShortcutCards = activityShortcutCards,
+                        shellCommandCards = shellCommandCards,
+                        googleSystemServiceDefaults = googleSystemServiceDefaults,
+                        googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults
+                    )
                 }
-                OsCardTransferService.buildImportPreview(
-                    raw = raw,
-                    target = target,
-                    activityShortcutCards = activityShortcutCards,
-                    shellCommandCards = shellCommandCards,
-                    googleSystemServiceDefaults = googleSystemServiceDefaults,
-                    googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults
-                )
             }.onSuccess { preview ->
                 overlayState.onPendingCardImportPreviewChange(preview)
             }.onFailure { error ->

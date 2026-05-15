@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import android.content.Context
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -11,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
+import os.kei.core.io.readTextFromUriLimited
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 
@@ -28,101 +31,57 @@ internal fun rememberBaGuideCatalogImportActions(
     filterSortState: BaGuideCatalogFilterSortState,
     onPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit
 ): BaGuideCatalogImportActions {
-    val importStudentFavoritesLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
+    fun requestImportPreview(
+        uri: Uri?,
+        kind: BaGuideCatalogImportKind,
+        failureMessageRes: Int
+    ) {
+        if (uri == null) return
         pageScope.launch {
-            val preview = withContext(Dispatchers.IO) {
-                runCatching {
-                    val raw = context.contentResolver.openInputStream(uri)
-                        ?.bufferedReader()
-                        ?.use { it.readText() }
-                        .orEmpty()
-                    BaGuideCatalogImportPreviewState(
-                        kind = BaGuideCatalogImportKind.Student,
-                        raw = raw,
-                        studentPreview = previewCatalogFavoritesImport(
-                            raw = raw,
-                            currentFavorites = filterSortState.favoriteCatalogEntries
-                        ),
-                        bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport("")
-                    )
-                }.getOrNull()
-            }
+            val preview = buildBaGuideCatalogImportPreview(
+                context = context,
+                uri = uri,
+                kind = kind,
+                currentFavorites = filterSortState.favoriteCatalogEntries
+            )
             if (preview == null || !preview.hasImportableData) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.ba_catalog_transfer_import_failed),
+                    context.getString(failureMessageRes),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
                 onPreviewStateChange(preview)
             }
         }
+    }
+
+    val importStudentFavoritesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        requestImportPreview(
+            uri = uri,
+            kind = BaGuideCatalogImportKind.Student,
+            failureMessageRes = R.string.ba_catalog_transfer_import_failed
+        )
     }
     val importBgmFavoritesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        pageScope.launch {
-            val preview = withContext(Dispatchers.IO) {
-                runCatching {
-                    val raw = context.contentResolver.openInputStream(uri)
-                        ?.bufferedReader()
-                        ?.use { it.readText() }
-                        .orEmpty()
-                    BaGuideCatalogImportPreviewState(
-                        kind = BaGuideCatalogImportKind.Bgm,
-                        raw = raw,
-                        studentPreview = CatalogFavoritesImportPreview(0, 0, 0),
-                        bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
-                    )
-                }.getOrNull()
-            }
-            if (preview == null || !preview.hasImportableData) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_catalog_bgm_import_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                onPreviewStateChange(preview)
-            }
-        }
+        requestImportPreview(
+            uri = uri,
+            kind = BaGuideCatalogImportKind.Bgm,
+            failureMessageRes = R.string.ba_catalog_bgm_import_failed
+        )
     }
     val importAllFavoritesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        pageScope.launch {
-            val preview = withContext(Dispatchers.IO) {
-                runCatching {
-                    val raw = context.contentResolver.openInputStream(uri)
-                        ?.bufferedReader()
-                        ?.use { it.readText() }
-                        .orEmpty()
-                    BaGuideCatalogImportPreviewState(
-                        kind = BaGuideCatalogImportKind.All,
-                        raw = raw,
-                        studentPreview = previewCatalogFavoritesImport(
-                            raw = raw,
-                            currentFavorites = filterSortState.favoriteCatalogEntries
-                        ),
-                        bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
-                    )
-                }.getOrNull()
-            }
-            if (preview == null || !preview.hasImportableData) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_catalog_transfer_import_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                onPreviewStateChange(preview)
-            }
-        }
+        requestImportPreview(
+            uri = uri,
+            kind = BaGuideCatalogImportKind.All,
+            failureMessageRes = R.string.ba_catalog_transfer_import_failed
+        )
     }
     return BaGuideCatalogImportActions(
         importStudentFavoritesLauncher = importStudentFavoritesLauncher,
@@ -148,26 +107,28 @@ private fun confirmFavoritesImport(
     onPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit
 ) {
     pageScope.launch {
-        val result = withContext(Dispatchers.IO) {
-            runCatching {
-                val studentFavorites = if (
-                    preview.kind == BaGuideCatalogImportKind.All ||
-                    preview.kind == BaGuideCatalogImportKind.Student
-                ) {
+        val result = runCatching {
+            val studentFavorites = if (
+                preview.kind == BaGuideCatalogImportKind.All ||
+                preview.kind == BaGuideCatalogImportKind.Student
+            ) {
+                withContext(Dispatchers.Default) {
                     parseCatalogFavoritesExport(preview.raw)
-                } else {
-                    emptyMap()
                 }
-                val bgmResult = if (
-                    preview.kind == BaGuideCatalogImportKind.All ||
-                    preview.kind == BaGuideCatalogImportKind.Bgm
-                ) {
-                    GuideBgmFavoriteStore.importFavoritesJsonMerged(preview.raw)
-                } else {
-                    null
-                }
-                studentFavorites to bgmResult
+            } else {
+                emptyMap()
             }
+            val bgmResult = if (
+                preview.kind == BaGuideCatalogImportKind.All ||
+                preview.kind == BaGuideCatalogImportKind.Bgm
+            ) {
+                withContext(Dispatchers.IO) {
+                    GuideBgmFavoriteStore.importFavoritesJsonMerged(preview.raw)
+                }
+            } else {
+                null
+            }
+            studentFavorites to bgmResult
         }
         result
             .onSuccess { (studentFavorites, bgmResult) ->
@@ -206,4 +167,53 @@ private fun confirmFavoritesImport(
                 ).show()
             }
     }
+}
+
+private suspend fun buildBaGuideCatalogImportPreview(
+    context: Context,
+    uri: Uri,
+    kind: BaGuideCatalogImportKind,
+    currentFavorites: Map<Long, Long>
+): BaGuideCatalogImportPreviewState? {
+    return runCatching {
+        val raw = readBaGuideCatalogImportText(context, uri)
+        withContext(Dispatchers.Default) {
+            when (kind) {
+                BaGuideCatalogImportKind.Student -> BaGuideCatalogImportPreviewState(
+                    kind = kind,
+                    raw = raw,
+                    studentPreview = previewCatalogFavoritesImport(
+                        raw = raw,
+                        currentFavorites = currentFavorites
+                    ),
+                    bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport("")
+                )
+
+                BaGuideCatalogImportKind.Bgm -> BaGuideCatalogImportPreviewState(
+                    kind = kind,
+                    raw = raw,
+                    studentPreview = CatalogFavoritesImportPreview(0, 0, 0),
+                    bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
+                )
+
+                BaGuideCatalogImportKind.All -> BaGuideCatalogImportPreviewState(
+                    kind = kind,
+                    raw = raw,
+                    studentPreview = previewCatalogFavoritesImport(
+                        raw = raw,
+                        currentFavorites = currentFavorites
+                    ),
+                    bgmPreview = GuideBgmFavoriteStore.previewFavoritesJsonImport(raw)
+                )
+            }
+        }
+    }.getOrNull()
+}
+
+private suspend fun readBaGuideCatalogImportText(context: Context, uri: Uri): String {
+    return context.contentResolver.readTextFromUriLimited(
+        uri = uri,
+        maxBytes = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES,
+        ioDispatcher = Dispatchers.IO
+    ).text
 }

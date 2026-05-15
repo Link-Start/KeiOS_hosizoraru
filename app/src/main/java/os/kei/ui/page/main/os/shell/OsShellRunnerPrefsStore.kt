@@ -150,9 +150,7 @@ internal object OsShellRunnerPrefsStore {
     }
 
     fun saveInput(value: String) {
-        val normalized = value
-            .trimEnd()
-            .take(maxSavedInputLength)
+        val normalized = normalizeSavedInput(value)
         if (normalized.isBlank()) {
             store.removeValueForKey(KEY_SAVED_INPUT)
             return
@@ -161,12 +159,7 @@ internal object OsShellRunnerPrefsStore {
     }
 
     fun saveOutput(value: String) {
-        val normalized = value.trimEnd()
-        val clipped = if (normalized.length <= maxSavedOutputLength) {
-            normalized
-        } else {
-            normalized.takeLast(maxSavedOutputLength)
-        }
+        val clipped = normalizeSavedOutput(value)
         if (clipped.isBlank()) {
             store.removeValueForKey(KEY_SAVED_OUTPUT)
             return
@@ -180,6 +173,21 @@ internal object OsShellRunnerPrefsStore {
 
     fun clearSavedOutput() {
         store.removeValueForKey(KEY_SAVED_OUTPUT)
+    }
+
+    fun normalizeSavedInput(value: String): String {
+        return value
+            .trimEnd()
+            .take(maxSavedInputLength)
+    }
+
+    fun normalizeSavedOutput(value: String): String {
+        val normalized = value.trimEnd()
+        return if (normalized.length <= maxSavedOutputLength) {
+            normalized
+        } else {
+            normalized.takeLast(maxSavedOutputLength)
+        }
     }
 
     private const val maxSavedInputLength = 8_000

@@ -7,6 +7,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 
 private const val shellPersistDebounceMs = 220L
@@ -29,6 +30,7 @@ internal fun BindOsShellRunnerPersistEffects(
     LaunchedEffect(persistInputEnabled, snapshotFlowManager) {
         if (!persistInputEnabled) return@LaunchedEffect
         snapshotFlowManager.snapshotFlow { currentCommandInput.value }
+            .distinctUntilChanged()
             .debounce(shellPersistDebounceMs)
             .collectLatest { input ->
                 currentPersistInput.value(input)
@@ -37,6 +39,7 @@ internal fun BindOsShellRunnerPersistEffects(
     LaunchedEffect(persistOutputEnabled, snapshotFlowManager) {
         if (!persistOutputEnabled) return@LaunchedEffect
         snapshotFlowManager.snapshotFlow { currentOutputText.value }
+            .distinctUntilChanged()
             .debounce(shellPersistDebounceMs)
             .collectLatest { output ->
                 currentPersistOutput.value(output)

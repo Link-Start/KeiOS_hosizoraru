@@ -55,8 +55,6 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
-import os.kei.ui.page.main.student.catalog.component.favoriteBgmCachedBytes
-import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.resolvePlaybackArtworkImageUrl
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
@@ -187,6 +185,7 @@ fun BaGuideCatalogPage(
     val playbackUiState by playbackCoordinator.uiState.collectAsStateWithLifecycle()
     var playbackSliderPreview by remember { mutableStateOf<Float?>(null) }
     var bgmCacheRevision by remember { mutableIntStateOf(0) }
+    var bgmCacheSnapshot by remember { mutableStateOf(BaGuideFavoriteBgmCacheSnapshot()) }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchInputActive by remember { mutableStateOf(false) }
     var sliderInteractionActive by remember { mutableStateOf(false) }
@@ -223,17 +222,17 @@ fun BaGuideCatalogPage(
         ?.resolvePlaybackArtworkImageUrl()
         .orEmpty()
     val chromePlaybackProgress = playbackSliderPreview ?: playbackUiState.runtimeState.progress
-    val bgmCachedCount = remember(favoriteBgms, bgmCacheRevision) {
-        favoriteBgms.count { favorite -> isFavoriteBgmCached(appContext, favorite) }
-    }
-    val bgmCacheBytes = remember(favoriteBgms, bgmCacheRevision) {
-        favoriteBgms.sumOf { favorite -> favoriteBgmCachedBytes(appContext, favorite) }
+    LaunchedEffect(favoriteBgms, bgmCacheRevision, showTransferSheet) {
+        bgmCacheSnapshot = loadFavoriteBgmCacheSnapshotAsync(
+            context = appContext,
+            favorites = favoriteBgms
+        )
     }
     val bgmCacheSummary = stringResource(
         R.string.ba_catalog_bgm_cache_summary,
-        bgmCachedCount,
+        bgmCacheSnapshot.cachedAudioUrls.size,
         favoriteBgms.size,
-        formatBgmCacheBytes(bgmCacheBytes)
+        formatBgmCacheBytes(bgmCacheSnapshot.bytes)
     )
     val transferExportAction = rememberBaGuideCatalogJsonExportAction(
         context, pageScope, exportDoneText, exportFailedText

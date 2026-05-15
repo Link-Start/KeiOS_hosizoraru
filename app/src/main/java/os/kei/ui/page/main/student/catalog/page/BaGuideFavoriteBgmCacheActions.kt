@@ -15,10 +15,15 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.catalog.component.favoriteBgmCachedBytes
 import os.kei.ui.page.main.student.catalog.component.clearFavoriteBgmCache
+import os.kei.ui.page.main.student.catalog.component.favoriteBgmCachedBytes
 import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
+
+internal data class BaGuideFavoriteBgmCacheSnapshot(
+    val cachedAudioUrls: Set<String> = emptySet(),
+    val bytes: Long = 0L
+)
 
 private const val FAVORITE_BGM_CACHE_PARALLELISM = 3
 private const val FAVORITE_BGM_CACHE_BATCH_SIZE = FAVORITE_BGM_CACHE_PARALLELISM * 2
@@ -91,19 +96,37 @@ internal suspend fun loadFavoriteBgmCachedAudioUrlsAsync(
     context: Context,
     favorites: List<GuideBgmFavoriteItem>,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-): Set<String> = withContext(ioDispatcher) {
+): Set<String> = loadFavoriteBgmCacheSnapshotAsync(
+    context = context,
+    favorites = favorites,
+    ioDispatcher = ioDispatcher
+).cachedAudioUrls
+
+internal suspend fun loadFavoriteBgmCacheSnapshotAsync(
+    context: Context,
+    favorites: List<GuideBgmFavoriteItem>,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+): BaGuideFavoriteBgmCacheSnapshot = withContext(ioDispatcher) {
     val appContext = context.applicationContext
-    buildSet {
-        favorites.forEachIndexed { index, favorite ->
-            currentCoroutineContext().ensureActive()
-            if (favorite.audioUrl.isNotBlank() && isFavoriteBgmCached(appContext, favorite)) {
-                add(favorite.audioUrl)
-            }
-            if ((index + 1) % FAVORITE_BGM_CLEAN_YIELD_EVERY == 0) {
-                yield()
+    val cachedAudioUrls = mutableSetOf<String>()
+    var bytes = 0L
+    favorites.forEachIndexed { index, favorite ->
+        currentCoroutineContext().ensureActive()
+        if (favorite.audioUrl.isNotBlank()) {
+            val cachedBytes = favoriteBgmCachedBytes(appContext, favorite)
+            if (cachedBytes > 0L) {
+                cachedAudioUrls += favorite.audioUrl
+                bytes += cachedBytes
             }
         }
+        if ((index + 1) % FAVORITE_BGM_CLEAN_YIELD_EVERY == 0) {
+            yield()
+        }
     }
+    BaGuideFavoriteBgmCacheSnapshot(
+        cachedAudioUrls = cachedAudioUrls,
+        bytes = bytes.coerceAtLeast(0L)
+    )
 }
 
 internal suspend fun cacheFavoriteBgmAsync(

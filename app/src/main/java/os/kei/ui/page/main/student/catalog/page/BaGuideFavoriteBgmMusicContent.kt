@@ -1,17 +1,12 @@
 package os.kei.ui.page.main.student.catalog.page
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -21,10 +16,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
@@ -54,12 +48,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
     onOpenGuide: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val appContext = remember(context) { context.applicationContext }
-    val scope = rememberCoroutineScope()
     val favorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
-    var cacheRevision by remember { mutableIntStateOf(0) }
-    var cachingAudioUrls by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var offlineAudioUrls by remember { mutableStateOf<Set<String>>(emptySet()) }
     val contentBackdrop = rememberLayerBackdrop()
     val displayedFavorites = remember(favorites, searchQuery) {
         filterAndSortBgmFavorites(
@@ -68,23 +57,26 @@ internal fun BaGuideFavoriteBgmMusicContent(
             sortMode = os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode.Recent
         )
     }
+    val offlineCacheState = rememberBaGuideFavoriteBgmOfflineCacheState(
+        context = context,
+        favorites = displayedFavorites,
+        isPageActive = isPageActive
+    )
     LaunchedEffect(playbackCoordinator, displayedFavorites, isPageActive) {
         if (isPageActive) {
             playbackCoordinator.updateQueue(displayedFavorites)
         }
     }
-    LaunchedEffect(displayedFavorites, cacheRevision, isPageActive) {
-        if (!isPageActive) return@LaunchedEffect
-        offlineAudioUrls = loadFavoriteBgmCachedAudioUrlsAsync(
-            context = appContext,
-            favorites = displayedFavorites
-        )
-    }
     val selectedFavorite = playbackState.selectedFavorite
         ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
         ?: displayedFavorites.firstOrNull()
-    val tracks = remember(displayedFavorites, cacheRevision) {
-        displayedFavorites.map { favorite -> favorite.toBaGuideBgmTrack() }
+    val playbackSnapshot = remember(displayedFavorites) {
+        GuideBgmFavoritePlaybackStore.snapshot()
+    }
+    val tracks = remember(displayedFavorites) {
+        displayedFavorites.map { favorite ->
+            favorite.toBaGuideBgmTrack(playbackSnapshot)
+        }
     }
     val favoritesByTrackId = remember(displayedFavorites) {
         displayedFavorites.associateBy { it.audioUrl }
@@ -99,53 +91,12 @@ internal fun BaGuideFavoriteBgmMusicContent(
         stringResource(
             R.string.ba_catalog_bgm_library_summary,
             favorites.size,
-            offlineAudioUrls.size
+            offlineCacheState.offlineAudioUrls.size
         )
     }
-    val cacheSuccessText = stringResource(R.string.ba_catalog_bgm_cache_success)
-    val cacheFailedText = stringResource(R.string.ba_catalog_bgm_cache_failed)
-    val cacheRemovedText = stringResource(R.string.ba_catalog_bgm_cache_removed)
 
     fun playFavorite(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
         playbackCoordinator.play(favorite, restart = restart)
-    }
-
-    fun cacheFavorite(favorite: GuideBgmFavoriteItem) {
-        if (favorite.audioUrl.isBlank() || favorite.audioUrl in cachingAudioUrls) return
-        cachingAudioUrls = cachingAudioUrls + favorite.audioUrl
-        scope.launch {
-            val success = try {
-                cacheFavoriteBgmAsync(appContext, favorite)
-            } catch (error: CancellationException) {
-                cachingAudioUrls = cachingAudioUrls - favorite.audioUrl
-                throw error
-            } catch (_: Throwable) {
-                false
-            }
-            cachingAudioUrls = cachingAudioUrls - favorite.audioUrl
-            if (success) {
-                offlineAudioUrls = offlineAudioUrls + favorite.audioUrl
-            }
-            cacheRevision += 1
-            Toast.makeText(
-                context,
-                if (success) cacheSuccessText else cacheFailedText,
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
-    fun toggleFavoriteCache(favorite: GuideBgmFavoriteItem) {
-        if (favorite.audioUrl in offlineAudioUrls) {
-            scope.launch {
-                clearFavoriteBgmCacheAsync(appContext, favorite)
-                offlineAudioUrls = offlineAudioUrls - favorite.audioUrl
-                cacheRevision += 1
-                Toast.makeText(context, cacheRemovedText, Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            cacheFavorite(favorite)
-        }
     }
 
     LaunchedEffect(selectedFavorite?.audioUrl, playbackCoordinator.queueMode) {
@@ -199,7 +150,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
                 if (playbackState.selectedAudioUrl == id) playbackCoordinator.select("")
             },
             onTrackOfflineClick = { id ->
-                favoritesByTrackId[id]?.let(::toggleFavoriteCache)
+                favoritesByTrackId[id]?.let(offlineCacheState.onToggleFavoriteCache)
             },
             onTrackShareClick = { track ->
                 favoritesByTrackId[track.id]?.let { favorite ->
@@ -208,12 +159,12 @@ internal fun BaGuideFavoriteBgmMusicContent(
                 }
             },
             isTrackOfflineSaved = { id ->
-                id in offlineAudioUrls
+                id in offlineCacheState.offlineAudioUrls
             },
             sectionTitle = sectionTitle,
             sectionMeta = sectionMeta,
             sectionFooterTitle = stringResource(R.string.ba_catalog_tab_bgm),
-            offlineTrackCount = offlineAudioUrls.size,
+            offlineTrackCount = offlineCacheState.offlineAudioUrls.size,
             showFooter = false,
             listState = rememberLazyListState(),
             collapseProgress = 0f,
@@ -232,8 +183,10 @@ internal fun BaGuideFavoriteBgmMusicContent(
     }
 }
 
-private fun GuideBgmFavoriteItem.toBaGuideBgmTrack(): BaGuideBgmTrack {
-    val durationMs = GuideBgmFavoritePlaybackStore.progressFor(audioUrl)?.durationMs ?: 0L
+private fun GuideBgmFavoriteItem.toBaGuideBgmTrack(
+    playbackSnapshot: GuideBgmFavoritePlaybackSnapshot
+): BaGuideBgmTrack {
+    val durationMs = playbackSnapshot.progressFor(audioUrl)?.durationMs ?: 0L
     return BaGuideBgmTrack(
         id = audioUrl,
         title = studentTitle.ifBlank { title }.ifBlank { audioUrl },

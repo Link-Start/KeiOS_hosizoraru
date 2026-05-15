@@ -44,9 +44,11 @@ internal class BaGuideStudentBgmLookupCoordinator(
     val states: StateFlow<Map<Long, BaGuideStudentBgmLookupState>> = _states.asStateFlow()
 
     private var cachePrewarmJob: Job? = null
+    private val cachePrewarmCheckedContentIds = mutableSetOf<Long>()
 
     fun clear() {
         cachePrewarmJob?.cancel()
+        cachePrewarmCheckedContentIds.clear()
         _states.value = emptyMap()
     }
 
@@ -60,7 +62,11 @@ internal class BaGuideStudentBgmLookupCoordinator(
     }
 
     fun prewarmCached(entries: List<BaGuideCatalogEntry>) {
-        val pendingEntries = entries.filter { entry -> _states.value[entry.contentId] == null }
+        val currentStates = _states.value
+        val pendingEntries = entries.filter { entry ->
+            currentStates[entry.contentId] == null &&
+                entry.contentId !in cachePrewarmCheckedContentIds
+        }
         if (pendingEntries.isEmpty()) return
         cachePrewarmJob?.cancel()
         cachePrewarmJob = scope.launch {
@@ -79,6 +85,7 @@ internal class BaGuideStudentBgmLookupCoordinator(
                     }
                     .awaitAll()
                     .filterNotNull()
+                cachePrewarmCheckedContentIds += batch.map { entry -> entry.contentId }
                 if (cached.isNotEmpty()) {
                     _states.update { states ->
                         states + cached.associate { (contentId, item) ->

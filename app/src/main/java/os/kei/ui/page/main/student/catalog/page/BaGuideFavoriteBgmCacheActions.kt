@@ -1,6 +1,16 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import android.content.Context
+import android.widget.Toast
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +23,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
+import kotlinx.coroutines.launch
+import os.kei.R
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.component.clearFavoriteBgmCache
@@ -25,9 +37,75 @@ internal data class BaGuideFavoriteBgmCacheSnapshot(
     val bytes: Long = 0L
 )
 
+internal data class BaGuideFavoriteBgmOfflineCacheState(
+    val offlineAudioUrls: Set<String> = emptySet(),
+    val onToggleFavoriteCache: (GuideBgmFavoriteItem) -> Unit = {}
+)
+
 private const val FAVORITE_BGM_CACHE_PARALLELISM = 3
 private const val FAVORITE_BGM_CACHE_BATCH_SIZE = FAVORITE_BGM_CACHE_PARALLELISM * 2
 private const val FAVORITE_BGM_CLEAN_YIELD_EVERY = 32
+
+@Composable
+internal fun rememberBaGuideFavoriteBgmOfflineCacheState(
+    context: Context,
+    favorites: List<GuideBgmFavoriteItem>,
+    isPageActive: Boolean
+): BaGuideFavoriteBgmOfflineCacheState {
+    val appContext = remember(context) { context.applicationContext }
+    val scope = rememberCoroutineScope()
+    var revision by remember { mutableIntStateOf(0) }
+    var cachingAudioUrls by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var offlineAudioUrls by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val cacheSuccessText = stringResource(R.string.ba_catalog_bgm_cache_success)
+    val cacheFailedText = stringResource(R.string.ba_catalog_bgm_cache_failed)
+    val cacheRemovedText = stringResource(R.string.ba_catalog_bgm_cache_removed)
+
+    LaunchedEffect(favorites, revision, isPageActive) {
+        if (!isPageActive) return@LaunchedEffect
+        offlineAudioUrls = loadFavoriteBgmCachedAudioUrlsAsync(
+            context = appContext,
+            favorites = favorites
+        )
+    }
+
+    val onToggleFavoriteCache: (GuideBgmFavoriteItem) -> Unit = { favorite ->
+        if (favorite.audioUrl in offlineAudioUrls) {
+            scope.launch {
+                clearFavoriteBgmCacheAsync(appContext, favorite)
+                offlineAudioUrls = offlineAudioUrls - favorite.audioUrl
+                revision += 1
+                Toast.makeText(context, cacheRemovedText, Toast.LENGTH_SHORT).show()
+            }
+        } else if (favorite.audioUrl.isNotBlank() && favorite.audioUrl !in cachingAudioUrls) {
+            cachingAudioUrls = cachingAudioUrls + favorite.audioUrl
+            scope.launch {
+                val success = try {
+                    cacheFavoriteBgmAsync(appContext, favorite)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Throwable) {
+                    false
+                } finally {
+                    cachingAudioUrls = cachingAudioUrls - favorite.audioUrl
+                }
+                if (success) {
+                    offlineAudioUrls = offlineAudioUrls + favorite.audioUrl
+                }
+                revision += 1
+                Toast.makeText(
+                    context,
+                    if (success) cacheSuccessText else cacheFailedText,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+    return BaGuideFavoriteBgmOfflineCacheState(
+        offlineAudioUrls = offlineAudioUrls,
+        onToggleFavoriteCache = onToggleFavoriteCache
+    )
+}
 
 internal suspend fun cacheMissingFavoriteBgmsAsync(
     context: Context,

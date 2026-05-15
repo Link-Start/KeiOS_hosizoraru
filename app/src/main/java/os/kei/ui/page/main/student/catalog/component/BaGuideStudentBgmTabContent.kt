@@ -348,18 +348,26 @@ internal fun BaGuideStudentBgmTabContent(
     }
     LaunchedEffect(listState, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow { listState.canScrollBackward to listState.canScrollForward }
+        var lastScrollBounds: Pair<Boolean, Boolean>? = null
+        var lastScrollInProgress: Boolean? = null
+        snapshotFlowManager.snapshotFlow {
+            Triple(
+                listState.canScrollBackward,
+                listState.canScrollForward,
+                listState.isScrollInProgress
+            )
+        }
             .distinctUntilChanged()
-            .collect { (canScrollBackward, canScrollForward) ->
-                onScrollBoundsChange(canScrollBackward, canScrollForward)
-            }
-    }
-    LaunchedEffect(listState, isPageActive, snapshotFlowManager) {
-        if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow { listState.isScrollInProgress }
-            .distinctUntilChanged()
-            .collect { scrolling ->
-                onListScrollInProgressChange(scrolling)
+            .collect { (canScrollBackward, canScrollForward, scrolling) ->
+                val nextScrollBounds = canScrollBackward to canScrollForward
+                if (lastScrollBounds != nextScrollBounds) {
+                    lastScrollBounds = nextScrollBounds
+                    onScrollBoundsChange(canScrollBackward, canScrollForward)
+                }
+                if (lastScrollInProgress != scrolling) {
+                    lastScrollInProgress = scrolling
+                    onListScrollInProgressChange(scrolling)
+                }
             }
     }
     DisposableEffect(Unit) {

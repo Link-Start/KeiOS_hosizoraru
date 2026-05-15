@@ -37,6 +37,27 @@ class BaGuideStudentBgmLookupCoordinatorTest {
     }
 
     @Test
+    fun `prewarm skips entries already checked as cache misses`() = runBlocking {
+        val firstEntry = catalogEntry(contentId = 11L)
+        val secondEntry = catalogEntry(contentId = 12L)
+        val checkedContentIds = mutableListOf<Long>()
+        val coordinator = BaGuideStudentBgmLookupCoordinator(
+            scope = CoroutineScope(Dispatchers.Unconfined),
+            ioDispatcher = Dispatchers.Unconfined,
+            cachedLoader = { entry ->
+                checkedContentIds += entry.contentId
+                null
+            },
+            networkLoader = { null }
+        )
+
+        coordinator.prewarmCached(listOf(firstEntry))
+        coordinator.prewarmCached(listOf(firstEntry, secondEntry))
+
+        assertEquals(listOf(firstEntry.contentId, secondEntry.contentId), checkedContentIds)
+    }
+
+    @Test
     fun `resolve entry reuses ready state before loaders`() = runBlocking {
         var cacheCalls = 0
         var networkCalls = 0

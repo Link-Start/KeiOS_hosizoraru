@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.catalog.component
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,14 +38,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
-import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
-import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
@@ -168,126 +163,21 @@ internal fun BaGuideStudentBgmTabContent(
         sliderInteractionActive = active
         onSliderInteractionChanged(active)
     }
-
-    fun openStudentGuide(entry: BaGuideCatalogEntry) {
-        GuideDetailTabRequestStore.request(entry.detailUrl, GuideBottomTab.Gallery)
-        onOpenGuide(entry.detailUrl)
-    }
-
-    fun openFavoriteGuide(favorite: GuideBgmFavoriteItem) {
-        GuideDetailTabRequestStore.request(favorite.sourceUrl, GuideBottomTab.Gallery)
-        onOpenGuide(favorite.sourceUrl)
-    }
-
-    fun favoriteForEntry(entry: BaGuideCatalogEntry): GuideBgmFavoriteItem? {
-        return favoriteForStudentBgmEntry(
-            entry = entry,
-            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
-        )
-    }
-
-    fun stateWithFavoriteFallback(
-        entry: BaGuideCatalogEntry,
-        lookupState: BaGuideStudentBgmLookupState
-    ): BaGuideStudentBgmLookupState {
-        return studentBgmStateWithFavoriteFallback(
-            entry = entry,
-            lookupState = lookupState,
-            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
-        )
-    }
-
-    fun resolveEntry(
-        entry: BaGuideCatalogEntry,
-        allowNetwork: Boolean,
-        onResolved: (BaGuideStudentBgmResolvedItem?) -> Unit
-    ) {
-        lookupCoordinator.resolveEntry(
-            entry = entry,
-            allowNetwork = allowNetwork,
-            onResolved = onResolved
-        )
-    }
-
-    fun startPlayback(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
-        playbackCoordinator.play(favorite, restart = restart)
-        setNowPlayingVisible(true)
-    }
-
-    fun togglePlayback(favorite: GuideBgmFavoriteItem) {
-        playbackCoordinator.toggle(favorite)
-        setNowPlayingVisible(true)
-    }
-
-    fun playEntry(entry: BaGuideCatalogEntry) {
-        val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
-        stateWithFavoriteFallback(entry, lookupState).readyFavoriteOrNull()?.let { favorite ->
-            if (lookupState !is BaGuideStudentBgmLookupState.Ready) {
-                lookupCoordinator.markReadyFromFavorite(
-                    entry = entry,
-                    item = BaGuideStudentBgmResolvedItem(
-                        favorite = favorite,
-                        fromCache = false,
-                        fromFavorite = true
-                    )
-                )
-            }
-            if (selectedAudioUrl == favorite.audioUrl) {
-                togglePlayback(favorite)
-            } else {
-                startPlayback(favorite)
-            }
-            return
-        }
-        resolveEntry(entry = entry, allowNetwork = true) { resolved ->
-            val favorite = resolved?.favorite
-            if (favorite == null) {
-                Toast.makeText(context, bgmMissingText, Toast.LENGTH_SHORT).show()
-            } else {
-                if (selectedAudioUrl == favorite.audioUrl) {
-                    togglePlayback(favorite)
-                } else {
-                    startPlayback(favorite)
-                }
-            }
-        }
-    }
-
-    fun toggleEntryFavorite(entry: BaGuideCatalogEntry) {
-        val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
-        if (lookupState !is BaGuideStudentBgmLookupState.Ready) {
-            val savedFavorite = favoriteForEntry(entry)
-            if (savedFavorite != null) {
-                GuideBgmFavoriteStore.removeFavorite(savedFavorite.audioUrl)
-                Toast.makeText(context, favoriteRemovedText, Toast.LENGTH_SHORT).show()
-                return
-            }
-        }
-        resolveEntry(entry = entry, allowNetwork = true) { resolved ->
-            val favorite = resolved?.favorite
-            if (favorite == null) {
-                Toast.makeText(context, bgmResolveFailedText, Toast.LENGTH_SHORT).show()
-                return@resolveEntry
-            }
-            val added = GuideBgmFavoriteStore.toggleFavorite(favorite)
-            Toast.makeText(
-                context,
-                if (added) favoriteAddedText else favoriteRemovedText,
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
-    fun isFavoriteEntry(
-        entry: BaGuideCatalogEntry,
-        lookupState: BaGuideStudentBgmLookupState
-    ): Boolean {
-        val readyAudioUrl = lookupState.readyFavoriteOrNull()?.audioUrl
-        if (!readyAudioUrl.isNullOrBlank()) {
-            return readyAudioUrl in favoriteAudioUrls
-        }
-        return favoriteForEntry(entry) != null
-    }
+    val actions = rememberBaGuideStudentBgmActions(
+        context = context,
+        lookupCoordinator = lookupCoordinator,
+        lookupStates = lookupStates,
+        favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+        favoriteAudioUrls = favoriteAudioUrls,
+        selectedAudioUrl = selectedAudioUrl,
+        playbackCoordinator = playbackCoordinator,
+        setNowPlayingVisible = ::setNowPlayingVisible,
+        onOpenGuide = onOpenGuide,
+        bgmMissingText = bgmMissingText,
+        bgmResolveFailedText = bgmResolveFailedText,
+        favoriteAddedText = favoriteAddedText,
+        favoriteRemovedText = favoriteRemovedText
+    )
 
     val displayedBgmModel =
         remember(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl) {
@@ -326,14 +216,6 @@ internal fun BaGuideStudentBgmTabContent(
         innerPadding.calculateBottomPadding()
     }
     val nowPlayingBottomPadding = navigationBarBottom + AppChromeTokens.pageSectionGap
-
-    fun selectQueueOffset(offset: Int, shouldStartPlayback: Boolean, restart: Boolean = false) {
-        playbackCoordinator.selectOffset(
-            offset = offset,
-            startPlayback = shouldStartPlayback,
-            restart = restart
-        )
-    }
 
     LaunchedEffect(catalog.syncedAtMs) {
         lookupCoordinator.clear()
@@ -453,7 +335,7 @@ internal fun BaGuideStudentBgmTabContent(
                     contentType = { "student_bgm_entry" }
                 ) { entry ->
                     val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
-                    val displayState = stateWithFavoriteFallback(entry, lookupState)
+                    val displayState = actions.stateWithFavoriteFallback(entry, lookupState)
                     val readyFavorite = displayState.readyFavoriteOrNull()
                     val selected = readyFavorite?.audioUrl == selectedAudioUrl
                     BaGuideStudentBgmCard(
@@ -461,11 +343,11 @@ internal fun BaGuideStudentBgmTabContent(
                         lookupState = displayState,
                         selected = selected,
                         playing = selected && playbackRuntimeState.isPlaying,
-                        favorite = isFavoriteEntry(entry, lookupState),
+                        favorite = actions.isFavoriteEntry(entry, lookupState),
                         accent = accent,
-                        onOpenGuide = { openStudentGuide(entry) },
-                        onPlay = { playEntry(entry) },
-                        onToggleFavorite = { toggleEntryFavorite(entry) }
+                        onOpenGuide = { actions.openStudentGuide(entry) },
+                        onPlay = { actions.playEntry(entry) },
+                        onToggleFavorite = { actions.toggleEntryFavorite(entry) }
                     )
                 }
             }
@@ -497,14 +379,13 @@ internal fun BaGuideStudentBgmTabContent(
                         pageScope.launch { listState.animateScrollToItem(0) }
                     },
                     onPrevious = {
-                        selectQueueOffset(offset = -1, shouldStartPlayback = true, restart = true)
+                        actions.selectQueueOffset(-1, true, true)
                     },
                     onTogglePlayback = {
-                        setNowPlayingVisible(true)
-                        playbackCoordinator.toggle(favorite)
+                        actions.togglePlayback(favorite)
                     },
                     onNext = {
-                        selectQueueOffset(offset = 1, shouldStartPlayback = true, restart = true)
+                        actions.selectQueueOffset(1, true, true)
                     },
                     onSeekChanged = { progress ->
                         seekPreviewProgress = progress.coerceIn(0f, 1f)
@@ -522,7 +403,7 @@ internal fun BaGuideStudentBgmTabContent(
                     onToggleQueueMode = {
                         playbackCoordinator.toggleQueueMode()
                     },
-                    onOpenGuide = { openFavoriteGuide(favorite) }
+                    onOpenGuide = { actions.openFavoriteGuide(favorite) }
                 )
             }
         }

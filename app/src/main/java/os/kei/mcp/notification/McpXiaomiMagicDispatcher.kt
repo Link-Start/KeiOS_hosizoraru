@@ -54,18 +54,6 @@ internal object McpXiaomiMagicDispatcher {
         val notificationManager = NotificationManagerCompat.from(context)
         val targetUid = resolveXmsfUid(context)
         AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
-        if (!shouldExecute(targetUid)) {
-            AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
-            if (canUseCommand()) {
-                restoreNetworkIfNeeded(context)
-            }
-            return McpNotificationHelper.notifySafely(
-                context,
-                notificationManager,
-                notificationId,
-                notification
-            )
-        }
         val nonNullUid = targetUid ?: run {
             AppLogger.w(TAG, "skip Xiaomi magic: xmsf uid is null")
             return McpNotificationHelper.notifySafely(
@@ -78,6 +66,19 @@ internal object McpXiaomiMagicDispatcher {
 
         scope.launch {
             networkMutex.withLock {
+                if (!shouldExecuteLocked(nonNullUid)) {
+                    AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
+                    if (canUseCommand()) {
+                        healXmsfNetworkingLocked(nonNullUid)
+                    }
+                    McpNotificationHelper.notifySafely(
+                        context,
+                        notificationManager,
+                        notificationId,
+                        notification
+                    )
+                    return@withLock
+                }
                 var notificationDispatched = false
                 var networkTouched = false
                 try {
@@ -143,16 +144,12 @@ internal object McpXiaomiMagicDispatcher {
         }.getOrNull()?.takeIf { it > 0 }
     }
 
-    private fun shouldExecute(xmsfUid: Int?): Boolean {
-        if (xmsfUid == null) {
-            AppLogger.w(TAG, "shouldExecute=false: xmsf uid not found")
-            return false
-        }
+    private suspend fun shouldExecuteLocked(xmsfUid: Int): Boolean {
         if (!canUseCommand()) {
             AppLogger.w(TAG, "shouldExecute=false: Shizuku command unavailable")
             return false
         }
-        val idOutput = shizukuApiUtils.execCommand("id").orEmpty()
+        val idOutput = shizukuApiUtils.execCommandCancellable("id").orEmpty()
         val isShellOrRoot = idOutput.contains("uid=2000") || idOutput.contains("uid=0")
         if (!isShellOrRoot) {
             AppLogger.w(TAG, "shouldExecute=false: unsupported Shizuku identity '$idOutput'")
@@ -164,7 +161,7 @@ internal object McpXiaomiMagicDispatcher {
         return canUseMode
     }
 
-    private fun blockXmsfNetworkingLocked(uid: Int) {
+    private suspend fun blockXmsfNetworkingLocked(uid: Int) {
         when (resolveCommandSet()) {
             CommandSet.PACKAGE_NETWORKING -> {
                 val blocked =
@@ -195,7 +192,7 @@ internal object McpXiaomiMagicDispatcher {
         }
     }
 
-    private fun restoreXmsfNetworkingLocked(uid: Int) {
+    private suspend fun restoreXmsfNetworkingLocked(uid: Int) {
         val mode = resolveCommandSet()
         val restored = when (mode) {
             CommandSet.PACKAGE_NETWORKING -> {
@@ -221,7 +218,7 @@ internal object McpXiaomiMagicDispatcher {
         isUidFirewallChainEnabled = false
     }
 
-    private fun healXmsfNetworkingLocked(uid: Int) {
+    private suspend fun healXmsfNetworkingLocked(uid: Int) {
         when (resolveCommandSet()) {
             CommandSet.PACKAGE_NETWORKING -> {
                 val restored =
@@ -248,9 +245,9 @@ internal object McpXiaomiMagicDispatcher {
         isUidFirewallChainEnabled = false
     }
 
-    private fun resolveCommandSet(): CommandSet {
+    private suspend fun resolveCommandSet(): CommandSet {
         commandSet?.let { return it }
-        val helpText = shizukuApiUtils.execCommand("cmd connectivity help")
+        val helpText = shizukuApiUtils.execCommandCancellable("cmd connectivity help")
         if (helpText.isNullOrBlank()) {
             AppLogger.w(TAG, "resolveCommandSet skipped: connectivity help unavailable")
             return CommandSet.NONE
@@ -267,9 +264,9 @@ internal object McpXiaomiMagicDispatcher {
         return resolved
     }
 
-    private fun execCommand(command: String): Boolean {
+    private suspend fun execCommand(command: String): Boolean {
         val output =
-            shizukuApiUtils.execCommand("($command) >/dev/null 2>&1 && echo __OK__ || echo __FAIL__")
+            shizukuApiUtils.execCommandCancellable("($command) >/dev/null 2>&1 && echo __OK__ || echo __FAIL__")
                 ?: return false
         val success = output.contains("__OK__")
         if (!success) {

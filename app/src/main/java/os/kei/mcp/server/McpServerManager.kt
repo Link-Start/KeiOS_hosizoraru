@@ -1,7 +1,6 @@
 package os.kei.mcp.server
 
 import android.content.Context
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +48,8 @@ class McpServerManager(
     monitorDispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 ) {
     companion object {
-        private val SESSION_MONITOR_ACTIVE_DELAY = 5_000.milliseconds
+        private val SESSION_MONITOR_SETTLE_DELAYS = longArrayOf(1_000L, 3_000L, 8_000L)
+        private val SESSION_MONITOR_CALIBRATION_DELAY = 60_000.milliseconds
 
         fun loadSavedCacheSummary(context: Context): String {
             val snapshot = McpServerPrefs.loadSnapshot()
@@ -295,10 +295,14 @@ class McpServerManager(
             _uiState.value = _uiState.value.copy(addresses = ipv4Addresses())
         }
         if (running) {
-            val sessions = endpointSession?.server?.sessions?.size ?: 0
-            _uiState.value = _uiState.value.copy(connectedClients = sessions)
-            if (sessions > 0) {
-                endpointSession?.let(::ensureActiveSessionMonitor)
+            val currentSession = endpointSession
+            val sessions = if (currentSession != null) {
+                updateConnectedClientCount(currentSession.server)
+            } else {
+                0
+            }
+            if (sessions > 0 && currentSession != null) {
+                ensureActiveSessionMonitor(currentSession)
             }
             syncKeepAliveNotification(forceStart = false)
             appendLog("INFO", "Snapshot refreshed: clients=$sessions")
@@ -355,12 +359,17 @@ class McpServerManager(
     @Synchronized
     private fun ensureActiveSessionMonitor(session: McpEndpointSession) {
         if (monitorJob?.isActive == true) return
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val job = scope.launch {
             try {
+                SESSION_MONITOR_SETTLE_DELAYS.forEach { delayMs ->
+                    delay(delayMs.milliseconds)
+                    val count = updateConnectedClientCount(session.server)
+                    if (count <= 0) return@launch
+                }
                 while (true) {
+                    delay(SESSION_MONITOR_CALIBRATION_DELAY)
                     val count = updateConnectedClientCount(session.server)
                     if (count <= 0) break
-                    delay(SESSION_MONITOR_ACTIVE_DELAY)
                 }
             } finally {
                 synchronized(this@McpServerManager) {
@@ -371,7 +380,6 @@ class McpServerManager(
             }
         }
         monitorJob = job
-        job.start()
     }
 
     private fun updateConnectedClientCountAsync(server: io.modelcontextprotocol.kotlin.sdk.server.Server) {

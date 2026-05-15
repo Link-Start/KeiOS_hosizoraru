@@ -21,10 +21,19 @@ import os.kei.mcp.notification.McpNotificationPayload
 import kotlin.time.Duration.Companion.milliseconds
 
 class McpKeepAliveService : Service() {
+    private data class HeartbeatSignature(
+        val notificationId: Int,
+        val serverName: String,
+        val port: Int,
+        val path: String,
+        val clients: Int
+    )
+
     private val serviceScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
     private val notificationManager by lazy { NotificationManagerCompat.from(this) }
     private var heartbeatJob: Job? = null
+    private var heartbeatSignature: HeartbeatSignature? = null
     private var islandRefreshJob: Job? = null
     private var isForegroundPromoted: Boolean = false
     private var currentRunning: Boolean = false
@@ -171,11 +180,17 @@ class McpKeepAliveService : Service() {
     }
 
     private fun startHeartbeat() {
-        heartbeatJob?.cancel()
-        if (!currentRunning || !currentHeartbeatEnabled) return
+        val signature = currentHeartbeatSignatureOrNull()
+        if (signature == null) {
+            stopHeartbeat()
+            return
+        }
+        if (heartbeatJob?.isActive == true && heartbeatSignature == signature) return
+        stopHeartbeat()
+        heartbeatSignature = signature
         heartbeatJob = serviceScope.launch {
             while (true) {
-                delay(resolveHeartbeatDelay())
+                delay(HEARTBEAT_ACTIVE_DELAY)
                 if (!currentRunning || !currentHeartbeatEnabled) continue
                 yield()
                 McpNotificationHelper.refreshForegroundPulse(
@@ -191,15 +206,21 @@ class McpKeepAliveService : Service() {
         }
     }
 
-    private fun resolveHeartbeatDelay() = if (currentClients > 0) {
-        HEARTBEAT_ACTIVE_DELAY
-    } else {
-        HEARTBEAT_IDLE_DELAY
+    private fun currentHeartbeatSignatureOrNull(): HeartbeatSignature? {
+        if (!currentRunning || !currentHeartbeatEnabled || currentClients <= 0) return null
+        return HeartbeatSignature(
+            notificationId = currentNotificationId,
+            serverName = currentServerName,
+            port = currentPort,
+            path = currentPath,
+            clients = currentClients
+        )
     }
 
     private fun stopHeartbeat() {
         heartbeatJob?.cancel()
         heartbeatJob = null
+        heartbeatSignature = null
     }
 
     private fun refreshForegroundNotification(
@@ -302,7 +323,6 @@ class McpKeepAliveService : Service() {
         private const val EXTRA_CLIENTS = "clients"
         private const val EXTRA_HEARTBEAT_ENABLED = "heartbeat_enabled"
         private val HEARTBEAT_ACTIVE_DELAY = 90_000.milliseconds
-        private val HEARTBEAT_IDLE_DELAY = 300_000.milliseconds
 
         fun startOrUpdate(
             context: Context,

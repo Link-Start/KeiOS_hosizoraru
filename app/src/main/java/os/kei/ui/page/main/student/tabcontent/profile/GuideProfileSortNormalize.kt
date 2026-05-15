@@ -65,3 +65,9 @@ internal val profileCapsuleFieldKeys = setOf(
 internal val profileLongTextFieldKeys = setOf(
     "全名", "个人简介", "兴趣爱好", "MomoTalk状态消息"
 ).map(::normalizeProfileFieldKey).toSet()
+internal val profileFullWidthInfoRowKeys = setOf(
+    "MomoTalk状态消息",
+    "Momotalk状态消息",
+    "MomoTalk解锁等级",
+    "Momotalk解锁等级"
+).map(::normalizeProfileFieldKey).toSet()

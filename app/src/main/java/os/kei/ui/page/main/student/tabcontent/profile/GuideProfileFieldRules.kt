@@ -47,6 +47,10 @@ internal val profileHobbyFieldSpecs = listOf(
 
 internal val profileStructuredFieldSpecs = profileNicknameFieldSpecs + profileStudentInfoFieldSpecs + profileHobbyFieldSpecs
 
+internal fun shouldUseFullWidthProfileInfoRow(key: String): Boolean {
+    return normalizeProfileFieldKey(key) in profileFullWidthInfoRowKeys
+}
+
 internal fun shouldUseProfileValueCapsule(
     key: String,
     value: String,
@@ -96,15 +100,26 @@ internal fun isGiftPreferenceProfileRow(row: BaGuideRow): Boolean {
 internal fun buildGiftPreferenceItems(rows: List<BaGuideRow>): List<GiftPreferenceItem> {
     if (rows.isEmpty()) return emptyList()
     return rows.mapIndexedNotNull { index, row ->
+        val primaryImage = row.imageUrl
+            .trim()
+            .takeIf(::isRenderableGalleryImageUrl)
+            .orEmpty()
         val normalizedImages = buildList {
-            add(row.imageUrl.trim())
+            if (primaryImage.isNotBlank()) add(primaryImage)
             addAll(row.imageUrls.map { it.trim() })
-        }.filter { candidate ->
-            isRenderableGalleryImageUrl(candidate)
-        }.distinct()
-        val giftImage = normalizedImages.firstOrNull().orEmpty()
+        }
+            .filter(::isRenderableGalleryImageUrl)
+            .distinct()
+        val giftImage = primaryImage.ifBlank {
+            normalizedImages.firstOrNull { candidate ->
+                !isLikelyGiftPreferenceEmojiImageUrl(candidate, normalizedImages.size)
+            } ?: normalizedImages.firstOrNull().orEmpty()
+        }
         if (giftImage.isBlank()) return@mapIndexedNotNull null
         val emojiImage = normalizedImages.firstOrNull { candidate ->
+            candidate != giftImage &&
+                isLikelyGiftPreferenceEmojiImageUrl(candidate, normalizedImages.size)
+        } ?: normalizedImages.firstOrNull { candidate ->
             candidate != giftImage
         }.orEmpty()
         val fallbackIndex = extractOrderedNumbers(row.key).firstOrNull() ?: (index + 1)
@@ -120,6 +135,23 @@ internal fun buildGiftPreferenceItems(rows: List<BaGuideRow>): List<GiftPreferen
     }.distinctBy { item ->
         "${item.giftImageUrl}|${item.emojiImageUrl}|${item.label.trim()}"
     }
+}
+
+private fun isLikelyGiftPreferenceEmojiImageUrl(
+    url: String,
+    candidateCount: Int
+): Boolean {
+    val value = url.trim()
+    if (value.isBlank() || candidateCount <= 1) return false
+    val lower = value.lowercase()
+    if (lower.contains("emoji") || lower.contains("emote")) return true
+    val sizeMatch = Regex("""/w_(\d{1,4})/h_(\d{1,4})/""")
+        .find(value)
+    val width = sizeMatch?.groupValues?.getOrNull(1)?.toIntOrNull()
+    val height = sizeMatch?.groupValues?.getOrNull(2)?.toIntOrNull()
+    if (width == null || height == null) return false
+    val ratio = width.toFloat() / height.toFloat()
+    return width in 16..120 && height in 16..120 && ratio in 0.75f..1.33f
 }
 
 internal fun isProfileSectionHeaderRow(row: BaGuideRow): Boolean {

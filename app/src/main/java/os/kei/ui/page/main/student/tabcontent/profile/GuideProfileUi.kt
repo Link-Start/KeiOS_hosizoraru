@@ -117,38 +117,75 @@ internal fun GuideProfileInfoItem(
                 value = displayValue,
                 containerWidth = maxWidth
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = displayKey,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    modifier = Modifier.widthIn(min = 52.dp, max = keyMaxWidth),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.TopEnd
+            if (shouldUseFullWidthProfileInfoRow(key)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
+                    Text(
+                        text = displayKey,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        maxLines = Int.MAX_VALUE,
+                        overflow = TextOverflow.Clip
+                    )
                     if (showCapsule) {
-                        GuideProfileValueCapsule(
-                            label = displayValue,
-                            tint = valueColor ?: Color(0xFF5FA8FF),
-                            onClick = onClick,
-                            onLongClick = rowCopyAction
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            GuideProfileValueCapsule(
+                                label = displayValue,
+                                tint = valueColor ?: Color(0xFF5FA8FF),
+                                onClick = onClick,
+                                onLongClick = rowCopyAction
+                            )
+                        }
                     } else {
                         Text(
                             text = displayValue,
                             color = valueColor ?: MiuixTheme.colorScheme.onBackground,
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.End,
+                            textAlign = TextAlign.Start,
                             fontWeight = FontWeight.Medium,
                             maxLines = Int.MAX_VALUE,
                             overflow = TextOverflow.Clip
                         )
+                    }
+                }
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = displayKey,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        modifier = Modifier.widthIn(min = 52.dp, max = keyMaxWidth),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        if (showCapsule) {
+                            GuideProfileValueCapsule(
+                                label = displayValue,
+                                tint = valueColor ?: Color(0xFF5FA8FF),
+                                onClick = onClick,
+                                onLongClick = rowCopyAction
+                            )
+                        } else {
+                            Text(
+                                text = displayValue,
+                                color = valueColor ?: MiuixTheme.colorScheme.onBackground,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.End,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = Int.MAX_VALUE,
+                                overflow = TextOverflow.Clip
+                            )
+                        }
                     }
                 }
             }
@@ -465,6 +502,7 @@ internal fun GuideGiftPreferenceGrid(
         val giftIconWidth = (cardWidth + 4.dp).coerceIn(74.dp, 122.dp)
         val giftIconHeight = (giftBoxHeight + 2.dp).coerceAtLeast(48.dp)
         val emojiIconSize = (cardWidth * 0.16f).coerceIn(13.dp, 18.dp)
+        val emojiBubbleSize = emojiIconSize + 8.dp
 
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -504,7 +542,9 @@ internal fun GuideGiftPreferenceGrid(
                             GuideProfileLiquidSurfaceBox(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(bottom = 3.dp, end = 3.dp),
+                                    .padding(bottom = 3.dp, end = 3.dp)
+                                    .width(emojiBubbleSize)
+                                    .height(emojiBubbleSize),
                                 shape = ContinuousCapsule,
                                 surfaceColor = if (isDark) Color(0x663B82F6) else Color(0xCCEFF6FF),
                                 contentPadding = PaddingValues(horizontal = 3.dp, vertical = 3.dp)

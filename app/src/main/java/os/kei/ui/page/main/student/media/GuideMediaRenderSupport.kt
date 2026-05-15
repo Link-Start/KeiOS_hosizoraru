@@ -287,6 +287,29 @@ fun GuideRemoteIcon(
     val density = LocalDensity.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) return
+    val isGifSource = remember(target) { isGifMediaSource(target) }
+    if (isGifSource) {
+        val resolvedGifTarget by produceState(
+            initialValue = target,
+            target
+        ) {
+            value = if (isHttpMediaSource(target)) {
+                GameKeeMediaImageLoader.resolveInlineGifTarget(context, target)
+                    .ifBlank { target }
+            } else {
+                target
+            }
+        }
+        AsyncImage(
+            model = resolvedGifTarget,
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = modifier
+                .width(iconWidth)
+                .height(iconHeight)
+        )
+        return
+    }
     val iconDecodeDimension = remember(iconWidth, iconHeight, density) {
         val widthPx = with(density) { iconWidth.roundToPx() }
         val heightPx = with(density) { iconHeight.roundToPx() }

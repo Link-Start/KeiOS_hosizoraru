@@ -336,14 +336,15 @@ internal object BASettingsStore {
         storedAp: Double,
         notifyHomeOverview: Boolean = true,
     ) {
-        kv().encode(KEY_CAFE_STORED_AP, normalizeAp(storedAp).toString())
-        notifyChanged(notifyHomeOverview = notifyHomeOverview)
+        saveBaRuntimeState(
+            cafeStoredAp = storedAp,
+            notifyHomeOverview = notifyHomeOverview,
+        )
     }
 
     fun loadCafeLastHourMs(): Long = kv().decodeLong(KEY_CAFE_LAST_HOUR_MS, 0L)
     fun saveCafeLastHourMs(epochMs: Long) {
-        kv().encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
-        notifyChanged(notifyHomeOverview = false)
+        saveBaRuntimeState(cafeLastHourMs = epochMs, notifyHomeOverview = false)
     }
 
     fun loadCafeApNotifyEnabled(): Boolean = kv().decodeBool(KEY_CAFE_AP_NOTIFY_ENABLED, false)
@@ -591,22 +592,49 @@ internal object BASettingsStore {
         current: Double,
         notifyHomeOverview: Boolean = true,
     ) {
-        val normalized = normalizeAp(current)
-        kv().encode(KEY_AP_CURRENT_EXACT, normalized.toString())
-        kv().encode(KEY_AP_CURRENT, displayAp(normalized))
-        notifyChanged(notifyHomeOverview = notifyHomeOverview)
+        saveBaRuntimeState(
+            apCurrent = current,
+            notifyHomeOverview = notifyHomeOverview,
+        )
     }
 
     fun loadApRegenBaseMs(): Long = kv().decodeLong(KEY_AP_REGEN_BASE_MS, 0L)
     fun saveApRegenBaseMs(epochMs: Long) {
-        kv().encode(KEY_AP_REGEN_BASE_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged(notifyHomeOverview = false)
+        saveBaRuntimeState(apRegenBaseMs = epochMs, notifyHomeOverview = false)
     }
 
     fun loadApSyncMs(): Long = kv().decodeLong(KEY_AP_SYNC_MS, 0L)
     fun saveApSyncMs(epochMs: Long) {
-        kv().encode(KEY_AP_SYNC_MS, epochMs.coerceAtLeast(0L))
-        notifyChanged(notifyHomeOverview = false)
+        saveBaRuntimeState(apSyncMs = epochMs, notifyHomeOverview = false)
+    }
+
+    fun saveBaRuntimeState(
+        apCurrent: Double? = null,
+        apRegenBaseMs: Long? = null,
+        apSyncMs: Long? = null,
+        cafeStoredAp: Double? = null,
+        cafeLastHourMs: Long? = null,
+        notifyHomeOverview: Boolean = true,
+    ) {
+        val store = kv()
+        apCurrent?.let { current ->
+            val normalized = normalizeAp(current)
+            store.encode(KEY_AP_CURRENT_EXACT, normalized.toString())
+            store.encode(KEY_AP_CURRENT, displayAp(normalized))
+        }
+        apRegenBaseMs?.let { epochMs ->
+            store.encode(KEY_AP_REGEN_BASE_MS, epochMs.coerceAtLeast(0L))
+        }
+        apSyncMs?.let { epochMs ->
+            store.encode(KEY_AP_SYNC_MS, epochMs.coerceAtLeast(0L))
+        }
+        cafeStoredAp?.let { storedAp ->
+            store.encode(KEY_CAFE_STORED_AP, normalizeAp(storedAp).toString())
+        }
+        cafeLastHourMs?.let { epochMs ->
+            store.encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
+        }
+        notifyChanged(notifyHomeOverview = notifyHomeOverview)
     }
 
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)

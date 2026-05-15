@@ -88,7 +88,7 @@ internal fun saveBaPageSettings(
     onRefreshCalendar: (Boolean) -> Unit,
     onRefreshPool: (Boolean) -> Unit,
 ) {
-    office.applyCafeStorage()
+    office.applyRuntimeTick()
 
     val persisted = persistBaSettingsDraft(
         sheetState = settingsSheetState,
@@ -123,7 +123,7 @@ internal fun saveBaPageSettings(
         if (!poolHasImage) onRefreshPool(true)
     }
 
-    office.applyApRegen()
+    office.applyRuntimeTick()
     AppBackgroundScheduler.scheduleBaApThreshold(context)
     ui.closeSettingsSheet(office)
 }
@@ -134,7 +134,7 @@ internal fun saveBaNotificationSettings(
     ui: BaPageUiController,
     notificationSettingsSheetState: BaNotificationSettingsSheetState,
 ) {
-    office.applyCafeStorage()
+    office.applyRuntimeTick()
     val previousCafeApNotifyEnabled = office.cafeApNotifyEnabled
     val previousCafeApNotifyThreshold = office.cafeApNotifyThreshold
     val previousArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
@@ -179,7 +179,7 @@ internal fun saveBaNotificationSettings(
         BASettingsStore.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
     }
 
-    office.applyApRegen()
+    office.applyRuntimeTick()
     AppBackgroundScheduler.scheduleBaApThreshold(context)
     ui.closeNotificationSettingsSheet(office)
 }

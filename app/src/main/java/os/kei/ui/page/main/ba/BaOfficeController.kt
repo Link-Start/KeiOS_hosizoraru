@@ -193,13 +193,16 @@ internal class BaOfficeController(
             newValue = newValue,
         )
         apCurrent = next
-        BASettingsStore.saveApCurrent(next)
         apRegenBaseMs = nowMs
-        BASettingsStore.saveApRegenBaseMs(nowMs)
         if (markSync) {
             apSyncMs = nowMs
-            BASettingsStore.saveApSyncMs(nowMs)
         }
+        BASettingsStore.saveBaRuntimeState(
+            apCurrent = next,
+            apRegenBaseMs = nowMs,
+            apSyncMs = nowMs.takeIf { markSync },
+            notifyHomeOverview = true,
+        )
     }
 
     fun addCurrentAp(delta: Double, markSync: Boolean) {
@@ -209,13 +212,16 @@ internal class BaOfficeController(
         ) ?: return
         val (next, nowMs) = result
         apCurrent = next
-        BASettingsStore.saveApCurrent(next)
         apRegenBaseMs = nowMs
-        BASettingsStore.saveApRegenBaseMs(nowMs)
         if (markSync) {
             apSyncMs = nowMs
-            BASettingsStore.saveApSyncMs(nowMs)
         }
+        BASettingsStore.saveBaRuntimeState(
+            apCurrent = next,
+            apRegenBaseMs = nowMs,
+            apSyncMs = nowMs.takeIf { markSync },
+            notifyHomeOverview = true,
+        )
     }
 
     fun updateApLimit(newLimit: Int) {
@@ -228,11 +234,15 @@ internal class BaOfficeController(
     fun applyApRegen(nowMs: Long = System.currentTimeMillis()) {
         if (apLimit.coerceIn(0, BA_AP_LIMIT_MAX) <= 0) {
             apRegenBaseMs = nowMs
-            BASettingsStore.saveApRegenBaseMs(nowMs)
+            val correctedAp = if (apCurrent < 0.0) 0.0 else null
             if (apCurrent < 0.0) {
                 apCurrent = 0.0
-                BASettingsStore.saveApCurrent(0.0)
             }
+            BASettingsStore.saveBaRuntimeState(
+                apCurrent = correctedAp,
+                apRegenBaseMs = nowMs,
+                notifyHomeOverview = false,
+            )
             return
         }
         val (nextAp, nextBase) = applyBaApRegenTick(
@@ -241,13 +251,81 @@ internal class BaOfficeController(
             apRegenBaseMs = apRegenBaseMs,
             nowMs = nowMs,
         )
-        if (nextAp != apCurrent) {
+        val shouldSaveAp = nextAp != apCurrent
+        val shouldSaveBase = nextBase != apRegenBaseMs
+        if (shouldSaveAp) {
             apCurrent = nextAp
-            BASettingsStore.saveApCurrent(nextAp, notifyHomeOverview = false)
         }
-        if (nextBase != apRegenBaseMs) {
+        if (shouldSaveBase) {
             apRegenBaseMs = nextBase
-            BASettingsStore.saveApRegenBaseMs(nextBase)
+        }
+        if (shouldSaveAp || shouldSaveBase) {
+            BASettingsStore.saveBaRuntimeState(
+                apCurrent = nextAp.takeIf { shouldSaveAp },
+                apRegenBaseMs = nextBase.takeIf { shouldSaveBase },
+                notifyHomeOverview = false,
+            )
+        }
+    }
+
+    fun applyRuntimeTick(nowMs: Long = System.currentTimeMillis()) {
+        var nextApToSave: Double? = null
+        var nextApBaseToSave: Long? = null
+        var nextCafeStoredToSave: Double? = null
+        var nextCafeHourToSave: Long? = null
+
+        val (nextStoredAp, nextHour) = applyBaCafeStorageTick(
+            cafeStoredAp = cafeStoredAp,
+            cafeLevel = cafeLevel,
+            cafeLastHourMs = cafeLastHourMs,
+            nowMs = nowMs,
+        )
+        if (nextStoredAp != cafeStoredAp) {
+            cafeStoredAp = nextStoredAp
+            nextCafeStoredToSave = nextStoredAp
+        }
+        if (nextHour != cafeLastHourMs) {
+            cafeLastHourMs = nextHour
+            nextCafeHourToSave = nextHour
+        }
+
+        if (apLimit.coerceIn(0, BA_AP_LIMIT_MAX) <= 0) {
+            apRegenBaseMs = nowMs
+            nextApBaseToSave = nowMs
+            if (apCurrent < 0.0) {
+                apCurrent = 0.0
+                nextApToSave = 0.0
+            }
+        } else {
+            val (nextAp, nextBase) = applyBaApRegenTick(
+                apLimit = apLimit,
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
+                nowMs = nowMs,
+            )
+            if (nextAp != apCurrent) {
+                apCurrent = nextAp
+                nextApToSave = nextAp
+            }
+            if (nextBase != apRegenBaseMs) {
+                apRegenBaseMs = nextBase
+                nextApBaseToSave = nextBase
+            }
+        }
+
+        if (
+            nextApToSave != null ||
+            nextApBaseToSave != null ||
+            nextCafeStoredToSave != null ||
+            nextCafeHourToSave != null
+        ) {
+            BASettingsStore.saveBaRuntimeState(
+                apCurrent = nextApToSave,
+                apRegenBaseMs = nextApBaseToSave,
+                cafeStoredAp = nextCafeStoredToSave,
+                cafeLastHourMs = nextCafeHourToSave,
+                notifyHomeOverview = false,
+            )
         }
     }
 
@@ -258,13 +336,20 @@ internal class BaOfficeController(
             cafeLastHourMs = cafeLastHourMs,
             nowMs = nowMs,
         )
-        if (nextStoredAp != cafeStoredAp) {
+        val shouldSaveStoredAp = nextStoredAp != cafeStoredAp
+        val shouldSaveHour = nextHour != cafeLastHourMs
+        if (shouldSaveStoredAp) {
             cafeStoredAp = nextStoredAp
-            BASettingsStore.saveCafeStoredAp(nextStoredAp, notifyHomeOverview = false)
         }
-        if (nextHour != cafeLastHourMs) {
+        if (shouldSaveHour) {
             cafeLastHourMs = nextHour
-            BASettingsStore.saveCafeLastHourMs(nextHour)
+        }
+        if (shouldSaveStoredAp || shouldSaveHour) {
+            BASettingsStore.saveBaRuntimeState(
+                cafeStoredAp = nextStoredAp.takeIf { shouldSaveStoredAp },
+                cafeLastHourMs = nextHour.takeIf { shouldSaveHour },
+                notifyHomeOverview = false,
+            )
         }
     }
 

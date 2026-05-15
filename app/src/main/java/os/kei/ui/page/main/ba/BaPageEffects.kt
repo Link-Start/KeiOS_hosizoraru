@@ -79,13 +79,11 @@ internal fun BaPageCommonEffects(
         office.ensureRegenBase()
         office.ensureCafeHourBase()
         office.clampCafeStoredToCap()
-        office.applyCafeStorage()
-        office.applyApRegen()
+        office.applyRuntimeTick()
         while (true) {
             if (isPageActive) {
                 delay(BA_AP_REGEN_TICK_MS.milliseconds)
-                office.applyCafeStorage()
-                office.applyApRegen()
+                office.applyRuntimeTick()
             } else {
                 // Keep background overhead low on offscreen pager pages.
                 delay(5_000.milliseconds)

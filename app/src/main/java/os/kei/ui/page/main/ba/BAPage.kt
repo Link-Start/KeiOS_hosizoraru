@@ -182,8 +182,7 @@ fun BAPage(
     }
 
     fun refreshAllBaData() {
-        office.applyCafeStorage()
-        office.applyApRegen()
+        office.applyRuntimeTick()
         refreshCalendar(force = true)
         refreshPool(force = true)
     }

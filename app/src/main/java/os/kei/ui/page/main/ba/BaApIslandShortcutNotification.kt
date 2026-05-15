@@ -86,19 +86,13 @@ internal object BaApIslandShortcutNotificationCoordinator {
     }
 
     private fun persistPlan(plan: BaApIslandShortcutNotificationPlan) {
-        if (plan.shouldSaveAp) {
-            BASettingsStore.saveApCurrent(
-                current = plan.nextAp,
-                notifyHomeOverview = false
-            )
-            BASettingsStore.saveApRegenBaseMs(plan.nextApRegenBaseMs)
-        }
-        if (plan.shouldSaveCafe) {
-            BASettingsStore.saveCafeStoredAp(
-                storedAp = plan.nextCafeStoredAp,
-                notifyHomeOverview = false
-            )
-            BASettingsStore.saveCafeLastHourMs(plan.nextCafeLastHourMs)
-        }
+        if (!plan.shouldSaveAp && !plan.shouldSaveCafe) return
+        BASettingsStore.saveBaRuntimeState(
+            apCurrent = plan.nextAp.takeIf { plan.shouldSaveAp },
+            apRegenBaseMs = plan.nextApRegenBaseMs.takeIf { plan.shouldSaveAp },
+            cafeStoredAp = plan.nextCafeStoredAp.takeIf { plan.shouldSaveCafe },
+            cafeLastHourMs = plan.nextCafeLastHourMs.takeIf { plan.shouldSaveCafe },
+            notifyHomeOverview = false,
+        )
     }
 }

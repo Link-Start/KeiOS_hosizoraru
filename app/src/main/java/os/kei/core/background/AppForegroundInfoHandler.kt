@@ -396,11 +396,11 @@ object AppForegroundInfoHandler {
     private suspend fun persistBaCafeApReminderPlan(plan: BaCafeApReminderPlan) {
         if (plan.shouldSaveCafe) {
             withContext(Dispatchers.IO) {
-                BASettingsStore.saveCafeStoredAp(
-                    storedAp = plan.nextStoredAp,
-                    notifyHomeOverview = false
+                BASettingsStore.saveBaRuntimeState(
+                    cafeStoredAp = plan.nextStoredAp,
+                    cafeLastHourMs = plan.nextCafeLastHourMs,
+                    notifyHomeOverview = false,
                 )
-                BASettingsStore.saveCafeLastHourMs(plan.nextCafeLastHourMs)
             }
         }
         if (plan.resetLastNotifiedLevel) {
@@ -434,11 +434,11 @@ object AppForegroundInfoHandler {
     private suspend fun persistBaApReminderPlan(plan: BaApReminderPlan) {
         if (plan.shouldSaveAp) {
             withContext(Dispatchers.IO) {
-                BASettingsStore.saveApCurrent(
-                    current = plan.nextAp,
-                    notifyHomeOverview = false
+                BASettingsStore.saveBaRuntimeState(
+                    apCurrent = plan.nextAp,
+                    apRegenBaseMs = plan.nextApRegenBaseMs,
+                    notifyHomeOverview = false,
                 )
-                BASettingsStore.saveApRegenBaseMs(plan.nextApRegenBaseMs)
             }
         }
         if (plan.resetLastNotifiedLevel) {

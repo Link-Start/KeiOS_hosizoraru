@@ -12,7 +12,11 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         BackgroundAsyncReceiverRunner.launch(
             receiver = this,
             context = context,
-            tag = TAG
+            tag = TAG,
+            timeoutMs = timeoutForAction(action),
+            onTimeout = { appContext ->
+                AppBackgroundScheduler.onTickHandled(appContext, action)
+            }
         ) { appContext ->
             try {
                 when (action) {
@@ -30,7 +34,17 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         const val ACTION_BA_AP_TICK = "os.kei.background.action.BA_AP_TICK"
         private const val REQUEST_CODE_GITHUB_TICK = 42001
         private const val REQUEST_CODE_BA_AP_TICK = 42002
+        private const val GITHUB_TICK_TIMEOUT_MS = 45_000L
+        private const val BA_AP_TICK_TIMEOUT_MS = 12_000L
         private const val TAG = "AppBackgroundTickReceiver"
+
+        private fun timeoutForAction(action: String): Long {
+            return when (action) {
+                ACTION_GITHUB_TICK -> GITHUB_TICK_TIMEOUT_MS
+                ACTION_BA_AP_TICK -> BA_AP_TICK_TIMEOUT_MS
+                else -> GITHUB_TICK_TIMEOUT_MS
+            }
+        }
 
         fun githubTickPendingIntent(context: Context): PendingIntent {
             val intent = Intent(context, AppBackgroundTickReceiver::class.java).apply {

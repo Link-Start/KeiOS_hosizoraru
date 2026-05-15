@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
@@ -107,7 +108,16 @@ fun OsPage(
     val backdrops = uiContext.backdrops
     val topBarMaterialBackdrop = uiContext.topBarMaterialBackdrop
     DisposableEffect(Unit) {
-        onDispose { onActionBarInteractingChanged(false) }
+        onDispose {
+            onActionBarInteractingChanged(false)
+            RuntimeCommandExecutor.closePersistentShell()
+        }
+    }
+    LaunchedEffect(runtime.contentReady, runtime.isDataActive) {
+        val active = runtime.contentReady && runtime.isDataActive
+        if (!active) {
+            RuntimeCommandExecutor.closePersistentShell()
+        }
     }
     BindOsShellCardReloadOnResume(
         lifecycleOwner = lifecycleOwner,

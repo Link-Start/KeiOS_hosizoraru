@@ -1,6 +1,7 @@
 package os.kei.core.system
 
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -8,6 +9,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RuntimeCommandExecutorTest {
+    @After
+    fun tearDown() {
+        RuntimeCommandExecutor.closePersistentShell()
+    }
+
     @Test
     fun `executeAsync captures stdout for successful command`() = runTest {
         val result = RuntimeCommandExecutor.executeAsync("printf async", timeoutMs = 1_000L)
@@ -123,5 +129,81 @@ class RuntimeCommandExecutorTest {
         assertNull(result.exitCode)
         assertFalse(result.timedOut)
         assertFalse(result.succeeded)
+    }
+
+    @Test
+    fun `persistent shell preserves exit code without leaking shell state`() = runTest {
+        val executor = PersistentShellCommandExecutor()
+
+        val cwdBefore = executor.executeAsync(
+            AppCommandRequest("pwd", timeoutMs = 1_000L)
+        )
+        val changedDirectory = executor.executeAsync(
+            AppCommandRequest("cd /; printf changed; exit 7", timeoutMs = 1_000L)
+        )
+        val cwdAfter = executor.executeAsync(
+            AppCommandRequest("pwd", timeoutMs = 1_000L)
+        )
+
+        executor.close()
+
+        assertEquals("changed", changedDirectory.stdout)
+        assertEquals(7, changedDirectory.exitCode)
+        assertEquals(cwdBefore.stdout, cwdAfter.stdout)
+        assertTrue(cwdAfter.succeeded)
+    }
+
+    @Test
+    fun `persistent shell bounds oversized stdout`() = runTest {
+        val executor = PersistentShellCommandExecutor()
+
+        val result = executor.executeAsync(
+            AppCommandRequest(
+                command = "awk 'BEGIN { for (i = 0; i < 12000; i++) printf \"x\" }'",
+                timeoutMs = 2_000L,
+                maxOutputBytes = 2_000
+            )
+        )
+
+        executor.close()
+
+        assertEquals(2_000, result.stdout.length)
+        assertTrue(result.stdoutTruncated)
+        assertEquals(0, result.exitCode)
+        assertTrue(result.succeeded)
+    }
+
+    @Test
+    fun `persistent shell rebuilds after timeout`() = runTest {
+        val executor = PersistentShellCommandExecutor()
+
+        val timedOut = executor.executeAsync(
+            AppCommandRequest("sleep 2; printf late", timeoutMs = 100L)
+        )
+        val recovered = executor.executeAsync(
+            AppCommandRequest("printf recovered", timeoutMs = 1_000L)
+        )
+
+        executor.close()
+
+        assertTrue(timedOut.timedOut)
+        assertNull(timedOut.exitCode)
+        assertEquals("recovered", recovered.stdout)
+        assertTrue(recovered.succeeded)
+    }
+
+    @Test
+    fun `persistent shell policy only accepts OS readonly commands`() {
+        assertTrue(PersistentShellCommandPolicy.isEligible("getprop"))
+        assertTrue(PersistentShellCommandPolicy.isEligible("settings list system"))
+        assertTrue(
+            PersistentShellCommandPolicy.isEligible(
+                "printf '__keios_settings_section=system\\n'; settings list system 2>/dev/null; " +
+                    "printf '__keios_settings_section=secure\\n'; settings list secure 2>/dev/null; " +
+                    "printf '__keios_settings_section=global\\n'; settings list global 2>/dev/null"
+            )
+        )
+        assertFalse(PersistentShellCommandPolicy.isEligible("cd /; pwd"))
+        assertFalse(PersistentShellCommandPolicy.isEligible("echo warning >&2; exit 7"))
     }
 }

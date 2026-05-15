@@ -15,6 +15,7 @@ data class RuntimeCommandResult(
 
 object RuntimeCommandExecutor {
     private const val DEFAULT_TIMEOUT_MS = 5_000L
+    private val persistentShell = PersistentShellCommandExecutor()
 
     fun execute(
         command: String,
@@ -36,7 +37,16 @@ object RuntimeCommandExecutor {
         command: String,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS
     ): RuntimeCommandResult {
-        val result = AppCommandExecutor.executeAsync(command = command, timeoutMs = timeoutMs)
+        val result = if (PersistentShellCommandPolicy.isEligible(command)) {
+            persistentShell.executeAsync(
+                AppCommandRequest(
+                    command = command,
+                    timeoutMs = timeoutMs
+                )
+            )
+        } else {
+            AppCommandExecutor.executeAsync(command = command, timeoutMs = timeoutMs)
+        }
         return RuntimeCommandResult(
             stdout = result.stdout,
             stderr = result.stderr,
@@ -46,5 +56,9 @@ object RuntimeCommandExecutor {
             stdoutTruncated = result.stdoutTruncated,
             stderrTruncated = result.stderrTruncated
         )
+    }
+
+    fun closePersistentShell() {
+        persistentShell.close()
     }
 }

@@ -6,6 +6,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.PromptArgument
 import io.modelcontextprotocol.kotlin.sdk.types.PromptMessage
 import io.modelcontextprotocol.kotlin.sdk.types.Role
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import os.kei.core.io.readTextLimitedBlocking
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
@@ -217,8 +218,9 @@ internal class McpSkillContent(
         return runCatching {
             skillTemplateCache.getOrPut(path) {
                 environment.appContext.assets.open(path)
-                    .bufferedReader()
-                    .use { it.readText() }
+                    .use { input ->
+                        input.readTextLimitedBlocking(MCP_SKILL_ASSET_MAX_BYTES).text
+                    }
             }
         }.map { template ->
             renderSkillTemplate(template, locale)
@@ -515,5 +517,9 @@ internal class McpSkillContent(
             isJapanese(locale) -> ja
             else -> en
         }
+    }
+
+    private companion object {
+        private const val MCP_SKILL_ASSET_MAX_BYTES = 768L * 1024L
     }
 }

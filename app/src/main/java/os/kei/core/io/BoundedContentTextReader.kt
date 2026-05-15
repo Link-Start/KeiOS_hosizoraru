@@ -9,6 +9,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 
 internal const val DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES: Long = 5L * 1024L * 1024L
 
@@ -51,6 +52,28 @@ internal suspend fun ContentResolver.readTextFromUriLimited(
             )
         } ?: error("openInputStream returned null")
     }
+}
+
+internal fun InputStream.readTextLimitedBlocking(
+    maxBytes: Long = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
+): BoundedContentTextReadResult {
+    require(maxBytes > 0L) { "maxBytes must be positive" }
+    val output = ByteArrayOutputStream()
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var total = 0L
+    while (true) {
+        val read = read(buffer)
+        if (read < 0) break
+        total += read
+        if (total > maxBytes) {
+            throw BoundedContentTextReadTooLargeException(maxBytes)
+        }
+        output.write(buffer, 0, read)
+    }
+    return BoundedContentTextReadResult(
+        text = output.toString(Charsets.UTF_8.name()),
+        byteCount = total
+    )
 }
 
 private const val YIELD_EVERY_BYTES = 64L * 1024L

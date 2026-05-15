@@ -6,6 +6,7 @@ import android.os.Looper
 import kotlinx.coroutines.suspendCancellableCoroutine
 import os.kei.core.log.AppLogger
 import rikka.shizuku.Shizuku
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.util.Locale
@@ -301,8 +302,8 @@ class ShizukuApiUtils(
     }
 
     private fun executeProcess(process: Process, timeoutMs: Long): AppCommandResult {
-        val stdout = StringBuilder()
-        val stderr = StringBuilder()
+        val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
+        val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
         val stdoutReader = startStreamCollector(
             name = "KeiOS-ShizukuStdout",
             stream = process.inputStream,
@@ -339,36 +340,43 @@ class ShizukuApiUtils(
             stdoutReader.join(300)
             stderrReader.join(300)
             return AppCommandResult(
-                stdout = stdout.toString().trim(),
-                stderr = stderr.toString().trim(),
+                stdout = stdout.text().trim(),
+                stderr = stderr.text().trim(),
                 exitCode = null,
                 timedOut = true,
-                cancelled = false
+                cancelled = false,
+                stdoutTruncated = stdout.truncated,
+                stderrTruncated = stderr.truncated
             )
         }
         waitThrowable?.let { throw it }
         stdoutReader.join(600)
         stderrReader.join(600)
         return AppCommandResult(
-            stdout = stdout.toString().trim(),
-            stderr = stderr.toString().trim(),
+            stdout = stdout.text().trim(),
+            stderr = stderr.text().trim(),
             exitCode = process.exitValue(),
             timedOut = false,
-            cancelled = false
+            cancelled = false,
+            stdoutTruncated = stdout.truncated,
+            stderrTruncated = stderr.truncated
         )
     }
 
     private fun startStreamCollector(
         name: String,
         stream: InputStream,
-        sink: StringBuilder
+        sink: BoundedCommandOutputSink
     ): Thread {
         return Thread(
             {
                 runCatching {
-                    stream.bufferedReader().useLines { lines ->
-                        lines.forEach { line ->
-                            sink.appendLine(line)
+                    stream.use { input ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            sink.append(buffer, read)
                         }
                     }
                 }
@@ -377,6 +385,34 @@ class ShizukuApiUtils(
         ).apply {
             isDaemon = true
             start()
+        }
+    }
+
+    private class BoundedCommandOutputSink(
+        private val maxBytes: Int
+    ) {
+        private val output = ByteArrayOutputStream()
+        private var capturedBytes = 0
+        @Volatile
+        var truncated: Boolean = false
+            private set
+
+        @Synchronized
+        fun append(buffer: ByteArray, length: Int) {
+            val remaining = maxBytes - capturedBytes
+            if (remaining > 0) {
+                val accepted = minOf(length, remaining)
+                output.write(buffer, 0, accepted)
+                capturedBytes += accepted
+            }
+            if (length > remaining) {
+                truncated = true
+            }
+        }
+
+        @Synchronized
+        fun text(): String {
+            return output.toByteArray().toString(Charsets.UTF_8)
         }
     }
 

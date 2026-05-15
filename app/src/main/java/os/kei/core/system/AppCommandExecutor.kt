@@ -1,13 +1,16 @@
 package os.kei.core.system
 
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 data class AppCommandRequest(
     val command: String,
-    val timeoutMs: Long = AppCommandExecutor.DEFAULT_TIMEOUT_MS
+    val timeoutMs: Long = AppCommandExecutor.DEFAULT_TIMEOUT_MS,
+    val maxOutputBytes: Int = AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES
 )
 
 data class AppCommandResult(
@@ -15,7 +18,9 @@ data class AppCommandResult(
     val stderr: String,
     val exitCode: Int?,
     val timedOut: Boolean,
-    val cancelled: Boolean = false
+    val cancelled: Boolean = false,
+    val stdoutTruncated: Boolean = false,
+    val stderrTruncated: Boolean = false
 ) {
     val succeeded: Boolean
         get() = exitCode == 0 && !timedOut && !cancelled
@@ -27,12 +32,29 @@ data class AppCommandResult(
 
 object AppCommandExecutor {
     const val DEFAULT_TIMEOUT_MS = 5_000L
+    const val DEFAULT_MAX_OUTPUT_BYTES = 512 * 1024
+    private val streamThreadIndex = AtomicInteger(0)
+    private val streamExecutor = Executors.newCachedThreadPool { runnable ->
+        Thread(
+            runnable,
+            "KeiOS-AppCommandStream-${streamThreadIndex.incrementAndGet()}"
+        ).apply {
+            isDaemon = true
+        }
+    }
 
     fun execute(
         command: String,
-        timeoutMs: Long = DEFAULT_TIMEOUT_MS
+        timeoutMs: Long = DEFAULT_TIMEOUT_MS,
+        maxOutputBytes: Int = DEFAULT_MAX_OUTPUT_BYTES
     ): AppCommandResult {
-        return execute(AppCommandRequest(command = command, timeoutMs = timeoutMs))
+        return execute(
+            AppCommandRequest(
+                command = command,
+                timeoutMs = timeoutMs,
+                maxOutputBytes = maxOutputBytes
+            )
+        )
     }
 
     fun execute(request: AppCommandRequest): AppCommandResult {
@@ -48,16 +70,16 @@ object AppCommandExecutor {
         }
 
         var process: Process? = null
-        val streamExecutor = Executors.newFixedThreadPool(2) { runnable ->
-            Thread(runnable, "KeiOS-AppCommandStream").apply {
-                isDaemon = true
-            }
-        }
+        val maxOutputBytes = request.maxOutputBytes.coerceAtLeast(MIN_OUTPUT_BYTES)
         return try {
             val startedProcess = ProcessBuilder("sh", "-c", normalizedCommand).start()
             process = startedProcess
-            val stdoutFuture = streamExecutor.submit(Callable { startedProcess.inputStream.readTextSafely() })
-            val stderrFuture = streamExecutor.submit(Callable { startedProcess.errorStream.readTextSafely() })
+            val stdoutFuture = streamExecutor.submit(
+                Callable { startedProcess.inputStream.captureText(maxOutputBytes) }
+            )
+            val stderrFuture = streamExecutor.submit(
+                Callable { startedProcess.errorStream.captureText(maxOutputBytes) }
+            )
             val completed = startedProcess.waitFor(
                 request.timeoutMs.coerceAtLeast(1L),
                 TimeUnit.MILLISECONDS
@@ -66,12 +88,16 @@ object AppCommandExecutor {
                 startedProcess.destroyForcibly()
                 startedProcess.waitFor(250L, TimeUnit.MILLISECONDS)
             }
+            val stdout = stdoutFuture.awaitCapture(completed)
+            val stderr = stderrFuture.awaitCapture(completed)
             AppCommandResult(
-                stdout = stdoutFuture.awaitText(completed).trim(),
-                stderr = stderrFuture.awaitText(completed).trim(),
+                stdout = stdout.text.trim(),
+                stderr = stderr.text.trim(),
                 exitCode = if (completed) startedProcess.exitValue() else null,
                 timedOut = !completed,
-                cancelled = false
+                cancelled = false,
+                stdoutTruncated = stdout.truncated,
+                stderrTruncated = stderr.truncated
             )
         } catch (error: InterruptedException) {
             Thread.currentThread().interrupt()
@@ -93,19 +119,50 @@ object AppCommandExecutor {
                 cancelled = false
             )
         } finally {
-            streamExecutor.shutdownNow()
+            process = null
         }
     }
 
-    private fun InputStream.readTextSafely(): String {
+    private fun InputStream.captureText(maxOutputBytes: Int): AppCommandStreamCapture {
         return runCatching {
-            bufferedReader().use { reader -> reader.readText() }
-        }.getOrDefault("")
+            use { input ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                val output = ByteArrayOutputStream()
+                var capturedBytes = 0
+                var truncated = false
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    val remaining = maxOutputBytes - capturedBytes
+                    if (remaining > 0) {
+                        val accepted = minOf(read, remaining)
+                        output.write(buffer, 0, accepted)
+                        capturedBytes += accepted
+                    }
+                    if (read > remaining) {
+                        truncated = true
+                    }
+                }
+                AppCommandStreamCapture(
+                    text = output.toByteArray().toString(Charsets.UTF_8),
+                    truncated = truncated
+                )
+            }
+        }.getOrDefault(AppCommandStreamCapture())
     }
 
-    private fun java.util.concurrent.Future<String>.awaitText(processCompleted: Boolean): String {
+    private fun java.util.concurrent.Future<AppCommandStreamCapture>.awaitCapture(
+        processCompleted: Boolean
+    ): AppCommandStreamCapture {
         val timeoutMs = if (processCompleted) 2_000L else 250L
         return runCatching { get(timeoutMs, TimeUnit.MILLISECONDS) }
-            .getOrDefault("")
+            .getOrDefault(AppCommandStreamCapture())
     }
+
+    private data class AppCommandStreamCapture(
+        val text: String = "",
+        val truncated: Boolean = false
+    )
+
+    private const val MIN_OUTPUT_BYTES = 1_024
 }

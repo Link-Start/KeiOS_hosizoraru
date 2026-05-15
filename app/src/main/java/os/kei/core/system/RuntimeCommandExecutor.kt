@@ -5,7 +5,9 @@ data class RuntimeCommandResult(
     val stderr: String,
     val exitCode: Int?,
     val timedOut: Boolean,
-    val cancelled: Boolean = false
+    val cancelled: Boolean = false,
+    val stdoutTruncated: Boolean = false,
+    val stderrTruncated: Boolean = false
 ) {
     val succeeded: Boolean
         get() = exitCode == 0 && !timedOut && !cancelled
@@ -24,7 +26,9 @@ object RuntimeCommandExecutor {
             stderr = result.stderr,
             exitCode = result.exitCode,
             timedOut = result.timedOut,
-            cancelled = result.cancelled
+            cancelled = result.cancelled,
+            stdoutTruncated = result.stdoutTruncated,
+            stderrTruncated = result.stderrTruncated
         )
     }
 }

@@ -45,6 +45,21 @@ class RuntimeCommandExecutorTest {
 
         assertEquals(12_000, result.stdout.length)
         assertEquals(0, result.exitCode)
+        assertFalse(result.stdoutTruncated)
+        assertTrue(result.succeeded)
+    }
+
+    @Test
+    fun `app command executor bounds oversized stdout`() {
+        val result = AppCommandExecutor.execute(
+            command = "awk 'BEGIN { for (i = 0; i < 12000; i++) printf \"x\" }'",
+            timeoutMs = 2_000L,
+            maxOutputBytes = 2_000
+        )
+
+        assertEquals(2_000, result.stdout.length)
+        assertTrue(result.stdoutTruncated)
+        assertEquals(0, result.exitCode)
         assertTrue(result.succeeded)
     }
 

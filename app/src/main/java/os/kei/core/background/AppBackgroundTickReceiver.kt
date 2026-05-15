@@ -4,19 +4,24 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AppBackgroundTickReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
         if (action != ACTION_GITHUB_TICK && action != ACTION_BA_AP_TICK) return
+        val rescheduled = AtomicBoolean(false)
+        val rescheduleOnce: suspend (Context) -> Unit = { appContext ->
+            if (rescheduled.compareAndSet(false, true)) {
+                AppBackgroundScheduler.onTickHandled(appContext, action)
+            }
+        }
         BackgroundAsyncReceiverRunner.launch(
             receiver = this,
             context = context,
             tag = TAG,
             timeoutMs = timeoutForAction(action),
-            onTimeout = { appContext ->
-                AppBackgroundScheduler.onTickHandled(appContext, action)
-            }
+            onTimeout = rescheduleOnce
         ) { appContext ->
             try {
                 when (action) {
@@ -24,7 +29,7 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
                     ACTION_BA_AP_TICK -> AppForegroundInfoHandler.handleBaApTick(appContext)
                 }
             } finally {
-                AppBackgroundScheduler.onTickHandled(appContext, action)
+                rescheduleOnce(appContext)
             }
         }
     }

@@ -45,7 +45,6 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -103,26 +102,29 @@ internal fun BaGuideStudentBgmTabContent(
         buildMap {
             favorites.forEach { favorite ->
                 val normalizedSourceUrl = normalizeGuideUrl(favorite.sourceUrl)
-                if (!containsKey(normalizedSourceUrl)) {
+                if (normalizedSourceUrl.isNotBlank() && !containsKey(normalizedSourceUrl)) {
                     put(normalizedSourceUrl, favorite)
                 }
             }
         }
     }
-    val favoriteSourceUrls = remember(favoriteByNormalizedSourceUrl) {
-        favoriteByNormalizedSourceUrl.keys
+    val favoriteContentIds = remember(allStudentEntries, favoriteByNormalizedSourceUrl) {
+        favoriteStudentBgmEntryContentIds(
+            entries = allStudentEntries,
+            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
+        )
     }
     val favoriteAudioUrls = remember(favorites) {
-        favorites.mapTo(mutableSetOf()) { favorite -> favorite.audioUrl }
+        favorites.mapNotNullTo(mutableSetOf()) { favorite ->
+            favorite.audioUrl.takeIf { it.isNotBlank() }
+        }
     }
-    val filteredEntries = remember(allStudentEntries, searchQuery, favoriteSourceUrls) {
-        allStudentEntries
-            .filterByQuery(searchQuery)
-            .sortedWith(
-                compareByDescending<BaGuideCatalogEntry> { entry ->
-                    normalizeGuideUrl(entry.detailUrl) in favoriteSourceUrls
-                }.thenBy { entry -> entry.order }
-            )
+    val filteredEntries = remember(allStudentEntries, searchQuery, favoriteContentIds) {
+        filterAndSortStudentBgmEntries(
+            entries = allStudentEntries,
+            searchQuery = searchQuery,
+            favoriteContentIds = favoriteContentIds
+        )
     }
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()

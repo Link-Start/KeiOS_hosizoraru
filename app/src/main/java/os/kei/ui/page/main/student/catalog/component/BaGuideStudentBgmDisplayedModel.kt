@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student.catalog.component
 import androidx.compose.runtime.Immutable
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 
 @Immutable
@@ -20,6 +21,35 @@ internal fun favoriteForStudentBgmEntry(
     val detailUrl = normalizeGuideUrl(entry.detailUrl)
     if (detailUrl.isBlank()) return null
     return favoriteByNormalizedSourceUrl[detailUrl]
+}
+
+internal fun favoriteStudentBgmEntryContentIds(
+    entries: List<BaGuideCatalogEntry>,
+    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>
+): Set<Long> {
+    if (entries.isEmpty() || favoriteByNormalizedSourceUrl.isEmpty()) return emptySet()
+    return buildSet {
+        entries.forEach { entry ->
+            val detailUrl = normalizeGuideUrl(entry.detailUrl)
+            if (detailUrl.isNotBlank() && detailUrl in favoriteByNormalizedSourceUrl) {
+                add(entry.contentId)
+            }
+        }
+    }
+}
+
+internal fun filterAndSortStudentBgmEntries(
+    entries: List<BaGuideCatalogEntry>,
+    searchQuery: String,
+    favoriteContentIds: Set<Long>
+): List<BaGuideCatalogEntry> {
+    val filtered = entries.filterByQuery(searchQuery)
+    if (filtered.size <= 1 || favoriteContentIds.isEmpty()) return filtered
+    return filtered.sortedWith(
+        compareByDescending<BaGuideCatalogEntry> { entry ->
+            entry.contentId in favoriteContentIds
+        }.thenBy { entry -> entry.order }
+    )
 }
 
 internal fun studentBgmStateWithFavoriteFallback(

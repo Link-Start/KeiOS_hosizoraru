@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
@@ -26,7 +27,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 @Composable
 internal fun BaCafeCard(
     backdrop: Backdrop?,
-    uiNowMs: Long,
+    clockState: BaPageClockState,
     serverIndex: Int,
     cafeLevel: Int,
     cafeLevelOptions: List<Int>,
@@ -45,6 +46,7 @@ internal fun BaCafeCard(
     onUseInviteTicket2: () -> Unit,
     onForceResetInviteTicket2Cooldown: () -> Unit,
 ) {
+    val uiNowMs = clockState.uiMinuteMs.longValue
     val accentPink = Color(0xFFF472B6)
     val countdownBlue = Color(0xFF60A5FA)
     val nextHeadpatAt = calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)

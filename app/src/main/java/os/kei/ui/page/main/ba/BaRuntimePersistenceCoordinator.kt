@@ -1,0 +1,86 @@
+package os.kei.ui.page.main.ba
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import os.kei.ui.page.main.ba.support.BASettingsStore
+import kotlin.time.Duration.Companion.milliseconds
+
+internal data class BaRuntimePersistenceUpdate(
+    val apCurrent: Double? = null,
+    val apRegenBaseMs: Long? = null,
+    val apSyncMs: Long? = null,
+    val cafeStoredAp: Double? = null,
+    val cafeLastHourMs: Long? = null,
+    val apLastNotifiedLevel: Int? = null,
+    val notifyHomeOverview: Boolean = false,
+) {
+    fun mergedWith(newer: BaRuntimePersistenceUpdate): BaRuntimePersistenceUpdate {
+        return BaRuntimePersistenceUpdate(
+            apCurrent = newer.apCurrent ?: apCurrent,
+            apRegenBaseMs = newer.apRegenBaseMs ?: apRegenBaseMs,
+            apSyncMs = newer.apSyncMs ?: apSyncMs,
+            cafeStoredAp = newer.cafeStoredAp ?: cafeStoredAp,
+            cafeLastHourMs = newer.cafeLastHourMs ?: cafeLastHourMs,
+            apLastNotifiedLevel = newer.apLastNotifiedLevel ?: apLastNotifiedLevel,
+            notifyHomeOverview = notifyHomeOverview || newer.notifyHomeOverview,
+        )
+    }
+
+    fun persist() {
+        if (
+            apCurrent != null ||
+            apRegenBaseMs != null ||
+            apSyncMs != null ||
+            cafeStoredAp != null ||
+            cafeLastHourMs != null
+        ) {
+            BASettingsStore.saveBaRuntimeState(
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
+                apSyncMs = apSyncMs,
+                cafeStoredAp = cafeStoredAp,
+                cafeLastHourMs = cafeLastHourMs,
+                notifyHomeOverview = notifyHomeOverview,
+            )
+        }
+        apLastNotifiedLevel?.let(BASettingsStore::saveApLastNotifiedLevel)
+    }
+}
+
+internal class BaRuntimePersistenceCoordinator(
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val debounceMs: Long = 250L,
+) {
+    private val updates = Channel<BaRuntimePersistenceUpdate>(capacity = Channel.BUFFERED)
+
+    fun submit(update: BaRuntimePersistenceUpdate?) {
+        if (update == null) return
+        updates.trySend(update)
+    }
+
+    suspend fun run() {
+        for (first in updates) {
+            var merged = first
+            if (debounceMs > 0L) {
+                delay(debounceMs.milliseconds)
+            }
+            while (true) {
+                val next = updates.tryReceive().getOrNull() ?: break
+                merged = merged.mergedWith(next)
+            }
+            withContext(ioDispatcher) {
+                merged.persist()
+            }
+        }
+    }
+}
+
+@Composable
+internal fun rememberBaRuntimePersistenceCoordinator(): BaRuntimePersistenceCoordinator {
+    return remember { BaRuntimePersistenceCoordinator() }
+}

@@ -22,8 +22,7 @@ internal data class BaPageContentState(
     val isPageActive: Boolean,
     val officeOverviewTitle: String,
     val officeState: BaOfficeState,
-    val uiNowMs: Long,
-    val uiMinuteMs: Long,
+    val clockState: BaPageClockState,
     val serverOptions: List<String>,
     val cafeLevelOptions: List<Int>,
     val serverIndex: Int,
@@ -111,8 +110,7 @@ internal fun BaPageContent(
                 idFriendCodeInput = state.officeState.idFriendCodeInput,
                 onIdFriendCodeInputChange = actions.onIdFriendCodeInputChange,
                 onSaveIdFriendCode = actions.onSaveIdFriendCode,
-                uiNowMs = state.uiNowMs,
-                uiMinuteMs = state.uiMinuteMs,
+                clockState = state.clockState,
                 apSyncMs = state.officeState.apSyncMs,
                 apLimit = state.officeState.apLimit,
                 apCurrent = state.officeState.apCurrent,
@@ -140,7 +138,7 @@ internal fun BaPageContent(
         item {
             BaCafeCard(
                 backdrop = backdrop,
-                uiNowMs = state.uiMinuteMs,
+                clockState = state.clockState,
                 serverIndex = state.serverIndex,
                 cafeLevel = state.officeState.cafeLevel,
                 cafeLevelOptions = state.cafeLevelOptions,

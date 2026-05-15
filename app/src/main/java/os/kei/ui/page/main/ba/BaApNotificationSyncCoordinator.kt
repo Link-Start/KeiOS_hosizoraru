@@ -11,6 +11,18 @@ internal data class BaApNotificationSyncRequest(
     val limitDisplay: Int,
     val thresholdDisplay: Int,
     val notifyEnabled: Boolean,
+    val lastNotifiedLevel: Int,
+)
+
+internal data class BaApNotificationSyncResult(
+    val lastNotifiedLevel: Int? = null,
+)
+
+internal data class BaApNotificationSyncPlan(
+    val request: BaApNotificationSyncRequest,
+    val shouldSendThresholdNotification: Boolean = false,
+    val shouldRefreshActiveNotification: Boolean = true,
+    val nextLastNotifiedLevel: Int? = null,
 )
 
 internal object BaApNotificationSyncCoordinator {
@@ -18,39 +30,36 @@ internal object BaApNotificationSyncCoordinator {
 
     suspend fun sync(
         context: Context,
-        office: BaOfficeController,
         request: BaApNotificationSyncRequest,
-    ) {
-        val normalizedRequest = request.normalized()
-        val thresholdNotificationSent = maybeSendThresholdNotification(
-            context = context,
-            office = office,
-            request = normalizedRequest,
-        )
-        if (!thresholdNotificationSent) {
+    ): BaApNotificationSyncResult {
+        val plan = planBaApNotificationSync(request)
+        var nextLastNotifiedLevel = plan.nextLastNotifiedLevel
+        val thresholdNotificationSent = if (plan.shouldSendThresholdNotification) {
+            sendThresholdNotification(
+                context = context,
+                request = plan.request,
+            )
+        } else {
+            false
+        }
+        if (thresholdNotificationSent) {
+            nextLastNotifiedLevel = plan.request.currentDisplay
+        } else if (plan.shouldRefreshActiveNotification || plan.shouldSendThresholdNotification) {
             refreshActiveNotification(
                 context = context,
-                request = normalizedRequest,
+                request = plan.request,
             )
         }
+        return BaApNotificationSyncResult(
+            lastNotifiedLevel = nextLastNotifiedLevel
+        )
     }
 
-    private suspend fun maybeSendThresholdNotification(
+    private suspend fun sendThresholdNotification(
         context: Context,
-        office: BaOfficeController,
         request: BaApNotificationSyncRequest,
     ): Boolean {
-        if (!request.notifyEnabled) {
-            office.updateApLastNotifiedLevelIfChanged(-1)
-            return false
-        }
-        if (request.currentDisplay < request.thresholdDisplay) {
-            office.updateApLastNotifiedLevelIfChanged(-1)
-            return false
-        }
-        if (request.currentDisplay == office.apLastNotifiedLevel) return false
-
-        val sent = withNotificationTimeout {
+        return withNotificationTimeout {
             BaApNotificationDispatcher.send(
                 context = context,
                 currentDisplay = request.currentDisplay,
@@ -58,10 +67,6 @@ internal object BaApNotificationSyncCoordinator {
                 thresholdDisplay = request.thresholdDisplay,
             )
         }
-        if (sent) {
-            office.updateApLastNotifiedLevelIfChanged(request.currentDisplay)
-        }
-        return sent
     }
 
     private suspend fun refreshActiveNotification(
@@ -84,12 +89,40 @@ internal object BaApNotificationSyncCoordinator {
         } ?: false
     }
 
-    private fun BaApNotificationSyncRequest.normalized(): BaApNotificationSyncRequest {
+    internal fun BaApNotificationSyncRequest.normalized(): BaApNotificationSyncRequest {
         val normalizedLimit = limitDisplay.coerceIn(0, BA_AP_MAX)
         return copy(
             currentDisplay = currentDisplay.coerceIn(0, BA_AP_MAX),
             limitDisplay = normalizedLimit,
             thresholdDisplay = thresholdDisplay.coerceIn(0, BA_AP_MAX),
+            lastNotifiedLevel = lastNotifiedLevel.coerceIn(-1, BA_AP_MAX),
         )
     }
+}
+
+internal fun planBaApNotificationSync(
+    request: BaApNotificationSyncRequest,
+): BaApNotificationSyncPlan {
+    val normalizedRequest = with(BaApNotificationSyncCoordinator) { request.normalized() }
+    val resetLastNotifiedLevel = (-1).takeIf { normalizedRequest.lastNotifiedLevel != -1 }
+    if (!normalizedRequest.notifyEnabled) {
+        return BaApNotificationSyncPlan(
+            request = normalizedRequest,
+            nextLastNotifiedLevel = resetLastNotifiedLevel,
+        )
+    }
+    if (normalizedRequest.currentDisplay < normalizedRequest.thresholdDisplay) {
+        return BaApNotificationSyncPlan(
+            request = normalizedRequest,
+            nextLastNotifiedLevel = resetLastNotifiedLevel,
+        )
+    }
+    if (normalizedRequest.currentDisplay == normalizedRequest.lastNotifiedLevel) {
+        return BaApNotificationSyncPlan(request = normalizedRequest)
+    }
+    return BaApNotificationSyncPlan(
+        request = normalizedRequest,
+        shouldSendThresholdNotification = true,
+        shouldRefreshActiveNotification = false,
+    )
 }

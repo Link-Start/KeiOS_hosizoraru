@@ -268,7 +268,7 @@ internal class BaOfficeController(
         }
     }
 
-    fun applyRuntimeTick(nowMs: Long = System.currentTimeMillis()) {
+    fun applyRuntimeTick(nowMs: Long = System.currentTimeMillis()): BaRuntimePersistenceUpdate? {
         var nextApToSave: Double? = null
         var nextApBaseToSave: Long? = null
         var nextCafeStoredToSave: Double? = null
@@ -319,7 +319,7 @@ internal class BaOfficeController(
             nextCafeStoredToSave != null ||
             nextCafeHourToSave != null
         ) {
-            BASettingsStore.saveBaRuntimeState(
+            return BaRuntimePersistenceUpdate(
                 apCurrent = nextApToSave,
                 apRegenBaseMs = nextApBaseToSave,
                 cafeStoredAp = nextCafeStoredToSave,
@@ -327,6 +327,11 @@ internal class BaOfficeController(
                 notifyHomeOverview = false,
             )
         }
+        return null
+    }
+
+    fun applyRuntimeTickAndPersist(nowMs: Long = System.currentTimeMillis()) {
+        applyRuntimeTick(nowMs)?.persist()
     }
 
     fun applyCafeStorage(nowMs: Long = System.currentTimeMillis()) {
@@ -569,11 +574,11 @@ internal class BaOfficeController(
         return true
     }
 
-    fun updateApLastNotifiedLevelIfChanged(level: Int) {
+    fun applyApLastNotifiedLevel(level: Int): BaRuntimePersistenceUpdate? {
         val normalized = level.coerceIn(-1, BA_AP_MAX)
-        if (apLastNotifiedLevel == normalized) return
+        if (apLastNotifiedLevel == normalized) return null
         apLastNotifiedLevel = normalized
-        BASettingsStore.saveApLastNotifiedLevel(normalized)
+        return BaRuntimePersistenceUpdate(apLastNotifiedLevel = normalized)
     }
 }
 

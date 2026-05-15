@@ -97,6 +97,7 @@ fun BAPage(
         calendarUiState = calendarUiState,
         poolUiState = poolUiState,
     )
+    val baClockState = ui.clockState()
 
     val officeName = when (baRouteState.serverIndex) {
         0 -> stringResource(R.string.ba_office_name_cn)
@@ -142,12 +143,14 @@ fun BAPage(
         officeOverviewTitle = officeOverviewTitle,
         office = office,
         routeState = baRouteState,
+        clockState = baClockState,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
     )
     val syncPageActive = runtime.hasActivated &&
             if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
     val baGlassRuntime = LocalGlassEffectRuntime.current
+    val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
 
     fun openSettingsSheet() {
         ui.openSettingsSheet(office)
@@ -182,7 +185,7 @@ fun BAPage(
     }
 
     fun refreshAllBaData() {
-        office.applyRuntimeTick()
+        office.applyRuntimeTickAndPersist()
         refreshCalendar(force = true)
         refreshPool(force = true)
     }
@@ -245,6 +248,7 @@ fun BAPage(
         onConsumedScrollToTopSignalChange = { ui.consumedScrollToTopSignal = it },
         onDisposeActionBarInteraction = { onActionBarInteractingChanged(false) },
         office = office,
+        runtimePersistenceCoordinator = runtimePersistenceCoordinator,
         onUiNowMsChange = { ui.uiNowMs = it },
         onUiMinuteMsChange = { ui.uiMinuteMs = it },
         serverIndex = ui.serverIndex,

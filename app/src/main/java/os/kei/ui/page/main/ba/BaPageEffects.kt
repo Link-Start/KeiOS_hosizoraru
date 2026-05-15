@@ -30,6 +30,7 @@ internal fun BaPageCommonEffects(
     onConsumedScrollToTopSignalChange: (Int) -> Unit,
     onDisposeActionBarInteraction: () -> Unit,
     office: BaOfficeController,
+    runtimePersistenceCoordinator: BaRuntimePersistenceCoordinator,
     onUiNowMsChange: (Long) -> Unit,
     onUiMinuteMsChange: (Long) -> Unit,
     serverIndex: Int,
@@ -41,6 +42,10 @@ internal fun BaPageCommonEffects(
 
     DisposableEffect(Unit) {
         onDispose { onDisposeActionBarInteraction() }
+    }
+
+    LaunchedEffect(runtimePersistenceCoordinator) {
+        runtimePersistenceCoordinator.run()
     }
 
     LaunchedEffect(scrollToTopSignal) {
@@ -79,11 +84,11 @@ internal fun BaPageCommonEffects(
         office.ensureRegenBase()
         office.ensureCafeHourBase()
         office.clampCafeStoredToCap()
-        office.applyRuntimeTick()
+        runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         while (true) {
             if (isPageActive) {
                 delay(BA_AP_REGEN_TICK_MS.milliseconds)
-                office.applyRuntimeTick()
+                runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
             } else {
                 // Keep background overhead low on offscreen pager pages.
                 delay(5_000.milliseconds)
@@ -167,16 +172,19 @@ internal fun BaPageCommonEffects(
                 limitDisplay = office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX),
                 thresholdDisplay = office.apNotifyThreshold.coerceIn(0, BA_AP_MAX),
                 notifyEnabled = office.apNotifyEnabled,
+                lastNotifiedLevel = office.apLastNotifiedLevel,
             )
         }
             .distinctUntilChanged()
             .collectLatest { request ->
                 delay(250.milliseconds)
-                BaApNotificationSyncCoordinator.sync(
+                val result = BaApNotificationSyncCoordinator.sync(
                     context = notificationContext,
-                    office = office,
                     request = request,
                 )
+                result.lastNotifiedLevel?.let { level ->
+                    runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
+                }
             }
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
@@ -59,8 +60,7 @@ internal fun BaOverviewCard(
     idFriendCodeInput: String,
     onIdFriendCodeInputChange: (String) -> Unit,
     onSaveIdFriendCode: () -> Unit,
-    uiNowMs: Long,
-    uiMinuteMs: Long,
+    clockState: BaPageClockState,
     apSyncMs: Long,
     apLimit: Int,
     apCurrent: Double,
@@ -84,24 +84,9 @@ internal fun BaOverviewCard(
     onOpenGuideCatalog: () -> Unit,
 ) {
     val isWorkActivated = idFriendCode != BA_DEFAULT_FRIEND_CODE
-    val apNextPointAt = calculateApNextPointAtMs(
-        apLimit = apLimit,
-        apCurrent = apCurrent,
-        apRegenBaseMs = apRegenBaseMs,
-        nowMs = uiNowMs,
-    )
-    val apFullAt = calculateApFullAtMs(
-        apLimit = apLimit,
-        apCurrent = apCurrent,
-        apRegenBaseMs = apRegenBaseMs,
-        nowMs = uiMinuteMs,
-    )
-    val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs, includeSeconds = true)
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val apSyncTimeText =
         if (apSyncMs > 0L) formatBaDateTimeNoSeconds(apSyncMs, notSyncedText) else notSyncedText
-    val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
-    val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
     val accentBlue = AppStatusColors.Cached
     val accentGreen = AppStatusColors.Fresh
     val stateAccent =
@@ -269,71 +254,20 @@ internal fun BaOverviewCard(
             }
         }
 
-        BaLiquidPanel(
+        BaOverviewApPanel(
             backdrop = backdrop,
-            accentColor = accentGreen,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier.heightIn(min = 40.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("AP", color = accentGreen, fontWeight = FontWeight.Bold)
-                        Image(
-                            painter = painterResource(id = R.drawable.ba_ap_icon_tight),
-                            contentDescription = stringResource(R.string.ba_overview_cd_ap_icon),
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppLiquidSearchField(
-                        modifier = Modifier.width(72.dp),
-                        value = apCurrentInput,
-                        onValueChange = onApCurrentInputChange,
-                        onImeActionDone = onApCurrentDone,
-                        label = "0",
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetInput,
-                        singleLine = true,
-                        textAlign = TextAlign.Center,
-                        fontSize = 18.sp,
-                        textColor = accentGreen,
-                    )
-                    Text("/", color = MiuixTheme.colorScheme.onBackgroundVariant)
-                    AppLiquidSearchField(
-                        modifier = Modifier.width(72.dp),
-                        value = apLimitInput,
-                        onValueChange = onApLimitInputChange,
-                        onImeActionDone = onApLimitDone,
-                        label = "240",
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetInput,
-                        singleLine = true,
-                        textAlign = TextAlign.Center,
-                        fontSize = 18.sp,
-                        textColor = accentGreen,
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.ba_overview_ap_regen_status, apNextPointRemain, apFullText),
-                color = Color(0xFF60A5FA),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+            clockState = clockState,
+            accentGreen = accentGreen,
+            apLimit = apLimit,
+            apCurrent = apCurrent,
+            apRegenBaseMs = apRegenBaseMs,
+            apCurrentInput = apCurrentInput,
+            onApCurrentInputChange = onApCurrentInputChange,
+            onApCurrentDone = onApCurrentDone,
+            apLimitInput = apLimitInput,
+            onApLimitInputChange = onApLimitInputChange,
+            onApLimitDone = onApLimitDone,
+        )
 
         BaLiquidPanel(
             backdrop = backdrop,
@@ -389,17 +323,144 @@ internal fun BaOverviewCard(
                 valueMaxLines = 2,
                 modifier = Modifier.weight(1f),
             )
-            BaLiquidMetricPanel(
+            BaOverviewApFullMetric(
                 backdrop = backdrop,
-                label = stringResource(R.string.ba_metric_ap_full),
-                value = apFullTimeText,
-                accentColor = Color(0xFF60A5FA),
-                valueColor = Color(0xFF60A5FA),
-                valueMaxLines = 2,
+                clockState = clockState,
+                apLimit = apLimit,
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
                 modifier = Modifier.weight(1f),
             )
         }
     }
+}
+
+@Composable
+private fun BaOverviewApPanel(
+    backdrop: Backdrop?,
+    clockState: BaPageClockState,
+    accentGreen: Color,
+    apLimit: Int,
+    apCurrent: Double,
+    apRegenBaseMs: Long,
+    apCurrentInput: String,
+    onApCurrentInputChange: (String) -> Unit,
+    onApCurrentDone: () -> Unit,
+    apLimitInput: String,
+    onApLimitInputChange: (String) -> Unit,
+    onApLimitDone: () -> Unit,
+) {
+    val uiNowMs = clockState.uiNowMs.longValue
+    val uiMinuteMs = clockState.uiMinuteMs.longValue
+    val apNextPointAt = calculateApNextPointAtMs(
+        apLimit = apLimit,
+        apCurrent = apCurrent,
+        apRegenBaseMs = apRegenBaseMs,
+        nowMs = uiNowMs,
+    )
+    val apFullAt = calculateApFullAtMs(
+        apLimit = apLimit,
+        apCurrent = apCurrent,
+        apRegenBaseMs = apRegenBaseMs,
+        nowMs = uiMinuteMs,
+    )
+    val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs, includeSeconds = true)
+    val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
+
+    BaLiquidPanel(
+        backdrop = backdrop,
+        accentColor = accentGreen,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.heightIn(min = 40.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("AP", color = accentGreen, fontWeight = FontWeight.Bold)
+                    Image(
+                        painter = painterResource(id = R.drawable.ba_ap_icon_tight),
+                        contentDescription = stringResource(R.string.ba_overview_cd_ap_icon),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppLiquidSearchField(
+                    modifier = Modifier.width(72.dp),
+                    value = apCurrentInput,
+                    onValueChange = onApCurrentInputChange,
+                    onImeActionDone = onApCurrentDone,
+                    label = "0",
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetInput,
+                    singleLine = true,
+                    textAlign = TextAlign.Center,
+                    fontSize = 18.sp,
+                    textColor = accentGreen,
+                )
+                Text("/", color = MiuixTheme.colorScheme.onBackgroundVariant)
+                AppLiquidSearchField(
+                    modifier = Modifier.width(72.dp),
+                    value = apLimitInput,
+                    onValueChange = onApLimitInputChange,
+                    onImeActionDone = onApLimitDone,
+                    label = "240",
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetInput,
+                    singleLine = true,
+                    textAlign = TextAlign.Center,
+                    fontSize = 18.sp,
+                    textColor = accentGreen,
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.ba_overview_ap_regen_status, apNextPointRemain, apFullText),
+            color = Color(0xFF60A5FA),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun BaOverviewApFullMetric(
+    backdrop: Backdrop?,
+    clockState: BaPageClockState,
+    apLimit: Int,
+    apCurrent: Double,
+    apRegenBaseMs: Long,
+    modifier: Modifier = Modifier,
+) {
+    val uiMinuteMs = clockState.uiMinuteMs.longValue
+    val notSyncedText = stringResource(R.string.ba_state_not_synced)
+    val apFullAt = calculateApFullAtMs(
+        apLimit = apLimit,
+        apCurrent = apCurrent,
+        apRegenBaseMs = apRegenBaseMs,
+        nowMs = uiMinuteMs,
+    )
+    val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
+    BaLiquidMetricPanel(
+        backdrop = backdrop,
+        label = stringResource(R.string.ba_metric_ap_full),
+        value = apFullTimeText,
+        accentColor = Color(0xFF60A5FA),
+        valueColor = Color(0xFF60A5FA),
+        valueMaxLines = 2,
+        modifier = modifier,
+    )
 }
 
 @Composable

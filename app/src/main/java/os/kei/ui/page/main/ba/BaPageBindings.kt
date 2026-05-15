@@ -49,6 +49,7 @@ internal fun buildBaPageContentState(
     officeOverviewTitle: String,
     office: BaOfficeController,
     routeState: BaPageRouteState,
+    clockState: BaPageClockState,
     serverOptions: List<String>,
     cafeLevelOptions: List<Int>,
 ): BaPageContentState {
@@ -57,8 +58,7 @@ internal fun buildBaPageContentState(
         isPageActive = isPageActive,
         officeOverviewTitle = officeOverviewTitle,
         officeState = office.state(),
-        uiNowMs = routeState.uiNowMs,
-        uiMinuteMs = routeState.uiMinuteMs,
+        clockState = clockState,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
         serverIndex = routeState.serverIndex,
@@ -88,7 +88,7 @@ internal fun saveBaPageSettings(
     onRefreshCalendar: (Boolean) -> Unit,
     onRefreshPool: (Boolean) -> Unit,
 ) {
-    office.applyRuntimeTick()
+    office.applyRuntimeTickAndPersist()
 
     val persisted = persistBaSettingsDraft(
         sheetState = settingsSheetState,
@@ -123,7 +123,7 @@ internal fun saveBaPageSettings(
         if (!poolHasImage) onRefreshPool(true)
     }
 
-    office.applyRuntimeTick()
+    office.applyRuntimeTickAndPersist()
     AppBackgroundScheduler.scheduleBaApThreshold(context)
     ui.closeSettingsSheet(office)
 }
@@ -134,7 +134,7 @@ internal fun saveBaNotificationSettings(
     ui: BaPageUiController,
     notificationSettingsSheetState: BaNotificationSettingsSheetState,
 ) {
-    office.applyRuntimeTick()
+    office.applyRuntimeTickAndPersist()
     val previousCafeApNotifyEnabled = office.cafeApNotifyEnabled
     val previousCafeApNotifyThreshold = office.cafeApNotifyThreshold
     val previousArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
@@ -179,7 +179,7 @@ internal fun saveBaNotificationSettings(
         BASettingsStore.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
     }
 
-    office.applyRuntimeTick()
+    office.applyRuntimeTickAndPersist()
     AppBackgroundScheduler.scheduleBaApThreshold(context)
     ui.closeNotificationSettingsSheet(office)
 }

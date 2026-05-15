@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LongState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -12,6 +13,12 @@ import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.state.PageRouteState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+
+@Stable
+internal data class BaPageClockState(
+    val uiNowMs: LongState,
+    val uiMinuteMs: LongState,
+)
 
 @Stable
 internal data class BaPagePopupState(
@@ -57,8 +64,6 @@ internal data class BaPageRouteState(
     val showDebugSheet: Boolean,
     val popupState: BaPagePopupState,
     val serverIndex: Int,
-    val uiNowMs: Long,
-    val uiMinuteMs: Long,
     val baCalendarReloadSignal: Int,
     val baPoolReloadSignal: Int,
     val calendarUiState: BaCalendarUiState,
@@ -90,8 +95,18 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     var cafeLevelPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var showCalendarIntervalPopup by mutableStateOf(false)
     var serverIndex by mutableIntStateOf(snapshot.serverIndex)
-    var uiNowMs by mutableLongStateOf(System.currentTimeMillis())
-    var uiMinuteMs by mutableLongStateOf(System.currentTimeMillis())
+    private val uiNowMsState = mutableLongStateOf(System.currentTimeMillis())
+    private val uiMinuteMsState = mutableLongStateOf(System.currentTimeMillis())
+    var uiNowMs: Long
+        get() = uiNowMsState.longValue
+        set(value) {
+            uiNowMsState.longValue = value
+        }
+    var uiMinuteMs: Long
+        get() = uiMinuteMsState.longValue
+        set(value) {
+            uiMinuteMsState.longValue = value
+        }
     var baCalendarReloadSignal by mutableIntStateOf(0)
     var baPoolReloadSignal by mutableIntStateOf(0)
     var showEndedPools by mutableStateOf(snapshot.showEndedPools)
@@ -137,8 +152,6 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             showDebugSheet = showDebugSheet,
             popupState = popupState(),
             serverIndex = serverIndex,
-            uiNowMs = uiNowMs,
-            uiMinuteMs = uiMinuteMs,
             baCalendarReloadSignal = baCalendarReloadSignal,
             baPoolReloadSignal = baPoolReloadSignal,
             calendarUiState = calendarUiState,
@@ -157,6 +170,13 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             notificationDraftState = notificationDraftState(),
             debugUseRealCalendarPoolData = debugUseRealCalendarPoolData,
             consumedScrollToTopSignal = consumedScrollToTopSignal,
+        )
+    }
+
+    fun clockState(): BaPageClockState {
+        return BaPageClockState(
+            uiNowMs = uiNowMsState,
+            uiMinuteMs = uiMinuteMsState,
         )
     }
 

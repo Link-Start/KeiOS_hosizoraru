@@ -24,6 +24,7 @@ import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 internal data class BaGuideMediaCacheMetadata(
     val sourceUrl: String,
@@ -61,6 +62,10 @@ internal fun scanBaGuideMediaCacheSession(dir: File): BaGuideMediaCacheSessionSu
 object BaGuideTempMediaCache {
     private const val ROOT_DIR = "ba_student_guide_temp_media"
     private const val MAX_PARALLEL_DOWNLOADS = 3
+    private const val PREFETCH_TASK_BATCH_SIZE = MAX_PARALLEL_DOWNLOADS * 2
+    private const val MAX_TOTAL_CACHE_BYTES = 256L * 1024L * 1024L
+    private const val SESSION_TTL_MS = 72L * 60L * 60L * 1000L
+    private const val PRUNE_MIN_INTERVAL_MS = 30L * 60L * 1000L
     private const val INDEX_KV_ID = "ba_student_guide_temp_media_index"
     private const val INDEX_VERSION = 1
     private const val KEY_INDEX_VERSION = "index_version"
@@ -68,6 +73,7 @@ object BaGuideTempMediaCache {
 
     private val indexStore: MMKV by lazy { KeiMmkv.byId(INDEX_KV_ID) }
     private val downloadLocks = ConcurrentHashMap<String, DownloadLock>()
+    private val lastPruneAtMs = AtomicLong(0L)
 
     private data class DownloadLock(
         val mutex: Mutex = Mutex(),
@@ -291,27 +297,31 @@ object BaGuideTempMediaCache {
 
         coroutineScope {
             val semaphore = Semaphore(MAX_PARALLEL_DOWNLOADS)
-            targets.map { url ->
-                async(Dispatchers.IO) {
-                    semaphore.withPermit {
-                        withDownloadLock(sourceUrl = sourceUrl, normalizedUrl = url) {
-                            ensureActive()
-                            val file = targetFile(context, sourceUrl, url)
-                            if (!forceReDownload && isUsableCachedMedia(url, file)) return@withDownloadLock
-                            val downloaded = downloadWithValidation(
-                                normalizedUrl = url,
-                                targetFile = file,
-                                forceReDownload = forceReDownload
-                            )
-                            if (!downloaded) {
-                                runCatching { file.delete() }
+            targets.chunked(PREFETCH_TASK_BATCH_SIZE).forEach { batch ->
+                ensureActive()
+                batch.map { url ->
+                    async {
+                        semaphore.withPermit {
+                            withDownloadLock(sourceUrl = sourceUrl, normalizedUrl = url) {
+                                ensureActive()
+                                val file = targetFile(context, sourceUrl, url)
+                                if (!forceReDownload && isUsableCachedMedia(url, file)) return@withDownloadLock
+                                val downloaded = downloadWithValidation(
+                                    normalizedUrl = url,
+                                    targetFile = file,
+                                    forceReDownload = forceReDownload
+                                )
+                                if (!downloaded) {
+                                    runCatching { file.delete() }
+                                }
                             }
                         }
                     }
-                }
-            }.awaitAll()
+                }.awaitAll()
+            }
         }
         rebuildSessionIndex(context, sourceUrl)
+        pruneTempCache(context)
     }
 
     fun resolveCachedUrl(
@@ -530,6 +540,58 @@ object BaGuideTempMediaCache {
             )
         }
         return aggregateSummaryFromIndex(kv)
+    }
+
+    private fun pruneTempCache(context: Context) {
+        val now = System.currentTimeMillis()
+        val lastPrune = lastPruneAtMs.get()
+        if (lastPrune > 0L && now - lastPrune < PRUNE_MIN_INTERVAL_MS) return
+        if (!lastPruneAtMs.compareAndSet(lastPrune, now)) return
+
+        val root = rootDir(context)
+        if (!root.exists()) {
+            clearIndex()
+            return
+        }
+        data class SessionCandidate(
+            val id: String,
+            val dir: File,
+            val summary: SessionSummary
+        )
+        val candidates = root.listFiles()
+            .orEmpty()
+            .filter { it.isDirectory }
+            .map { dir ->
+                SessionCandidate(
+                    id = dir.name.trim(),
+                    dir = dir,
+                    summary = scanSessionSummary(dir)
+                )
+            }
+            .filter { it.id.isNotBlank() }
+            .toMutableList()
+
+        candidates
+            .filter { candidate ->
+                candidate.summary.count <= 0 ||
+                    candidate.summary.bytes <= 0L ||
+                    (candidate.summary.latest > 0L && now - candidate.summary.latest > SESSION_TTL_MS)
+            }
+            .forEach { candidate ->
+                runCatching { candidate.dir.deleteRecursively() }
+            }
+
+        val survivors = candidates
+            .filter { it.dir.exists() }
+            .sortedBy { it.summary.latest }
+            .toMutableList()
+        var totalBytes = survivors.sumOf { it.summary.bytes.coerceAtLeast(0L) }
+        while (totalBytes > MAX_TOTAL_CACHE_BYTES && survivors.isNotEmpty()) {
+            val victim = survivors.removeAt(0)
+            totalBytes -= victim.summary.bytes.coerceAtLeast(0L)
+            runCatching { victim.dir.deleteRecursively() }
+        }
+        rebuildAllIndex(context)
     }
 
     private fun aggregateSummaryFromIndex(kv: MMKV = indexStore): MediaSummary {

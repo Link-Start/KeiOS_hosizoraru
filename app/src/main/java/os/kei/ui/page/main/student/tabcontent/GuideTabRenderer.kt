@@ -27,6 +27,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     isVoicePlaying: Boolean,
     voicePlayProgress: Float,
     selectedVoiceLanguage: String,
+    bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
@@ -56,6 +57,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             context = context,
             sourceUrl = sourceUrl,
             galleryCacheRevision = galleryCacheRevision,
+            bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
             onOpenExternal = onOpenExternal,
             onOpenGuide = onOpenGuide,
             onSaveMedia = onSaveMedia
@@ -87,6 +89,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             context = context,
             sourceUrl = sourceUrl,
             galleryCacheRevision = galleryCacheRevision,
+            bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
             onOpenExternal = onOpenExternal,
             onSaveMedia = onSaveMedia,
             onSaveMediaPack = onSaveMediaPack

@@ -14,7 +14,6 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.delay
 import os.kei.R
-import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.clearGuideBgmLoopScope
 import os.kei.ui.page.main.student.clearGuideBgmPlaybackScope
@@ -23,7 +22,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 internal fun BindBaStudentGuidePlayerLifecycleEffects(
-    context: Context,
     sourceUrl: String,
     voicePlayerController: BaStudentGuideVoicePlayerController
 ) {
@@ -37,7 +35,6 @@ internal fun BindBaStudentGuidePlayerLifecycleEffects(
         onDispose {
             clearGuideBgmLoopScope(sourceUrl)
             clearGuideBgmPlaybackScope(sourceUrl)
-            BaGuideTempMediaCache.clearGuideCache(context, sourceUrl)
         }
     }
 }

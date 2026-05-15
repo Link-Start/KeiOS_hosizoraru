@@ -60,6 +60,7 @@ fun GuideGalleryCardItem(
     bgmFavoriteStudentTitle: String = "",
     bgmFavoriteStudentImageUrl: String = "",
     bgmFavoriteSourceUrl: String = "",
+    bgmFavoriteAudioUrls: Set<String> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -153,8 +154,7 @@ fun GuideGalleryCardItem(
         normalizedMediaType == "audio" &&
         favoriteAudioUrl.isNotBlank() &&
         isGuideBgmFavoriteCandidateTitle(item.title, displayTitle)
-    val bgmFavorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
-    val isBgmFavorite = canFavoriteBgm && bgmFavorites.any { it.audioUrl == favoriteAudioUrl }
+    val isBgmFavorite = canFavoriteBgm && favoriteAudioUrl in bgmFavoriteAudioUrls
     val favoriteContentDescription = stringResource(
         if (isBgmFavorite) {
             R.string.guide_bgm_cd_unfavorite

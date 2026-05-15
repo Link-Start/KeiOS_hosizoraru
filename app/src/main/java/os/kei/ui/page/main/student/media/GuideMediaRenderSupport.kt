@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.SystemClock
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -55,6 +56,40 @@ internal fun loadGuideBitmapSource(
         maxDecodeDimension = maxDecodeDimension,
         onProgress = onProgress
     )
+}
+
+private class GuideMediaProgressThrottler(
+    private val minIntervalMs: Long = 80L,
+    private val minDelta: Float = 0.015f
+) {
+    private var lastEmitAtMs: Long = 0L
+    private var lastProgress: Float = -1f
+
+    fun update(
+        progressState: MutableStateFlow<Float>?,
+        downloadedBytes: Long,
+        totalBytes: Long
+    ) {
+        progressState ?: return
+        if (totalBytes <= 0L) return
+        val progress = (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
+        val now = SystemClock.elapsedRealtime()
+        val shouldEmit = progress >= 0.999f ||
+            lastProgress < 0f ||
+            progress - lastProgress >= minDelta ||
+            now - lastEmitAtMs >= minIntervalMs
+        if (!shouldEmit) return
+        lastProgress = progress
+        lastEmitAtMs = now
+        progressState.value = progress
+    }
+
+    fun finish(progressState: MutableStateFlow<Float>?) {
+        progressState ?: return
+        lastProgress = 1f
+        lastEmitAtMs = SystemClock.elapsedRealtime()
+        progressState.value = 1f
+    }
 }
 
 internal fun normalizeGalleryDisplayTitle(
@@ -175,6 +210,7 @@ fun GuideRemoteImageAdaptive(
         return
     }
     var retainedBitmap by remember(target) { mutableStateOf<Bitmap?>(null) }
+    val progressThrottler = remember(target, progressState) { GuideMediaProgressThrottler() }
     val bitmap by produceState<Bitmap?>(initialValue = retainedBitmap, target) {
         progressState?.value = 0f
         onLoadingChanged?.invoke(true)
@@ -184,19 +220,16 @@ fun GuideRemoteImageAdaptive(
                 source = target,
                 maxDecodeDimension = maxDecodeDimension
             ) { downloadedBytes, totalBytes ->
-                if (totalBytes > 0L) {
-                    progressState?.value =
-                        (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                }
+                progressThrottler.update(progressState, downloadedBytes, totalBytes)
             }
         }.getOrNull()
         if (loadedBitmap != null) {
             retainedBitmap = loadedBitmap
             value = loadedBitmap
-            progressState?.value = 1f
+            progressThrottler.finish(progressState)
         } else {
             value = retainedBitmap
-            progressState?.value = 1f
+            progressThrottler.finish(progressState)
         }
         onLoadingChanged?.invoke(false)
     }

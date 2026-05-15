@@ -19,6 +19,19 @@ import os.kei.ui.page.main.student.normalizeGalleryTitle
 import os.kei.ui.page.main.student.profileRowsForDisplay
 import os.kei.ui.page.main.student.tabcontent.profile.isGalleryRelatedProfileLinkRow
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
+import java.util.LinkedHashMap
+
+private const val GUIDE_GALLERY_TAB_STATE_CACHE_MAX_SIZE = 96
+
+private val guideGalleryTabStateCache = object : LinkedHashMap<String, GuideGalleryTabResolvedState>(
+    GUIDE_GALLERY_TAB_STATE_CACHE_MAX_SIZE,
+    0.75f,
+    true
+) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, GuideGalleryTabResolvedState>?): Boolean {
+        return size > GUIDE_GALLERY_TAB_STATE_CACHE_MAX_SIZE
+    }
+}
 
 internal data class GuideGalleryTabResolvedState(
     val previewVideoGroups: List<Pair<String, List<BaGuideGalleryItem>>>,
@@ -39,6 +52,10 @@ internal data class GuideGalleryTabResolvedState(
 }
 
 internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGalleryTabResolvedState {
+    val cacheKey = guide.galleryTabStateCacheKey()
+    synchronized(guideGalleryTabStateCache) {
+        guideGalleryTabStateCache[cacheKey]?.let { return it }
+    }
     val galleryItems = if (guide.galleryItems.isNotEmpty()) {
         guide.galleryItems
             .filter(::hasRenderableGalleryMedia)
@@ -169,7 +186,7 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
         }
         .map { it.value }
 
-    return GuideGalleryTabResolvedState(
+    val computed = GuideGalleryTabResolvedState(
         previewVideoGroups = previewVideoGroups,
         memoryHallVideoGroup = memoryHallVideoGroup,
         pvAndRoleVideoGroups = pvAndRoleVideoGroups,
@@ -183,4 +200,22 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
         firstMemoryHallIndex = displayGalleryItems.indexOfFirst(::isMemoryHallGalleryItem),
         lastOfficialIntroIndex = displayGalleryItems.indexOfLast(::isOfficialIntroGalleryItem)
     )
+    synchronized(guideGalleryTabStateCache) {
+        guideGalleryTabStateCache[cacheKey] = computed
+    }
+    return computed
+}
+
+private fun BaStudentGuideInfo.galleryTabStateCacheKey(): String {
+    return buildString {
+        append(sourceUrl.trim().ifBlank { title.trim() })
+        append('|')
+        append(syncedAtMs)
+        append('|')
+        append(galleryItems.size)
+        append('|')
+        append(profileRows.size)
+        append('|')
+        append(imageUrl.trim().hashCode())
+    }
 }

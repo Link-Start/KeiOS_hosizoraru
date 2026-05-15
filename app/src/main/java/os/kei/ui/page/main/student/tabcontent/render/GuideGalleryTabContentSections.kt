@@ -38,6 +38,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     studentTitle: String,
     studentImageUrl: String,
     galleryCacheRevision: Int,
+    bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit
@@ -112,7 +113,8 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     mediaUrlResolver = mediaUrlResolver,
                     bgmFavoriteStudentTitle = studentTitle,
                     bgmFavoriteStudentImageUrl = studentImageUrl,
-                    bgmFavoriteSourceUrl = sourceUrl
+                    bgmFavoriteSourceUrl = sourceUrl,
+                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls
                 )
             }
         }

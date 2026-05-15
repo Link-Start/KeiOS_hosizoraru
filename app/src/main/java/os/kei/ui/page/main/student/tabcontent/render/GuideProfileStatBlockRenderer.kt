@@ -58,6 +58,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     context: Context,
     sourceUrl: String,
     galleryCacheRevision: Int,
+    bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     preferCapsule: Boolean
@@ -93,7 +94,8 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
                     }
                 },
                 embedded = true,
-                showMediaTypeLabel = false
+                showMediaTypeLabel = false,
+                bgmFavoriteAudioUrls = bgmFavoriteAudioUrls
             )
         }
     }

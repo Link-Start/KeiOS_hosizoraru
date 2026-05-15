@@ -25,9 +25,11 @@ import kotlin.time.Duration.Companion.milliseconds
 @Stable
 internal class GuideGalleryAudioPlayerState(
     val audioTargetUrl: String,
-    val player: Player?,
+    private val context: Context,
     private val audioLoopScopeKey: String
 ) {
+    var player by mutableStateOf<Player?>(GuideBgmPlayerStore.getExisting(audioLoopScopeKey, audioTargetUrl))
+        private set
     var isPlaying by mutableStateOf(false)
     var isBuffering by mutableStateOf(false)
     var playProgress by mutableFloatStateOf(0f)
@@ -74,8 +76,21 @@ internal class GuideGalleryAudioPlayerState(
         player?.repeatMode = if (enabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
     }
 
+    private fun ensurePlayer(): Player? {
+        val existing = player
+        if (existing != null) return existing
+        val created = GuideBgmPlayerStore.getOrCreate(
+            context = context,
+            scopeKey = audioLoopScopeKey,
+            audioUrl = audioTargetUrl
+        ) ?: return null
+        created.repeatMode = if (loopEnabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        player = created
+        return created
+    }
+
     fun play(context: Context, restart: Boolean = false) {
-        val currentPlayer = player ?: run {
+        val currentPlayer = ensurePlayer() ?: run {
             Toast.makeText(context, context.getString(R.string.guide_media_audio_url_invalid), Toast.LENGTH_SHORT).show()
             return
         }
@@ -89,6 +104,7 @@ internal class GuideGalleryAudioPlayerState(
                 currentPlayer.seekTo(0)
             }
             currentPlayer.play()
+            isPlaying = true
         }.onFailure {
             loadError = it.message
             Toast.makeText(context, context.getString(R.string.guide_media_audio_play_failed), Toast.LENGTH_SHORT).show()
@@ -96,7 +112,7 @@ internal class GuideGalleryAudioPlayerState(
     }
 
     fun togglePlay(context: Context) {
-        val currentPlayer = player ?: run {
+        val currentPlayer = ensurePlayer() ?: run {
             Toast.makeText(context, context.getString(R.string.guide_media_audio_url_invalid), Toast.LENGTH_SHORT).show()
             return
         }
@@ -150,17 +166,11 @@ internal fun rememberGuideGalleryAudioPlayerState(
     audioLoopScopeKey: String,
     audioTargetUrl: String
 ): GuideGalleryAudioPlayerState {
-    val audioPlayer = remember(context, audioLoopScopeKey, audioTargetUrl) {
-        GuideBgmPlayerStore.getOrCreate(
-            context = context,
-            scopeKey = audioLoopScopeKey,
-            audioUrl = audioTargetUrl
-        )
-    }
-    return remember(audioLoopScopeKey, audioTargetUrl, audioPlayer) {
+    val appContext = remember(context) { context.applicationContext }
+    return remember(audioLoopScopeKey, audioTargetUrl, appContext) {
         GuideGalleryAudioPlayerState(
             audioTargetUrl = audioTargetUrl,
-            player = audioPlayer,
+            context = appContext,
             audioLoopScopeKey = audioLoopScopeKey
         )
     }

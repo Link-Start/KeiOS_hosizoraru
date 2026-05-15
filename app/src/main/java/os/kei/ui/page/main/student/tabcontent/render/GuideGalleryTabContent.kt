@@ -16,6 +16,7 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
     context: Context,
     sourceUrl: String,
     galleryCacheRevision: Int,
+    bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit
@@ -43,6 +44,7 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
         studentTitle = guide.title,
         studentImageUrl = guide.imageUrl,
         galleryCacheRevision = galleryCacheRevision,
+        bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
         onSaveMediaPack = onSaveMediaPack

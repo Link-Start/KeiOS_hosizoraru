@@ -28,6 +28,19 @@ import os.kei.ui.page.main.student.tabcontent.profile.profileNicknameFieldSpecs
 import os.kei.ui.page.main.student.tabcontent.profile.profileStudentInfoFieldSpecs
 import os.kei.ui.page.main.student.tabcontent.profile.sortGalleryItemsByTitleNumbers
 import os.kei.ui.page.main.student.tabcontent.profile.sortProfileRowsByKeyNumbers
+import java.util.LinkedHashMap
+
+private const val GUIDE_PROFILE_TAB_STATE_CACHE_MAX_SIZE = 96
+
+private val guideProfileTabStateCache = object : LinkedHashMap<String, GuideProfileTabHeaderState>(
+    GUIDE_PROFILE_TAB_STATE_CACHE_MAX_SIZE,
+    0.75f,
+    true
+) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, GuideProfileTabHeaderState>?): Boolean {
+        return size > GUIDE_PROFILE_TAB_STATE_CACHE_MAX_SIZE
+    }
+}
 
 internal data class GuideProfileTabHeaderState(
     val nicknameRows: List<BaGuideRow>,
@@ -46,6 +59,10 @@ internal data class GuideProfileTabHeaderState(
 internal fun buildGuideProfileTabHeaderState(
     guide: BaStudentGuideInfo
 ): GuideProfileTabHeaderState {
+    val cacheKey = guide.profileTabStateCacheKey()
+    synchronized(guideProfileTabStateCache) {
+        guideProfileTabStateCache[cacheKey]?.let { return it }
+    }
     val profileRowsBase = guide.profileRowsForDisplay()
         .filterNot(::shouldHideMovedHeaderRow)
         .filterNot(::isGrowthTitleVoiceRow)
@@ -117,7 +134,7 @@ internal fun buildGuideProfileTabHeaderState(
             "${it.mediaType}|$media"
         }
         .let(::sortGalleryItemsByTitleNumbers)
-    return GuideProfileTabHeaderState(
+    val computed = GuideProfileTabHeaderState(
         nicknameRows = nicknameRows,
         studentInfoRows = studentInfoRows,
         hobbyRows = hobbyRows,
@@ -130,4 +147,22 @@ internal fun buildGuideProfileTabHeaderState(
         chocolateGalleryItems = chocolateGalleryItems,
         furnitureGalleryItems = furnitureGalleryItems
     )
+    synchronized(guideProfileTabStateCache) {
+        guideProfileTabStateCache[cacheKey] = computed
+    }
+    return computed
+}
+
+private fun BaStudentGuideInfo.profileTabStateCacheKey(): String {
+    return buildString {
+        append(sourceUrl.trim().ifBlank { title.trim() })
+        append('|')
+        append(syncedAtMs)
+        append('|')
+        append(profileRows.size)
+        append('|')
+        append(galleryItems.size)
+        append('|')
+        append(stats.size)
+    }
 }

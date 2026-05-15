@@ -8,7 +8,9 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
-import os.kei.ui.page.main.student.fetchGuideInfo
+import os.kei.ui.page.main.student.fetchGuideInfoAsync
+import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
+import kotlin.coroutines.cancellation.CancellationException
 
 internal data class BaStudentGuideLoadResult(
     val info: BaStudentGuideInfo?,
@@ -16,7 +18,8 @@ internal data class BaStudentGuideLoadResult(
 )
 
 internal class BaStudentGuideRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     fun loadCurrentUrl(): String = BaStudentGuideStore.loadCurrentUrl()
 
@@ -36,6 +39,12 @@ internal class BaStudentGuideRepository(
                 sourceUrl = sourceUrl,
                 rawUrls = rawUrls
             )
+        }
+    }
+
+    suspend fun collectStaticImagePrefetchUrls(info: BaStudentGuideInfo): List<String> {
+        return withContext(parseDispatcher) {
+            collectGuideStaticImagePrefetchUrls(info)
         }
     }
 
@@ -78,8 +87,18 @@ internal class BaStudentGuideRepository(
         val shouldClearLocalCache =
             manualRefresh || (cacheSnapshot.hasCache && (cacheExpired || !cacheSnapshot.isComplete))
 
-        val result = withContext(ioDispatcher) {
-            runCatching { fetchGuideInfo(requestUrl) }
+        val result = try {
+            Result.success(
+                fetchGuideInfoAsync(
+                    sourceUrl = requestUrl,
+                    networkDispatcher = ioDispatcher,
+                    parseDispatcher = parseDispatcher
+                )
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            Result.failure(error)
         }
         return result.fold(
             onSuccess = { latest ->

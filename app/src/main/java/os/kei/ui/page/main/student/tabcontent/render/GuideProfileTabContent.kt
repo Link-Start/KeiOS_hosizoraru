@@ -41,6 +41,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     context: Context,
     sourceUrl: String,
     galleryCacheRevision: Int,
+    bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit
@@ -211,6 +212,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         context = context,
         sourceUrl = sourceUrl,
         galleryCacheRevision = galleryCacheRevision,
+        bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
         preferCapsule = true
@@ -224,6 +226,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         context = context,
         sourceUrl = sourceUrl,
         galleryCacheRevision = galleryCacheRevision,
+        bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
         preferCapsule = false

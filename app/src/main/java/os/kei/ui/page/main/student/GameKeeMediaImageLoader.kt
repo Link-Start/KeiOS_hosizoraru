@@ -22,23 +22,14 @@ internal object GameKeeMediaImageLoader {
     ): Bitmap? {
         val target = normalizeGuideMediaSource(source)
         if (target.isBlank()) return null
-        if (onProgress != null) {
-            return withContext(ioDispatcher) {
-                loadGuideBitmapSource(
-                    context = context.applicationContext,
-                    source = target,
-                    maxDecodeDimension = maxDecodeDimension,
-                    onProgress = onProgress
-                )
-            }
-        }
         return withLoadLock("guide:$maxDecodeDimension:$target") {
             BaGuideImageCache.peekBitmap(target, maxDecodeDimension)?.let { return@withLoadLock it }
             withContext(ioDispatcher) {
                 loadGuideBitmapSource(
                     context = context.applicationContext,
                     source = target,
-                    maxDecodeDimension = maxDecodeDimension
+                    maxDecodeDimension = maxDecodeDimension,
+                    onProgress = onProgress
                 )
             }
         }

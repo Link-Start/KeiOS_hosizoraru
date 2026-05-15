@@ -39,6 +39,7 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
@@ -120,6 +121,10 @@ fun BaStudentGuidePage(
     val guideViewModel: BaStudentGuideViewModel = viewModel()
     val guideDataState by guideViewModel.dataState.collectAsStateWithLifecycle()
     val guidePrefetchState by guideViewModel.prefetchState.collectAsStateWithLifecycle()
+    val bgmFavorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
+    val bgmFavoriteAudioUrls = remember(bgmFavorites) {
+        bgmFavorites.mapTo(hashSetOf()) { it.audioUrl }
+    }
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -222,7 +227,6 @@ fun BaStudentGuidePage(
     )
 
     BindBaStudentGuidePlayerLifecycleEffects(
-        context = context,
         sourceUrl = sourceUrl,
         voicePlayerController = voicePlayerController
     )
@@ -353,6 +357,7 @@ fun BaStudentGuidePage(
                 playingVoiceUrl = playingVoiceUrl,
                 isVoicePlaying = isVoicePlaying,
                 voicePlayProgress = voicePlayProgress,
+                bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
                 includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
                 guidePagerBeyondViewportPageCount = preloadPolicy.guidePagerBeyondViewportPageCount,
                 nestedScrollConnection = scrollBehavior.nestedScrollConnection,

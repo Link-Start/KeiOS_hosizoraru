@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
-import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaStudentGuideDataUiState(
@@ -209,7 +208,19 @@ internal class BaStudentGuideViewModel(
         initialPrefetchCount: Int,
         galleryExtraPrefetchCount: Int
     ) {
-        val allUrls = collectGuideStaticImagePrefetchUrls(info)
+        val guideSyncToken = info.syncedAtMs
+        val allUrls = repository.collectStaticImagePrefetchUrls(info)
+        fun updatePrefetchIfCurrent(
+            transform: (BaStudentGuidePrefetchUiState) -> BaStudentGuidePrefetchUiState
+        ) {
+            _prefetchState.update { state ->
+                if (state.sourceUrl == sourceUrl && state.guideSyncToken == guideSyncToken) {
+                    transform(state)
+                } else {
+                    state
+                }
+            }
+        }
         if (_prefetchState.value.staticImagePrefetchStage < 1 && targetStage >= 1) {
             val urls = allUrls.take(initialPrefetchCount)
             if (urls.isNotEmpty()) {
@@ -218,11 +229,13 @@ internal class BaStudentGuideViewModel(
                     sourceUrl = sourceUrl,
                     rawUrls = urls
                 )
-                _prefetchState.update { state ->
+                updatePrefetchIfCurrent { state ->
                     state.copy(galleryCacheRevision = state.galleryCacheRevision + 1)
                 }
             }
-            _prefetchState.update { state -> state.copy(staticImagePrefetchStage = 1) }
+            updatePrefetchIfCurrent { state ->
+                state.copy(staticImagePrefetchStage = 1)
+            }
         }
         if (_prefetchState.value.staticImagePrefetchStage < 2 && targetStage >= 2) {
             val urls = allUrls
@@ -234,11 +247,13 @@ internal class BaStudentGuideViewModel(
                     sourceUrl = sourceUrl,
                     rawUrls = urls
                 )
-                _prefetchState.update { state ->
+                updatePrefetchIfCurrent { state ->
                     state.copy(galleryCacheRevision = state.galleryCacheRevision + 1)
                 }
             }
-            _prefetchState.update { state -> state.copy(staticImagePrefetchStage = 2) }
+            updatePrefetchIfCurrent { state ->
+                state.copy(staticImagePrefetchStage = 2)
+            }
         }
     }
 }

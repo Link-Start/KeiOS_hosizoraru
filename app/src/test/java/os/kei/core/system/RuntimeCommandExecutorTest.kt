@@ -1,5 +1,6 @@
 package os.kei.core.system
 
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -7,6 +8,25 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RuntimeCommandExecutorTest {
+    @Test
+    fun `executeAsync captures stdout for successful command`() = runTest {
+        val result = RuntimeCommandExecutor.executeAsync("printf async", timeoutMs = 1_000L)
+
+        assertEquals("async", result.stdout)
+        assertEquals(0, result.exitCode)
+        assertFalse(result.timedOut)
+        assertTrue(result.succeeded)
+    }
+
+    @Test
+    fun `executeAsync force stops commands after timeout`() = runTest {
+        val result = RuntimeCommandExecutor.executeAsync("sleep 2; printf late", timeoutMs = 100L)
+
+        assertTrue(result.timedOut)
+        assertNull(result.exitCode)
+        assertFalse(result.succeeded)
+    }
+
     @Test
     fun `execute captures stdout for successful command`() {
         val result = RuntimeCommandExecutor.execute("printf hello", timeoutMs = 1_000L)

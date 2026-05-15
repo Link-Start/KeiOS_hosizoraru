@@ -31,4 +31,20 @@ object RuntimeCommandExecutor {
             stderrTruncated = result.stderrTruncated
         )
     }
+
+    suspend fun executeAsync(
+        command: String,
+        timeoutMs: Long = DEFAULT_TIMEOUT_MS
+    ): RuntimeCommandResult {
+        val result = AppCommandExecutor.executeAsync(command = command, timeoutMs = timeoutMs)
+        return RuntimeCommandResult(
+            stdout = result.stdout,
+            stderr = result.stderr,
+            exitCode = result.exitCode,
+            timedOut = result.timedOut,
+            cancelled = result.cancelled,
+            stdoutTruncated = result.stdoutTruncated,
+            stderrTruncated = result.stderrTruncated
+        )
+    }
 }

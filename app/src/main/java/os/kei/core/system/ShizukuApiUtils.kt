@@ -6,6 +6,7 @@ import android.os.Looper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.log.AppLogger
@@ -14,6 +15,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 
 class ShizukuApiUtils(
     private val requestCode: Int = DEFAULT_REQUEST_CODE,
@@ -160,36 +162,10 @@ class ShizukuApiUtils(
     }
 
     fun execCommandResult(command: String, timeoutMs: Long = 2000L): AppCommandResult {
-        val normalizedCommand = command.trim()
-        if (normalizedCommand.isBlank()) {
-            return AppCommandResult(
-                stdout = "",
-                stderr = "",
-                exitCode = null,
-                timedOut = false,
-                cancelled = false
-            )
-        }
-        val state = resolveRuntimeState()
-        if (!state.commandReady) {
-            return AppCommandResult(
-                stdout = "",
-                stderr = state.statusText,
-                exitCode = null,
-                timedOut = false,
-                cancelled = false
-            )
-        }
-        val process = createShellProcess(normalizedCommand)
-            ?: return AppCommandResult(
-                stdout = "",
-                stderr = "Shizuku process unavailable",
-                exitCode = null,
-                timedOut = false,
-                cancelled = false
-            )
         return runCatching {
-            executeProcess(process = process, timeoutMs = timeoutMs)
+            runBlocking(commandDispatcher) {
+                execCommandCancellableResult(command = command, timeoutMs = timeoutMs)
+            }
         }.onFailure {
             AppLogger.w(
                 TAG,
@@ -201,7 +177,7 @@ class ShizukuApiUtils(
                 stderr = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
                 exitCode = null,
                 timedOut = false,
-                cancelled = false
+                cancelled = error is CancellationException
             )
         }
     }
@@ -379,43 +355,61 @@ class ShizukuApiUtils(
             sink = stderr
         )
 
-        val exitCode = runCatching {
-            withTimeoutOrNull(timeoutMs.coerceAtLeast(1L)) {
+        try {
+            val exitCode = withTimeoutOrNull(timeoutMs.coerceAtLeast(1L)) {
                 runInterruptible { process.waitFor() }
             }
-        }.onFailure {
-            runCatching { process.destroy() }
-            runCatching { process.destroyForcibly() }
-            throw it
-        }.getOrNull()
 
-        if (exitCode == null) {
-            runCatching { process.destroy() }
-            runCatching { process.destroyForcibly() }
-            stdoutReader.join(300)
-            stderrReader.join(300)
-            return@withContext AppCommandResult(
+            if (exitCode == null) {
+                terminateProcess(process)
+                stdoutReader.join(300)
+                stderrReader.join(300)
+                return@withContext AppCommandResult(
+                    stdout = stdout.text().trim(),
+                    stderr = stderr.text().trim(),
+                    exitCode = null,
+                    timedOut = true,
+                    cancelled = false,
+                    stdoutTruncated = stdout.truncated,
+                    stderrTruncated = stderr.truncated
+                )
+            }
+
+            stdoutReader.join(600)
+            stderrReader.join(600)
+            AppCommandResult(
                 stdout = stdout.text().trim(),
                 stderr = stderr.text().trim(),
-                exitCode = null,
-                timedOut = true,
+                exitCode = exitCode,
+                timedOut = false,
                 cancelled = false,
                 stdoutTruncated = stdout.truncated,
                 stderrTruncated = stderr.truncated
             )
+        } catch (error: CancellationException) {
+            terminateProcess(process)
+            stdoutReader.join(300)
+            stderrReader.join(300)
+            throw error
+        } catch (error: Throwable) {
+            terminateProcess(process)
+            stdoutReader.join(300)
+            stderrReader.join(300)
+            throw error
+        } finally {
+            closeProcessStreams(process)
         }
+    }
 
-        stdoutReader.join(600)
-        stderrReader.join(600)
-        AppCommandResult(
-            stdout = stdout.text().trim(),
-            stderr = stderr.text().trim(),
-            exitCode = exitCode,
-            timedOut = false,
-            cancelled = false,
-            stdoutTruncated = stdout.truncated,
-            stderrTruncated = stderr.truncated
-        )
+    private fun terminateProcess(process: Process) {
+        runCatching { process.destroy() }
+        runCatching { process.destroyForcibly() }
+    }
+
+    private fun closeProcessStreams(process: Process) {
+        runCatching { process.outputStream.close() }
+        runCatching { process.inputStream.close() }
+        runCatching { process.errorStream.close() }
     }
 
     private fun startStreamCollector(

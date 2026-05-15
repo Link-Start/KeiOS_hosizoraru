@@ -1,11 +1,17 @@
 package os.kei.core.system
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
 
 data class AppCommandRequest(
     val command: String,
@@ -121,6 +127,98 @@ object AppCommandExecutor {
         } finally {
             process = null
         }
+    }
+
+    suspend fun executeAsync(
+        command: String,
+        timeoutMs: Long = DEFAULT_TIMEOUT_MS,
+        maxOutputBytes: Int = DEFAULT_MAX_OUTPUT_BYTES,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO
+    ): AppCommandResult {
+        return executeAsync(
+            request = AppCommandRequest(
+                command = command,
+                timeoutMs = timeoutMs,
+                maxOutputBytes = maxOutputBytes
+            ),
+            dispatcher = dispatcher
+        )
+    }
+
+    suspend fun executeAsync(
+        request: AppCommandRequest,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO
+    ): AppCommandResult = withContext(dispatcher) {
+        val normalizedCommand = request.command.trim()
+        if (normalizedCommand.isBlank()) {
+            return@withContext AppCommandResult(
+                stdout = "",
+                stderr = "",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+
+        val maxOutputBytes = request.maxOutputBytes.coerceAtLeast(MIN_OUTPUT_BYTES)
+        var process: Process? = null
+        var stdoutFuture: java.util.concurrent.Future<AppCommandStreamCapture>? = null
+        var stderrFuture: java.util.concurrent.Future<AppCommandStreamCapture>? = null
+        try {
+            val startedProcess = ProcessBuilder("sh", "-c", normalizedCommand).start()
+            process = startedProcess
+            stdoutFuture = streamExecutor.submit(
+                Callable { startedProcess.inputStream.captureText(maxOutputBytes) }
+            )
+            stderrFuture = streamExecutor.submit(
+                Callable { startedProcess.errorStream.captureText(maxOutputBytes) }
+            )
+
+            val exitCode = withTimeoutOrNull(request.timeoutMs.coerceAtLeast(1L)) {
+                runInterruptible { startedProcess.waitFor() }
+            }
+            if (exitCode == null) {
+                startedProcess.destroyForcibly()
+                runInterruptible {
+                    startedProcess.waitFor(250L, TimeUnit.MILLISECONDS)
+                }
+            }
+            val completed = exitCode != null
+            val stdout = stdoutFuture.awaitCapture(completed)
+            val stderr = stderrFuture.awaitCapture(completed)
+            AppCommandResult(
+                stdout = stdout.text.trim(),
+                stderr = stderr.text.trim(),
+                exitCode = exitCode,
+                timedOut = !completed,
+                cancelled = false,
+                stdoutTruncated = stdout.truncated,
+                stderrTruncated = stderr.truncated
+            )
+        } catch (error: CancellationException) {
+            runCatching { process?.destroyForcibly() }
+            stdoutFuture?.cancel(true)
+            stderrFuture?.cancel(true)
+            throw error
+        } catch (error: Exception) {
+            runCatching { process?.destroyForcibly() }
+            AppCommandResult(
+                stdout = "",
+                stderr = error.message.orEmpty(),
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        } finally {
+            process?.let(::closeProcessStreams)
+            process = null
+        }
+    }
+
+    private fun closeProcessStreams(process: Process) {
+        runCatching { process.outputStream.close() }
+        runCatching { process.inputStream.close() }
+        runCatching { process.errorStream.close() }
     }
 
     private fun InputStream.captureText(maxOutputBytes: Int): AppCommandStreamCapture {

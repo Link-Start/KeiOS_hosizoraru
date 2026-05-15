@@ -145,7 +145,7 @@ private data class SettingsOemAutoStartLaunchPlan(
     val supportsStateDetection: Boolean
 )
 
-private fun resolveAppListAccessState(
+private suspend fun resolveAppListAccessState(
     context: Context,
     shizukuApiUtils: ShizukuApiUtils
 ): SettingsAppListAccessState {
@@ -177,8 +177,8 @@ private fun resolveAppListAccessState(
     )
 }
 
-private fun queryShizukuPackageCount(shizukuApiUtils: ShizukuApiUtils): Int {
-    val output = shizukuApiUtils.execCommand("pm list packages", timeoutMs = 2500L).orEmpty()
+private suspend fun queryShizukuPackageCount(shizukuApiUtils: ShizukuApiUtils): Int {
+    val output = shizukuApiUtils.execCommandCancellable("pm list packages", timeoutMs = 2500L).orEmpty()
     return output.lineSequence()
         .count { line -> line.startsWith("package:") }
         .coerceAtLeast(0)

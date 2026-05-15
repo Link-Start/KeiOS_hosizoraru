@@ -71,6 +71,27 @@ private object PropSnapshotStore {
         }
     }
 
+    suspend fun systemPropertiesAsync(
+        forceRefresh: Boolean,
+        dispatcher: CoroutineDispatcher
+    ): Map<String, String> {
+        val now = System.nanoTime()
+        if (!forceRefresh) {
+            systemPropertiesSnapshot?.takeIf { it.isFresh(now) }?.let { return it.value }
+        }
+        val loaded = readAllSystemPropertiesAsync(dispatcher)
+        return synchronized(systemLock) {
+            val lockedNow = System.nanoTime()
+            if (!forceRefresh) {
+                systemPropertiesSnapshot?.takeIf { it.isFresh(lockedNow) }?.let {
+                    return@synchronized it.value
+                }
+            }
+            systemPropertiesSnapshot = TimedSnapshot(loaded, lockedNow)
+            loaded
+        }
+    }
+
     fun javaProperties(forceRefresh: Boolean): Map<String, String> {
         val now = System.nanoTime()
         if (!forceRefresh) {
@@ -142,9 +163,7 @@ suspend fun getAllSystemPropertiesSnapshotAsync(
     forceRefresh: Boolean = false,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ): Map<String, String> {
-    return withContext(dispatcher) {
-        getAllSystemPropertiesSnapshot(forceRefresh)
-    }
+    return PropSnapshotStore.systemPropertiesAsync(forceRefresh, dispatcher)
 }
 
 val getAllSystemProperties: Map<String, String>
@@ -165,6 +184,17 @@ private fun readAllSystemProperties(): Map<String, String> {
     return safeOf(emptyMap()) {
         val raw = RuntimeCommandExecutor.execute("getprop").stdout
         parseSystemPropertiesOutput(raw)
+    }
+}
+
+private suspend fun readAllSystemPropertiesAsync(
+    dispatcher: CoroutineDispatcher
+): Map<String, String> {
+    return withContext(dispatcher) {
+        runCatching {
+            val raw = RuntimeCommandExecutor.executeAsync("getprop").stdout
+            parseSystemPropertiesOutput(raw)
+        }.getOrDefault(emptyMap())
     }
 }
 

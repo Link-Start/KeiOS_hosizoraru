@@ -161,23 +161,24 @@ internal fun BaPageCommonEffects(
         onServerChanged()
     }
 
-    val apDisplay = displayAp(office.apCurrent)
-    val apLimitDisplay = office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX)
-    val apThresholdDisplay = office.apNotifyThreshold.coerceIn(0, BA_AP_MAX)
-    LaunchedEffect(
-        apDisplay,
-        apLimitDisplay,
-        apThresholdDisplay,
-        office.apNotifyEnabled
-    ) {
-        val thresholdNotificationSent = office.tryApThresholdNotification(context)
-        if (!thresholdNotificationSent) {
-            BaApNotificationDispatcher.refreshIfActive(
-                context = context,
-                currentDisplay = apDisplay,
-                limitDisplay = apLimitDisplay,
-                thresholdDisplay = apThresholdDisplay
+    LaunchedEffect(context, office) {
+        val notificationContext = context.applicationContext
+        snapshotFlow {
+            BaApNotificationSyncRequest(
+                currentDisplay = displayAp(office.apCurrent),
+                limitDisplay = office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX),
+                thresholdDisplay = office.apNotifyThreshold.coerceIn(0, BA_AP_MAX),
+                notifyEnabled = office.apNotifyEnabled,
             )
         }
+            .distinctUntilChanged()
+            .collectLatest { request ->
+                delay(250.milliseconds)
+                BaApNotificationSyncCoordinator.sync(
+                    context = notificationContext,
+                    office = office,
+                    request = request,
+                )
+            }
     }
 }

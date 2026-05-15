@@ -484,26 +484,11 @@ internal class BaOfficeController(
         return true
     }
 
-    fun tryApThresholdNotification(context: Context): Boolean {
-        if (!apNotifyEnabled) {
-            apLastNotifiedLevel = -1
-            BASettingsStore.saveApLastNotifiedLevel(-1)
-            return false
-        }
-        val threshold = apNotifyThreshold.coerceIn(0, BA_AP_MAX)
-        val currentDisplay = displayAp(apCurrent)
-        if (currentDisplay < threshold) {
-            apLastNotifiedLevel = -1
-            BASettingsStore.saveApLastNotifiedLevel(-1)
-            return false
-        }
-        if (currentDisplay == apLastNotifiedLevel) return false
-        if (sendApTestNotification(context = context, showToast = false, thresholdTriggered = true)) {
-            apLastNotifiedLevel = currentDisplay
-            BASettingsStore.saveApLastNotifiedLevel(currentDisplay)
-            return true
-        }
-        return false
+    fun updateApLastNotifiedLevelIfChanged(level: Int) {
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        if (apLastNotifiedLevel == normalized) return
+        apLastNotifiedLevel = normalized
+        BASettingsStore.saveApLastNotifiedLevel(normalized)
     }
 }
 

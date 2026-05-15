@@ -211,7 +211,7 @@ internal fun applyBaApRegenTick(
 
     val current = apCurrent.coerceAtLeast(0.0)
     val ensuredBase = if (apRegenBaseMs <= 0L) nowMs else apRegenBaseMs
-    if (current >= limit.toDouble()) return current to nowMs
+    if (current >= limit.toDouble()) return current to ensuredBase
 
     val elapsed = (nowMs - ensuredBase).coerceAtLeast(0L)
     val gained = (elapsed / BA_AP_REGEN_INTERVAL_MS).toInt()

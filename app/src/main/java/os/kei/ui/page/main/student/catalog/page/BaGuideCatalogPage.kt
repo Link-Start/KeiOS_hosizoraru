@@ -45,7 +45,6 @@ import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
-import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
@@ -57,7 +56,6 @@ import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.favoriteBgmCachedBytes
-import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.resolvePlaybackArtworkImageUrl
@@ -249,22 +247,14 @@ fun BaGuideCatalogPage(
 
     fun cacheAllFavoriteBgms() {
         pageScope.launch {
-            val targets = favoriteBgms.filter { favorite ->
-                favorite.audioUrl.isNotBlank() && !isFavoriteBgmCached(appContext, favorite)
-            }
-            targets.forEach { favorite ->
-                runCatching {
-                    BaGuideTempMediaCache.prefetchForGuide(
-                        context = appContext,
-                        sourceUrl = favoriteCacheScope(favorite),
-                        rawUrls = listOf(favorite.audioUrl)
-                    )
-                }
-            }
+            val targetCount = cacheMissingFavoriteBgmsAsync(
+                context = appContext,
+                favorites = favoriteBgms
+            )
             bgmCacheRevision += 1
             Toast.makeText(
                 context,
-                context.resolveString(R.string.ba_catalog_bgm_cache_batch_done, targets.size),
+                context.resolveString(R.string.ba_catalog_bgm_cache_batch_done, targetCount),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -272,13 +262,10 @@ fun BaGuideCatalogPage(
 
     fun cleanInvalidFavoriteBgmCache() {
         pageScope.launch {
-            var cleaned = 0
-            favoriteBgms.forEach { favorite ->
-                val before = favoriteBgmCachedBytes(appContext, favorite)
-                isFavoriteBgmCached(appContext, favorite)
-                val after = favoriteBgmCachedBytes(appContext, favorite)
-                if (before > 0L && after <= 0L) cleaned += 1
-            }
+            val cleaned = cleanInvalidFavoriteBgmCacheAsync(
+                context = appContext,
+                favorites = favoriteBgms
+            )
             bgmCacheRevision += 1
             Toast.makeText(
                 context,

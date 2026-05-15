@@ -63,7 +63,8 @@ internal object GameKeeMediaImageLoader {
                     BaGuideTempMediaCache.prefetchForGuide(
                         context = context.applicationContext,
                         sourceUrl = GUIDE_INLINE_GIF_CACHE_SCOPE,
-                        rawUrls = listOf(normalized)
+                        rawUrls = listOf(normalized),
+                        ioDispatcher = ioDispatcher
                     )
                 }
                 var resolved = BaGuideTempMediaCache.resolveCachedUrl(
@@ -77,7 +78,8 @@ internal object GameKeeMediaImageLoader {
                             context = context.applicationContext,
                             sourceUrl = GUIDE_INLINE_GIF_CACHE_SCOPE,
                             rawUrls = listOf(normalized),
-                            forceReDownload = true
+                            forceReDownload = true,
+                            ioDispatcher = ioDispatcher
                         )
                     }
                     resolved = BaGuideTempMediaCache.resolveCachedUrl(

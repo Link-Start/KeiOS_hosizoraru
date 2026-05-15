@@ -37,7 +37,8 @@ internal class BaStudentGuideRepository(
             BaGuideTempMediaCache.prefetchForGuide(
                 context = context,
                 sourceUrl = sourceUrl,
-                rawUrls = rawUrls
+                rawUrls = rawUrls,
+                ioDispatcher = ioDispatcher
             )
         }
     }

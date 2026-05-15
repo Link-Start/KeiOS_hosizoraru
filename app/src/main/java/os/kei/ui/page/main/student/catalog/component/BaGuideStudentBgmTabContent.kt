@@ -336,7 +336,8 @@ internal fun BaGuideStudentBgmTabContent(
     LaunchedEffect(catalog.syncedAtMs) {
         lookupCoordinator.clear()
     }
-    LaunchedEffect(displayedBgmModel.contentIds) {
+    LaunchedEffect(displayedBgmModel.contentIds, isPageActive) {
+        if (!isPageActive) return@LaunchedEffect
         lookupCoordinator.prewarmCached(displayedEntries)
     }
     LaunchedEffect(selectedFavorite?.audioUrl) {

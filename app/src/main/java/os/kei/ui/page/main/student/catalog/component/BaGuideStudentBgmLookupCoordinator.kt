@@ -4,6 +4,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,12 +13,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val BGM_CACHE_PREWARM_BATCH_SIZE = 32
+private const val BGM_CACHE_PREWARM_PARALLELISM = 4
 
 internal class BaGuideStudentBgmLookupCoordinator(
     private val scope: CoroutineScope,
@@ -59,11 +64,21 @@ internal class BaGuideStudentBgmLookupCoordinator(
         if (pendingEntries.isEmpty()) return
         cachePrewarmJob?.cancel()
         cachePrewarmJob = scope.launch {
+            val semaphore = Semaphore(BGM_CACHE_PREWARM_PARALLELISM)
             pendingEntries.chunked(BGM_CACHE_PREWARM_BATCH_SIZE).forEach { batch ->
                 currentCoroutineContext().ensureActive()
-                val cached = batch.mapNotNull { entry ->
-                    cachedLoader(entry)?.let { item -> entry.contentId to item }
-                }
+                val cached = batch
+                    .map { entry ->
+                        async {
+                            semaphore.withPermit {
+                                runCatchingCancellable {
+                                    cachedLoader(entry)?.let { item -> entry.contentId to item }
+                                }.getOrNull()
+                            }
+                        }
+                    }
+                    .awaitAll()
+                    .filterNotNull()
                 if (cached.isNotEmpty()) {
                     _states.update { states ->
                         states + cached.associate { (contentId, item) ->

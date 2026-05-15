@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
 import os.kei.core.prefs.KeiMmkv
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -66,6 +67,8 @@ object BaGuideTempMediaCache {
     private const val MAX_TOTAL_CACHE_BYTES = 256L * 1024L * 1024L
     private const val SESSION_TTL_MS = 72L * 60L * 60L * 1000L
     private const val PRUNE_MIN_INTERVAL_MS = 30L * 60L * 1000L
+    private const val INDEX_STALE_CHECK_MIN_INTERVAL_MS = 5L * 60L * 1000L
+    private const val VALIDATION_CACHE_MAX_SIZE = 2048
     private const val INDEX_KV_ID = "ba_student_guide_temp_media_index"
     private const val INDEX_VERSION = 1
     private const val KEY_INDEX_VERSION = "index_version"
@@ -73,7 +76,9 @@ object BaGuideTempMediaCache {
 
     private val indexStore: MMKV by lazy { KeiMmkv.byId(INDEX_KV_ID) }
     private val downloadLocks = ConcurrentHashMap<String, DownloadLock>()
+    private val mediaValidationCache = ConcurrentHashMap<String, Boolean>()
     private val lastPruneAtMs = AtomicLong(0L)
+    private val lastIndexStaleCheckAtMs = AtomicLong(0L)
 
     private data class DownloadLock(
         val mutex: Mutex = Mutex(),
@@ -172,6 +177,29 @@ object BaGuideTempMediaCache {
 
     private fun isUsableCachedMedia(url: String, file: File): Boolean {
         if (!file.exists() || file.length() <= 0L) return false
+        val cacheKey = mediaValidationCacheKey(url, file)
+        mediaValidationCache[cacheKey]?.let { cached -> return cached }
+        val valid = validateCachedMediaFile(url, file)
+        if (mediaValidationCache.size >= VALIDATION_CACHE_MAX_SIZE) {
+            mediaValidationCache.clear()
+        }
+        mediaValidationCache[cacheKey] = valid
+        return valid
+    }
+
+    private fun mediaValidationCacheKey(url: String, file: File): String {
+        return buildString {
+            append(url)
+            append('|')
+            append(file.absolutePath)
+            append('|')
+            append(file.length())
+            append('|')
+            append(file.lastModified())
+        }
+    }
+
+    private fun validateCachedMediaFile(url: String, file: File): Boolean {
         val strictGif = looksLikeGifUrl(url) || file.extension.equals("gif", ignoreCase = true)
         val fileLooksLikeGif = hasGifHeader(file)
         if (strictGif || fileLooksLikeGif) {
@@ -285,8 +313,9 @@ object BaGuideTempMediaCache {
         context: Context,
         sourceUrl: String,
         rawUrls: List<String>,
-        forceReDownload: Boolean = false
-    ) = withContext(Dispatchers.IO) {
+        forceReDownload: Boolean = false,
+        ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ) = withContext(ioDispatcher) {
         val dir = sessionDir(context, sourceUrl)
         dir.mkdirs()
         val targets = rawUrls
@@ -488,6 +517,7 @@ object BaGuideTempMediaCache {
         kv.removeValueForKey(KEY_SESSION_IDS)
         kv.removeValueForKey(KEY_INDEX_VERSION)
         kv.trim()
+        lastIndexStaleCheckAtMs.set(System.currentTimeMillis())
     }
 
     private fun removeSessionIndex(sourceUrl: String) {
@@ -539,6 +569,7 @@ object BaGuideTempMediaCache {
                 kv = kv
             )
         }
+        lastIndexStaleCheckAtMs.set(System.currentTimeMillis())
         return aggregateSummaryFromIndex(kv)
     }
 
@@ -628,9 +659,16 @@ object BaGuideTempMediaCache {
                 val hasFiles = root.listFiles().orEmpty().any { it.isDirectory }
                 if (hasFiles) rebuildAllIndex(context) else MediaSummary(count = 0, bytes = 0L, latest = 0L)
             }
-            hasStaleIndexedSessions(context, kv) -> rebuildAllIndex(context)
+            shouldCheckIndexedSessions() && hasStaleIndexedSessions(context, kv) -> rebuildAllIndex(context)
             else -> aggregateSummaryFromIndex(kv)
         }
+    }
+
+    private fun shouldCheckIndexedSessions(): Boolean {
+        val now = System.currentTimeMillis()
+        val lastCheck = lastIndexStaleCheckAtMs.get()
+        if (lastCheck > 0L && now - lastCheck < INDEX_STALE_CHECK_MIN_INTERVAL_MS) return false
+        return lastIndexStaleCheckAtMs.compareAndSet(lastCheck, now)
     }
 
     private fun hasStaleIndexedSessions(context: Context, kv: MMKV = indexStore): Boolean {

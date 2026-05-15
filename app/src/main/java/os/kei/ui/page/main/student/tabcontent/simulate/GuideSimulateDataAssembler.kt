@@ -61,7 +61,9 @@ internal fun buildGuideSimulateData(rows: List<BaGuideRow>): GuideSimulateData {
         maxHint = hints["顶级数据"].orEmpty(),
         maxRows = expandSimulateRows(sections["顶级数据"].orEmpty()),
         weaponHint = hints["专武"].orEmpty(),
-        weaponRows = expandSimulateRows(sections["专武"].orEmpty()),
+        weaponRows = sanitizeSimulateWeaponRows(
+            expandSimulateRows(sections["专武"].orEmpty())
+        ),
         equipmentHint = hints["装备"].orEmpty(),
         equipmentRows = expandSimulateRows(sections["装备"].orEmpty()),
         favorHint = hints["爱用品"].orEmpty(),

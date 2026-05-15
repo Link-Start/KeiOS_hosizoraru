@@ -45,6 +45,13 @@ internal fun sanitizeSimulateFavorRows(rows: List<BaGuideRow>): List<BaGuideRow>
         }
 }
 
+internal fun sanitizeSimulateWeaponRows(rows: List<BaGuideRow>): List<BaGuideRow> {
+    if (rows.isEmpty()) return emptyList()
+    return rows.filterNot { row ->
+        isSimulateZeroBlankInstruction(row.value)
+    }
+}
+
 internal fun sanitizeSimulateBondRows(rows: List<BaGuideRow>): List<BaGuideRow> {
     if (rows.isEmpty()) return emptyList()
     return rows.filterNot { row ->
@@ -234,4 +241,15 @@ internal fun buildSimulateWeaponViewData(rows: List<BaGuideRow>): SimulateWeapon
         imageUrl = imageUrl,
         statRows = statRows
     )
+}
+
+private fun isSimulateZeroBlankInstruction(raw: String): Boolean {
+    if (raw.isBlank()) return false
+    val normalized = raw
+        .replace("０", "0")
+        .replace(Regex("""[\s　*＊,，.。;；:：/／|｜_\-—~·]+"""), "")
+        .trim()
+    return normalized.contains("0") &&
+        normalized.contains("格") &&
+        normalized.contains("留空")
 }

@@ -4,14 +4,49 @@ import android.os.Build
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.findJavaPropString
 import os.kei.core.system.findPropString
+import java.util.concurrent.ConcurrentHashMap
+
+private const val INFO_COMMAND_CACHE_TTL_NANOS = 15_000_000_000L
 
 private fun exec(command: String): String {
     return RuntimeCommandExecutor.execute(command).stdout
 }
 
+private data class TimedCommandValue(
+    val value: String,
+    val capturedAtNanos: Long
+) {
+    fun isFresh(nowNanos: Long): Boolean {
+        val age = nowNanos - capturedAtNanos
+        return age in 0..INFO_COMMAND_CACHE_TTL_NANOS
+    }
+}
+
+private class TimedCommandCache {
+    private val values = ConcurrentHashMap<String, TimedCommandValue>()
+
+    fun get(command: String, loader: () -> String): String {
+        val now = System.nanoTime()
+        values[command]?.takeIf { it.isFresh(now) }?.let { return it.value }
+        return synchronized(this) {
+            val lockedNow = System.nanoTime()
+            values[command]?.takeIf { it.isFresh(lockedNow) }?.let { return@synchronized it.value }
+            val loaded = loader()
+            values[command] = TimedCommandValue(loaded, lockedNow)
+            loaded
+        }
+    }
+}
+
+private val commandCache = TimedCommandCache()
+
+private fun cachedExec(command: String): String {
+    return commandCache.get(command) { exec(command).trim() }
+}
+
 object InfoFactory {
     val procVersion
-        get() = exec("cat /proc/version").trim()
+        get() = cachedExec("cat /proc/version")
 
     val vendorBuildSecurityPatch
         get() = findPropString("ro.vendor.build.security_patch")
@@ -20,7 +55,7 @@ object InfoFactory {
         get() = findPropString("ro.boot.slot_suffix")
 
     val toyboxVersion
-        get() = exec("toybox --version").trim()
+        get() = cachedExec("toybox --version")
 
     val systemBuildId
         get() = findPropString("ro.system.build.id")
@@ -194,7 +229,7 @@ object InfoFactory {
         get() = findPropString("persist.sys.stability.miui_fbo_enable").toBoolean()
 
     private val selinux
-        get() = exec("cat /sys/fs/selinux/enforce").trim()
+        get() = cachedExec("cat /sys/fs/selinux/enforce")
 
     val selinuxBoolean
         get() = selinux == "1"
@@ -210,7 +245,7 @@ object InfoFactory {
         get() = Build.VERSION.PREVIEW_SDK_INT != 0
 
     val fileSaf
-        get() = exec("pm resolve-activity -a android.intent.action.CREATE_DOCUMENT -c android.intent.category.OPENABLE -t application/zip").trim()
+        get() = cachedExec("pm resolve-activity -a android.intent.action.CREATE_DOCUMENT -c android.intent.category.OPENABLE -t application/zip")
 
     val fileSafStatus
         get() = fileSaf != "No activity found"

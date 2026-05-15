@@ -9,8 +9,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
-import os.kei.core.system.getAllJavaPropString
-import os.kei.core.system.getAllSystemProperties
+import os.kei.core.system.getAllJavaPropertiesSnapshot
+import os.kei.core.system.getAllSystemPropertiesSnapshot
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -114,6 +114,64 @@ internal fun commandRows(command: String, shizukuApiUtils: ShizukuApiUtils): Lis
     return parseKeyValueLines(shizuku ?: runtime)
 }
 
+private val linuxProbeCommand = listOf(
+    "printf 'uname-a=%s\\n' \"\$(uname -a 2>/dev/null | head -n 1)\"",
+    "printf 'getenforce=%s\\n' \"\$(getenforce 2>/dev/null | head -n 1)\"",
+    "printf 'proc.version=%s\\n' \"\$(cat /proc/version 2>/dev/null | head -n 1)\"",
+    "printf 'toybox --version=%s\\n' \"\$(toybox --version 2>/dev/null | head -n 1)\""
+).joinToString(separator = "; ")
+
+internal data class OsLinuxCommandSnapshot(
+    val uname: String = "",
+    val getenforce: String = "",
+    val procVersion: String = "",
+    val toyboxVersion: String = ""
+)
+
+internal data class OsLinuxProbeSnapshot(
+    val runtime: OsLinuxCommandSnapshot,
+    val shizuku: OsLinuxCommandSnapshot
+)
+
+internal data class OsPageDataSnapshot(
+    val systemProperties: Map<String, String>? = null,
+    val javaProperties: Map<String, String>? = null,
+    val linuxProbe: OsLinuxProbeSnapshot? = null
+) {
+    companion object {
+        fun loadForExport(shizukuApiUtils: ShizukuApiUtils): OsPageDataSnapshot {
+            return OsPageDataSnapshot(
+                systemProperties = getAllSystemPropertiesSnapshot(forceRefresh = true),
+                javaProperties = getAllJavaPropertiesSnapshot(forceRefresh = true),
+                linuxProbe = loadLinuxProbeSnapshot(shizukuApiUtils)
+            )
+        }
+    }
+}
+
+private fun parseLinuxCommandSnapshot(raw: String?): OsLinuxCommandSnapshot {
+    val rows = parseKeyValueLines(raw).associate { it.key to it.value }
+    return OsLinuxCommandSnapshot(
+        uname = rows["uname-a"].orEmpty(),
+        getenforce = rows["getenforce"].orEmpty(),
+        procVersion = rows["proc.version"].orEmpty(),
+        toyboxVersion = rows["toybox --version"].orEmpty()
+    )
+}
+
+private fun loadLinuxProbeSnapshot(shizukuApiUtils: ShizukuApiUtils): OsLinuxProbeSnapshot {
+    return OsLinuxProbeSnapshot(
+        runtime = parseLinuxCommandSnapshot(execRuntimeCommand(linuxProbeCommand)),
+        shizuku = parseLinuxCommandSnapshot(shizukuApiUtils.execCommand(linuxProbeCommand))
+    )
+}
+
+private fun OsLinuxProbeSnapshot.preferredValue(
+    selector: OsLinuxCommandSnapshot.() -> String
+): String {
+    return shizuku.selector().ifBlank { runtime.selector() }
+}
+
 internal fun decodeVulkanApiVersion(version: Int): String {
     if (version <= 0) return ""
     val major = version shr 22
@@ -157,7 +215,7 @@ internal fun boolFeatureRow(pm: PackageManager, featureName: String, label: Stri
 
 internal fun graphicsRows(
     context: Context,
-    systemProperties: Map<String, String> = getAllSystemProperties
+    systemProperties: Map<String, String> = getAllSystemPropertiesSnapshot()
 ): List<InfoRow> {
     val pm = context.packageManager
     val features = pm.systemAvailableFeatures
@@ -224,14 +282,17 @@ internal fun buildSectionRows(
     section: SectionKind,
     context: Context,
     shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils
+    shizukuApiUtils: ShizukuApiUtils,
+    forceRefresh: Boolean = false,
+    dataSnapshot: OsPageDataSnapshot? = null
 ): List<InfoRow> {
     return when (section) {
         SectionKind.SYSTEM -> cleanRows(commandRows("settings list system", shizukuApiUtils))
         SectionKind.SECURE -> cleanRows(commandRows("settings list secure", shizukuApiUtils))
         SectionKind.GLOBAL -> cleanRows(commandRows("settings list global", shizukuApiUtils))
         SectionKind.ANDROID -> {
-            val systemProperties = getAllSystemProperties
+            val systemProperties = dataSnapshot?.systemProperties
+                ?: getAllSystemPropertiesSnapshot(forceRefresh = forceRefresh)
             cleanRows(
                 graphicsRows(context, systemProperties) +
                     capabilityRows(context) +
@@ -239,40 +300,31 @@ internal fun buildSectionRows(
             )
         }
         SectionKind.JAVA -> cleanRows(
-            getAllJavaPropString.toSortedMap().map { InfoRow(it.key, it.value) }
+            (dataSnapshot?.javaProperties ?: getAllJavaPropertiesSnapshot(forceRefresh = forceRefresh))
+                .toSortedMap()
+                .map { InfoRow(it.key, it.value) }
         )
         SectionKind.LINUX -> {
-            val runtimeUname = execRuntimeCommand("uname -a")
-            val runtimeGetenforce = execRuntimeCommand("getenforce")
-            val runtimeProcVersion = execRuntimeCommand("cat /proc/version")
-            val runtimeToybox = execRuntimeCommand("toybox --version")
-
-            val shizukuUname = shizukuApiUtils.execCommand("uname -a")
-            val shizukuGetenforce = shizukuApiUtils.execCommand("getenforce")
-            val shizukuProcVersion = shizukuApiUtils.execCommand("cat /proc/version")
-            val shizukuToybox = shizukuApiUtils.execCommand("toybox --version")
-
+            val linuxProbe = dataSnapshot?.linuxProbe ?: loadLinuxProbeSnapshot(shizukuApiUtils)
             val envRows = System.getenv().toSortedMap().map { InfoRow("env.${it.key}", it.value) }
             cleanRows(
                 listOf(
                     InfoRow("Shizuku Status", shizukuStatus),
                     InfoRow(
                         "uname-a",
-                        shizukuUname?.lineSequence()?.firstOrNull() ?: runtimeUname.orEmpty()
+                        linuxProbe.preferredValue { uname }
                     ),
                     InfoRow(
                         "getenforce",
-                        shizukuGetenforce?.lineSequence()?.firstOrNull()
-                            ?: runtimeGetenforce.orEmpty()
+                        linuxProbe.preferredValue { getenforce }
                     ),
                     InfoRow(
                         "proc.version",
-                        shizukuProcVersion?.lineSequence()?.firstOrNull()
-                            ?: runtimeProcVersion.orEmpty()
+                        linuxProbe.preferredValue { procVersion }
                     ),
                     InfoRow(
                         "toybox --version",
-                        shizukuToybox?.lineSequence()?.firstOrNull() ?: runtimeToybox.orEmpty()
+                        linuxProbe.preferredValue { toyboxVersion }
                     )
                 ) + envRows
             )
@@ -296,12 +348,13 @@ internal fun buildExportSections(
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils
 ): ExportSections {
-    val system = buildSectionRows(SectionKind.SYSTEM, context, shizukuStatus, shizukuApiUtils)
-    val secure = buildSectionRows(SectionKind.SECURE, context, shizukuStatus, shizukuApiUtils)
-    val global = buildSectionRows(SectionKind.GLOBAL, context, shizukuStatus, shizukuApiUtils)
-    val android = buildSectionRows(SectionKind.ANDROID, context, shizukuStatus, shizukuApiUtils)
-    val java = buildSectionRows(SectionKind.JAVA, context, shizukuStatus, shizukuApiUtils)
-    val linux = buildSectionRows(SectionKind.LINUX, context, shizukuStatus, shizukuApiUtils)
+    val snapshot = OsPageDataSnapshot.loadForExport(shizukuApiUtils)
+    val system = buildSectionRows(SectionKind.SYSTEM, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
+    val secure = buildSectionRows(SectionKind.SECURE, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
+    val global = buildSectionRows(SectionKind.GLOBAL, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
+    val android = buildSectionRows(SectionKind.ANDROID, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
+    val java = buildSectionRows(SectionKind.JAVA, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
+    val linux = buildSectionRows(SectionKind.LINUX, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
     val topInfo = buildTopInfoRows(system, secure, global, android, java, linux)
 
     return ExportSections(

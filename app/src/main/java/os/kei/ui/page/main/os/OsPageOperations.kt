@@ -56,7 +56,13 @@ internal suspend fun ensureOsSectionLoaded(
             }
             updateSection(section) { it.copy(loading = true, loadFailed = false) }
             loadDeferred = scope.async(Dispatchers.IO) {
-                buildSectionRows(section, context, shizukuStatus, shizukuApiUtils)
+                buildSectionRows(
+                    section = section,
+                    context = context,
+                    shizukuStatus = shizukuStatus,
+                    shizukuApiUtils = shizukuApiUtils,
+                    forceRefresh = forceRefresh
+                )
             }
             sectionLoadDeferreds[section] = loadDeferred
             isLoadOwner = true

@@ -30,8 +30,8 @@ import os.kei.ui.page.main.student.page.support.GuideMediaPackSaveRequest
 import os.kei.ui.page.main.student.page.support.GuideMediaSaveRequest
 import os.kei.ui.page.main.student.page.support.buildGuideMediaPackSaveRequest
 import os.kei.ui.page.main.student.page.support.buildGuideMediaSaveRequest
-import os.kei.ui.page.main.student.page.support.copyGuideMediaPackToUri
-import os.kei.ui.page.main.student.page.support.copyGuideMediaToUri
+import os.kei.ui.page.main.student.page.support.copyGuideMediaPackToUriAsync
+import os.kei.ui.page.main.student.page.support.copyGuideMediaToUriAsync
 import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
 import os.kei.ui.page.main.student.page.support.normalizeGuidePlaybackSource
 
@@ -65,9 +65,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
             return@rememberLauncherForActivityResult
         }
         pageScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                copyGuideMediaToUri(context, request.sourceUrl, targetUri)
-            }
+            val success = copyGuideMediaToUriAsync(context, request.sourceUrl, targetUri)
             if (success) {
                 Toast.makeText(
                     context,
@@ -105,15 +103,18 @@ internal fun rememberBaStudentGuideMediaSaveAction(
         BASettingsStore.saveMediaSaveFixedTreeUri(treeUri.toString())
         pendingFixedSaveRequest = null
         pageScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext false
+            val targetUri = withContext(Dispatchers.IO) {
+                val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
                 val targetDoc = createUniqueDocumentInTree(
                     tree = treeDoc,
                     mimeType = request.mimeType,
                     fileName = request.fileName
-                ) ?: return@withContext false
-                copyGuideMediaToUri(context, request.sourceUrl, targetDoc.uri)
+                ) ?: return@withContext null
+                targetDoc.uri
             }
+            val success = targetUri?.let { uri ->
+                copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
+            } == true
             if (success) {
                 Toast.makeText(
                     context,
@@ -160,16 +161,19 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                     }
                     if (fixedTreeUri != null) {
                         pageScope.launch {
-                            val success = withContext(Dispatchers.IO) {
+                            val targetUri = withContext(Dispatchers.IO) {
                                 val treeDoc = DocumentFile.fromTreeUri(context, fixedTreeUri)
-                                    ?: return@withContext false
+                                    ?: return@withContext null
                                 val targetDoc = createUniqueDocumentInTree(
                                     tree = treeDoc,
                                     mimeType = request.mimeType,
                                     fileName = request.fileName
-                                ) ?: return@withContext false
-                                copyGuideMediaToUri(context, request.sourceUrl, targetDoc.uri)
+                                ) ?: return@withContext null
+                                targetDoc.uri
                             }
+                            val success = targetUri?.let { uri ->
+                                copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
+                            } == true
                             if (success) {
                                 Toast.makeText(
                                     context,
@@ -232,13 +236,11 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
             return@rememberLauncherForActivityResult
         }
         pageScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                copyGuideMediaPackToUri(
-                    context = context,
-                    request = request,
-                    outputUri = targetUri
-                )
-            }
+            val result = copyGuideMediaPackToUriAsync(
+                context = context,
+                request = request,
+                outputUri = targetUri
+            )
             if (result.success) {
                 Toast.makeText(
                     context,
@@ -281,17 +283,20 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
         BASettingsStore.saveMediaSaveFixedTreeUri(treeUri.toString())
         pendingFixedPackSaveRequest = null
         pageScope.launch {
-            val result = withContext(Dispatchers.IO) {
+            val targetUri = withContext(Dispatchers.IO) {
                 val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
                 val targetDoc = createUniqueDocumentInTree(
                     tree = treeDoc,
                     mimeType = "application/zip",
                     fileName = request.fileName
                 ) ?: return@withContext null
-                copyGuideMediaPackToUri(
+                targetDoc.uri
+            }
+            val result = targetUri?.let { uri ->
+                copyGuideMediaPackToUriAsync(
                     context = context,
                     request = request,
-                    outputUri = targetDoc.uri
+                    outputUri = uri
                 )
             }
             if (result?.success == true) {
@@ -340,18 +345,21 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                     }
                     if (fixedTreeUri != null) {
                         pageScope.launch {
-                            val (treeReady, result) = withContext(Dispatchers.IO) {
+                            val targetUri = withContext(Dispatchers.IO) {
                                 val treeDoc = DocumentFile.fromTreeUri(context, fixedTreeUri)
-                                    ?: return@withContext false to null
+                                    ?: return@withContext null
                                 val targetDoc = createUniqueDocumentInTree(
                                     tree = treeDoc,
                                     mimeType = "application/zip",
                                     fileName = request.fileName
-                                ) ?: return@withContext false to null
-                                true to copyGuideMediaPackToUri(
+                                ) ?: return@withContext null
+                                targetDoc.uri
+                            }
+                            val result = targetUri?.let { uri ->
+                                copyGuideMediaPackToUriAsync(
                                     context = context,
                                     request = request,
-                                    outputUri = targetDoc.uri
+                                    outputUri = uri
                                 )
                             }
                             if (result?.success == true) {
@@ -365,7 +373,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                                     ),
                                     Toast.LENGTH_SHORT
                                 ).show()
-                            } else if (treeReady) {
+                            } else if (targetUri != null) {
                                 Toast.makeText(
                                     context,
                                     context.resolveString(R.string.guide_media_pack_save_failed),

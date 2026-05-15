@@ -104,24 +104,19 @@ internal fun BaGuideBgmAlbumContent(
                 promoteSectionTitle = promoteSectionTitle
             )
         }
-        item(
-            key = "ba-guide-bgm-track-list",
-            contentType = "ba_guide_bgm_track_list"
-        ) {
-            BaGuideBgmTrackList(
-                tracks = tracks,
-                currentTrackId = currentTrackId,
-                isPlaying = isPlaying,
-                accent = accent,
-                backdrop = contentBackdrop,
-                isTrackFavorite = isTrackFavorite,
-                isTrackOfflineSaved = isTrackOfflineSaved,
-                onTrackClick = onTrackClick,
-                onTrackFavoriteClick = onTrackFavoriteClick,
-                onTrackOfflineClick = onTrackOfflineClick,
-                onTrackShareClick = onTrackShareClick
-            )
-        }
+        renderBaGuideBgmTrackList(
+            tracks = tracks,
+            currentTrackId = currentTrackId,
+            isPlaying = isPlaying,
+            accent = accent,
+            backdrop = contentBackdrop,
+            isTrackFavorite = isTrackFavorite,
+            isTrackOfflineSaved = isTrackOfflineSaved,
+            onTrackClick = onTrackClick,
+            onTrackFavoriteClick = onTrackFavoriteClick,
+            onTrackOfflineClick = onTrackOfflineClick,
+            onTrackShareClick = onTrackShareClick
+        )
         if (showFooter) {
             item(
                 key = "ba-guide-bgm-album-footer",

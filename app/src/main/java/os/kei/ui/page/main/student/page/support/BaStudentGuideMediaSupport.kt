@@ -12,6 +12,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import os.kei.feature.ba.data.remote.GameKeeNetworkClient
 import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.student.BaGuideGalleryItem
@@ -24,11 +30,13 @@ import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.InputStream
+import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.coroutines.cancellation.CancellationException
 
 internal fun normalizeGuidePlaybackSource(raw: String): String {
     val value = raw.trim()
@@ -109,6 +117,8 @@ internal data class GuideMediaPackSaveResult(
     val success: Boolean
         get() = savedCount > 0
 }
+
+private const val GUIDE_MEDIA_COPY_YIELD_BYTES = 512 * 1024
 
 private fun sanitizeGuideMediaTitle(raw: String): String {
     val cleaned = raw
@@ -317,78 +327,107 @@ internal fun buildGuideMediaPackSaveRequest(
     )
 }
 
-private inline fun copyGuideMediaFromSource(
-    context: Context,
-    sourceUrl: String,
-    onInputStream: (InputStream) -> Boolean
-): Boolean {
-    return runCatching {
-        val normalized = normalizeGuidePlaybackSource(sourceUrl)
-        if (normalized.isBlank()) {
-            false
-        } else {
-            val sourceUri = runCatching { normalized.toUri() }.getOrNull()
-            val scheme = sourceUri?.scheme.orEmpty().lowercase()
-            when {
-                scheme == "file" -> {
-                    val path = sourceUri?.path.orEmpty()
-                    if (path.isBlank()) {
-                        false
-                    } else {
-                        File(path).inputStream().use(onInputStream)
-                    }
-                }
-
-                scheme == "content" -> {
-                    val parsedUri = sourceUri
-                    val input = parsedUri?.let { context.contentResolver.openInputStream(it) }
-                    if (input == null) {
-                        false
-                    } else {
-                        input.use(onInputStream)
-                    }
-                }
-
-                scheme == "http" || scheme == "https" || normalized.startsWith("//") -> {
-                    val tempDir = File(context.cacheDir, "guide_media_save")
-                    if (!tempDir.exists()) tempDir.mkdirs()
-                    val tempFile = File(tempDir, "tmp_${System.nanoTime().toString(16)}")
-                    try {
-                        val downloaded =
-                            GameKeeNetworkClient.downloadToFile(
-                                normalized,
-                                tempFile
-                            ) is GameKeeNetworkResult.Success
-                        if (!downloaded || !tempFile.exists() || tempFile.length() <= 0L) {
-                            false
-                        } else {
-                            tempFile.inputStream().use(onInputStream)
-                        }
-                    } finally {
-                        runCatching { tempFile.delete() }
-                    }
-                }
-
-                else -> false
-            }
+private suspend fun InputStream.copyToCancellable(output: OutputStream): Long {
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var copiedBytes = 0L
+    var bytesSinceYield = 0
+    while (true) {
+        currentCoroutineContext().ensureActive()
+        val read = read(buffer)
+        if (read < 0) break
+        output.write(buffer, 0, read)
+        copiedBytes += read.toLong()
+        bytesSinceYield += read
+        if (bytesSinceYield >= GUIDE_MEDIA_COPY_YIELD_BYTES) {
+            bytesSinceYield = 0
+            yield()
         }
-    }.getOrDefault(false)
+    }
+    return copiedBytes
 }
 
-internal fun copyGuideMediaToUri(
+private suspend fun copyGuideMediaFromSourceToOutput(
     context: Context,
     sourceUrl: String,
-    outputUri: Uri
+    output: OutputStream
 ): Boolean {
-    return runCatching {
-        val output = context.contentResolver.openOutputStream(outputUri) ?: return@runCatching false
-        output.use { out ->
-            copyGuideMediaFromSource(context, sourceUrl) { input ->
-                input.copyTo(out)
-                true
+    return try {
+        val normalized = normalizeGuidePlaybackSource(sourceUrl)
+        if (normalized.isBlank()) return false
+        val sourceUri = runCatching { normalized.toUri() }.getOrNull()
+        val scheme = sourceUri?.scheme.orEmpty().lowercase()
+        when {
+            scheme == "file" -> {
+                val path = sourceUri?.path.orEmpty()
+                if (path.isBlank()) {
+                    false
+                } else {
+                    File(path).inputStream().use { input ->
+                        input.copyToCancellable(output)
+                    }
+                    true
+                }
             }
+
+            scheme == "content" -> {
+                val input = sourceUri?.let { context.contentResolver.openInputStream(it) }
+                if (input == null) {
+                    false
+                } else {
+                    input.use { it.copyToCancellable(output) }
+                    true
+                }
+            }
+
+            scheme == "http" || scheme == "https" || normalized.startsWith("//") -> {
+                val tempDir = File(context.cacheDir, "guide_media_save")
+                if (!tempDir.exists()) tempDir.mkdirs()
+                val tempFile = File(tempDir, "tmp_${System.nanoTime().toString(16)}")
+                try {
+                    val downloaded = GameKeeNetworkClient.downloadToFile(
+                        normalized,
+                        tempFile
+                    ) is GameKeeNetworkResult.Success
+                    if (!downloaded || !tempFile.exists() || tempFile.length() <= 0L) {
+                        false
+                    } else {
+                        tempFile.inputStream().use { input ->
+                            input.copyToCancellable(output)
+                        }
+                        true
+                    }
+                } finally {
+                    runCatching { tempFile.delete() }
+                }
+            }
+
+            else -> false
         }
-    }.getOrDefault(false)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Throwable) {
+        false
+    }
+}
+
+internal suspend fun copyGuideMediaToUriAsync(
+    context: Context,
+    sourceUrl: String,
+    outputUri: Uri,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+): Boolean {
+    return withContext(ioDispatcher) {
+        try {
+            val output = context.contentResolver.openOutputStream(outputUri) ?: return@withContext false
+            output.use { out ->
+                copyGuideMediaFromSourceToOutput(context, sourceUrl, out)
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            false
+        }
+    }
 }
 
 private fun createUniqueZipEntryName(
@@ -415,48 +454,118 @@ private fun createUniqueZipEntryName(
     return fallback
 }
 
-internal fun copyGuideMediaPackToUri(
+private suspend fun copyGuideMediaFromSourceToZipEntry(
+    context: Context,
+    sourceUrl: String,
+    zip: ZipOutputStream,
+    entryName: String
+): Boolean {
+    var entryOpened = false
+    return try {
+        suspend fun copyInput(input: InputStream): Boolean {
+            zip.putNextEntry(ZipEntry(entryName))
+            entryOpened = true
+            input.use { it.copyToCancellable(zip) }
+            return true
+        }
+
+        val normalized = normalizeGuidePlaybackSource(sourceUrl)
+        if (normalized.isBlank()) return false
+        val sourceUri = runCatching { normalized.toUri() }.getOrNull()
+        val scheme = sourceUri?.scheme.orEmpty().lowercase()
+        when {
+            scheme == "file" -> {
+                val path = sourceUri?.path.orEmpty()
+                if (path.isBlank()) {
+                    false
+                } else {
+                    copyInput(File(path).inputStream())
+                }
+            }
+
+            scheme == "content" -> {
+                val input = sourceUri?.let { context.contentResolver.openInputStream(it) }
+                if (input == null) {
+                    false
+                } else {
+                    copyInput(input)
+                }
+            }
+
+            scheme == "http" || scheme == "https" || normalized.startsWith("//") -> {
+                val tempDir = File(context.cacheDir, "guide_media_save")
+                if (!tempDir.exists()) tempDir.mkdirs()
+                val tempFile = File(tempDir, "tmp_${System.nanoTime().toString(16)}")
+                try {
+                    val downloaded = GameKeeNetworkClient.downloadToFile(
+                        normalized,
+                        tempFile
+                    ) is GameKeeNetworkResult.Success
+                    if (!downloaded || !tempFile.exists() || tempFile.length() <= 0L) {
+                        false
+                    } else {
+                        copyInput(tempFile.inputStream())
+                    }
+                } finally {
+                    runCatching { tempFile.delete() }
+                }
+            }
+
+            else -> false
+        }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Throwable) {
+        false
+    } finally {
+        if (entryOpened) {
+            runCatching { zip.closeEntry() }
+        }
+    }
+}
+
+internal suspend fun copyGuideMediaPackToUriAsync(
     context: Context,
     request: GuideMediaPackSaveRequest,
-    outputUri: Uri
+    outputUri: Uri,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ): GuideMediaPackSaveResult {
-    val total = request.entries.size
-    if (total <= 0) return GuideMediaPackSaveResult(totalCount = 0, savedCount = 0)
-    var savedCount = 0
-    val success = runCatching {
-        val output = context.contentResolver.openOutputStream(outputUri) ?: return@runCatching false
-        output.use { out ->
-            ZipOutputStream(BufferedOutputStream(out)).use { zip ->
-                val usedEntryNames = mutableSetOf<String>()
-                request.entries.forEach { item ->
-                    val entryName = createUniqueZipEntryName(
-                        usedNames = usedEntryNames,
-                        rawFileName = item.fileName
-                    )
-                    var entryOpened = false
-                    val copied = copyGuideMediaFromSource(context, item.sourceUrl) { input ->
-                        runCatching {
-                            zip.putNextEntry(ZipEntry(entryName))
-                            entryOpened = true
-                            input.copyTo(zip)
-                            true
-                        }.getOrDefault(false)
-                    }
-                    if (entryOpened) {
-                        runCatching { zip.closeEntry() }
-                    }
-                    if (copied) {
-                        savedCount += 1
+    return withContext(ioDispatcher) {
+        val total = request.entries.size
+        if (total <= 0) return@withContext GuideMediaPackSaveResult(totalCount = 0, savedCount = 0)
+        var savedCount = 0
+        try {
+            val output = context.contentResolver.openOutputStream(outputUri)
+                ?: return@withContext GuideMediaPackSaveResult(totalCount = total, savedCount = 0)
+            output.use { out ->
+                ZipOutputStream(BufferedOutputStream(out)).use { zip ->
+                    val usedEntryNames = mutableSetOf<String>()
+                    request.entries.forEach { item ->
+                        currentCoroutineContext().ensureActive()
+                        val entryName = createUniqueZipEntryName(
+                            usedNames = usedEntryNames,
+                            rawFileName = item.fileName
+                        )
+                        val copied = copyGuideMediaFromSourceToZipEntry(
+                            context = context,
+                            sourceUrl = item.sourceUrl,
+                            zip = zip,
+                            entryName = entryName
+                        )
+                        if (copied) {
+                            savedCount += 1
+                        }
+                        yield()
                     }
                 }
             }
+            GuideMediaPackSaveResult(totalCount = total, savedCount = savedCount)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            GuideMediaPackSaveResult(totalCount = total, savedCount = 0)
         }
-        true
-    }.getOrDefault(false)
-    if (!success) {
-        return GuideMediaPackSaveResult(totalCount = total, savedCount = 0)
     }
-    return GuideMediaPackSaveResult(totalCount = total, savedCount = savedCount)
 }
 
 internal fun createUniqueDocumentInTree(

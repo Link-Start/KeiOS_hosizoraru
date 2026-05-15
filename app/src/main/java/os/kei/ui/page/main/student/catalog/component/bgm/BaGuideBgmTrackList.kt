@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -66,8 +67,9 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@Composable
-internal fun BaGuideBgmTrackList(
+private const val BGM_TRACK_CHUNK_SIZE = 18
+
+internal fun LazyListScope.renderBaGuideBgmTrackList(
     tracks: List<BaGuideBgmTrack>,
     currentTrackId: String,
     isPlaying: Boolean,
@@ -81,13 +83,59 @@ internal fun BaGuideBgmTrackList(
     onTrackShareClick: (BaGuideBgmTrack) -> Unit,
 ) {
     if (tracks.isEmpty()) {
-        BaGuideBgmEmptyTrackResult(
-            accent = accent,
-            backdrop = backdrop
-        )
+        item(
+            key = "ba-guide-bgm-empty-track-result",
+            contentType = "ba_guide_bgm_empty_track_result"
+        ) {
+            BaGuideBgmEmptyTrackResult(
+                accent = accent,
+                backdrop = backdrop
+            )
+        }
         return
     }
 
+    tracks.chunked(BGM_TRACK_CHUNK_SIZE).forEachIndexed { chunkIndex, chunk ->
+        val firstId = chunk.firstOrNull()?.id.orEmpty()
+        val lastId = chunk.lastOrNull()?.id.orEmpty()
+        val baseIndex = chunkIndex * BGM_TRACK_CHUNK_SIZE
+        item(
+            key = "ba-guide-bgm-track-chunk-$firstId-$lastId-${chunk.size}",
+            contentType = "ba_guide_bgm_track_chunk"
+        ) {
+            BaGuideBgmTrackChunk(
+                tracks = chunk,
+                baseIndex = baseIndex,
+                currentTrackId = currentTrackId,
+                isPlaying = isPlaying,
+                accent = accent,
+                backdrop = backdrop,
+                isTrackFavorite = isTrackFavorite,
+                isTrackOfflineSaved = isTrackOfflineSaved,
+                onTrackClick = onTrackClick,
+                onTrackFavoriteClick = onTrackFavoriteClick,
+                onTrackOfflineClick = onTrackOfflineClick,
+                onTrackShareClick = onTrackShareClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaGuideBgmTrackChunk(
+    tracks: List<BaGuideBgmTrack>,
+    baseIndex: Int,
+    currentTrackId: String,
+    isPlaying: Boolean,
+    accent: Color,
+    backdrop: Backdrop,
+    isTrackFavorite: (String) -> Boolean,
+    isTrackOfflineSaved: (String) -> Boolean,
+    onTrackClick: (String) -> Unit,
+    onTrackFavoriteClick: (String) -> Unit,
+    onTrackOfflineClick: (String) -> Unit,
+    onTrackShareClick: (BaGuideBgmTrack) -> Unit,
+) {
     val isDark = isSystemInDarkTheme()
     val listShape = RoundedCornerShape(24.dp)
     LiquidSurface(
@@ -108,7 +156,7 @@ internal fun BaGuideBgmTrackList(
             tracks.forEachIndexed { index, track ->
                 val active = track.id == currentTrackId
                 BaGuideBgmTrackRow(
-                    index = index,
+                    index = baseIndex + index,
                     track = track,
                     active = active,
                     isPlaying = isPlaying,

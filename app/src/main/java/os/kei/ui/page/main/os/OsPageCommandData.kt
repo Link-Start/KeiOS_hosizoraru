@@ -1,9 +1,16 @@
 package os.kei.ui.page.main.os
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropertiesSnapshot
+import os.kei.core.system.getAllJavaPropertiesSnapshotAsync
 import os.kei.core.system.getAllSystemPropertiesSnapshot
+import os.kei.core.system.getAllSystemPropertiesSnapshotAsync
 
 internal fun execRuntimeCommand(command: String): String? {
     return RuntimeCommandExecutor.execute(command).stdout.ifBlank { null }
@@ -29,6 +36,16 @@ internal fun commandRows(command: String, shizukuApiUtils: ShizukuApiUtils): Lis
     val shizuku = shizukuApiUtils.execCommand(command)
     val runtime = if (shizuku.isNullOrBlank()) execRuntimeCommand(command) else null
     return parseKeyValueLines(shizuku ?: runtime)
+}
+
+internal suspend fun commandRowsAsync(
+    command: String,
+    shizukuApiUtils: ShizukuApiUtils,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): List<InfoRow> {
+    return withContext(dispatcher) {
+        commandRows(command, shizukuApiUtils)
+    }
 }
 
 internal data class OsSettingsSectionSnapshot(
@@ -67,6 +84,29 @@ internal data class OsPageDataSnapshot(
                 linuxProbe = loadLinuxProbeSnapshot(shizukuApiUtils)
             )
         }
+
+        suspend fun loadForExportAsync(
+            shizukuApiUtils: ShizukuApiUtils,
+            dispatcher: CoroutineDispatcher = Dispatchers.IO
+        ): OsPageDataSnapshot = coroutineScope {
+            val systemProperties = async {
+                getAllSystemPropertiesSnapshotAsync(forceRefresh = true, dispatcher = dispatcher)
+            }
+            val javaProperties = async {
+                getAllJavaPropertiesSnapshotAsync(forceRefresh = true, dispatcher = dispatcher)
+            }
+            val commandSnapshot = async {
+                loadSettingsSectionSnapshotAsync(shizukuApiUtils, dispatcher) to
+                    loadLinuxProbeSnapshotAsync(shizukuApiUtils, dispatcher)
+            }
+            val (settingsSections, linuxProbe) = commandSnapshot.await()
+            OsPageDataSnapshot(
+                settingsSections = settingsSections,
+                systemProperties = systemProperties.await(),
+                javaProperties = javaProperties.await(),
+                linuxProbe = linuxProbe
+            )
+        }
     }
 }
 
@@ -77,12 +117,29 @@ internal fun settingsRowsForSection(
     return commandRows(settingsListCommand(section), shizukuApiUtils)
 }
 
+internal suspend fun settingsRowsForSectionAsync(
+    section: SectionKind,
+    shizukuApiUtils: ShizukuApiUtils,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): List<InfoRow> {
+    return commandRowsAsync(settingsListCommand(section), shizukuApiUtils, dispatcher)
+}
+
 internal fun loadSettingsSectionSnapshot(shizukuApiUtils: ShizukuApiUtils): OsSettingsSectionSnapshot {
     val shizuku = shizukuApiUtils.execCommand(settingsProbeCommand, timeoutMs = SETTINGS_PROBE_TIMEOUT_MS)
     val shizukuSnapshot = parseSettingsSectionSnapshot(shizuku)
     if (shizukuSnapshot.hasRows) return shizukuSnapshot
     val runtime = execRuntimeCommand(settingsProbeCommand)
     return parseSettingsSectionSnapshot(runtime)
+}
+
+internal suspend fun loadSettingsSectionSnapshotAsync(
+    shizukuApiUtils: ShizukuApiUtils,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): OsSettingsSectionSnapshot {
+    return withContext(dispatcher) {
+        loadSettingsSectionSnapshot(shizukuApiUtils)
+    }
 }
 
 internal fun parseSettingsSectionSnapshot(raw: String?): OsSettingsSectionSnapshot {
@@ -125,6 +182,15 @@ internal fun loadLinuxProbeSnapshot(shizukuApiUtils: ShizukuApiUtils): OsLinuxPr
         runtime = parseLinuxCommandSnapshot(execRuntimeCommand(linuxProbeCommand)),
         shizuku = parseLinuxCommandSnapshot(shizukuApiUtils.execCommand(linuxProbeCommand))
     )
+}
+
+internal suspend fun loadLinuxProbeSnapshotAsync(
+    shizukuApiUtils: ShizukuApiUtils,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): OsLinuxProbeSnapshot {
+    return withContext(dispatcher) {
+        loadLinuxProbeSnapshot(shizukuApiUtils)
+    }
 }
 
 internal fun OsLinuxProbeSnapshot.preferredValue(

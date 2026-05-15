@@ -55,8 +55,8 @@ internal suspend fun ensureOsSectionLoaded(
                 inFlight?.cancel()
             }
             updateSection(section) { it.copy(loading = true, loadFailed = false) }
-            loadDeferred = scope.async(Dispatchers.IO) {
-                buildSectionRows(
+            loadDeferred = scope.async {
+                buildSectionRowsAsync(
                     section = section,
                     context = context,
                     shizukuStatus = shizukuStatus,

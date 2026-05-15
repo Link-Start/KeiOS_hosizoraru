@@ -13,6 +13,7 @@ import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubVersionCandidateSource
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 
 class GitHubPreciseApkVersionResolverTest {
@@ -131,8 +132,10 @@ class GitHubPreciseApkVersionResolverTest {
         private val assets: List<GitHubReleaseAssetFile>,
         private val manifests: Map<String, GitHubApkManifestInfo>
     ) : GitHubPreciseApkVersionSource {
-        var inspectCount = 0
-            private set
+        private val inspectCounter = AtomicInteger(0)
+
+        val inspectCount: Int
+            get() = inspectCounter.get()
 
         override suspend fun loadReleaseAssetBundle(
             owner: String,
@@ -155,7 +158,7 @@ class GitHubPreciseApkVersionResolverTest {
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<GitHubApkManifestInfo> {
-            inspectCount += 1
+            inspectCounter.incrementAndGet()
             return Result.success(requireNotNull(manifests[asset.name]))
         }
     }

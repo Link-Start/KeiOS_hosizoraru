@@ -25,11 +25,11 @@ import kotlin.time.Duration.Companion.milliseconds
 internal fun BindBaStudentGuidePlayerLifecycleEffects(
     context: Context,
     sourceUrl: String,
-    voicePlayer: ExoPlayer
+    voicePlayerController: BaStudentGuideVoicePlayerController
 ) {
-    DisposableEffect(voicePlayer) {
+    DisposableEffect(voicePlayerController) {
         onDispose {
-            runCatching { voicePlayer.release() }
+            voicePlayerController.release()
         }
     }
 
@@ -45,16 +45,16 @@ internal fun BindBaStudentGuidePlayerLifecycleEffects(
 @Composable
 internal fun BindBaStudentGuideForegroundAudioGuard(
     sourceUrl: String,
-    voicePlayer: ExoPlayer,
+    voicePlayerController: BaStudentGuideVoicePlayerController,
     onPlayingVoiceUrlChange: (String) -> Unit,
     onIsVoicePlayingChange: (Boolean) -> Unit,
     onVoicePlayProgressChange: (Float) -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, sourceUrl, voicePlayer) {
+    DisposableEffect(lifecycleOwner, sourceUrl, voicePlayerController) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                runCatching { voicePlayer.pause() }
+                voicePlayerController.pause()
                 pauseGuideBgmPlaybackScope(sourceUrl)
                 onPlayingVoiceUrlChange("")
                 onIsVoicePlayingChange(false)
@@ -71,59 +71,63 @@ internal fun BindBaStudentGuideForegroundAudioGuard(
 @Composable
 internal fun BindBaStudentGuideVoiceListenerEffect(
     context: Context,
-    voicePlayer: ExoPlayer,
+    voicePlayer: ExoPlayer?,
     playingVoiceUrl: String,
     onPlayingVoiceUrlChange: (String) -> Unit,
     onIsVoicePlayingChange: (Boolean) -> Unit,
     onVoicePlayProgressChange: (Float) -> Unit
 ) {
     DisposableEffect(voicePlayer, playingVoiceUrl) {
-        val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                val active = isPlaying && playingVoiceUrl.isNotBlank()
-                onIsVoicePlayingChange(active)
-                if (!active) {
-                    onVoicePlayProgressChange(0f)
-                }
-            }
-
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                onVoicePlayProgressChange(0f)
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_ENDED, Player.STATE_IDLE -> {
-                        onPlayingVoiceUrlChange("")
-                        onIsVoicePlayingChange(false)
+        if (voicePlayer == null) {
+            onDispose { }
+        } else {
+            val listener = object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    val active = isPlaying && playingVoiceUrl.isNotBlank()
+                    onIsVoicePlayingChange(active)
+                    if (!active) {
                         onVoicePlayProgressChange(0f)
                     }
+                }
 
-                    Player.STATE_READY -> {
-                        onIsVoicePlayingChange(
-                            voicePlayer.isPlaying && playingVoiceUrl.isNotBlank()
-                        )
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    onVoicePlayProgressChange(0f)
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    when (playbackState) {
+                        Player.STATE_ENDED, Player.STATE_IDLE -> {
+                            onPlayingVoiceUrlChange("")
+                            onIsVoicePlayingChange(false)
+                            onVoicePlayProgressChange(0f)
+                        }
+
+                        Player.STATE_READY -> {
+                            onIsVoicePlayingChange(
+                                voicePlayer.isPlaying && playingVoiceUrl.isNotBlank()
+                            )
+                        }
                     }
                 }
-            }
 
-            override fun onPlayerError(error: PlaybackException) {
-                onPlayingVoiceUrlChange("")
-                onIsVoicePlayingChange(false)
-                onVoicePlayProgressChange(0f)
-                Toast.makeText(
-                    context,
-                    context.getString(
-                        R.string.guide_toast_voice_play_failed_with_reason,
-                        error.errorCodeName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
+                override fun onPlayerError(error: PlaybackException) {
+                    onPlayingVoiceUrlChange("")
+                    onIsVoicePlayingChange(false)
+                    onVoicePlayProgressChange(0f)
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.guide_toast_voice_play_failed_with_reason,
+                            error.errorCodeName
+                        ),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-        }
-        voicePlayer.addListener(listener)
-        onDispose {
-            voicePlayer.removeListener(listener)
+            voicePlayer.addListener(listener)
+            onDispose {
+                voicePlayer.removeListener(listener)
+            }
         }
     }
 }
@@ -133,15 +137,20 @@ internal fun BindBaStudentGuideVoiceProgressEffect(
     activeBottomTab: GuideBottomTab,
     isVoicePlaying: Boolean,
     playingVoiceUrl: String,
-    voicePlayer: ExoPlayer,
+    voicePlayer: ExoPlayer?,
     onVoicePlayProgressChange: (Float) -> Unit
 ) {
     val voiceTabActive = activeBottomTab == GuideBottomTab.Voice
     val voicePlayingForProgress = if (voiceTabActive) isVoicePlaying else false
     val voiceUrlForProgress = if (voiceTabActive) playingVoiceUrl else ""
 
-    LaunchedEffect(voiceTabActive, voicePlayingForProgress, voiceUrlForProgress) {
-        if (!voiceTabActive || !voicePlayingForProgress || voiceUrlForProgress.isBlank()) {
+    LaunchedEffect(voiceTabActive, voicePlayingForProgress, voiceUrlForProgress, voicePlayer) {
+        if (
+            !voiceTabActive ||
+            !voicePlayingForProgress ||
+            voiceUrlForProgress.isBlank() ||
+            voicePlayer == null
+        ) {
             onVoicePlayProgressChange(0f)
             return@LaunchedEffect
         }

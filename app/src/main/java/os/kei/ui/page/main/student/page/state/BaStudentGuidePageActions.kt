@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -414,7 +413,7 @@ internal fun rememberBaStudentGuidePageActions(
     shareSourceChooserTitle: String,
     shareSourceFailedText: String,
     openLinkFailedText: String,
-    voicePlayer: ExoPlayer,
+    voicePlayerController: BaStudentGuideVoicePlayerController,
     playingVoiceUrl: String,
     onPlayingVoiceUrlChange: (String) -> Unit,
     onIsVoicePlayingChange: (Boolean) -> Unit,
@@ -433,7 +432,7 @@ internal fun rememberBaStudentGuidePageActions(
         shareSourceChooserTitle,
         shareSourceFailedText,
         openLinkFailedText,
-        voicePlayer,
+        voicePlayerController,
         playingVoiceUrl,
         onPlayingVoiceUrlChange,
         onIsVoicePlayingChange,
@@ -488,17 +487,27 @@ internal fun rememberBaStudentGuidePageActions(
                 if (target.isNotBlank()) {
                     runCatching {
                         if (playingVoiceUrl == target) {
-                            if (voicePlayer.isPlaying) {
-                                voicePlayer.pause()
+                            val existingPlayer = voicePlayerController.player
+                            if (existingPlayer?.isPlaying == true) {
+                                existingPlayer.pause()
                                 onPlayingVoiceUrlChange("")
                                 onIsVoicePlayingChange(false)
                                 onVoicePlayProgressChange(0f)
+                            } else if (existingPlayer != null) {
+                                existingPlayer.play()
+                                onPlayingVoiceUrlChange(target)
+                                onIsVoicePlayingChange(true)
                             } else {
+                                val voicePlayer = voicePlayerController.getOrCreate()
+                                voicePlayer.setMediaItem(MediaItem.fromUri(target))
+                                voicePlayer.prepare()
                                 voicePlayer.play()
                                 onPlayingVoiceUrlChange(target)
                                 onIsVoicePlayingChange(true)
+                                onVoicePlayProgressChange(0f)
                             }
                         } else {
+                            val voicePlayer = voicePlayerController.getOrCreate()
                             voicePlayer.setMediaItem(MediaItem.fromUri(target))
                             voicePlayer.prepare()
                             voicePlayer.play()

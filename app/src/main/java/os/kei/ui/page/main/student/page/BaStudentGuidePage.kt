@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.exoplayer.ExoPlayer
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
@@ -40,7 +39,6 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.student.GuideBottomTab
-import os.kei.ui.page.main.student.createGameKeeMediaSourceFactory
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
@@ -56,6 +54,7 @@ import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideMediaSaveAct
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuidePageActions
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTabSelectCoordinator
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTopBarActionItems
+import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideVoicePlayerController
 import os.kei.ui.page.main.student.page.support.rememberGuideSyncProgress
 import os.kei.ui.page.main.student.page.support.resolveGuideBottomTabs
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -212,11 +211,7 @@ fun BaStudentGuidePage(
         }
     }
     val pageTitle = info?.title?.ifBlank { defaultPageTitle } ?: defaultPageTitle
-    val voicePlayer = remember(context, sourceUrl) {
-        ExoPlayer.Builder(context)
-            .setMediaSourceFactory(createGameKeeMediaSourceFactory(context))
-            .build()
-    }
+    val voicePlayerController = rememberBaStudentGuideVoicePlayerController(sourceUrl)
     val saveGuideMediaAction = rememberBaStudentGuideMediaSaveAction(
         pageScope = pageScope,
         currentStudentNamePrefix = { info?.title?.trim().orEmpty() }
@@ -229,18 +224,18 @@ fun BaStudentGuidePage(
     BindBaStudentGuidePlayerLifecycleEffects(
         context = context,
         sourceUrl = sourceUrl,
-        voicePlayer = voicePlayer
+        voicePlayerController = voicePlayerController
     )
     BindBaStudentGuideForegroundAudioGuard(
         sourceUrl = sourceUrl,
-        voicePlayer = voicePlayer,
+        voicePlayerController = voicePlayerController,
         onPlayingVoiceUrlChange = { playingVoiceUrl = it },
         onIsVoicePlayingChange = { isVoicePlaying = it },
         onVoicePlayProgressChange = { voicePlayProgress = it }
     )
     BindBaStudentGuideVoiceListenerEffect(
         context = context,
-        voicePlayer = voicePlayer,
+        voicePlayer = voicePlayerController.player,
         playingVoiceUrl = playingVoiceUrl,
         onPlayingVoiceUrlChange = { playingVoiceUrl = it },
         onIsVoicePlayingChange = { isVoicePlaying = it },
@@ -253,7 +248,7 @@ fun BaStudentGuidePage(
         shareSourceChooserTitle = shareSourceChooserTitle,
         shareSourceFailedText = shareSourceFailedText,
         openLinkFailedText = openLinkFailedText,
-        voicePlayer = voicePlayer,
+        voicePlayerController = voicePlayerController,
         playingVoiceUrl = playingVoiceUrl,
         onPlayingVoiceUrlChange = { playingVoiceUrl = it },
         onIsVoicePlayingChange = { isVoicePlaying = it },
@@ -280,7 +275,7 @@ fun BaStudentGuidePage(
         activeBottomTab = activeBottomTab,
         isVoicePlaying = isVoicePlaying,
         playingVoiceUrl = playingVoiceUrl,
-        voicePlayer = voicePlayer,
+        voicePlayer = voicePlayerController.player,
         onVoicePlayProgressChange = { voicePlayProgress = it }
     )
     BindBaStudentGuidePrefetchEffects(

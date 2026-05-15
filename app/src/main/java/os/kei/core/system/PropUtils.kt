@@ -1,5 +1,8 @@
 package os.kei.core.system
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.lang.reflect.Method
 
 private inline fun <T> safeOf(default: T, block: () -> T): T = runCatching(block).getOrDefault(default)
@@ -119,11 +122,29 @@ fun getAllJavaPropertiesSnapshot(forceRefresh: Boolean = false): Map<String, Str
     return PropSnapshotStore.javaProperties(forceRefresh)
 }
 
+suspend fun getAllJavaPropertiesSnapshotAsync(
+    forceRefresh: Boolean = false,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): Map<String, String> {
+    return withContext(dispatcher) {
+        getAllJavaPropertiesSnapshot(forceRefresh)
+    }
+}
+
 val getAllJavaPropString: Map<String, String>
     get() = getAllJavaPropertiesSnapshot()
 
 fun getAllSystemPropertiesSnapshot(forceRefresh: Boolean = false): Map<String, String> {
     return PropSnapshotStore.systemProperties(forceRefresh)
+}
+
+suspend fun getAllSystemPropertiesSnapshotAsync(
+    forceRefresh: Boolean = false,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): Map<String, String> {
+    return withContext(dispatcher) {
+        getAllSystemPropertiesSnapshot(forceRefresh)
+    }
 }
 
 val getAllSystemProperties: Map<String, String>

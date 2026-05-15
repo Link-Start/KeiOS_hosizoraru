@@ -81,7 +81,10 @@ internal fun BaGuideBgmAlbumContent(
         contentPadding = PaddingValues(start = 16.dp, top = topPadding, end = 16.dp, bottom = bottomPadding),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
+        item(
+            key = "ba-guide-bgm-album-hero",
+            contentType = "ba_guide_bgm_album_hero"
+        ) {
             BaGuideBgmAlbumHero(
                 accent = accent,
                 collapseProgress = collapseProgress,
@@ -101,7 +104,10 @@ internal fun BaGuideBgmAlbumContent(
                 promoteSectionTitle = promoteSectionTitle
             )
         }
-        item {
+        item(
+            key = "ba-guide-bgm-track-list",
+            contentType = "ba_guide_bgm_track_list"
+        ) {
             BaGuideBgmTrackList(
                 tracks = tracks,
                 currentTrackId = currentTrackId,
@@ -117,7 +123,10 @@ internal fun BaGuideBgmAlbumContent(
             )
         }
         if (showFooter) {
-            item {
+            item(
+                key = "ba-guide-bgm-album-footer",
+                contentType = "ba_guide_bgm_album_footer"
+            ) {
                 BaGuideBgmAlbumFooter(
                     sectionTitle = sectionFooterTitle,
                     trackCount = tracks.size,

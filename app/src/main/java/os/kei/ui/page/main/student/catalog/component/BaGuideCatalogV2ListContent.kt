@@ -62,7 +62,10 @@ internal fun BaGuideCatalogV2ListContent(
         verticalArrangement = Arrangement.spacedBy(AppChromeTokens.pageSectionGap)
     ) {
         if (uiState.showError) {
-            item {
+            item(
+                key = "ba-guide-catalog-error-${tab.name}",
+                contentType = "ba_guide_catalog_status"
+            ) {
                 LiquidInfoBlock(
                     backdrop = null,
                     title = uiState.syncStatusTitle,
@@ -73,12 +76,18 @@ internal fun BaGuideCatalogV2ListContent(
             }
         }
         if (uiState.showLoading) {
-            item {
+            item(
+                key = "ba-guide-catalog-loading-${tab.name}",
+                contentType = "ba_guide_catalog_loading"
+            ) {
                 AppAronaLoadingPanel(accent = accent)
             }
         }
         if (uiState.showEmpty) {
-            item {
+            item(
+                key = "ba-guide-catalog-empty-${tab.name}",
+                contentType = "ba_guide_catalog_status"
+            ) {
                 LiquidInfoBlock(
                     backdrop = null,
                     title = uiState.emptyTitle,

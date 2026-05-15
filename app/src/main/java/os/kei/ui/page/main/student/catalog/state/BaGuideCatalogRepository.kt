@@ -19,6 +19,7 @@ internal data class BaGuideCatalogLoadResult(
 
 internal class BaGuideCatalogRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val refreshIntervalLoader: () -> Int = BASettingsStore::loadCalendarRefreshIntervalHours,
     private val cachedBundleLoader: () -> BaGuideCatalogBundle? = ::loadCachedBaGuideCatalogBundle,
     private val catalogFetcher: suspend (forceRefresh: Boolean) -> BaGuideCatalogBundle =
@@ -87,6 +88,8 @@ internal class BaGuideCatalogRepository(
         return hydrateBaGuideCatalogReleaseDateIndex(
             source = source,
             maxNetworkFetchPerPass = CATALOG_RELEASE_DATE_FETCH_LIMIT_PER_PASS,
+            networkDispatcher = ioDispatcher,
+            parseDispatcher = parseDispatcher,
             onBundleUpdated = onBundleUpdated
         )
     }

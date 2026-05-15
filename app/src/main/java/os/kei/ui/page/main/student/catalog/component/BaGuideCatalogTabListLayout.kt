@@ -44,7 +44,10 @@ internal fun BaGuideCatalogTabListLayout(
         verticalArrangement = Arrangement.spacedBy(AppChromeTokens.pageSectionGap)
     ) {
         if (uiState.showError) {
-            item {
+            item(
+                key = "ba-guide-tab-error",
+                contentType = "ba_guide_catalog_status"
+            ) {
                 LiquidInfoBlock(
                     backdrop = null,
                     title = uiState.syncStatusTitle,
@@ -55,7 +58,10 @@ internal fun BaGuideCatalogTabListLayout(
             }
         }
         if (uiState.showEmpty) {
-            item {
+            item(
+                key = "ba-guide-tab-empty",
+                contentType = "ba_guide_catalog_status"
+            ) {
                 LiquidInfoBlock(
                     backdrop = null,
                     title = uiState.emptyTitle,

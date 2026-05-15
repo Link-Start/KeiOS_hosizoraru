@@ -2,8 +2,10 @@ package os.kei.ui.page.main.student.catalog
 
 import android.content.Context
 import androidx.annotation.StringRes
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -18,6 +20,7 @@ import os.kei.ui.page.main.student.fetch.parseGuideDetailFromContentJson
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val BA_GUIDE_SECOND_PAGE_ID = 23941
@@ -103,6 +106,12 @@ private data class CatalogReleaseDatePatch(
     }
 }
 
+private data class CatalogReleaseDateProbeResult(
+    val contentId: Long,
+    val probeAtMs: Long,
+    val releaseDateSec: Long
+)
+
 internal fun loadCachedBaGuideCatalogBundle(): BaGuideCatalogBundle? {
     val memory = cachedCatalogBundle
     if (memory != null) return memory
@@ -187,16 +196,18 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     maxNetworkFetchPerPass: Int = BA_GUIDE_RELEASE_INDEX_MAX_NETWORK_FETCH_PER_PASS,
     networkBatchSize: Int = BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE,
     requestThrottleMs: Long = BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS,
+    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
     onBundleUpdated: (BaGuideCatalogBundle) -> Unit = {}
 ): BaGuideCatalogBundle {
     if (source.entriesByTab.values.all { it.isEmpty() }) return source
     var working = source
 
-    val localPatch = withContext(Dispatchers.IO) {
+    val localPatch = withContext(networkDispatcher) {
         collectReleaseDatePatchFromGuideCache(working)
     }
     if (!localPatch.isEmpty()) {
-        val updated = withContext(Dispatchers.IO) {
+        val updated = withContext(networkDispatcher) {
             applyAndPersistReleaseDatePatch(working, localPatch)
         }
         if (updated !== working) {
@@ -212,13 +223,16 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
             limit = minOf(batchLimit, remainingFetch)
         )
         if (candidates.isEmpty()) break
-        val networkPatch = withContext(Dispatchers.IO) {
-            collectReleaseDatePatchFromNetwork(candidates, requestThrottleMs)
-        }
+        val networkPatch = collectReleaseDatePatchFromNetwork(
+            entries = candidates,
+            requestThrottleMs = requestThrottleMs,
+            networkDispatcher = networkDispatcher,
+            parseDispatcher = parseDispatcher
+        )
         remainingFetch -= candidates.size
         if (networkPatch.isEmpty()) continue
         val hasReleaseDateUpdates = networkPatch.releaseDateSecByContentId.isNotEmpty()
-        val updated = withContext(Dispatchers.IO) {
+        val updated = withContext(networkDispatcher) {
             applyAndPersistReleaseDatePatch(working, networkPatch)
         }
         if (updated !== working) {
@@ -342,20 +356,64 @@ private fun collectReleaseDatePatchFromGuideCache(bundle: BaGuideCatalogBundle):
 
 private suspend fun collectReleaseDatePatchFromNetwork(
     entries: List<BaGuideCatalogEntry>,
-    requestThrottleMs: Long
+    requestThrottleMs: Long,
+    networkDispatcher: CoroutineDispatcher,
+    parseDispatcher: CoroutineDispatcher
 ): CatalogReleaseDatePatch {
     if (entries.isEmpty()) return CatalogReleaseDatePatch()
+    val results = coroutineScope {
+        entries.mapIndexed { index, entry ->
+            async {
+                if (requestThrottleMs > 0L && index > 0) {
+                    delay((requestThrottleMs * index).milliseconds)
+                }
+                probeReleaseDateFromNetwork(
+                    entry = entry,
+                    networkDispatcher = networkDispatcher,
+                    parseDispatcher = parseDispatcher
+                )
+            }
+        }.awaitAll()
+    }
     val releaseDateUpdates = mutableMapOf<Long, Long>()
     val probeUpdates = mutableMapOf<Long, Long>()
-    entries.forEachIndexed { index, entry ->
-        val contentId = entry.contentId
-        if (contentId <= 0L || entry.detailUrl.isBlank()) return@forEachIndexed
-        probeUpdates[contentId] = System.currentTimeMillis().coerceAtLeast(1L)
-        runCatching {
-            val contentDetail = GameKeeRepository.fetchBaContentDetail(
+    results.forEach { result ->
+        if (result.contentId <= 0L) return@forEach
+        if (result.probeAtMs > 0L) {
+            probeUpdates[result.contentId] = result.probeAtMs
+        }
+        if (result.releaseDateSec > 0L) {
+            releaseDateUpdates[result.contentId] = result.releaseDateSec
+        }
+    }
+    return CatalogReleaseDatePatch(
+        releaseDateSecByContentId = releaseDateUpdates,
+        probeAtMsByContentId = probeUpdates
+    )
+}
+
+private suspend fun probeReleaseDateFromNetwork(
+    entry: BaGuideCatalogEntry,
+    networkDispatcher: CoroutineDispatcher,
+    parseDispatcher: CoroutineDispatcher
+): CatalogReleaseDateProbeResult {
+    val contentId = entry.contentId
+    if (contentId <= 0L || entry.detailUrl.isBlank()) {
+        return CatalogReleaseDateProbeResult(
+            contentId = contentId,
+            probeAtMs = 0L,
+            releaseDateSec = 0L
+        )
+    }
+    val probedAtMs = System.currentTimeMillis().coerceAtLeast(1L)
+    return try {
+        val contentDetail = withContext(networkDispatcher) {
+            GameKeeRepository.fetchBaContentDetail(
                 contentId = contentId,
                 refererPath = "/ba/tj/$contentId.html"
             )
+        }
+        val releaseDateSec = withContext(parseDispatcher) {
             val detail = parseGuideDetailFromContentJson(
                 raw = contentDetail.resolvedContentJson,
                 sourceUrl = entry.detailUrl
@@ -364,19 +422,21 @@ private suspend fun collectReleaseDatePatchFromNetwork(
                 profileRows = detail.profileRows,
                 stats = detail.stats
             )
-        }.onSuccess { releaseDateSec ->
-                if (releaseDateSec > 0L) {
-                    releaseDateUpdates[contentId] = releaseDateSec
-                }
-            }
-        if (requestThrottleMs > 0L && index < entries.lastIndex) {
-            delay(requestThrottleMs.milliseconds)
         }
+        CatalogReleaseDateProbeResult(
+            contentId = contentId,
+            probeAtMs = probedAtMs,
+            releaseDateSec = releaseDateSec.coerceAtLeast(0L)
+        )
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Throwable) {
+        CatalogReleaseDateProbeResult(
+            contentId = contentId,
+            probeAtMs = probedAtMs,
+            releaseDateSec = 0L
+        )
     }
-    return CatalogReleaseDatePatch(
-        releaseDateSecByContentId = releaseDateUpdates,
-        probeAtMsByContentId = probeUpdates
-    )
 }
 
 private fun applyAndPersistReleaseDatePatch(

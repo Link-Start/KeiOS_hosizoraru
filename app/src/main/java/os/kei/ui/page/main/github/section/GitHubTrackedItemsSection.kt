@@ -9,18 +9,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.model.forTrackedItem
-import os.kei.feature.github.model.isDirectApkTrack
-import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
-import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
-import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.widget.core.AppInfoListBody
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSupportingBlock
@@ -143,75 +139,16 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         )
                     }
-
-                    val assetBundle = assetState.apkAssetBundles[item.id]
-                    val assetLoading = assetState.apkAssetLoading[item.id] == true
-                    val assetError = assetState.apkAssetErrors[item.id].orEmpty()
-                    val assetExpanded = assetState.apkAssetExpanded[item.id] == true
-                    if (item.isGitHubRepositoryTrack() &&
-                        content.lookupConfig.decisionAssistEnabled &&
-                        content.lookupConfig.repositoryHealthCardEnabled
-                    ) {
-                        val health = buildGitHubRepositoryHealth(item, state)
-                        GitHubHealthPreviewBlock(
-                            health = health,
-                            onClick = {
-                                actions.onOpenDecisionAssistDetail(
-                                    GitHubDecisionAssistDetailType.RepositoryHealth,
-                                    item,
-                                )
-                            },
-                        )
-                    }
-                    if (item.isGitHubRepositoryTrack()) {
-                        GitHubTrackedItemAssetPanel(
-                            item = item,
-                            state = state,
-                            lookupConfig = itemLookupConfig,
-                            isDark = surfaces.isDark,
-                            contentBackdrop = surfaces.contentBackdrop,
-                            assetBundle = assetBundle,
-                            assetLoading = assetLoading,
-                            assetError = assetError,
-                            assetExpanded = assetExpanded,
-                            managedInstallLoading = assetState.managedInstallLoading,
-                            onOpenExternalUrl = actions.onOpenExternalUrl,
-                            onLoadApkAssets = actions.onLoadApkAssets,
-                            onRefreshTrackedItem = actions.onRefreshTrackedItem,
-                            onOpenApkInfo = actions.onOpenApkInfo,
-                            onOpenApkInDownloader = actions.onOpenApkInDownloader,
-                            onShareApkLink = actions.onShareApkLink,
-                            context = context,
-                            supportedAbis = runtime.supportedAbis,
-                        )
-                    }
-                    if (item.isDirectApkTrack()) {
-                        GitHubTrackedItemAssetPanel(
-                            item = item,
-                            state = state,
-                            lookupConfig = itemLookupConfig,
-                            isDark = surfaces.isDark,
-                            contentBackdrop = surfaces.contentBackdrop,
-                            assetBundle = null,
-                            assetLoading = false,
-                            assetError = "",
-                            assetExpanded = assetExpanded,
-                            managedInstallLoading = assetState.managedInstallLoading,
-                            onOpenExternalUrl = actions.onOpenExternalUrl,
-                            onLoadApkAssets = actions.onLoadApkAssets,
-                            onRefreshTrackedItem = actions.onRefreshTrackedItem,
-                            onOpenApkInfo = actions.onOpenApkInfo,
-                            onOpenApkInDownloader = actions.onOpenApkInDownloader,
-                            onShareApkLink = actions.onShareApkLink,
-                            context = context,
-                            supportedAbis = runtime.supportedAbis,
-                        )
-                        GitHubDirectApkRemoteHealthCard(
-                            item = item,
-                            state = state,
-                            onOpenExternalUrl = actions.onOpenExternalUrl,
-                        )
-                    }
+                    GitHubTrackedItemAssetSections(
+                        item = item,
+                        state = state,
+                        itemLookupConfig = itemLookupConfig,
+                        content = content,
+                        surfaces = surfaces,
+                        assetState = assetState,
+                        runtime = runtime,
+                        actions = actions,
+                    )
                 }
             }
         }

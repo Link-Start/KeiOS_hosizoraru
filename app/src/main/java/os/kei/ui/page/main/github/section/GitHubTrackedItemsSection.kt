@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.section
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,13 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
-import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
@@ -67,92 +59,65 @@ import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@Suppress("FunctionName")
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.GitHubTrackedItemsSection(
-    lookupConfig: GitHubLookupConfig,
-    trackedItems: List<GitHubTrackedApp>,
-    filteredTracked: List<GitHubTrackedApp>,
-    sortedTracked: List<GitHubTrackedApp>,
-    installedAppLabelsByPackage: Map<String, String>,
-    appLastUpdatedAtByTrackId: Map<String, Long>,
-    checkStates: SnapshotStateMap<String, VersionCheckUi>,
-    itemRefreshLoading: SnapshotStateMap<String, Boolean>,
-    contentBackdrop: LayerBackdrop,
-    isDark: Boolean,
-    apkAssetBundles: SnapshotStateMap<String, GitHubReleaseAssetBundle>,
-    apkAssetLoading: SnapshotStateMap<String, Boolean>,
-    apkAssetErrors: SnapshotStateMap<String, String>,
-    apkAssetExpanded: SnapshotStateMap<String, Boolean>,
-    managedInstallLoading: SnapshotStateMap<String, Boolean>,
-    actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
-    trackedCardExpanded: SnapshotStateMap<String, Boolean>,
-    trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
-    trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
-    trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>,
-    onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
-    onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
-    onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
-    onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
-    onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onLocalVersionExpandedChange: (String, Boolean) -> Unit,
-    onStableVersionExpandedChange: (String, Boolean) -> Unit,
-    onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,
-    onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
-    onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
-    onOpenExternalUrl: (String) -> Unit,
-    onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
-    onOpenApkInDownloader: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
-    onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
-    context: Context,
-    supportedAbis: List<String>
+    content: GitHubTrackedItemsContent,
+    surfaces: GitHubTrackedItemsSurfaces,
+    checkState: GitHubTrackedItemsCheckState,
+    assetState: GitHubTrackedItemsAssetState,
+    expansionState: GitHubTrackedItemsExpansionState,
+    runtime: GitHubTrackedItemsRuntime,
+    actions: GitHubTrackedItemsActions,
 ) {
-    if (trackedItems.isEmpty()) {
+    val context = runtime.context
+    if (content.trackedItems.isEmpty()) {
         item {
             MiuixInfoItem(
                 stringResource(R.string.github_list_label_track_list),
-                stringResource(R.string.github_list_msg_empty)
+                stringResource(R.string.github_list_msg_empty),
             )
         }
-    } else if (filteredTracked.isEmpty()) {
+    } else if (content.filteredTracked.isEmpty()) {
         item {
             MiuixInfoItem(
                 stringResource(R.string.github_list_label_search_result),
-                stringResource(R.string.github_list_msg_no_match)
+                stringResource(R.string.github_list_msg_no_match),
             )
         }
     } else {
         items(
-            items = sortedTracked,
+            items = content.sortedTracked,
             key = { it.id },
-            contentType = { "tracked_app" }
+            contentType = { "tracked_app" },
         ) { item ->
-            val expanded = trackedCardExpanded[item.id] == true
-            val state = checkStates[item.id] ?: pendingVersionCheckUi(context)
-            val itemLookupConfig = lookupConfig.forTrackedItem(item)
-            val installedAppLabel = installedAppLabelsByPackage[item.packageName.trim()].orEmpty()
-            val displayTitle = item.githubTrackedDisplayTitle(
-                state = state,
-                installedAppLabel = installedAppLabel
-            )
+            val expanded = expansionState.trackedCardExpanded[item.id] == true
+            val state = checkState.checkStates[item.id] ?: pendingVersionCheckUi(context)
+            val itemLookupConfig = content.lookupConfig.forTrackedItem(item)
+            val installedAppLabel = content.installedAppLabelsByPackage[item.packageName.trim()].orEmpty()
+            val displayTitle =
+                item.githubTrackedDisplayTitle(
+                    state = state,
+                    installedAppLabel = installedAppLabel,
+                )
             val displaySubtitle = item.githubTrackedDisplaySubtitle(state, displayTitle)
             AppLiquidAccordionCard(
-                backdrop = contentBackdrop,
+                backdrop = surfaces.contentBackdrop,
                 title = displayTitle,
                 subtitle = displaySubtitle,
                 expanded = expanded,
                 onExpandedChange = {
-                    trackedCardExpanded[item.id] = it
+                    expansionState.trackedCardExpanded[item.id] = it
                     if (!it) {
-                        val collapseState = checkStates[item.id] ?: VersionCheckUi()
-                        onCollapseTrackedCard(item, collapseState)
+                        val collapseState = checkState.checkStates[item.id] ?: VersionCheckUi()
+                        actions.onCollapseTrackedCard(item, collapseState)
                     }
                 },
                 headerStartAction = {
                     AppIcon(
                         packageName = item.packageName,
                         localRefreshKey = state.localVersionCode to state.localVersion,
-                        size = 24.dp
+                        size = 24.dp,
                     )
                 },
                 titleAccessory = {
@@ -160,97 +125,105 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                         StatusPill(
                             label = stringResource(R.string.github_track_badge_current_app),
                             color = GitHubStatusPalette.Active,
-                            size = AppStatusPillSize.Compact
+                            size = AppStatusPillSize.Compact,
                         )
                     }
                 },
-                onHeaderLongClick = { onOpenTrackSheetForEdit(item) },
+                onHeaderLongClick = { actions.onOpenTrackSheetForEdit(item) },
                 clipContent = false,
                 headerActions = {
-                    val isItemRefreshLoading = itemRefreshLoading[item.id] == true
+                    val isItemRefreshLoading = checkState.itemRefreshLoading[item.id] == true
                     val alwaysLatestReleaseDownload = item.alwaysShowLatestReleaseDownloadButton
                     val latestReleaseAccent = Color(0xFF06B6D4)
                     val localAppUninstalled = state.isLocalAppUninstalled()
                     val directAssetPanelData = item.directApkAssetPanelData(state)
-                    val statusColor = state.statusColor(
-                        neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
-                    )
-                    val statusReleaseUrl = state.statusActionUrl(
-                        owner = item.owner,
-                        repo = item.repo
-                    )
-                    val canLoadRepositoryApkAssets = item.isGitHubRepositoryTrack() &&
+                    val statusColor =
+                        state.statusColor(
+                            neutralColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        )
+                    val statusReleaseUrl =
+                        state.statusActionUrl(
+                            owner = item.owner,
+                            repo = item.repo,
+                        )
+                    val canLoadRepositoryApkAssets =
+                        item.isGitHubRepositoryTrack() &&
                             (
-                                    alwaysLatestReleaseDownload ||
-                                            state.hasUpdate == true ||
-                                            state.recommendsPreRelease ||
-                                            state.hasPreReleaseUpdate ||
-                                            (
-                                                    localAppUninstalled &&
-                                                            state.apkAssetTarget(
-                                                                owner = item.owner,
-                                                                repo = item.repo,
-                                                                context = context,
-                                                                allowLatestReleaseFallback = true
-                                                            ) != null
-                                                    )
+                                alwaysLatestReleaseDownload ||
+                                    state.hasUpdate == true ||
+                                    state.recommendsPreRelease ||
+                                    state.hasPreReleaseUpdate ||
+                                    (
+                                        localAppUninstalled &&
+                                            state.apkAssetTarget(
+                                                owner = item.owner,
+                                                repo = item.repo,
+                                                context = context,
+                                                allowLatestReleaseFallback = true,
+                                            ) != null
                                     )
+                            )
                     val canToggleDirectApkAssets =
                         item.isDirectApkTrack() && directAssetPanelData != null
                     val canLoadApkAssets = canLoadRepositoryApkAssets || canToggleDirectApkAssets
-                    val isAssetPanelExpanded = apkAssetExpanded[item.id] == true
-                    val isAssetPanelLoading = apkAssetLoading[item.id] == true
-                    val statusIcon = when {
-                        isAssetPanelLoading -> appLucideRefreshIcon()
-                        canLoadApkAssets && isAssetPanelExpanded -> appLucideCloseIcon()
-                        localAppUninstalled && canLoadApkAssets -> appLucidePackageIcon()
-                        alwaysLatestReleaseDownload -> appLucideDownloadIcon()
-                        else -> state.statusIcon()
-                    }
-                    val iconTint = when {
-                        localAppUninstalled && canLoadApkAssets -> GitHubStatusPalette.Install
-                        alwaysLatestReleaseDownload -> latestReleaseAccent
-                        else -> statusColor
-                    }
+                    val isAssetPanelExpanded = assetState.apkAssetExpanded[item.id] == true
+                    val isAssetPanelLoading = assetState.apkAssetLoading[item.id] == true
+                    val statusIcon =
+                        when {
+                            isAssetPanelLoading -> appLucideRefreshIcon()
+                            canLoadApkAssets && isAssetPanelExpanded -> appLucideCloseIcon()
+                            localAppUninstalled && canLoadApkAssets -> appLucidePackageIcon()
+                            alwaysLatestReleaseDownload -> appLucideDownloadIcon()
+                            else -> state.statusIcon()
+                        }
+                    val iconTint =
+                        when {
+                            localAppUninstalled && canLoadApkAssets -> GitHubStatusPalette.Install
+                            alwaysLatestReleaseDownload -> latestReleaseAccent
+                            else -> statusColor
+                        }
                     AppCompactIconAction(
                         icon = statusIcon,
-                        contentDescription = if (localAppUninstalled && canLoadApkAssets) {
-                            stringResource(R.string.github_cd_install_tracked_item, displayTitle)
-                        } else {
-                            state.statusMessage(context)
-                                .ifBlank { stringResource(R.string.github_cd_status) }
-                        },
+                        contentDescription =
+                            if (localAppUninstalled && canLoadApkAssets) {
+                                stringResource(R.string.github_cd_install_tracked_item, displayTitle)
+                            } else {
+                                state
+                                    .statusMessage(context)
+                                    .ifBlank { stringResource(R.string.github_cd_status) }
+                            },
                         tint = iconTint,
                         enabled = canLoadApkAssets || statusReleaseUrl.isNotBlank(),
                         onClick = {
                             if (canToggleDirectApkAssets) {
-                                apkAssetExpanded[item.id] = !isAssetPanelExpanded
+                                assetState.apkAssetExpanded[item.id] = !isAssetPanelExpanded
                             } else if (canLoadRepositoryApkAssets) {
                                 if (isAssetPanelExpanded) {
-                                    onCollapseApkAssetPanel(item, state)
+                                    actions.onCollapseApkAssetPanel(item, state)
                                 } else {
-                                    onLoadApkAssets(item, state, true, false, localAppUninstalled)
+                                    actions.onLoadApkAssets(item, state, true, false, localAppUninstalled)
                                 }
                             } else {
-                                onOpenExternalUrl(statusReleaseUrl)
+                                actions.onOpenExternalUrl(statusReleaseUrl)
                             }
-                        }
+                        },
                     )
                     if (isItemRefreshLoading) {
                         val checkingContentDescription = stringResource(R.string.github_msg_checking)
                         Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .semantics {
-                                    contentDescription = checkingContentDescription
-                                },
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .size(18.dp)
+                                    .semantics {
+                                        contentDescription = checkingContentDescription
+                                    },
+                            contentAlignment = Alignment.Center,
                         ) {
                             LiquidCircularProgressBar(
                                 size = 16.dp,
                                 strokeWidth = 2.dp,
                                 activeColor = iconTint,
-                                inactiveColor = iconTint.copy(alpha = 0.18f)
+                                inactiveColor = iconTint.copy(alpha = 0.18f),
                             )
                         }
                     } else {
@@ -258,40 +231,43 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             item = item,
                             state = state,
                             iconTint = iconTint,
-                            showReleaseNotesAction = lookupConfig.decisionAssistEnabled,
-                            onRefreshTrackedItem = onRefreshTrackedItem,
-                            onOpenActionsSheet = onOpenActionsSheet,
+                            showReleaseNotesAction = content.lookupConfig.decisionAssistEnabled,
+                            onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                            onOpenActionsSheet = actions.onOpenActionsSheet,
                             onOpenReleaseNotes = {
-                                onOpenDecisionAssistDetail(
+                                actions.onOpenDecisionAssistDetail(
                                     GitHubDecisionAssistDetailType.ReleaseNotes,
-                                    item
+                                    item,
                                 )
                             },
-                            onRequestDeleteTrackedItem = onRequestDeleteTrackedItem
+                            onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
                         )
                     }
-                }
+                },
             ) {
                 AppInfoListBody(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalSpacing = CardLayoutRhythm.denseSectionGap
+                    verticalSpacing = CardLayoutRhythm.denseSectionGap,
                 ) {
                     GitHubRepositoryLinkCard(
                         item = item,
-                        onOpenExternalUrl = onOpenExternalUrl
+                        onOpenExternalUrl = actions.onOpenExternalUrl,
                     )
-                    val appUpdatedAtLabel = formatReleaseUpdatedAtCompact(
-                        appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L }
-                    ) ?: stringResource(R.string.common_unknown)
-                    val actionsRunSnapshot = actionsRecommendedRunSnapshots[item.id]
-                    val localText = formatLocalVersionText(context, checkStates[item.id])
+                    val appUpdatedAtLabel =
+                        formatReleaseUpdatedAtCompact(
+                            content.appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L },
+                        ) ?: stringResource(R.string.common_unknown)
+                    val actionsRunSnapshot = checkState.actionsRecommendedRunSnapshots[item.id]
+                    val localText = formatLocalVersionText(context, checkState.checkStates[item.id])
                     if (localText != null) {
-                        val localVersionColor = if (state.isLocalAppUninstalled()) {
-                            MiuixTheme.colorScheme.onBackgroundVariant
-                        } else {
-                            MiuixTheme.colorScheme.primary
-                        }
-                        val localVersionExpanded = trackedLocalVersionExpanded[item.id] == true
+                        val localVersionColor =
+                            if (state.isLocalAppUninstalled()) {
+                                MiuixTheme.colorScheme.onBackgroundVariant
+                            } else {
+                                MiuixTheme.colorScheme.primary
+                            }
+                        val localVersionExpanded =
+                            expansionState.trackedLocalVersionExpanded[item.id] == true
                         GitHubReleaseVersionCard(
                             label = stringResource(R.string.github_item_label_local_version),
                             value = localText,
@@ -300,25 +276,25 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             emphasized = !state.isLocalAppUninstalled(),
                             valueMaxLines = 2,
                             onExpandedChange = { expanded ->
-                                onLocalVersionExpandedChange(item.id, expanded)
-                            }
+                                actions.onLocalVersionExpandedChange(item.id, expanded)
+                            },
                         )
                         AnimatedVisibility(
                             visible = localVersionExpanded,
                             enter = appExpandIn(),
-                            exit = appExpandOut()
+                            exit = appExpandOut(),
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
+                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
                             ) {
                                 GitHubLinkedInfoCard(
                                     label = stringResource(R.string.github_item_label_updated_at),
                                     value = appUpdatedAtLabel,
                                     valueColor = GitHubStatusPalette.Active,
                                     onClick = {
-                                        onLocalVersionExpandedChange(item.id, false)
-                                    }
+                                        actions.onLocalVersionExpandedChange(item.id, false)
+                                    },
                                 )
                                 if (item.checkActionsUpdates) {
                                     GitHubLinkedInfoCard(
@@ -327,147 +303,168 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                                         valueColor = GitHubStatusPalette.Cache,
                                         valueMaxLines = 2,
                                         onClick = {
-                                            onOpenActionsSheet(item)
-                                        }
+                                            actions.onOpenActionsSheet(item)
+                                        },
                                     )
                                 }
                             }
                         }
                     }
-                    val showStableRelease = state.hasStableRelease &&
-                        (state.latestStableName.isNotBlank() ||
-                            state.latestStableRawTag.isNotBlank() ||
-                            state.latestTag.isNotBlank())
-                    val showPreRelease = state.showPreReleaseInfo &&
-                            (state.latestPreName.isNotBlank() ||
+                    val showStableRelease =
+                        state.hasStableRelease &&
+                            (
+                                state.latestStableName.isNotBlank() ||
+                                    state.latestStableRawTag.isNotBlank() ||
+                                    state.latestTag.isNotBlank()
+                            )
+                    val showPreRelease =
+                        state.showPreReleaseInfo &&
+                            (
+                                state.latestPreName.isNotBlank() ||
                                     state.latestPreRawTag.isNotBlank() ||
-                                    state.preReleaseInfo.isNotBlank())
+                                    state.preReleaseInfo.isNotBlank()
+                            )
                     if (showStableRelease) {
-                        val latestColor = state.stableVersionColor(
-                            neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
-                        )
-                        val stableReleaseMeta = formatReleaseMetaValue(
-                            preciseInfo = state.latestStableApkVersion.takeIf {
-                                itemLookupConfig.preciseApkVersionEnabled
-                            },
-                            releaseName = state.latestStableName.ifBlank { state.latestTag },
-                            rawTag = state.latestStableRawTag
-                        )
-                        val stableExpanded = trackedStableVersionExpanded[item.id] == true
-                        GitHubReleaseVersionCard(
-                            label = stringResource(
-                                if (item.isDirectApkTrack()) {
-                                    R.string.github_item_label_remote_stable_version
-                                } else {
-                                    R.string.github_item_label_stable_version
-                                }
-                            ),
-                            value = formatApkVersionValue(
-                                preciseInfo = state.latestStableApkVersion.takeIf {
-                                    itemLookupConfig.preciseApkVersionEnabled
-                                },
+                        val latestColor =
+                            state.stableVersionColor(
+                                neutralColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                            )
+                        val stableReleaseMeta =
+                            formatReleaseMetaValue(
+                                preciseInfo =
+                                    state.latestStableApkVersion.takeIf {
+                                        itemLookupConfig.preciseApkVersionEnabled
+                                    },
                                 releaseName = state.latestStableName.ifBlank { state.latestTag },
-                                rawTag = state.latestStableRawTag
-                            ),
+                                rawTag = state.latestStableRawTag,
+                            )
+                        val stableExpanded =
+                            expansionState.trackedStableVersionExpanded[item.id] == true
+                        GitHubReleaseVersionCard(
+                            label =
+                                stringResource(
+                                    if (item.isDirectApkTrack()) {
+                                        R.string.github_item_label_remote_stable_version
+                                    } else {
+                                        R.string.github_item_label_stable_version
+                                    },
+                                ),
+                            value =
+                                formatApkVersionValue(
+                                    preciseInfo =
+                                        state.latestStableApkVersion.takeIf {
+                                            itemLookupConfig.preciseApkVersionEnabled
+                                        },
+                                    releaseName = state.latestStableName.ifBlank { state.latestTag },
+                                    rawTag = state.latestStableRawTag,
+                                ),
                             textColor = latestColor,
                             expanded = stableExpanded,
                             emphasized = state.hasUpdate == true && !state.recommendsPreRelease,
                             valueMaxLines = 2,
                             onExpandedChange = { expanded ->
-                                onStableVersionExpandedChange(item.id, expanded)
-                            }
+                                actions.onStableVersionExpandedChange(item.id, expanded)
+                            },
                         )
                         AnimatedVisibility(
                             visible = stableExpanded && stableReleaseMeta.isNotBlank(),
                             enter = appExpandIn(),
-                            exit = appExpandOut()
+                            exit = appExpandOut(),
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
+                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
                             ) {
                                 GitHubLinkedInfoCard(
-                                    label = stringResource(
-                                        if (item.isDirectApkTrack()) {
-                                            R.string.github_item_label_remote_stable_release
-                                        } else {
-                                            R.string.github_item_label_stable_release
-                                        }
-                                    ),
+                                    label =
+                                        stringResource(
+                                            if (item.isDirectApkTrack()) {
+                                                R.string.github_item_label_remote_stable_release
+                                            } else {
+                                                R.string.github_item_label_stable_release
+                                            },
+                                        ),
                                     value = stableReleaseMeta,
                                     valueColor = MiuixTheme.colorScheme.primary,
                                     valueMaxLines = 2,
                                     onClick = {
-                                        onOpenExternalUrl(
+                                        actions.onOpenExternalUrl(
                                             state.githubStableReleaseLinkUrl(
                                                 item.owner,
-                                                item.repo
-                                            )
+                                                item.repo,
+                                            ),
                                         )
-                                    }
+                                    },
                                 )
                             }
                         }
                     }
                     if (showPreRelease) {
                         val preReleaseCardTextColor = gitHubPreReleaseCardTextColor()
-                        val preReleaseMeta = formatReleaseMetaValue(
-                            preciseInfo = state.latestPreApkVersion.takeIf {
-                                itemLookupConfig.preciseApkVersionEnabled
-                            },
-                            releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
-                            rawTag = state.latestPreRawTag
-                        )
-                        val preExpanded = trackedPreReleaseVersionExpanded[item.id] == true
-                        GitHubReleaseVersionCard(
-                            label = stringResource(
-                                if (item.isDirectApkTrack()) {
-                                    R.string.github_item_label_remote_prerelease_version
-                                } else {
-                                    R.string.github_item_label_prerelease_version
-                                }
-                            ),
-                            value = formatApkVersionValue(
-                                preciseInfo = state.latestPreApkVersion.takeIf {
-                                    itemLookupConfig.preciseApkVersionEnabled
-                                },
+                        val preReleaseMeta =
+                            formatReleaseMetaValue(
+                                preciseInfo =
+                                    state.latestPreApkVersion.takeIf {
+                                        itemLookupConfig.preciseApkVersionEnabled
+                                    },
                                 releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
-                                rawTag = state.latestPreRawTag
-                            ),
+                                rawTag = state.latestPreRawTag,
+                            )
+                        val preExpanded =
+                            expansionState.trackedPreReleaseVersionExpanded[item.id] == true
+                        GitHubReleaseVersionCard(
+                            label =
+                                stringResource(
+                                    if (item.isDirectApkTrack()) {
+                                        R.string.github_item_label_remote_prerelease_version
+                                    } else {
+                                        R.string.github_item_label_prerelease_version
+                                    },
+                                ),
+                            value =
+                                formatApkVersionValue(
+                                    preciseInfo =
+                                        state.latestPreApkVersion.takeIf {
+                                            itemLookupConfig.preciseApkVersionEnabled
+                                        },
+                                    releaseName = state.latestPreName.ifBlank { state.preReleaseInfo },
+                                    rawTag = state.latestPreRawTag,
+                                ),
                             textColor = preReleaseCardTextColor,
                             expanded = preExpanded,
                             emphasized = state.recommendsPreRelease || state.hasPreReleaseUpdate,
                             valueMaxLines = 2,
                             onExpandedChange = { expanded ->
-                                onPreReleaseVersionExpandedChange(item.id, expanded)
-                            }
+                                actions.onPreReleaseVersionExpandedChange(item.id, expanded)
+                            },
                         )
                         AnimatedVisibility(
                             visible = preExpanded && preReleaseMeta.isNotBlank(),
                             enter = appExpandIn(),
-                            exit = appExpandOut()
+                            exit = appExpandOut(),
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
+                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
                             ) {
                                 GitHubLinkedInfoCard(
-                                    label = stringResource(
-                                        if (item.isDirectApkTrack()) {
-                                            R.string.github_item_label_remote_prerelease_release
-                                        } else {
-                                            R.string.github_item_label_prerelease_release
-                                        }
-                                    ),
+                                    label =
+                                        stringResource(
+                                            if (item.isDirectApkTrack()) {
+                                                R.string.github_item_label_remote_prerelease_release
+                                            } else {
+                                                R.string.github_item_label_prerelease_release
+                                            },
+                                        ),
                                     value = preReleaseMeta,
                                     labelColor = preReleaseCardTextColor,
                                     valueColor = preReleaseCardTextColor,
                                     valueMaxLines = 2,
                                     onClick = {
-                                        onOpenExternalUrl(
-                                            state.githubPreReleaseLinkUrl(item.owner, item.repo)
+                                        actions.onOpenExternalUrl(
+                                            state.githubPreReleaseLinkUrl(item.owner, item.repo),
                                         )
-                                    }
+                                    },
                                 )
                             }
                         }
@@ -475,27 +472,27 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                     if (state.releaseHint.isNotBlank()) {
                         AppSupportingBlock(
                             text = githubReleaseHintMessage(context, state.releaseHint),
-                            accentColor = MiuixTheme.colorScheme.onBackgroundVariant
+                            accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         )
                     }
 
-                    val assetBundle = apkAssetBundles[item.id]
-                    val assetLoading = apkAssetLoading[item.id] == true
-                    val assetError = apkAssetErrors[item.id].orEmpty()
-                    val assetExpanded = apkAssetExpanded[item.id] == true
+                    val assetBundle = assetState.apkAssetBundles[item.id]
+                    val assetLoading = assetState.apkAssetLoading[item.id] == true
+                    val assetError = assetState.apkAssetErrors[item.id].orEmpty()
+                    val assetExpanded = assetState.apkAssetExpanded[item.id] == true
                     if (item.isGitHubRepositoryTrack() &&
-                        lookupConfig.decisionAssistEnabled &&
-                        lookupConfig.repositoryHealthCardEnabled
+                        content.lookupConfig.decisionAssistEnabled &&
+                        content.lookupConfig.repositoryHealthCardEnabled
                     ) {
                         val health = buildGitHubRepositoryHealth(item, state)
                         GitHubHealthPreviewBlock(
                             health = health,
                             onClick = {
-                                onOpenDecisionAssistDetail(
+                                actions.onOpenDecisionAssistDetail(
                                     GitHubDecisionAssistDetailType.RepositoryHealth,
-                                    item
+                                    item,
                                 )
-                            }
+                            },
                         )
                     }
                     if (item.isGitHubRepositoryTrack()) {
@@ -503,21 +500,21 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             item = item,
                             state = state,
                             lookupConfig = itemLookupConfig,
-                            isDark = isDark,
-                            contentBackdrop = contentBackdrop,
+                            isDark = surfaces.isDark,
+                            contentBackdrop = surfaces.contentBackdrop,
                             assetBundle = assetBundle,
                             assetLoading = assetLoading,
                             assetError = assetError,
                             assetExpanded = assetExpanded,
-                            managedInstallLoading = managedInstallLoading,
-                            onOpenExternalUrl = onOpenExternalUrl,
-                            onLoadApkAssets = onLoadApkAssets,
-                            onRefreshTrackedItem = onRefreshTrackedItem,
-                            onOpenApkInfo = onOpenApkInfo,
-                            onOpenApkInDownloader = onOpenApkInDownloader,
-                            onShareApkLink = onShareApkLink,
+                            managedInstallLoading = assetState.managedInstallLoading,
+                            onOpenExternalUrl = actions.onOpenExternalUrl,
+                            onLoadApkAssets = actions.onLoadApkAssets,
+                            onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                            onOpenApkInfo = actions.onOpenApkInfo,
+                            onOpenApkInDownloader = actions.onOpenApkInDownloader,
+                            onShareApkLink = actions.onShareApkLink,
                             context = context,
-                            supportedAbis = supportedAbis
+                            supportedAbis = runtime.supportedAbis,
                         )
                     }
                     if (item.isDirectApkTrack()) {
@@ -525,26 +522,26 @@ internal fun LazyListScope.GitHubTrackedItemsSection(
                             item = item,
                             state = state,
                             lookupConfig = itemLookupConfig,
-                            isDark = isDark,
-                            contentBackdrop = contentBackdrop,
+                            isDark = surfaces.isDark,
+                            contentBackdrop = surfaces.contentBackdrop,
                             assetBundle = null,
                             assetLoading = false,
                             assetError = "",
                             assetExpanded = assetExpanded,
-                            managedInstallLoading = managedInstallLoading,
-                            onOpenExternalUrl = onOpenExternalUrl,
-                            onLoadApkAssets = onLoadApkAssets,
-                            onRefreshTrackedItem = onRefreshTrackedItem,
-                            onOpenApkInfo = onOpenApkInfo,
-                            onOpenApkInDownloader = onOpenApkInDownloader,
-                            onShareApkLink = onShareApkLink,
+                            managedInstallLoading = assetState.managedInstallLoading,
+                            onOpenExternalUrl = actions.onOpenExternalUrl,
+                            onLoadApkAssets = actions.onLoadApkAssets,
+                            onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                            onOpenApkInfo = actions.onOpenApkInfo,
+                            onOpenApkInDownloader = actions.onOpenApkInDownloader,
+                            onShareApkLink = actions.onShareApkLink,
                             context = context,
-                            supportedAbis = supportedAbis
+                            supportedAbis = runtime.supportedAbis,
                         )
                         GitHubDirectApkRemoteHealthCard(
                             item = item,
                             state = state,
-                            onOpenExternalUrl = onOpenExternalUrl
+                            onOpenExternalUrl = actions.onOpenExternalUrl,
                         )
                     }
                 }

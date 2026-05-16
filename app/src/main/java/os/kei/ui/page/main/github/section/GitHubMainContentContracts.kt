@@ -31,7 +31,7 @@ internal data class GitHubMainContentLayout(
     val scrollBehavior: ScrollBehavior,
     val addButtonScrollConnection: NestedScrollConnection,
     val bottomBarVisible: Boolean,
-    val floatingDockSide: AppFloatingDockSide
+    val floatingDockSide: AppFloatingDockSide,
 )
 
 internal data class GitHubMainContentSurfaces(
@@ -39,7 +39,7 @@ internal data class GitHubMainContentSurfaces(
     val contentBackdrop: LayerBackdrop,
     val topBarColor: Color,
     val liquidActionBarLayeredStyleEnabled: Boolean,
-    val isDark: Boolean
+    val isDark: Boolean,
 )
 
 internal data class GitHubMainContentControls(
@@ -52,7 +52,7 @@ internal data class GitHubMainContentControls(
     val showActionMenuPopup: Boolean,
     val deleteInProgress: Boolean,
     val tracksExporting: Boolean,
-    val tracksImporting: Boolean
+    val tracksImporting: Boolean,
 )
 
 internal data class GitHubMainContentOverview(
@@ -62,7 +62,7 @@ internal data class GitHubMainContentOverview(
     val lastRefreshMs: Long,
     val lookupConfig: GitHubLookupConfig,
     val visibleEntries: Set<GitHubOverviewEntry>,
-    val metrics: GitHubOverviewMetrics
+    val metrics: GitHubOverviewMetrics,
 )
 
 internal data class GitHubMainContentTracked(
@@ -82,7 +82,7 @@ internal data class GitHubMainContentTracked(
     val trackedCardExpanded: SnapshotStateMap<String, Boolean>,
     val trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
     val trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>
+    val trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>,
 )
 
 internal data class GitHubMainContentShareImport(
@@ -91,7 +91,7 @@ internal data class GitHubMainContentShareImport(
     val pendingAttachCandidate: GitHubPendingShareImportAttachCandidate?,
     val pendingResult: GitHubShareImportResult?,
     val showPendingCard: Boolean,
-    val pendingRepoOverlapCount: Int
+    val pendingRepoOverlapCount: Int,
 )
 
 internal data class GitHubMainContentActions(
@@ -133,5 +133,5 @@ internal data class GitHubMainContentActions(
     val onCancelActiveShareImportFlow: () -> Unit,
     val onCancelPendingShareImportTrack: () -> Unit,
     val onDismissShareImportResult: () -> Unit,
-    val onActionBarInteractingChanged: (Boolean) -> Unit
+    val onActionBarInteractingChanged: (Boolean) -> Unit,
 )

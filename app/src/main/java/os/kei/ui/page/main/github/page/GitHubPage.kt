@@ -33,6 +33,13 @@ import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
+import os.kei.ui.page.main.github.section.GitHubMainContentActions
+import os.kei.ui.page.main.github.section.GitHubMainContentControls
+import os.kei.ui.page.main.github.section.GitHubMainContentLayout
+import os.kei.ui.page.main.github.section.GitHubMainContentOverview
+import os.kei.ui.page.main.github.section.GitHubMainContentShareImport
+import os.kei.ui.page.main.github.section.GitHubMainContentSurfaces
+import os.kei.ui.page.main.github.section.GitHubMainContentTracked
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -254,124 +261,138 @@ fun GitHubPage(
     val githubGlassRuntime = LocalGlassEffectRuntime.current
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
         GitHubMainContent(
-            contentBottomPadding = runtime.contentBottomPadding,
-            listState = listState,
-            scrollBehavior = scrollBehavior,
-            addButtonScrollConnection = state.addButtonScrollConnection,
-            topBarBackdrop = backdrops.topBar,
-            contentBackdrop = backdrops.content,
-            topBarColor = topBarColor,
-            bottomBarVisible = runtime.bottomBarVisible,
-            liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-            searchExpanded = enableSearchBar && searchExpanded,
-            trackedSearch = state.trackedSearch,
-            sortMode = state.sortMode,
-            sortDirection = state.sortDirection,
-            trackedFilterMode = state.trackedFilterMode,
-            refreshIntervalHours = state.refreshIntervalHours,
-            showActionMenuPopup = state.showActionMenuPopup,
-            floatingDockSide = runtime.floatingDockSide,
-            deleteInProgress = state.deleteInProgress,
-            tracksExporting = transferState.tracksExporting,
-            tracksImporting = transferState.tracksImporting,
-            isDark = isDark,
-            overviewRefreshState = state.overviewRefreshState,
-            overviewExpanded = state.overviewExpanded,
-            refreshProgress = state.refreshProgress,
-            lastRefreshMs = state.lastRefreshMs,
-            lookupConfig = state.lookupConfig,
-            overviewVisibleEntries = state.overviewVisibleEntries,
-            overviewMetrics = contentDerivedState.trackedUi.overviewMetrics,
-            appList = state.appList,
-            trackedItems = state.trackedItems,
-            filteredTracked = contentDerivedState.trackedUi.filteredTracked,
-            sortedTracked = contentDerivedState.trackedUi.sortedTracked,
-            appLastUpdatedAtByTrackId = contentDerivedState.appLastUpdatedAtByTrackId,
-            checkStates = state.checkStates,
-            itemRefreshLoading = state.itemRefreshLoading,
-            apkAssetBundles = state.apkAssetBundles,
-            apkAssetLoading = state.apkAssetLoading,
-            apkAssetErrors = state.apkAssetErrors,
-            apkAssetExpanded = state.apkAssetExpanded,
-            managedInstallLoading = state.managedInstallLoading,
-            actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
-            trackedCardExpanded = state.trackedCardExpanded,
-            trackedLocalVersionExpanded = state.trackedLocalVersionExpanded,
-            trackedStableVersionExpanded = state.trackedStableVersionExpanded,
-            trackedPreReleaseVersionExpanded = state.trackedPreReleaseVersionExpanded,
-            pendingShareImportPreview = state.pendingShareImportPreview,
-            pendingShareImportTrack = state.pendingShareImportTrack,
-            pendingShareImportAttachCandidate = state.pendingShareImportAttachCandidate,
-            pendingShareImportResult = state.pendingShareImportResult,
-            showPendingShareImportCard = contentDerivedState.showPendingShareImportCard,
-            pendingShareImportRepoOverlapCount = contentDerivedState.pendingShareImportRepoOverlapCount,
-            onTrackedSearchChange = { state.trackedSearch = it },
-            onSearchExpandedChange = { expanded ->
-                searchExpanded = enableSearchBar && expanded
-            },
-            onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
-            onSortModeChange = actions::setSortMode,
-            onSortDirectionChange = actions::setSortDirection,
-            onTrackedFilterModeChange = actions::setTrackedFilterMode,
-            onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
-            onExportTrackedItems = transferCallbacks.onExportTrackedItems,
-            onImportTrackedItems = transferCallbacks.onImportTrackedItems,
-            onOpenStarImport = transferCallbacks.onOpenStarImport,
-            onOpenStrategySheet = actions::openStrategySheet,
-            onOpenCheckLogicSheet = actions::openCheckLogicSheet,
-            onOverviewExpandedChange = actions::setOverviewExpanded,
-            onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
-            onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
-            onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,
-            onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
-            onRefreshVisibleTracked = {
-                actions.refreshVisibleTracked(
-                    items = contentDerivedState.trackedUi.sortedTracked,
-                    showToast = true
-                )
-            },
-            onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
-            onFailedFilterToggle = actions::setFailedFilterEnabled,
-            onRefreshTrackedItem = { actions.refreshTrackedItem(it, showToastOnError = true) },
-            onOpenActionsSheet = actions::openActionsSheet,
-            onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
-            onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
-            onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
-            onCollapseTrackedCard = actions::collapseTrackedCard,
-            onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
-            onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->
-                actions.loadApkAssets(
-                    item = item,
-                    itemState = itemState,
-                    toggleOnlyWhenCached = toggleOnlyWhenCached,
-                    includeAllAssets = includeAllAssets,
-                    allowLatestReleaseFallback = allowLatestReleaseFallback
-                )
-            },
-            onOpenDecisionAssistDetail = { type, item ->
-                val itemState = state.checkStates[item.id] ?: VersionCheckUi()
-                state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
-                    type = type,
-                    item = item
-                )
-                if (type == GitHubDecisionAssistDetailType.ReleaseNotes) {
-                    actions.loadReleaseNotesTargets(
+            layout = GitHubMainContentLayout(
+                contentBottomPadding = runtime.contentBottomPadding,
+                listState = listState,
+                scrollBehavior = scrollBehavior,
+                addButtonScrollConnection = state.addButtonScrollConnection,
+                bottomBarVisible = runtime.bottomBarVisible,
+                floatingDockSide = runtime.floatingDockSide
+            ),
+            surfaces = GitHubMainContentSurfaces(
+                topBarBackdrop = backdrops.topBar,
+                contentBackdrop = backdrops.content,
+                topBarColor = topBarColor,
+                liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                isDark = isDark
+            ),
+            controls = GitHubMainContentControls(
+                searchExpanded = enableSearchBar && searchExpanded,
+                trackedSearch = state.trackedSearch,
+                sortMode = state.sortMode,
+                sortDirection = state.sortDirection,
+                trackedFilterMode = state.trackedFilterMode,
+                refreshIntervalHours = state.refreshIntervalHours,
+                showActionMenuPopup = state.showActionMenuPopup,
+                deleteInProgress = state.deleteInProgress,
+                tracksExporting = transferState.tracksExporting,
+                tracksImporting = transferState.tracksImporting
+            ),
+            overview = GitHubMainContentOverview(
+                refreshState = state.overviewRefreshState,
+                expanded = state.overviewExpanded,
+                refreshProgress = state.refreshProgress,
+                lastRefreshMs = state.lastRefreshMs,
+                lookupConfig = state.lookupConfig,
+                visibleEntries = state.overviewVisibleEntries,
+                metrics = contentDerivedState.trackedUi.overviewMetrics
+            ),
+            tracked = GitHubMainContentTracked(
+                appList = state.appList,
+                trackedItems = state.trackedItems,
+                filteredTracked = contentDerivedState.trackedUi.filteredTracked,
+                sortedTracked = contentDerivedState.trackedUi.sortedTracked,
+                appLastUpdatedAtByTrackId = contentDerivedState.appLastUpdatedAtByTrackId,
+                checkStates = state.checkStates,
+                itemRefreshLoading = state.itemRefreshLoading,
+                apkAssetBundles = state.apkAssetBundles,
+                apkAssetLoading = state.apkAssetLoading,
+                apkAssetErrors = state.apkAssetErrors,
+                apkAssetExpanded = state.apkAssetExpanded,
+                managedInstallLoading = state.managedInstallLoading,
+                actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
+                trackedCardExpanded = state.trackedCardExpanded,
+                trackedLocalVersionExpanded = state.trackedLocalVersionExpanded,
+                trackedStableVersionExpanded = state.trackedStableVersionExpanded,
+                trackedPreReleaseVersionExpanded = state.trackedPreReleaseVersionExpanded
+            ),
+            shareImport = GitHubMainContentShareImport(
+                pendingPreview = state.pendingShareImportPreview,
+                pendingTrack = state.pendingShareImportTrack,
+                pendingAttachCandidate = state.pendingShareImportAttachCandidate,
+                pendingResult = state.pendingShareImportResult,
+                showPendingCard = contentDerivedState.showPendingShareImportCard,
+                pendingRepoOverlapCount = contentDerivedState.pendingShareImportRepoOverlapCount
+            ),
+            actions = GitHubMainContentActions(
+                onTrackedSearchChange = { state.trackedSearch = it },
+                onSearchExpandedChange = { expanded ->
+                    searchExpanded = enableSearchBar && expanded
+                },
+                onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
+                onSortModeChange = actions::setSortMode,
+                onSortDirectionChange = actions::setSortDirection,
+                onTrackedFilterModeChange = actions::setTrackedFilterMode,
+                onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
+                onExportTrackedItems = transferCallbacks.onExportTrackedItems,
+                onImportTrackedItems = transferCallbacks.onImportTrackedItems,
+                onOpenStarImport = transferCallbacks.onOpenStarImport,
+                onOpenStrategySheet = actions::openStrategySheet,
+                onOpenCheckLogicSheet = actions::openCheckLogicSheet,
+                onOverviewExpandedChange = actions::setOverviewExpanded,
+                onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
+                onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
+                onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,
+                onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
+                onRefreshVisibleTracked = {
+                    actions.refreshVisibleTracked(
+                        items = contentDerivedState.trackedUi.sortedTracked,
+                        showToast = true
+                    )
+                },
+                onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
+                onFailedFilterToggle = actions::setFailedFilterEnabled,
+                onRefreshTrackedItem = { actions.refreshTrackedItem(it, showToastOnError = true) },
+                onOpenActionsSheet = actions::openActionsSheet,
+                onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
+                onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
+                onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
+                onCollapseTrackedCard = actions::collapseTrackedCard,
+                onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
+                onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->
+                    actions.loadApkAssets(
                         item = item,
                         itemState = itemState,
-                        forceRefresh = false
+                        toggleOnlyWhenCached = toggleOnlyWhenCached,
+                        includeAllAssets = includeAllAssets,
+                        allowLatestReleaseFallback = allowLatestReleaseFallback
                     )
-                }
-            },
-            onOpenExternalUrl = actions::openExternalUrl,
-            onOpenApkInfo = actions::openApkInfo,
-            onOpenApkInDownloader = actions::openApkInDownloader,
-            onShareApkLink = actions::shareApkLink,
-            onOpenShareImportFlow = actions::openShareImportFlow,
-            onOpenShareImportResult = actions::focusShareImportResult,
-            onCancelActiveShareImportFlow = actions::cancelActiveShareImportFlow,
-            onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,
-            onDismissShareImportResult = actions::dismissShareImportResult,
-            onActionBarInteractingChanged = onActionBarInteractingChanged
+                },
+                onOpenDecisionAssistDetail = { type, item ->
+                    val itemState = state.checkStates[item.id] ?: VersionCheckUi()
+                    state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
+                        type = type,
+                        item = item
+                    )
+                    if (type == GitHubDecisionAssistDetailType.ReleaseNotes) {
+                        actions.loadReleaseNotesTargets(
+                            item = item,
+                            itemState = itemState,
+                            forceRefresh = false
+                        )
+                    }
+                },
+                onOpenExternalUrl = actions::openExternalUrl,
+                onOpenApkInfo = actions::openApkInfo,
+                onOpenApkInDownloader = actions::openApkInDownloader,
+                onShareApkLink = actions::shareApkLink,
+                onOpenShareImportFlow = actions::openShareImportFlow,
+                onOpenShareImportResult = actions::focusShareImportResult,
+                onCancelActiveShareImportFlow = actions::cancelActiveShareImportFlow,
+                onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,
+                onDismissShareImportResult = actions::dismissShareImportResult,
+                onActionBarInteractingChanged = onActionBarInteractingChanged
+            )
         )
     }
 

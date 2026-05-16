@@ -5,38 +5,18 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
-import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.InstalledAppItem
-import os.kei.ui.page.main.github.GitHubSortDirection
-import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
-import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
-import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
-import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
-import os.kei.ui.page.main.github.share.GitHubShareImportPreview
-import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -51,127 +31,43 @@ import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.testing.KeiOsTestTags
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
 internal fun GitHubMainContent(
-    contentBottomPadding: Dp,
-    listState: LazyListState,
-    scrollBehavior: ScrollBehavior,
-    addButtonScrollConnection: NestedScrollConnection,
-    topBarBackdrop: LayerBackdrop,
-    contentBackdrop: LayerBackdrop,
-    topBarColor: Color,
-    bottomBarVisible: Boolean,
-    liquidActionBarLayeredStyleEnabled: Boolean,
-    searchExpanded: Boolean,
-    trackedSearch: String,
-    sortMode: GitHubSortMode,
-    sortDirection: GitHubSortDirection,
-    trackedFilterMode: GitHubTrackedFilterMode,
-    refreshIntervalHours: Int,
-    showActionMenuPopup: Boolean,
-    floatingDockSide: AppFloatingDockSide,
-    deleteInProgress: Boolean,
-    tracksExporting: Boolean,
-    tracksImporting: Boolean,
-    isDark: Boolean,
-    overviewRefreshState: OverviewRefreshState,
-    overviewExpanded: Boolean,
-    refreshProgress: Float,
-    lastRefreshMs: Long,
-    lookupConfig: GitHubLookupConfig,
-    overviewVisibleEntries: Set<GitHubOverviewEntry>,
-    overviewMetrics: GitHubOverviewMetrics,
-    appList: List<InstalledAppItem>,
-    trackedItems: List<GitHubTrackedApp>,
-    filteredTracked: List<GitHubTrackedApp>,
-    sortedTracked: List<GitHubTrackedApp>,
-    appLastUpdatedAtByTrackId: Map<String, Long>,
-    checkStates: SnapshotStateMap<String, VersionCheckUi>,
-    itemRefreshLoading: SnapshotStateMap<String, Boolean>,
-    apkAssetBundles: SnapshotStateMap<String, GitHubReleaseAssetBundle>,
-    apkAssetLoading: SnapshotStateMap<String, Boolean>,
-    apkAssetErrors: SnapshotStateMap<String, String>,
-    apkAssetExpanded: SnapshotStateMap<String, Boolean>,
-    managedInstallLoading: SnapshotStateMap<String, Boolean>,
-    actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
-    trackedCardExpanded: SnapshotStateMap<String, Boolean>,
-    trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
-    trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
-    trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>,
-    pendingShareImportPreview: GitHubShareImportPreview?,
-    pendingShareImportTrack: GitHubPendingShareImportTrack?,
-    pendingShareImportAttachCandidate: GitHubPendingShareImportAttachCandidate?,
-    pendingShareImportResult: GitHubShareImportResult?,
-    showPendingShareImportCard: Boolean,
-    pendingShareImportRepoOverlapCount: Int,
-    onTrackedSearchChange: (String) -> Unit,
-    onSearchExpandedChange: (Boolean) -> Unit,
-    onShowActionMenuPopupChange: (Boolean) -> Unit,
-    onSortModeChange: (GitHubSortMode) -> Unit,
-    onSortDirectionChange: (GitHubSortDirection) -> Unit,
-    onTrackedFilterModeChange: (GitHubTrackedFilterMode) -> Unit,
-    onRefreshIntervalHoursChange: (Int) -> Unit,
-    onExportTrackedItems: () -> Unit,
-    onImportTrackedItems: () -> Unit,
-    onOpenStarImport: () -> Unit,
-    onOpenStrategySheet: () -> Unit,
-    onOpenCheckLogicSheet: () -> Unit,
-    onOverviewExpandedChange: (Boolean) -> Unit,
-    onLocalVersionExpandedChange: (String, Boolean) -> Unit,
-    onStableVersionExpandedChange: (String, Boolean) -> Unit,
-    onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,
-    onOpenOverviewEntrySheet: () -> Unit,
-    onRefreshVisibleTracked: () -> Unit,
-    onRetryFailedTracked: () -> Unit,
-    onFailedFilterToggle: (Boolean) -> Unit,
-    onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
-    onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
-    onOpenTrackSheetForAdd: () -> Unit,
-    onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
-    onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
-    onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
-    onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
-    onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
-    onOpenExternalUrl: (String) -> Unit,
-    onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
-    onOpenApkInDownloader: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
-    onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
-    onOpenShareImportFlow: () -> Unit,
-    onOpenShareImportResult: () -> Unit,
-    onCancelActiveShareImportFlow: () -> Unit,
-    onCancelPendingShareImportTrack: () -> Unit,
-    onDismissShareImportResult: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit
+    layout: GitHubMainContentLayout,
+    surfaces: GitHubMainContentSurfaces,
+    controls: GitHubMainContentControls,
+    overview: GitHubMainContentOverview,
+    tracked: GitHubMainContentTracked,
+    shareImport: GitHubMainContentShareImport,
+    actions: GitHubMainContentActions
 ) {
     val context = LocalContext.current
     val supportedAbis = Build.SUPPORTED_ABIS?.toList().orEmpty()
-    val installedAppLabelsByPackage = remember(appList) {
-        appList
+    val installedAppLabelsByPackage = remember(tracked.appList) {
+        tracked.appList
             .asSequence()
             .map { it.packageName.trim() to it.label.trim() }
             .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
             .toMap()
     }
-    val bottomBarOffset = if (bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
+    val bottomBarOffset = if (layout.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
     val searchDockBottom by animateDpAsState(
-        targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
+        targetValue = layout.contentBottomPadding - 24.dp - bottomBarOffset,
         label = "github_floating_search_bottom"
     )
     val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
         restingBottomGap = searchDockBottom,
         label = "github_floating_keyboard_lift"
     )
-    val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
+    val dockAlignment = if (layout.floatingDockSide == AppFloatingDockSide.Start) {
         androidx.compose.ui.Alignment.BottomStart
     } else {
         androidx.compose.ui.Alignment.BottomEnd
     }
-    val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
-    val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
-    val refreshStatus = when (overviewRefreshState) {
+    val dockStartPadding = if (layout.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
+    val dockEndPadding = if (layout.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val refreshStatus = when (overview.refreshState) {
         OverviewRefreshState.Refreshing -> AppFloatingRefreshStatus.Refreshing
         OverviewRefreshState.Completed -> AppFloatingRefreshStatus.Success
         OverviewRefreshState.Failed -> AppFloatingRefreshStatus.Danger
@@ -187,24 +83,24 @@ internal fun GitHubMainContent(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 GitHubTopBarSection(
-                    topBarColor = topBarColor,
-                    scrollBehavior = scrollBehavior,
-                    titleBackdrop = topBarBackdrop,
+                    topBarColor = surfaces.topBarColor,
+                    scrollBehavior = layout.scrollBehavior,
+                    titleBackdrop = surfaces.topBarBackdrop,
                 )
             }
         ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .nestedScroll(addButtonScrollConnection)
+                    .nestedScroll(layout.addButtonScrollConnection)
             ) {
                 AppPageLazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    state = listState,
+                        .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
+                    state = layout.listState,
                     innerPadding = innerPadding,
-                    bottomExtra = appPageBottomPaddingWithFloatingOverlay(contentBottomPadding),
+                    bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
                     sectionSpacing = CardLayoutRhythm.denseSectionGap
                 ) {
                     item(
@@ -212,139 +108,139 @@ internal fun GitHubMainContent(
                         contentType = "github_overview"
                     ) {
                         GitHubOverviewCard(
-                            backdrop = contentBackdrop,
-                            isDark = isDark,
-                            lookupConfig = lookupConfig,
-                            overviewRefreshState = overviewRefreshState,
-                            expanded = overviewExpanded,
-                            onExpandedChange = onOverviewExpandedChange,
-                            refreshProgress = refreshProgress,
-                            lastRefreshMs = lastRefreshMs,
-                            visibleEntries = overviewVisibleEntries,
-                            metrics = overviewMetrics,
-                            failedFilterActive = trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
-                            onEditVisibleEntries = onOpenOverviewEntrySheet,
-                            onRetryFailedTracked = onRetryFailedTracked,
-                            onFailedFilterToggle = onFailedFilterToggle
+                            backdrop = surfaces.contentBackdrop,
+                            isDark = surfaces.isDark,
+                            lookupConfig = overview.lookupConfig,
+                            overviewRefreshState = overview.refreshState,
+                            expanded = overview.expanded,
+                            onExpandedChange = actions.onOverviewExpandedChange,
+                            refreshProgress = overview.refreshProgress,
+                            lastRefreshMs = overview.lastRefreshMs,
+                            visibleEntries = overview.visibleEntries,
+                            metrics = overview.metrics,
+                            failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
+                            onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
+                            onRetryFailedTracked = actions.onRetryFailedTracked,
+                            onFailedFilterToggle = actions.onFailedFilterToggle
                         )
                     }
-                    if (showPendingShareImportCard && pendingShareImportTrack != null) {
+                    if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
                         item(
                             key = "github_pending_share_import_track",
                             contentType = "github_share_import"
                         ) {
                             GitHubPendingShareImportCard(
-                                pending = pendingShareImportTrack,
-                                repoOverlapCount = pendingShareImportRepoOverlapCount,
-                                onOpen = onOpenShareImportFlow,
-                                onCancel = onCancelPendingShareImportTrack
+                                pending = shareImport.pendingTrack,
+                                repoOverlapCount = shareImport.pendingRepoOverlapCount,
+                                onOpen = actions.onOpenShareImportFlow,
+                                onCancel = actions.onCancelPendingShareImportTrack
                             )
                         }
                     }
-                    pendingShareImportAttachCandidate?.let { candidate ->
+                    shareImport.pendingAttachCandidate?.let { candidate ->
                         item(
                             key = "github_pending_share_import_attach",
                             contentType = "github_share_import"
                         ) {
                             GitHubShareImportAttachCandidateCard(
                                 candidate = candidate,
-                                onOpen = onOpenShareImportFlow,
-                                onCancel = onCancelActiveShareImportFlow
+                                onOpen = actions.onOpenShareImportFlow,
+                                onCancel = actions.onCancelActiveShareImportFlow
                             )
                         }
                     }
-                    if (pendingShareImportTrack == null && pendingShareImportAttachCandidate == null) {
-                        pendingShareImportPreview?.let { preview ->
+                    if (shareImport.pendingTrack == null && shareImport.pendingAttachCandidate == null) {
+                        shareImport.pendingPreview?.let { preview ->
                             item(
                                 key = "github_share_import_preview",
                                 contentType = "github_share_import"
                             ) {
                                 GitHubShareImportPreviewCard(
                                     preview = preview,
-                                    onOpen = onOpenShareImportFlow,
-                                    onCancel = onCancelActiveShareImportFlow
+                                    onOpen = actions.onOpenShareImportFlow,
+                                    onCancel = actions.onCancelActiveShareImportFlow
                                 )
                             }
                         }
                     }
                     if (
-                        pendingShareImportPreview == null &&
-                        pendingShareImportTrack == null &&
-                        pendingShareImportAttachCandidate == null
+                        shareImport.pendingPreview == null &&
+                        shareImport.pendingTrack == null &&
+                        shareImport.pendingAttachCandidate == null
                     ) {
-                        pendingShareImportResult?.let { result ->
+                        shareImport.pendingResult?.let { result ->
                             item(
                                 key = "github_share_import_result",
                                 contentType = "github_share_import"
                             ) {
                                 GitHubShareImportResultCard(
                                     result = result,
-                                    onOpen = onOpenShareImportResult,
-                                    onDismiss = onDismissShareImportResult
+                                    onOpen = actions.onOpenShareImportResult,
+                                    onDismiss = actions.onDismissShareImportResult
                                 )
                             }
                         }
                     }
                     GitHubTrackedItemsSection(
-                        lookupConfig = lookupConfig,
-                        trackedItems = trackedItems,
-                        filteredTracked = filteredTracked,
-                        sortedTracked = sortedTracked,
+                        lookupConfig = overview.lookupConfig,
+                        trackedItems = tracked.trackedItems,
+                        filteredTracked = tracked.filteredTracked,
+                        sortedTracked = tracked.sortedTracked,
                         installedAppLabelsByPackage = installedAppLabelsByPackage,
-                        appLastUpdatedAtByTrackId = appLastUpdatedAtByTrackId,
-                        checkStates = checkStates,
-                        itemRefreshLoading = itemRefreshLoading,
-                        contentBackdrop = contentBackdrop,
-                        isDark = isDark,
-                        apkAssetBundles = apkAssetBundles,
-                        apkAssetLoading = apkAssetLoading,
-                        apkAssetErrors = apkAssetErrors,
-                        apkAssetExpanded = apkAssetExpanded,
-                        managedInstallLoading = managedInstallLoading,
-                        actionsRecommendedRunSnapshots = actionsRecommendedRunSnapshots,
-                        trackedCardExpanded = trackedCardExpanded,
-                        trackedLocalVersionExpanded = trackedLocalVersionExpanded,
-                        trackedStableVersionExpanded = trackedStableVersionExpanded,
-                        trackedPreReleaseVersionExpanded = trackedPreReleaseVersionExpanded,
-                        onRefreshTrackedItem = onRefreshTrackedItem,
-                        onOpenActionsSheet = onOpenActionsSheet,
-                        onOpenTrackSheetForEdit = onOpenTrackSheetForEdit,
-                        onRequestDeleteTrackedItem = onRequestDeleteTrackedItem,
-                        onCollapseTrackedCard = onCollapseTrackedCard,
-                        onLocalVersionExpandedChange = onLocalVersionExpandedChange,
-                        onStableVersionExpandedChange = onStableVersionExpandedChange,
-                        onPreReleaseVersionExpandedChange = onPreReleaseVersionExpandedChange,
-                        onCollapseApkAssetPanel = onCollapseApkAssetPanel,
-                        onLoadApkAssets = onLoadApkAssets,
-                        onOpenDecisionAssistDetail = onOpenDecisionAssistDetail,
-                        onOpenExternalUrl = onOpenExternalUrl,
-                        onOpenApkInfo = onOpenApkInfo,
-                        onOpenApkInDownloader = onOpenApkInDownloader,
-                        onShareApkLink = onShareApkLink,
+                        appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
+                        checkStates = tracked.checkStates,
+                        itemRefreshLoading = tracked.itemRefreshLoading,
+                        contentBackdrop = surfaces.contentBackdrop,
+                        isDark = surfaces.isDark,
+                        apkAssetBundles = tracked.apkAssetBundles,
+                        apkAssetLoading = tracked.apkAssetLoading,
+                        apkAssetErrors = tracked.apkAssetErrors,
+                        apkAssetExpanded = tracked.apkAssetExpanded,
+                        managedInstallLoading = tracked.managedInstallLoading,
+                        actionsRecommendedRunSnapshots = tracked.actionsRecommendedRunSnapshots,
+                        trackedCardExpanded = tracked.trackedCardExpanded,
+                        trackedLocalVersionExpanded = tracked.trackedLocalVersionExpanded,
+                        trackedStableVersionExpanded = tracked.trackedStableVersionExpanded,
+                        trackedPreReleaseVersionExpanded = tracked.trackedPreReleaseVersionExpanded,
+                        onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                        onOpenActionsSheet = actions.onOpenActionsSheet,
+                        onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
+                        onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
+                        onCollapseTrackedCard = actions.onCollapseTrackedCard,
+                        onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
+                        onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
+                        onPreReleaseVersionExpandedChange = actions.onPreReleaseVersionExpandedChange,
+                        onCollapseApkAssetPanel = actions.onCollapseApkAssetPanel,
+                        onLoadApkAssets = actions.onLoadApkAssets,
+                        onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
+                        onOpenExternalUrl = actions.onOpenExternalUrl,
+                        onOpenApkInfo = actions.onOpenApkInfo,
+                        onOpenApkInDownloader = actions.onOpenApkInDownloader,
+                        onShareApkLink = actions.onShareApkLink,
                         context = context,
                         supportedAbis = supportedAbis
                     )
                 }
 
                 AppFloatingVerticalSearchActionDock(
-                    backdrop = contentBackdrop,
-                    expanded = searchExpanded,
-                    query = trackedSearch,
-                    onQueryChange = onTrackedSearchChange,
-                    onExpandedChange = onSearchExpandedChange,
+                    backdrop = surfaces.contentBackdrop,
+                    expanded = controls.searchExpanded,
+                    query = controls.trackedSearch,
+                    onQueryChange = actions.onTrackedSearchChange,
+                    onExpandedChange = actions.onSearchExpandedChange,
                     searchIcon = appLucideSearchIcon(),
                     searchContentDescription = stringResource(R.string.github_topbar_search_label),
                     placeholder = stringResource(R.string.github_topbar_search_label),
                     addIcon = appLucideAddIcon(),
                     addContentDescription = stringResource(R.string.github_cd_add_track),
-                    onAddClick = onOpenTrackSheetForAdd,
+                    onAddClick = actions.onOpenTrackSheetForAdd,
                     refreshIcon = appLucideRefreshIcon(),
                     refreshContentDescription = stringResource(R.string.github_topbar_cd_check),
-                    onRefreshClick = onRefreshVisibleTracked,
+                    onRefreshClick = actions.onRefreshVisibleTracked,
                     showAddAction = true,
-                    refreshEnabled = !deleteInProgress,
+                    refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,
-                    dockSide = floatingDockSide,
+                    dockSide = layout.floatingDockSide,
                     keyboardLift = floatingKeyboardLift,
                     modifier = Modifier
                         .align(dockAlignment)
@@ -358,26 +254,26 @@ internal fun GitHubMainContent(
         }
         AppTopEndActionBarOverlay {
             GitHubTopBarActions(
-                backdrop = topBarBackdrop,
-                liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                sortMode = sortMode,
-                sortDirection = sortDirection,
-                trackedFilterMode = trackedFilterMode,
-                refreshIntervalHours = refreshIntervalHours,
-                showActionMenuPopup = showActionMenuPopup,
-                tracksExporting = tracksExporting,
-                tracksImporting = tracksImporting,
-                onOpenStrategySheet = onOpenStrategySheet,
-                onOpenCheckLogicSheet = onOpenCheckLogicSheet,
-                onShowActionMenuPopupChange = onShowActionMenuPopupChange,
-                onSortModeChange = onSortModeChange,
-                onSortDirectionChange = onSortDirectionChange,
-                onTrackedFilterModeChange = onTrackedFilterModeChange,
-                onRefreshIntervalHoursChange = onRefreshIntervalHoursChange,
-                onExportTrackedItems = onExportTrackedItems,
-                onImportTrackedItems = onImportTrackedItems,
-                onOpenStarImport = onOpenStarImport,
-                onActionBarInteractingChanged = onActionBarInteractingChanged
+                backdrop = surfaces.topBarBackdrop,
+                liquidActionBarLayeredStyleEnabled = surfaces.liquidActionBarLayeredStyleEnabled,
+                sortMode = controls.sortMode,
+                sortDirection = controls.sortDirection,
+                trackedFilterMode = controls.trackedFilterMode,
+                refreshIntervalHours = controls.refreshIntervalHours,
+                showActionMenuPopup = controls.showActionMenuPopup,
+                tracksExporting = controls.tracksExporting,
+                tracksImporting = controls.tracksImporting,
+                onOpenStrategySheet = actions.onOpenStrategySheet,
+                onOpenCheckLogicSheet = actions.onOpenCheckLogicSheet,
+                onShowActionMenuPopupChange = actions.onShowActionMenuPopupChange,
+                onSortModeChange = actions.onSortModeChange,
+                onSortDirectionChange = actions.onSortDirectionChange,
+                onTrackedFilterModeChange = actions.onTrackedFilterModeChange,
+                onRefreshIntervalHoursChange = actions.onRefreshIntervalHoursChange,
+                onExportTrackedItems = actions.onExportTrackedItems,
+                onImportTrackedItems = actions.onImportTrackedItems,
+                onOpenStarImport = actions.onOpenStarImport,
+                onActionBarInteractingChanged = actions.onActionBarInteractingChanged
             )
         }
     }

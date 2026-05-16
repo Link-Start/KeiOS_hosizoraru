@@ -5,16 +5,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 
-private fun guideLabelLookupKey(raw: String): String {
-    return raw
+private fun guideLabelLookupKey(raw: String): String =
+    raw
         .trim()
         .replace(" ", "")
         .replace("　", "")
-}
 
 @StringRes
-internal fun guideSourceLabelRes(raw: String): Int? {
-    return when (guideLabelLookupKey(raw)) {
+internal fun guideSourceLabelRes(raw: String): Int? =
+    when (guideLabelLookupKey(raw)) {
         "信息" -> R.string.guide_label_info
         "图片" -> R.string.guide_label_image
         "见下图" -> R.string.guide_label_see_image_below
@@ -43,6 +42,13 @@ internal fun guideSourceLabelRes(raw: String): Int? {
         "年龄" -> R.string.guide_field_age
         "兴趣爱好" -> R.string.guide_field_hobbies
         "介绍", "个人简介" -> R.string.guide_field_intro
+        "所属" -> R.string.guide_field_affiliation
+        "全名" -> R.string.guide_field_full_name
+        "日语全名" -> R.string.guide_field_japanese_full_name
+        "其他译名" -> R.string.guide_field_other_names
+        "年级" -> R.string.guide_field_grade
+        "首次登场", "首次登场日期" -> R.string.guide_field_first_appearance
+        "黑话", "黑话(别名)", "别名" -> R.string.guide_field_nickname_slang
         "攻击力" -> R.string.guide_stat_attack
         "防御力" -> R.string.guide_stat_defense
         "生命值" -> R.string.guide_stat_hp
@@ -79,6 +85,10 @@ internal fun guideSourceLabelRes(raw: String): Int? {
         "学生昵称" -> R.string.guide_profile_section_nickname
         "学生信息" -> R.string.guide_profile_section_info
         "学生爱好" -> R.string.guide_profile_section_hobbies
+        "称呼与译名" -> R.string.guide_profile_section_npc_aliases
+        "角色资料" -> R.string.guide_profile_section_npc_identity
+        "角色简介" -> R.string.guide_profile_section_npc_intro
+        "补充资料" -> R.string.guide_profile_section_npc_extra
         "礼物偏好" -> R.string.guide_profile_section_gifts
         "巧克力" -> R.string.guide_profile_section_chocolate
         "互动家具" -> R.string.guide_profile_section_furniture
@@ -107,12 +117,11 @@ internal fun guideSourceLabelRes(raw: String): Int? {
         "羁绊角色" -> R.string.guide_simulate_bond_character
         else -> null
     }
-}
 
 @Composable
 internal fun guideLocalizedLabel(
     raw: String,
-    @StringRes fallbackRes: Int = R.string.guide_label_info
+    @StringRes fallbackRes: Int = R.string.guide_label_info,
 ): String {
     val clean = raw.trim()
     val dynamicLabel = guideLocalizedDynamicLabel(clean)
@@ -171,45 +180,75 @@ private fun guideLocalizedDynamicLabel(raw: String): String? {
 }
 
 @Composable
-internal fun guideLocalizedValue(raw: String): String {
-    return when (raw.trim()) {
+internal fun guideLocalizedValue(raw: String): String =
+    when (raw.trim()) {
         "暂无数据", "原网站暂无该数据" -> stringResource(R.string.guide_value_no_data)
         "暂无更多参数，可点击来源查看完整图鉴。" -> stringResource(R.string.guide_value_open_source_for_full_guide)
         "未解析到详细描述，可点击下方来源查看完整图鉴。" -> stringResource(R.string.guide_value_description_not_parsed)
         else -> raw
     }
-}
 
 @Composable
 internal fun guideLocalizedVoiceLanguage(raw: String): String {
     val normalized = guideLabelLookupKey(raw).lowercase()
     val languageMatch = Regex("""^语言(\d+)$""").matchEntire(normalized)
     return when {
-        languageMatch != null -> stringResource(
-            R.string.guide_voice_language_format,
-            languageMatch.groupValues[1].toIntOrNull() ?: 1
-        )
-        normalized == "日配" -> stringResource(R.string.guide_voice_language_jp)
-        normalized == "中配" -> stringResource(R.string.guide_voice_language_cn)
-        normalized == "韩配" -> stringResource(R.string.guide_voice_language_kr)
-        normalized == "官翻" -> stringResource(R.string.guide_voice_language_official)
-        else -> raw.trim()
+        languageMatch != null -> {
+            stringResource(
+                R.string.guide_voice_language_format,
+                languageMatch.groupValues[1].toIntOrNull() ?: 1,
+            )
+        }
+
+        normalized == "日配" -> {
+            stringResource(R.string.guide_voice_language_jp)
+        }
+
+        normalized == "中配" -> {
+            stringResource(R.string.guide_voice_language_cn)
+        }
+
+        normalized == "韩配" -> {
+            stringResource(R.string.guide_voice_language_kr)
+        }
+
+        normalized == "官翻" -> {
+            stringResource(R.string.guide_voice_language_official)
+        }
+
+        else -> {
+            raw.trim()
+        }
     }
 }
 
 @Composable
-internal fun guideLocalizedVoiceLineLabel(raw: String, fallbackIndex: Int): String {
+internal fun guideLocalizedVoiceLineLabel(
+    raw: String,
+    fallbackIndex: Int,
+): String {
     val clean = raw.trim()
     val normalized = guideLabelLookupKey(clean)
     val lineMatch = Regex("""^台词(\d+)$""").matchEntire(normalized)
     return when {
-        normalized == "台词" -> stringResource(R.string.guide_voice_line)
-        lineMatch != null -> stringResource(
-            R.string.guide_voice_line_format,
-            lineMatch.groupValues[1].toIntOrNull() ?: fallbackIndex + 1
-        )
-        clean.isBlank() -> stringResource(R.string.guide_voice_line_format, fallbackIndex + 1)
-        else -> guideLocalizedVoiceLanguage(clean).ifBlank { clean }
+        normalized == "台词" -> {
+            stringResource(R.string.guide_voice_line)
+        }
+
+        lineMatch != null -> {
+            stringResource(
+                R.string.guide_voice_line_format,
+                lineMatch.groupValues[1].toIntOrNull() ?: fallbackIndex + 1,
+            )
+        }
+
+        clean.isBlank() -> {
+            stringResource(R.string.guide_voice_line_format, fallbackIndex + 1)
+        }
+
+        else -> {
+            guideLocalizedVoiceLanguage(clean).ifBlank { clean }
+        }
     }
 }
 
@@ -219,11 +258,19 @@ internal fun guideLocalizedVoiceEntryTitle(raw: String): String {
     val normalized = guideLabelLookupKey(clean)
     val growthMatch = Regex("""^成长台词(\d+)$""").matchEntire(normalized)
     return when {
-        growthMatch != null -> stringResource(
-            R.string.guide_voice_growth_title_format,
-            growthMatch.groupValues[1].toIntOrNull() ?: 1
-        )
-        clean.isBlank() -> ""
-        else -> guideLocalizedLabel(clean)
+        growthMatch != null -> {
+            stringResource(
+                R.string.guide_voice_growth_title_format,
+                growthMatch.groupValues[1].toIntOrNull() ?: 1,
+            )
+        }
+
+        clean.isBlank() -> {
+            ""
+        }
+
+        else -> {
+            guideLocalizedLabel(clean)
+        }
     }
 }

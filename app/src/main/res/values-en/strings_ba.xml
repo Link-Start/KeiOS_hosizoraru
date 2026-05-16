@@ -454,6 +454,13 @@
     <string name="guide_field_age">Age</string>
     <string name="guide_field_hobbies">Hobbies</string>
     <string name="guide_field_intro">Introduction</string>
+    <string name="guide_field_affiliation">Affiliation</string>
+    <string name="guide_field_full_name">Full Name</string>
+    <string name="guide_field_japanese_full_name">Japanese Name</string>
+    <string name="guide_field_other_names">Other Names</string>
+    <string name="guide_field_grade">Grade</string>
+    <string name="guide_field_first_appearance">First Appearance</string>
+    <string name="guide_field_nickname_slang">Alias</string>
     <string name="guide_stat_attack">ATK</string>
     <string name="guide_stat_defense">DEF</string>
     <string name="guide_stat_hp">HP</string>
@@ -511,10 +518,15 @@
     <string name="guide_profile_section_nickname">Nicknames</string>
     <string name="guide_profile_section_info">Student Info</string>
     <string name="guide_profile_section_hobbies">Student Hobbies</string>
+    <string name="guide_profile_section_npc_aliases">Names and Aliases</string>
+    <string name="guide_profile_section_npc_identity">Character Info</string>
+    <string name="guide_profile_section_npc_intro">Character Intro</string>
+    <string name="guide_profile_section_npc_extra">Extra Notes</string>
     <string name="guide_profile_section_gifts">Gift Preferences</string>
     <string name="guide_profile_section_chocolate">Valentine Chocolate</string>
     <string name="guide_profile_section_furniture">Interactive Furniture</string>
     <string name="guide_profile_empty">No student profile data has been parsed.</string>
+    <string name="guide_profile_npc_empty">No character profile data has been parsed.</string>
     <string name="guide_profile_no_gifts">No gift preferences parsed.</string>
     <string name="guide_profile_gift">Gift</string>
     <string name="guide_profile_related_same_name">Related Versions</string>
@@ -522,6 +534,7 @@
     <string name="guide_profile_same_name_empty">No related versions parsed.</string>
     <string name="guide_profile_archive_action">Guide</string>
     <string name="guide_profile_link_unavailable">No guide link available</string>
+    <string name="guide_archive_section_npc_overview">Character Overview</string>
     <string name="guide_voice_dubbing">Voice</string>
     <string name="guide_voice_language_jp">JP Voice</string>
     <string name="guide_voice_language_cn">CN Voice</string>

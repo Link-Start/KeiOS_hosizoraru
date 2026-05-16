@@ -456,6 +456,13 @@
     <string name="guide_field_age">年齢</string>
     <string name="guide_field_hobbies">趣味</string>
     <string name="guide_field_intro">紹介</string>
+    <string name="guide_field_affiliation">所属</string>
+    <string name="guide_field_full_name">フルネーム</string>
+    <string name="guide_field_japanese_full_name">日本語名</string>
+    <string name="guide_field_other_names">別名</string>
+    <string name="guide_field_grade">学年</string>
+    <string name="guide_field_first_appearance">初登場</string>
+    <string name="guide_field_nickname_slang">通称</string>
     <string name="guide_stat_attack">攻撃力</string>
     <string name="guide_stat_defense">防御力</string>
     <string name="guide_stat_hp">HP</string>
@@ -513,10 +520,15 @@
     <string name="guide_profile_section_nickname">別名</string>
     <string name="guide_profile_section_info">生徒情報</string>
     <string name="guide_profile_section_hobbies">趣味</string>
+    <string name="guide_profile_section_npc_aliases">名称と別名</string>
+    <string name="guide_profile_section_npc_identity">キャラクター情報</string>
+    <string name="guide_profile_section_npc_intro">キャラクター紹介</string>
+    <string name="guide_profile_section_npc_extra">補足情報</string>
     <string name="guide_profile_section_gifts">贈り物の好み</string>
     <string name="guide_profile_section_chocolate">バレンタインチョコ</string>
     <string name="guide_profile_section_furniture">家具モーション</string>
     <string name="guide_profile_empty">生徒プロフィールデータは解析されていません。</string>
+    <string name="guide_profile_npc_empty">キャラクター情報は解析されていません。</string>
     <string name="guide_profile_no_gifts">贈り物の好みは解析されていません。</string>
     <string name="guide_profile_gift">贈り物</string>
     <string name="guide_profile_related_same_name">別バージョン</string>
@@ -524,6 +536,7 @@
     <string name="guide_profile_same_name_empty">別バージョンは解析されていません。</string>
     <string name="guide_profile_archive_action">情報</string>
     <string name="guide_profile_link_unavailable">生徒情報リンクがありません</string>
+    <string name="guide_archive_section_npc_overview">キャラクター概要</string>
     <string name="guide_voice_dubbing">ボイス</string>
     <string name="guide_voice_language_jp">日本語ボイス</string>
     <string name="guide_voice_language_cn">中国語ボイス</string>

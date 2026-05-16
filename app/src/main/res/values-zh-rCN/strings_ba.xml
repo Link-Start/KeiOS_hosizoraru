@@ -458,6 +458,13 @@
     <string name="guide_field_age">年龄</string>
     <string name="guide_field_hobbies">兴趣爱好</string>
     <string name="guide_field_intro">介绍</string>
+    <string name="guide_field_affiliation">所属</string>
+    <string name="guide_field_full_name">全名</string>
+    <string name="guide_field_japanese_full_name">日语全名</string>
+    <string name="guide_field_other_names">其他译名</string>
+    <string name="guide_field_grade">年级</string>
+    <string name="guide_field_first_appearance">首次登场</string>
+    <string name="guide_field_nickname_slang">别名</string>
     <string name="guide_stat_attack">攻击力</string>
     <string name="guide_stat_defense">防御力</string>
     <string name="guide_stat_hp">生命值</string>
@@ -515,10 +522,15 @@
     <string name="guide_profile_section_nickname">学生昵称</string>
     <string name="guide_profile_section_info">学生信息</string>
     <string name="guide_profile_section_hobbies">学生爱好</string>
+    <string name="guide_profile_section_npc_aliases">称呼与译名</string>
+    <string name="guide_profile_section_npc_identity">角色资料</string>
+    <string name="guide_profile_section_npc_intro">角色简介</string>
+    <string name="guide_profile_section_npc_extra">补充资料</string>
     <string name="guide_profile_section_gifts">礼物偏好</string>
     <string name="guide_profile_section_chocolate">巧克力</string>
     <string name="guide_profile_section_furniture">互动家具</string>
     <string name="guide_profile_empty">暂未解析到学生档案数据。</string>
+    <string name="guide_profile_npc_empty">暂未解析到角色资料。</string>
     <string name="guide_profile_no_gifts">暂无礼物偏好条目。</string>
     <string name="guide_profile_gift">礼物</string>
     <string name="guide_profile_related_same_name">相关同名角色</string>
@@ -526,6 +538,7 @@
     <string name="guide_profile_same_name_empty">暂无同名角色条目。</string>
     <string name="guide_profile_archive_action">图鉴</string>
     <string name="guide_profile_link_unavailable">暂无可跳转链接</string>
+    <string name="guide_archive_section_npc_overview">角色速览</string>
     <string name="guide_voice_dubbing">配音</string>
     <string name="guide_voice_language_jp">日配</string>
     <string name="guide_voice_language_cn">中配</string>

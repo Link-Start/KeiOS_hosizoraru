@@ -12,8 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.isNpcSatelliteLikeGuide
 import os.kei.ui.page.main.student.tabcontent.profile.GuideGiftPreferenceGrid
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoRows
@@ -26,7 +28,6 @@ import os.kei.ui.page.main.student.tabcontent.profile.profileLinkTitleCache
 import os.kei.ui.page.main.student.tabcontent.profile.profileRoleReferenceFieldKey
 import os.kei.ui.page.main.student.tabcontent.profile.resolveProfileLinkTitleAsync
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -42,7 +43,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
-    onSaveMedia: (url: String, title: String) -> Unit
+    onSaveMedia: (url: String, title: String) -> Unit,
 ) {
     val guide = info
     if (guide == null) {
@@ -59,12 +60,22 @@ internal fun LazyListScope.renderGuideProfileTabContent(
                             text = it,
                             color = MiuixTheme.colorScheme.error,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
-                }
+                },
             )
         }
+        return
+    }
+
+    if (guide.isNpcSatelliteLikeGuide()) {
+        renderGuideNpcSatelliteProfileContent(
+            guide = guide,
+            error = error,
+            backdrop = backdrop,
+            onOpenGuide = onOpenGuide,
+        )
         return
     }
 
@@ -76,7 +87,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
                 text = error.orEmpty(),
                 color = MiuixTheme.colorScheme.error,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         item { Spacer(modifier = Modifier.height(10.dp)) }
@@ -88,7 +99,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
             GuideProfileInfoRows(rows = headerState.nicknameRows) { row ->
                 GuideProfileInfoItem(
                     key = row.key,
-                    value = row.value.ifBlank { "-" }
+                    value = row.value.ifBlank { "-" },
                 )
             }
         }
@@ -101,45 +112,51 @@ internal fun LazyListScope.renderGuideProfileTabContent(
             GuideProfileInfoRows(rows = headerState.studentInfoRows) { row ->
                 val normalizedKey = normalizeProfileFieldKey(row.key)
                 if (normalizedKey == profileRoleReferenceFieldKey) {
-                    val externalLink = remember(row.value) {
-                        extractProfileExternalLink(row.value)
-                    }
-                    val resolvedTitle by produceState(
-                        initialValue = if (externalLink.isNotBlank()) {
-                            profileLinkTitleCache[externalLink].orEmpty()
-                        } else {
-                            ""
-                        },
-                        key1 = externalLink
-                    ) {
-                        value = if (externalLink.isBlank()) {
-                            ""
-                        } else {
-                            resolveProfileLinkTitleAsync(externalLink)
+                    val externalLink =
+                        remember(row.value) {
+                            extractProfileExternalLink(row.value)
                         }
+                    val resolvedTitle by produceState(
+                        initialValue =
+                            if (externalLink.isNotBlank()) {
+                                profileLinkTitleCache[externalLink].orEmpty()
+                            } else {
+                                ""
+                            },
+                        key1 = externalLink,
+                    ) {
+                        value =
+                            if (externalLink.isBlank()) {
+                                ""
+                            } else {
+                                resolveProfileLinkTitleAsync(externalLink)
+                            }
                     }
-                    val displayValue = when {
-                        externalLink.isBlank() -> row.value.ifBlank { "-" }
-                        resolvedTitle.isNotBlank() -> resolvedTitle
-                        else -> fallbackProfileLinkTitle(externalLink)
-                    }
+                    val displayValue =
+                        when {
+                            externalLink.isBlank() -> row.value.ifBlank { "-" }
+                            resolvedTitle.isNotBlank() -> resolvedTitle
+                            else -> fallbackProfileLinkTitle(externalLink)
+                        }
                     GuideProfileInfoItem(
                         key = row.key,
                         value = displayValue,
-                        onClick = externalLink.takeIf { it.isNotBlank() }?.let { link ->
-                            { onOpenExternal(link) }
-                        },
-                        valueColor = if (externalLink.isNotBlank()) {
-                            Color(0xFF5FA8FF)
-                        } else {
-                            null
-                        },
-                        preferCapsule = false
+                        onClick =
+                            externalLink.takeIf { it.isNotBlank() }?.let { link ->
+                                { onOpenExternal(link) }
+                            },
+                        valueColor =
+                            if (externalLink.isNotBlank()) {
+                                Color(0xFF5FA8FF)
+                            } else {
+                                null
+                            },
+                        preferCapsule = false,
                     )
                 } else {
                     GuideProfileInfoItem(
                         key = row.key,
-                        value = row.value.ifBlank { "-" }
+                        value = row.value.ifBlank { "-" },
                     )
                 }
             }
@@ -154,7 +171,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
                 GuideProfileInfoItem(
                     key = row.key,
                     value = row.value.ifBlank { "-" },
-                    preferCapsule = false
+                    preferCapsule = false,
                 )
             }
         }
@@ -174,7 +191,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
             sameNameRoleHint = headerState.sameNameRoleHint,
             sameNameRoleItems = headerState.sameNameRoleItems,
             backdrop = backdrop,
-            onOpenGuide = onOpenGuide
+            onOpenGuide = onOpenGuide,
         )
     }
     item { Spacer(modifier = Modifier.height(10.dp)) }
@@ -183,7 +200,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         guideProfileCard {
             GuideProfileRowsSection(
                 rows = headerState.normalProfileRows,
-                emptyText = stringResource(R.string.guide_profile_empty)
+                emptyText = stringResource(R.string.guide_profile_empty),
             )
         }
     } else if (
@@ -195,7 +212,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         guideProfileCard {
             Text(
                 text = stringResource(R.string.guide_profile_empty),
-                color = MiuixTheme.colorScheme.onBackgroundVariant
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
             )
         }
     }
@@ -211,7 +228,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
-        preferCapsule = true
+        preferCapsule = true,
     )
 
     renderGuideProfileMediaGroup(
@@ -225,6 +242,6 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
-        preferCapsule = false
+        preferCapsule = false,
     )
 }

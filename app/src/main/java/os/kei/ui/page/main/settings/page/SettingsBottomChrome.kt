@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "PropertyName")
+
 package os.kei.ui.page.main.settings.page
 
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -32,7 +34,10 @@ import os.kei.ui.page.main.widget.chrome.AppBottomSearchDock
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
+import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabItem
+import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabStrip
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
+import os.kei.ui.page.main.widget.chrome.miuixFloatingBottomBarLayout
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -58,6 +63,7 @@ internal fun SettingsBottomChrome(
     searchPlaceholder: String,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
+    miuixMainNavigationEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
 ) {
     if (!visible && !searchExpanded) return
@@ -66,26 +72,31 @@ internal fun SettingsBottomChrome(
     val gap = SettingsBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
-    val keyboardLift = rememberAppFloatingKeyboardLift(
-        focusedLift = 18.dp,
-        restingBottomGap = navigationBarBottom + 12.dp,
-        label = "settings_bottom_chrome_keyboard_lift",
-    )
-    val transition = updateTransition(
-        targetState = searchExpanded,
-        label = "settings_bottom_chrome",
-    )
-    val sizeAnimationSpec = tween<Dp>(
-        durationMillis = resolvedMotionDuration(SettingsBottomChromeMotionMs, animationsEnabled),
-        easing = FastOutSlowInEasing,
-    )
-    val fadeAnimationSpec = tween<Float>(
-        durationMillis = resolvedMotionDuration(
-            SettingsBottomChromeFadeMotionMs,
-            animationsEnabled
-        ),
-        easing = FastOutSlowInEasing,
-    )
+    val keyboardLift =
+        rememberAppFloatingKeyboardLift(
+            focusedLift = 18.dp,
+            restingBottomGap = navigationBarBottom + 12.dp,
+            label = "settings_bottom_chrome_keyboard_lift",
+        )
+    val transition =
+        updateTransition(
+            targetState = searchExpanded,
+            label = "settings_bottom_chrome",
+        )
+    val sizeAnimationSpec =
+        tween<Dp>(
+            durationMillis = resolvedMotionDuration(SettingsBottomChromeMotionMs, animationsEnabled),
+            easing = FastOutSlowInEasing,
+        )
+    val fadeAnimationSpec =
+        tween<Float>(
+            durationMillis =
+                resolvedMotionDuration(
+                    SettingsBottomChromeFadeMotionMs,
+                    animationsEnabled,
+                ),
+            easing = FastOutSlowInEasing,
+        )
     val fullDockAlpha by transition.animateFloat(
         transitionSpec = { fadeAnimationSpec },
         label = "settings_full_dock_alpha",
@@ -103,32 +114,49 @@ internal fun SettingsBottomChrome(
         label = "settings_compact_dock_scale",
     ) { expanded -> if (expanded) 1f else 0.92f }
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .offset(y = -keyboardLift)
-            .padding(
-                start = outerPadding,
-                end = outerPadding,
-                top = 12.dp,
-                bottom = 12.dp + navigationBarBottom,
-            )
-            .height(size),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .offset(y = -keyboardLift)
+                .padding(
+                    start = outerPadding,
+                    end = outerPadding,
+                    top = 12.dp,
+                    bottom = 12.dp + navigationBarBottom,
+                ).height(size),
     ) {
-        val expandedSearchWidth = settingsExpandedSearchWidth(
-            availableWidth = maxWidth,
-            compactDockWidth = size,
-            gap = gap,
-        )
-        val collapsedDockWidth = settingsCollapsedDockWidth(
-            availableWidth = maxWidth,
-            searchDockWidth = size,
-            gap = gap,
-        )
+        val expandedSearchWidth =
+            settingsExpandedSearchWidth(
+                availableWidth = maxWidth,
+                compactDockWidth = size,
+                gap = gap,
+            )
+        val collapsedDockWidth =
+            settingsCollapsedDockWidth(
+                availableWidth = maxWidth,
+                searchDockWidth = size,
+                gap = gap,
+            )
+        val miuixDockLayout =
+            miuixFloatingBottomBarLayout(
+                availableWidth = collapsedDockWidth,
+                itemCount = categories.size,
+                horizontalMargin = 0.dp,
+                preferredItemWidth = 52.dp,
+                maxItemWidth = 56.dp,
+                maxBarWidth = collapsedDockWidth,
+            )
+        val visibleDockWidth =
+            if (miuixMainNavigationEnabled) {
+                miuixDockLayout.barWidth
+            } else {
+                collapsedDockWidth
+            }
         val searchX by transition.animateDp(
             transitionSpec = { sizeAnimationSpec },
             label = "settings_search_dock_x",
         ) { expanded ->
-            if (expanded) size + gap else collapsedDockWidth + gap
+            if (expanded) size + gap else visibleDockWidth + gap
         }
         val searchWidth by transition.animateDp(
             transitionSpec = { sizeAnimationSpec },
@@ -137,7 +165,23 @@ internal fun SettingsBottomChrome(
             if (expanded) expandedSearchWidth else size
         }
 
-        if (fullDockAlpha > SettingsBottomChromeVisibleAlpha) {
+        if (fullDockAlpha > SettingsBottomChromeVisibleAlpha && miuixMainNavigationEnabled) {
+            SettingsMiuixCategoryBar(
+                categories = categories,
+                selectedPage = safeSelectedPage,
+                backdrop = backdrop,
+                onSelectCategory = onSelectCategory,
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .requiredWidth(miuixDockLayout.barWidth)
+                        .graphicsLayer {
+                            alpha = fullDockAlpha
+                            scaleX = fullDockScale
+                            scaleY = fullDockScale
+                        },
+            )
+        } else if (fullDockAlpha > SettingsBottomChromeVisibleAlpha) {
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 categories.forEachIndexed { index, category ->
                     val tabColor = liquidGlassBottomBarItemContentColor(index)
@@ -146,12 +190,13 @@ internal fun SettingsBottomChrome(
                             imageVector = category.icon(),
                             contentDescription = category.label(),
                             tint = tabColor,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .graphicsLayer {
-                                    scaleX = 1f
-                                    scaleY = 1f
-                                },
+                            modifier =
+                                Modifier
+                                    .size(20.dp)
+                                    .graphicsLayer {
+                                        scaleX = 1f
+                                        scaleY = 1f
+                                    },
                         )
                         Text(
                             text = category.label(),
@@ -173,15 +218,16 @@ internal fun SettingsBottomChrome(
                 }
             }
             LiquidGlassBottomBar(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .requiredWidth(collapsedDockWidth)
-                    .height(size)
-                    .graphicsLayer {
-                        alpha = fullDockAlpha
-                        scaleX = fullDockScale
-                        scaleY = fullDockScale
-                    },
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .requiredWidth(collapsedDockWidth)
+                        .height(size)
+                        .graphicsLayer {
+                            alpha = fullDockAlpha
+                            scaleX = fullDockScale
+                            scaleY = fullDockScale
+                        },
                 selectedIndex = safeSelectedPage,
                 selectedPosition = selectedPagePosition,
                 onSelected = { index ->
@@ -201,14 +247,15 @@ internal fun SettingsBottomChrome(
                 category = categories[safeSelectedPage],
                 backdrop = backdrop,
                 onClick = { onSearchExpandedChange(false) },
-                modifier = Modifier
-                    .width(size)
-                    .height(size)
-                    .graphicsLayer {
-                        alpha = compactDockAlpha
-                        scaleX = compactDockScale
-                        scaleY = compactDockScale
-                    },
+                modifier =
+                    Modifier
+                        .width(size)
+                        .height(size)
+                        .graphicsLayer {
+                            alpha = compactDockAlpha
+                            scaleX = compactDockScale
+                            scaleY = compactDockScale
+                        },
             )
         }
 
@@ -224,6 +271,38 @@ internal fun SettingsBottomChrome(
             modifier = Modifier.offset(x = searchX, y = 0.dp),
             expandedWidth = searchWidth,
         )
+    }
+}
+
+@Composable
+private fun SettingsMiuixCategoryBar(
+    categories: List<SettingsCategory>,
+    selectedPage: Int,
+    backdrop: LayerBackdrop,
+    onSelectCategory: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MiuixFloatingBottomTabStrip(
+        itemCount = categories.size,
+        selectedIndex = selectedPage,
+        onSelected = onSelectCategory,
+        backdrop = backdrop,
+        modifier = modifier,
+    ) { index, selected, contentColor ->
+        val category = categories[index]
+        MiuixFloatingBottomTabItem(
+            selected = selected,
+            label = category.label(),
+            color = contentColor,
+            onClick = { onSelectCategory(index) },
+        ) { contentColor, iconModifier ->
+            Icon(
+                imageVector = category.icon(),
+                contentDescription = category.label(),
+                tint = contentColor,
+                modifier = iconModifier,
+            )
+        }
     }
 }
 
@@ -262,15 +341,11 @@ private fun settingsExpandedSearchWidth(
     compactDockWidth: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     gap: Dp = SettingsBottomChromeSearchGap,
     minWidth: Dp = SettingsBottomChromeMinSearchWidth,
-): Dp {
-    return (availableWidth - compactDockWidth - gap).coerceAtLeast(minWidth)
-}
+): Dp = (availableWidth - compactDockWidth - gap).coerceAtLeast(minWidth)
 
 private fun settingsCollapsedDockWidth(
     availableWidth: Dp,
     searchDockWidth: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     gap: Dp = SettingsBottomChromeSearchGap,
     minWidth: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
-): Dp {
-    return (availableWidth - searchDockWidth - gap).coerceAtLeast(minWidth)
-}
+): Dp = (availableWidth - searchDockWidth - gap).coerceAtLeast(minWidth)

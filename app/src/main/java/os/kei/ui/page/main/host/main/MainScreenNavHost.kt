@@ -160,12 +160,14 @@ internal fun MainScreenNavHost(
                 shizukuStatus = pagerCoordinator.shizukuStatus,
                 shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
                 onCheckShizuku = onCheckOrRequestShizuku,
+                miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
                 onBack = { navigator.pop() }
             )
         }
         entry<KeiosRoute.BaStudentGuide> {
             BaStudentGuidePage(
                 liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
+                miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
                 liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                 preloadingEnabled = prefsState.preloadingEnabled,
                 onBack = { navigator.pop() }

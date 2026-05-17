@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.host.pager
 
 import androidx.compose.animation.AnimatedVisibility
@@ -40,25 +42,14 @@ internal fun MainPagerBottomBar(
     selectedPagePosition: Float?,
     backdrop: LayerBackdrop,
     liquidBottomBarEnabled: Boolean,
-    miuixMainNavigationEnabled: Boolean,
-    onPageSelected: (Int) -> Unit
+    onPageSelected: (Int) -> Unit,
 ) {
-    if (miuixMainNavigationEnabled) {
-        MainMiuixBottomBar(
-            visible = visible,
-            tabs = tabs,
-            selectedPageIndex = selectedPageIndex,
-            onPageSelected = onPageSelected
-        )
-        return
-    }
-
     Box(modifier = Modifier.fillMaxWidth()) {
         AnimatedVisibility(
             visible = visible,
             enter = appFloatingEnter(),
             exit = appFloatingExit(),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 tabs.forEachIndexed { index, page ->
@@ -68,24 +59,26 @@ internal fun MainPagerBottomBar(
                         selected = selected,
                         tabIndex = index,
                         onClick = { onPageSelected(index) },
-                        modifier = if (page == BottomPage.GitHub) {
-                            Modifier.testTag(KeiOsTestTags.MainBottomTabGitHub)
-                        } else {
-                            Modifier
-                        }
+                        modifier =
+                            if (page == BottomPage.GitHub) {
+                                Modifier.testTag(KeiOsTestTags.MainBottomTabGitHub)
+                            } else {
+                                Modifier
+                            },
                     ) {
-                        val tabIconModifier = Modifier
-                            .size(20.dp)
-                            .graphicsLayer {
-                                scaleX = page.iconScale
-                                scaleY = page.iconScale
-                            }
+                        val tabIconModifier =
+                            Modifier
+                                .size(20.dp)
+                                .graphicsLayer {
+                                    scaleX = page.iconScale
+                                    scaleY = page.iconScale
+                                }
                         if (page.iconRes != null) {
                             Icon(
                                 painter = painterResource(id = page.iconRes),
                                 contentDescription = page.label,
                                 tint = if (page.keepOriginalColors) Color.Unspecified else tabColor,
-                                modifier = tabIconModifier
+                                modifier = tabIconModifier,
                             )
                         } else {
                             page.icon?.let { icon ->
@@ -93,7 +86,7 @@ internal fun MainPagerBottomBar(
                                     imageVector = icon,
                                     contentDescription = page.label,
                                     tint = tabColor,
-                                    modifier = tabIconModifier
+                                    modifier = tabIconModifier,
                                 )
                             }
                         }
@@ -104,7 +97,7 @@ internal fun MainPagerBottomBar(
                             color = tabColor,
                             maxLines = 1,
                             softWrap = false,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -112,32 +105,36 @@ internal fun MainPagerBottomBar(
 
             BoxWithConstraints(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
-                val horizontalMargin = when {
-                    maxWidth < 360.dp -> 8.dp
-                    maxWidth < 600.dp -> 12.dp
-                    else -> 24.dp
-                }
+                val horizontalMargin =
+                    when {
+                        maxWidth < 360.dp -> 8.dp
+                        maxWidth < 600.dp -> 12.dp
+                        else -> 24.dp
+                    }
                 val availableWidth = maxWidth - horizontalMargin * 2
-                val minBarWidth = when {
-                    tabs.size <= 2 -> 220.dp
-                    tabs.size == 3 -> 280.dp
-                    else -> 320.dp
-                }
+                val minBarWidth =
+                    when {
+                        tabs.size <= 2 -> 220.dp
+                        tabs.size == 3 -> 280.dp
+                        else -> 320.dp
+                    }
                 val preferredWidth = (76.dp * tabs.size + 8.dp).coerceAtLeast(minBarWidth)
                 val maxBarWidth = if (maxWidth < 600.dp) availableWidth else 460.dp
                 val bottomBarWidth = preferredWidth.coerceAtMost(maxBarWidth)
-                val bottomBarModifier = Modifier
-                    .width(bottomBarWidth)
-                    .widthIn(max = availableWidth)
-                    .padding(
-                        bottom = if (navigationBarBottom != 0.dp) {
-                            8.dp + navigationBarBottom
-                        } else {
-                            36.dp
-                        }
-                    )
+                val bottomBarModifier =
+                    Modifier
+                        .width(bottomBarWidth)
+                        .widthIn(max = availableWidth)
+                        .padding(
+                            bottom =
+                                if (navigationBarBottom != 0.dp) {
+                                    8.dp + navigationBarBottom
+                                } else {
+                                    36.dp
+                                },
+                        )
 
                 LiquidGlassBottomBar(
                     modifier = bottomBarModifier,
@@ -148,7 +145,7 @@ internal fun MainPagerBottomBar(
                     tabsCount = tabs.size,
                     isLiquidEffectEnabled = liquidBottomBarEnabled,
                     expandToMaxWidth = true,
-                    content = bottomBarTabs
+                    content = bottomBarTabs,
                 )
             }
         }

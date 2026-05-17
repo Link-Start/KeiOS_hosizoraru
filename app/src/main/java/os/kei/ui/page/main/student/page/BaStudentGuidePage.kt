@@ -75,6 +75,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun BaStudentGuidePage(
     liquidBottomBarEnabled: Boolean = true,
+    miuixMainNavigationEnabled: Boolean = false,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     onBack: () -> Unit
@@ -355,6 +356,7 @@ fun BaStudentGuidePage(
                     selectedPageProvider = { pagerState.targetPage },
                     backdrop = navBackdrop,
                     isLiquidEffectEnabled = liquidBottomBarEnabled,
+                    miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                     onSelectTab = selectBottomTabAction
                 )
             }

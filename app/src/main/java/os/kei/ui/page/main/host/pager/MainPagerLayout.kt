@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.host.pager
 
 import android.app.Activity
@@ -69,74 +71,83 @@ internal fun MainPagerLayout(
     requestedGitHubActionsTrackId: String?,
     requestedGitHubActionsSheetToken: Int,
     transientExternalLaunchActive: Boolean,
-    onRequestedBottomPageConsumed: () -> Unit
+    onRequestedBottomPageConsumed: () -> Unit,
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val backNavigationRuntime = LocalBackNavigationRuntimeState.current
     val context = LocalContext.current
     val insets = rememberMainPagerInsets()
     val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
-    val floatingDockSide = if (gripAwareFloatingDockEnabled) {
-        floatingDockState.side
-    } else {
-        AppFloatingDockSide.End
-    }
-    val onOpenSettings = remember(navigator) {
-        { navigator.pushSingleTop(KeiosRoute.Settings) }
-    }
-    val onOpenAbout = remember(navigator) {
-        { navigator.pushSingleTop(KeiosRoute.About) }
-    }
-    val openBaGuideCatalog = remember(navigator) {
-        { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog()) }
-    }
-    val onOpenMcpSkill = remember(navigator) {
-        { navigator.pushSingleTop(KeiosRoute.McpSkill) }
-    }
-    val coordinator = rememberMainPagerCoordinator(
-        settingsReturnToken = settingsReturnToken,
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        miuixMainNavigationEnabled = miuixMainNavigationEnabled,
-        preloadingEnabled = preloadingEnabled,
-        nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
-        nonHomeBackgroundUri = nonHomeBackgroundUri,
-        visibleBottomPageNames = visibleBottomPageNames,
-        onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
-        mcpServerManager = mcpServerManager,
-        requestedBottomPage = requestedBottomPage,
-        requestedBottomPageToken = requestedBottomPageToken,
-        onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
-    )
-    val onOpenGitHubPage = remember(coordinator.tabs, coordinator.onPageSelected) {
-        {
-            val index = coordinator.tabs.indexOf(BottomPage.GitHub)
-            if (index >= 0) {
-                coordinator.onPageSelected(index)
+    val floatingDockSide =
+        if (gripAwareFloatingDockEnabled) {
+            floatingDockState.side
+        } else {
+            AppFloatingDockSide.End
+        }
+    val onOpenSettings =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.Settings) }
+        }
+    val onOpenAbout =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.About) }
+        }
+    val openBaGuideCatalog =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.BaGuideCatalog()) }
+        }
+    val onOpenMcpSkill =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.McpSkill) }
+        }
+    val coordinator =
+        rememberMainPagerCoordinator(
+            settingsReturnToken = settingsReturnToken,
+            transitionAnimationsEnabled = transitionAnimationsEnabled,
+            miuixMainNavigationEnabled = miuixMainNavigationEnabled,
+            preloadingEnabled = preloadingEnabled,
+            nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
+            nonHomeBackgroundUri = nonHomeBackgroundUri,
+            visibleBottomPageNames = visibleBottomPageNames,
+            onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
+            mcpServerManager = mcpServerManager,
+            requestedBottomPage = requestedBottomPage,
+            requestedBottomPageToken = requestedBottomPageToken,
+            onRequestedBottomPageConsumed = onRequestedBottomPageConsumed,
+        )
+    val onOpenGitHubPage =
+        remember(coordinator.tabs, coordinator.onPageSelected) {
+            {
+                val index = coordinator.tabs.indexOf(BottomPage.GitHub)
+                if (index >= 0) {
+                    coordinator.onPageSelected(index)
+                }
             }
         }
-    }
     DisposableEffect(
         context,
         homeIconHdrEnabled,
         coordinator.tabs,
         coordinator.pagerState.currentPage,
         coordinator.pagerState.targetPage,
-        coordinator.pagerState.settledPage
+        coordinator.pagerState.settledPage,
     ) {
         val activity = context as? Activity
-        val homeVisibleInPager = listOf(
-            coordinator.pagerState.currentPage,
-            coordinator.pagerState.targetPage,
-            coordinator.pagerState.settledPage
-        ).any { pageIndex ->
-            coordinator.tabs.getOrElse(pageIndex) { BottomPage.Home } == BottomPage.Home
-        }
-        runCatching {
-            activity?.window?.colorMode = if (homeIconHdrEnabled && homeVisibleInPager) {
-                ActivityInfo.COLOR_MODE_HDR
-            } else {
-                ActivityInfo.COLOR_MODE_DEFAULT
+        val homeVisibleInPager =
+            listOf(
+                coordinator.pagerState.currentPage,
+                coordinator.pagerState.targetPage,
+                coordinator.pagerState.settledPage,
+            ).any { pageIndex ->
+                coordinator.tabs.getOrElse(pageIndex) { BottomPage.Home } == BottomPage.Home
             }
+        runCatching {
+            activity?.window?.colorMode =
+                if (homeIconHdrEnabled && homeVisibleInPager) {
+                    ActivityInfo.COLOR_MODE_HDR
+                } else {
+                    ActivityInfo.COLOR_MODE_DEFAULT
+                }
         }
         onDispose {
             runCatching {
@@ -144,91 +155,112 @@ internal fun MainPagerLayout(
             }
         }
     }
-    val homePageIndex = coordinator.tabs
-        .indexOf(BottomPage.Home)
-        .takeIf { it >= 0 }
-        ?: 0
-    val mainBackAction = resolveMainBackNavigationAction(
-        backStackSize = 1,
-        targetPageIndex = coordinator.pagerState.targetPage.coerceIn(
-            0,
-            (coordinator.tabs.size - 1).coerceAtLeast(0)
-        ),
-        homePageIndex = homePageIndex
-    )
+    val homePageIndex =
+        coordinator.tabs
+            .indexOf(BottomPage.Home)
+            .takeIf { it >= 0 }
+            ?: 0
+    val mainBackAction =
+        resolveMainBackNavigationAction(
+            backStackSize = 1,
+            targetPageIndex =
+                coordinator.pagerState.targetPage.coerceIn(
+                    0,
+                    (coordinator.tabs.size - 1).coerceAtLeast(0),
+                ),
+            homePageIndex = homePageIndex,
+        )
     KeiOSBackNavigationHandler(
         enabled = rootBackHandlersEnabled && mainBackAction == MainBackNavigationAction.NavigateHome,
-        source = BackNavigationSource.MainPager
+        source = BackNavigationSource.MainPager,
     ) {
         coordinator.onPageSelected(homePageIndex)
     }
 
     AppScaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .semantics { testTagsAsResourceId = true }
-            .appGripAwareDockTouchObserver(
-                enabled = gripAwareFloatingDockEnabled,
-                onDockSideTouch = floatingDockState::recordTouchSide
-            )
-            .background(MiuixTheme.colorScheme.background)
-            .nestedScroll(coordinator.nestedScrollConnection),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .semantics { testTagsAsResourceId = true }
+                .appGripAwareDockTouchObserver(
+                    enabled = gripAwareFloatingDockEnabled,
+                    onDockSideTouch = floatingDockState::recordTouchSide,
+                ).background(MiuixTheme.colorScheme.background)
+                .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
-            val safeSelectedPageIndex = coordinator.pagerState.targetPage.coerceIn(
-                0,
-                (coordinator.tabs.size - 1).coerceAtLeast(0)
-            )
-            val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
-            val pagerSelectionPosition = coordinator.pagerState.pagePosition.coerceIn(
-                0f,
-                lastPagePosition
-            )
-            MainPagerBottomBar(
-                visible = coordinator.showBottomBar,
-                navigationBarBottom = insets.navigationBarBottom,
-                tabs = coordinator.tabs,
-                selectedPageIndex = safeSelectedPageIndex,
-                selectedPagePosition = pagerSelectionPosition,
-                backdrop = coordinator.backdrop,
-                liquidBottomBarEnabled = liquidBottomBarEnabled,
-                miuixMainNavigationEnabled = miuixMainNavigationEnabled,
-                onPageSelected = coordinator.onPageSelected
-            )
-        }
+            val safeSelectedPageIndex =
+                coordinator.pagerState.targetPage.coerceIn(
+                    0,
+                    (coordinator.tabs.size - 1).coerceAtLeast(0),
+                )
+            if (miuixMainNavigationEnabled) {
+                MainMiuixBottomBar(
+                    visible = coordinator.showBottomBar,
+                    navigationBarBottom = insets.navigationBarBottom,
+                    tabs = coordinator.tabs,
+                    selectedPageIndex = safeSelectedPageIndex,
+                    backdrop = coordinator.backdrop,
+                    onPageSelected = coordinator.onPageSelected,
+                )
+            } else {
+                val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
+                val pagerSelectionPosition =
+                    coordinator.pagerState.pagePosition.coerceIn(
+                        0f,
+                        lastPagePosition,
+                    )
+                MainPagerBottomBar(
+                    visible = coordinator.showBottomBar,
+                    navigationBarBottom = insets.navigationBarBottom,
+                    tabs = coordinator.tabs,
+                    selectedPageIndex = safeSelectedPageIndex,
+                    selectedPagePosition = pagerSelectionPosition,
+                    backdrop = coordinator.backdrop,
+                    liquidBottomBarEnabled = liquidBottomBarEnabled,
+                    onPageSelected = coordinator.onPageSelected,
+                )
+            }
+        },
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
-            val pagerModifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = coordinator.farJumpAlpha }
-                .layerBackdrop(coordinator.backdrop)
-            val activationState = rememberMainPageActivationState(
-                tabs = coordinator.tabs,
-                settledPageIndex = coordinator.pagerState.settledPage
-            )
+            val pagerModifier =
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = coordinator.farJumpAlpha }
+                    .layerBackdrop(coordinator.backdrop)
+            val activationState =
+                rememberMainPageActivationState(
+                    tabs = coordinator.tabs,
+                    settledPageIndex = coordinator.pagerState.settledPage,
+                )
             val pageContent: @Composable (Int) -> Unit = { pageIndex ->
                 val pageType = coordinator.tabs[pageIndex]
-                val pageRuntime = coordinator.pagerRuntime.pageRuntime(
-                    pageIndex = pageIndex,
-                    contentTopPadding = if (pageType == BottomPage.Home) insets.homeTopInset else 0.dp,
-                    contentBottomPadding = if (pageType == BottomPage.Home) {
-                        insets.homeBottomInset
-                    } else {
-                        insets.bottomOverlayPadding
-                    },
-                    bottomBarVisible = coordinator.showBottomBar,
-                    floatingDockSide = floatingDockSide,
-                    scrollToTopSignal = when (pageType) {
-                        BottomPage.Home -> 0
-                        BottomPage.Os -> coordinator.osScrollToTopSignal
-                        BottomPage.Ba -> coordinator.baScrollToTopSignal
-                        BottomPage.Mcp -> coordinator.mcpScrollToTopSignal
-                        BottomPage.GitHub -> coordinator.githubScrollToTopSignal
-                    },
-                    hasActivated = activationState.hasActivated(pageType),
-                    contentReady = activationState.contentReady(pageType),
-                    contentWorkAllowed = backNavigationRuntime.contentWorkAllowed &&
-                            !transientExternalLaunchActive
-                )
+                val pageRuntime =
+                    coordinator.pagerRuntime.pageRuntime(
+                        pageIndex = pageIndex,
+                        contentTopPadding = if (pageType == BottomPage.Home) insets.homeTopInset else 0.dp,
+                        contentBottomPadding =
+                            if (pageType == BottomPage.Home) {
+                                insets.homeBottomInset
+                            } else {
+                                insets.bottomOverlayPadding
+                            },
+                        bottomBarVisible = coordinator.showBottomBar,
+                        floatingDockSide = floatingDockSide,
+                        scrollToTopSignal =
+                            when (pageType) {
+                                BottomPage.Home -> 0
+                                BottomPage.Os -> coordinator.osScrollToTopSignal
+                                BottomPage.Ba -> coordinator.baScrollToTopSignal
+                                BottomPage.Mcp -> coordinator.mcpScrollToTopSignal
+                                BottomPage.GitHub -> coordinator.githubScrollToTopSignal
+                            },
+                        hasActivated = activationState.hasActivated(pageType),
+                        contentReady = activationState.contentReady(pageType),
+                        contentWorkAllowed =
+                            backNavigationRuntime.contentWorkAllowed &&
+                                !transientExternalLaunchActive,
+                    )
                 key(pageType.name) {
                     MainPagerPageHost(
                         pageType = pageType,
@@ -248,7 +280,7 @@ internal fun MainPagerLayout(
                         showCacheFreshnessInCards = coordinator.showCacheFreshnessInCards,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                         requestedGitHubManagedInstallConfirmToken =
-                            requestedGitHubManagedInstallConfirmToken,
+                        requestedGitHubManagedInstallConfirmToken,
                         requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
                         requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
                         onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
@@ -260,24 +292,32 @@ internal fun MainPagerLayout(
                         onOpenPoolGuideDetail = onOpenGuideDetail,
                         onOpenBaGuideCatalog = openBaGuideCatalog,
                         onOpenMcpSkill = onOpenMcpSkill,
-                        onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged
+                        onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged,
                     )
                 }
             }
             when (val pagerState = coordinator.pagerState) {
-                is MainMiuixPagerState -> MainMiuixPager(
-                    state = pagerState,
-                    userScrollEnabled = coordinator.pagerScrollEnabled,
-                    modifier = pagerModifier,
-                    pageContent = pageContent
-                )
-                is MainFoundationPagerState -> MainFoundationPager(
-                    state = pagerState,
-                    userScrollEnabled = coordinator.pagerScrollEnabled,
-                    modifier = pagerModifier,
-                    pageContent = pageContent
-                )
-                else -> error("Unsupported main pager state: ${pagerState::class.java.name}")
+                is MainMiuixPagerState -> {
+                    MainMiuixPager(
+                        state = pagerState,
+                        userScrollEnabled = coordinator.pagerScrollEnabled,
+                        modifier = pagerModifier,
+                        pageContent = pageContent,
+                    )
+                }
+
+                is MainFoundationPagerState -> {
+                    MainFoundationPager(
+                        state = pagerState,
+                        userScrollEnabled = coordinator.pagerScrollEnabled,
+                        modifier = pagerModifier,
+                        pageContent = pageContent,
+                    )
+                }
+
+                else -> {
+                    error("Unsupported main pager state: ${pagerState::class.java.name}")
+                }
             }
 
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
@@ -285,7 +325,7 @@ internal fun MainPagerLayout(
                     enabled = coordinator.hasNonHomeBackground,
                     imageUri = coordinator.effectiveNonHomeBackgroundUri,
                     opacity = nonHomeBackgroundOpacity,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
@@ -297,32 +337,41 @@ private fun NonHomePageBackground(
     enabled: Boolean,
     imageUri: String,
     opacity: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (!enabled || imageUri.isBlank()) return
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
-    val (targetWidthPx, targetHeightPx) = remember(configuration, density) {
-        with(density) {
-            val width = configuration.screenWidthDp.dp.roundToPx().coerceAtLeast(1)
-            val height = configuration.screenHeightDp.dp.roundToPx().coerceAtLeast(1)
-            width to height
+    val (targetWidthPx, targetHeightPx) =
+        remember(configuration, density) {
+            with(density) {
+                val width =
+                    configuration.screenWidthDp.dp
+                        .roundToPx()
+                        .coerceAtLeast(1)
+                val height =
+                    configuration.screenHeightDp.dp
+                        .roundToPx()
+                        .coerceAtLeast(1)
+                width to height
+            }
         }
-    }
-    val request = remember(imageUri, targetWidthPx, targetHeightPx) {
-        ImageRequest.Builder(context)
-            .data(imageUri)
-            .size(targetWidthPx, targetHeightPx)
-            .scale(Scale.FILL)
-            .precision(Precision.INEXACT)
-            .build()
-    }
+    val request =
+        remember(imageUri, targetWidthPx, targetHeightPx) {
+            ImageRequest
+                .Builder(context)
+                .data(imageUri)
+                .size(targetWidthPx, targetHeightPx)
+                .scale(Scale.FILL)
+                .precision(Precision.INEXACT)
+                .build()
+        }
     AsyncImage(
         model = request,
         contentDescription = null,
         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
         alpha = opacity.coerceIn(0f, 1f),
-        modifier = modifier
+        modifier = modifier,
     )
 }

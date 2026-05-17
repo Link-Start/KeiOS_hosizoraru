@@ -426,6 +426,7 @@ fun SettingsPage(
                 searchPlaceholder = settingsSearchPlaceholder,
                 backdrop = bottomBarBackdrop,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
+                miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                 onSelectCategory = selectSettingsCategoryAction
             )
         }

@@ -51,7 +51,7 @@
     <string name="settings_miuix_main_navigation_title">MIUIX メインナビゲーションモード</string>
     <string name="settings_miuix_main_navigation_summary_enabled">メインタブで MIUIX demo と同系統の HorizontalPager 状態チェーンと MIUIX フローティング下部バーを使用します。</string>
     <string name="settings_miuix_main_navigation_summary_disabled">メインタブで現在の KeiOS Liquid Glass 下部バーとページャーチェーンを使用します。</string>
-    <string name="settings_miuix_main_navigation_scope">Home / OS / MCP / GitHub / BA のメインタブ下部バーと左右切り替えに影響します。設定、About、図鑑などの二階層ページは現在のスタイルを維持します。</string>
+    <string name="settings_miuix_main_navigation_scope">Home / OS / MCP / GitHub / BA のメインタブ下部バーと左右切り替えに加えて、設定、About、図鑑などの二階層ページの下部カテゴリバーにも同期します。</string>
     <string name="settings_actionbar_style_header">アクションバー</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus アクションバー</string>
     <string name="settings_actionbar_style_summary_enabled">レイヤード液体スタイルを使用します: カプセルベース、スライドハイライト、選択状態モーション。</string>

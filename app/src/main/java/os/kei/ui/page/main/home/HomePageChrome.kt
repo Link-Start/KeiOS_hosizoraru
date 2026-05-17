@@ -67,6 +67,7 @@ private val HOME_KEI_TITLE_GRADIENT_COLORS = listOf(
 )
 private val HOME_HERO_SHARED_AVOIDANCE_LIFT = 72.dp
 private const val HOME_HERO_AVOIDANCE_ALPHA_WEIGHT = 0.28f
+private const val HOME_HERO_FOREGROUND_BLUR_RADIUS_DP = 50f
 
 internal data class HomeHeaderStatusPillState(
     val label: String,
@@ -394,7 +395,7 @@ internal fun HomePageHero(
                         backdrop = foregroundBackdrop,
                         enabled = foregroundBlurEnabled,
                         shape = RoundedCornerShape(18.dp),
-                        blurRadius = 150f
+                        blurRadiusDp = HOME_HERO_FOREGROUND_BLUR_RADIUS_DP
                     )
             )
         }

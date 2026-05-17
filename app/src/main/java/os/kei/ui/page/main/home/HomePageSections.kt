@@ -95,7 +95,7 @@ internal fun Modifier.homeHeroForegroundBlur(
     backdrop: LayerBackdrop?,
     enabled: Boolean,
     shape: Shape,
-    blurRadius: Float
+    blurRadiusDp: Float
 ): Modifier {
     if (!enabled || backdrop == null) return this
     val isDark = isSystemInDarkTheme()
@@ -117,7 +117,7 @@ internal fun Modifier.homeHeroForegroundBlur(
     return textureBlur(
         backdrop = backdrop,
         shape = shape,
-        blurRadius = blurRadius,
+        blurRadius = blurRadiusDp,
         colors = BlurColors(blendColors = logoBlend),
         contentBlendMode = BlendMode.DstIn
     )

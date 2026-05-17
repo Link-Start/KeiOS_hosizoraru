@@ -130,7 +130,7 @@ val nonReleaseVersionCode = nonReleaseVersion.toVersionCode(
 val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
-        ?: "0.9.0-8a5e4f4b-SNAPSHOT"
+        ?: "0.9.1"
 val coreKtxVersion = "1.18.0"
 val activityComposeVersion = "1.13.0"
 val materialVersion = "1.13.0"

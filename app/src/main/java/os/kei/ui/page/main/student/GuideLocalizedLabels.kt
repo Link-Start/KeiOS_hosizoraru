@@ -38,8 +38,11 @@ internal fun guideSourceLabelRes(raw: String): Int? =
         "屋内", "室内" -> R.string.guide_field_indoor
         "声优" -> R.string.guide_field_voice_actor
         "画师" -> R.string.guide_field_illustrator
+        "设计" -> R.string.guide_field_designer
         "生日" -> R.string.guide_field_birthday
         "年龄" -> R.string.guide_field_age
+        "身份" -> R.string.guide_field_identity
+        "职务" -> R.string.guide_field_position_title
         "兴趣爱好" -> R.string.guide_field_hobbies
         "介绍", "个人简介" -> R.string.guide_field_intro
         "所属" -> R.string.guide_field_affiliation

@@ -452,8 +452,11 @@
     <string name="guide_field_indoor">屋内</string>
     <string name="guide_field_voice_actor">声優</string>
     <string name="guide_field_illustrator">イラストレーター</string>
+    <string name="guide_field_designer">デザイン</string>
     <string name="guide_field_birthday">誕生日</string>
     <string name="guide_field_age">年齢</string>
+    <string name="guide_field_identity">身分</string>
+    <string name="guide_field_position_title">役職</string>
     <string name="guide_field_hobbies">趣味</string>
     <string name="guide_field_intro">紹介</string>
     <string name="guide_field_affiliation">所属</string>

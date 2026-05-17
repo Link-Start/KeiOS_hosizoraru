@@ -1,10 +1,10 @@
 package os.kei.ui.page.main.student.tabcontent.profile
 
 import org.junit.Test
+import os.kei.ui.page.main.student.BaGuideRow
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import os.kei.ui.page.main.student.BaGuideRow
 
 class GuideProfileFieldRulesTest {
     @Test
@@ -16,26 +16,40 @@ class GuideProfileFieldRulesTest {
         assertTrue(
             shouldStackProfileInfoRow(
                 key = "MomoTalk状态消息",
-                value = "为了参加派对换上了礼服裙，所属于格黑娜学园的风纪委员长。"
-            )
+                value = "为了参加派对换上了礼服裙，所属于格黑娜学园的风纪委员长。",
+            ),
         )
     }
 
     @Test
-    fun `gift preference keeps primary gift image and attitude emoji`() {
-        val items = buildGiftPreferenceItems(
-            listOf(
-                BaGuideRow(
-                    key = "礼物偏好礼物1",
-                    value = "",
-                    imageUrl = "https://cdn.example.com/gift-ticket.png",
-                    imageUrls = listOf(
-                        "https://cdn.example.com/gift-ticket.png",
-                        "https://cdn.example.com/gift-emoji-love.gif"
-                    )
-                )
-            )
+    fun `npc intro rows use stacked full width layout`() {
+        assertTrue(shouldUseFullWidthProfileInfoRow("介绍"))
+        assertTrue(
+            shouldStackProfileInfoRow(
+                key = "介绍",
+                value = "初登场：主线剧情vol.0序章 首席行政官凛！现在是失踪的学生会长的代理。",
+            ),
         )
+        assertFalse(shouldUseProfileValueCapsule("介绍", "短简介", onClick = null))
+    }
+
+    @Test
+    fun `gift preference keeps primary gift image and attitude emoji`() {
+        val items =
+            buildGiftPreferenceItems(
+                listOf(
+                    BaGuideRow(
+                        key = "礼物偏好礼物1",
+                        value = "",
+                        imageUrl = "https://cdn.example.com/gift-ticket.png",
+                        imageUrls =
+                            listOf(
+                                "https://cdn.example.com/gift-ticket.png",
+                                "https://cdn.example.com/gift-emoji-love.gif",
+                            ),
+                    ),
+                ),
+            )
 
         assertEquals(1, items.size)
         assertEquals("https://cdn.example.com/gift-ticket.png", items.single().giftImageUrl)
@@ -45,18 +59,20 @@ class GuideProfileFieldRulesTest {
 
     @Test
     fun `gift preference falls back to non emoji candidate as primary image`() {
-        val items = buildGiftPreferenceItems(
-            listOf(
-                BaGuideRow(
-                    key = "礼物偏好礼物2",
-                    value = "电影票",
-                    imageUrls = listOf(
-                        "https://cdn.example.com/gift-emoji-like.gif",
-                        "https://cdn.example.com/movie-ticket.png"
-                    )
-                )
+        val items =
+            buildGiftPreferenceItems(
+                listOf(
+                    BaGuideRow(
+                        key = "礼物偏好礼物2",
+                        value = "电影票",
+                        imageUrls =
+                            listOf(
+                                "https://cdn.example.com/gift-emoji-like.gif",
+                                "https://cdn.example.com/movie-ticket.png",
+                            ),
+                    ),
+                ),
             )
-        )
 
         assertEquals(1, items.size)
         assertEquals("https://cdn.example.com/movie-ticket.png", items.single().giftImageUrl)

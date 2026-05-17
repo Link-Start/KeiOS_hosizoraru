@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
@@ -22,7 +23,6 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideRemoteImage
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
-import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileRowsSection
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileSectionHeader
 import os.kei.ui.page.main.student.tabcontent.profile.buildGuideNpcSatelliteProfileState
 import top.yukonga.miuix.kmp.basic.Text
@@ -72,14 +72,17 @@ internal fun LazyListScope.renderGuideNpcSatelliteArchiveContent(guide: BaStuden
                         modifier =
                             Modifier
                                 .weight(1f)
-                                .height(152.dp),
-                        verticalArrangement = Arrangement.SpaceBetween,
+                                .heightIn(min = 152.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         leadingRows.take(5).forEach { row ->
                             GuideProfileInfoItem(
                                 key = row.key,
                                 value = row.value.ifBlank { "-" },
-                                preferCapsule = row.value.length <= 14 && !row.value.contains('\n'),
+                                preferCapsule =
+                                    row.value.length <= 14 &&
+                                        !row.value.contains('\n') &&
+                                        !row.value.contains(" / "),
                             )
                         }
                     }
@@ -96,23 +99,13 @@ internal fun LazyListScope.renderGuideNpcSatelliteArchiveContent(guide: BaStuden
             }
         }
     }
-    if (profileState.normalRows.isNotEmpty()) {
-        item { Spacer(modifier = Modifier.height(10.dp)) }
-        guideProfileCard {
-            GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_npc_extra))
-            GuideProfileRowsSection(
-                rows = profileState.normalRows,
-                emptyText = stringResource(R.string.guide_profile_npc_empty),
-            )
-        }
-    }
 }
 
 private fun buildNpcArchiveLeadingRows(
     identityRows: List<BaGuideRow>,
     aliasRows: List<BaGuideRow>,
 ): List<BaGuideRow> {
-    val preferredIdentityKeys = listOf("所属", "声优", "生日", "身高", "首次登场日期", "首次登场")
+    val preferredIdentityKeys = listOf("所属", "首次登场", "声优", "生日", "身高")
     val identity =
         preferredIdentityKeys.mapNotNull { key ->
             identityRows.firstOrNull { row -> row.key.trim() == key }

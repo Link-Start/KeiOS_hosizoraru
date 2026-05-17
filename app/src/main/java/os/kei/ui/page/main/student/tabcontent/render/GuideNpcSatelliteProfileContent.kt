@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student.tabcontent.render
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +40,7 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
         item {
             Spacer(
                 modifier =
-                    androidx.compose.ui.Modifier
+                    Modifier
                         .height(10.dp),
             )
         }
@@ -56,6 +57,7 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     renderNpcProfileGroup(
         titleRes = R.string.guide_profile_section_npc_intro,
         rows = profileState.introRows,
+        preferCapsule = false,
     )
 
     if (profileState.sameNameRoleItems.isNotEmpty() || profileState.sameNameRoleHint.isNotBlank()) {
@@ -94,16 +96,22 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
 private fun LazyListScope.renderNpcProfileGroup(
     titleRes: Int,
     rows: List<BaGuideRow>,
+    preferCapsule: Boolean = true,
 ) {
     if (rows.isEmpty()) return
     guideProfileCard(addTopSpacing = true) {
         GuideProfileSectionHeader(title = stringResource(titleRes))
         GuideProfileInfoRows(rows = rows) { row ->
+            val displayAsCapsule =
+                preferCapsule &&
+                    row.value.length <= 14 &&
+                    !row.value.contains('\n') &&
+                    !row.value.contains(" / ")
             GuideProfileInfoItem(
                 key = row.key,
                 value = row.value.ifBlank { "-" },
                 valueColor = npcProfileValueColor(row),
-                preferCapsule = row.value.length <= 14 && !row.value.contains('\n'),
+                preferCapsule = displayAsCapsule,
             )
         }
     }

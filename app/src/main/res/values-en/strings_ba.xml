@@ -450,8 +450,11 @@
     <string name="guide_field_indoor">Indoor</string>
     <string name="guide_field_voice_actor">Voice Actor</string>
     <string name="guide_field_illustrator">Illustrator</string>
+    <string name="guide_field_designer">Designer</string>
     <string name="guide_field_birthday">Birthday</string>
     <string name="guide_field_age">Age</string>
+    <string name="guide_field_identity">Identity</string>
+    <string name="guide_field_position_title">Position</string>
     <string name="guide_field_hobbies">Hobbies</string>
     <string name="guide_field_intro">Introduction</string>
     <string name="guide_field_affiliation">Affiliation</string>

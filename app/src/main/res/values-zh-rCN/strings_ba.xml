@@ -454,8 +454,11 @@
     <string name="guide_field_indoor">室内</string>
     <string name="guide_field_voice_actor">声优</string>
     <string name="guide_field_illustrator">画师</string>
+    <string name="guide_field_designer">设计</string>
     <string name="guide_field_birthday">生日</string>
     <string name="guide_field_age">年龄</string>
+    <string name="guide_field_identity">身份</string>
+    <string name="guide_field_position_title">职务</string>
     <string name="guide_field_hobbies">兴趣爱好</string>
     <string name="guide_field_intro">介绍</string>
     <string name="guide_field_affiliation">所属</string>

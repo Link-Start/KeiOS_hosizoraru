@@ -7,7 +7,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -20,6 +19,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -139,11 +139,10 @@ fun AppDropdownSelector(
     placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd,
     enabled: Boolean = true
 ) {
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
     val maxScreenWidth =
-        (configuration.screenWidthDp.dp - DropdownSelectorScreenHorizontalMargin * 2)
+        (appWindowWidthDp() - DropdownSelectorScreenHorizontalMargin * 2)
             .coerceAtLeast(DropdownSelectorMinWidth)
     val resolvedMaxWidth = (popupMaxWidth ?: maxScreenWidth)
         .coerceAtMost(maxScreenWidth)

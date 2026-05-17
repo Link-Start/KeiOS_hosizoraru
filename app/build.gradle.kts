@@ -138,7 +138,7 @@ val miuixVersion =
         ?: "0.9.1"
 val coreKtxVersion = "1.18.0"
 val activityComposeVersion = "1.13.0"
-val materialVersion = "1.13.0"
+val materialVersion = "1.14.0"
 val composeVersion = "1.11.1"
 val constraintLayoutComposeVersion = "1.1.1"
 val navigation3Version = "1.1.1"

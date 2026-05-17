@@ -44,7 +44,7 @@ internal fun artifactKindLabel(kind: GitHubActionsArtifactKind): String {
 }
 
 @Composable
-internal fun runBranchTrustPill(match: GitHubActionsRunMatch) {
+internal fun RunBranchTrustPill(match: GitHubActionsRunMatch) {
     val trust = match.traits.branchTrust
     val label = when (trust) {
         GitHubActionsRunBranchTrust.DefaultBranch -> stringResource(R.string.github_actions_badge_default_branch)

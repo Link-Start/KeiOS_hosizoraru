@@ -20,13 +20,15 @@ internal data class ApkAssetTarget(
     val label: String
 )
 
-private val releaseUpdatedAtFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yy-MM-dd HH:mm", Locale.getDefault())
-    .withZone(ZoneId.systemDefault())
+private fun releaseUpdatedAtFormatter(): DateTimeFormatter =
+    DateTimeFormatter
+        .ofPattern("yy-MM-dd HH:mm", Locale.getDefault())
+        .withZone(ZoneId.systemDefault())
 
-private val releaseUpdatedAtNoYearFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("MM-dd HH:mm", Locale.getDefault())
-    .withZone(ZoneId.systemDefault())
+private fun releaseUpdatedAtNoYearFormatter(): DateTimeFormatter =
+    DateTimeFormatter
+        .ofPattern("MM-dd HH:mm", Locale.getDefault())
+        .withZone(ZoneId.systemDefault())
 
 private val arm64TokenRegex = Regex("""(?:^|[^a-z0-9])arm64(?:[^a-z0-9]|$)""")
 private val armeabiTokenRegex = Regex("""(?:^|[^a-z0-9])armeabi(?:[^a-z0-9]|$)""")
@@ -161,14 +163,14 @@ internal fun bundleReleaseUpdatedAtMillis(bundle: GitHubReleaseAssetBundle?): Lo
 internal fun formatReleaseUpdatedAtCompact(updatedAtMillis: Long?): String? {
     val millis = updatedAtMillis?.takeIf { it > 0L } ?: return null
     return runCatching {
-        releaseUpdatedAtFormatter.format(Instant.ofEpochMilli(millis))
+        releaseUpdatedAtFormatter().format(Instant.ofEpochMilli(millis))
     }.getOrNull()
 }
 
 internal fun formatReleaseUpdatedAtNoYear(updatedAtMillis: Long?): String? {
     val millis = updatedAtMillis?.takeIf { it > 0L } ?: return null
     return runCatching {
-        releaseUpdatedAtNoYearFormatter.format(Instant.ofEpochMilli(millis))
+        releaseUpdatedAtNoYearFormatter().format(Instant.ofEpochMilli(millis))
     }.getOrNull()
 }
 

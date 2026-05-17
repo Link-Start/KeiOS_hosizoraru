@@ -3,12 +3,9 @@
 
 package os.kei.core.ui.effect.background
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import top.yukonga.miuix.kmp.blur.RuntimeShader
 import kotlin.time.TimeSource
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class BgEffectPainter {
     val shaderCode by lazy { OS3_BG_FRAG }
     private var bound: FloatArray = FloatArray(4)

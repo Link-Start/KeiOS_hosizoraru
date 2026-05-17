@@ -33,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.PlatformTextStyle
@@ -75,11 +74,11 @@ fun AppBottomSearchDock(
     val keyboardController = LocalSoftwareKeyboardController.current
     val dockInteractionSource = remember { MutableInteractionSource() }
     val dockPressed by dockInteractionSource.collectIsPressedAsState()
-    val configuration = LocalConfiguration.current
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
+    val windowWidth = appWindowWidthDp()
     val maxExpandedWidth = (
-            configuration.screenWidthDp.dp -
+            windowWidth -
                     horizontalInset * 2 -
                     compactDockReservedWidth -
                     AppChromeTokens.pageSectionGap

@@ -28,7 +28,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
@@ -43,6 +42,7 @@ import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.chrome.appWindowHeightPx
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
@@ -78,12 +78,11 @@ fun SnapshotWindowListPopup(
     matchAnchorWidth: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val configuration = LocalConfiguration.current
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
     val explicitAnchorBounds = anchorBounds
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.roundToPx() }
+    val screenHeightPx = appWindowHeightPx()
     val anchorWidthDp = remember(explicitAnchorBounds, density) {
         explicitAnchorBounds?.let { with(density) { it.width.toDp() } } ?: 0.dp
     }

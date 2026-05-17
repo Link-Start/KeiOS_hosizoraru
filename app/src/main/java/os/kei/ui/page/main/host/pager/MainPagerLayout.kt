@@ -14,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
@@ -36,6 +35,7 @@ import os.kei.ui.page.main.back.MainBackNavigationAction
 import os.kei.ui.page.main.back.resolveMainBackNavigationAction
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.chrome.AppScaffold
+import os.kei.ui.page.main.widget.chrome.appWindowSizeDp
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
@@ -341,17 +341,17 @@ private fun NonHomePageBackground(
 ) {
     if (!enabled || imageUri.isBlank()) return
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
+    val windowSize = appWindowSizeDp()
     val (targetWidthPx, targetHeightPx) =
-        remember(configuration, density) {
+        remember(windowSize, density) {
             with(density) {
                 val width =
-                    configuration.screenWidthDp.dp
+                    windowSize.width
                         .roundToPx()
                         .coerceAtLeast(1)
                 val height =
-                    configuration.screenHeightDp.dp
+                    windowSize.height
                         .roundToPx()
                         .coerceAtLeast(1)
                 width to height

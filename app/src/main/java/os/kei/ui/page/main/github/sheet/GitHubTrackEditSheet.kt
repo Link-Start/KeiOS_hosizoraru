@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +53,7 @@ import os.kei.ui.page.main.github.GitHubSelectedAppCard
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.widget.chrome.appWindowHeightDp
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
@@ -844,8 +844,7 @@ private fun GitHubTrackAppPickerContent(
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val listMaxHeight = (configuration.screenHeightDp.dp * 0.60f).coerceIn(340.dp, 680.dp)
+    val listMaxHeight = (appWindowHeightDp() * 0.60f).coerceIn(340.dp, 680.dp)
     val savedPreferences = remember { GitHubTrackStore.loadAppPickerPreferences() }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()

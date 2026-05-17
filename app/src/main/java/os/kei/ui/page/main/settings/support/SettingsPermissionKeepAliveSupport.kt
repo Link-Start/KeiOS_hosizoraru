@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.settings.support
 
 import android.app.AppOpsManager
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -445,6 +446,7 @@ private fun queryOemAutoStartRestriction(context: Context): Boolean? {
     return queryAutoStartRestrictionViaAppOps(context)
 }
 
+@SuppressLint("PrivateApi")
 private fun queryAutoStartRestrictionViaInjector(packageName: String): Boolean? {
     return runCatching {
         val method = Class.forName("android.app.AppOpsManagerInjector")

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -25,6 +24,7 @@ import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.os.appLucideUploadIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
+import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
@@ -112,7 +112,7 @@ internal fun GitHubTopBarActions(
     }
     val importStarsLabel = stringResource(R.string.github_check_sheet_action_import_stars)
     val transferActionEnabled = !tracksExporting && !tracksImporting
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val screenWidth = appWindowWidthDp()
     val actionMenuMaxWidth = (screenWidth - GitHubActionMenuHorizontalMargin)
         .coerceIn(GitHubActionMenuCompactMinWidth, GitHubActionMenuPreferredMaxWidth)
     val actionMenuMinWidth = minOf(GitHubActionMenuPreferredMinWidth, actionMenuMaxWidth)

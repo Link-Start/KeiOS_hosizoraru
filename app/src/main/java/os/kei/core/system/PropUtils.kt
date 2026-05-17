@@ -1,5 +1,6 @@
 package os.kei.core.system
 
+import android.annotation.SuppressLint
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -10,7 +11,12 @@ private inline fun <T> safeOf(default: T, block: () -> T): T = runCatching(block
 private const val PROP_SNAPSHOT_TTL_NANOS = 60_000_000_000L
 
 private val systemPropertiesGetMethod: Method? by lazy(LazyThreadSafetyMode.PUBLICATION) {
-    runCatching {
+    systemPropertiesGetMethodOrNull()
+}
+
+@SuppressLint("PrivateApi")
+private fun systemPropertiesGetMethodOrNull(): Method? {
+    return runCatching {
         Class.forName("android.os.SystemProperties")
             .getMethod("get", String::class.java, String::class.java)
     }.getOrNull()

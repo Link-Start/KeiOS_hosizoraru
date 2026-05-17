@@ -104,6 +104,8 @@ internal fun BindBaStudentGuideVoiceListenerEffect(
                                 voicePlayer.isPlaying && playingVoiceUrl.isNotBlank()
                             )
                         }
+
+                        Player.STATE_BUFFERING -> Unit
                     }
                 }
 

@@ -569,7 +569,7 @@ private fun BaGuideBgmExpandedDockTab(
             )
             Text(
                 text = tab.label,
-                color = BaGuideBgmDockTint(
+                color = baGuideBgmDockTint(
                     selected = selected,
                     accent = accent,
                     selectionProgress = tintProgress
@@ -596,7 +596,7 @@ internal fun BaGuideBgmDockTabIcon(
     Icon(
         imageVector = icon,
         contentDescription = label,
-        tint = BaGuideBgmDockTint(
+        tint = baGuideBgmDockTint(
             selected = selected,
             accent = accent,
             selectionProgress = selectionProgress
@@ -635,7 +635,7 @@ internal fun rememberBaGuideBgmDockTabs(): List<BaGuideBgmDockTab> {
 }
 
 @Composable
-private fun BaGuideBgmDockTint(
+private fun baGuideBgmDockTint(
     selected: Boolean,
     accent: Color,
     selectionProgress: Float = if (selected) 1f else 0f

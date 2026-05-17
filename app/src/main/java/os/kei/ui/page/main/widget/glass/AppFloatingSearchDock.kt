@@ -33,7 +33,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
+import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.Icon
@@ -86,10 +86,9 @@ fun AppFloatingSearchDock(
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
-    val configuration = LocalConfiguration.current
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
-    val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
+    val availableWidth = appWindowWidthDp() - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
     val transition = updateTransition(targetState = expanded, label = "app_floating_search")
     val fieldWidth by transition.animateDp(
@@ -197,12 +196,11 @@ fun AppFloatingVerticalSearchActionDock(
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
-    val configuration = LocalConfiguration.current
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val resolvedKeyboardLift = keyboardLift ?: rememberAppFloatingKeyboardLift(focusedLift)
     val visibleActionCount = if (showAddAction) 3 else 2
     val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
-    val availableWidth = configuration.screenWidthDp.dp - horizontalInset * 2
+    val availableWidth = appWindowWidthDp() - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
     val transition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
     val fieldWidth by transition.animateDp(

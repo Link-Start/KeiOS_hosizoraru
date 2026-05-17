@@ -25,7 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,6 +74,7 @@ internal fun SettingsBottomChrome(
     val gap = SettingsBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
+    val density = LocalDensity.current
     val keyboardLift =
         rememberAppFloatingKeyboardLift(
             focusedLift = 18.dp,
@@ -117,7 +120,11 @@ internal fun SettingsBottomChrome(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .offset(y = -keyboardLift)
+                .offset {
+                    with(density) {
+                        IntOffset(x = 0, y = -keyboardLift.roundToPx())
+                    }
+                }
                 .padding(
                     start = outerPadding,
                     end = outerPadding,
@@ -268,7 +275,12 @@ internal fun SettingsBottomChrome(
             searchIcon = searchIcon,
             contentDescription = searchContentDescription,
             placeholder = searchPlaceholder,
-            modifier = Modifier.offset(x = searchX, y = 0.dp),
+            modifier =
+                Modifier.offset {
+                    with(density) {
+                        IntOffset(x = searchX.roundToPx(), y = 0)
+                    }
+                },
             expandedWidth = searchWidth,
         )
     }

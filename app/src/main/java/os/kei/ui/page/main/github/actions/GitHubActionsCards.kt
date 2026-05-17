@@ -152,7 +152,7 @@ internal fun GitHubActionsRunCard(
                     minWidth = GitHubActionsStatePillMinWidth
                 )
             }
-            runBranchTrustPill(match)
+            RunBranchTrustPill(match)
             if (match.traits.pullRequestLike) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_pr),

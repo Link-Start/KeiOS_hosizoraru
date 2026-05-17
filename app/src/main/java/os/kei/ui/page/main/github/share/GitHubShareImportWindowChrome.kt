@@ -3,10 +3,8 @@ package os.kei.ui.page.main.github.share
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.os.Build
 import android.view.Window
 import android.view.WindowManager
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -27,7 +25,6 @@ internal fun GitHubShareImportWindowBlurEffect(
     useBlur: Boolean = true,
     blurRadius: Int = GitHubShareImportWindowChrome.BlurBehindRadius
 ) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
     val window = currentShareImportWindow() ?: return
     val blurEnabledBySystem = rememberCrossWindowBlurEnabled()
 
@@ -56,7 +53,6 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 private fun rememberCrossWindowBlurEnabled(): Boolean {
     val context = LocalContext.current
@@ -80,7 +76,6 @@ private fun rememberCrossWindowBlurEnabled(): Boolean {
     return enabled
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 private fun Window.applyShareImportBlur(radius: Int) {
     clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
     addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
@@ -90,7 +85,6 @@ private fun Window.applyShareImportBlur(radius: Int) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.S)
 private fun Window.clearShareImportBlur() {
     clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
     attributes = attributes.apply {

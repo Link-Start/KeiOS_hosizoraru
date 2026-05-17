@@ -37,12 +37,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
@@ -86,6 +88,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     val defaultTabs = rememberBaGuideBgmDockTabs()
     val tabs = dockTabs ?: defaultTabs
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
+    val density = LocalDensity.current
     val miniPlayerInteractionSource = remember { MutableInteractionSource() }
     val dockSurfaceInteractionSource = remember { MutableInteractionSource() }
     val searchFocusRequester = remember { FocusRequester() }
@@ -262,7 +265,14 @@ internal fun BaGuideBgmFloatingBottomChrome(
         if (miniPlayerHeight > 1.dp && miniPlayerWidth > 1.dp) {
             AppLiquidFloatingSurface(
                 modifier = Modifier
-                    .offset(x = miniPlayerX, y = miniPlayerY)
+                    .offset {
+                        with(density) {
+                            IntOffset(
+                                x = miniPlayerX.roundToPx(),
+                                y = miniPlayerY.roundToPx()
+                            )
+                        }
+                    }
                     .width(miniPlayerWidth)
                     .height(miniPlayerHeight)
                     .graphicsLayer { alpha = miniPlayerAlpha },
@@ -296,7 +306,11 @@ internal fun BaGuideBgmFloatingBottomChrome(
 
         AppLiquidFloatingSurface(
             modifier = Modifier
-                .offset(x = 0.dp, y = tabGroupY)
+                .offset {
+                    with(density) {
+                        IntOffset(x = 0, y = tabGroupY.roundToPx())
+                    }
+                }
                 .width(tabGroupWidth)
                 .height(tabGroupHeight),
             shape = ContinuousCapsule,
@@ -321,7 +335,14 @@ internal fun BaGuideBgmFloatingBottomChrome(
 
         AppLiquidFloatingSurface(
             modifier = Modifier
-                .offset(x = searchX, y = searchY)
+                .offset {
+                    with(density) {
+                        IntOffset(
+                            x = searchX.roundToPx(),
+                            y = searchY.roundToPx()
+                        )
+                    }
+                }
                 .width(searchWidth)
                 .height(searchSize),
             shape = if (searchFieldVisible) ContinuousCapsule else CircleShape,

@@ -480,7 +480,8 @@ internal fun SettingsComponentEffectsSection(
     val componentEffectsGroupActive = state.liquidActionBarLayeredStyleEnabled ||
         state.liquidSwitchEnabled ||
         state.liquidBottomBarEnabled ||
-            state.searchAutoFocusEnabled ||
+        state.miuixMainNavigationEnabled ||
+        state.searchAutoFocusEnabled ||
         state.gripAwareFloatingDockEnabled
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_component_effects_header),
@@ -517,6 +518,18 @@ internal fun SettingsComponentEffectsSection(
             summary = stringResource(R.string.settings_bottom_bar_summary),
             checked = state.liquidBottomBarEnabled,
             onCheckedChange = actions.onLiquidBottomBarChanged
+        )
+        SettingsToggleItem(
+            title = stringResource(R.string.settings_miuix_main_navigation_title),
+            summary = if (state.miuixMainNavigationEnabled) {
+                stringResource(R.string.settings_miuix_main_navigation_summary_enabled)
+            } else {
+                stringResource(R.string.settings_miuix_main_navigation_summary_disabled)
+            },
+            checked = state.miuixMainNavigationEnabled,
+            onCheckedChange = actions.onMiuixMainNavigationChanged,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_miuix_main_navigation_scope)
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_search_auto_focus_title),

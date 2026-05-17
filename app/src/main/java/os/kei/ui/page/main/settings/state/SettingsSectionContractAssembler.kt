@@ -48,6 +48,7 @@ internal fun rememberSettingsSectionContractBundle(
     liquidActionBarLayeredStyleEnabled: Boolean,
     liquidSwitchEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
+    miuixMainNavigationEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
@@ -77,6 +78,7 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     onLiquidSwitchChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
+    onMiuixMainNavigationChanged: (Boolean) -> Unit,
     onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
@@ -194,6 +196,7 @@ internal fun rememberSettingsSectionContractBundle(
         liquidActionBarLayeredStyleEnabled,
         liquidSwitchEnabled,
         liquidBottomBarEnabled,
+        miuixMainNavigationEnabled,
         searchAutoFocusEnabled,
         gripAwareFloatingDockEnabled
     ) {
@@ -201,6 +204,7 @@ internal fun rememberSettingsSectionContractBundle(
             liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             liquidSwitchEnabled = liquidSwitchEnabled,
             liquidBottomBarEnabled = liquidBottomBarEnabled,
+            miuixMainNavigationEnabled = miuixMainNavigationEnabled,
             searchAutoFocusEnabled = searchAutoFocusEnabled,
             gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
         )
@@ -209,6 +213,7 @@ internal fun rememberSettingsSectionContractBundle(
         onLiquidActionBarLayeredStyleChanged,
         onLiquidSwitchChanged,
         onLiquidBottomBarChanged,
+        onMiuixMainNavigationChanged,
         onSearchAutoFocusChanged,
         onGripAwareFloatingDockChanged
     ) {
@@ -216,6 +221,7 @@ internal fun rememberSettingsSectionContractBundle(
             onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
             onLiquidSwitchChanged = onLiquidSwitchChanged,
             onLiquidBottomBarChanged = onLiquidBottomBarChanged,
+            onMiuixMainNavigationChanged = onMiuixMainNavigationChanged,
             onSearchAutoFocusChanged = onSearchAutoFocusChanged,
             onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
         )

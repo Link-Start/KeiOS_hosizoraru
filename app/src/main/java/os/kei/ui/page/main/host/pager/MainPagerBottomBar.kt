@@ -40,8 +40,19 @@ internal fun MainPagerBottomBar(
     selectedPagePosition: Float?,
     backdrop: LayerBackdrop,
     liquidBottomBarEnabled: Boolean,
+    miuixMainNavigationEnabled: Boolean,
     onPageSelected: (Int) -> Unit
 ) {
+    if (miuixMainNavigationEnabled) {
+        MainMiuixBottomBar(
+            visible = visible,
+            tabs = tabs,
+            selectedPageIndex = selectedPageIndex,
+            onPageSelected = onPageSelected
+        )
+        return
+    }
+
     Box(modifier = Modifier.fillMaxWidth()) {
         AnimatedVisibility(
             visible = visible,

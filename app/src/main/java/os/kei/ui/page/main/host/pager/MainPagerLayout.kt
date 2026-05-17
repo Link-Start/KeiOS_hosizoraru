@@ -46,6 +46,7 @@ internal fun MainPagerLayout(
     navigator: Navigator,
     settingsReturnToken: Int,
     liquidBottomBarEnabled: Boolean,
+    miuixMainNavigationEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
@@ -95,6 +96,7 @@ internal fun MainPagerLayout(
     val coordinator = rememberMainPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
         transitionAnimationsEnabled = transitionAnimationsEnabled,
+        miuixMainNavigationEnabled = miuixMainNavigationEnabled,
         preloadingEnabled = preloadingEnabled,
         nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
         nonHomeBackgroundUri = nonHomeBackgroundUri,
@@ -189,6 +191,7 @@ internal fun MainPagerLayout(
                 selectedPagePosition = pagerSelectionPosition,
                 backdrop = coordinator.backdrop,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
+                miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                 onPageSelected = coordinator.onPageSelected
             )
         }
@@ -261,12 +264,21 @@ internal fun MainPagerLayout(
                     )
                 }
             }
-            MainFoundationPager(
-                state = coordinator.pagerState,
-                userScrollEnabled = coordinator.pagerScrollEnabled,
-                modifier = pagerModifier,
-                pageContent = pageContent
-            )
+            when (val pagerState = coordinator.pagerState) {
+                is MainMiuixPagerState -> MainMiuixPager(
+                    state = pagerState,
+                    userScrollEnabled = coordinator.pagerScrollEnabled,
+                    modifier = pagerModifier,
+                    pageContent = pageContent
+                )
+                is MainFoundationPagerState -> MainFoundationPager(
+                    state = pagerState,
+                    userScrollEnabled = coordinator.pagerScrollEnabled,
+                    modifier = pagerModifier,
+                    pageContent = pageContent
+                )
+                else -> error("Unsupported main pager state: ${pagerState::class.java.name}")
+            }
 
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
                 NonHomePageBackground(

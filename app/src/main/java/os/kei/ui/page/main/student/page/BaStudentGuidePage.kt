@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.page
 
 import androidx.compose.animation.core.Animatable
@@ -39,8 +41,8 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
-import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
@@ -78,13 +80,14 @@ fun BaStudentGuidePage(
     miuixMainNavigationEnabled: Boolean = false,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val preloadPolicy = remember(preloadingEnabled) {
-        UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
-    }
+    val preloadPolicy =
+        remember(preloadingEnabled) {
+            UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
+        }
     val defaultPageTitle = stringResource(R.string.guide_page_title_default)
     val shareSourceEmptyText = stringResource(R.string.guide_share_source_empty)
     val shareSourceChooserTitle = stringResource(R.string.guide_share_source_chooser_title)
@@ -104,19 +107,21 @@ fun BaStudentGuidePage(
         onDispose { }
     }
     // Keep top-level backdrop only for navigator/pager layer and bottom bar.
-    val navBackdrop: LayerBackdrop = key("nav-$activationCount") {
-        rememberLayerBackdrop {
-            drawRect(surfaceColor)
-            drawContent()
+    val navBackdrop: LayerBackdrop =
+        key("nav-$activationCount") {
+            rememberLayerBackdrop {
+                drawRect(surfaceColor)
+                drawContent()
+            }
         }
-    }
     // Top action bar uses its own backdrop instance to avoid cross-layer recursion.
-    val topBarBackdrop: LayerBackdrop = key("topbar-$activationCount") {
-        rememberLayerBackdrop {
-            drawRect(surfaceColor)
-            drawContent()
+    val topBarBackdrop: LayerBackdrop =
+        key("topbar-$activationCount") {
+            rememberLayerBackdrop {
+                drawRect(surfaceColor)
+                drawContent()
+            }
         }
-    }
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -124,21 +129,22 @@ fun BaStudentGuidePage(
     val guideDataState by guideViewModel.dataState.collectAsStateWithLifecycle()
     val guidePrefetchState by guideViewModel.prefetchState.collectAsStateWithLifecycle()
     val bgmFavorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
-    val bgmFavoriteAudioUrls = remember(bgmFavorites) {
-        bgmFavorites.mapTo(hashSetOf()) { it.audioUrl }
-    }
+    val bgmFavoriteAudioUrls =
+        remember(bgmFavorites) {
+            bgmFavorites.mapTo(hashSetOf()) { it.audioUrl }
+        }
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
         preloadPolicy.initialFetchDelayMs,
         loadFailedText,
-        refreshFailedKeepCacheText
+        refreshFailedKeepCacheText,
     ) {
         guideViewModel.bind(
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             initialFetchDelayMs = preloadPolicy.initialFetchDelayMs,
             loadFailedText = loadFailedText,
-            refreshFailedKeepCacheText = refreshFailedKeepCacheText
+            refreshFailedKeepCacheText = refreshFailedKeepCacheText,
         )
     }
     val sourceUrl = guideDataState.sourceUrl
@@ -161,43 +167,50 @@ fun BaStudentGuidePage(
             selectedBottomTabOrdinal = bottomTabsList.firstOrNull()?.ordinal ?: GuideBottomTab.Archive.ordinal
         }
     }
-    val selectedBottomTabIndex = bottomTabsList.indexOfFirst { tab ->
-        tab.ordinal == selectedBottomTabOrdinal
-    }.takeIf { it >= 0 } ?: 0
-    val pagerState = rememberPagerState(
-        initialPage = selectedBottomTabIndex,
-        pageCount = { bottomTabsList.size }
-    )
+    val selectedBottomTabIndex =
+        bottomTabsList
+            .indexOfFirst { tab ->
+                tab.ordinal == selectedBottomTabOrdinal
+            }.takeIf { it >= 0 } ?: 0
+    val pagerState =
+        rememberPagerState(
+            initialPage = selectedBottomTabIndex,
+            pageCount = { bottomTabsList.size },
+        )
     ReportPagerPerformanceState(
         scope = "guide_detail_pager",
         currentPage = bottomTabsList.getOrElse(pagerState.currentPage) { GuideBottomTab.Archive }.name,
         targetPage = bottomTabsList.getOrElse(pagerState.targetPage) { GuideBottomTab.Archive }.name,
-        scrolling = pagerState.isScrollInProgress
+        scrolling = pagerState.isScrollInProgress,
     )
     val activeBottomTab = bottomTabsList.getOrElse(pagerState.currentPage) { GuideBottomTab.Archive }
+    val settledBottomTab = bottomTabsList.getOrElse(pagerState.settledPage) { GuideBottomTab.Archive }
+    val guideStaticPrefetchEnabled = info != null && !loading && error == null
     val pageScope = rememberCoroutineScope()
-    val syncProgress = rememberGuideSyncProgress(
-        loading = loading,
-        animationsEnabled = transitionAnimationsEnabled
-    )
+    val syncProgress =
+        rememberGuideSyncProgress(
+            loading = loading,
+            animationsEnabled = transitionAnimationsEnabled,
+        )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     var showBottomBar by remember { mutableStateOf(true) }
     var activePageCanScrollBackward by remember { mutableStateOf(false) }
     var activePageCanScrollForward by remember { mutableStateOf(false) }
     val farJumpAlpha = remember { Animatable(1f) }
-    val selectBottomTabAction = rememberBaStudentGuideTabSelectCoordinator(
-        bottomTabs = bottomTabsList,
-        pagerState = pagerState,
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        farJumpAlpha = farJumpAlpha,
-        onShowBottomBarChange = { showBottomBar = it },
-        onSelectedBottomTabIndexChange = { selectedIndex ->
-            selectedBottomTabOrdinal = bottomTabsList
-                .getOrNull(selectedIndex)
-                ?.ordinal
-                ?: GuideBottomTab.Archive.ordinal
-        }
-    )
+    val selectBottomTabAction =
+        rememberBaStudentGuideTabSelectCoordinator(
+            bottomTabs = bottomTabsList,
+            pagerState = pagerState,
+            transitionAnimationsEnabled = transitionAnimationsEnabled,
+            farJumpAlpha = farJumpAlpha,
+            onShowBottomBarChange = { showBottomBar = it },
+            onSelectedBottomTabIndexChange = { selectedIndex ->
+                selectedBottomTabOrdinal = bottomTabsList
+                    .getOrNull(selectedIndex)
+                    ?.ordinal
+                    ?: GuideBottomTab.Archive.ordinal
+            },
+        )
     LaunchedEffect(requestedInitialBottomTab, bottomTabsList, selectBottomTabAction) {
         val targetTab = requestedInitialBottomTab ?: return@LaunchedEffect
         val targetIndex = bottomTabsList.indexOf(targetTab)
@@ -208,25 +221,31 @@ fun BaStudentGuidePage(
     }
     val density = LocalDensity.current
     val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
-    val bottomBarVisibilityController = remember(bottomBarVisibilityThresholdPx) {
-        ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
-    }
+    val bottomBarVisibilityController =
+        remember(bottomBarVisibilityThresholdPx) {
+            ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
+        }
     val currentShowBottomBar by rememberUpdatedState(showBottomBar)
     val currentActivePageCanScrollBackward by rememberUpdatedState(activePageCanScrollBackward)
     val currentActivePageCanScrollForward by rememberUpdatedState(activePageCanScrollForward)
-    val bottomBarNestedScrollConnection = remember(bottomBarVisibilityController) {
-        object : NestedScrollConnection {
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                bottomBarVisibilityController.updateWithinScrollBounds(
-                    deltaY = consumed.y,
-                    visible = currentShowBottomBar,
-                    canScrollBackward = currentActivePageCanScrollBackward,
-                    canScrollForward = currentActivePageCanScrollForward
-                ) { showBottomBar = it }
-                return Offset.Zero
+    val bottomBarNestedScrollConnection =
+        remember(bottomBarVisibilityController) {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    bottomBarVisibilityController.updateWithinScrollBounds(
+                        deltaY = consumed.y,
+                        visible = currentShowBottomBar,
+                        canScrollBackward = currentActivePageCanScrollBackward,
+                        canScrollForward = currentActivePageCanScrollForward,
+                    ) { showBottomBar = it }
+                    return Offset.Zero
+                }
             }
         }
-    }
     LaunchedEffect(sourceUrl, activeBottomTab) {
         bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
     }
@@ -234,30 +253,32 @@ fun BaStudentGuidePage(
         bottomBarVisibilityController.showForStaticContent(
             visible = showBottomBar,
             canScrollBackward = activePageCanScrollBackward,
-            canScrollForward = activePageCanScrollForward
+            canScrollForward = activePageCanScrollForward,
         ) { showBottomBar = it }
     }
     val pageTitle = info?.title?.ifBlank { defaultPageTitle } ?: defaultPageTitle
     val voicePlayerController = rememberBaStudentGuideVoicePlayerController(sourceUrl)
-    val saveGuideMediaAction = rememberBaStudentGuideMediaSaveAction(
-        pageScope = pageScope,
-        currentStudentNamePrefix = { info?.title?.trim().orEmpty() }
-    )
-    val saveGuideMediaPackAction = rememberBaStudentGuideMediaPackSaveAction(
-        pageScope = pageScope,
-        currentStudentNamePrefix = { info?.title?.trim().orEmpty() }
-    )
+    val saveGuideMediaAction =
+        rememberBaStudentGuideMediaSaveAction(
+            pageScope = pageScope,
+            currentStudentNamePrefix = { info?.title?.trim().orEmpty() },
+        )
+    val saveGuideMediaPackAction =
+        rememberBaStudentGuideMediaPackSaveAction(
+            pageScope = pageScope,
+            currentStudentNamePrefix = { info?.title?.trim().orEmpty() },
+        )
 
     BindBaStudentGuidePlayerLifecycleEffects(
         sourceUrl = sourceUrl,
-        voicePlayerController = voicePlayerController
+        voicePlayerController = voicePlayerController,
     )
     BindBaStudentGuideForegroundAudioGuard(
         sourceUrl = sourceUrl,
         voicePlayerController = voicePlayerController,
         onPlayingVoiceUrlChange = { playingVoiceUrl = it },
         onIsVoicePlayingChange = { isVoicePlaying = it },
-        onVoicePlayProgressChange = { voicePlayProgress = it }
+        onVoicePlayProgressChange = { voicePlayProgress = it },
     )
     BindBaStudentGuideVoiceListenerEffect(
         context = context,
@@ -265,25 +286,26 @@ fun BaStudentGuidePage(
         playingVoiceUrl = playingVoiceUrl,
         onPlayingVoiceUrlChange = { playingVoiceUrl = it },
         onIsVoicePlayingChange = { isVoicePlaying = it },
-        onVoicePlayProgressChange = { voicePlayProgress = it }
-    )
-    val pageActions = rememberBaStudentGuidePageActions(
-        info = info,
-        sourceUrl = sourceUrl,
-        shareSourceEmptyText = shareSourceEmptyText,
-        shareSourceChooserTitle = shareSourceChooserTitle,
-        shareSourceFailedText = shareSourceFailedText,
-        openLinkFailedText = openLinkFailedText,
-        voicePlayerController = voicePlayerController,
-        playingVoiceUrl = playingVoiceUrl,
-        onPlayingVoiceUrlChange = { playingVoiceUrl = it },
-        onIsVoicePlayingChange = { isVoicePlaying = it },
         onVoicePlayProgressChange = { voicePlayProgress = it },
-        onOpenGuideInPage = guideViewModel::openGuide,
-        onRefresh = guideViewModel::requestRefresh,
-        saveGuideMedia = saveGuideMediaAction,
-        saveGuideMediaPack = saveGuideMediaPackAction
     )
+    val pageActions =
+        rememberBaStudentGuidePageActions(
+            info = info,
+            sourceUrl = sourceUrl,
+            shareSourceEmptyText = shareSourceEmptyText,
+            shareSourceChooserTitle = shareSourceChooserTitle,
+            shareSourceFailedText = shareSourceFailedText,
+            openLinkFailedText = openLinkFailedText,
+            voicePlayerController = voicePlayerController,
+            playingVoiceUrl = playingVoiceUrl,
+            onPlayingVoiceUrlChange = { playingVoiceUrl = it },
+            onIsVoicePlayingChange = { isVoicePlaying = it },
+            onVoicePlayProgressChange = { voicePlayProgress = it },
+            onOpenGuideInPage = guideViewModel::openGuide,
+            onRefresh = guideViewModel::requestRefresh,
+            saveGuideMedia = saveGuideMediaAction,
+            saveGuideMediaPack = saveGuideMediaPackAction,
+        )
 
     BindBaStudentGuidePagerSyncEffects(
         sourceUrl = sourceUrl,
@@ -295,38 +317,41 @@ fun BaStudentGuidePage(
                 .getOrNull(selectedIndex)
                 ?.ordinal
                 ?: GuideBottomTab.Archive.ordinal
-        }
+        },
     )
     BindBaStudentGuideVoiceProgressEffect(
         activeBottomTab = activeBottomTab,
         isVoicePlaying = isVoicePlaying,
         playingVoiceUrl = playingVoiceUrl,
         voicePlayer = voicePlayerController.player,
-        onVoicePlayProgressChange = { voicePlayProgress = it }
+        onVoicePlayProgressChange = { voicePlayProgress = it },
     )
     BindBaStudentGuidePrefetchEffects(
         info = info,
-        activeBottomTab = activeBottomTab,
+        prefetchBottomTab = settledBottomTab,
+        prefetchEnabled = guideStaticPrefetchEnabled,
         initialPrefetchCount = preloadPolicy.guideStaticPrefetchInitialCount,
         galleryExtraPrefetchCount = preloadPolicy.guideStaticPrefetchGalleryExtraCount,
-        onSyncPrefetch = guideViewModel::syncStaticImagePrefetch
+        onSyncPrefetch = guideViewModel::syncStaticImagePrefetch,
     )
     val shareIcon = appLucideShareIcon()
     val refreshIcon = appLucideRefreshIcon()
-    val actionItems = rememberBaStudentGuideTopBarActionItems(
-        shareIcon = shareIcon,
-        refreshIcon = refreshIcon,
-        shareSourceContentDescription = shareSourceContentDescription,
-        refreshContentDescription = refreshContentDescription,
-        onShareSource = pageActions.shareSource,
-        onRefresh = pageActions.requestRefresh
-    )
+    val actionItems =
+        rememberBaStudentGuideTopBarActionItems(
+            shareIcon = shareIcon,
+            refreshIcon = refreshIcon,
+            shareSourceContentDescription = shareSourceContentDescription,
+            refreshContentDescription = refreshContentDescription,
+            onShareSource = pageActions.shareSource,
+            onRefresh = pageActions.requestRefresh,
+        )
     Box(modifier = Modifier.fillMaxSize()) {
         AppScaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
-                .nestedScroll(bottomBarNestedScrollConnection),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MiuixTheme.colorScheme.background)
+                    .nestedScroll(bottomBarNestedScrollConnection),
             topBar = {
                 AppTopBarSection(
                     title = pageTitle,
@@ -340,9 +365,9 @@ fun BaStudentGuidePage(
                             icon = appLucideBackIcon(),
                             contentDescription = pageTitle,
                             onClick = onBack,
-                            backdrop = topBarBackdrop
+                            backdrop = topBarBackdrop,
                         )
-                    }
+                    },
                 )
             },
             bottomBar = {
@@ -351,15 +376,16 @@ fun BaStudentGuidePage(
                     navigationBarBottom = navigationBarBottom,
                     bottomTabs = bottomTabsList,
                     selectedPage = pagerState.targetPage,
-                    selectedPagePosition = (pagerState.currentPage + pagerState.currentPageOffsetFraction)
-                        .coerceIn(0f, bottomTabsList.lastIndex.coerceAtLeast(0).toFloat()),
+                    selectedPagePosition =
+                        (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                            .coerceIn(0f, bottomTabsList.lastIndex.coerceAtLeast(0).toFloat()),
                     selectedPageProvider = { pagerState.targetPage },
                     backdrop = navBackdrop,
                     isLiquidEffectEnabled = liquidBottomBarEnabled,
                     miuixMainNavigationEnabled = miuixMainNavigationEnabled,
-                    onSelectTab = selectBottomTabAction
+                    onSelectTab = selectBottomTabAction,
                 )
-            }
+            },
         ) { innerPadding ->
             BaStudentGuidePagerContent(
                 sourceUrl = sourceUrl,
@@ -394,14 +420,14 @@ fun BaStudentGuidePage(
                     activePageCanScrollForward = canScrollForward
                 },
                 onListScrollInProgressChange = {},
-                onSelectedVoiceLanguageChange = { selectedVoiceLanguage = it }
+                onSelectedVoiceLanguageChange = { selectedVoiceLanguage = it },
             )
         }
         AppTopEndActionBarOverlay {
             LiquidActionBar(
                 backdrop = topBarBackdrop,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                items = actionItems
+                items = actionItems,
             )
         }
     }

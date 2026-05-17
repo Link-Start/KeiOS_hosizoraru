@@ -9,23 +9,25 @@ import kotlin.test.assertTrue
 class MainPageRuntimeTest {
     @Test
     fun `back gesture freezes heavy page work while keeping activation state`() {
-        val snapshot = buildMainPagerRuntimeSnapshot(
-            tabs = listOf(BottomPage.Home, BottomPage.GitHub),
-            currentPageIndex = 1,
-            targetPageIndex = 1,
-            settledPageIndex = 1,
-            pagePosition = 1f,
-            isPagerScrollInProgress = false,
-            preloadPolicy = UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled = true),
-            hasNonHomeBackground = false
-        )
+        val snapshot =
+            buildMainPagerRuntimeSnapshot(
+                tabs = listOf(BottomPage.Home, BottomPage.GitHub),
+                currentPageIndex = 1,
+                targetPageIndex = 1,
+                settledPageIndex = 1,
+                isPagerScrollInProgress = false,
+                preloadPolicy = UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled = true),
+                hasNonHomeBackground = false,
+                targetWarmDataActive = true,
+            )
 
-        val runtime = snapshot.pageRuntime(
-            pageIndex = 1,
-            hasActivated = true,
-            contentReady = true,
-            contentWorkAllowed = false
-        )
+        val runtime =
+            snapshot.pageRuntime(
+                pageIndex = 1,
+                hasActivated = true,
+                contentReady = true,
+                contentWorkAllowed = false,
+            )
 
         assertTrue(runtime.hasActivated)
         assertTrue(runtime.contentReady)

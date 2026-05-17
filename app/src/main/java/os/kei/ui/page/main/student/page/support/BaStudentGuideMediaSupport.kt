@@ -20,7 +20,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import os.kei.feature.ba.data.remote.GameKeeNetworkClient
 import os.kei.feature.ba.data.remote.GameKeeNetworkResult
-import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.hasRenderableGalleryMedia
@@ -58,61 +57,54 @@ internal fun isGuideAudioPlaybackUrl(raw: String): Boolean {
         scheme.equals("file", ignoreCase = true)
 }
 
-internal fun collectGuideStaticImagePrefetchUrls(info: BaStudentGuideInfo): List<String> {
-    val orderedUrls = mutableListOf<String>()
-    val coverUrl = normalizeGuideUrl(info.imageUrl)
-    if (isRenderableGalleryStaticImageUrl(coverUrl)) {
-        orderedUrls += coverUrl
+internal fun collectGuideStaticImagePrefetchUrls(
+    info: BaStudentGuideInfo,
+    maxCount: Int = Int.MAX_VALUE,
+): List<String> {
+    if (maxCount <= 0) return emptyList()
+    val orderedUrls = LinkedHashSet<String>()
+
+    fun addPrefetchUrl(raw: String): Boolean {
+        if (orderedUrls.size >= maxCount) return true
+        val normalized = normalizeGuideUrl(raw)
+        if (isRenderableGalleryStaticImageUrl(normalized)) {
+            orderedUrls += normalized
+        }
+        return orderedUrls.size >= maxCount
     }
 
-    val galleryItems = if (info.galleryItems.isNotEmpty()) {
-        info.galleryItems
-            .filter(::hasRenderableGalleryMedia)
-            .filterNot(::isMemoryHallFileGalleryItem)
-            .distinctBy { "${it.mediaType}|${it.mediaUrl.ifBlank { it.imageUrl }}" }
-    } else {
-        listOfNotNull(
-            info.imageUrl.takeIf { it.isNotBlank() }?.let {
-                BaGuideGalleryItem(
-                    title = "立绘",
-                    imageUrl = it,
-                    mediaType = "image",
-                    mediaUrl = it
-                )
-            }
-        )
+    if (addPrefetchUrl(info.imageUrl)) return orderedUrls.toList()
+    if (info.galleryItems.isEmpty()) {
+        addPrefetchUrl(info.imageUrl)
+        return orderedUrls.toList()
     }
 
-    galleryItems.forEach { item ->
-        val imageUrl = normalizeGuideUrl(item.imageUrl)
-        if (isRenderableGalleryStaticImageUrl(imageUrl)) {
-            orderedUrls += imageUrl
-        }
-        val mediaUrl = normalizeGuideUrl(item.mediaUrl)
-        if (isRenderableGalleryStaticImageUrl(mediaUrl)) {
-            orderedUrls += mediaUrl
-        }
+    val seenGalleryKeys = HashSet<String>()
+    for (item in info.galleryItems) {
+        if (!hasRenderableGalleryMedia(item) || isMemoryHallFileGalleryItem(item)) continue
+        val itemKey = "${item.mediaType}|${item.mediaUrl.ifBlank { item.imageUrl }}"
+        if (!seenGalleryKeys.add(itemKey)) continue
+        if (addPrefetchUrl(item.imageUrl)) break
+        if (addPrefetchUrl(item.mediaUrl)) break
     }
-    return orderedUrls
-        .filter { it.isNotBlank() }
-        .distinct()
+    return orderedUrls.toList()
 }
 
 internal data class GuideMediaSaveRequest(
     val sourceUrl: String,
     val title: String,
     val fileName: String,
-    val mimeType: String
+    val mimeType: String,
 )
 
 internal data class GuideMediaPackSaveRequest(
     val entries: List<GuideMediaSaveRequest>,
-    val fileName: String
+    val fileName: String,
 )
 
 internal data class GuideMediaPackSaveResult(
     val totalCount: Int,
-    val savedCount: Int
+    val savedCount: Int,
 ) {
     val success: Boolean
         get() = savedCount > 0
@@ -121,28 +113,46 @@ internal data class GuideMediaPackSaveResult(
 private const val GUIDE_MEDIA_COPY_YIELD_BYTES = 512 * 1024
 
 private fun sanitizeGuideMediaTitle(raw: String): String {
-    val cleaned = raw
-        .replace(Regex("""[\\/:*?"<>|]"""), " ")
-        .replace(Regex("""\s+"""), " ")
-        .trim()
+    val cleaned =
+        raw
+            .replace(Regex("""[\\/:*?"<>|]"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
     return cleaned.ifBlank { "BA_media" }.take(96)
 }
 
-private fun sanitizeGuideMediaToken(raw: String): String {
-    return raw
+private fun sanitizeGuideMediaToken(raw: String): String =
+    raw
         .replace(Regex("""[\\/:*?"<>|]"""), " ")
         .replace(Regex("""\s+"""), " ")
         .trim()
         .take(48)
-}
 
-private val guideKnownMediaExts = setOf(
-    "jpg", "jpeg", "png", "webp", "gif", "bmp",
-    "mp4", "webm", "mkv", "mov", "m3u8",
-    "ogg", "mp3", "wav", "flac", "aac", "m4a"
-)
+private val guideKnownMediaExts =
+    setOf(
+        "jpg",
+        "jpeg",
+        "png",
+        "webp",
+        "gif",
+        "bmp",
+        "mp4",
+        "webm",
+        "mkv",
+        "mov",
+        "m3u8",
+        "ogg",
+        "mp3",
+        "wav",
+        "flac",
+        "aac",
+        "m4a",
+    )
 
-private fun readGuideFileHeader(path: String, maxBytes: Int = 16): ByteArray {
+private fun readGuideFileHeader(
+    path: String,
+    maxBytes: Int = 16,
+): ByteArray {
     if (path.isBlank()) return ByteArray(0)
     val file = File(path)
     if (!file.exists() || file.length() <= 0L) return ByteArray(0)
@@ -162,7 +172,10 @@ private fun ByteArray.startsWithAscii(prefix: String): Boolean {
     }
 }
 
-private fun ByteArray.asciiAt(offset: Int, length: Int): String {
+private fun ByteArray.asciiAt(
+    offset: Int,
+    length: Int,
+): String {
     if (offset < 0 || length <= 0 || size < offset + length) return ""
     return buildString(length) {
         for (i in offset until offset + length) {
@@ -171,27 +184,49 @@ private fun ByteArray.asciiAt(offset: Int, length: Int): String {
     }
 }
 
-private fun inferGuideMediaExtFromLocalFile(rawSourceUrl: String, rawTitle: String): String? {
+private fun inferGuideMediaExtFromLocalFile(
+    rawSourceUrl: String,
+    rawTitle: String,
+): String? {
     val parsed = runCatching { rawSourceUrl.toUri() }.getOrNull()
-    val path = when {
-        parsed?.scheme.equals("file", ignoreCase = true) -> parsed?.path.orEmpty()
-        rawSourceUrl.startsWith("/") -> rawSourceUrl
-        else -> ""
-    }
+    val path =
+        when {
+            parsed?.scheme.equals("file", ignoreCase = true) -> parsed?.path.orEmpty()
+            rawSourceUrl.startsWith("/") -> rawSourceUrl
+            else -> ""
+        }
     val header = readGuideFileHeader(path = path, maxBytes = 16)
     if (header.isEmpty()) return null
 
     fun byteAt(index: Int): Int = header.getOrNull(index)?.toInt()?.and(0xFF) ?: -1
 
     return when {
-        header.size >= 4 && header.startsWithAscii("OggS") -> "ogg"
-        header.size >= 3 && header.startsWithAscii("ID3") -> "mp3"
-        header.size >= 2 && byteAt(0) == 0xFF && (byteAt(1) and 0xE0) == 0xE0 -> "mp3"
-        header.size >= 4 && header.startsWithAscii("fLaC") -> "flac"
+        header.size >= 4 && header.startsWithAscii("OggS") -> {
+            "ogg"
+        }
+
+        header.size >= 3 && header.startsWithAscii("ID3") -> {
+            "mp3"
+        }
+
+        header.size >= 2 && byteAt(0) == 0xFF && (byteAt(1) and 0xE0) == 0xE0 -> {
+            "mp3"
+        }
+
+        header.size >= 4 && header.startsWithAscii("fLaC") -> {
+            "flac"
+        }
+
         header.size >= 12 &&
             header.startsWithAscii("RIFF") &&
-            header.asciiAt(8, 4) == "WAVE" -> "wav"
-        header.size >= 2 && byteAt(0) == 0xFF && (byteAt(1) and 0xF6) == 0xF0 -> "aac"
+            header.asciiAt(8, 4) == "WAVE" -> {
+            "wav"
+        }
+
+        header.size >= 2 && byteAt(0) == 0xFF && (byteAt(1) and 0xF6) == 0xF0 -> {
+            "aac"
+        }
+
         header.size >= 12 && header.asciiAt(4, 4) == "ftyp" -> {
             val lowerTitle = rawTitle.lowercase()
             if (lowerTitle.contains("bgm") || lowerTitle.contains("音频") || lowerTitle.contains("语音")) {
@@ -200,18 +235,39 @@ private fun inferGuideMediaExtFromLocalFile(rawSourceUrl: String, rawTitle: Stri
                 "mp4"
             }
         }
-        header.size >= 4 && byteAt(0) == 0x89 && header.asciiAt(1, 3) == "PNG" -> "png"
-        header.size >= 3 && byteAt(0) == 0xFF && byteAt(1) == 0xD8 && byteAt(2) == 0xFF -> "jpg"
-        header.size >= 6 && (header.startsWithAscii("GIF87a") || header.startsWithAscii("GIF89a")) -> "gif"
+
+        header.size >= 4 && byteAt(0) == 0x89 && header.asciiAt(1, 3) == "PNG" -> {
+            "png"
+        }
+
+        header.size >= 3 && byteAt(0) == 0xFF && byteAt(1) == 0xD8 && byteAt(2) == 0xFF -> {
+            "jpg"
+        }
+
+        header.size >= 6 && (header.startsWithAscii("GIF87a") || header.startsWithAscii("GIF89a")) -> {
+            "gif"
+        }
+
         header.size >= 12 &&
             header.startsWithAscii("RIFF") &&
-            header.asciiAt(8, 4) == "WEBP" -> "webp"
-        header.size >= 2 && header.startsWithAscii("BM") -> "bmp"
-        else -> null
+            header.asciiAt(8, 4) == "WEBP" -> {
+            "webp"
+        }
+
+        header.size >= 2 && header.startsWithAscii("BM") -> {
+            "bmp"
+        }
+
+        else -> {
+            null
+        }
     }
 }
 
-private fun guessGuideMediaExt(rawSourceUrl: String, rawTitle: String = ""): String {
+private fun guessGuideMediaExt(
+    rawSourceUrl: String,
+    rawTitle: String = "",
+): String {
     val normalized = normalizeGuidePlaybackSource(rawSourceUrl)
     val source = normalized.substringBefore('#').substringBefore('?')
     val ext = source.substringAfterLast('.', "").lowercase()
@@ -257,73 +313,79 @@ private fun mimeTypeFromGuideExt(ext: String): String {
 internal fun buildGuideMediaSaveRequest(
     rawUrl: String,
     rawTitle: String,
-    rawPrefix: String = ""
+    rawPrefix: String = "",
 ): GuideMediaSaveRequest? {
     val source = normalizeGuidePlaybackSource(rawUrl)
     if (source.isBlank()) return null
     val ext = guessGuideMediaExt(source, rawTitle)
     val mime = mimeTypeFromGuideExt(ext)
     val baseTitle = sanitizeGuideMediaTitle(rawTitle)
-    val prefix = sanitizeGuideMediaToken(rawPrefix)
-        .takeIf { it.isNotBlank() && it != "学生图鉴" }
-        .orEmpty()
-    val title = when {
-        prefix.isBlank() -> baseTitle
-        baseTitle.startsWith(prefix) -> baseTitle
-        else -> sanitizeGuideMediaTitle("${prefix}_${baseTitle}")
-    }
-    val fileName = if (title.endsWith(".$ext", ignoreCase = true)) {
-        title
-    } else {
-        "$title.$ext"
-    }
+    val prefix =
+        sanitizeGuideMediaToken(rawPrefix)
+            .takeIf { it.isNotBlank() && it != "学生图鉴" }
+            .orEmpty()
+    val title =
+        when {
+            prefix.isBlank() -> baseTitle
+            baseTitle.startsWith(prefix) -> baseTitle
+            else -> sanitizeGuideMediaTitle("${prefix}_$baseTitle")
+        }
+    val fileName =
+        if (title.endsWith(".$ext", ignoreCase = true)) {
+            title
+        } else {
+            "$title.$ext"
+        }
     return GuideMediaSaveRequest(
         sourceUrl = source,
         title = title,
         fileName = fileName,
-        mimeType = mime
+        mimeType = mime,
     )
 }
 
 private fun buildGuideMediaPackZipFileName(
     rawPackTitle: String,
-    rawPrefix: String
+    rawPrefix: String,
 ): String {
     val packTitle = sanitizeGuideMediaToken(rawPackTitle).ifBlank { "角色表情" }
-    val prefix = sanitizeGuideMediaToken(rawPrefix)
-        .takeIf { it.isNotBlank() && it != "学生图鉴" }
-        .orEmpty()
+    val prefix =
+        sanitizeGuideMediaToken(rawPrefix)
+            .takeIf { it.isNotBlank() && it != "学生图鉴" }
+            .orEmpty()
     val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())
-    val base = if (prefix.isBlank()) {
-        "${packTitle}_打包_$stamp"
-    } else {
-        "${prefix}_${packTitle}_打包_$stamp"
-    }
+    val base =
+        if (prefix.isBlank()) {
+            "${packTitle}_打包_$stamp"
+        } else {
+            "${prefix}_${packTitle}_打包_$stamp"
+        }
     return "${sanitizeGuideMediaTitle(base)}.zip"
 }
 
 internal fun buildGuideMediaPackSaveRequest(
     rawItems: List<Pair<String, String>>,
     rawPackTitle: String,
-    rawPrefix: String = ""
+    rawPrefix: String = "",
 ): GuideMediaPackSaveRequest? {
     if (rawItems.isEmpty()) return null
-    val entries = rawItems
-        .mapNotNull { (url, title) ->
-            buildGuideMediaSaveRequest(
-                rawUrl = url,
-                rawTitle = title,
-                rawPrefix = rawPrefix
-            )
-        }
-        .distinctBy { it.sourceUrl }
+    val entries =
+        rawItems
+            .mapNotNull { (url, title) ->
+                buildGuideMediaSaveRequest(
+                    rawUrl = url,
+                    rawTitle = title,
+                    rawPrefix = rawPrefix,
+                )
+            }.distinctBy { it.sourceUrl }
     if (entries.isEmpty()) return null
     return GuideMediaPackSaveRequest(
         entries = entries,
-        fileName = buildGuideMediaPackZipFileName(
-            rawPackTitle = rawPackTitle,
-            rawPrefix = rawPrefix
-        )
+        fileName =
+            buildGuideMediaPackZipFileName(
+                rawPackTitle = rawPackTitle,
+                rawPrefix = rawPrefix,
+            ),
     )
 }
 
@@ -349,7 +411,7 @@ private suspend fun InputStream.copyToCancellable(output: OutputStream): Long {
 private suspend fun copyGuideMediaFromSourceToOutput(
     context: Context,
     sourceUrl: String,
-    output: OutputStream
+    output: OutputStream,
 ): Boolean {
     return try {
         val normalized = normalizeGuidePlaybackSource(sourceUrl)
@@ -384,10 +446,11 @@ private suspend fun copyGuideMediaFromSourceToOutput(
                 if (!tempDir.exists()) tempDir.mkdirs()
                 val tempFile = File(tempDir, "tmp_${System.nanoTime().toString(16)}")
                 try {
-                    val downloaded = GameKeeNetworkClient.downloadToFile(
-                        normalized,
-                        tempFile
-                    ) is GameKeeNetworkResult.Success
+                    val downloaded =
+                        GameKeeNetworkClient.downloadToFile(
+                            normalized,
+                            tempFile,
+                        ) is GameKeeNetworkResult.Success
                     if (!downloaded || !tempFile.exists() || tempFile.length() <= 0L) {
                         false
                     } else {
@@ -401,7 +464,9 @@ private suspend fun copyGuideMediaFromSourceToOutput(
                 }
             }
 
-            else -> false
+            else -> {
+                false
+            }
         }
     } catch (error: CancellationException) {
         throw error
@@ -414,7 +479,7 @@ internal suspend fun copyGuideMediaToUriAsync(
     context: Context,
     sourceUrl: String,
     outputUri: Uri,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): Boolean {
     return withContext(ioDispatcher) {
         try {
@@ -432,7 +497,7 @@ internal suspend fun copyGuideMediaToUriAsync(
 
 private fun createUniqueZipEntryName(
     usedNames: MutableSet<String>,
-    rawFileName: String
+    rawFileName: String,
 ): String {
     val sanitized = sanitizeGuideMediaTitle(rawFileName).ifBlank { "BA_media.bin" }
     val base = sanitized.substringBeforeLast('.', sanitized).ifBlank { "BA_media" }
@@ -440,11 +505,12 @@ private fun createUniqueZipEntryName(
     val suffix = ext.takeIf { it.isNotBlank() }?.let { ".$it" }.orEmpty()
     val maxAttempts = 120
     for (index in 0 until maxAttempts) {
-        val candidate = if (index == 0) {
-            "$base$suffix"
-        } else {
-            "$base ($index)$suffix"
-        }
+        val candidate =
+            if (index == 0) {
+                "$base$suffix"
+            } else {
+                "$base ($index)$suffix"
+            }
         if (usedNames.add(candidate)) {
             return candidate
         }
@@ -458,7 +524,7 @@ private suspend fun copyGuideMediaFromSourceToZipEntry(
     context: Context,
     sourceUrl: String,
     zip: ZipOutputStream,
-    entryName: String
+    entryName: String,
 ): Boolean {
     var entryOpened = false
     return try {
@@ -497,10 +563,11 @@ private suspend fun copyGuideMediaFromSourceToZipEntry(
                 if (!tempDir.exists()) tempDir.mkdirs()
                 val tempFile = File(tempDir, "tmp_${System.nanoTime().toString(16)}")
                 try {
-                    val downloaded = GameKeeNetworkClient.downloadToFile(
-                        normalized,
-                        tempFile
-                    ) is GameKeeNetworkResult.Success
+                    val downloaded =
+                        GameKeeNetworkClient.downloadToFile(
+                            normalized,
+                            tempFile,
+                        ) is GameKeeNetworkResult.Success
                     if (!downloaded || !tempFile.exists() || tempFile.length() <= 0L) {
                         false
                     } else {
@@ -511,7 +578,9 @@ private suspend fun copyGuideMediaFromSourceToZipEntry(
                 }
             }
 
-            else -> false
+            else -> {
+                false
+            }
         }
     } catch (error: CancellationException) {
         throw error
@@ -528,30 +597,33 @@ internal suspend fun copyGuideMediaPackToUriAsync(
     context: Context,
     request: GuideMediaPackSaveRequest,
     outputUri: Uri,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ): GuideMediaPackSaveResult {
     return withContext(ioDispatcher) {
         val total = request.entries.size
         if (total <= 0) return@withContext GuideMediaPackSaveResult(totalCount = 0, savedCount = 0)
         var savedCount = 0
         try {
-            val output = context.contentResolver.openOutputStream(outputUri)
-                ?: return@withContext GuideMediaPackSaveResult(totalCount = total, savedCount = 0)
+            val output =
+                context.contentResolver.openOutputStream(outputUri)
+                    ?: return@withContext GuideMediaPackSaveResult(totalCount = total, savedCount = 0)
             output.use { out ->
                 ZipOutputStream(BufferedOutputStream(out)).use { zip ->
                     val usedEntryNames = mutableSetOf<String>()
                     request.entries.forEach { item ->
                         currentCoroutineContext().ensureActive()
-                        val entryName = createUniqueZipEntryName(
-                            usedNames = usedEntryNames,
-                            rawFileName = item.fileName
-                        )
-                        val copied = copyGuideMediaFromSourceToZipEntry(
-                            context = context,
-                            sourceUrl = item.sourceUrl,
-                            zip = zip,
-                            entryName = entryName
-                        )
+                        val entryName =
+                            createUniqueZipEntryName(
+                                usedNames = usedEntryNames,
+                                rawFileName = item.fileName,
+                            )
+                        val copied =
+                            copyGuideMediaFromSourceToZipEntry(
+                                context = context,
+                                sourceUrl = item.sourceUrl,
+                                zip = zip,
+                                entryName = entryName,
+                            )
                         if (copied) {
                             savedCount += 1
                         }
@@ -571,18 +643,19 @@ internal suspend fun copyGuideMediaPackToUriAsync(
 internal fun createUniqueDocumentInTree(
     tree: DocumentFile,
     mimeType: String,
-    fileName: String
+    fileName: String,
 ): DocumentFile? {
     val base = fileName.substringBeforeLast('.', fileName).ifBlank { "BA_media" }
     val ext = fileName.substringAfterLast('.', "")
     val normalizedExt = ext.takeIf { it.isNotBlank() }?.let { ".$it" }.orEmpty()
     val maxAttempts = 120
     for (index in 0 until maxAttempts) {
-        val candidate = if (index == 0) {
-            "$base$normalizedExt"
-        } else {
-            "$base ($index)$normalizedExt"
-        }
+        val candidate =
+            if (index == 0) {
+                "$base$normalizedExt"
+            } else {
+                "$base ($index)$normalizedExt"
+            }
         val exists = tree.findFile(candidate)
         if (exists == null) {
             return tree.createFile(mimeType, candidate)
@@ -596,20 +669,21 @@ internal suspend fun createUniqueDocumentUriInTreeAsync(
     treeUri: Uri,
     mimeType: String,
     fileName: String,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-): Uri? = withContext(ioDispatcher) {
-    val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
-    createUniqueDocumentInTree(
-        tree = treeDoc,
-        mimeType = mimeType,
-        fileName = fileName
-    )?.uri
-}
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+): Uri? =
+    withContext(ioDispatcher) {
+        val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null
+        createUniqueDocumentInTree(
+            tree = treeDoc,
+            mimeType = mimeType,
+            fileName = fileName,
+        )?.uri
+    }
 
 @Composable
 internal fun rememberGuideSyncProgress(
     loading: Boolean,
-    animationsEnabled: Boolean
+    animationsEnabled: Boolean,
 ): Float {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(loading, animationsEnabled) {
@@ -621,25 +695,28 @@ internal fun rememberGuideSyncProgress(
             progress.snapTo(0.12f)
             progress.animateTo(
                 targetValue = 0.68f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(520, animationsEnabled),
-                    easing = FastOutSlowInEasing
-                ),
+                animationSpec =
+                    tween(
+                        durationMillis = resolvedMotionDuration(520, animationsEnabled),
+                        easing = FastOutSlowInEasing,
+                    ),
             )
             progress.animateTo(
                 targetValue = 0.90f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(1800, animationsEnabled),
-                    easing = LinearEasing
-                ),
+                animationSpec =
+                    tween(
+                        durationMillis = resolvedMotionDuration(1800, animationsEnabled),
+                        easing = LinearEasing,
+                    ),
             )
         } else {
             progress.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(260, animationsEnabled),
-                    easing = FastOutSlowInEasing
-                ),
+                animationSpec =
+                    tween(
+                        durationMillis = resolvedMotionDuration(260, animationsEnabled),
+                        easing = FastOutSlowInEasing,
+                    ),
             )
         }
     }

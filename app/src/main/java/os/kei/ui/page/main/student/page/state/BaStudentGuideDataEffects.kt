@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.page.state
 
 import androidx.compose.runtime.Composable
@@ -8,28 +10,30 @@ import os.kei.ui.page.main.student.GuideBottomTab
 @Composable
 internal fun BindBaStudentGuidePrefetchEffects(
     info: BaStudentGuideInfo?,
-    activeBottomTab: GuideBottomTab,
+    prefetchBottomTab: GuideBottomTab,
+    prefetchEnabled: Boolean,
     initialPrefetchCount: Int,
     galleryExtraPrefetchCount: Int,
     onSyncPrefetch: (
         BaStudentGuideInfo?,
         GuideBottomTab,
         Int,
-        Int
-    ) -> Unit
+        Int,
+    ) -> Unit,
 ) {
     LaunchedEffect(
         info?.sourceUrl,
         info?.syncedAtMs,
-        activeBottomTab,
+        prefetchBottomTab,
+        prefetchEnabled,
         initialPrefetchCount,
-        galleryExtraPrefetchCount
+        galleryExtraPrefetchCount,
     ) {
         onSyncPrefetch(
-            info,
-            activeBottomTab,
+            info.takeIf { prefetchEnabled },
+            prefetchBottomTab,
             initialPrefetchCount,
-            galleryExtraPrefetchCount
+            galleryExtraPrefetchCount,
         )
     }
 }

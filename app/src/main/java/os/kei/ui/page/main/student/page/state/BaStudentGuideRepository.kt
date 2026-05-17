@@ -14,12 +14,12 @@ import kotlin.coroutines.cancellation.CancellationException
 
 internal data class BaStudentGuideLoadResult(
     val info: BaStudentGuideInfo?,
-    val error: String?
+    val error: String?,
 )
 
 internal class BaStudentGuideRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     fun loadCurrentUrl(): String = BaStudentGuideStore.loadCurrentUrl()
 
@@ -30,7 +30,7 @@ internal class BaStudentGuideRepository(
     suspend fun prefetchStaticImages(
         context: Context,
         sourceUrl: String,
-        rawUrls: List<String>
+        rawUrls: List<String>,
     ) {
         if (sourceUrl.isBlank() || rawUrls.isEmpty()) return
         withContext(ioDispatcher) {
@@ -38,16 +38,21 @@ internal class BaStudentGuideRepository(
                 context = context,
                 sourceUrl = sourceUrl,
                 rawUrls = rawUrls,
-                ioDispatcher = ioDispatcher
+                ioDispatcher = ioDispatcher,
             )
         }
     }
 
-    suspend fun collectStaticImagePrefetchUrls(info: BaStudentGuideInfo): List<String> {
-        return withContext(parseDispatcher) {
-            collectGuideStaticImagePrefetchUrls(info)
+    suspend fun collectStaticImagePrefetchUrls(
+        info: BaStudentGuideInfo,
+        maxCount: Int,
+    ): List<String> =
+        withContext(parseDispatcher) {
+            collectGuideStaticImagePrefetchUrls(
+                info = info,
+                maxCount = maxCount,
+            )
         }
-    }
 
     suspend fun loadGuide(
         context: Context,
@@ -55,7 +60,7 @@ internal class BaStudentGuideRepository(
         currentInfo: BaStudentGuideInfo?,
         manualRefresh: Boolean,
         loadFailedText: String,
-        refreshFailedKeepCacheText: String
+        refreshFailedKeepCacheText: String,
     ): BaStudentGuideLoadResult {
         val requestUrl = sourceUrl.trim()
         if (requestUrl.isBlank()) {
@@ -63,44 +68,49 @@ internal class BaStudentGuideRepository(
         }
 
         val now = System.currentTimeMillis()
-        val refreshIntervalHours = withContext(ioDispatcher) {
-            BASettingsStore.loadCalendarRefreshIntervalHours()
-        }
-        val cacheSnapshot = withContext(ioDispatcher) {
-            BaStudentGuideStore.loadInfoSnapshot(requestUrl)
-        }
-        val cacheExpired = BaStudentGuideStore.isCacheExpired(
-            snapshot = cacheSnapshot,
-            refreshIntervalHours = refreshIntervalHours,
-            nowMs = now
-        )
+        val refreshIntervalHours =
+            withContext(ioDispatcher) {
+                BASettingsStore.loadCalendarRefreshIntervalHours()
+            }
+        val cacheSnapshot =
+            withContext(ioDispatcher) {
+                BaStudentGuideStore.loadInfoSnapshot(requestUrl)
+            }
+        val cacheExpired =
+            BaStudentGuideStore.isCacheExpired(
+                snapshot = cacheSnapshot,
+                refreshIntervalHours = refreshIntervalHours,
+                nowMs = now,
+            )
         val cacheInfo = cacheSnapshot.info.takeIf { cacheSnapshot.isComplete }
         if (!manualRefresh && cacheInfo != null && !cacheExpired) {
             return BaStudentGuideLoadResult(info = cacheInfo, error = null)
         }
 
-        val visibleInfo = when {
-            cacheInfo != null -> cacheInfo
-            cacheSnapshot.hasCache -> null
-            currentInfo?.sourceUrl == requestUrl -> currentInfo
-            else -> null
-        }
+        val visibleInfo =
+            when {
+                cacheInfo != null -> cacheInfo
+                cacheSnapshot.hasCache -> null
+                currentInfo?.sourceUrl == requestUrl -> currentInfo
+                else -> null
+            }
         val shouldClearLocalCache =
             manualRefresh || (cacheSnapshot.hasCache && (cacheExpired || !cacheSnapshot.isComplete))
 
-        val result = try {
-            Result.success(
-                fetchGuideInfoAsync(
-                    sourceUrl = requestUrl,
-                    networkDispatcher = ioDispatcher,
-                    parseDispatcher = parseDispatcher
+        val result =
+            try {
+                Result.success(
+                    fetchGuideInfoAsync(
+                        sourceUrl = requestUrl,
+                        networkDispatcher = ioDispatcher,
+                        parseDispatcher = parseDispatcher,
+                    ),
                 )
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Throwable) {
-            Result.failure(error)
-        }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                Result.failure(error)
+            }
         return result.fold(
             onSuccess = { latest ->
                 withContext(ioDispatcher) {
@@ -115,9 +125,9 @@ internal class BaStudentGuideRepository(
             onFailure = {
                 BaStudentGuideLoadResult(
                     info = visibleInfo,
-                    error = if (visibleInfo != null) refreshFailedKeepCacheText else loadFailedText
+                    error = if (visibleInfo != null) refreshFailedKeepCacheText else loadFailedText,
                 )
-            }
+            },
         )
     }
 }

@@ -69,6 +69,69 @@ class BaStudentGuideMediaSupportTest {
         )
     }
 
+    @Test
+    fun `static image prefetch returns empty list when max count is zero`() {
+        val info =
+            guideInfo(
+                imageUrl = "https://img.example.com/cover.png",
+                galleryItems =
+                    listOf(
+                        BaGuideGalleryItem(
+                            title = "立绘",
+                            imageUrl = "https://img.example.com/standing.png",
+                            mediaUrl = "https://img.example.com/standing.webp",
+                        ),
+                    ),
+            )
+
+        val urls = collectGuideStaticImagePrefetchUrls(info, maxCount = 0)
+
+        assertEquals(emptyList(), urls)
+    }
+
+    @Test
+    fun `static image prefetch ignores animated and playable media`() {
+        val info =
+            guideInfo(
+                imageUrl = "https://img.example.com/cover.gif",
+                galleryItems =
+                    listOf(
+                        BaGuideGalleryItem(
+                            title = "动画",
+                            imageUrl = "https://img.example.com/animated.gif",
+                            mediaUrl = "https://img.example.com/animated.gif",
+                        ),
+                        BaGuideGalleryItem(
+                            title = "视频",
+                            imageUrl = "https://img.example.com/video-poster.mp4",
+                            mediaType = "video",
+                            mediaUrl = "https://img.example.com/video.mp4",
+                        ),
+                        BaGuideGalleryItem(
+                            title = "语音",
+                            imageUrl = "https://img.example.com/audio.mp3",
+                            mediaType = "audio",
+                            mediaUrl = "https://img.example.com/audio.mp3",
+                        ),
+                        BaGuideGalleryItem(
+                            title = "静态",
+                            imageUrl = "https://img.example.com/static.png",
+                            mediaUrl = "https://img.example.com/static.webp",
+                        ),
+                    ),
+            )
+
+        val urls = collectGuideStaticImagePrefetchUrls(info, maxCount = 4)
+
+        assertEquals(
+            listOf(
+                "https://img.example.com/static.png",
+                "https://img.example.com/static.webp",
+            ),
+            urls,
+        )
+    }
+
     private fun guideInfo(
         imageUrl: String,
         galleryItems: List<BaGuideGalleryItem>,

@@ -1,6 +1,7 @@
 package os.kei.feature.github.install
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
@@ -117,6 +118,7 @@ open class ShizukuPackageInstallerBridge {
         field.set(target, wrappedInterface)
     }
 
+    @SuppressLint("DiscouragedPrivateApi", "PrivateApi")
     private fun systemServiceBinder(name: String): IBinder {
         return Class.forName("android.os.ServiceManager")
             .getDeclaredMethod("getService", String::class.java)
@@ -152,6 +154,7 @@ open class ShizukuPackageInstallerBridge {
             ?: error("${javaClass.name} does not expose asBinder()")
     }
 
+    @SuppressLint("PrivateApi")
     private fun newPackageInstaller(
         packageInstaller: IInterface,
         installerPackageName: String,

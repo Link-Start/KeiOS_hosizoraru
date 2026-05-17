@@ -1,5 +1,6 @@
 package os.kei.core.intent
 
+import android.annotation.SuppressLint
 import android.app.ActivityOptions
 import android.app.PendingIntent
 import android.content.Context
@@ -22,6 +23,7 @@ object PendingIntentLaunchOptionsCompat {
         )
     }
 
+    @SuppressLint("InlinedApi")
     private fun userVisibleActivityOptions(): Bundle {
         val options = ActivityOptions.makeBasic()
         setBackgroundActivityStartModeIfAvailable(

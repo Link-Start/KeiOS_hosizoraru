@@ -10,6 +10,7 @@ import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import java.net.URI
+import java.util.Locale
 
 internal enum class StarImportViewFilter(@param:StringRes val labelRes: Int) {
     All(R.string.github_star_import_filter_all),
@@ -397,8 +398,8 @@ private fun String.validGitHubUsernameOrBlank(): String {
 
 internal fun Int.formatStarCount(): String {
     return when {
-        this >= 1_000_000 -> String.format("%.1fm", this / 1_000_000.0).trimTrailingZeroDecimal()
-        this >= 1_000 -> String.format("%.1fk", this / 1_000.0).trimTrailingZeroDecimal()
+        this >= 1_000_000 -> String.format(Locale.ROOT, "%.1fm", this / 1_000_000.0).trimTrailingZeroDecimal()
+        this >= 1_000 -> String.format(Locale.ROOT, "%.1fk", this / 1_000.0).trimTrailingZeroDecimal()
         else -> toString()
     }
 }

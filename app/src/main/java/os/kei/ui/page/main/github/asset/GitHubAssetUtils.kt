@@ -116,9 +116,9 @@ internal fun formatAssetSize(sizeBytes: Long, context: Context): String {
     val mb = kb * 1024L
     val gb = mb * 1024L
     return when {
-        sizeBytes >= gb -> String.format("%.1fG", sizeBytes.toDouble() / gb.toDouble())
-        sizeBytes >= mb -> String.format("%.1fM", sizeBytes.toDouble() / mb.toDouble())
-        sizeBytes >= kb -> String.format("%.0fK", sizeBytes.toDouble() / kb.toDouble())
+        sizeBytes >= gb -> String.format(Locale.ROOT, "%.1fG", sizeBytes.toDouble() / gb.toDouble())
+        sizeBytes >= mb -> String.format(Locale.ROOT, "%.1fM", sizeBytes.toDouble() / mb.toDouble())
+        sizeBytes >= kb -> String.format(Locale.ROOT, "%.0fK", sizeBytes.toDouble() / kb.toDouble())
         else -> "${sizeBytes}B"
     }
 }

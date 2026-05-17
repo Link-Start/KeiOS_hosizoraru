@@ -420,7 +420,7 @@ fun SettingsPage(
                 .fillMaxSize()
                 .nestedScroll(bottomBarNestedScrollConnection),
         scrollBehavior = scrollBehavior,
-        topBarColor = MiuixTheme.colorScheme.background,
+        topBarColor = androidx.compose.ui.graphics.Color.Transparent,
         titleBackdrop = topBarBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(

@@ -4,20 +4,25 @@ package os.kei.ui.page.main.settings.support
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -29,6 +34,7 @@ import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -77,17 +83,46 @@ internal fun SettingsActionItem(
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .let { base ->
+                    if (onClick != null) {
+                        base.clickable(role = Role.Button, onClick = onClick)
+                    } else {
+                        base
+                    }
+                }.defaultMinSize(minHeight = AppInteractiveTokens.controlRowMinHeight)
+                .padding(vertical = CardLayoutRhythm.controlRowVerticalPadding),
         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
     ) {
-        AppControlRow(
-            title = title,
-            summary = summary,
-            titleColor = MiuixTheme.colorScheme.onBackground,
-            minHeight = 48.dp,
-            onClick = onClick,
-            trailing = trailing,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                color = MiuixTheme.colorScheme.onBackground,
+                fontSize = AppTypographyTokens.CompactTitle.fontSize,
+                lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+                fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+                modifier = Modifier.weight(1f),
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
+                verticalAlignment = Alignment.CenterVertically,
+                content = trailing,
+            )
+        }
+        if (summary.isNotBlank()) {
+            Text(
+                text = summary,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        }
         if (!infoKey.isNullOrBlank() && !infoValue.isNullOrBlank()) {
             SettingsInfoItem(
                 key = infoKey,
@@ -129,7 +164,7 @@ internal fun SettingsInfoItem(
     val resolvedValue = value.ifBlank { stringResource(R.string.common_na) }
     val commonScopeLabel = stringResource(R.string.common_scope)
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val stacked = key == commonScopeLabel || resolvedValue.length >= 20 || maxWidth < 380.dp
+        val stacked = key == commonScopeLabel || resolvedValue.length >= 32 || maxWidth < 300.dp
         AppInfoRow(
             label = key,
             value = resolvedValue,

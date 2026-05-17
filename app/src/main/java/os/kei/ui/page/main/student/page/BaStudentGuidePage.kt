@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -180,6 +181,8 @@ fun BaStudentGuidePage(
     )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     var showBottomBar by remember { mutableStateOf(true) }
+    var activePageCanScrollBackward by remember { mutableStateOf(false) }
+    var activePageCanScrollForward by remember { mutableStateOf(false) }
     val farJumpAlpha = remember { Animatable(1f) }
     val selectBottomTabAction = rememberBaStudentGuideTabSelectCoordinator(
         bottomTabs = bottomTabsList,
@@ -207,13 +210,31 @@ fun BaStudentGuidePage(
     val bottomBarVisibilityController = remember(bottomBarVisibilityThresholdPx) {
         ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
     }
+    val currentShowBottomBar by rememberUpdatedState(showBottomBar)
+    val currentActivePageCanScrollBackward by rememberUpdatedState(activePageCanScrollBackward)
+    val currentActivePageCanScrollForward by rememberUpdatedState(activePageCanScrollForward)
     val bottomBarNestedScrollConnection = remember(bottomBarVisibilityController) {
         object : NestedScrollConnection {
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                bottomBarVisibilityController.update(consumed.y, showBottomBar) { showBottomBar = it }
+                bottomBarVisibilityController.updateWithinScrollBounds(
+                    deltaY = consumed.y,
+                    visible = currentShowBottomBar,
+                    canScrollBackward = currentActivePageCanScrollBackward,
+                    canScrollForward = currentActivePageCanScrollForward
+                ) { showBottomBar = it }
                 return Offset.Zero
             }
         }
+    }
+    LaunchedEffect(sourceUrl, activeBottomTab) {
+        bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
+    }
+    LaunchedEffect(activePageCanScrollBackward, activePageCanScrollForward, bottomBarVisibilityController) {
+        bottomBarVisibilityController.showForStaticContent(
+            visible = showBottomBar,
+            canScrollBackward = activePageCanScrollBackward,
+            canScrollForward = activePageCanScrollForward
+        ) { showBottomBar = it }
     }
     val pageTitle = info?.title?.ifBlank { defaultPageTitle } ?: defaultPageTitle
     val voicePlayerController = rememberBaStudentGuideVoicePlayerController(sourceUrl)
@@ -366,6 +387,10 @@ fun BaStudentGuidePage(
                 onSaveMedia = pageActions.saveGuideMedia,
                 onSaveMediaPack = pageActions.saveGuideMediaPack,
                 onToggleVoicePlayback = pageActions.toggleVoicePlayback,
+                onScrollBoundsChange = { canScrollBackward, canScrollForward ->
+                    activePageCanScrollBackward = canScrollBackward
+                    activePageCanScrollForward = canScrollForward
+                },
                 onListScrollInProgressChange = {},
                 onSelectedVoiceLanguageChange = { selectedVoiceLanguage = it }
             )

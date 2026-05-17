@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -36,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -247,17 +249,18 @@ fun SettingsPage(
     }
     val currentActivePageListState = rememberUpdatedState(activePageListState)
     val currentActiveCategory = rememberUpdatedState(activeCategory)
+    val currentShowBottomBar = rememberUpdatedState(showBottomBar)
     val bottomBarNestedScrollConnection = remember(bottomBarVisibilityController) {
         object : NestedScrollConnection {
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 if (currentActiveCategory.value.keepsChromeVisibleOnBounds()) {
-                    bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
+                    bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
                     return Offset.Zero
                 }
                 val currentListState = currentActivePageListState.value
                 bottomBarVisibilityController.updateWithinScrollBounds(
                     deltaY = consumed.y,
-                    visible = showBottomBar,
+                    visible = currentShowBottomBar.value,
                     canScrollBackward = currentListState.canScrollBackward,
                     canScrollForward = currentListState.canScrollForward
                 ) { showBottomBar = it }
@@ -325,9 +328,27 @@ fun SettingsPage(
 
     LaunchedEffect(pagerState.settledPage) {
         sliderInteractionActive = false
+        bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
         if (selectedCategoryIndex != pagerState.settledPage) {
             selectedCategoryIndex = pagerState.settledPage
         }
+    }
+    LaunchedEffect(activeCategory, activePageListState, bottomBarVisibilityController) {
+        snapshotFlow {
+            activePageListState.canScrollBackward to activePageListState.canScrollForward
+        }
+            .distinctUntilChanged()
+            .collect { (canScrollBackward, canScrollForward) ->
+                if (activeCategory.keepsChromeVisibleOnBounds()) {
+                    bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+                } else {
+                    bottomBarVisibilityController.showForStaticContent(
+                        visible = currentShowBottomBar.value,
+                        canScrollBackward = canScrollBackward,
+                        canScrollForward = canScrollForward
+                    ) { showBottomBar = it }
+                }
+            }
     }
 
     BackHandler(enabled = searchExpanded) {

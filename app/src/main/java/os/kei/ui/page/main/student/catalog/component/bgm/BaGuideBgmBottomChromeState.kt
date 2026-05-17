@@ -31,6 +31,14 @@ internal class BaGuideBgmBottomChromeScrollState(
         accumulatedScroll = 0f
     }
 
+    fun expandForStaticContent(
+        canScrollBackward: Boolean,
+        canScrollForward: Boolean
+    ) {
+        if (canScrollBackward || canScrollForward) return
+        expand()
+    }
+
     override fun onPreScroll(
         available: androidx.compose.ui.geometry.Offset,
         source: NestedScrollSource

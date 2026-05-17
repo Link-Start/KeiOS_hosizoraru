@@ -68,6 +68,7 @@ internal fun BaStudentGuidePagerPage(
     onSaveMedia: (String, String) -> Unit,
     onSaveMediaPack: (List<Pair<String, String>>, String) -> Unit,
     onToggleVoicePlayback: (String) -> Unit,
+    onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit
 ) {
@@ -114,10 +115,26 @@ internal fun BaStudentGuidePagerPage(
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(pageListState, isActivePage, snapshotFlowManager) {
         if (!isActivePage) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow { pageListState.isScrollInProgress }
+        var lastScrollBounds: Pair<Boolean, Boolean>? = null
+        var lastScrollInProgress: Boolean? = null
+        snapshotFlowManager.snapshotFlow {
+            Triple(
+                pageListState.canScrollBackward,
+                pageListState.canScrollForward,
+                pageListState.isScrollInProgress
+            )
+        }
             .distinctUntilChanged()
-            .collect { scrolling ->
-                onListScrollInProgressChange(scrolling)
+            .collect { (canScrollBackward, canScrollForward, scrolling) ->
+                val nextScrollBounds = canScrollBackward to canScrollForward
+                if (lastScrollBounds != nextScrollBounds) {
+                    lastScrollBounds = nextScrollBounds
+                    onScrollBoundsChange(canScrollBackward, canScrollForward)
+                }
+                if (lastScrollInProgress != scrolling) {
+                    lastScrollInProgress = scrolling
+                    onListScrollInProgressChange(scrolling)
+                }
             }
     }
 

@@ -249,6 +249,14 @@ internal class GitHubPageState(
     ) {
         this.canScrollBackward = canScrollBackward
         this.canScrollForward = canScrollForward
+        searchBarVisibilityController.showForStaticContent(
+            visible = pendingShowSearchBar ?: showSearchBar,
+            canScrollBackward = canScrollBackward,
+            canScrollForward = canScrollForward
+        ) { target ->
+            pendingShowSearchBar = null
+            showSearchBar = target
+        }
     }
 
     fun settleScrollChromeVisibility() {

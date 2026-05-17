@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.R
+import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
@@ -45,11 +47,14 @@ internal fun BaGuideFavoriteBgmMusicContent(
     bottomPadding: Dp,
     isPageActive: Boolean,
     onSliderInteractionChanged: (Boolean) -> Unit,
+    onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onOpenGuide: (String) -> Unit
 ) {
     val context = LocalContext.current
     val favorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     val contentBackdrop = rememberLayerBackdrop()
+    val listState = rememberLazyListState()
+    val snapshotFlowManager = rememberAppSnapshotFlowManager()
     val displayedFavorites = remember(favorites, searchQuery) {
         filterAndSortBgmFavorites(
             favorites = favorites,
@@ -66,6 +71,16 @@ internal fun BaGuideFavoriteBgmMusicContent(
         if (isPageActive) {
             playbackCoordinator.updateQueue(displayedFavorites)
         }
+    }
+    LaunchedEffect(listState, isPageActive, snapshotFlowManager) {
+        if (!isPageActive) return@LaunchedEffect
+        snapshotFlowManager.snapshotFlow {
+            listState.canScrollBackward to listState.canScrollForward
+        }
+            .distinctUntilChanged()
+            .collect { (canScrollBackward, canScrollForward) ->
+                onScrollBoundsChange(canScrollBackward, canScrollForward)
+            }
     }
     val selectedFavorite = playbackState.selectedFavorite
         ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
@@ -166,7 +181,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
             sectionFooterTitle = stringResource(R.string.ba_catalog_tab_bgm),
             offlineTrackCount = offlineCacheState.offlineAudioUrls.size,
             showFooter = false,
-            listState = rememberLazyListState(),
+            listState = listState,
             collapseProgress = 0f,
             bottomBarScrollConnection = bottomBarScrollConnection,
             userScrollEnabled = true,

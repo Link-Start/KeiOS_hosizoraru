@@ -82,4 +82,32 @@ class ScrollChromeVisibilityControllerTest {
 
         assertTrue(visible)
     }
+
+    @Test
+    fun `hidden chrome recovers for static content`() {
+        val controller = ScrollChromeVisibilityController(hideThresholdPx = 20f)
+        var visible = false
+
+        controller.showForStaticContent(
+            visible = visible,
+            canScrollBackward = false,
+            canScrollForward = false
+        ) { visible = it }
+
+        assertTrue(visible)
+    }
+
+    @Test
+    fun `hidden chrome stays controlled when content can still scroll`() {
+        val controller = ScrollChromeVisibilityController(hideThresholdPx = 20f)
+        var visible = false
+
+        controller.showForStaticContent(
+            visible = visible,
+            canScrollBackward = false,
+            canScrollForward = true
+        ) { visible = it }
+
+        assertFalse(visible)
+    }
 }

@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import kotlinx.coroutines.flow.distinctUntilChanged
+import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
@@ -30,6 +33,7 @@ internal fun BaGuideCatalogV2ListContent(
     innerPadding: PaddingValues,
     nestedScrollConnection: NestedScrollConnection,
     isPageActive: Boolean,
+    onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onOpenGuide: (String) -> Unit
 ) {
     val tabListState = rememberBaGuideCatalogTabListState(
@@ -48,6 +52,17 @@ internal fun BaGuideCatalogV2ListContent(
         error = error,
         filteredEntriesEmpty = tabListState.filteredEntries.isEmpty()
     )
+    val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
+        if (!isPageActive) return@LaunchedEffect
+        snapshotFlowManager.snapshotFlow {
+            tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
+        }
+            .distinctUntilChanged()
+            .collect { (canScrollBackward, canScrollForward) ->
+                onScrollBoundsChange(canScrollBackward, canScrollForward)
+            }
+    }
     LazyColumn(
         state = tabListState.listState,
         modifier = Modifier

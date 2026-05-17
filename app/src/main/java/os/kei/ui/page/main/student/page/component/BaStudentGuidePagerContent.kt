@@ -43,6 +43,7 @@ internal fun BaStudentGuidePagerContent(
     onSaveMedia: (String, String) -> Unit,
     onSaveMediaPack: (List<Pair<String, String>>, String) -> Unit,
     onToggleVoicePlayback: (String) -> Unit,
+    onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit
 ) {
@@ -82,6 +83,7 @@ internal fun BaStudentGuidePagerContent(
             onSaveMedia = onSaveMedia,
             onSaveMediaPack = onSaveMediaPack,
             onToggleVoicePlayback = onToggleVoicePlayback,
+            onScrollBoundsChange = onScrollBoundsChange,
             onListScrollInProgressChange = onListScrollInProgressChange,
             onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange
         )

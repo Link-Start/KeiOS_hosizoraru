@@ -67,6 +67,16 @@ internal class ScrollChromeVisibilityController(
         }
     }
 
+    fun showForStaticContent(
+        visible: Boolean,
+        canScrollBackward: Boolean,
+        canScrollForward: Boolean,
+        onVisibleChange: (Boolean) -> Unit
+    ) {
+        if (canScrollBackward || canScrollForward) return
+        showNow(visible, onVisibleChange)
+    }
+
     fun reset() {
         hideDistancePx = 0f
         showDistancePx = 0f

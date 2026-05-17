@@ -55,4 +55,24 @@ class BaGuideBgmBottomChromeModeTest {
             )
         )
     }
+
+    @Test
+    fun compactDockExpandsForStaticContent() {
+        val scrollState = BaGuideBgmBottomChromeScrollState(scrollThresholdPx = 20f)
+
+        scrollState.compact()
+        scrollState.expandForStaticContent(canScrollBackward = false, canScrollForward = false)
+
+        assertEquals(false, scrollState.isCompact)
+    }
+
+    @Test
+    fun compactDockStaysControlledWhenContentCanScroll() {
+        val scrollState = BaGuideBgmBottomChromeScrollState(scrollThresholdPx = 20f)
+
+        scrollState.compact()
+        scrollState.expandForStaticContent(canScrollBackward = false, canScrollForward = true)
+
+        assertEquals(true, scrollState.isCompact)
+    }
 }

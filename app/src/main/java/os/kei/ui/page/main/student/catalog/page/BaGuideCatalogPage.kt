@@ -200,6 +200,9 @@ fun BaGuideCatalogPage(
         selectedTabIndex
     }.coerceIn(0, tabs.lastIndex)
     val chromeActiveTab = tabs.getOrElse(chromeActivePageIndex) { BaGuideCatalogPageTab.Student }
+    LaunchedEffect(chromeActiveTab) {
+        chromeScrollState.expand()
+    }
     val chromeCurrentTitle = stringResource(id = chromeActiveTab.labelRes)
     val chromeSearchQuery = searchQueries[chromeActiveTab.name].orEmpty()
     val chromeSearchPlaceholder = stringResource(
@@ -325,6 +328,7 @@ fun BaGuideCatalogPage(
                                 ),
                                 nestedScrollConnection = chromeScrollState,
                                 isPageActive = pageIndex == pagerState.settledPage,
+                                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
                                 onOpenGuide = onOpenGuide
                             )
                             pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> BaGuideStudentBgmTabContent(
@@ -341,7 +345,7 @@ fun BaGuideCatalogPage(
                                 accent = accent,
                                 isPageActive = pageIndex == pagerState.settledPage,
                                 onSliderInteractionChanged = { sliderInteractionActive = it },
-                                onScrollBoundsChange = { _, _ -> },
+                                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
                                 onListScrollInProgressChange = {},
                                 onNowPlayingVisibilityChange = {},
                                 showNowPlayingOverlay = false,
@@ -358,6 +362,7 @@ fun BaGuideCatalogPage(
                                 bottomPadding = CatalogMusicContentBottomPadding,
                                 isPageActive = pageIndex == pagerState.settledPage,
                                 onSliderInteractionChanged = { sliderInteractionActive = it },
+                                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
                                 onOpenGuide = onOpenGuide
                             )
                         }

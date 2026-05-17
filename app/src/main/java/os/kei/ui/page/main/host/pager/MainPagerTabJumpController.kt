@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -55,19 +56,20 @@ internal fun rememberMainPagerTabJumpController(
     val bottomBarVisibilityController = remember(bottomBarVisibilityThresholdPx) {
         ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
     }
+    val currentShowBottomBar by rememberUpdatedState(showBottomBar)
 
     val nestedScrollConnection = remember(pagerRuntime.homePageBottomBarPinned, bottomBarVisibilityController) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (pagerRuntime.homePageBottomBarPinned) {
-                    bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
+                    bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
                 }
                 return Offset.Zero
             }
 
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 if (!pagerRuntime.homePageBottomBarPinned) {
-                    bottomBarVisibilityController.update(consumed.y, showBottomBar) { showBottomBar = it }
+                    bottomBarVisibilityController.update(consumed.y, currentShowBottomBar) { showBottomBar = it }
                 }
                 return Offset.Zero
             }
@@ -114,6 +116,9 @@ internal fun rememberMainPagerTabJumpController(
             bottomBarVisibilityController.reset()
             showBottomBar = true
         }
+    }
+    LaunchedEffect(pagerState.selectedPage) {
+        bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
     }
     LaunchedEffect(pagerState.selectedPage, pagerState.isScrollInProgress, tabs.size) {
         if (!pagerState.isScrollInProgress && !navigationActive) {

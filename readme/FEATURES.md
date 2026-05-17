@@ -142,5 +142,5 @@ Settings collect the runtime controls in one place:
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
 - UI stack: Jetpack Compose `1.11.1`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
   chrome, MMKV-backed preferences.
-- Build baseline: Java 21, Kotlin `2.3.21`, Android Gradle Plugin `9.2.1`, generated Baseline
-  Profiles, and Gradle project tooling.
+- Build baseline: Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`, Android Gradle Plugin `9.2.1`,
+  generated Baseline Profiles, and Gradle project tooling.

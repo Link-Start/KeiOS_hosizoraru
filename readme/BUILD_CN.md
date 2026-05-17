@@ -19,7 +19,8 @@
 - Gradle daemon、Java 编译、Kotlin JVM 目标统一为 Java 21。
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。
-- Kotlin 插件：`2.3.21`；Android Gradle Plugin：`9.2.1`；Compose 运行库：`1.11.1`。
+- Gradle Wrapper：`9.5.1`；Kotlin 插件：`2.3.21`；Android Gradle Plugin：`9.2.1`；
+  Compose 运行库：`1.11.1`。
 - Release 与 Benchmark APK 会合入 `app/src/main/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
 

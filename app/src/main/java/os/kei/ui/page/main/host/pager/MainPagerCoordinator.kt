@@ -25,7 +25,7 @@ internal data class MainPagerInsets(
     val navigationBarBottom: Dp,
     val homeTopInset: Dp,
     val homeBottomInset: Dp,
-    val bottomOverlayPadding: Dp
+    val bottomOverlayPadding: Dp,
 )
 
 internal data class MainPagerCoordinatorState(
@@ -55,7 +55,7 @@ internal data class MainPagerCoordinatorState(
     val osScrollToTopSignal: Int,
     val baScrollToTopSignal: Int,
     val mcpScrollToTopSignal: Int,
-    val githubScrollToTopSignal: Int
+    val githubScrollToTopSignal: Int,
 )
 
 @Composable
@@ -68,7 +68,7 @@ internal fun rememberMainPagerInsets(): MainPagerInsets {
             navigationBarBottom = navigationBarBottom,
             homeTopInset = systemInsets.calculateTopPadding(),
             homeBottomInset = systemInsets.calculateBottomPadding(),
-            bottomOverlayPadding = 112.dp + navigationBarBottom
+            bottomOverlayPadding = 112.dp + navigationBarBottom,
         )
     }
 }
@@ -86,87 +86,97 @@ internal fun rememberMainPagerCoordinator(
     mcpServerManager: McpServerManager,
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
-    onRequestedBottomPageConsumed: () -> Unit
+    onRequestedBottomPageConsumed: () -> Unit,
 ): MainPagerCoordinatorState {
-    val preloadPolicy = remember(preloadingEnabled) {
-        UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
-    }
-    val backgroundState = rememberMainPagerBackgroundState(
-        nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
-        nonHomeBackgroundUri = nonHomeBackgroundUri
-    )
-    val tabsState = rememberMainPagerTabsState(
-        visibleBottomPageNames = visibleBottomPageNames,
-        requestedBottomPage = requestedBottomPage,
-        requestedBottomPageToken = requestedBottomPageToken
-    )
+    val preloadPolicy =
+        remember(preloadingEnabled) {
+            UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
+        }
+    val backgroundState =
+        rememberMainPagerBackgroundState(
+            nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
+            nonHomeBackgroundUri = nonHomeBackgroundUri,
+        )
+    val tabsState =
+        rememberMainPagerTabsState(
+            visibleBottomPageNames = visibleBottomPageNames,
+            requestedBottomPage = requestedBottomPage,
+            requestedBottomPageToken = requestedBottomPageToken,
+        )
     val tabs = tabsState.tabs
     val visibleTabsSnapshot = tabsState.visibleTabsSnapshot
     val pageKeys = remember(tabs) { tabs.map { page -> page.name } }
-    val pagerState: MainPagerStateContract = if (miuixMainNavigationEnabled) {
-        rememberMainMiuixPagerState(
-            initialPage = tabsState.initialPageIndex,
-            pageCount = tabs.size,
-            pageKeys = pageKeys
+    val pagerState: MainPagerStateContract =
+        if (miuixMainNavigationEnabled) {
+            rememberMainMiuixPagerState(
+                initialPage = tabsState.initialPageIndex,
+                pageCount = tabs.size,
+                pageKeys = pageKeys,
+            )
+        } else {
+            rememberMainFoundationPagerState(
+                initialPage = tabsState.initialPageIndex,
+                pageCount = tabs.size,
+                pageKeys = pageKeys,
+            )
+        }
+    val homeOverviewState =
+        rememberMainPagerHomeOverviewState(
+            mcpServerManager = mcpServerManager,
+            settingsReturnToken = settingsReturnToken,
         )
-    } else {
-        rememberMainFoundationPagerState(
-            initialPage = tabsState.initialPageIndex,
-            pageCount = tabs.size,
-            pageKeys = pageKeys
-        )
-    }
-    val homeOverviewState = rememberMainPagerHomeOverviewState(
-        mcpServerManager = mcpServerManager,
-        settingsReturnToken = settingsReturnToken
-    )
     val backdrop = rememberMainPagerBackdropLifecycle()
+    val targetWarmDataActive = rememberPagerTargetWarmDataActive(pagerState).value
 
-    val pagerRuntime = buildMainPagerRuntimeSnapshot(
-        tabs = tabs,
-        currentPageIndex = pagerState.currentPage,
-        targetPageIndex = pagerState.targetPage,
-        settledPageIndex = pagerState.settledPage,
-        pagePosition = pagerState.pagePosition,
-        isPagerScrollInProgress = pagerState.isScrollInProgress,
-        preloadPolicy = preloadPolicy,
-        hasNonHomeBackground = backgroundState.hasNonHomeBackground
-    )
+    val pagerRuntime =
+        buildMainPagerRuntimeSnapshot(
+            tabs = tabs,
+            currentPageIndex = pagerState.currentPage,
+            targetPageIndex = pagerState.targetPage,
+            settledPageIndex = pagerState.settledPage,
+            isPagerScrollInProgress = pagerState.isScrollInProgress,
+            preloadPolicy = preloadPolicy,
+            hasNonHomeBackground = backgroundState.hasNonHomeBackground,
+            targetWarmDataActive = targetWarmDataActive,
+        )
     BindMainPagerCoordinatorEffects(
         tabsSize = tabs.size,
-        pagerState = pagerState
-    )
-    val tabJumpController = rememberMainPagerTabJumpController(
-        tabs = tabs,
         pagerState = pagerState,
-        pagerRuntime = pagerRuntime,
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        requestedBottomPage = requestedBottomPage,
-        requestedBottomPageToken = requestedBottomPageToken,
-        onRequestedBottomPageConsumed = onRequestedBottomPageConsumed
     )
-    val scrollSignalController = rememberMainPagerScrollSignalController(
-        tabs = tabs,
-        pagerRuntime = pagerRuntime,
-        onPageSelected = tabJumpController.onPageSelected
-    )
-    val onBottomPageVisibilityChange = remember(
-        visibleBottomPageNames,
-        onVisibleBottomPageNamesChange,
-        homeOverviewState.onOverviewCardVisibilityChange
-    ) {
-        buildMainPagerVisibilityChangeAction(
-            visibleBottomPageNames = visibleBottomPageNames,
-            onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
-            onOverviewCardVisibilityChange = homeOverviewState.onOverviewCardVisibilityChange
+    val tabJumpController =
+        rememberMainPagerTabJumpController(
+            tabs = tabs,
+            pagerState = pagerState,
+            pagerRuntime = pagerRuntime,
+            transitionAnimationsEnabled = transitionAnimationsEnabled,
+            requestedBottomPage = requestedBottomPage,
+            requestedBottomPageToken = requestedBottomPageToken,
+            onRequestedBottomPageConsumed = onRequestedBottomPageConsumed,
         )
-    }
+    val scrollSignalController =
+        rememberMainPagerScrollSignalController(
+            tabs = tabs,
+            pagerRuntime = pagerRuntime,
+            onPageSelected = tabJumpController.onPageSelected,
+        )
+    val onBottomPageVisibilityChange =
+        remember(
+            visibleBottomPageNames,
+            onVisibleBottomPageNamesChange,
+            homeOverviewState.onOverviewCardVisibilityChange,
+        ) {
+            buildMainPagerVisibilityChangeAction(
+                visibleBottomPageNames = visibleBottomPageNames,
+                onVisibleBottomPageNamesChange = onVisibleBottomPageNamesChange,
+                onOverviewCardVisibilityChange = homeOverviewState.onOverviewCardVisibilityChange,
+            )
+        }
 
     ReportPagerPerformanceState(
         scope = "main_pager",
         currentPage = tabs.getOrElse(pagerState.currentPage) { BottomPage.Home }.name,
         targetPage = tabs.getOrElse(pagerState.targetPage) { BottomPage.Home }.name,
-        scrolling = pagerState.isScrollInProgress
+        scrolling = pagerState.isScrollInProgress,
     )
 
     return remember(
@@ -183,7 +193,7 @@ internal fun rememberMainPagerCoordinator(
         tabJumpController.navigationActive,
         backgroundState.hasNonHomeBackground,
         backgroundState.effectiveNonHomeBackgroundUri,
-        onBottomPageVisibilityChange
+        onBottomPageVisibilityChange,
     ) {
         MainPagerCoordinatorState(
             tabs = tabs,
@@ -212,7 +222,7 @@ internal fun rememberMainPagerCoordinator(
             osScrollToTopSignal = scrollSignalController.osScrollToTopSignal,
             baScrollToTopSignal = scrollSignalController.baScrollToTopSignal,
             mcpScrollToTopSignal = scrollSignalController.mcpScrollToTopSignal,
-            githubScrollToTopSignal = scrollSignalController.githubScrollToTopSignal
+            githubScrollToTopSignal = scrollSignalController.githubScrollToTopSignal,
         )
     }
 }

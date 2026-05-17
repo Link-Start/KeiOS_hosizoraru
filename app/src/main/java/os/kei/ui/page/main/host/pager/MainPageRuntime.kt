@@ -1,8 +1,15 @@
 package os.kei.ui.page.main.host.pager
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -52,21 +59,22 @@ internal data class MainPagerRuntimeSnapshot(
         hasActivated: Boolean = true,
         contentReady: Boolean = true,
         contentWorkAllowed: Boolean = true,
-    ): MainPageRuntime = MainPageRuntime(
-        scrollToTopSignal = scrollToTopSignal,
-        contentTopPadding = contentTopPadding,
-        contentBottomPadding = contentBottomPadding,
-        hasActivated = hasActivated,
-        contentReady = contentReady,
-        isWarmActive = contentWorkAllowed && isWarmActive(pageIndex),
-        isWarmDataActive = contentWorkAllowed && isWarmDataActive(pageIndex),
-        isDataActive = contentWorkAllowed && isDataActive(pageIndex),
-        backGestureActive = !contentWorkAllowed,
-        contentWorkAllowed = contentWorkAllowed,
-        isPagerScrollInProgress = isPagerScrollInProgress,
-        bottomBarVisible = bottomBarVisible,
-        floatingDockSide = floatingDockSide
-    )
+    ): MainPageRuntime =
+        MainPageRuntime(
+            scrollToTopSignal = scrollToTopSignal,
+            contentTopPadding = contentTopPadding,
+            contentBottomPadding = contentBottomPadding,
+            hasActivated = hasActivated,
+            contentReady = contentReady,
+            isWarmActive = contentWorkAllowed && isWarmActive(pageIndex),
+            isWarmDataActive = contentWorkAllowed && isWarmDataActive(pageIndex),
+            isDataActive = contentWorkAllowed && isDataActive(pageIndex),
+            backGestureActive = !contentWorkAllowed,
+            contentWorkAllowed = contentWorkAllowed,
+            isPagerScrollInProgress = isPagerScrollInProgress,
+            bottomBarVisible = bottomBarVisible,
+            floatingDockSide = floatingDockSide,
+        )
 
     fun isWarmActive(pageIndex: Int): Boolean {
         val isCurrent = pageIndex == currentPageIndex
@@ -97,10 +105,10 @@ internal fun buildMainPagerRuntimeSnapshot(
     currentPageIndex: Int,
     targetPageIndex: Int,
     settledPageIndex: Int,
-    pagePosition: Float,
     isPagerScrollInProgress: Boolean,
     preloadPolicy: UiPerformanceBudget.PreloadPolicy,
     hasNonHomeBackground: Boolean,
+    targetWarmDataActive: Boolean,
 ): MainPagerRuntimeSnapshot {
     fun pageAt(index: Int): BottomPage = tabs.getOrElse(index) { BottomPage.Home }
 
@@ -112,14 +120,53 @@ internal fun buildMainPagerRuntimeSnapshot(
         settledPageIndex = settledPageIndex,
         isPagerScrollInProgress = isPagerScrollInProgress,
         includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
-        targetWarmDataActive = abs(pagePosition - targetPageIndex) <= MainPagerTargetWarmDataActivationDistance,
-        shouldRenderNonHomeBackground = hasNonHomeBackground && (
-            targetPage != BottomPage.Home ||
-                settledPage != BottomPage.Home
+        targetWarmDataActive = targetWarmDataActive,
+        shouldRenderNonHomeBackground =
+            hasNonHomeBackground && (
+                targetPage != BottomPage.Home ||
+                    settledPage != BottomPage.Home
             ),
-        homePageBottomBarPinned = targetPage == BottomPage.Home ||
-            settledPage == BottomPage.Home
+        homePageBottomBarPinned =
+            targetPage == BottomPage.Home ||
+                settledPage == BottomPage.Home,
     )
 }
 
-private const val MainPagerTargetWarmDataActivationDistance = 0.75f
+@Composable
+internal fun rememberPagerTargetWarmDataActive(
+    pagerState: MainPagerStateContract,
+    activationDistance: Float = MAIN_PAGER_TARGET_WARM_DATA_ACTIVATION_DISTANCE,
+): State<Boolean> {
+    val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    val warmState =
+        remember(pagerState, activationDistance) {
+            mutableStateOf(pagerState.isTargetWarmDataActive(activationDistance))
+        }
+    LaunchedEffect(pagerState, activationDistance, snapshotFlowManager) {
+        snapshotFlowManager
+            .snapshotFlow { pagerState.isTargetWarmDataActive(activationDistance) }
+            .distinctUntilChanged()
+            .collect { active -> warmState.value = active }
+    }
+    return warmState
+}
+
+internal fun MainPagerStateContract.shouldRenderStablePageContent(
+    pageIndex: Int,
+    includeTargetPageInHeavyRender: Boolean = true,
+    targetWarmDataActive: Boolean = true,
+): Boolean {
+    val isCurrent = pageIndex == currentPage
+    val isTarget = pageIndex == targetPage
+    val isSettled = pageIndex == settledPage
+    return if (isScrollInProgress) {
+        isCurrent || isSettled || (includeTargetPageInHeavyRender && targetWarmDataActive && isTarget)
+    } else {
+        isCurrent || isSettled || (includeTargetPageInHeavyRender && isTarget)
+    }
+}
+
+private fun MainPagerStateContract.isTargetWarmDataActive(activationDistance: Float): Boolean =
+    abs(pagePosition - targetPage) <= activationDistance
+
+private const val MAIN_PAGER_TARGET_WARM_DATA_ACTIVATION_DISTANCE = 0.75f

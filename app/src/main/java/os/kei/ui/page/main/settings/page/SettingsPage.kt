@@ -47,6 +47,7 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
+import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
@@ -503,11 +504,7 @@ fun SettingsPage(
                         .layerBackdrop(topBarBackdrop)
                         .layerBackdrop(bottomBarBackdrop),
             ) { pageIndex ->
-                val renderHeavyContent =
-                    pageIndex == pagerState.currentPage ||
-                        pageIndex == pagerState.settledPage ||
-                        pageIndex == pagerState.targetPage ||
-                        abs(pageIndex - pagerState.pagePosition) <= 1.05f
+                val renderHeavyContent = pagerState.shouldRenderStablePageContent(pageIndex)
                 if (renderHeavyContent) {
                     val category = categories[pageIndex]
                     val pageListState =

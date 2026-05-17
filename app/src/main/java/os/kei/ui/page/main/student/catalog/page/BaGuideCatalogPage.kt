@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.page
 
 import androidx.activity.compose.BackHandler
@@ -43,6 +45,8 @@ import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
+import os.kei.ui.page.main.host.pager.rememberPagerTargetWarmDataActive
+import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
@@ -66,35 +70,35 @@ private enum class BaGuideCatalogPageTab(
     val labelRes: Int,
     val compactLabelRes: Int,
     val catalogTab: BaGuideCatalogTab?,
-    val specialTab: BaGuideCatalogSpecialTab? = null
+    val specialTab: BaGuideCatalogSpecialTab? = null,
 ) {
     Student(
         labelRes = R.string.ba_catalog_tab_student,
         compactLabelRes = R.string.ba_catalog_tab_student_short,
-        catalogTab = BaGuideCatalogTab.Student
+        catalogTab = BaGuideCatalogTab.Student,
     ),
     NpcSatellite(
         labelRes = R.string.ba_catalog_tab_npc_satellite,
         compactLabelRes = R.string.ba_catalog_tab_npc_satellite_short,
-        catalogTab = BaGuideCatalogTab.NpcSatellite
+        catalogTab = BaGuideCatalogTab.NpcSatellite,
     ),
     StudentBgm(
         labelRes = R.string.ba_catalog_tab_student_bgm,
         compactLabelRes = R.string.ba_catalog_tab_student_bgm_short,
         catalogTab = null,
-        specialTab = BaGuideCatalogSpecialTab.StudentBgm
+        specialTab = BaGuideCatalogSpecialTab.StudentBgm,
     ),
     Bgm(
         labelRes = R.string.ba_catalog_tab_bgm,
         compactLabelRes = R.string.ba_catalog_tab_bgm,
         catalogTab = null,
-        specialTab = BaGuideCatalogSpecialTab.FavoriteBgm
-    )
+        specialTab = BaGuideCatalogSpecialTab.FavoriteBgm,
+    ),
 }
 
 private enum class BaGuideCatalogSpecialTab {
     StudentBgm,
-    FavoriteBgm
+    FavoriteBgm,
 }
 
 @Composable
@@ -113,9 +117,10 @@ fun BaGuideCatalogPage(
     val appContext = remember(context) { context.applicationContext }
     val pageScope = rememberCoroutineScope()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val preloadPolicy = remember(preloadingEnabled) {
-        UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
-    }
+    val preloadPolicy =
+        remember(preloadingEnabled) {
+            UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled)
+        }
     val pageTitle = stringResource(R.string.ba_catalog_page_title)
     val accent = MiuixTheme.colorScheme.primary
     val isDark = isSystemInDarkTheme()
@@ -125,12 +130,14 @@ fun BaGuideCatalogPage(
         activationCount++
         onDispose { }
     }
-    val pageChromeBackdrop: LayerBackdrop = key("ba-catalog-page-$activationCount-$isDark") {
-        rememberLayerBackdrop()
-    }
-    val bottomChromeBackdrop: LayerBackdrop = key("ba-catalog-bottom-$activationCount-$isDark") {
-        rememberLayerBackdrop()
-    }
+    val pageChromeBackdrop: LayerBackdrop =
+        key("ba-catalog-page-$activationCount-$isDark") {
+            rememberLayerBackdrop()
+        }
+    val bottomChromeBackdrop: LayerBackdrop =
+        key("ba-catalog-bottom-$activationCount-$isDark") {
+            rememberLayerBackdrop()
+        }
 
     val loadFailedText = stringResource(R.string.ba_catalog_load_failed)
     val refreshFailedKeepCacheText = stringResource(R.string.ba_catalog_refresh_failed_keep_cached)
@@ -146,22 +153,23 @@ fun BaGuideCatalogPage(
         transitionAnimationsEnabled,
         preloadPolicy.initialFetchDelayMs,
         loadFailedText,
-        refreshFailedKeepCacheText
+        refreshFailedKeepCacheText,
     ) {
         catalogViewModel.bind(
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             initialFetchDelayMs = preloadPolicy.initialFetchDelayMs,
             loadFailedText = loadFailedText,
-            refreshFailedKeepCacheText = refreshFailedKeepCacheText
+            refreshFailedKeepCacheText = refreshFailedKeepCacheText,
         )
     }
 
     val tabs = BaGuideCatalogPageTab.entries
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
-    val pagerState = rememberMainLoadedPagerState(
-        initialPage = selectedTabIndex.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)),
-        pageCount = tabs.size
-    )
+    val pagerState =
+        rememberMainLoadedPagerState(
+            initialPage = selectedTabIndex.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)),
+            pageCount = tabs.size,
+        )
     val filterSortState = rememberBaGuideCatalogFilterSortState()
     var searchQueries by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
     var showTransferSheet by rememberSaveable { mutableStateOf(false) }
@@ -172,11 +180,12 @@ fun BaGuideCatalogPage(
     var nativeBgmMediaNotificationEnabled by rememberSaveable {
         mutableStateOf(BASettingsStore.loadNativeBgmMediaNotificationEnabled())
     }
-    val playbackCoordinator = rememberBaGuideBgmPlaybackCoordinator(
-        context = appContext,
-        favorites = favoriteBgms,
-        nativeMediaNotificationEnabled = nativeBgmMediaNotificationEnabled
-    )
+    val playbackCoordinator =
+        rememberBaGuideBgmPlaybackCoordinator(
+            context = appContext,
+            favorites = favoriteBgms,
+            nativeMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+        )
     val playbackUiState by playbackCoordinator.uiState.collectAsStateWithLifecycle()
     var playbackSliderPreview by remember { mutableStateOf<Float?>(null) }
     var searchVisible by rememberSaveable { mutableStateOf(false) }
@@ -194,44 +203,53 @@ fun BaGuideCatalogPage(
         chromeScrollState.expand()
     }
 
-    val chromeActivePageIndex = if (pagerState.isScrollInProgress) {
-        pagerState.targetPage
-    } else {
-        selectedTabIndex
-    }.coerceIn(0, tabs.lastIndex)
+    val chromeActivePageIndex =
+        if (pagerState.isScrollInProgress) {
+            pagerState.targetPage
+        } else {
+            selectedTabIndex
+        }.coerceIn(0, tabs.lastIndex)
     val chromeActiveTab = tabs.getOrElse(chromeActivePageIndex) { BaGuideCatalogPageTab.Student }
     LaunchedEffect(chromeActiveTab) {
         chromeScrollState.expand()
     }
     val chromeCurrentTitle = stringResource(id = chromeActiveTab.labelRes)
     val chromeSearchQuery = searchQueries[chromeActiveTab.name].orEmpty()
-    val chromeSearchPlaceholder = stringResource(
-        when (chromeActiveTab) {
-            BaGuideCatalogPageTab.Student -> R.string.ba_catalog_search_placeholder_student
-            BaGuideCatalogPageTab.NpcSatellite -> R.string.ba_catalog_search_placeholder_npc_satellite
-            BaGuideCatalogPageTab.StudentBgm -> R.string.ba_catalog_search_placeholder_music
-            BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
-        }
-    )
+    val chromeSearchPlaceholder =
+        stringResource(
+            when (chromeActiveTab) {
+                BaGuideCatalogPageTab.Student -> R.string.ba_catalog_search_placeholder_student
+                BaGuideCatalogPageTab.NpcSatellite -> R.string.ba_catalog_search_placeholder_npc_satellite
+                BaGuideCatalogPageTab.StudentBgm -> R.string.ba_catalog_search_placeholder_music
+                BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
+            },
+        )
     val chromePlaybackFavorite = playbackUiState.selectedFavorite
-    val chromeArtworkImageUrl = chromePlaybackFavorite
-        ?.resolvePlaybackArtworkImageUrl()
-        .orEmpty()
+    val chromeArtworkImageUrl =
+        chromePlaybackFavorite
+            ?.resolvePlaybackArtworkImageUrl()
+            .orEmpty()
     val chromePlaybackProgress = playbackSliderPreview ?: playbackUiState.runtimeState.progress
-    val bgmCacheState = rememberBaGuideCatalogBgmCacheState(
-        context = context,
-        favorites = favoriteBgms,
-        refreshWhenVisible = showTransferSheet
-    )
-    val transferExportAction = rememberBaGuideCatalogJsonExportAction(
-        context, pageScope, exportDoneText, exportFailedText
-    )
-    val importActions = rememberBaGuideCatalogImportActions(
-        context = context,
-        pageScope = pageScope,
-        filterSortState = filterSortState,
-        onPreviewStateChange = { importPreviewState = it }
-    )
+    val bgmCacheState =
+        rememberBaGuideCatalogBgmCacheState(
+            context = context,
+            favorites = favoriteBgms,
+            refreshWhenVisible = showTransferSheet,
+        )
+    val transferExportAction =
+        rememberBaGuideCatalogJsonExportAction(
+            context,
+            pageScope,
+            exportDoneText,
+            exportFailedText,
+        )
+    val importActions =
+        rememberBaGuideCatalogImportActions(
+            context = context,
+            pageScope = pageScope,
+            filterSortState = filterSortState,
+            onPreviewStateChange = { importPreviewState = it },
+        )
 
     LaunchedEffect(pagerState.settledPage) {
         if (selectedTabIndex != pagerState.settledPage) {
@@ -242,14 +260,15 @@ fun BaGuideCatalogPage(
         scope = "guide_catalog_music_pager",
         currentPage = tabs.getOrElse(pagerState.currentPage) { BaGuideCatalogPageTab.Student }.name,
         targetPage = tabs.getOrElse(pagerState.targetPage) { BaGuideCatalogPageTab.Student }.name,
-        scrolling = pagerState.isScrollInProgress
+        scrolling = pagerState.isScrollInProgress,
     )
 
     val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val keyboardLift = rememberAppFloatingKeyboardLift(
-        focusedLift = 18.dp,
-        restingBottomGap = navigationBottom
-    )
+    val keyboardLift =
+        rememberAppFloatingKeyboardLift(
+            focusedLift = 18.dp,
+            restingBottomGap = navigationBottom,
+        )
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val bottomChromeTargetPadding = navigationBottom + if (searchInputActive) keyboardLift else 0.dp
 
@@ -259,112 +278,130 @@ fun BaGuideCatalogPage(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(panelBackground)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        accent.copy(alpha = if (isDark) 0.20f else 0.08f),
-                        MiuixTheme.colorScheme.surface.copy(alpha = if (isDark) 0.10f else 0.55f),
-                        panelBackground
-                    )
-                )
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(panelBackground)
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                accent.copy(alpha = if (isDark) 0.20f else 0.08f),
+                                MiuixTheme.colorScheme.surface.copy(alpha = if (isDark) 0.10f else 0.55f),
+                                panelBackground,
+                            ),
+                    ),
+                ),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(bottomChromeBackdrop)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(bottomChromeBackdrop),
         ) {
-            val progress = rememberCatalogSyncProgress(
-                loading = catalogDataState.loading,
-                animationsEnabled = transitionAnimationsEnabled
-            )
-            val progressColor = when {
-                catalogDataState.loading -> Color(0xFF3B82F6)
-                !catalogDataState.error.isNullOrBlank() -> Color(0xFFEF4444)
-                else -> Color(0xFF22C55E)
-            }
+            val progress =
+                rememberCatalogSyncProgress(
+                    loading = catalogDataState.loading,
+                    animationsEnabled = transitionAnimationsEnabled,
+                )
+            val progressColor =
+                when {
+                    catalogDataState.loading -> Color(0xFF3B82F6)
+                    !catalogDataState.error.isNullOrBlank() -> Color(0xFFEF4444)
+                    else -> Color(0xFF22C55E)
+                }
+            val targetWarmDataActive =
+                rememberPagerTargetWarmDataActive(
+                    pagerState = pagerState,
+                    activationDistance = CATALOG_PAGER_TARGET_WARM_DATA_DISTANCE,
+                ).value
             MainLoadedPager(
                 state = pagerState,
                 userScrollEnabled = !sliderInteractionActive,
                 animationsEnabled = transitionAnimationsEnabled,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .layerBackdrop(pageChromeBackdrop)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .layerBackdrop(pageChromeBackdrop),
             ) { pageIndex ->
                 val pageTab = tabs.getOrElse(pageIndex) { BaGuideCatalogPageTab.Student }
-                val targetWarmDataActive = !pagerState.isScrollInProgress ||
-                    kotlin.math.abs(pagerState.pagePosition - pagerState.targetPage) <= CatalogPagerTargetWarmDataDistance
-                val renderHeavyContent = pageIndex == pagerState.currentPage ||
-                    pageIndex == pagerState.settledPage ||
-                    (
-                        preloadPolicy.includeTargetPageInHeavyRender &&
-                            targetWarmDataActive &&
-                            pageIndex == pagerState.targetPage
-                        )
+                val renderHeavyContent =
+                    pagerState.shouldRenderStablePageContent(
+                        pageIndex = pageIndex,
+                        includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
+                        targetWarmDataActive = targetWarmDataActive,
+                    )
                 val pageSearchQuery = searchQueries[pageTab.name].orEmpty()
                 key(pageTab.name) {
                     if (!renderHeavyContent) {
                         BaGuideCatalogMusicPlaceholder(
                             label = stringResource(pageTab.labelRes),
-                            topPadding = CatalogMusicContentTopPadding,
-                            bottomPadding = CatalogMusicContentBottomPadding
+                            topPadding = CATALOG_MUSIC_CONTENT_TOP_PADDING,
+                            bottomPadding = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
                         )
                     } else {
                         when {
-                            pageTab.catalogTab != null -> BaGuideCatalogV2ListContent(
-                                tab = pageTab.catalogTab,
-                                catalog = catalogDataState.catalog,
-                                filterSortState = filterSortState,
-                                searchQuery = pageSearchQuery,
-                                loading = catalogDataState.loading,
-                                error = catalogDataState.error,
-                                accent = accent,
-                                innerPadding = PaddingValues(
-                                    top = CatalogMusicContentTopPadding,
-                                    bottom = CatalogMusicContentBottomPadding
-                                ),
-                                nestedScrollConnection = chromeScrollState,
-                                isPageActive = pageIndex == pagerState.settledPage,
-                                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
-                                onOpenGuide = onOpenGuide
-                            )
-                            pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> BaGuideStudentBgmTabContent(
-                                catalog = catalogDataState.catalog,
-                                playbackCoordinator = playbackCoordinator,
-                                playbackState = playbackUiState,
-                                searchQuery = pageSearchQuery,
-                                loading = catalogDataState.loading,
-                                innerPadding = PaddingValues(
-                                    top = CatalogMusicContentTopPadding,
-                                    bottom = CatalogMusicContentBottomPadding
-                                ),
-                                nestedScrollConnection = chromeScrollState,
-                                accent = accent,
-                                isPageActive = pageIndex == pagerState.settledPage,
-                                onSliderInteractionChanged = { sliderInteractionActive = it },
-                                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
-                                onListScrollInProgressChange = {},
-                                onNowPlayingVisibilityChange = {},
-                                showNowPlayingOverlay = false,
-                                onOpenGuide = onOpenGuide
-                            )
-                            pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> BaGuideFavoriteBgmMusicContent(
-                                catalog = catalogDataState.catalog,
-                                playbackCoordinator = playbackCoordinator,
-                                playbackState = playbackUiState,
-                                searchQuery = pageSearchQuery,
-                                accent = accent,
-                                bottomBarScrollConnection = chromeScrollState,
-                                topPadding = CatalogMusicContentTopPadding,
-                                bottomPadding = CatalogMusicContentBottomPadding,
-                                isPageActive = pageIndex == pagerState.settledPage,
-                                onSliderInteractionChanged = { sliderInteractionActive = it },
-                                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
-                                onOpenGuide = onOpenGuide
-                            )
+                            pageTab.catalogTab != null -> {
+                                BaGuideCatalogV2ListContent(
+                                    tab = pageTab.catalogTab,
+                                    catalog = catalogDataState.catalog,
+                                    filterSortState = filterSortState,
+                                    searchQuery = pageSearchQuery,
+                                    loading = catalogDataState.loading,
+                                    error = catalogDataState.error,
+                                    accent = accent,
+                                    innerPadding =
+                                        PaddingValues(
+                                            top = CATALOG_MUSIC_CONTENT_TOP_PADDING,
+                                            bottom = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
+                                        ),
+                                    nestedScrollConnection = chromeScrollState,
+                                    isPageActive = pageIndex == pagerState.settledPage,
+                                    onScrollBoundsChange = chromeScrollState::expandForStaticContent,
+                                    onOpenGuide = onOpenGuide,
+                                )
+                            }
+
+                            pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> {
+                                BaGuideStudentBgmTabContent(
+                                    catalog = catalogDataState.catalog,
+                                    playbackCoordinator = playbackCoordinator,
+                                    playbackState = playbackUiState,
+                                    searchQuery = pageSearchQuery,
+                                    loading = catalogDataState.loading,
+                                    innerPadding =
+                                        PaddingValues(
+                                            top = CATALOG_MUSIC_CONTENT_TOP_PADDING,
+                                            bottom = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
+                                        ),
+                                    nestedScrollConnection = chromeScrollState,
+                                    accent = accent,
+                                    isPageActive = pageIndex == pagerState.settledPage,
+                                    onSliderInteractionChanged = { sliderInteractionActive = it },
+                                    onScrollBoundsChange = chromeScrollState::expandForStaticContent,
+                                    onListScrollInProgressChange = {},
+                                    onNowPlayingVisibilityChange = {},
+                                    showNowPlayingOverlay = false,
+                                    onOpenGuide = onOpenGuide,
+                                )
+                            }
+
+                            pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> {
+                                BaGuideFavoriteBgmMusicContent(
+                                    catalog = catalogDataState.catalog,
+                                    playbackCoordinator = playbackCoordinator,
+                                    playbackState = playbackUiState,
+                                    searchQuery = pageSearchQuery,
+                                    accent = accent,
+                                    bottomBarScrollConnection = chromeScrollState,
+                                    topPadding = CATALOG_MUSIC_CONTENT_TOP_PADDING,
+                                    bottomPadding = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
+                                    isPageActive = pageIndex == pagerState.settledPage,
+                                    onSliderInteractionChanged = { sliderInteractionActive = it },
+                                    onScrollBoundsChange = chromeScrollState::expandForStaticContent,
+                                    onOpenGuide = onOpenGuide,
+                                )
+                            }
                         }
                     }
                 }
@@ -381,28 +418,30 @@ fun BaGuideCatalogPage(
                 onTransfer = { showTransferSheet = true },
                 onRefresh = catalogViewModel::requestRefresh,
                 backdrop = pageChromeBackdrop,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
             )
             BaGuideCatalogTransferSheet(
                 show = showTransferSheet,
                 onDismissRequest = { showTransferSheet = false },
                 mediaSaveCustomEnabled = transferExportAction.saveLocationState.mediaSaveCustomEnabled,
                 mediaSaveFixedTreeUri = transferExportAction.saveLocationState.mediaSaveFixedTreeUri,
-                playbackSettingsState = BaGuideCatalogPlaybackSettingsState(
-                    nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
-                    notificationPermissionGranted = notificationPermissionGranted,
-                    onNativeBgmMediaNotificationChange = { enabled ->
-                        if (enabled && !notificationPermissionGranted) {
-                            onRequestNotificationPermission()
-                        }
-                        nativeBgmMediaNotificationEnabled = enabled
-                        BASettingsStore.saveNativeBgmMediaNotificationEnabled(enabled)
-                        playbackCoordinator.updateNativeMediaNotificationEnabled(enabled)
-                    }
-                ),
+                playbackSettingsState =
+                    BaGuideCatalogPlaybackSettingsState(
+                        nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+                        notificationPermissionGranted = notificationPermissionGranted,
+                        onNativeBgmMediaNotificationChange = { enabled ->
+                            if (enabled && !notificationPermissionGranted) {
+                                onRequestNotificationPermission()
+                            }
+                            nativeBgmMediaNotificationEnabled = enabled
+                            BASettingsStore.saveNativeBgmMediaNotificationEnabled(enabled)
+                            playbackCoordinator.updateNativeMediaNotificationEnabled(enabled)
+                        },
+                    ),
                 onMediaSaveCustomEnabledChange = transferExportAction.saveLocationState.onMediaSaveCustomEnabledChange,
                 onPickMediaSaveLocation = transferExportAction.saveLocationState.onPickMediaSaveLocation,
                 onExportAllFavorites = {
@@ -410,7 +449,7 @@ fun BaGuideCatalogPage(
                     transferExportAction.exportJsonFrom(
                         { buildCatalogAllFavoritesExportJsonAsync(filterSortState.favoriteCatalogEntries) },
                         "keios-ba-favorites.json",
-                        allExportSuccessText
+                        allExportSuccessText,
                     )
                 },
                 onImportAllFavorites = {
@@ -419,15 +458,16 @@ fun BaGuideCatalogPage(
                         arrayOf(
                             "application/json",
                             "text/*",
-                            "*/*"
-                        )
+                            "*/*",
+                        ),
                     )
                 },
                 onExportStudentFavorites = {
                     showTransferSheet = false
                     transferExportAction.exportJsonFrom(
                         { buildCatalogFavoritesExportJsonAsync(filterSortState.favoriteCatalogEntries) },
-                        "keios-ba-student-favorites.json", studentExportSuccessText
+                        "keios-ba-student-favorites.json",
+                        studentExportSuccessText,
                     )
                 },
                 onImportStudentFavorites = {
@@ -436,15 +476,16 @@ fun BaGuideCatalogPage(
                         arrayOf(
                             "application/json",
                             "text/*",
-                            "*/*"
-                        )
+                            "*/*",
+                        ),
                     )
                 },
                 onExportBgmFavorites = {
                     showTransferSheet = false
                     transferExportAction.exportJsonFrom(
                         { buildBgmFavoritesExportJsonAsync() },
-                        "keios-ba-bgm-favorites.json", bgmExportSuccessText
+                        "keios-ba-bgm-favorites.json",
+                        bgmExportSuccessText,
                     )
                 },
                 onImportBgmFavorites = {
@@ -453,8 +494,8 @@ fun BaGuideCatalogPage(
                         arrayOf(
                             "application/json",
                             "text/*",
-                            "*/*"
-                        )
+                            "*/*",
+                        ),
                     )
                 },
                 bgmCacheSummary = bgmCacheState.summary,
@@ -465,39 +506,42 @@ fun BaGuideCatalogPage(
                 onCleanInvalidBgmCache = {
                     showTransferSheet = false
                     bgmCacheState.onCleanInvalidBgmCache()
-                }
+                },
             )
             BaGuideCatalogImportPreviewSheet(
                 state = importPreviewState,
                 onDismissRequest = { importPreviewState = null },
                 onConfirm = {
                     importPreviewState?.let(importActions.confirmFavoritesImport)
-                }
+                },
             )
             Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(196.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                panelBackground.copy(alpha = if (isDark) 0.86f else 0.88f),
-                                panelBackground.copy(alpha = if (isDark) 0.96f else 0.98f)
-                            )
-                        )
-                    )
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(196.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        Color.Transparent,
+                                        panelBackground.copy(alpha = if (isDark) 0.86f else 0.88f),
+                                        panelBackground.copy(alpha = if (isDark) 0.96f else 0.98f),
+                                    ),
+                            ),
+                        ),
             )
         }
         BaGuideBgmFloatingBottomChrome(
             accent = accent,
             scrollState = chromeScrollState,
             dockTabs = chromeTabs,
-            currentTrackTitle = chromePlaybackFavorite
-                ?.studentTitle
-                ?.ifBlank { chromeCurrentTitle }
-                ?: chromeCurrentTitle,
+            currentTrackTitle =
+                chromePlaybackFavorite
+                    ?.studentTitle
+                    ?.ifBlank { chromeCurrentTitle }
+                    ?: chromeCurrentTitle,
             artworkImageUrl = chromeArtworkImageUrl,
             isPlaying = playbackUiState.runtimeState.isPlaying,
             playbackProgress = chromePlaybackProgress,
@@ -538,7 +582,8 @@ fun BaGuideCatalogPage(
             onSelectedDockKeyChange = { keyName ->
                 searchInputActive = false
                 searchVisible = false
-                tabs.indexOfFirst { it.name == keyName }
+                tabs
+                    .indexOfFirst { it.name == keyName }
                     .takeIf { it >= 0 }
                     ?.let { index ->
                         selectedTabIndex = index
@@ -547,9 +592,10 @@ fun BaGuideCatalogPage(
                                 pagerState.animateToPage(
                                     target = index,
                                     animationsEnabled = true,
-                                    durationMillis = catalogPagerSwitchDurationMillis(
-                                        kotlin.math.abs(index - pagerState.settledPage)
-                                    )
+                                    durationMillis =
+                                        catalogPagerSwitchDurationMillis(
+                                            kotlin.math.abs(index - pagerState.settledPage),
+                                        ),
                                 )
                             } else {
                                 pagerState.scrollToPage(index)
@@ -570,13 +616,14 @@ fun BaGuideCatalogPage(
                 }
             },
             backdrop = bottomChromeBackdrop,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(
-                    start = 12.dp,
-                    end = 12.dp,
-                    bottom = bottomChromeTargetPadding + 12.dp
-                )
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = 12.dp,
+                        end = 12.dp,
+                        bottom = bottomChromeTargetPadding + 12.dp,
+                    ),
         )
     }
 }
@@ -599,22 +646,20 @@ private fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
         studentIcon,
         npcIcon,
         musicIcon,
-        playbackIcon
+        playbackIcon,
     ) {
         listOf(
             BaGuideBgmDockTab(BaGuideCatalogPageTab.Student.name, studentIcon, studentLabel),
             BaGuideBgmDockTab(BaGuideCatalogPageTab.NpcSatellite.name, npcIcon, npcLabel),
             BaGuideBgmDockTab(BaGuideCatalogPageTab.StudentBgm.name, musicIcon, studentBgmLabel),
-            BaGuideBgmDockTab(BaGuideCatalogPageTab.Bgm.name, playbackIcon, bgmLabel)
+            BaGuideBgmDockTab(BaGuideCatalogPageTab.Bgm.name, playbackIcon, bgmLabel),
         )
     }
 }
 
-private fun catalogPagerSwitchDurationMillis(distance: Int): Int {
-    return (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
-}
+private fun catalogPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
 
-private const val CatalogPagerTargetWarmDataDistance = 0.75f
+private const val CATALOG_PAGER_TARGET_WARM_DATA_DISTANCE = 0.75f
 
-private val CatalogMusicContentTopPadding = 136.dp
-private val CatalogMusicContentBottomPadding = 224.dp
+private val CATALOG_MUSIC_CONTENT_TOP_PADDING = 136.dp
+private val CATALOG_MUSIC_CONTENT_BOTTOM_PADDING = 224.dp

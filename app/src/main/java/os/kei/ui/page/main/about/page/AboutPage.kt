@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.about.page
 
 import android.content.pm.PackageInfo
@@ -56,6 +58,7 @@ import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
+import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -82,28 +85,30 @@ fun AboutPage(
     miuixMainNavigationEnabled: Boolean = false,
     contentBottomPadding: Dp = 72.dp,
     scrollToTopSignal: Int = 0,
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val palette = rememberAboutPageColorPalette(shizukuStatus = shizukuStatus)
     val viewModel: AboutPageViewModel = viewModel()
     val detailsState by viewModel.detailsState.collectAsStateWithLifecycle()
 
-    val categories = remember {
-        listOf(
-            AboutCategory.Overview,
-            AboutCategory.System,
-            AboutCategory.Tech,
-            AboutCategory.Lab,
-        )
-    }
+    val categories =
+        remember {
+            listOf(
+                AboutCategory.Overview,
+                AboutCategory.System,
+                AboutCategory.Tech,
+                AboutCategory.Lab,
+            )
+        }
     var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val pagerState = rememberMainLoadedPagerState(
-        initialPage = selectedCategoryIndex,
-        pageCount = categories.size,
-    )
+    val pagerState =
+        rememberMainLoadedPagerState(
+            initialPage = selectedCategoryIndex,
+            pageCount = categories.size,
+        )
     val overviewListState = rememberLazyListState()
     val systemListState = rememberLazyListState()
     val techListState = rememberLazyListState()
@@ -141,7 +146,7 @@ fun AboutPage(
         viewModel.refreshDetails(
             context = context,
             notificationPermissionGranted = notificationPermissionGranted,
-            shizukuApiUtils = shizukuApiUtils
+            shizukuApiUtils = shizukuApiUtils,
         )
     }
     val permissionEntries = detailsState.permissionEntries
@@ -151,57 +156,64 @@ fun AboutPage(
     val openLinkFailed = stringResource(R.string.common_open_link_failed)
     val aboutSearchPlaceholder = stringResource(R.string.about_search_placeholder)
     val searchContentDescription = stringResource(R.string.about_search_placeholder)
-    val searchTargets = rememberAboutSearchTargets(
-        appLabel = appLabel,
-        shizukuStatus = shizukuStatus,
-        permissionEntries = permissionEntries,
-        componentEntries = componentEntries,
-    )
+    val searchTargets =
+        rememberAboutSearchTargets(
+            appLabel = appLabel,
+            shizukuStatus = shizukuStatus,
+            permissionEntries = permissionEntries,
+            componentEntries = componentEntries,
+        )
     val trimmedSearchQuery = searchQuery.trim()
     val searchActive = trimmedSearchQuery.isNotEmpty()
     val matchingSearchTargets = searchTargets.filter { it.matches(trimmedSearchQuery) }
     val matchingSearchCards = matchingSearchTargets.map { it.card }.toSet()
     val selectAboutCategory: (Int) -> Unit = { index ->
         val target = index.coerceIn(0, categories.lastIndex)
-        val stablePageIndex = if (pagerState.isScrollInProgress) {
-            pagerState.targetPage
-        } else {
-            pagerState.settledPage
-        }
+        val stablePageIndex =
+            if (pagerState.isScrollInProgress) {
+                pagerState.targetPage
+            } else {
+                pagerState.settledPage
+            }
         if (target != stablePageIndex) {
             selectedCategoryIndex = target
             tabJumpJob?.cancel()
-            tabJumpJob = scope.launch {
-                val distance = abs(target - stablePageIndex)
-                if (distance > 1) {
-                    farJumpAlpha.snapTo(1f)
-                    farJumpAlpha.animateTo(
-                        targetValue = 0.92f,
-                        animationSpec = tween(
-                            durationMillis = resolvedMotionDuration(
-                                AppMotionTokens.farJumpDimMs,
-                                transitionAnimationsEnabled,
-                            ),
-                        ),
+            tabJumpJob =
+                scope.launch {
+                    val distance = abs(target - stablePageIndex)
+                    if (distance > 1) {
+                        farJumpAlpha.snapTo(1f)
+                        farJumpAlpha.animateTo(
+                            targetValue = 0.92f,
+                            animationSpec =
+                                tween(
+                                    durationMillis =
+                                        resolvedMotionDuration(
+                                            AppMotionTokens.farJumpDimMs,
+                                            transitionAnimationsEnabled,
+                                        ),
+                                ),
+                        )
+                    }
+                    pagerState.animateToPage(
+                        target = target,
+                        animationsEnabled = transitionAnimationsEnabled,
+                        durationMillis = aboutPagerSwitchDurationMillis(distance),
                     )
+                    if (distance > 1) {
+                        farJumpAlpha.animateTo(
+                            targetValue = 1f,
+                            animationSpec =
+                                tween(
+                                    durationMillis =
+                                        resolvedMotionDuration(
+                                            AppMotionTokens.farJumpRestoreMs,
+                                            transitionAnimationsEnabled,
+                                        ),
+                                ),
+                        )
+                    }
                 }
-                pagerState.animateToPage(
-                    target = target,
-                    animationsEnabled = transitionAnimationsEnabled,
-                    durationMillis = aboutPagerSwitchDurationMillis(distance),
-                )
-                if (distance > 1) {
-                    farJumpAlpha.animateTo(
-                        targetValue = 1f,
-                        animationSpec = tween(
-                            durationMillis = resolvedMotionDuration(
-                                AppMotionTokens.farJumpRestoreMs,
-                                transitionAnimationsEnabled,
-                            ),
-                        ),
-                    )
-                }
-            }
         }
     }
 
@@ -215,163 +227,195 @@ fun AboutPage(
         }
     }
 
-    fun cardVisible(card: AboutSearchCard): Boolean {
-        return !searchActive || card in matchingSearchCards
-    }
+    fun cardVisible(card: AboutSearchCard): Boolean = !searchActive || card in matchingSearchCards
 
     fun LazyListScope.aboutCardItem(card: AboutSearchCard) {
         item(key = "about_card_${card.name}") {
             when (card) {
-                AboutSearchCard.App -> AboutAppCardSection(
-                    appLabel = appLabel,
-                    packageInfo = packageInfo,
-                    cardColor = palette.infoCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.appExpanded,
-                    onExpandedChange = { expansionState.appExpanded = it }
-                )
+                AboutSearchCard.App -> {
+                    AboutAppCardSection(
+                        appLabel = appLabel,
+                        packageInfo = packageInfo,
+                        cardColor = palette.infoCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.appExpanded,
+                        onExpandedChange = { expansionState.appExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.GitHub -> AboutGitHubCardSection(
-                    cardColor = palette.githubCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.githubExpanded,
-                    onExpandedChange = { expansionState.githubExpanded = it },
-                    onOpenProjectUrl = { url ->
-                        if (!openExternalUrl(context, url)) {
-                            Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
+                AboutSearchCard.GitHub -> {
+                    AboutGitHubCardSection(
+                        cardColor = palette.githubCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.githubExpanded,
+                        onExpandedChange = { expansionState.githubExpanded = it },
+                        onOpenProjectUrl = { url ->
+                            if (!openExternalUrl(context, url)) {
+                                Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
+                }
 
-                AboutSearchCard.Runtime -> AboutRuntimeStatusCardSection(
-                    cardColor = palette.runtimeCardColor,
-                    accent = palette.accent,
-                    shizukuReady = shizukuReady,
-                    readyColor = palette.readyColor,
-                    notReadyColor = palette.notReadyColor,
-                    subtitleColor = palette.subtitleColor,
-                    notificationPermissionGranted = notificationPermissionGranted,
-                    shizukuDetailMap = shizukuDetailMap,
-                    permissionCount = permissionEntries.size,
-                    componentCount = componentEntries.size,
-                    expanded = if (searchActive) true else expansionState.runtimeExpanded,
-                    onExpandedChange = { expansionState.runtimeExpanded = it },
-                    onCheckShizuku = onCheckShizuku
-                )
+                AboutSearchCard.Runtime -> {
+                    AboutRuntimeStatusCardSection(
+                        cardColor = palette.runtimeCardColor,
+                        accent = palette.accent,
+                        shizukuReady = shizukuReady,
+                        readyColor = palette.readyColor,
+                        notReadyColor = palette.notReadyColor,
+                        subtitleColor = palette.subtitleColor,
+                        notificationPermissionGranted = notificationPermissionGranted,
+                        shizukuDetailMap = shizukuDetailMap,
+                        permissionCount = permissionEntries.size,
+                        componentCount = componentEntries.size,
+                        expanded = if (searchActive) true else expansionState.runtimeExpanded,
+                        onExpandedChange = { expansionState.runtimeExpanded = it },
+                        onCheckShizuku = onCheckShizuku,
+                    )
+                }
 
-                AboutSearchCard.Network -> AboutNetworkServiceCardSection(
-                    cardColor = palette.networkServiceCardColor,
-                    titleColor = palette.readyColor,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.networkExpanded,
-                    onExpandedChange = { expansionState.networkExpanded = it }
-                )
+                AboutSearchCard.Network -> {
+                    AboutNetworkServiceCardSection(
+                        cardColor = palette.networkServiceCardColor,
+                        titleColor = palette.readyColor,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.networkExpanded,
+                        onExpandedChange = { expansionState.networkExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.Media -> AboutMediaStorageCardSection(
-                    cardColor = palette.mediaStorageCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.mediaExpanded,
-                    onExpandedChange = { expansionState.mediaExpanded = it }
-                )
+                AboutSearchCard.Media -> {
+                    AboutMediaStorageCardSection(
+                        cardColor = palette.mediaStorageCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.mediaExpanded,
+                        onExpandedChange = { expansionState.mediaExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.Permission -> AboutPermissionCardSection(
-                    cardColor = palette.githubCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    readyColor = palette.readyColor,
-                    notReadyColor = palette.notReadyColor,
-                    entries = permissionEntries,
-                    expanded = if (searchActive) true else expansionState.permissionExpanded,
-                    onExpandedChange = { expansionState.permissionExpanded = it }
-                )
+                AboutSearchCard.Permission -> {
+                    AboutPermissionCardSection(
+                        cardColor = palette.githubCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        readyColor = palette.readyColor,
+                        notReadyColor = palette.notReadyColor,
+                        entries = permissionEntries,
+                        expanded = if (searchActive) true else expansionState.permissionExpanded,
+                        onExpandedChange = { expansionState.permissionExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.Component -> AboutComponentCardSection(
-                    cardColor = Color(0x2234D399),
-                    titleColor = palette.readyColor,
-                    subtitleColor = palette.subtitleColor,
-                    accent = palette.accent,
-                    entries = componentEntries,
-                    expanded = if (searchActive) true else expansionState.componentExpanded,
-                    onExpandedChange = { expansionState.componentExpanded = it }
-                )
+                AboutSearchCard.Component -> {
+                    AboutComponentCardSection(
+                        cardColor = Color(0x2234D399),
+                        titleColor = palette.readyColor,
+                        subtitleColor = palette.subtitleColor,
+                        accent = palette.accent,
+                        entries = componentEntries,
+                        expanded = if (searchActive) true else expansionState.componentExpanded,
+                        onExpandedChange = { expansionState.componentExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.Build -> AboutBuildSdkCardSection(
-                    cardColor = palette.buildCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.buildExpanded,
-                    onExpandedChange = { expansionState.buildExpanded = it }
-                )
+                AboutSearchCard.Build -> {
+                    AboutBuildSdkCardSection(
+                        cardColor = palette.buildCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.buildExpanded,
+                        onExpandedChange = { expansionState.buildExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.Ui -> AboutUiFrameworkCardSection(
-                    cardColor = palette.uiFrameworkCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.uiFrameworkExpanded,
-                    onExpandedChange = { expansionState.uiFrameworkExpanded = it }
-                )
+                AboutSearchCard.Ui -> {
+                    AboutUiFrameworkCardSection(
+                        cardColor = palette.uiFrameworkCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.uiFrameworkExpanded,
+                        onExpandedChange = { expansionState.uiFrameworkExpanded = it },
+                    )
+                }
 
-                AboutSearchCard.ProjectLicense -> AboutProjectLicenseCardSection(
-                    cardColor = palette.projectLicenseCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.projectLicenseExpanded,
-                    onExpandedChange = { expansionState.projectLicenseExpanded = it },
-                    onOpenLicenseUrl = { url ->
-                        if (!openExternalUrl(context, url)) {
-                            Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
+                AboutSearchCard.ProjectLicense -> {
+                    AboutProjectLicenseCardSection(
+                        cardColor = palette.projectLicenseCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.projectLicenseExpanded,
+                        onExpandedChange = { expansionState.projectLicenseExpanded = it },
+                        onOpenLicenseUrl = { url ->
+                            if (!openExternalUrl(context, url)) {
+                                Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
+                }
 
-                AboutSearchCard.License -> AboutLicenseCardSection(
-                    cardColor = palette.licenseCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.licenseExpanded,
-                    onExpandedChange = { expansionState.licenseExpanded = it },
-                    onOpenSourceUrl = { url ->
-                        if (!openExternalUrl(context, url)) {
-                            Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
+                AboutSearchCard.License -> {
+                    AboutLicenseCardSection(
+                        cardColor = palette.licenseCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.licenseExpanded,
+                        onExpandedChange = { expansionState.licenseExpanded = it },
+                        onOpenSourceUrl = { url ->
+                            if (!openExternalUrl(context, url)) {
+                                Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
+                }
 
-                AboutSearchCard.Lab -> AboutComponentLabCardSection(
-                    cardColor = palette.componentLabCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = if (searchActive) true else expansionState.componentLabExpanded,
-                    onExpandedChange = { expansionState.componentLabExpanded = it },
-                    onOpenComponentLab = { DebugComponentLabActivity.launch(context) }
-                )
+                AboutSearchCard.Lab -> {
+                    AboutComponentLabCardSection(
+                        cardColor = palette.componentLabCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.componentLabExpanded,
+                        onExpandedChange = { expansionState.componentLabExpanded = it },
+                        onOpenComponentLab = { DebugComponentLabActivity.launch(context) },
+                    )
+                }
             }
         }
     }
 
     fun LazyListScope.aboutCategoryCards(category: AboutCategory) {
-        val cards = when (category) {
-            AboutCategory.Overview -> listOf(AboutSearchCard.App, AboutSearchCard.GitHub)
-            AboutCategory.System -> listOf(
-                AboutSearchCard.Runtime,
-                AboutSearchCard.Network,
-                AboutSearchCard.Media,
-                AboutSearchCard.Permission,
-                AboutSearchCard.Component,
-            )
+        val cards =
+            when (category) {
+                AboutCategory.Overview -> {
+                    listOf(AboutSearchCard.App, AboutSearchCard.GitHub)
+                }
 
-            AboutCategory.Tech -> listOf(
-                AboutSearchCard.Build,
-                AboutSearchCard.Ui,
-                AboutSearchCard.ProjectLicense,
-                AboutSearchCard.License,
-            )
+                AboutCategory.System -> {
+                    listOf(
+                        AboutSearchCard.Runtime,
+                        AboutSearchCard.Network,
+                        AboutSearchCard.Media,
+                        AboutSearchCard.Permission,
+                        AboutSearchCard.Component,
+                    )
+                }
 
-            AboutCategory.Lab -> listOf(AboutSearchCard.Lab)
-        }
+                AboutCategory.Tech -> {
+                    listOf(
+                        AboutSearchCard.Build,
+                        AboutSearchCard.Ui,
+                        AboutSearchCard.ProjectLicense,
+                        AboutSearchCard.License,
+                    )
+                }
+
+                AboutCategory.Lab -> {
+                    listOf(AboutSearchCard.Lab)
+                }
+            }
         cards.filter(::cardVisible).forEach(::aboutCardItem)
     }
 
@@ -387,7 +431,7 @@ fun AboutPage(
                     icon = appLucideBackIcon(),
                     contentDescription = stringResource(R.string.common_close),
                     onClick = onBack,
-                    backdrop = topBarBackdrop
+                    backdrop = topBarBackdrop,
                 )
             }
         },
@@ -396,14 +440,15 @@ fun AboutPage(
                 navigationBarBottom = navigationBarBottom,
                 categories = categories,
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
-                selectedPagePosition = if (!searchExpanded && pagerState.isScrollInProgress) {
-                    pagerState.pagePosition.coerceIn(
-                        0f,
-                        categories.lastIndex.coerceAtLeast(0).toFloat(),
-                    )
-                } else {
-                    null
-                },
+                selectedPagePosition =
+                    if (!searchExpanded && pagerState.isScrollInProgress) {
+                        pagerState.pagePosition.coerceIn(
+                            0f,
+                            categories.lastIndex.coerceAtLeast(0).toFloat(),
+                        )
+                    } else {
+                        null
+                    },
                 selectedPageProvider = { pagerState.targetPage },
                 searchExpanded = searchExpanded,
                 searchQuery = searchQuery,
@@ -417,18 +462,19 @@ fun AboutPage(
                 miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                 onSelectCategory = selectAboutCategory,
             )
-        }
+        },
     ) { innerPadding ->
         if (searchActive) {
             AppPageLazyColumn(
                 innerPadding = innerPadding,
                 state = searchListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .graphicsLayer { alpha = 1f }
-                    .layerBackdrop(topBarBackdrop)
-                    .layerBackdrop(bottomBarBackdrop),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .graphicsLayer { alpha = 1f }
+                        .layerBackdrop(topBarBackdrop)
+                        .layerBackdrop(bottomBarBackdrop),
                 bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
                 sectionSpacing = 14.dp,
             ) {
@@ -439,9 +485,10 @@ fun AboutPage(
                             color = MiuixTheme.colorScheme.onBackgroundVariant,
                             fontSize = AppTypographyTokens.Body.fontSize,
                             lineHeight = AppTypographyTokens.Body.lineHeight,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = AppChromeTokens.pageHorizontalPadding),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = AppChromeTokens.pageHorizontalPadding),
                         )
                     }
                 } else {
@@ -455,25 +502,24 @@ fun AboutPage(
                 state = pagerState,
                 userScrollEnabled = !searchExpanded,
                 animationsEnabled = transitionAnimationsEnabled,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { alpha = farJumpAlpha.value }
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .layerBackdrop(topBarBackdrop)
-                    .layerBackdrop(bottomBarBackdrop),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = farJumpAlpha.value }
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .layerBackdrop(topBarBackdrop)
+                        .layerBackdrop(bottomBarBackdrop),
             ) { pageIndex ->
-                val renderHeavyContent = pageIndex == pagerState.currentPage ||
-                        pageIndex == pagerState.settledPage ||
-                        pageIndex == pagerState.targetPage ||
-                        abs(pageIndex - pagerState.pagePosition) <= 1.05f
+                val renderHeavyContent = pagerState.shouldRenderStablePageContent(pageIndex)
                 if (renderHeavyContent) {
                     val category = categories[pageIndex]
-                    val pageListState = when (category) {
-                        AboutCategory.Overview -> overviewListState
-                        AboutCategory.System -> systemListState
-                        AboutCategory.Tech -> techListState
-                        AboutCategory.Lab -> labListState
-                    }
+                    val pageListState =
+                        when (category) {
+                            AboutCategory.Overview -> overviewListState
+                            AboutCategory.System -> systemListState
+                            AboutCategory.Tech -> techListState
+                            AboutCategory.Lab -> labListState
+                        }
                     AppPageLazyColumn(
                         innerPadding = innerPadding,
                         state = pageListState,
@@ -489,6 +535,4 @@ fun AboutPage(
     }
 }
 
-private fun aboutPagerSwitchDurationMillis(distance: Int): Int {
-    return (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
-}
+private fun aboutPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)

@@ -67,8 +67,8 @@ The GitHub page tracks APK updates from GitHub projects and subscription project
 - Deep repository profiles, health scoring, archived/fork signals, release-note parsing,
   release-note translation, precise APK version modes, and runtime cache freshness checks.
 - Subscription-project cards with remote health, remote stable/prerelease releases, Scene-style
-  index release notes, installed-app labels, and install actions when the tracked package is
-  missing.
+  index release notes, installed-app labels, release-note actions, and install actions when the
+  tracked package is missing.
 - Share-import flow for repository, release, tag, and direct APK links with transparent window
   handling, notification-first/sheet-first routing, external installer handoff, and app-managed
   Shizuku delivery.
@@ -112,11 +112,16 @@ The BA page acts as a Blue Archive office dashboard:
 The student guide expands the BA workflow into catalog and media browsing:
 
 - Catalog tabs for students and related entries, with search, sort, compact localized labels, sync status, and local caching.
-- Student detail pages with profile, strategy/simulation sections, gallery media, localized voice-language labels, audio/video content, and source sharing.
+- Student and related-entry detail pages with profile, strategy/simulation sections, NPC/satellite
+  label grouping, gallery media, localized voice-language labels, audio/video content, and source
+  sharing.
 - Gift preference parsing with image and attitude markers.
 - BGM favorites library with playback queue, liquid bottom dock, mini player, batch cache, retry,
   import/export, and jump back into the student guide.
 - Media cache controls and export flows, including archive-style saves for expression/media packs.
+- NPC and satellite entries adapt older GameKee pages with broader gallery parsing, related-role
+  classification, leaner information rows, and compatibility for pages with fewer implemented-student
+  fields.
 
 ## Settings And Compatibility
 
@@ -126,6 +131,10 @@ Settings collect the runtime controls in one place:
   language shortcut, and Home HDR highlight.
 - v2 liquid-glass ActionBar, title cards, search fields, floating docks, bottom bar, bottom-bar
   full-effect policy during scrolling, and scoped card press feedback.
+- Toggleable main navigation style between the existing bottom bar / pager chain and the MIUIX
+  iOS-like bottom bar / pager chain.
+- Icon design selector with Apple Designs as the refreshed default and Android Designs as the legacy
+  option.
 - Custom non-Home background image and opacity controls.
 - Notification permission, battery optimization, OEM autostart, app-list access, and Shizuku status.
 - Super Island notification style, HyperOS compatibility bypass, and restore-delay tuning.

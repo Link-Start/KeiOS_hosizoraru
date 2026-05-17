@@ -50,6 +50,7 @@ import os.kei.ui.page.main.about.section.AboutMediaStorageCardSection
 import os.kei.ui.page.main.about.section.AboutNetworkServiceCardSection
 import os.kei.ui.page.main.about.section.AboutPermissionCardSection
 import os.kei.ui.page.main.about.section.AboutProjectLicenseCardSection
+import os.kei.ui.page.main.about.section.AboutReleaseCardSection
 import os.kei.ui.page.main.about.section.AboutRuntimeStatusCardSection
 import os.kei.ui.page.main.about.section.AboutUiFrameworkCardSection
 import os.kei.ui.page.main.about.state.rememberAboutPageColorPalette
@@ -259,6 +260,16 @@ fun AboutPage(
                     )
                 }
 
+                AboutSearchCard.Release -> {
+                    AboutReleaseCardSection(
+                        cardColor = palette.releaseCardColor,
+                        accent = palette.accent,
+                        subtitleColor = palette.subtitleColor,
+                        expanded = if (searchActive) true else expansionState.releaseExpanded,
+                        onExpandedChange = { expansionState.releaseExpanded = it },
+                    )
+                }
+
                 AboutSearchCard.Runtime -> {
                     AboutRuntimeStatusCardSection(
                         cardColor = palette.runtimeCardColor,
@@ -390,7 +401,7 @@ fun AboutPage(
         val cards =
             when (category) {
                 AboutCategory.Overview -> {
-                    listOf(AboutSearchCard.App, AboutSearchCard.GitHub)
+                    listOf(AboutSearchCard.App, AboutSearchCard.Release, AboutSearchCard.GitHub)
                 }
 
                 AboutCategory.System -> {

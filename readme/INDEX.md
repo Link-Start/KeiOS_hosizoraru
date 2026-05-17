@@ -14,9 +14,9 @@
 
 ## Map
 
-- `../README.md`: public project overview, latest stable tag, post-v1.5.0 HEAD highlights,
+- `../README.md`: public project overview, latest stable tag, v1.6.0 highlights,
   install links, and quick feature summary.
-- `CN.md`: Chinese public project overview, latest stable tag, post-v1.5.0 HEAD highlights,
+- `CN.md`: Chinese public project overview, latest stable tag, v1.6.0 highlights,
   install links, and quick feature summary.
 - `FEATURES.md` / `FEATURES_CN.md`: fuller feature tour for Home, OS, MCP, GitHub
   tracking/subscription projects/discovery/Star import, Blue Archive, Student Guide, settings, and

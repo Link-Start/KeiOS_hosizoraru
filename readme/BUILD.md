@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.5.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.5.0).
-- `master` currently contains post-v1.5.0 development work for subscription-project tracking, MCP
-  productization, and Home/GitHub UX updates.
+  is [KeiOS v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0).
+- `master` currently tracks v1.6.0 release work for subscription-project tracking, MCP
+  productization, BA guide parsing, MIUIX navigation mode, and release hardening.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 

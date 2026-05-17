@@ -28,6 +28,7 @@ import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.about.section.AboutAppCardSection
+import os.kei.ui.page.main.about.section.AboutReleaseCardSection
 import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
 import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.importer.StarImportApkVerificationUiState
@@ -81,10 +82,9 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @Config(
     application = AppDesignSystemScreenshotTestApp::class,
     sdk = [35],
-    qualifiers = "w411dp-h891dp-xxhdpi"
+    qualifiers = "w411dp-h891dp-xxhdpi",
 )
 class AppDesignSystemScreenshotTest {
-
     private fun currentPackageInfo(): PackageInfo? {
         val context = ApplicationProvider.getApplicationContext<Application>()
         return runCatching {
@@ -98,9 +98,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         AppOverviewCard(
                             title = "MCP Logs",
@@ -110,9 +111,9 @@ class AppDesignSystemScreenshotTest {
                             headerEndActions = {
                                 StatusPill(
                                     label = "已激活",
-                                    color = Color(0xFF22C55E)
+                                    color = Color(0xFF22C55E),
                                 )
-                            }
+                            },
                         ) {
                             AppSupportingBlock(text = "卡片头部、状态胶囊和正文节奏会在这里一起校验。")
                         }
@@ -126,16 +127,17 @@ class AppDesignSystemScreenshotTest {
     @Config(
         application = AppDesignSystemScreenshotTestApp::class,
         sdk = [35],
-        qualifiers = "w411dp-h891dp-xxhdpi +night"
+        qualifiers = "w411dp-h891dp-xxhdpi +night",
     )
     fun appOverviewCardDark() {
         captureRoboImage(filePath = "src/test/screenshots/design-system/app_overview_card_dark.png") {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFF111827))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFF111827))
+                                .padding(16.dp),
                     ) {
                         AppOverviewCard(
                             title = "GitHub 项目追踪",
@@ -147,32 +149,32 @@ class AppDesignSystemScreenshotTest {
                             headerEndActions = {
                                 StatusPill(
                                     label = "3m 前",
-                                    color = Color(0xFF60A5FA)
+                                    color = Color(0xFF60A5FA),
                                 )
                                 StatusPill(
                                     label = "已检查",
-                                    color = Color(0xFF4ADE80)
+                                    color = Color(0xFF4ADE80),
                                 )
-                            }
+                            },
                         ) {
                             AppInfoListBody {
                                 AppInfoRow(
                                     label = "追踪项目",
                                     value = "18",
                                     labelColor = Color(0xFFCBD5E1),
-                                    valueColor = Color.White
+                                    valueColor = Color.White,
                                 )
                                 AppInfoRow(
                                     label = "可更新",
                                     value = "4",
                                     labelColor = Color(0xFFCBD5E1),
-                                    valueColor = Color(0xFF60A5FA)
+                                    valueColor = Color(0xFF60A5FA),
                                 )
                                 AppInfoRow(
                                     label = "预发行",
                                     value = "2",
                                     labelColor = Color(0xFFCBD5E1),
-                                    valueColor = AppStatusColors.Cached
+                                    valueColor = AppStatusColors.Cached,
                                 )
                             }
                         }
@@ -188,9 +190,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         AppOverviewCard(
                             title = "列表骨架",
@@ -200,9 +203,9 @@ class AppDesignSystemScreenshotTest {
                             headerEndActions = {
                                 StatusPill(
                                     label = "3 项",
-                                    color = Color(0xFF2563EB)
+                                    color = Color(0xFF2563EB),
                                 )
-                            }
+                            },
                         ) {
                             AppInfoListBody {
                                 AppInfoRow(label = "当前策略", value = "统一正文骨架")
@@ -222,14 +225,15 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         SettingsGroupCard(
                             header = "视觉样式",
                             title = "操作与反馈",
-                            containerColor = Color(0x223B82F6)
+                            containerColor = Color(0x223B82F6),
                         ) {
                             SettingsToggleItem(
                                 title = "ActionBar 分层样式",
@@ -237,7 +241,7 @@ class AppDesignSystemScreenshotTest {
                                 checked = true,
                                 onCheckedChange = {},
                                 infoKey = "作用范围",
-                                infoValue = "主页面与具备 action bar 的子页面"
+                                infoValue = "主页面与具备 action bar 的子页面",
                             )
                             SettingsToggleItem(
                                 title = "复制能力扩展",
@@ -245,7 +249,7 @@ class AppDesignSystemScreenshotTest {
                                 checked = false,
                                 onCheckedChange = {},
                                 infoKey = "说明",
-                                infoValue = "关闭时保留轻量长按复制，开启后支持完整选择拖动。"
+                                infoValue = "关闭时保留轻量长按复制，开启后支持完整选择拖动。",
                             )
                         }
                     }
@@ -260,28 +264,30 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         BaGuideCatalogEntryCard(
-                            entry = BaGuideCatalogEntry(
-                                entryId = 1,
-                                pid = 49443,
-                                contentId = 46680L,
-                                name = "星野（临战）",
-                                alias = "hoshino battle",
-                                aliasDisplay = "别名：星野 / Hoshino / 对策委员会",
-                                iconUrl = "",
-                                type = 0,
-                                order = 1,
-                                createdAtSec = 0L,
-                                detailUrl = "https://www.gamekee.com/ba/tj/46680.html",
-                                tab = BaGuideCatalogTab.Student
-                            ),
+                            entry =
+                                BaGuideCatalogEntry(
+                                    entryId = 1,
+                                    pid = 49443,
+                                    contentId = 46680L,
+                                    name = "星野（临战）",
+                                    alias = "hoshino battle",
+                                    aliasDisplay = "别名：星野 / Hoshino / 对策委员会",
+                                    iconUrl = "",
+                                    type = 0,
+                                    order = 1,
+                                    createdAtSec = 0L,
+                                    detailUrl = "https://www.gamekee.com/ba/tj/46680.html",
+                                    tab = BaGuideCatalogTab.Student,
+                                ),
                             isFavorite = true,
                             onOpenGuide = {},
-                            onToggleFavorite = {}
+                            onToggleFavorite = {},
                         )
                     }
                 }
@@ -295,9 +301,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         AboutAppCardSection(
                             appLabel = "KeiOS",
@@ -306,7 +313,7 @@ class AppDesignSystemScreenshotTest {
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                             expanded = true,
-                            onExpandedChange = {}
+                            onExpandedChange = {},
                         )
                     }
                 }
@@ -320,9 +327,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         AboutAppCardSection(
                             appLabel = "KeiOS",
@@ -331,7 +339,31 @@ class AppDesignSystemScreenshotTest {
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                             expanded = false,
-                            onExpandedChange = {}
+                            onExpandedChange = {},
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun aboutReleaseCardLight() {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/about_release_card_light.png") {
+            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
+                    ) {
+                        AboutReleaseCardSection(
+                            cardColor = Color(0x2222C55E),
+                            accent = MiuixTheme.colorScheme.primary,
+                            subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                            expanded = true,
+                            onExpandedChange = {},
                         )
                     }
                 }
@@ -345,9 +377,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         GitHubTrackedItemAssetRow(
                             asset = GitHubEnhancedInfoFixture.releaseAsset,
@@ -364,7 +397,7 @@ class AppDesignSystemScreenshotTest {
                             context = ApplicationProvider.getApplicationContext(),
                             onOpenApkInfo = {},
                             onOpenApkInDownloader = {},
-                            onShareApkLink = {}
+                            onShareApkLink = {},
                         )
                     }
                 }
@@ -378,24 +411,25 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Column(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         VersionValueRow(
                             label = "健康评分",
                             value = "88",
                             valueColor = Color(0xFF22C55E),
                             emphasized = true,
-                            onClick = {}
+                            onClick = {},
                         )
                         AppSupportingBlock(
                             text = "Release Notes\n${GitHubEnhancedInfoFixture.releaseBundle.releaseName}",
                             accentColor = Color(0xFF0EA5E9),
                             maxLines = 3,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            onClick = {}
+                            onClick = {},
                         )
                     }
                 }
@@ -409,24 +443,27 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         StarImportListControlCard(
                             filterInput = "installer",
                             viewFilter = StarImportViewFilter.VerifiedApk,
-                            qualityFilters = setOf(
-                                GitHubStarImportQuality.LikelyAndroid,
-                                GitHubStarImportQuality.NeedsReview
-                            ),
+                            qualityFilters =
+                                setOf(
+                                    GitHubStarImportQuality.LikelyAndroid,
+                                    GitHubStarImportQuality.NeedsReview,
+                                ),
                             conflictStrategy = StarImportConflictStrategy.NewOnly,
-                            qualityFilterCounts = mapOf(
-                                GitHubStarImportQuality.LikelyAndroid to 8,
-                                GitHubStarImportQuality.NeedsReview to 4,
-                                GitHubStarImportQuality.OtherPlatform to 2,
-                                GitHubStarImportQuality.ArchivedOrFork to 1
-                            ),
+                            qualityFilterCounts =
+                                mapOf(
+                                    GitHubStarImportQuality.LikelyAndroid to 8,
+                                    GitHubStarImportQuality.NeedsReview to 4,
+                                    GitHubStarImportQuality.OtherPlatform to 2,
+                                    GitHubStarImportQuality.ArchivedOrFork to 1,
+                                ),
                             filteredCount = 6,
                             visibleImportableCount = 5,
                             visibleRecommendedCount = 4,
@@ -448,7 +485,7 @@ class AppDesignSystemScreenshotTest {
                             onSelectVerifiedVisible = {},
                             onSelectVisible = {},
                             onClearSelection = {},
-                            onImport = {}
+                            onImport = {},
                         )
                     }
                 }
@@ -458,52 +495,58 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun githubStarImportCandidateCardLight() {
-        val repository = GitHubRepositoryCandidate(
-            owner = "Miuzarte",
-            repo = "ScrcpyForAndroid",
-            repoUrl = "https://github.com/Miuzarte/ScrcpyForAndroid",
-            description = "Android scrcpy client with APK releases",
-            language = "Kotlin",
-            starCount = 1280,
-            fork = true,
-            sourceType = GitHubRepositoryDiscoverySourceType.StarList,
-            matchReason = GitHubRepositoryCandidateMatchReason.Starred
-        )
-        val candidate = GitHubRepositoryImportCandidate(
-            repository = repository,
-            trackedApp = GitHubTrackedApp(
-                repoUrl = repository.repoUrl,
-                owner = repository.owner,
-                repo = repository.repo,
-                packageName = "io.github.miuzarte.scrcpyforandroid",
-                appLabel = "ScrcpyForAndroid"
-            ),
-            alreadyTracked = false,
-            score = 86
-        )
-        val verification = StarImportApkVerificationUiState(
-            verification = GitHubStarImportApkVerification(
-                owner = repository.owner,
-                repo = repository.repo,
-                status = GitHubStarImportApkVerificationStatus.HasApk,
-                apkAssetCount = 3,
-                packageName = "io.github.miuzarte.scrcpyforandroid"
+        val repository =
+            GitHubRepositoryCandidate(
+                owner = "Miuzarte",
+                repo = "ScrcpyForAndroid",
+                repoUrl = "https://github.com/Miuzarte/ScrcpyForAndroid",
+                description = "Android scrcpy client with APK releases",
+                language = "Kotlin",
+                starCount = 1280,
+                fork = true,
+                sourceType = GitHubRepositoryDiscoverySourceType.StarList,
+                matchReason = GitHubRepositoryCandidateMatchReason.Starred,
             )
-        )
+        val candidate =
+            GitHubRepositoryImportCandidate(
+                repository = repository,
+                trackedApp =
+                    GitHubTrackedApp(
+                        repoUrl = repository.repoUrl,
+                        owner = repository.owner,
+                        repo = repository.repo,
+                        packageName = "io.github.miuzarte.scrcpyforandroid",
+                        appLabel = "ScrcpyForAndroid",
+                    ),
+                alreadyTracked = false,
+                score = 86,
+            )
+        val verification =
+            StarImportApkVerificationUiState(
+                verification =
+                    GitHubStarImportApkVerification(
+                        owner = repository.owner,
+                        repo = repository.repo,
+                        status = GitHubStarImportApkVerificationStatus.HasApk,
+                        apkAssetCount = 3,
+                        packageName = "io.github.miuzarte.scrcpyforandroid",
+                    ),
+            )
         captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_candidate_card_light.png") {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         StarImportCandidateCard(
                             candidate = candidate,
                             selected = true,
                             trackedSelectable = false,
                             apkVerificationState = verification,
-                            onToggle = {}
+                            onToggle = {},
                         )
                     }
                 }
@@ -517,9 +560,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         AppTopBarSection(
                             title = "",
@@ -527,13 +571,13 @@ class AppDesignSystemScreenshotTest {
                             scrollBehavior = MiuixScrollBehavior(),
                             color = Color.Transparent,
                             searchBarVisible = true,
-                            searchBarAnimationLabelPrefix = "screenshotTopBar"
+                            searchBarAnimationLabelPrefix = "screenshotTopBar",
                         ) {
                             AppTopBarSearchField(
                                 value = "星野",
                                 onValueChange = {},
                                 label = "搜索学生 / NPC / 卫星",
-                                modifier = Modifier.padding(horizontal = AppChromeTokens.searchFieldHorizontalPadding)
+                                modifier = Modifier.padding(horizontal = AppChromeTokens.searchFieldHorizontalPadding),
                             )
                         }
                     }
@@ -548,48 +592,50 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         AppOverviewCard(
                             title = "交互控件",
                             subtitle = "统一尺寸、按压反馈和选项行高",
                             containerColor = Color.White,
-                            borderColor = Color(0xFFD7DFEA)
+                            borderColor = Color(0xFFD7DFEA),
                         ) {
                             Column(
-                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.sectionGap)
+                                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.sectionGap),
                             ) {
                                 AppLiquidTextButton(
                                     backdrop = null,
                                     text = "立即刷新",
                                     leadingIcon = MiuixIcons.Regular.Refresh,
                                     onClick = {},
-                                    variant = GlassVariant.SheetAction
+                                    variant = GlassVariant.SheetAction,
                                 )
                                 AppLiquidTextButton(
                                     backdrop = null,
                                     text = "已读",
                                     onClick = {},
-                                    variant = GlassVariant.Compact
+                                    variant = GlassVariant.Compact,
                                 )
                                 AppLiquidIconButton(
                                     backdrop = null,
                                     icon = MiuixIcons.Regular.Refresh,
                                     contentDescription = "刷新",
                                     onClick = {},
-                                    variant = GlassVariant.Compact
+                                    variant = GlassVariant.Compact,
                                 )
                                 LiquidGlassDropdownColumn {
                                     LiquidGlassDropdownSingleChoiceList(
-                                        options = listOf(
-                                            "默认排序",
-                                            "创建条目：新到旧",
-                                            "创建条目：旧到新"
-                                        ),
+                                        options =
+                                            listOf(
+                                                "默认排序",
+                                                "创建条目：新到旧",
+                                                "创建条目：旧到新",
+                                            ),
                                         selectedIndex = 0,
-                                        onSelectedIndexChange = {}
+                                        onSelectedIndexChange = {},
                                     )
                                 }
                             }
@@ -606,9 +652,10 @@ class AppDesignSystemScreenshotTest {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
-                        modifier = Modifier
-                            .background(Color(0xFFF3F4F6))
-                            .padding(16.dp)
+                        modifier =
+                            Modifier
+                                .background(Color(0xFFF3F4F6))
+                                .padding(16.dp),
                     ) {
                         val editIcon = appLucideEditIcon()
                         val configIcon = appLucideConfigIcon()
@@ -616,96 +663,100 @@ class AppDesignSystemScreenshotTest {
                         val sortIcon = appLucideSortIcon()
                         val intervalIcon = appLucideTimeIcon()
                         LiquidGlassActionMenu(
-                            quickActions = listOf(
-                                LiquidGlassActionMenuQuickAction(
-                                    id = "scan",
-                                    icon = editIcon,
-                                    label = "扫描",
-                                    onClick = {}
+                            quickActions =
+                                listOf(
+                                    LiquidGlassActionMenuQuickAction(
+                                        id = "scan",
+                                        icon = editIcon,
+                                        label = "扫描",
+                                        onClick = {},
+                                    ),
+                                    LiquidGlassActionMenuQuickAction(
+                                        id = "pin",
+                                        icon = configIcon,
+                                        label = "置顶",
+                                        onClick = {},
+                                    ),
+                                    LiquidGlassActionMenuQuickAction(
+                                        id = "refresh",
+                                        icon = refreshIcon,
+                                        label = "刷新",
+                                        onClick = {},
+                                    ),
                                 ),
-                                LiquidGlassActionMenuQuickAction(
-                                    id = "pin",
-                                    icon = configIcon,
-                                    label = "置顶",
-                                    onClick = {}
+                            items =
+                                listOf(
+                                    LiquidGlassActionMenuSubmenuRow(
+                                        id = "sort",
+                                        text = "排序",
+                                        subtitle = "更新优先",
+                                        leadingIcon = sortIcon,
+                                        trailingIcon = appLucideChevronRightIcon(),
+                                        submenuItems =
+                                            listOf(
+                                                LiquidGlassActionMenuSingleChoiceRow(
+                                                    id = "update",
+                                                    text = "更新优先",
+                                                    selected = true,
+                                                    leadingIcon = sortIcon,
+                                                    onClick = {},
+                                                ),
+                                                LiquidGlassActionMenuSingleChoiceRow(
+                                                    id = "name",
+                                                    text = "名称 A-Z",
+                                                    selected = false,
+                                                    leadingIcon = sortIcon,
+                                                    onClick = {},
+                                                ),
+                                                LiquidGlassActionMenuSingleChoiceRow(
+                                                    id = "pre",
+                                                    text = "预发行优先",
+                                                    selected = false,
+                                                    leadingIcon = sortIcon,
+                                                    onClick = {},
+                                                ),
+                                            ),
+                                    ),
+                                    LiquidGlassActionMenuSubmenuRow(
+                                        id = "interval",
+                                        text = "更新间隔",
+                                        subtitle = "3 小时",
+                                        leadingIcon = intervalIcon,
+                                        trailingIcon = appLucideChevronRightIcon(),
+                                        submenuItems =
+                                            listOf(
+                                                LiquidGlassActionMenuSingleChoiceRow(
+                                                    id = "1h",
+                                                    text = "1 小时",
+                                                    selected = false,
+                                                    leadingIcon = intervalIcon,
+                                                    onClick = {},
+                                                ),
+                                                LiquidGlassActionMenuSingleChoiceRow(
+                                                    id = "3h",
+                                                    text = "3 小时",
+                                                    selected = true,
+                                                    leadingIcon = intervalIcon,
+                                                    onClick = {},
+                                                ),
+                                                LiquidGlassActionMenuSingleChoiceRow(
+                                                    id = "6h",
+                                                    text = "6 小时",
+                                                    selected = false,
+                                                    leadingIcon = intervalIcon,
+                                                    onClick = {},
+                                                ),
+                                            ),
+                                    ),
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "danger",
+                                        text = "移除规则",
+                                        leadingIcon = appLucideTrashIcon(),
+                                        variant = GlassVariant.SheetDangerAction,
+                                        onClick = {},
+                                    ),
                                 ),
-                                LiquidGlassActionMenuQuickAction(
-                                    id = "refresh",
-                                    icon = refreshIcon,
-                                    label = "刷新",
-                                    onClick = {}
-                                )
-                            ),
-                            items = listOf(
-                                LiquidGlassActionMenuSubmenuRow(
-                                    id = "sort",
-                                    text = "排序",
-                                    subtitle = "更新优先",
-                                    leadingIcon = sortIcon,
-                                    trailingIcon = appLucideChevronRightIcon(),
-                                    submenuItems = listOf(
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = "update",
-                                            text = "更新优先",
-                                            selected = true,
-                                            leadingIcon = sortIcon,
-                                            onClick = {}
-                                        ),
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = "name",
-                                            text = "名称 A-Z",
-                                            selected = false,
-                                            leadingIcon = sortIcon,
-                                            onClick = {}
-                                        ),
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = "pre",
-                                            text = "预发行优先",
-                                            selected = false,
-                                            leadingIcon = sortIcon,
-                                            onClick = {}
-                                        )
-                                    )
-                                ),
-                                LiquidGlassActionMenuSubmenuRow(
-                                    id = "interval",
-                                    text = "更新间隔",
-                                    subtitle = "3 小时",
-                                    leadingIcon = intervalIcon,
-                                    trailingIcon = appLucideChevronRightIcon(),
-                                    submenuItems = listOf(
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = "1h",
-                                            text = "1 小时",
-                                            selected = false,
-                                            leadingIcon = intervalIcon,
-                                            onClick = {}
-                                        ),
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = "3h",
-                                            text = "3 小时",
-                                            selected = true,
-                                            leadingIcon = intervalIcon,
-                                            onClick = {}
-                                        ),
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = "6h",
-                                            text = "6 小时",
-                                            selected = false,
-                                            leadingIcon = intervalIcon,
-                                            onClick = {}
-                                        )
-                                    )
-                                ),
-                                LiquidGlassActionMenuActionRow(
-                                    id = "danger",
-                                    text = "移除规则",
-                                    leadingIcon = appLucideTrashIcon(),
-                                    variant = GlassVariant.SheetDangerAction,
-                                    onClick = {}
-                                )
-                            ),
-                            initialExpandedSubmenuId = "sort"
+                            initialExpandedSubmenuId = "sort",
                         )
                     }
                 }

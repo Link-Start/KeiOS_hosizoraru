@@ -13,6 +13,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Stable
 internal class AboutPageSectionExpansionState {
     var appExpanded by mutableStateOf(true)
+    var releaseExpanded by mutableStateOf(true)
     var runtimeExpanded by mutableStateOf(false)
     var permissionExpanded by mutableStateOf(false)
     var componentExpanded by mutableStateOf(false)
@@ -32,6 +33,7 @@ internal data class AboutPageColorPalette(
     val readyColor: Color,
     val notReadyColor: Color,
     val infoCardColor: Color,
+    val releaseCardColor: Color,
     val buildCardColor: Color,
     val uiFrameworkCardColor: Color,
     val networkServiceCardColor: Color,
@@ -40,12 +42,13 @@ internal data class AboutPageColorPalette(
     val licenseCardColor: Color,
     val githubCardColor: Color,
     val runtimeCardColor: Color,
-    val componentLabCardColor: Color
+    val componentLabCardColor: Color,
 )
 
 @Composable
 internal fun rememberAboutPageSectionExpansionState(): AboutPageSectionExpansionState {
     val appExpanded = rememberSaveable { mutableStateOf(true) }
+    val releaseExpanded = rememberSaveable { mutableStateOf(true) }
     val runtimeExpanded = rememberSaveable { mutableStateOf(false) }
     val permissionExpanded = rememberSaveable { mutableStateOf(false) }
     val componentExpanded = rememberSaveable { mutableStateOf(false) }
@@ -60,6 +63,7 @@ internal fun rememberAboutPageSectionExpansionState(): AboutPageSectionExpansion
     return remember {
         AboutPageSectionExpansionState().apply {
             this.appExpanded = appExpanded.value
+            this.releaseExpanded = releaseExpanded.value
             this.runtimeExpanded = runtimeExpanded.value
             this.permissionExpanded = permissionExpanded.value
             this.componentExpanded = componentExpanded.value
@@ -74,6 +78,7 @@ internal fun rememberAboutPageSectionExpansionState(): AboutPageSectionExpansion
         }
     }.also { state ->
         appExpanded.value = state.appExpanded
+        releaseExpanded.value = state.releaseExpanded
         runtimeExpanded.value = state.runtimeExpanded
         permissionExpanded.value = state.permissionExpanded
         componentExpanded.value = state.componentExpanded
@@ -94,11 +99,12 @@ internal fun rememberAboutPageColorPalette(shizukuStatus: String): AboutPageColo
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
     val readyColor = Color(0xFF2E7D32)
     val notReadyColor = Color(0xFFC62828)
-    val runtimeCardColor = if (shizukuStatus.contains("granted", ignoreCase = true)) {
-        Color(0x2222C55E)
-    } else {
-        Color(0x22EF4444)
-    }
+    val runtimeCardColor =
+        if (shizukuStatus.contains("granted", ignoreCase = true)) {
+            Color(0x2222C55E)
+        } else {
+            Color(0x22EF4444)
+        }
     return remember(shizukuStatus, accent, subtitleColor) {
         AboutPageColorPalette(
             accent = accent,
@@ -106,6 +112,7 @@ internal fun rememberAboutPageColorPalette(shizukuStatus: String): AboutPageColo
             readyColor = readyColor,
             notReadyColor = notReadyColor,
             infoCardColor = Color(0x223B82F6),
+            releaseCardColor = Color(0x2222C55E),
             buildCardColor = Color(0x223B82F6),
             uiFrameworkCardColor = Color(0x2233A1F4),
             networkServiceCardColor = Color(0x2222C55E),
@@ -114,7 +121,7 @@ internal fun rememberAboutPageColorPalette(shizukuStatus: String): AboutPageColo
             licenseCardColor = Color(0x2243A047),
             githubCardColor = Color(0x2248A6FF),
             runtimeCardColor = runtimeCardColor,
-            componentLabCardColor = Color(0x223B82F6)
+            componentLabCardColor = Color(0x223B82F6),
         )
     }
 }

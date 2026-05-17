@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.5.0`                                             |
+| Latest stable tag | `v1.6.0`                                             |
 
 ## Quick Links
 
@@ -83,25 +83,27 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## Post-v1.5.0 HEAD Highlights
+## v1.6.0 Highlights
 
-- GitHub tracking now treats direct APK, JSON feed, companion JSON, versioned directory, and APK
+- GitHub tracking treats direct APK, JSON feed, companion JSON, versioned directory, and APK
   directory-index sources as subscription projects, with remote health, stable/prerelease channels,
-  release notes, and remote stable/prerelease cards.
-- Subscription and GitHub tracked items can surface install actions when the package is missing;
-  the install button reuses the existing APK asset, downloader, app-managed Shizuku install, and
-  manifest inspection flow.
-- GitHub page state gained remembered sort/filter/order settings, visible-list batch refresh from
-  the floating dock, full-refresh shortcuts, unsaved-change confirmation across edit/settings
-  sheets, and separate Actions update intervals with 2h / 3h options.
-- MCP was productized around entrypoint, workflow, and advanced tools, with typed catalog metadata,
-  JSON schemas, structured outputs, workflow blueprints, resource/help registries, a redesigned MCP
-  Skill page, and adaptive runtime-log/session monitoring.
-- Home was simplified into status pills plus focused MCP / GitHub / BA cards, removing the repeated
-  overview card while keeping compact, scan-first summaries.
-- GitHub install and subscription cards now use installed app labels when available, keep remote
-  health at the bottom, and expose release notes through the same more-actions model as GitHub
-  projects.
+  release notes, install actions, and Shizuku-backed managed install handoff.
+- GitHub page state keeps remembered sort/filter/order settings, visible-list batch refresh from the
+  floating dock, full-refresh shortcuts, edit/settings unsaved-change confirmation, and independent
+  Actions update intervals including 2h / 3h choices.
+- MCP is organized around entrypoint, workflow, and advanced tools, with typed catalog metadata, JSON
+  schemas, structured outputs, workflow blueprints, resource/help registries, a redesigned MCP Skill
+  page, and lighter runtime-log/session monitoring.
+- BA Student Guide adapts NPC and satellite entries with leaner profile labels, related-role
+  grouping, broader gallery parsing, media export, favorite-data migration, and older GameKee page
+  compatibility.
+- Settings can switch between the existing bottom bar / pager path and the MIUIX iOS-like bottom bar
+  / pager path, with shared sizing fixes for different display densities.
+- App icons gained a refreshed Apple Designs default while keeping Android Designs as the legacy
+  selectable icon set.
+- Release hardening covered bottom-bar visibility recovery, benchmark package startup, Gradle
+  configuration-cache hygiene, test coverage, R8 keep-rule review, and release/benchmark mapping
+  verification.
 
 Read the full feature tour:
 
@@ -111,7 +113,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.5.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.5.0).
+- Current stable tag: [v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
   Compose `1.11.1`, Android Gradle Plugin `9.2.1`.

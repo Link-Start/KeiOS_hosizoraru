@@ -49,4 +49,4 @@ object LauncherIconController {
 
 internal fun LauncherIconDesign.componentName(packageName: String): ComponentName = ComponentName(packageName, qualifiedAliasClassName())
 
-internal fun LauncherIconDesign.qualifiedAliasClassName(): String = "${BuildConfig::class.java.packageName}.$aliasClassName"
+internal fun LauncherIconDesign.qualifiedAliasClassName(): String = "${BuildConfig.MANIFEST_COMPONENT_PACKAGE}.$aliasClassName"

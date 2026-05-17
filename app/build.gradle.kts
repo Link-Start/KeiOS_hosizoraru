@@ -73,13 +73,18 @@ fun gitTotalCommitCountOrNull(): Int? {
     return runGitCommandOrNull("rev-list", "--count", "HEAD")?.toIntOrNull()
 }
 
+fun readBooleanPropertyOrNull(key: String): Boolean? {
+    return providers.gradleProperty(key).orNull?.toBooleanStrictOrNull()
+        ?: readLocalPropertyOrNull(key)?.toBooleanStrictOrNull()
+}
+
 val fallbackReleaseVersion = AppSemVer(major = 1, minor = 0, patch = 0)
 val versionAnchorTag = latestMergedSemVerTagOrNull() ?: "v${fallbackReleaseVersion.name}"
 val releaseVersion = parseSemVerTagOrNull(versionAnchorTag) ?: fallbackReleaseVersion
 val nonReleaseVersion = releaseVersion.copy(patch = releaseVersion.patch + 1)
 val gitShortHashValue = runGitCommandOrNull("rev-parse", "--short", "HEAD")
 val gitBranchNameValue = runGitCommandOrNull("rev-parse", "--abbrev-ref", "HEAD")
-val gitDirtyValue = runGitCommandOrNull("status", "--porcelain")?.isNotBlank() ?: false
+val gitDirtyValue = readBooleanPropertyOrNull("keios.git.worktreeDirty") ?: false
 val gitRelativeCommitCount = gitRelativeCommitCountOrNull(versionAnchorTag)
 val gitTotalCommitCount = gitTotalCommitCountOrNull()
 val gitVersionSnapshot = if (
@@ -232,6 +237,7 @@ android {
         buildConfigField("String", "BASE_VERSION_NAME", "\"${releaseVersion.name}\"")
         buildConfigField("String", "NEXT_VERSION_NAME", "\"${nonReleaseVersion.name}\"")
         buildConfigField("String", "VERSION_ANCHOR_TAG", "\"$versionAnchorTag\"")
+        buildConfigField("String", "MANIFEST_COMPONENT_PACKAGE", "\"$namespace\"")
         buildConfigField("long", "BUILD_TIME_MILLIS", "${buildTimestampMillis}L")
         buildConfigField("int", "GIT_COMMIT_COUNT", gitVersionSnapshot.relativeCommitCount.toString())
         buildConfigField("int", "GIT_TOTAL_COMMIT_COUNT", gitVersionSnapshot.totalCommitCount.toString())

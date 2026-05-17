@@ -2,6 +2,7 @@ package os.kei.ui.page.main.settings.section
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntRect
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
@@ -20,7 +21,7 @@ internal data class SettingsPermissionKeepAliveSectionState(
     val appListDetectedCount: Int,
     val appListSettingsActionAvailable: Boolean,
     val shizukuGranted: Boolean,
-    val shizukuStatusText: String
+    val shizukuStatusText: String,
 )
 
 internal data class SettingsPermissionKeepAliveSectionActions(
@@ -29,39 +30,45 @@ internal data class SettingsPermissionKeepAliveSectionActions(
     val onOpenBatteryOptimizationSettings: () -> Unit,
     val onOpenOemAutoStartSettings: () -> Unit,
     val onOpenAppListPermissionSettings: () -> Unit,
-    val onCheckOrRequestShizuku: () -> Unit
+    val onCheckOrRequestShizuku: () -> Unit,
 )
 
 @Immutable
 internal data class SettingsVisualSectionState(
     val preloadingEnabled: Boolean,
+    val launcherIconDesign: LauncherIconDesign,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
     val appThemeMode: AppThemeMode,
     val appLanguageActionAvailable: Boolean,
     val showThemeModePopup: Boolean,
-    val themePopupAnchorBounds: IntRect?
+    val themePopupAnchorBounds: IntRect?,
+    val showLauncherIconDesignPopup: Boolean,
+    val launcherIconDesignPopupAnchorBounds: IntRect?,
 )
 
 internal data class SettingsVisualSectionActions(
     val onPreloadingEnabledChanged: (Boolean) -> Unit,
+    val onLauncherIconDesignChanged: (LauncherIconDesign) -> Unit,
     val onHomeIconHdrChanged: (Boolean) -> Unit,
     val onHomeDynamicFullEffectChanged: (Boolean) -> Unit,
     val onAppThemeModeChanged: (AppThemeMode) -> Unit,
     val onOpenAppLanguageSettings: () -> Unit,
     val onShowThemeModePopupChange: (Boolean) -> Unit,
-    val onThemePopupAnchorBoundsChange: (IntRect?) -> Unit
+    val onThemePopupAnchorBoundsChange: (IntRect?) -> Unit,
+    val onShowLauncherIconDesignPopupChange: (Boolean) -> Unit,
+    val onLauncherIconDesignPopupAnchorBoundsChange: (IntRect?) -> Unit,
 )
 
 @Immutable
 internal data class SettingsAnimationSectionState(
     val transitionAnimationsEnabled: Boolean,
-    val predictiveBackAnimationsEnabled: Boolean
+    val predictiveBackAnimationsEnabled: Boolean,
 )
 
 internal data class SettingsAnimationSectionActions(
     val onTransitionAnimationsChanged: (Boolean) -> Unit,
-    val onPredictiveBackAnimationsChanged: (Boolean) -> Unit
+    val onPredictiveBackAnimationsChanged: (Boolean) -> Unit,
 )
 
 @Immutable
@@ -71,7 +78,7 @@ internal data class SettingsComponentEffectsSectionState(
     val liquidBottomBarEnabled: Boolean,
     val miuixMainNavigationEnabled: Boolean,
     val searchAutoFocusEnabled: Boolean,
-    val gripAwareFloatingDockEnabled: Boolean
+    val gripAwareFloatingDockEnabled: Boolean,
 )
 
 internal data class SettingsComponentEffectsSectionActions(
@@ -80,27 +87,27 @@ internal data class SettingsComponentEffectsSectionActions(
     val onLiquidBottomBarChanged: (Boolean) -> Unit,
     val onMiuixMainNavigationChanged: (Boolean) -> Unit,
     val onSearchAutoFocusChanged: (Boolean) -> Unit,
-    val onGripAwareFloatingDockChanged: (Boolean) -> Unit
+    val onGripAwareFloatingDockChanged: (Boolean) -> Unit,
 )
 
 @Immutable
 internal data class SettingsNotifySectionState(
     val superIslandNotificationEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
-    val superIslandRestoreDelayMs: Int
+    val superIslandRestoreDelayMs: Int,
 )
 
 internal data class SettingsNotifySectionActions(
     val onSuperIslandNotificationChanged: (Boolean) -> Unit,
     val onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
-    val onSuperIslandRestoreDelayMsChanged: (Int) -> Unit
+    val onSuperIslandRestoreDelayMsChanged: (Int) -> Unit,
 )
 
 @Immutable
 internal data class SettingsCopySectionState(
-    val textCopyCapabilityExpanded: Boolean
+    val textCopyCapabilityExpanded: Boolean,
 )
 
 internal data class SettingsCopySectionActions(
-    val onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit
+    val onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
 )

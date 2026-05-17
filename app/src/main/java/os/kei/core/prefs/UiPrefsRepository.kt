@@ -7,19 +7,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 
 class UiPrefsRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val snapshots = MutableStateFlow(UiPrefs.defaultSnapshot())
 
     fun observeSnapshots(): StateFlow<UiPrefsSnapshot> = snapshots.asStateFlow()
 
     suspend fun refreshSnapshot() {
-        snapshots.value = withContext(ioDispatcher) {
-            UiPrefs.loadSnapshot()
-        }
+        snapshots.value =
+            withContext(ioDispatcher) {
+                UiPrefs.loadSnapshot()
+            }
     }
 
     suspend fun setLiquidBottomBarEnabled(value: Boolean) {
@@ -88,6 +90,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setLauncherIconDesign(value: LauncherIconDesign) {
+        updateAndPersist({ copy(launcherIconDesign = value) }) {
+            UiPrefs.setLauncherIconDesign(value)
+        }
+    }
+
     suspend fun setNonHomeBackgroundEnabled(value: Boolean) {
         updateAndPersist({ copy(nonHomeBackgroundEnabled = value) }) {
             UiPrefs.setNonHomeBackgroundEnabled(value)
@@ -151,7 +159,7 @@ class UiPrefsRepository(
 
     private suspend fun updateAndPersist(
         reducer: UiPrefsSnapshot.() -> UiPrefsSnapshot,
-        persist: () -> Unit
+        persist: () -> Unit,
     ) {
         snapshots.update { snapshot -> snapshot.reducer() }
         withContext(ioDispatcher) {

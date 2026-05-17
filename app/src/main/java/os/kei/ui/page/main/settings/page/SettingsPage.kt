@@ -42,6 +42,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
@@ -97,6 +98,8 @@ fun SettingsPage(
     onHomeDynamicFullEffectChanged: (Boolean) -> Unit,
     preloadingEnabled: Boolean,
     onPreloadingEnabledChanged: (Boolean) -> Unit,
+    launcherIconDesign: LauncherIconDesign,
+    onLauncherIconDesignChanged: (LauncherIconDesign) -> Unit,
     nonHomeBackgroundEnabled: Boolean,
     onNonHomeBackgroundEnabledChanged: (Boolean) -> Unit,
     nonHomeBackgroundUri: String,
@@ -175,6 +178,8 @@ fun SettingsPage(
             notificationPermissionGranted = notificationPermissionGranted,
             preloadingEnabled = preloadingEnabled,
             onPreloadingEnabledChanged = onPreloadingEnabledChanged,
+            launcherIconDesign = launcherIconDesign,
+            onLauncherIconDesignChanged = onLauncherIconDesignChanged,
             homeIconHdrEnabled = homeIconHdrEnabled,
             onHomeIconHdrChanged = onHomeIconHdrChanged,
             homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,

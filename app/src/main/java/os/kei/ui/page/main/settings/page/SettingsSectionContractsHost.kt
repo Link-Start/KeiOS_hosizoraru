@@ -4,6 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import os.kei.R
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.settings.state.SettingsPageUiState
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
@@ -22,6 +23,8 @@ internal fun rememberSettingsPageSectionContracts(
     notificationPermissionGranted: Boolean,
     preloadingEnabled: Boolean,
     onPreloadingEnabledChanged: (Boolean) -> Unit,
+    launcherIconDesign: LauncherIconDesign,
+    onLauncherIconDesignChanged: (LauncherIconDesign) -> Unit,
     homeIconHdrEnabled: Boolean,
     onHomeIconHdrChanged: (Boolean) -> Unit,
     homeDynamicFullEffectEnabled: Boolean,
@@ -53,13 +56,14 @@ internal fun rememberSettingsPageSectionContracts(
     textCopyCapabilityExpanded: Boolean,
     onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
     onRequestNotificationPermission: () -> Unit,
-    onCheckOrRequestShizuku: () -> Unit
-): SettingsSectionContractBundle {
-    return rememberSettingsSectionContractBundle(
+    onCheckOrRequestShizuku: () -> Unit,
+): SettingsSectionContractBundle =
+    rememberSettingsSectionContractBundle(
         notificationPermissionGranted = notificationPermissionGranted,
         notificationsEnabled = permissionKeepAliveController.notificationsEnabled,
         notificationSettingsActionAvailable = permissionKeepAliveController.notificationSettingsActionAvailable,
         preloadingEnabled = preloadingEnabled,
+        launcherIconDesign = launcherIconDesign,
         homeIconHdrEnabled = homeIconHdrEnabled,
         homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
         appThemeMode = appThemeMode,
@@ -92,10 +96,11 @@ internal fun rememberSettingsPageSectionContracts(
             showSettingsToastIfClosed(
                 context = context,
                 opened = permissionKeepAliveController.openNotificationSettings(),
-                messageRes = R.string.settings_notification_permission_toast_open_failed
+                messageRes = R.string.settings_notification_permission_toast_open_failed,
             )
         },
         onPreloadingEnabledChanged = onPreloadingEnabledChanged,
+        onLauncherIconDesignChanged = onLauncherIconDesignChanged,
         onHomeIconHdrChanged = onHomeIconHdrChanged,
         onHomeDynamicFullEffectChanged = onHomeDynamicFullEffectChanged,
         onAppThemeModeChanged = onAppThemeModeChanged,
@@ -103,7 +108,7 @@ internal fun rememberSettingsPageSectionContracts(
             showSettingsToastIfClosed(
                 context = context,
                 opened = appLanguageController.openAppLanguageSettings(),
-                messageRes = R.string.settings_app_language_toast_open_failed
+                messageRes = R.string.settings_app_language_toast_open_failed,
             )
         },
         onTransitionAnimationsChanged = onTransitionAnimationsChanged,
@@ -121,37 +126,37 @@ internal fun rememberSettingsPageSectionContracts(
             showSettingsToastIfClosed(
                 context = context,
                 opened = batteryOptimizationController.openBatteryOptimizationSettings(),
-                messageRes = R.string.settings_battery_optimization_toast_open_failed
+                messageRes = R.string.settings_battery_optimization_toast_open_failed,
             )
         },
         onOpenOemAutoStartSettings = {
             showSettingsToastIfClosed(
                 context = context,
                 opened = permissionKeepAliveController.openOemAutoStartSettings(),
-                messageRes = R.string.settings_oem_autostart_toast_open_failed
+                messageRes = R.string.settings_oem_autostart_toast_open_failed,
             )
         },
         onOpenAppListPermissionSettings = {
             showSettingsToastIfClosed(
                 context = context,
                 opened = permissionKeepAliveController.openAppListPermissionSettings(),
-                messageRes = R.string.settings_app_list_access_toast_open_failed
+                messageRes = R.string.settings_app_list_access_toast_open_failed,
             )
         },
         onCheckOrRequestShizuku = onCheckOrRequestShizuku,
-        onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged
+        onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged,
     )
-}
 
 private fun showSettingsToastIfClosed(
     context: Context,
     opened: Boolean,
-    messageRes: Int
+    messageRes: Int,
 ) {
     if (opened) return
-    Toast.makeText(
-        context,
-        context.getString(messageRes),
-        Toast.LENGTH_SHORT
-    ).show()
+    Toast
+        .makeText(
+            context,
+            context.getString(messageRes),
+            Toast.LENGTH_SHORT,
+        ).show()
 }

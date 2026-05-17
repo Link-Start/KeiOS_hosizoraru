@@ -1,7 +1,10 @@
+@file:Suppress("ktlint:standard:filename")
+
 package os.kei.ui.page.main.settings.state
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionActions
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionState
@@ -30,7 +33,7 @@ internal data class SettingsSectionContractBundle(
     val notifyState: SettingsNotifySectionState,
     val notifyActions: SettingsNotifySectionActions,
     val copyState: SettingsCopySectionState,
-    val copyActions: SettingsCopySectionActions
+    val copyActions: SettingsCopySectionActions,
 )
 
 @Composable
@@ -39,6 +42,7 @@ internal fun rememberSettingsSectionContractBundle(
     notificationsEnabled: Boolean,
     notificationSettingsActionAvailable: Boolean,
     preloadingEnabled: Boolean,
+    launcherIconDesign: LauncherIconDesign,
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean,
     appThemeMode: AppThemeMode,
@@ -69,6 +73,7 @@ internal fun rememberSettingsSectionContractBundle(
     onRequestNotificationPermission: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
     onPreloadingEnabledChanged: (Boolean) -> Unit,
+    onLauncherIconDesignChanged: (LauncherIconDesign) -> Unit,
     onHomeIconHdrChanged: (Boolean) -> Unit,
     onHomeDynamicFullEffectChanged: (Boolean) -> Unit,
     onAppThemeModeChanged: (AppThemeMode) -> Unit,
@@ -88,174 +93,200 @@ internal fun rememberSettingsSectionContractBundle(
     onOpenOemAutoStartSettings: () -> Unit,
     onOpenAppListPermissionSettings: () -> Unit,
     onCheckOrRequestShizuku: () -> Unit,
-    onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit
+    onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
 ): SettingsSectionContractBundle {
-    val permissionKeepAliveState = remember(
-        notificationPermissionGranted,
-        notificationsEnabled,
-        notificationSettingsActionAvailable,
-        ignoringBatteryOptimizations,
-        batteryOptimizationActionAvailable,
-        oemAutoStartState,
-        oemAutoStartVendorLabel,
-        oemAutoStartActionAvailable,
-        appListAccessMode,
-        appListDetectedCount,
-        appListSettingsActionAvailable,
-        shizukuGranted,
-        shizukuStatusText
-    ) {
-        SettingsPermissionKeepAliveSectionState(
-            notificationPermissionGranted = notificationPermissionGranted,
-            notificationsEnabled = notificationsEnabled,
-            notificationSettingsActionAvailable = notificationSettingsActionAvailable,
-            ignoringBatteryOptimizations = ignoringBatteryOptimizations,
-            batteryOptimizationActionAvailable = batteryOptimizationActionAvailable,
-            oemAutoStartState = oemAutoStartState,
-            oemAutoStartVendorLabel = oemAutoStartVendorLabel,
-            oemAutoStartActionAvailable = oemAutoStartActionAvailable,
-            appListAccessMode = appListAccessMode,
-            appListDetectedCount = appListDetectedCount,
-            appListSettingsActionAvailable = appListSettingsActionAvailable,
-            shizukuGranted = shizukuGranted,
-            shizukuStatusText = shizukuStatusText
-        )
-    }
-    val permissionKeepAliveActions = remember(
-        onRequestNotificationPermission,
-        onOpenNotificationSettings,
-        onOpenBatteryOptimizationSettings,
-        onOpenOemAutoStartSettings,
-        onOpenAppListPermissionSettings,
-        onCheckOrRequestShizuku
-    ) {
-        SettingsPermissionKeepAliveSectionActions(
-            onRequestNotificationPermission = onRequestNotificationPermission,
-            onOpenNotificationSettings = onOpenNotificationSettings,
-            onOpenBatteryOptimizationSettings = onOpenBatteryOptimizationSettings,
-            onOpenOemAutoStartSettings = onOpenOemAutoStartSettings,
-            onOpenAppListPermissionSettings = onOpenAppListPermissionSettings,
-            onCheckOrRequestShizuku = onCheckOrRequestShizuku
-        )
-    }
-    val visualState = remember(
-        preloadingEnabled,
-        homeIconHdrEnabled,
-        homeDynamicFullEffectEnabled,
-        appThemeMode,
-        appLanguageActionAvailable,
-        pageUiState.showThemeModePopup,
-        pageUiState.themePopupAnchorBounds
-    ) {
-        SettingsVisualSectionState(
-            preloadingEnabled = preloadingEnabled,
-            homeIconHdrEnabled = homeIconHdrEnabled,
-            homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
-            appThemeMode = appThemeMode,
-            appLanguageActionAvailable = appLanguageActionAvailable,
-            showThemeModePopup = pageUiState.showThemeModePopup,
-            themePopupAnchorBounds = pageUiState.themePopupAnchorBounds
-        )
-    }
-    val visualActions = remember(
-        onPreloadingEnabledChanged,
-        onHomeIconHdrChanged,
-        onHomeDynamicFullEffectChanged,
-        onAppThemeModeChanged,
-        onOpenAppLanguageSettings
-    ) {
-        SettingsVisualSectionActions(
-            onPreloadingEnabledChanged = onPreloadingEnabledChanged,
-            onHomeIconHdrChanged = onHomeIconHdrChanged,
-            onHomeDynamicFullEffectChanged = onHomeDynamicFullEffectChanged,
-            onAppThemeModeChanged = onAppThemeModeChanged,
-            onOpenAppLanguageSettings = onOpenAppLanguageSettings,
-            onShowThemeModePopupChange = { pageUiState.showThemeModePopup = it },
-            onThemePopupAnchorBoundsChange = { pageUiState.themePopupAnchorBounds = it }
-        )
-    }
-    val animationState = remember(
-        transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled
-    ) {
-        SettingsAnimationSectionState(
-            transitionAnimationsEnabled = transitionAnimationsEnabled,
-            predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled
-        )
-    }
-    val animationActions = remember(
-        onTransitionAnimationsChanged,
-        onPredictiveBackAnimationsChanged
-    ) {
-        SettingsAnimationSectionActions(
-            onTransitionAnimationsChanged = onTransitionAnimationsChanged,
-            onPredictiveBackAnimationsChanged = onPredictiveBackAnimationsChanged
-        )
-    }
-    val componentEffectsState = remember(
-        liquidActionBarLayeredStyleEnabled,
-        liquidSwitchEnabled,
-        liquidBottomBarEnabled,
-        miuixMainNavigationEnabled,
-        searchAutoFocusEnabled,
-        gripAwareFloatingDockEnabled
-    ) {
-        SettingsComponentEffectsSectionState(
-            liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-            liquidSwitchEnabled = liquidSwitchEnabled,
-            liquidBottomBarEnabled = liquidBottomBarEnabled,
-            miuixMainNavigationEnabled = miuixMainNavigationEnabled,
-            searchAutoFocusEnabled = searchAutoFocusEnabled,
-            gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled
-        )
-    }
-    val componentEffectsActions = remember(
-        onLiquidActionBarLayeredStyleChanged,
-        onLiquidSwitchChanged,
-        onLiquidBottomBarChanged,
-        onMiuixMainNavigationChanged,
-        onSearchAutoFocusChanged,
-        onGripAwareFloatingDockChanged
-    ) {
-        SettingsComponentEffectsSectionActions(
-            onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
-            onLiquidSwitchChanged = onLiquidSwitchChanged,
-            onLiquidBottomBarChanged = onLiquidBottomBarChanged,
-            onMiuixMainNavigationChanged = onMiuixMainNavigationChanged,
-            onSearchAutoFocusChanged = onSearchAutoFocusChanged,
-            onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged
-        )
-    }
-    val notifyState = remember(
-        superIslandNotificationEnabled,
-        superIslandBypassRestrictionEnabled,
-        superIslandRestoreDelayMs
-    ) {
-        SettingsNotifySectionState(
-            superIslandNotificationEnabled = superIslandNotificationEnabled,
-            superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
-            superIslandRestoreDelayMs = superIslandRestoreDelayMs
-        )
-    }
-    val notifyActions = remember(
-        onSuperIslandNotificationChanged,
-        onSuperIslandBypassRestrictionChanged,
-        onSuperIslandRestoreDelayMsChanged
-    ) {
-        SettingsNotifySectionActions(
-            onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
-            onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
-            onSuperIslandRestoreDelayMsChanged = onSuperIslandRestoreDelayMsChanged
-        )
-    }
-    val copyState = remember(textCopyCapabilityExpanded) {
-        SettingsCopySectionState(textCopyCapabilityExpanded = textCopyCapabilityExpanded)
-    }
-    val copyActions = remember(onTextCopyCapabilityExpandedChanged) {
-        SettingsCopySectionActions(
-            onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged
-        )
-    }
+    val permissionKeepAliveState =
+        remember(
+            notificationPermissionGranted,
+            notificationsEnabled,
+            notificationSettingsActionAvailable,
+            ignoringBatteryOptimizations,
+            batteryOptimizationActionAvailable,
+            oemAutoStartState,
+            oemAutoStartVendorLabel,
+            oemAutoStartActionAvailable,
+            appListAccessMode,
+            appListDetectedCount,
+            appListSettingsActionAvailable,
+            shizukuGranted,
+            shizukuStatusText,
+        ) {
+            SettingsPermissionKeepAliveSectionState(
+                notificationPermissionGranted = notificationPermissionGranted,
+                notificationsEnabled = notificationsEnabled,
+                notificationSettingsActionAvailable = notificationSettingsActionAvailable,
+                ignoringBatteryOptimizations = ignoringBatteryOptimizations,
+                batteryOptimizationActionAvailable = batteryOptimizationActionAvailable,
+                oemAutoStartState = oemAutoStartState,
+                oemAutoStartVendorLabel = oemAutoStartVendorLabel,
+                oemAutoStartActionAvailable = oemAutoStartActionAvailable,
+                appListAccessMode = appListAccessMode,
+                appListDetectedCount = appListDetectedCount,
+                appListSettingsActionAvailable = appListSettingsActionAvailable,
+                shizukuGranted = shizukuGranted,
+                shizukuStatusText = shizukuStatusText,
+            )
+        }
+    val permissionKeepAliveActions =
+        remember(
+            onRequestNotificationPermission,
+            onOpenNotificationSettings,
+            onOpenBatteryOptimizationSettings,
+            onOpenOemAutoStartSettings,
+            onOpenAppListPermissionSettings,
+            onCheckOrRequestShizuku,
+        ) {
+            SettingsPermissionKeepAliveSectionActions(
+                onRequestNotificationPermission = onRequestNotificationPermission,
+                onOpenNotificationSettings = onOpenNotificationSettings,
+                onOpenBatteryOptimizationSettings = onOpenBatteryOptimizationSettings,
+                onOpenOemAutoStartSettings = onOpenOemAutoStartSettings,
+                onOpenAppListPermissionSettings = onOpenAppListPermissionSettings,
+                onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+            )
+        }
+    val visualState =
+        remember(
+            preloadingEnabled,
+            launcherIconDesign,
+            homeIconHdrEnabled,
+            homeDynamicFullEffectEnabled,
+            appThemeMode,
+            appLanguageActionAvailable,
+            pageUiState.showThemeModePopup,
+            pageUiState.themePopupAnchorBounds,
+            pageUiState.showLauncherIconDesignPopup,
+            pageUiState.launcherIconDesignPopupAnchorBounds,
+        ) {
+            SettingsVisualSectionState(
+                preloadingEnabled = preloadingEnabled,
+                launcherIconDesign = launcherIconDesign,
+                homeIconHdrEnabled = homeIconHdrEnabled,
+                homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
+                appThemeMode = appThemeMode,
+                appLanguageActionAvailable = appLanguageActionAvailable,
+                showThemeModePopup = pageUiState.showThemeModePopup,
+                themePopupAnchorBounds = pageUiState.themePopupAnchorBounds,
+                showLauncherIconDesignPopup = pageUiState.showLauncherIconDesignPopup,
+                launcherIconDesignPopupAnchorBounds = pageUiState.launcherIconDesignPopupAnchorBounds,
+            )
+        }
+    val visualActions =
+        remember(
+            onPreloadingEnabledChanged,
+            onLauncherIconDesignChanged,
+            onHomeIconHdrChanged,
+            onHomeDynamicFullEffectChanged,
+            onAppThemeModeChanged,
+            onOpenAppLanguageSettings,
+        ) {
+            SettingsVisualSectionActions(
+                onPreloadingEnabledChanged = onPreloadingEnabledChanged,
+                onLauncherIconDesignChanged = onLauncherIconDesignChanged,
+                onHomeIconHdrChanged = onHomeIconHdrChanged,
+                onHomeDynamicFullEffectChanged = onHomeDynamicFullEffectChanged,
+                onAppThemeModeChanged = onAppThemeModeChanged,
+                onOpenAppLanguageSettings = onOpenAppLanguageSettings,
+                onShowThemeModePopupChange = { pageUiState.showThemeModePopup = it },
+                onThemePopupAnchorBoundsChange = { pageUiState.themePopupAnchorBounds = it },
+                onShowLauncherIconDesignPopupChange = {
+                    pageUiState.showLauncherIconDesignPopup = it
+                },
+                onLauncherIconDesignPopupAnchorBoundsChange = {
+                    pageUiState.launcherIconDesignPopupAnchorBounds = it
+                },
+            )
+        }
+    val animationState =
+        remember(
+            transitionAnimationsEnabled,
+            predictiveBackAnimationsEnabled,
+        ) {
+            SettingsAnimationSectionState(
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = predictiveBackAnimationsEnabled,
+            )
+        }
+    val animationActions =
+        remember(
+            onTransitionAnimationsChanged,
+            onPredictiveBackAnimationsChanged,
+        ) {
+            SettingsAnimationSectionActions(
+                onTransitionAnimationsChanged = onTransitionAnimationsChanged,
+                onPredictiveBackAnimationsChanged = onPredictiveBackAnimationsChanged,
+            )
+        }
+    val componentEffectsState =
+        remember(
+            liquidActionBarLayeredStyleEnabled,
+            liquidSwitchEnabled,
+            liquidBottomBarEnabled,
+            miuixMainNavigationEnabled,
+            searchAutoFocusEnabled,
+            gripAwareFloatingDockEnabled,
+        ) {
+            SettingsComponentEffectsSectionState(
+                liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                liquidSwitchEnabled = liquidSwitchEnabled,
+                liquidBottomBarEnabled = liquidBottomBarEnabled,
+                miuixMainNavigationEnabled = miuixMainNavigationEnabled,
+                searchAutoFocusEnabled = searchAutoFocusEnabled,
+                gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
+            )
+        }
+    val componentEffectsActions =
+        remember(
+            onLiquidActionBarLayeredStyleChanged,
+            onLiquidSwitchChanged,
+            onLiquidBottomBarChanged,
+            onMiuixMainNavigationChanged,
+            onSearchAutoFocusChanged,
+            onGripAwareFloatingDockChanged,
+        ) {
+            SettingsComponentEffectsSectionActions(
+                onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
+                onLiquidSwitchChanged = onLiquidSwitchChanged,
+                onLiquidBottomBarChanged = onLiquidBottomBarChanged,
+                onMiuixMainNavigationChanged = onMiuixMainNavigationChanged,
+                onSearchAutoFocusChanged = onSearchAutoFocusChanged,
+                onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
+            )
+        }
+    val notifyState =
+        remember(
+            superIslandNotificationEnabled,
+            superIslandBypassRestrictionEnabled,
+            superIslandRestoreDelayMs,
+        ) {
+            SettingsNotifySectionState(
+                superIslandNotificationEnabled = superIslandNotificationEnabled,
+                superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
+                superIslandRestoreDelayMs = superIslandRestoreDelayMs,
+            )
+        }
+    val notifyActions =
+        remember(
+            onSuperIslandNotificationChanged,
+            onSuperIslandBypassRestrictionChanged,
+            onSuperIslandRestoreDelayMsChanged,
+        ) {
+            SettingsNotifySectionActions(
+                onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
+                onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
+                onSuperIslandRestoreDelayMsChanged = onSuperIslandRestoreDelayMsChanged,
+            )
+        }
+    val copyState =
+        remember(textCopyCapabilityExpanded) {
+            SettingsCopySectionState(textCopyCapabilityExpanded = textCopyCapabilityExpanded)
+        }
+    val copyActions =
+        remember(onTextCopyCapabilityExpandedChanged) {
+            SettingsCopySectionActions(
+                onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged,
+            )
+        }
     return remember(
         permissionKeepAliveState,
         permissionKeepAliveActions,
@@ -268,7 +299,7 @@ internal fun rememberSettingsSectionContractBundle(
         notifyState,
         notifyActions,
         copyState,
-        copyActions
+        copyActions,
     ) {
         SettingsSectionContractBundle(
             permissionKeepAliveState = permissionKeepAliveState,
@@ -282,7 +313,7 @@ internal fun rememberSettingsSectionContractBundle(
             notifyState = notifyState,
             notifyActions = notifyActions,
             copyState = copyState,
-            copyActions = copyActions
+            copyActions = copyActions,
         )
     }
 }

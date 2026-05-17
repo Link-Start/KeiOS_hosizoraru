@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei
 
 import android.Manifest
@@ -25,6 +27,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.metrics.performance.JankStats
+import os.kei.core.icon.LauncherIconController
 import os.kei.core.perf.AppJankMonitor
 import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.platform.TransientExternalLaunchGuard
@@ -89,17 +92,18 @@ class MainActivity : ComponentActivity() {
             transientExternalLaunchGuard.clear()
             transientExternalLaunchActive = false
             val permissionGranted = granted || hasLocalNetworkPermission()
-            Toast.makeText(
-                this,
-                getString(
-                    if (permissionGranted) {
-                        R.string.mcp_toast_local_network_permission_granted
-                    } else {
-                        R.string.mcp_toast_local_network_permission_denied
-                    }
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast
+                .makeText(
+                    this,
+                    getString(
+                        if (permissionGranted) {
+                            R.string.mcp_toast_local_network_permission_granted
+                        } else {
+                            R.string.mcp_toast_local_network_permission_denied
+                        },
+                    ),
+                    Toast.LENGTH_SHORT,
+                ).show()
             val shouldStartMcp = startMcpAfterLocalNetworkPermission && permissionGranted
             startMcpAfterLocalNetworkPermission = false
             if (shouldStartMcp) {
@@ -110,35 +114,40 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        LauncherIconController.applyDesign(this, UiPrefs.getLauncherIconDesign())
         applyWindowColorMode(UiPrefs.isHomeIconHdrEnabled())
         window.isNavigationBarContrastEnforced = false
         notificationPermissionGranted = hasNotificationPermission()
         if (!notificationPermissionGranted) {
             transientExternalLaunchGuard.markLaunching(
-                TransientExternalLaunchGuard.Reason.NotificationPermission
+                TransientExternalLaunchGuard.Reason.NotificationPermission,
             )
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         consumeIntentNavigation(intent)
 
-        val appLabel = runCatching {
-            packageManager.getApplicationLabel(applicationInfo).toString()
-        }.getOrDefault("KeiOS")
-        val packageInfo = runCatching {
-            packageManager.getPackageInfoCompat(packageName)
-        }.getOrNull()
-        localMcpService = LocalMcpService(
-            appContext = applicationContext,
-            shizukuApiUtils = shizukuApiUtils,
-            appVersionName = packageInfo?.versionName ?: "unknown",
-            appVersionCode = packageInfo?.longVersionCode ?: -1L,
-            appPackageName = packageName,
-            appLabel = appLabel
-        )
-        mcpServerManager = McpServerManager(
-            appContext = applicationContext,
-            localMcpService = localMcpService
-        )
+        val appLabel =
+            runCatching {
+                packageManager.getApplicationLabel(applicationInfo).toString()
+            }.getOrDefault("KeiOS")
+        val packageInfo =
+            runCatching {
+                packageManager.getPackageInfoCompat(packageName)
+            }.getOrNull()
+        localMcpService =
+            LocalMcpService(
+                appContext = applicationContext,
+                shizukuApiUtils = shizukuApiUtils,
+                appVersionName = packageInfo?.versionName ?: "unknown",
+                appVersionCode = packageInfo?.longVersionCode ?: -1L,
+                appPackageName = packageName,
+                appLabel = appLabel,
+            )
+        mcpServerManager =
+            McpServerManager(
+                appContext = applicationContext,
+                localMcpService = localMcpService,
+            )
         applyPendingShortcutActions()
         McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this)
         runCatching { AppShortcuts.sync(this) }
@@ -149,11 +158,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appThemeMode = appThemeModeState.value
-            val colorSchemeMode = when (appThemeMode) {
-                AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
-                AppThemeMode.LIGHT -> ColorSchemeMode.Light
-                AppThemeMode.DARK -> ColorSchemeMode.Dark
-            }
+            val colorSchemeMode =
+                when (appThemeMode) {
+                    AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
+                    AppThemeMode.LIGHT -> ColorSchemeMode.Light
+                    AppThemeMode.DARK -> ColorSchemeMode.Dark
+                }
             val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
@@ -176,29 +186,29 @@ class MainActivity : ComponentActivity() {
                         requestedBottomPage = requestedBottomPage,
                         requestedBottomPageToken = requestedBottomPageToken,
                         requestedGitHubRefreshToken = requestedGitHubRefreshToken,
-                        requestedGitHubManagedInstallConfirmToken =
-                            requestedGitHubManagedInstallConfirmToken,
+                        requestedGitHubManagedInstallConfirmToken = requestedGitHubManagedInstallConfirmToken,
                         requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
                         requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
                         requestedBaBgmPlaybackToken = requestedBaBgmPlaybackToken,
                         transientExternalLaunchActive = transientExternalLaunchActive,
                         onRequestedBottomPageConsumed = {
                             requestedBottomPage = null
-                        }
+                        },
                     )
                 }
             }
         }
-        jankStats = AppJankMonitor.attach(
-            window = window,
-            enabled = BuildConfig.DEBUG
-        )
+        jankStats =
+            AppJankMonitor.attach(
+                window = window,
+                enabled = BuildConfig.DEBUG,
+            )
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         transientExternalLaunchGuard.markLaunching(
-            TransientExternalLaunchGuard.Reason.NotificationRoute
+            TransientExternalLaunchGuard.Reason.NotificationRoute,
         )
         setIntent(intent)
         consumeIntentNavigation(intent)
@@ -228,7 +238,7 @@ class MainActivity : ComponentActivity() {
         notificationPermissionGranted = hasNotificationPermission()
         if (!notificationPermissionGranted) {
             transientExternalLaunchGuard.markLaunching(
-                TransientExternalLaunchGuard.Reason.NotificationPermission
+                TransientExternalLaunchGuard.Reason.NotificationPermission,
             )
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -237,7 +247,7 @@ class MainActivity : ComponentActivity() {
     private fun hasNotificationPermission() =
         ContextCompat.checkSelfPermission(
             this,
-            Manifest.permission.POST_NOTIFICATIONS
+            Manifest.permission.POST_NOTIFICATIONS,
         ) == PackageManager.PERMISSION_GRANTED
 
     private fun requestLocalNetworkPermissionIfNeeded(startMcpAfterGrant: Boolean = false): Boolean {
@@ -245,40 +255,41 @@ class MainActivity : ComponentActivity() {
         val permission = LocalNetworkPermissionCompat.requiredPermissionOrNull() ?: return true
         startMcpAfterLocalNetworkPermission = startMcpAfterGrant
         transientExternalLaunchGuard.markLaunching(
-            TransientExternalLaunchGuard.Reason.LocalNetworkPermission
+            TransientExternalLaunchGuard.Reason.LocalNetworkPermission,
         )
         requestLocalNetworkPermissionLauncher.launch(permission)
-        Toast.makeText(
-            this,
-            getString(R.string.mcp_toast_local_network_permission_requested),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                this,
+                getString(R.string.mcp_toast_local_network_permission_requested),
+                Toast.LENGTH_SHORT,
+            ).show()
         return false
     }
 
-    private fun hasLocalNetworkPermission(): Boolean {
-        return LocalNetworkPermissionCompat.hasPermission(this)
-    }
+    private fun hasLocalNetworkPermission(): Boolean = LocalNetworkPermissionCompat.hasPermission(this)
 
     private fun applyWindowColorMode(hdrEnabled: Boolean) {
         runCatching {
-            window.colorMode = if (hdrEnabled) {
-                ActivityInfo.COLOR_MODE_HDR
-            } else {
-                ActivityInfo.COLOR_MODE_DEFAULT
-            }
+            window.colorMode =
+                if (hdrEnabled) {
+                    ActivityInfo.COLOR_MODE_HDR
+                } else {
+                    ActivityInfo.COLOR_MODE_DEFAULT
+                }
         }
     }
 
     private fun consumeIntentNavigation(intent: Intent?) {
         pendingMcpServerAction = null
         pendingShortcutAction = null
-        val route = MainActivityIntentRouting.sanitize(
-            rawTargetBottomPage = intent?.getStringExtra(EXTRA_TARGET_BOTTOM_PAGE),
-            rawMcpServerAction = intent?.getStringExtra(EXTRA_MCP_SERVER_ACTION),
-            rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION),
-            rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID)
-        ) ?: return
+        val route =
+            MainActivityIntentRouting.sanitize(
+                rawTargetBottomPage = intent?.getStringExtra(EXTRA_TARGET_BOTTOM_PAGE),
+                rawMcpServerAction = intent?.getStringExtra(EXTRA_MCP_SERVER_ACTION),
+                rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION),
+                rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID),
+            ) ?: return
         requestedBottomPage = route.targetBottomPage
         requestedBottomPageToken += 1
         pendingMcpServerAction = route.mcpServerAction
@@ -319,7 +330,7 @@ class MainActivity : ComponentActivity() {
         if (state.allowExternal && !requestLocalNetworkPermissionIfNeeded(startMcpAfterGrant = true)) return
         mcpServerManager.start(
             port = state.port,
-            allowExternal = state.allowExternal
+            allowExternal = state.allowExternal,
         )
     }
 
@@ -329,11 +340,12 @@ class MainActivity : ComponentActivity() {
         pendingShortcutAction = null
         val sent = BaApIslandShortcutNotificationCoordinator.send(this)
         if (!sent) {
-            Toast.makeText(
-                this,
-                getString(R.string.ba_toast_notification_permission_required),
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast
+                .makeText(
+                    this,
+                    getString(R.string.ba_toast_notification_permission_required),
+                    Toast.LENGTH_SHORT,
+                ).show()
         }
     }
 
@@ -359,19 +371,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun PackageManager.getPackageInfoCompat(packageName: String): PackageInfo {
-    return getPackageInfo(packageName, 0)
-}
+private fun PackageManager.getPackageInfoCompat(packageName: String): PackageInfo = getPackageInfo(packageName, 0)
 
 @Composable
 @Suppress("DEPRECATION")
 private fun SystemBarAutoStyle(appThemeMode: AppThemeMode) {
     val view = LocalView.current
-    val darkTheme = when (appThemeMode) {
-        AppThemeMode.FOLLOW_SYSTEM -> isSystemInDarkTheme()
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DARK -> true
-    }
+    val darkTheme =
+        when (appThemeMode) {
+            AppThemeMode.FOLLOW_SYSTEM -> isSystemInDarkTheme()
+            AppThemeMode.LIGHT -> false
+            AppThemeMode.DARK -> true
+        }
     val backgroundColor = MiuixTheme.colorScheme.background
     if (!view.isInEditMode) {
         SideEffect {

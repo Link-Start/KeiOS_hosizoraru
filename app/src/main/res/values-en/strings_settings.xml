@@ -13,6 +13,12 @@
     <string name="settings_theme_summary_follow_system">Use the current system theme.</string>
     <string name="settings_theme_summary_light">Always use the light theme.</string>
     <string name="settings_theme_summary_dark">Always use the dark theme.</string>
+    <string name="settings_launcher_icon_design_title">App icon design</string>
+    <string name="settings_launcher_icon_design_apple">Apple Designs</string>
+    <string name="settings_launcher_icon_design_android">Android Designs</string>
+    <string name="settings_launcher_icon_design_summary_apple">Use the refreshed Apple Designs icon as the current default.</string>
+    <string name="settings_launcher_icon_design_summary_android">Switch back to the classic Android Designs icon.</string>
+    <string name="settings_launcher_icon_design_scope">Affects the launcher icon. Some launchers may refresh after a short delay or after reopening the home screen.</string>
     <string name="settings_app_language_title">App language</string>
     <string name="settings_app_language_summary">Open the native app language settings for i18n testing without changing the system language.</string>
     <string name="settings_app_language_scope">Android native per-app language settings; falls back to the app info page when the direct page is unavailable.</string>

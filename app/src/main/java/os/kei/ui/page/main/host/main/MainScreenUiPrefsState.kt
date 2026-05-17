@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import os.kei.core.icon.LauncherIconController
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefsSnapshot
@@ -15,7 +17,7 @@ internal class MainScreenUiPrefsState(
     private val snapshot: UiPrefsSnapshot,
     private val appContext: Context,
     private val mcpServerManager: McpServerManager,
-    private val viewModel: MainScreenPrefsViewModel
+    private val viewModel: MainScreenPrefsViewModel,
 ) {
     val liquidBottomBarEnabled: Boolean get() = snapshot.liquidBottomBarEnabled
     val miuixMainNavigationEnabled: Boolean get() = snapshot.miuixMainNavigationEnabled
@@ -28,6 +30,7 @@ internal class MainScreenUiPrefsState(
     val homeIconHdrEnabled: Boolean get() = snapshot.homeIconHdrEnabled
     val homeDynamicFullEffectEnabled: Boolean get() = snapshot.homeDynamicFullEffectEnabled
     val preloadingEnabled: Boolean get() = snapshot.preloadingEnabled
+    val launcherIconDesign: LauncherIconDesign get() = snapshot.launcherIconDesign
     val nonHomeBackgroundEnabled: Boolean get() = snapshot.nonHomeBackgroundEnabled
     val nonHomeBackgroundUri: String get() = snapshot.nonHomeBackgroundUri
     val nonHomeBackgroundOpacity: Float get() = snapshot.nonHomeBackgroundOpacity
@@ -83,6 +86,12 @@ internal class MainScreenUiPrefsState(
         viewModel.updatePreloadingEnabled(value)
     }
 
+    fun updateLauncherIconDesign(value: LauncherIconDesign) {
+        if (value == snapshot.launcherIconDesign) return
+        viewModel.updateLauncherIconDesign(value)
+        LauncherIconController.applyDesign(appContext, value)
+    }
+
     fun updateNonHomeBackgroundEnabled(value: Boolean) {
         viewModel.updateNonHomeBackgroundEnabled(value)
     }
@@ -136,14 +145,13 @@ internal fun rememberMainScreenUiPrefsState(
     snapshot: UiPrefsSnapshot,
     appContext: Context,
     mcpServerManager: McpServerManager,
-    viewModel: MainScreenPrefsViewModel
-): MainScreenUiPrefsState {
-    return remember(snapshot, appContext, mcpServerManager, viewModel) {
+    viewModel: MainScreenPrefsViewModel,
+): MainScreenUiPrefsState =
+    remember(snapshot, appContext, mcpServerManager, viewModel) {
         MainScreenUiPrefsState(
             snapshot = snapshot,
             appContext = appContext,
             mcpServerManager = mcpServerManager,
-            viewModel = viewModel
+            viewModel = viewModel,
         )
     }
-}

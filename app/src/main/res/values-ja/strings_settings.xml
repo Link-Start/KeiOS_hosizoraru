@@ -13,6 +13,12 @@
     <string name="settings_theme_summary_follow_system">現在のシステムテーマを使用します。</string>
     <string name="settings_theme_summary_light">常にライトテーマを使用します。</string>
     <string name="settings_theme_summary_dark">常にダークテーマを使用します。</string>
+    <string name="settings_launcher_icon_design_title">アプリアイコンデザイン</string>
+    <string name="settings_launcher_icon_design_apple">Apple Designs</string>
+    <string name="settings_launcher_icon_design_android">Android Designs</string>
+    <string name="settings_launcher_icon_design_summary_apple">新しい Apple Designs アイコンを現在の既定として使用します。</string>
+    <string name="settings_launcher_icon_design_summary_android">従来の Android Designs アイコンに戻します。</string>
+    <string name="settings_launcher_icon_design_scope">ランチャーアイコンに反映されます。一部のランチャーでは少し待つか、ホーム画面を開き直すと更新されます。</string>
     <string name="settings_app_language_title">アプリの言語</string>
     <string name="settings_app_language_summary">システム言語を変更せずに i18n をテストするため、Android 標準のアプリ言語設定を開きます。</string>
     <string name="settings_app_language_scope">Android 標準のアプリ別言語設定です。直通ページがない端末ではアプリ情報ページにフォールバックします。</string>

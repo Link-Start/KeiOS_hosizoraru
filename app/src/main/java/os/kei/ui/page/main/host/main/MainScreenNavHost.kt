@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.host.main
 
 import android.content.pm.PackageInfo
@@ -58,138 +60,142 @@ internal fun MainScreenNavHost(
     mcpServerManager: McpServerManager,
     appThemeMode: AppThemeMode,
     transientExternalLaunchActive: Boolean,
-    onAppThemeModeChanged: (AppThemeMode) -> Unit
+    onAppThemeModeChanged: (AppThemeMode) -> Unit,
 ) {
-    val entryProvider = entryProvider<NavKey> {
-        entry<KeiosRoute.Main> {
-            MainPagerLayout(
-                rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
-                navigator = navigator,
-                settingsReturnToken = pagerCoordinator.settingsReturnToken,
-                liquidBottomBarEnabled = pagerCoordinator.liquidBottomBarEnabled,
-                miuixMainNavigationEnabled = pagerCoordinator.miuixMainNavigationEnabled,
-                liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
-                gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
-                homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
-                homeDynamicFullEffectEnabled = pagerCoordinator.homeDynamicFullEffectEnabled,
-                preloadingEnabled = pagerCoordinator.preloadingEnabled,
-                nonHomeBackgroundEnabled = pagerCoordinator.nonHomeBackgroundEnabled,
-                nonHomeBackgroundUri = pagerCoordinator.nonHomeBackgroundUri,
-                nonHomeBackgroundOpacity = pagerCoordinator.nonHomeBackgroundOpacity,
-                visibleBottomPageNames = pagerCoordinator.visibleBottomPageNames,
-                onVisibleBottomPageNamesChange = pagerCoordinator.onVisibleBottomPageNamesChange,
-                shizukuStatus = pagerCoordinator.shizukuStatus,
-                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                mcpServerManager = pagerCoordinator.mcpServerManager,
-                onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
-                onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
-                requestedBottomPage = pagerCoordinator.requestedBottomPage,
-                requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
-                requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
-                requestedGitHubManagedInstallConfirmToken =
-                    pagerCoordinator.requestedGitHubManagedInstallConfirmToken,
-                requestedGitHubActionsTrackId = pagerCoordinator.requestedGitHubActionsTrackId,
-                requestedGitHubActionsSheetToken = pagerCoordinator.requestedGitHubActionsSheetToken,
-                transientExternalLaunchActive = transientExternalLaunchActive,
-                onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed
-            )
+    val entryProvider =
+        entryProvider<NavKey> {
+            entry<KeiosRoute.Main> {
+                MainPagerLayout(
+                    rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
+                    navigator = navigator,
+                    settingsReturnToken = pagerCoordinator.settingsReturnToken,
+                    liquidBottomBarEnabled = pagerCoordinator.liquidBottomBarEnabled,
+                    miuixMainNavigationEnabled = pagerCoordinator.miuixMainNavigationEnabled,
+                    liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
+                    gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
+                    homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
+                    homeDynamicFullEffectEnabled = pagerCoordinator.homeDynamicFullEffectEnabled,
+                    preloadingEnabled = pagerCoordinator.preloadingEnabled,
+                    nonHomeBackgroundEnabled = pagerCoordinator.nonHomeBackgroundEnabled,
+                    nonHomeBackgroundUri = pagerCoordinator.nonHomeBackgroundUri,
+                    nonHomeBackgroundOpacity = pagerCoordinator.nonHomeBackgroundOpacity,
+                    visibleBottomPageNames = pagerCoordinator.visibleBottomPageNames,
+                    onVisibleBottomPageNamesChange = pagerCoordinator.onVisibleBottomPageNamesChange,
+                    shizukuStatus = pagerCoordinator.shizukuStatus,
+                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                    mcpServerManager = pagerCoordinator.mcpServerManager,
+                    onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
+                    onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
+                    requestedBottomPage = pagerCoordinator.requestedBottomPage,
+                    requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
+                    requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
+                    requestedGitHubManagedInstallConfirmToken =
+                        pagerCoordinator.requestedGitHubManagedInstallConfirmToken,
+                    requestedGitHubActionsTrackId = pagerCoordinator.requestedGitHubActionsTrackId,
+                    requestedGitHubActionsSheetToken = pagerCoordinator.requestedGitHubActionsSheetToken,
+                    transientExternalLaunchActive = transientExternalLaunchActive,
+                    onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed,
+                )
+            }
+            entry<KeiosRoute.Settings> {
+                SettingsPage(
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    onRequestNotificationPermission = onRequestNotificationPermission,
+                    liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
+                    onLiquidBottomBarChanged = prefsState::updateLiquidBottomBarEnabled,
+                    miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
+                    onMiuixMainNavigationChanged = prefsState::updateMiuixMainNavigationEnabled,
+                    liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                    onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
+                    liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
+                    onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
+                    transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
+                    onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
+                    predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
+                    onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
+                    searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
+                    onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
+                    gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
+                    onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
+                    homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
+                    onHomeIconHdrChanged = prefsState::updateHomeIconHdrEnabled,
+                    homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,
+                    onHomeDynamicFullEffectChanged = prefsState::updateHomeDynamicFullEffectEnabled,
+                    preloadingEnabled = prefsState.preloadingEnabled,
+                    onPreloadingEnabledChanged = prefsState::updatePreloadingEnabled,
+                    launcherIconDesign = prefsState.launcherIconDesign,
+                    onLauncherIconDesignChanged = prefsState::updateLauncherIconDesign,
+                    nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
+                    onNonHomeBackgroundEnabledChanged = prefsState::updateNonHomeBackgroundEnabled,
+                    nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
+                    onNonHomeBackgroundUriChanged = prefsState::updateNonHomeBackgroundUri,
+                    nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
+                    onNonHomeBackgroundOpacityChanged = prefsState::updateNonHomeBackgroundOpacity,
+                    superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
+                    onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
+                    superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
+                    onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
+                    superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,
+                    onSuperIslandRestoreDelayMsChanged = prefsState::updateSuperIslandRestoreDelayMs,
+                    logLevel = prefsState.logLevel,
+                    onLogLevelChanged = prefsState::updateLogLevel,
+                    textCopyCapabilityExpanded = prefsState.textCopyCapabilityExpanded,
+                    onTextCopyCapabilityExpandedChanged = prefsState::updateTextCopyCapabilityExpanded,
+                    cacheDiagnosticsEnabled = prefsState.cacheDiagnosticsEnabled,
+                    onCacheDiagnosticsChanged = prefsState::updateCacheDiagnosticsEnabled,
+                    shizukuStatus = pagerCoordinator.shizukuStatus,
+                    onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                    appThemeMode = appThemeMode,
+                    onAppThemeModeChanged = onAppThemeModeChanged,
+                    onBack = { navigator.pop() },
+                )
+            }
+            entry<KeiosRoute.McpSkill> {
+                McpSkillPage(
+                    mcpServerManager = mcpServerManager,
+                    onBack = { navigator.pop() },
+                )
+            }
+            entry<KeiosRoute.About> {
+                AboutPage(
+                    appLabel = appLabel,
+                    packageInfo = packageInfo,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    shizukuStatus = pagerCoordinator.shizukuStatus,
+                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                    onCheckShizuku = onCheckOrRequestShizuku,
+                    miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
+                    onBack = { navigator.pop() },
+                )
+            }
+            entry<KeiosRoute.BaStudentGuide> {
+                BaStudentGuidePage(
+                    liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
+                    miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
+                    liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                    preloadingEnabled = prefsState.preloadingEnabled,
+                    onBack = { navigator.pop() },
+                )
+            }
+            entry<KeiosRoute.BaGuideCatalog> { route ->
+                BaGuideCatalogPage(
+                    liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
+                    liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                    preloadingEnabled = prefsState.preloadingEnabled,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    onRequestNotificationPermission = onRequestNotificationPermission,
+                    openBgmPlaybackToken = route.openBgmPlaybackToken,
+                    onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+                    onOpenGuide = pagerCoordinator.onOpenGuideDetail,
+                )
+            }
         }
-        entry<KeiosRoute.Settings> {
-            SettingsPage(
-                notificationPermissionGranted = notificationPermissionGranted,
-                onRequestNotificationPermission = onRequestNotificationPermission,
-                liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                onLiquidBottomBarChanged = prefsState::updateLiquidBottomBarEnabled,
-                miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
-                onMiuixMainNavigationChanged = prefsState::updateMiuixMainNavigationEnabled,
-                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
-                liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
-                onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
-                transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
-                onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
-                predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
-                onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
-                searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
-                onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
-                gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
-                onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
-                homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
-                onHomeIconHdrChanged = prefsState::updateHomeIconHdrEnabled,
-                homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,
-                onHomeDynamicFullEffectChanged = prefsState::updateHomeDynamicFullEffectEnabled,
-                preloadingEnabled = prefsState.preloadingEnabled,
-                onPreloadingEnabledChanged = prefsState::updatePreloadingEnabled,
-                nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
-                onNonHomeBackgroundEnabledChanged = prefsState::updateNonHomeBackgroundEnabled,
-                nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
-                onNonHomeBackgroundUriChanged = prefsState::updateNonHomeBackgroundUri,
-                nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
-                onNonHomeBackgroundOpacityChanged = prefsState::updateNonHomeBackgroundOpacity,
-                superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
-                onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
-                superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
-                onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
-                superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,
-                onSuperIslandRestoreDelayMsChanged = prefsState::updateSuperIslandRestoreDelayMs,
-                logLevel = prefsState.logLevel,
-                onLogLevelChanged = prefsState::updateLogLevel,
-                textCopyCapabilityExpanded = prefsState.textCopyCapabilityExpanded,
-                onTextCopyCapabilityExpandedChanged = prefsState::updateTextCopyCapabilityExpanded,
-                cacheDiagnosticsEnabled = prefsState.cacheDiagnosticsEnabled,
-                onCacheDiagnosticsChanged = prefsState::updateCacheDiagnosticsEnabled,
-                shizukuStatus = pagerCoordinator.shizukuStatus,
-                onCheckOrRequestShizuku = onCheckOrRequestShizuku,
-                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                appThemeMode = appThemeMode,
-                onAppThemeModeChanged = onAppThemeModeChanged,
-                onBack = { navigator.pop() }
-            )
-        }
-        entry<KeiosRoute.McpSkill> {
-            McpSkillPage(
-                mcpServerManager = mcpServerManager,
-                onBack = { navigator.pop() }
-            )
-        }
-        entry<KeiosRoute.About> {
-            AboutPage(
-                appLabel = appLabel,
-                packageInfo = packageInfo,
-                notificationPermissionGranted = notificationPermissionGranted,
-                shizukuStatus = pagerCoordinator.shizukuStatus,
-                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                onCheckShizuku = onCheckOrRequestShizuku,
-                miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
-                onBack = { navigator.pop() }
-            )
-        }
-        entry<KeiosRoute.BaStudentGuide> {
-            BaStudentGuidePage(
-                liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
-                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                preloadingEnabled = prefsState.preloadingEnabled,
-                onBack = { navigator.pop() }
-            )
-        }
-        entry<KeiosRoute.BaGuideCatalog> { route ->
-            BaGuideCatalogPage(
-                liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                preloadingEnabled = prefsState.preloadingEnabled,
-                notificationPermissionGranted = notificationPermissionGranted,
-                onRequestNotificationPermission = onRequestNotificationPermission,
-                openBgmPlaybackToken = route.openBgmPlaybackToken,
-                onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
-                onOpenGuide = pagerCoordinator.onOpenGuideDetail
-            )
-        }
-    }
-    val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-        transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled
-    )
+    val predictiveBackPolicy =
+        PredictiveBackOemCompat.currentPolicy(
+            transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
+            predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
+        )
     val routePredictiveBackEnabled = predictiveBackPolicy.routePredictiveBackEnabled
     val predictivePopTransitionSpec =
         if (routePredictiveBackEnabled) {
@@ -197,27 +203,30 @@ internal fun MainScreenNavHost(
         } else {
             disabledPredictiveBackTransitionSpec<NavKey>()
         }
-    val transitionEffects = if (predictiveBackPolicy.popDirectionFollowsSwipeEdge) {
-        NavDisplayTransitionEffects.Default.copy(popDirectionFollowsSwipeEdge = true)
-    } else {
-        NavDisplayTransitionEffects.Default
-    }
+    val transitionEffects =
+        if (predictiveBackPolicy.popDirectionFollowsSwipeEdge) {
+            NavDisplayTransitionEffects.Default.copy(popDirectionFollowsSwipeEdge = true)
+        } else {
+            NavDisplayTransitionEffects.Default
+        }
     val backRuntimeController = remember { BackNavigationRuntimeController() }
     SideEffect {
         backRuntimeController.updatePolicy(predictiveBackPolicy)
     }
-    val entries = rememberDecoratedNavEntries(
-        backStack = backStack,
-        entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
-        entryProvider = entryProvider,
-    )
-    val sceneState = rememberSceneState(
-        entries = entries,
-        sceneStrategies = listOf(SinglePaneSceneStrategy()),
-        sceneDecoratorStrategies = emptyList(),
-        sharedTransitionScope = null,
-        onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
-    )
+    val entries =
+        rememberDecoratedNavEntries(
+            backStack = backStack,
+            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+            entryProvider = entryProvider,
+        )
+    val sceneState =
+        rememberSceneState(
+            entries = entries,
+            sceneStrategies = listOf(SinglePaneSceneStrategy()),
+            sceneDecoratorStrategies = emptyList(),
+            sharedTransitionScope = null,
+            onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+        )
     val navigationEventState = rememberNavigationEventState(sceneState)
     CompositionLocalProvider(
         LocalBackNavigationRuntimeController provides backRuntimeController,
@@ -225,13 +234,13 @@ internal fun MainScreenNavHost(
         LocalTransitionAnimationsEnabled provides prefsState.transitionAnimationsEnabled,
         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
-        LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled
+        LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled,
     ) {
         if (routePredictiveBackEnabled) {
             NavigationBackHandler(
                 sceneState = sceneState,
                 state = navigationEventState,
-                onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) }
+                onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
             )
         }
         NavDisplay(
@@ -239,11 +248,11 @@ internal fun MainScreenNavHost(
             navigationEventState = navigationEventState,
             predictivePopTransitionSpec = predictivePopTransitionSpec,
             transitionEffects = transitionEffects,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
         KeiOSBackNavigationHandler(
             enabled = !routePredictiveBackEnabled && backStack.size > 1,
-            source = BackNavigationSource.MainRoute
+            source = BackNavigationSource.MainRoute,
         ) {
             handleMainScreenBack(backStack, navigator, pagerCoordinator)
         }
@@ -253,7 +262,7 @@ internal fun MainScreenNavHost(
 private fun handleMainScreenBack(
     backStack: List<NavKey>,
     navigator: Navigator,
-    pagerCoordinator: MainScreenPagerCoordinator
+    pagerCoordinator: MainScreenPagerCoordinator,
 ) {
     if (backStack.lastOrNull() is KeiosRoute.BaGuideCatalog) {
         pagerCoordinator.onBaGuideCatalogBack()
@@ -261,10 +270,10 @@ private fun handleMainScreenBack(
     navigator.pop()
 }
 
-private fun <T : Any> disabledPredictiveBackTransitionSpec():
-    AnimatedContentTransitionScope<Scene<T>>.(Int) -> ContentTransform = {
+private fun <T : Any> disabledPredictiveBackTransitionSpec(): AnimatedContentTransitionScope<Scene<T>>.(Int) -> ContentTransform =
+    {
         ContentTransform(
             targetContentEnter = EnterTransition.None,
-            initialContentExit = ExitTransition.None
+            initialContentExit = ExitTransition.None,
         )
     }

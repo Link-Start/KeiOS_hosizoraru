@@ -7,25 +7,29 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 
 internal class MainScreenPrefsViewModel : ViewModel() {
     private val repository = UiPrefsRepository()
-    val snapshot: StateFlow<UiPrefsSnapshot> = repository.observeSnapshots()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = repository.observeSnapshots().value
-        )
+    val snapshot: StateFlow<UiPrefsSnapshot> =
+        repository
+            .observeSnapshots()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = repository.observeSnapshots().value,
+            )
     private var loadJob: Job? = null
 
     fun loadInitialSnapshot() {
         if (loadJob != null) return
-        loadJob = viewModelScope.launch {
-            repository.refreshSnapshot()
-        }
+        loadJob =
+            viewModelScope.launch {
+                repository.refreshSnapshot()
+            }
     }
 
     fun updateLiquidBottomBarEnabled(value: Boolean) {
@@ -94,6 +98,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateLauncherIconDesign(value: LauncherIconDesign) {
+        launchRepositoryUpdate {
+            setLauncherIconDesign(value)
+        }
+    }
+
     fun updateNonHomeBackgroundEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setNonHomeBackgroundEnabled(value)
@@ -154,9 +164,7 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
-    private fun launchRepositoryUpdate(
-        persist: suspend UiPrefsRepository.() -> Unit
-    ) {
+    private fun launchRepositoryUpdate(persist: suspend UiPrefsRepository.() -> Unit) {
         viewModelScope.launch {
             repository.persist()
         }

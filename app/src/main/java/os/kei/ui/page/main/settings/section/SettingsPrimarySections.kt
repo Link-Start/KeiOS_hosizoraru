@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.settings.section
 
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
@@ -37,189 +40,215 @@ internal fun SettingsPermissionKeepAliveSection(
     state: SettingsPermissionKeepAliveSectionState,
     actions: SettingsPermissionKeepAliveSectionActions,
     enabledCardColor: Color,
-    disabledCardColor: Color
+    disabledCardColor: Color,
 ) {
-    val permissionsActive = state.notificationsEnabled ||
-        state.ignoringBatteryOptimizations ||
-        state.oemAutoStartState == SettingsOemAutoStartState.Allowed ||
-        state.shizukuGranted ||
-        state.appListAccessMode != SettingsAppListAccessMode.Restricted
+    val permissionsActive =
+        state.notificationsEnabled ||
+            state.ignoringBatteryOptimizations ||
+            state.oemAutoStartState == SettingsOemAutoStartState.Allowed ||
+            state.shizukuGranted ||
+            state.appListAccessMode != SettingsAppListAccessMode.Restricted
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_permissions_header),
         title = stringResource(R.string.settings_group_permissions_title),
         sectionIcon = appLucideLockIcon(),
-        containerColor = if (permissionsActive) enabledCardColor else disabledCardColor
+        containerColor = if (permissionsActive) enabledCardColor else disabledCardColor,
     ) {
         SettingsActionItem(
             title = stringResource(R.string.settings_notification_permission_title),
-            summary = if (state.notificationPermissionGranted && state.notificationsEnabled) {
-                stringResource(R.string.settings_notification_permission_summary_granted)
-            } else {
-                stringResource(R.string.settings_notification_permission_summary_restricted)
-            },
+            summary =
+                if (state.notificationPermissionGranted && state.notificationsEnabled) {
+                    stringResource(R.string.settings_notification_permission_summary_granted)
+                } else {
+                    stringResource(R.string.settings_notification_permission_summary_restricted)
+                },
             infoKey = stringResource(R.string.settings_permissions_info_status),
-            infoValue = if (state.notificationPermissionGranted && state.notificationsEnabled) {
-                stringResource(R.string.settings_notification_permission_status_granted)
-            } else {
-                stringResource(R.string.settings_notification_permission_status_restricted)
-            },
+            infoValue =
+                if (state.notificationPermissionGranted && state.notificationsEnabled) {
+                    stringResource(R.string.settings_notification_permission_status_granted)
+                } else {
+                    stringResource(R.string.settings_notification_permission_status_restricted)
+                },
             trailing = {
                 AppStandaloneLiquidTextButton(
                     variant = GlassVariant.Compact,
-                    text = if (state.notificationPermissionGranted) {
-                        stringResource(R.string.common_open)
-                    } else {
-                        stringResource(R.string.settings_notification_permission_action_request)
-                    },
-                    enabled = if (state.notificationPermissionGranted) {
-                        state.notificationSettingsActionAvailable
-                    } else {
-                        true
-                    },
+                    text =
+                        if (state.notificationPermissionGranted) {
+                            stringResource(R.string.common_open)
+                        } else {
+                            stringResource(R.string.settings_notification_permission_action_request)
+                        },
+                    enabled =
+                        if (state.notificationPermissionGranted) {
+                            state.notificationSettingsActionAvailable
+                        } else {
+                            true
+                        },
                     onClick = {
                         if (state.notificationPermissionGranted) {
                             actions.onOpenNotificationSettings()
                         } else {
                             actions.onRequestNotificationPermission()
                         }
-                    }
+                    },
                 )
-            }
+            },
         )
         SettingsActionItem(
             title = stringResource(R.string.settings_battery_optimization_title),
-            summary = if (state.ignoringBatteryOptimizations) {
-                stringResource(R.string.settings_battery_optimization_summary_ignored)
-            } else {
-                stringResource(R.string.settings_battery_optimization_summary_restricted)
-            },
+            summary =
+                if (state.ignoringBatteryOptimizations) {
+                    stringResource(R.string.settings_battery_optimization_summary_ignored)
+                } else {
+                    stringResource(R.string.settings_battery_optimization_summary_restricted)
+                },
             infoKey = stringResource(R.string.settings_battery_optimization_info_status),
-            infoValue = if (state.ignoringBatteryOptimizations) {
-                stringResource(R.string.settings_battery_optimization_status_ignored)
-            } else {
-                stringResource(R.string.settings_battery_optimization_status_restricted)
-            },
+            infoValue =
+                if (state.ignoringBatteryOptimizations) {
+                    stringResource(R.string.settings_battery_optimization_status_ignored)
+                } else {
+                    stringResource(R.string.settings_battery_optimization_status_restricted)
+                },
             trailing = {
                 AppStandaloneLiquidTextButton(
                     variant = GlassVariant.Compact,
-                    text = if (state.ignoringBatteryOptimizations) {
-                        stringResource(R.string.common_open)
-                    } else {
-                        stringResource(R.string.settings_battery_optimization_action_request)
-                    },
+                    text =
+                        if (state.ignoringBatteryOptimizations) {
+                            stringResource(R.string.common_open)
+                        } else {
+                            stringResource(R.string.settings_battery_optimization_action_request)
+                        },
                     enabled = state.batteryOptimizationActionAvailable,
-                    onClick = actions.onOpenBatteryOptimizationSettings
+                    onClick = actions.onOpenBatteryOptimizationSettings,
                 )
-            }
+            },
         )
         SettingsActionItem(
             title = stringResource(R.string.settings_oem_autostart_title),
-            summary = when (state.oemAutoStartState) {
-                SettingsOemAutoStartState.Allowed -> {
-                    stringResource(
-                        R.string.settings_oem_autostart_summary_allowed,
-                        state.oemAutoStartVendorLabel
-                    )
-                }
-                SettingsOemAutoStartState.Restricted -> {
-                    stringResource(
-                        R.string.settings_oem_autostart_summary_restricted,
-                        state.oemAutoStartVendorLabel
-                    )
-                }
-                SettingsOemAutoStartState.Unknown -> {
-                    stringResource(
-                        R.string.settings_oem_autostart_summary_unknown,
-                        state.oemAutoStartVendorLabel
-                    )
-                }
-                SettingsOemAutoStartState.Fallback -> {
-                    stringResource(R.string.settings_oem_autostart_summary_fallback)
-                }
-                SettingsOemAutoStartState.Unsupported -> {
-                    stringResource(R.string.settings_oem_autostart_summary_unsupported)
-                }
-            },
+            summary =
+                when (state.oemAutoStartState) {
+                    SettingsOemAutoStartState.Allowed -> {
+                        stringResource(
+                            R.string.settings_oem_autostart_summary_allowed,
+                            state.oemAutoStartVendorLabel,
+                        )
+                    }
+
+                    SettingsOemAutoStartState.Restricted -> {
+                        stringResource(
+                            R.string.settings_oem_autostart_summary_restricted,
+                            state.oemAutoStartVendorLabel,
+                        )
+                    }
+
+                    SettingsOemAutoStartState.Unknown -> {
+                        stringResource(
+                            R.string.settings_oem_autostart_summary_unknown,
+                            state.oemAutoStartVendorLabel,
+                        )
+                    }
+
+                    SettingsOemAutoStartState.Fallback -> {
+                        stringResource(R.string.settings_oem_autostart_summary_fallback)
+                    }
+
+                    SettingsOemAutoStartState.Unsupported -> {
+                        stringResource(R.string.settings_oem_autostart_summary_unsupported)
+                    }
+                },
             infoKey = stringResource(R.string.settings_permissions_info_status),
-            infoValue = when (state.oemAutoStartState) {
-                SettingsOemAutoStartState.Allowed -> {
-                    stringResource(
-                        R.string.settings_oem_autostart_status_allowed,
-                        state.oemAutoStartVendorLabel
-                    )
-                }
-                SettingsOemAutoStartState.Restricted -> {
-                    stringResource(
-                        R.string.settings_oem_autostart_status_restricted,
-                        state.oemAutoStartVendorLabel
-                    )
-                }
-                SettingsOemAutoStartState.Unknown -> {
-                    stringResource(
-                        R.string.settings_oem_autostart_status_unknown,
-                        state.oemAutoStartVendorLabel
-                    )
-                }
-                SettingsOemAutoStartState.Fallback -> {
-                    stringResource(R.string.settings_oem_autostart_status_fallback)
-                }
-                SettingsOemAutoStartState.Unsupported -> {
-                    stringResource(R.string.settings_oem_autostart_status_unsupported)
-                }
-            },
+            infoValue =
+                when (state.oemAutoStartState) {
+                    SettingsOemAutoStartState.Allowed -> {
+                        stringResource(
+                            R.string.settings_oem_autostart_status_allowed,
+                            state.oemAutoStartVendorLabel,
+                        )
+                    }
+
+                    SettingsOemAutoStartState.Restricted -> {
+                        stringResource(
+                            R.string.settings_oem_autostart_status_restricted,
+                            state.oemAutoStartVendorLabel,
+                        )
+                    }
+
+                    SettingsOemAutoStartState.Unknown -> {
+                        stringResource(
+                            R.string.settings_oem_autostart_status_unknown,
+                            state.oemAutoStartVendorLabel,
+                        )
+                    }
+
+                    SettingsOemAutoStartState.Fallback -> {
+                        stringResource(R.string.settings_oem_autostart_status_fallback)
+                    }
+
+                    SettingsOemAutoStartState.Unsupported -> {
+                        stringResource(R.string.settings_oem_autostart_status_unsupported)
+                    }
+                },
             trailing = {
                 if (state.oemAutoStartActionAvailable) {
                     AppStandaloneLiquidTextButton(
                         variant = GlassVariant.Compact,
-                        text = if (state.oemAutoStartState == SettingsOemAutoStartState.Allowed) {
-                            stringResource(R.string.common_open)
-                        } else {
-                            stringResource(R.string.settings_oem_autostart_action_request)
-                        },
-                        onClick = actions.onOpenOemAutoStartSettings
+                        text =
+                            if (state.oemAutoStartState == SettingsOemAutoStartState.Allowed) {
+                                stringResource(R.string.common_open)
+                            } else {
+                                stringResource(R.string.settings_oem_autostart_action_request)
+                            },
+                        onClick = actions.onOpenOemAutoStartSettings,
                     )
                 }
-            }
+            },
         )
         SettingsActionItem(
             title = stringResource(R.string.settings_app_list_access_title),
-            summary = when (state.appListAccessMode) {
-                SettingsAppListAccessMode.Shizuku -> {
-                    stringResource(R.string.settings_app_list_access_summary_shizuku)
-                }
-                SettingsAppListAccessMode.Direct -> {
-                    stringResource(R.string.settings_app_list_access_summary_direct)
-                }
-                SettingsAppListAccessMode.Restricted -> {
-                    stringResource(R.string.settings_app_list_access_summary_restricted)
-                }
-            },
+            summary =
+                when (state.appListAccessMode) {
+                    SettingsAppListAccessMode.Shizuku -> {
+                        stringResource(R.string.settings_app_list_access_summary_shizuku)
+                    }
+
+                    SettingsAppListAccessMode.Direct -> {
+                        stringResource(R.string.settings_app_list_access_summary_direct)
+                    }
+
+                    SettingsAppListAccessMode.Restricted -> {
+                        stringResource(R.string.settings_app_list_access_summary_restricted)
+                    }
+                },
             infoKey = stringResource(R.string.settings_app_list_access_info_mode),
-            infoValue = when (state.appListAccessMode) {
-                SettingsAppListAccessMode.Shizuku -> {
-                    stringResource(
-                        R.string.settings_app_list_access_mode_shizuku,
-                        state.appListDetectedCount
-                    )
-                }
-                SettingsAppListAccessMode.Direct -> {
-                    stringResource(
-                        R.string.settings_app_list_access_mode_direct,
-                        state.appListDetectedCount
-                    )
-                }
-                SettingsAppListAccessMode.Restricted -> {
-                    stringResource(R.string.settings_app_list_access_mode_restricted)
-                }
-            },
+            infoValue =
+                when (state.appListAccessMode) {
+                    SettingsAppListAccessMode.Shizuku -> {
+                        stringResource(
+                            R.string.settings_app_list_access_mode_shizuku,
+                            state.appListDetectedCount,
+                        )
+                    }
+
+                    SettingsAppListAccessMode.Direct -> {
+                        stringResource(
+                            R.string.settings_app_list_access_mode_direct,
+                            state.appListDetectedCount,
+                        )
+                    }
+
+                    SettingsAppListAccessMode.Restricted -> {
+                        stringResource(R.string.settings_app_list_access_mode_restricted)
+                    }
+                },
             trailing = {
                 AppStandaloneLiquidTextButton(
                     variant = GlassVariant.Compact,
-                    text = if (state.appListSettingsActionAvailable) {
-                        stringResource(R.string.common_open)
-                    } else {
-                        stringResource(R.string.common_refresh)
-                    },
+                    text =
+                        if (state.appListSettingsActionAvailable) {
+                            stringResource(R.string.common_open)
+                        } else {
+                            stringResource(R.string.common_refresh)
+                        },
                     enabled = state.appListSettingsActionAvailable || state.shizukuGranted,
                     onClick = {
                         if (state.appListSettingsActionAvailable) {
@@ -227,39 +256,42 @@ internal fun SettingsPermissionKeepAliveSection(
                         } else {
                             actions.onCheckOrRequestShizuku()
                         }
-                    }
+                    },
                 )
-            }
+            },
         )
         SettingsActionItem(
             title = stringResource(R.string.settings_shizuku_permission_title),
-            summary = if (state.shizukuGranted) {
-                stringResource(R.string.settings_shizuku_permission_summary_granted)
-            } else {
-                stringResource(R.string.settings_shizuku_permission_summary_restricted)
-            },
-            infoKey = stringResource(R.string.settings_permissions_info_status),
-            infoValue = localizedShizukuStatusText(
-                statusText = state.shizukuStatusText,
-                granted = state.shizukuGranted
-            ).ifBlank {
+            summary =
                 if (state.shizukuGranted) {
-                    stringResource(R.string.settings_shizuku_permission_status_granted)
+                    stringResource(R.string.settings_shizuku_permission_summary_granted)
                 } else {
-                    stringResource(R.string.settings_shizuku_permission_status_restricted)
-                }
-            },
+                    stringResource(R.string.settings_shizuku_permission_summary_restricted)
+                },
+            infoKey = stringResource(R.string.settings_permissions_info_status),
+            infoValue =
+                localizedShizukuStatusText(
+                    statusText = state.shizukuStatusText,
+                    granted = state.shizukuGranted,
+                ).ifBlank {
+                    if (state.shizukuGranted) {
+                        stringResource(R.string.settings_shizuku_permission_status_granted)
+                    } else {
+                        stringResource(R.string.settings_shizuku_permission_status_restricted)
+                    }
+                },
             trailing = {
                 AppStandaloneLiquidTextButton(
                     variant = GlassVariant.Compact,
-                    text = if (state.shizukuGranted) {
-                        stringResource(R.string.common_refresh)
-                    } else {
-                        stringResource(R.string.settings_shizuku_permission_action_request)
-                    },
-                    onClick = actions.onCheckOrRequestShizuku
+                    text =
+                        if (state.shizukuGranted) {
+                            stringResource(R.string.common_refresh)
+                        } else {
+                            stringResource(R.string.settings_shizuku_permission_action_request)
+                        },
+                    onClick = actions.onCheckOrRequestShizuku,
                 )
-            }
+            },
         )
     }
 }
@@ -267,62 +299,76 @@ internal fun SettingsPermissionKeepAliveSection(
 @Composable
 private fun localizedShizukuStatusText(
     statusText: String,
-    granted: Boolean
+    granted: Boolean,
 ): String {
     val trimmed = statusText.trim()
     if (trimmed.isEmpty()) return ""
     return when {
-        trimmed == "Shizuku service unavailable (start Shizuku app first)" ->
+        trimmed == "Shizuku service unavailable (start Shizuku app first)" -> {
             stringResource(R.string.settings_shizuku_status_service_unavailable)
+        }
 
-        trimmed == "Shizuku service disconnected" ->
+        trimmed == "Shizuku service disconnected" -> {
             stringResource(R.string.settings_shizuku_status_service_disconnected)
+        }
 
-        trimmed == "Shizuku pre-v11 is unsupported" ->
+        trimmed == "Shizuku pre-v11 is unsupported" -> {
             stringResource(R.string.settings_shizuku_status_pre_v11_unsupported)
+        }
 
-        trimmed == "Shizuku permission: not granted" ->
+        trimmed == "Shizuku permission: not granted" -> {
             stringResource(R.string.settings_shizuku_status_permission_not_granted)
+        }
 
-        trimmed == "Shizuku permission: denied" ->
+        trimmed == "Shizuku permission: denied" -> {
             stringResource(R.string.settings_shizuku_status_permission_denied)
+        }
 
-        trimmed == "Shizuku permission denied permanently" ->
+        trimmed == "Shizuku permission denied permanently" -> {
             stringResource(R.string.settings_shizuku_status_permission_denied_permanently)
+        }
 
-        trimmed == "Requesting Shizuku permission..." ->
+        trimmed == "Requesting Shizuku permission..." -> {
             stringResource(R.string.settings_shizuku_status_requesting_permission)
+        }
 
-        trimmed == "Shizuku process API unavailable" ->
+        trimmed == "Shizuku process API unavailable" -> {
             stringResource(R.string.settings_shizuku_status_process_api_unavailable)
+        }
 
-        trimmed.startsWith("Shizuku command unavailable: unsupported service uid ") ->
+        trimmed.startsWith("Shizuku command unavailable: unsupported service uid ") -> {
             stringResource(
                 R.string.settings_shizuku_status_unsupported_service_uid,
-                trimmed.substringAfterLast(' ').ifBlank { "unknown" }
+                trimmed.substringAfterLast(' ').ifBlank { "unknown" },
             )
+        }
 
-        trimmed.startsWith("Shizuku init failed:") ->
+        trimmed.startsWith("Shizuku init failed:") -> {
             stringResource(
                 R.string.settings_shizuku_status_init_failed,
-                trimmed.substringAfter(':').trim().ifBlank { "unknown" }
+                trimmed.substringAfter(':').trim().ifBlank { "unknown" },
             )
+        }
 
-        trimmed.startsWith("Shizuku request failed:") ->
+        trimmed.startsWith("Shizuku request failed:") -> {
             stringResource(
                 R.string.settings_shizuku_status_request_failed,
-                trimmed.substringAfter(':').trim().ifBlank { "unknown" }
+                trimmed.substringAfter(':').trim().ifBlank { "unknown" },
             )
+        }
 
-        trimmed.startsWith("Shizuku permission: granted") ->
+        trimmed.startsWith("Shizuku permission: granted") -> {
             stringResource(
                 R.string.settings_shizuku_status_permission_granted_identity,
                 trimmed.substringAfter('(', "").substringBefore(')').ifBlank {
                     if (granted) "shell" else "unknown"
-                }
+                },
             )
+        }
 
-        else -> trimmed
+        else -> {
+            trimmed
+        }
     }
 }
 
@@ -331,39 +377,57 @@ internal fun SettingsVisualSection(
     state: SettingsVisualSectionState,
     actions: SettingsVisualSectionActions,
     enabledCardColor: Color,
-    disabledCardColor: Color
+    disabledCardColor: Color,
 ) {
-    val visualGroupActive = state.preloadingEnabled ||
-        state.homeIconHdrEnabled ||
-        state.homeDynamicFullEffectEnabled
-    val themeModeOptions = listOf(
-        AppThemeMode.FOLLOW_SYSTEM to stringResource(R.string.settings_theme_follow_system),
-        AppThemeMode.LIGHT to stringResource(R.string.settings_theme_light_mode),
-        AppThemeMode.DARK to stringResource(R.string.settings_theme_dark_mode)
-    )
+    val visualGroupActive =
+        state.preloadingEnabled ||
+            state.homeIconHdrEnabled ||
+            state.homeDynamicFullEffectEnabled
+    val themeModeOptions =
+        listOf(
+            AppThemeMode.FOLLOW_SYSTEM to stringResource(R.string.settings_theme_follow_system),
+            AppThemeMode.LIGHT to stringResource(R.string.settings_theme_light_mode),
+            AppThemeMode.DARK to stringResource(R.string.settings_theme_dark_mode),
+        )
+    val launcherIconOptions =
+        listOf(
+            LauncherIconDesign.Apple to stringResource(R.string.settings_launcher_icon_design_apple),
+            LauncherIconDesign.Android to stringResource(R.string.settings_launcher_icon_design_android),
+        )
     val currentThemeLabel =
         themeModeOptions.firstOrNull { it.first == state.appThemeMode }?.second
             ?: stringResource(R.string.settings_theme_follow_system)
-    val themeSummary = when (state.appThemeMode) {
-        AppThemeMode.FOLLOW_SYSTEM -> stringResource(R.string.settings_theme_summary_follow_system)
-        AppThemeMode.LIGHT -> stringResource(R.string.settings_theme_summary_light)
-        AppThemeMode.DARK -> stringResource(R.string.settings_theme_summary_dark)
-    }
+    val currentLauncherIconLabel =
+        launcherIconOptions.firstOrNull { it.first == state.launcherIconDesign }?.second
+            ?: stringResource(R.string.settings_launcher_icon_design_apple)
+    val themeSummary =
+        when (state.appThemeMode) {
+            AppThemeMode.FOLLOW_SYSTEM -> stringResource(R.string.settings_theme_summary_follow_system)
+            AppThemeMode.LIGHT -> stringResource(R.string.settings_theme_summary_light)
+            AppThemeMode.DARK -> stringResource(R.string.settings_theme_summary_dark)
+        }
+    val launcherIconSummary =
+        when (state.launcherIconDesign) {
+            LauncherIconDesign.Apple -> stringResource(R.string.settings_launcher_icon_design_summary_apple)
+            LauncherIconDesign.Android -> stringResource(R.string.settings_launcher_icon_design_summary_android)
+        }
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_visual_header),
         title = stringResource(R.string.settings_group_visual_title),
         sectionIcon = appLucideLayersIcon(),
-        containerColor = if (visualGroupActive) enabledCardColor else disabledCardColor
+        containerColor = if (visualGroupActive) enabledCardColor else disabledCardColor,
     ) {
         SettingsActionItem(
             title = stringResource(R.string.settings_theme_mode_title),
-            summary = themeSummary
+            summary = themeSummary,
         ) {
             AppDropdownSelector(
                 selectedText = currentThemeLabel,
                 options = themeModeOptions.map { it.second },
-                selectedIndex = themeModeOptions.indexOfFirst { it.first == state.appThemeMode }
-                    .coerceAtLeast(0),
+                selectedIndex =
+                    themeModeOptions
+                        .indexOfFirst { it.first == state.appThemeMode }
+                        .coerceAtLeast(0),
                 expanded = state.showThemeModePopup,
                 anchorBounds = state.themePopupAnchorBounds,
                 onExpandedChange = actions.onShowThemeModePopupChange,
@@ -371,7 +435,31 @@ internal fun SettingsVisualSection(
                     actions.onAppThemeModeChanged(themeModeOptions[selectedIndex].first)
                 },
                 onAnchorBoundsChange = actions.onThemePopupAnchorBoundsChange,
-                variant = GlassVariant.SheetAction
+                variant = GlassVariant.SheetAction,
+            )
+        }
+        SettingsActionItem(
+            title = stringResource(R.string.settings_launcher_icon_design_title),
+            summary = launcherIconSummary,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_launcher_icon_design_scope),
+        ) {
+            AppDropdownSelector(
+                selectedText = currentLauncherIconLabel,
+                options = launcherIconOptions.map { it.second },
+                selectedIndex =
+                    launcherIconOptions
+                        .indexOfFirst {
+                            it.first == state.launcherIconDesign
+                        }.coerceAtLeast(0),
+                expanded = state.showLauncherIconDesignPopup,
+                anchorBounds = state.launcherIconDesignPopupAnchorBounds,
+                onExpandedChange = actions.onShowLauncherIconDesignPopupChange,
+                onSelectedIndexChange = { selectedIndex ->
+                    actions.onLauncherIconDesignChanged(launcherIconOptions[selectedIndex].first)
+                },
+                onAnchorBoundsChange = actions.onLauncherIconDesignPopupAnchorBoundsChange,
+                variant = GlassVariant.SheetAction,
             )
         }
         SettingsActionItem(
@@ -385,45 +473,48 @@ internal fun SettingsVisualSection(
                     variant = GlassVariant.Compact,
                     text = stringResource(R.string.common_open),
                     enabled = state.appLanguageActionAvailable,
-                    onClick = actions.onOpenAppLanguageSettings
+                    onClick = actions.onOpenAppLanguageSettings,
                 )
-            }
+            },
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_preloading_title),
-            summary = if (state.preloadingEnabled) {
-                stringResource(R.string.settings_preloading_summary_enabled)
-            } else {
-                stringResource(R.string.settings_preloading_summary_disabled)
-            },
+            summary =
+                if (state.preloadingEnabled) {
+                    stringResource(R.string.settings_preloading_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_preloading_summary_disabled)
+                },
             checked = state.preloadingEnabled,
             onCheckedChange = actions.onPreloadingEnabledChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_preloading_scope)
+            infoValue = stringResource(R.string.settings_preloading_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_home_shine_title),
-            summary = if (state.homeIconHdrEnabled) {
-                stringResource(R.string.settings_home_shine_summary_enabled)
-            } else {
-                stringResource(R.string.settings_home_shine_summary_disabled)
-            },
+            summary =
+                if (state.homeIconHdrEnabled) {
+                    stringResource(R.string.settings_home_shine_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_home_shine_summary_disabled)
+                },
             checked = state.homeIconHdrEnabled,
             onCheckedChange = actions.onHomeIconHdrChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_home_shine_scope)
+            infoValue = stringResource(R.string.settings_home_shine_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_home_dynamic_full_effect_title),
-            summary = if (state.homeDynamicFullEffectEnabled) {
-                stringResource(R.string.settings_home_dynamic_full_effect_summary_enabled)
-            } else {
-                stringResource(R.string.settings_home_dynamic_full_effect_summary_disabled)
-            },
+            summary =
+                if (state.homeDynamicFullEffectEnabled) {
+                    stringResource(R.string.settings_home_dynamic_full_effect_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_home_dynamic_full_effect_summary_disabled)
+                },
             checked = state.homeDynamicFullEffectEnabled,
             onCheckedChange = actions.onHomeDynamicFullEffectChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_home_dynamic_full_effect_scope)
+            infoValue = stringResource(R.string.settings_home_dynamic_full_effect_scope),
         )
     }
 }
@@ -433,39 +524,42 @@ internal fun SettingsAnimationSection(
     state: SettingsAnimationSectionState,
     actions: SettingsAnimationSectionActions,
     enabledCardColor: Color,
-    disabledCardColor: Color
+    disabledCardColor: Color,
 ) {
-    val animationGroupActive = state.transitionAnimationsEnabled ||
-        state.predictiveBackAnimationsEnabled
+    val animationGroupActive =
+        state.transitionAnimationsEnabled ||
+            state.predictiveBackAnimationsEnabled
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_animation_header),
         title = stringResource(R.string.settings_group_animation_title),
         sectionIcon = appLucideTimeIcon(),
-        containerColor = if (animationGroupActive) enabledCardColor else disabledCardColor
+        containerColor = if (animationGroupActive) enabledCardColor else disabledCardColor,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_transition_animations_title),
-            summary = if (state.transitionAnimationsEnabled) {
-                stringResource(R.string.settings_transition_animations_summary_enabled)
-            } else {
-                stringResource(R.string.settings_transition_animations_summary_disabled)
-            },
+            summary =
+                if (state.transitionAnimationsEnabled) {
+                    stringResource(R.string.settings_transition_animations_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_transition_animations_summary_disabled)
+                },
             checked = state.transitionAnimationsEnabled,
             onCheckedChange = actions.onTransitionAnimationsChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_transition_animations_scope)
+            infoValue = stringResource(R.string.settings_transition_animations_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_predictive_back_animations_title),
-            summary = if (state.predictiveBackAnimationsEnabled) {
-                stringResource(R.string.settings_predictive_back_animations_summary_enabled)
-            } else {
-                stringResource(R.string.settings_predictive_back_animations_summary_disabled)
-            },
+            summary =
+                if (state.predictiveBackAnimationsEnabled) {
+                    stringResource(R.string.settings_predictive_back_animations_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_predictive_back_animations_summary_disabled)
+                },
             checked = state.predictiveBackAnimationsEnabled,
             onCheckedChange = actions.onPredictiveBackAnimationsChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_predictive_back_animations_scope)
+            infoValue = stringResource(R.string.settings_predictive_back_animations_scope),
         )
     }
 }
@@ -475,85 +569,91 @@ internal fun SettingsComponentEffectsSection(
     state: SettingsComponentEffectsSectionState,
     actions: SettingsComponentEffectsSectionActions,
     enabledCardColor: Color,
-    disabledCardColor: Color
+    disabledCardColor: Color,
 ) {
-    val componentEffectsGroupActive = state.liquidActionBarLayeredStyleEnabled ||
-        state.liquidSwitchEnabled ||
-        state.liquidBottomBarEnabled ||
-        state.miuixMainNavigationEnabled ||
-        state.searchAutoFocusEnabled ||
-        state.gripAwareFloatingDockEnabled
+    val componentEffectsGroupActive =
+        state.liquidActionBarLayeredStyleEnabled ||
+            state.liquidSwitchEnabled ||
+            state.liquidBottomBarEnabled ||
+            state.miuixMainNavigationEnabled ||
+            state.searchAutoFocusEnabled ||
+            state.gripAwareFloatingDockEnabled
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_component_effects_header),
         title = stringResource(R.string.settings_group_component_effects_title),
         sectionIcon = appLucideConfigIcon(),
-        containerColor = if (componentEffectsGroupActive) enabledCardColor else disabledCardColor
+        containerColor = if (componentEffectsGroupActive) enabledCardColor else disabledCardColor,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_actionbar_style_title),
-            summary = if (state.liquidActionBarLayeredStyleEnabled) {
-                stringResource(R.string.settings_actionbar_style_summary_enabled)
-            } else {
-                stringResource(R.string.settings_actionbar_style_summary_disabled)
-            },
+            summary =
+                if (state.liquidActionBarLayeredStyleEnabled) {
+                    stringResource(R.string.settings_actionbar_style_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_actionbar_style_summary_disabled)
+                },
             checked = state.liquidActionBarLayeredStyleEnabled,
             onCheckedChange = actions.onLiquidActionBarLayeredStyleChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_actionbar_style_scope)
+            infoValue = stringResource(R.string.settings_actionbar_style_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_liquid_switch_title),
-            summary = if (state.liquidSwitchEnabled) {
-                stringResource(R.string.settings_liquid_switch_summary_enabled)
-            } else {
-                stringResource(R.string.settings_liquid_switch_summary_disabled)
-            },
+            summary =
+                if (state.liquidSwitchEnabled) {
+                    stringResource(R.string.settings_liquid_switch_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_liquid_switch_summary_disabled)
+                },
             checked = state.liquidSwitchEnabled,
             onCheckedChange = actions.onLiquidSwitchChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_liquid_switch_scope)
+            infoValue = stringResource(R.string.settings_liquid_switch_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_bottom_bar_title),
             summary = stringResource(R.string.settings_bottom_bar_summary),
             checked = state.liquidBottomBarEnabled,
-            onCheckedChange = actions.onLiquidBottomBarChanged
+            onCheckedChange = actions.onLiquidBottomBarChanged,
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_miuix_main_navigation_title),
-            summary = if (state.miuixMainNavigationEnabled) {
-                stringResource(R.string.settings_miuix_main_navigation_summary_enabled)
-            } else {
-                stringResource(R.string.settings_miuix_main_navigation_summary_disabled)
-            },
+            summary =
+                if (state.miuixMainNavigationEnabled) {
+                    stringResource(R.string.settings_miuix_main_navigation_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_miuix_main_navigation_summary_disabled)
+                },
             checked = state.miuixMainNavigationEnabled,
             onCheckedChange = actions.onMiuixMainNavigationChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_miuix_main_navigation_scope)
+            infoValue = stringResource(R.string.settings_miuix_main_navigation_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_search_auto_focus_title),
-            summary = if (state.searchAutoFocusEnabled) {
-                stringResource(R.string.settings_search_auto_focus_summary_enabled)
-            } else {
-                stringResource(R.string.settings_search_auto_focus_summary_disabled)
-            },
+            summary =
+                if (state.searchAutoFocusEnabled) {
+                    stringResource(R.string.settings_search_auto_focus_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_search_auto_focus_summary_disabled)
+                },
             checked = state.searchAutoFocusEnabled,
             onCheckedChange = actions.onSearchAutoFocusChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_search_auto_focus_scope)
+            infoValue = stringResource(R.string.settings_search_auto_focus_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_grip_aware_floating_dock_title),
-            summary = if (state.gripAwareFloatingDockEnabled) {
-                stringResource(R.string.settings_grip_aware_floating_dock_summary_enabled)
-            } else {
-                stringResource(R.string.settings_grip_aware_floating_dock_summary_disabled)
-            },
+            summary =
+                if (state.gripAwareFloatingDockEnabled) {
+                    stringResource(R.string.settings_grip_aware_floating_dock_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_grip_aware_floating_dock_summary_disabled)
+                },
             checked = state.gripAwareFloatingDockEnabled,
             onCheckedChange = actions.onGripAwareFloatingDockChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_grip_aware_floating_dock_scope)
+            infoValue = stringResource(R.string.settings_grip_aware_floating_dock_scope),
         )
     }
 }
@@ -564,55 +664,60 @@ internal fun SettingsNotifySection(
     actions: SettingsNotifySectionActions,
     enabledCardColor: Color,
     disabledCardColor: Color,
-    onSliderInteractionChanged: (Boolean) -> Unit = {}
+    onSliderInteractionChanged: (Boolean) -> Unit = {},
 ) {
-    val notifyGroupActive = state.superIslandNotificationEnabled ||
-        state.superIslandBypassRestrictionEnabled
+    val notifyGroupActive =
+        state.superIslandNotificationEnabled ||
+            state.superIslandBypassRestrictionEnabled
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_notify_header),
         title = stringResource(R.string.settings_group_notify_title),
         sectionIcon = appLucideAlertIcon(),
-        containerColor = if (notifyGroupActive) enabledCardColor else disabledCardColor
+        containerColor = if (notifyGroupActive) enabledCardColor else disabledCardColor,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_super_island_style_title),
-            summary = if (state.superIslandNotificationEnabled) {
-                stringResource(R.string.settings_super_island_style_summary_enabled)
-            } else {
-                stringResource(R.string.settings_super_island_style_summary_disabled)
-            },
+            summary =
+                if (state.superIslandNotificationEnabled) {
+                    stringResource(R.string.settings_super_island_style_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_super_island_style_summary_disabled)
+                },
             checked = state.superIslandNotificationEnabled,
             onCheckedChange = actions.onSuperIslandNotificationChanged,
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_super_island_style_scope)
+            infoValue = stringResource(R.string.settings_super_island_style_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_super_island_bypass_title),
-            summary = if (state.superIslandBypassRestrictionEnabled) {
-                stringResource(R.string.settings_super_island_bypass_summary_enabled)
-            } else {
-                stringResource(R.string.settings_super_island_bypass_summary_disabled)
-            },
+            summary =
+                if (state.superIslandBypassRestrictionEnabled) {
+                    stringResource(R.string.settings_super_island_bypass_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_super_island_bypass_summary_disabled)
+                },
             checked = state.superIslandBypassRestrictionEnabled,
             onCheckedChange = actions.onSuperIslandBypassRestrictionChanged,
             infoKey = stringResource(R.string.common_note),
-            infoValue = stringResource(R.string.settings_super_island_bypass_note)
+            infoValue = stringResource(R.string.settings_super_island_bypass_note),
         )
         val restoreDelayTitle = stringResource(R.string.settings_super_island_restore_delay_title)
         SettingsActionItem(
             title = restoreDelayTitle,
-            summary = stringResource(
-                R.string.settings_super_island_restore_delay_summary,
-                formatMilliseconds(state.superIslandRestoreDelayMs)
-            ),
+            summary =
+                stringResource(
+                    R.string.settings_super_island_restore_delay_summary,
+                    formatMilliseconds(state.superIslandRestoreDelayMs),
+                ),
             infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_super_island_restore_delay_scope)
+            infoValue = stringResource(R.string.settings_super_island_restore_delay_scope),
         )
         SettingsLiquidKeyPointSlider(
-            value = state.superIslandRestoreDelayMs.toFloat().coerceIn(
-                SUPER_ISLAND_RESTORE_DELAY_MIN_MS,
-                SUPER_ISLAND_RESTORE_DELAY_MAX_MS
-            ),
+            value =
+                state.superIslandRestoreDelayMs.toFloat().coerceIn(
+                    SUPER_ISLAND_RESTORE_DELAY_MIN_MS,
+                    SUPER_ISLAND_RESTORE_DELAY_MAX_MS,
+                ),
             onValueChange = { value ->
                 actions.onSuperIslandRestoreDelayMsChanged(value.roundToInt())
             },
@@ -622,16 +727,18 @@ internal fun SettingsNotifySection(
             enabled = state.superIslandBypassRestrictionEnabled,
             contentDescription = restoreDelayTitle,
             onInteractionChanged = onSliderInteractionChanged,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 2.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
         )
         SettingsInfoItem(
             key = stringResource(R.string.common_note),
-            value = stringResource(
-                R.string.settings_super_island_restore_delay_note,
-                formatMilliseconds(SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS.roundToInt())
-            )
+            value =
+                stringResource(
+                    R.string.settings_super_island_restore_delay_note,
+                    formatMilliseconds(SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS.roundToInt()),
+                ),
         )
     }
 }
@@ -641,29 +748,31 @@ internal fun SettingsCopySection(
     state: SettingsCopySectionState,
     actions: SettingsCopySectionActions,
     enabledCardColor: Color,
-    disabledCardColor: Color
+    disabledCardColor: Color,
 ) {
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_copy_header),
         title = stringResource(R.string.settings_group_copy_title),
         sectionIcon = osLucideCopyIcon(),
-        containerColor = if (state.textCopyCapabilityExpanded) enabledCardColor else disabledCardColor
+        containerColor = if (state.textCopyCapabilityExpanded) enabledCardColor else disabledCardColor,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_copy_capability_title),
-            summary = if (state.textCopyCapabilityExpanded) {
-                stringResource(R.string.settings_copy_capability_summary_enabled)
-            } else {
-                stringResource(R.string.settings_copy_capability_summary_disabled)
-            },
+            summary =
+                if (state.textCopyCapabilityExpanded) {
+                    stringResource(R.string.settings_copy_capability_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_copy_capability_summary_disabled)
+                },
             checked = state.textCopyCapabilityExpanded,
             onCheckedChange = actions.onTextCopyCapabilityExpandedChanged,
             infoKey = stringResource(R.string.common_note),
-            infoValue = if (state.textCopyCapabilityExpanded) {
-                stringResource(R.string.settings_copy_capability_note_enabled)
-            } else {
-                stringResource(R.string.settings_copy_capability_note_disabled)
-            }
+            infoValue =
+                if (state.textCopyCapabilityExpanded) {
+                    stringResource(R.string.settings_copy_capability_note_enabled)
+                } else {
+                    stringResource(R.string.settings_copy_capability_note_disabled)
+                },
         )
     }
 }

@@ -12,9 +12,9 @@ import androidx.compose.ui.unit.IntRect
 internal class SettingsPageUiState {
     var showThemeModePopup by mutableStateOf(false)
     var themePopupAnchorBounds by mutableStateOf<IntRect?>(null)
+    var showLauncherIconDesignPopup by mutableStateOf(false)
+    var launcherIconDesignPopupAnchorBounds by mutableStateOf<IntRect?>(null)
 }
 
 @Composable
-internal fun rememberSettingsPageUiState(): SettingsPageUiState {
-    return remember { SettingsPageUiState() }
-}
+internal fun rememberSettingsPageUiState(): SettingsPageUiState = remember { SettingsPageUiState() }

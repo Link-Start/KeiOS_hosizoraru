@@ -60,11 +60,32 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
         preferCapsule = false,
     )
 
+    if (profileState.relatedRoleItems.isNotEmpty() || profileState.relatedRoleHint.isNotBlank()) {
+        guideProfileCard(addTopSpacing = true) {
+            GuideRelationRoleSection(
+                sectionTitle = profileState.relatedRoleTitle.ifBlank {
+                    stringResource(R.string.guide_profile_related_roles)
+                },
+                itemFallbackLabel = stringResource(R.string.guide_profile_related_role),
+                emptyText = stringResource(R.string.guide_profile_related_roles_empty),
+                roleHint = profileState.relatedRoleHint,
+                roleItems = profileState.relatedRoleItems,
+                backdrop = backdrop,
+                onOpenGuide = onOpenGuide,
+            )
+        }
+    }
+
     if (profileState.sameNameRoleItems.isNotEmpty() || profileState.sameNameRoleHint.isNotBlank()) {
         guideProfileCard(addTopSpacing = true) {
-            GuideSameNameRoleSection(
-                sameNameRoleHint = profileState.sameNameRoleHint,
-                sameNameRoleItems = profileState.sameNameRoleItems,
+            GuideRelationRoleSection(
+                sectionTitle = profileState.sameNameRoleTitle.ifBlank {
+                    stringResource(R.string.guide_profile_related_same_name)
+                },
+                itemFallbackLabel = stringResource(R.string.guide_profile_same_name),
+                emptyText = stringResource(R.string.guide_profile_same_name_empty),
+                roleHint = profileState.sameNameRoleHint,
+                roleItems = profileState.sameNameRoleItems,
                 backdrop = backdrop,
                 onOpenGuide = onOpenGuide,
             )

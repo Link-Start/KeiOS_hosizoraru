@@ -532,6 +532,9 @@
     <string name="guide_profile_npc_empty">No character profile data has been parsed.</string>
     <string name="guide_profile_no_gifts">No gift preferences parsed.</string>
     <string name="guide_profile_gift">Gift</string>
+    <string name="guide_profile_related_roles">Related Characters</string>
+    <string name="guide_profile_related_role">Related Character</string>
+    <string name="guide_profile_related_roles_empty">No related characters parsed.</string>
     <string name="guide_profile_related_same_name">Related Versions</string>
     <string name="guide_profile_same_name">Related Version</string>
     <string name="guide_profile_same_name_empty">No related versions parsed.</string>

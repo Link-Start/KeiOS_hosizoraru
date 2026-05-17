@@ -96,6 +96,7 @@ internal fun parseGiftPreferenceRowsFromBaseData(
     ).map(::normalizeGuideRowKey).toSet()
     val giftStopKeyFragments = listOf(
         "互动家具", "情人节巧克力", "巧克力图", "巧克力名称", "巧克力简介",
+        "相关角色", "相关角色名称",
         "相关同名角色", "同名角色名称", "配音", "配音语言", "配音大类",
         "官方介绍", "角色表情", "回忆大厅", "立绘", "本家画", "设定集", "TV动画设定图"
     ).map(::normalizeGuideRowKey)

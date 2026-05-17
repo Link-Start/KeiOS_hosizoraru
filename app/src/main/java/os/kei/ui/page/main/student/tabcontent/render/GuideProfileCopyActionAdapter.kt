@@ -31,39 +31,61 @@ internal fun GuideSameNameRoleSection(
     sameNameRoleHint: String,
     sameNameRoleItems: List<SameNameRoleItem>,
     backdrop: LayerBackdrop,
-    onOpenGuide: (String) -> Unit
+    onOpenGuide: (String) -> Unit,
 ) {
     val relatedSameNameLabel = stringResource(R.string.guide_profile_related_same_name)
     val sameNameLabel = stringResource(R.string.guide_profile_same_name)
-    GuideProfileSectionHeader(title = relatedSameNameLabel)
-    sameNameRoleHint.takeIf { it.isNotBlank() }?.let { hint ->
+    GuideRelationRoleSection(
+        sectionTitle = relatedSameNameLabel,
+        itemFallbackLabel = sameNameLabel,
+        emptyText = stringResource(R.string.guide_profile_same_name_empty),
+        roleHint = sameNameRoleHint,
+        roleItems = sameNameRoleItems,
+        backdrop = backdrop,
+        onOpenGuide = onOpenGuide,
+    )
+}
+
+@Composable
+internal fun GuideRelationRoleSection(
+    sectionTitle: String,
+    itemFallbackLabel: String,
+    emptyText: String,
+    roleHint: String,
+    roleItems: List<SameNameRoleItem>,
+    backdrop: LayerBackdrop,
+    onOpenGuide: (String) -> Unit,
+) {
+    GuideProfileSectionHeader(title = sectionTitle)
+    roleHint.takeIf { it.isNotBlank() }?.let { hint ->
         CopyModeSelectionContainer {
             Text(
                 text = hint,
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
-                modifier = Modifier.guideTabCopyable(
-                    buildGuideTabCopyPayload(relatedSameNameLabel, hint)
-                ),
+                modifier =
+                    Modifier.guideTabCopyable(
+                        buildGuideTabCopyPayload(sectionTitle, hint),
+                    ),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 
-    if (sameNameRoleItems.isEmpty()) {
+    if (roleItems.isEmpty()) {
         Text(
-            text = stringResource(R.string.guide_profile_same_name_empty),
-            color = MiuixTheme.colorScheme.onBackgroundVariant
+            text = emptyText,
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
         )
         return
     }
 
-    sameNameRoleItems.forEachIndexed { index, role ->
+    roleItems.forEachIndexed { index, role ->
         if (index > 0) {
             Spacer(modifier = Modifier.height(4.dp))
         }
         val roleCopyPayload = buildString {
-            append(role.name.ifBlank { sameNameLabel })
+            append(role.name.ifBlank { itemFallbackLabel })
             role.linkUrl.trim().takeIf { it.isNotBlank() }?.let { link ->
                 append('\n')
                 append(link)
@@ -75,12 +97,12 @@ internal fun GuideSameNameRoleSection(
                     .fillMaxWidth()
                     .guideTabCopyable(
                         buildGuideTabCopyPayload(
-                            sameNameLabel,
-                            roleCopyPayload
-                        )
+                            itemFallbackLabel,
+                            roleCopyPayload,
+                        ),
                     ),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 val previewImage = role.imageUrl.trim()
                 if (previewImage.isNotBlank()) {
@@ -92,20 +114,20 @@ internal fun GuideSameNameRoleSection(
                 }
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     val link = role.linkUrl.trim()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = role.name.ifBlank { sameNameLabel },
+                            text = role.name.ifBlank { itemFallbackLabel },
                             color = MiuixTheme.colorScheme.onBackground,
                             modifier = Modifier.weight(1f),
                             maxLines = Int.MAX_VALUE,
-                            overflow = TextOverflow.Clip
+                            overflow = TextOverflow.Clip,
                         )
                         if (link.isNotBlank()) {
                             AppLiquidTextButton(
@@ -113,7 +135,7 @@ internal fun GuideSameNameRoleSection(
                                 text = stringResource(R.string.guide_profile_archive_action),
                                 textColor = Color(0xFF3B82F6),
                                 variant = GlassVariant.Compact,
-                                onClick = { onOpenGuide(link) }
+                                onClick = { onOpenGuide(link) },
                             )
                         }
                     }
@@ -122,7 +144,7 @@ internal fun GuideSameNameRoleSection(
                             text = stringResource(R.string.guide_profile_link_unavailable),
                             color = MiuixTheme.colorScheme.onBackgroundVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

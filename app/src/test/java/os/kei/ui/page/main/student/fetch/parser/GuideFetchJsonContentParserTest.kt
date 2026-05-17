@@ -141,6 +141,45 @@ class GuideFetchJsonContentParserTest {
         )
     }
 
+    @Test
+    fun `array relation info preserves related and same name groups`() {
+        val detail = parseGuideDetailFromArrayContentJson(
+            raw = arrayContentJson(
+                relationInfoNode(
+                    relationGroup(
+                        title = "相关人物",
+                        relationItem(
+                            name = "桃香",
+                            href = "/ba/tj/161100.html",
+                            avatar = "//cdn.example/momoka.png",
+                        ),
+                    ),
+                    relationGroup(
+                        title = "同名角色",
+                        relationItem(
+                            name = "凛(临战)",
+                            href = "/ba/tj/161101.html",
+                            avatar = "//cdn.example/rin-alt.png",
+                        ),
+                    ),
+                ),
+            ),
+            sourceUrl = "https://www.gamekee.com/ba/161188.html",
+        )
+
+        val rowsByKey = detail.profileRows.groupBy { it.key }
+        assertEquals("相关人物", rowsByKey.getValue("相关角色").single().value)
+        assertEquals("同名角色", rowsByKey.getValue("相关同名角色").single().value)
+        assertEquals(
+            "桃香 / https://www.gamekee.com/ba/tj/161100.html",
+            rowsByKey.getValue("相关角色名称").single().value,
+        )
+        assertEquals(
+            "凛(临战) / https://www.gamekee.com/ba/tj/161101.html",
+            rowsByKey.getValue("同名角色名称").single().value,
+        )
+    }
+
     private fun objectContentJson(vararg rows: JSONArray): String {
         return JSONObject()
             .put(
@@ -194,6 +233,53 @@ class GuideFetchJsonContentParserTest {
                     }
                 }
             )
+    }
+
+    private fun relationInfoNode(vararg groups: JSONObject): JSONObject {
+        return JSONObject()
+            .put("type", "illustrated-book")
+            .put(
+                "data",
+                JSONArray().put(
+                    JSONObject()
+                        .put("type", "relation-info")
+                        .put(
+                            "data",
+                            JSONObject()
+                                .put(
+                                    "list",
+                                    JSONArray().apply {
+                                        groups.forEach(::put)
+                                    },
+                                ),
+                        ),
+                ),
+            )
+    }
+
+    private fun relationGroup(
+        title: String,
+        vararg items: JSONObject,
+    ): JSONObject {
+        return JSONObject()
+            .put("title", title)
+            .put(
+                "content",
+                JSONArray().apply {
+                    items.forEach(::put)
+                },
+            )
+    }
+
+    private fun relationItem(
+        name: String,
+        href: String,
+        avatar: String,
+    ): JSONObject {
+        return JSONObject()
+            .put("name", name)
+            .put("jumpHref", href)
+            .put("avatar", avatar)
     }
 
     private fun row(key: String, vararg cells: JSONObject): JSONArray {

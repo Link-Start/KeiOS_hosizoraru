@@ -241,6 +241,8 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
             if (key.isBlank()) return false
             if (isGrowthBlockStartKey(key)) return false
             return key == "礼物偏好" ||
+                key == "相关角色" ||
+                key == "相关角色名称" ||
                 key == "相关同名角色" ||
                 key == "同名角色名称" ||
                 key == "技能类型" ||

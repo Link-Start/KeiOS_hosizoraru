@@ -193,12 +193,13 @@ internal fun parseGuideDetailFromArrayContentJson(raw: String, sourceUrl: String
             for (groupIndex in 0 until list.length()) {
                 val group = list.optJSONObject(groupIndex) ?: continue
                 val relationTitle = extractEditorText(group.opt("title")).ifBlank { "相关人物" }
-                if (relationTitle.contains("同名")) {
-                    accumulator.pushProfileRow(
-                        key = "相关同名角色",
-                        value = relationTitle
-                    )
-                }
+                val isSameNameGroup = relationTitle.contains("同名")
+                val headerKey = if (isSameNameGroup) "相关同名角色" else "相关角色"
+                val itemKey = if (isSameNameGroup) "同名角色名称" else "相关角色名称"
+                accumulator.pushProfileRow(
+                    key = headerKey,
+                    value = relationTitle,
+                )
                 val content = group.optJSONArray("content") ?: continue
                 for (i in 0 until content.length()) {
                     val item = content.optJSONObject(i) ?: continue
@@ -214,10 +215,10 @@ internal fun parseGuideDetailFromArrayContentJson(raw: String, sourceUrl: String
                     }.trim()
                     if (value.isBlank() && avatar.isBlank()) continue
                     accumulator.pushProfileRow(
-                        key = "同名角色名称",
+                        key = itemKey,
                         value = value,
                         imageUrl = avatar,
-                        imageUrls = listOf(avatar)
+                        imageUrls = listOf(avatar),
                     )
                 }
             }

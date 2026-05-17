@@ -25,8 +25,12 @@ internal data class GuideNpcSatelliteProfileState(
     val identityRows: List<BaGuideRow>,
     val introRows: List<BaGuideRow>,
     val normalRows: List<BaGuideRow>,
+    val relatedRoleItems: List<SameNameRoleItem>,
+    val relatedRoleHint: String,
+    val relatedRoleTitle: String,
     val sameNameRoleItems: List<SameNameRoleItem>,
     val sameNameRoleHint: String,
+    val sameNameRoleTitle: String,
 )
 
 internal fun buildGuideNpcSatelliteProfileState(guide: BaStudentGuideInfo): GuideNpcSatelliteProfileState {
@@ -47,17 +51,29 @@ internal fun buildGuideNpcSatelliteProfileState(guide: BaStudentGuideInfo): Guid
                 shouldHideMovedHeaderRow(row) && !isNpcAffiliationKey(key)
             }
 
+    val relatedRows = baseRows.filter { row ->
+        val key = normalizeProfileFieldKey(row.key)
+        key == relatedRoleHeaderKey || key == relatedRoleNameRowKey
+    }
     val sameNameRows = baseRows.filter(::isSameNameRoleRow)
+    val relatedRoleItems = buildRelatedRoleItems(relatedRows)
+    val relatedRoleHint =
+        relatedRows
+            .firstNotNullOfOrNull { row ->
+                extractRelatedRoleHint(row)
+            }.orEmpty()
+    val relatedRoleTitle = extractRelatedRoleSectionTitle(relatedRows)
     val sameNameRoleItems = buildSameNameRoleItems(sameNameRows)
     val sameNameRoleHint =
         sameNameRows
             .firstNotNullOfOrNull { row ->
                 extractSameNameRoleHint(row)
             }.orEmpty()
+    val sameNameRoleTitle = extractSameNameRoleSectionTitle(sameNameRows)
 
     val availableRows =
         baseRows
-            .filterNot(::isSameNameRoleRow)
+            .filterNot(::isRelatedRoleRow)
             .mapNotNull(::cleanNpcProfileRow)
             .filterNot(::isNpcMediaIndexRow)
             .distinctBy(::npcRowExactDedupeKey)
@@ -92,8 +108,12 @@ internal fun buildGuideNpcSatelliteProfileState(guide: BaStudentGuideInfo): Guid
             identityRows = identityRows,
             introRows = introRows,
             normalRows = normalRows,
+            relatedRoleItems = relatedRoleItems,
+            relatedRoleHint = relatedRoleHint,
+            relatedRoleTitle = relatedRoleTitle,
             sameNameRoleItems = sameNameRoleItems,
             sameNameRoleHint = sameNameRoleHint,
+            sameNameRoleTitle = sameNameRoleTitle,
         )
     synchronized(npcProfileStateCache) {
         npcProfileStateCache[cacheKey] = computed

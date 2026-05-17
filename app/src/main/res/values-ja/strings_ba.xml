@@ -534,6 +534,9 @@
     <string name="guide_profile_npc_empty">キャラクター情報は解析されていません。</string>
     <string name="guide_profile_no_gifts">贈り物の好みは解析されていません。</string>
     <string name="guide_profile_gift">贈り物</string>
+    <string name="guide_profile_related_roles">関連キャラクター</string>
+    <string name="guide_profile_related_role">関連キャラクター</string>
+    <string name="guide_profile_related_roles_empty">関連キャラクターは解析されていません。</string>
     <string name="guide_profile_related_same_name">別バージョン</string>
     <string name="guide_profile_same_name">別バージョン</string>
     <string name="guide_profile_same_name_empty">別バージョンは解析されていません。</string>

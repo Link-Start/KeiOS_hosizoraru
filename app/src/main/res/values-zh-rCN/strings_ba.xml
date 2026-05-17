@@ -536,6 +536,9 @@
     <string name="guide_profile_npc_empty">暂未解析到角色资料。</string>
     <string name="guide_profile_no_gifts">暂无礼物偏好条目。</string>
     <string name="guide_profile_gift">礼物</string>
+    <string name="guide_profile_related_roles">相关角色</string>
+    <string name="guide_profile_related_role">相关角色</string>
+    <string name="guide_profile_related_roles_empty">暂无相关角色条目。</string>
     <string name="guide_profile_related_same_name">相关同名角色</string>
     <string name="guide_profile_same_name">同名角色</string>
     <string name="guide_profile_same_name_empty">暂无同名角色条目。</string>

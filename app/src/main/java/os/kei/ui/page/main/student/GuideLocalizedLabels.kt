@@ -96,6 +96,8 @@ internal fun guideSourceLabelRes(raw: String): Int? =
         "巧克力" -> R.string.guide_profile_section_chocolate
         "互动家具" -> R.string.guide_profile_section_furniture
         "礼物" -> R.string.guide_profile_gift
+        "相关人物", "相关角色" -> R.string.guide_profile_related_roles
+        "相关角色名称" -> R.string.guide_profile_related_role
         "相关同名角色" -> R.string.guide_profile_related_same_name
         "同名角色" -> R.string.guide_profile_same_name
         "配音" -> R.string.guide_voice_dubbing

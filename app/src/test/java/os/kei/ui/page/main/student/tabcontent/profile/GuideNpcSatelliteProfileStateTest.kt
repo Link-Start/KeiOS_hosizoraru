@@ -56,6 +56,40 @@ class GuideNpcSatelliteProfileStateTest {
         assertEquals(listOf("所属", "声优", "生日", "身高"), state.identityRows.map { it.key })
     }
 
+    @Test
+    fun `npc profile separates related roles from same name roles`() {
+        val state =
+            buildGuideNpcSatelliteProfileState(
+                guide =
+                    npcGuide(
+                        title = "凛",
+                        rows =
+                            listOf(
+                                BaGuideRow("相关角色", "相关人物"),
+                                BaGuideRow(
+                                    key = "相关角色名称",
+                                    value = "桃香 / https://www.gamekee.com/ba/tj/161100.html",
+                                    imageUrl = "https://cdn.example/momoka.png",
+                                    imageUrls = listOf("https://cdn.example/momoka.png"),
+                                ),
+                                BaGuideRow("相关同名角色", "同名角色"),
+                                BaGuideRow(
+                                    key = "同名角色名称",
+                                    value = "凛(临战) / https://www.gamekee.com/ba/tj/161101.html",
+                                    imageUrl = "https://cdn.example/rin-alt.png",
+                                    imageUrls = listOf("https://cdn.example/rin-alt.png"),
+                                ),
+                            ),
+                    ),
+            )
+
+        assertEquals("相关人物", state.relatedRoleTitle)
+        assertEquals(listOf("桃香"), state.relatedRoleItems.map { it.name })
+        assertEquals("同名角色", state.sameNameRoleTitle)
+        assertEquals(listOf("凛(临战)"), state.sameNameRoleItems.map { it.name })
+        assertTrue(state.normalRows.isEmpty())
+    }
+
     private fun npcGuide(
         title: String,
         rows: List<BaGuideRow>,

@@ -48,6 +48,8 @@ internal fun normalizeProfileFieldKey(raw: String): String =
         .lowercase()
 
 internal val profileRoleReferenceFieldKey = normalizeProfileFieldKey("角色考据")
+internal val relatedRoleHeaderKey = normalizeProfileFieldKey("相关角色")
+internal val relatedRoleNameRowKey = normalizeProfileFieldKey("相关角色名称")
 internal val relatedSameNameRoleHeaderKey = normalizeProfileFieldKey("相关同名角色")
 internal val sameNameRoleNameRowKey = normalizeProfileFieldKey("同名角色名称")
 internal val giftPreferenceRowPrefixKey = normalizeProfileFieldKey("礼物偏好礼物")

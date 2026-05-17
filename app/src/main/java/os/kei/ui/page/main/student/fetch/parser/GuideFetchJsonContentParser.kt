@@ -2,13 +2,18 @@ package os.kei.ui.page.main.student.fetch.parser
 
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
-import os.kei.ui.page.main.student.fetch.GuideDetailExtract
 import os.kei.ui.page.main.student.GuideTab
+import os.kei.ui.page.main.student.fetch.GUIDE_GALLERY_ITEM_LIMIT
+import os.kei.ui.page.main.student.fetch.GuideDetailExtract
 import os.kei.ui.page.main.student.fetch.deriveVoiceCvLegacyFields
 import os.kei.ui.page.main.student.fetch.extractImageUrlsFromAny
 import os.kei.ui.page.main.student.fetch.extractImageUrlsFromHtml
 import os.kei.ui.page.main.student.fetch.extractVideoUrlsFromAny
 import os.kei.ui.page.main.student.fetch.isAudioUrl
+import os.kei.ui.page.main.student.fetch.isGuideGalleryContextStart
+import os.kei.ui.page.main.student.fetch.isGuideGalleryKey
+import os.kei.ui.page.main.student.fetch.isGuideNonGalleryFallbackKey
+import os.kei.ui.page.main.student.fetch.isGuideNonGallerySectionStart
 import os.kei.ui.page.main.student.fetch.isMeaningfulGuideRowValue
 import os.kei.ui.page.main.student.fetch.isPlaceholderMediaToken
 import os.kei.ui.page.main.student.fetch.isTopDataStatKey
@@ -187,21 +192,6 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
             "所属社团", "实装日期", "攻击类型", "防御类型", "位置", "市街", "屋外", "屋内", "武器类型", "年龄", "生日",
             "兴趣爱好", "声优", "画师", "介绍", "个人简介", "MomoTalk", "回忆大厅解锁等级", "同名角色", "角色头像"
         )
-        val galleryKeywords = listOf(
-            "立绘", "本家画", "TV动画设定图", "回忆大厅视频", "回忆大厅", "PV", "Live", "巧克力图",
-            "互动家具", "角色表情", "设定集", "官方介绍", "官方衍生", "情人节巧克力", "BGM"
-        )
-        val galleryContextStartKeywords = galleryKeywords + listOf("视频")
-        val nonGallerySectionKeywords = listOf(
-            "技能", "技能类型", "技能名词", "EX技能升级材料", "其他技能升级材料",
-            "专武", "爱用品", "能力解放", "礼物偏好", "初始数据", "顶级数据",
-            "学生信息", "介绍", "配音"
-        )
-        val nonGalleryFallbackKeywords = listOf(
-            "头像", "技能", "图标", "语音", "台词", "专武", "武器", "装备", "材料",
-            "能力解放", "礼物偏好", "初始数据", "学生信息", "角色名称", "稀有度", "所属学园", "所属社团",
-            "战术作用", "攻击类型", "防御类型", "位置", "武器类型", "市街", "屋外", "屋内", "室内"
-        )
         val growthKeywords = listOf(
             "装备", "专武", "能力解放", "羁绊", "羁绊奖励", "升级材料",
             "所需", "爱用品", "羁绊等级奖励"
@@ -263,9 +253,7 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
                 key == "初始数据" ||
                 key == "顶级数据" ||
                     isVoiceCategoryKey(key) ||
-                galleryContextStartKeywords.any { keyword ->
-                    key.contains(keyword, ignoreCase = true)
-                }
+                isGuideGalleryContextStart(key)
         }
 
         baseRows.forEach { row ->
@@ -368,20 +356,16 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
             if (isSkillGlossaryStart) {
                 inSkillGlossaryBlock = true
             }
-            val isGalleryContextStart = galleryContextStartKeywords.any {
-                normalizedKey.contains(it, ignoreCase = true)
-            }
-            val isNonGallerySectionStart = normalizedKey.isNotBlank() && nonGallerySectionKeywords.any {
-                normalizedKey.contains(it, ignoreCase = true)
-            }
+            val isGalleryContextStart = isGuideGalleryContextStart(normalizedKey)
+            val isNonGallerySectionStart = isGuideNonGallerySectionStart(normalizedKey)
             if (isNonGallerySectionStart && !isGalleryContextStart) {
                 inGalleryContext = false
                 lastGalleryTitle = ""
             }
             if (isGalleryContextStart) {
                 inGalleryContext = true
-                if (guideRow.key.isNotBlank()) {
-                    lastGalleryTitle = guideRow.key
+                if (key.isNotBlank()) {
+                    lastGalleryTitle = key
                 }
             }
 
@@ -410,9 +394,9 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
                     !isVoice &&
                     !isProfile &&
                     inGalleryContext &&
-                    nonGalleryFallbackKeywords.none { normalizedKey.contains(it, ignoreCase = true) }
-            val isGallery = containsAny(normalizedKey, galleryKeywords) || isFallbackGallery
-            val galleryTitle = guideRow.key.ifBlank { lastGalleryTitle.ifBlank { "影画" } }
+                    !isGuideNonGalleryFallbackKey(normalizedKey)
+            val isGallery = isGuideGalleryKey(normalizedKey) || isFallbackGallery
+            val galleryTitle = key.ifBlank { lastGalleryTitle.ifBlank { "影画" } }
 
             when {
                 isVoice && !inWeaponBlock -> voiceRows += guideRow
@@ -426,7 +410,7 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
                                 imageUrl = url,
                                 mediaType = if (row.mediaTypes.contains("live2d")) "live2d" else "image",
                                 mediaUrl = url,
-                                memoryUnlockLevel = if (guideRow.key.startsWith("回忆大厅")) memoryUnlockLevel else "",
+                                memoryUnlockLevel = if (key.startsWith("回忆大厅")) memoryUnlockLevel else "",
                                 note = noteForGalleryImage(
                                     row.textValues,
                                     index,
@@ -443,7 +427,7 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
                                 imageUrl = row.imageValues.firstOrNull().orEmpty(),
                                 mediaType = "video",
                                 mediaUrl = url,
-                                memoryUnlockLevel = if (guideRow.key.startsWith("回忆大厅")) memoryUnlockLevel else "",
+                                memoryUnlockLevel = if (key.startsWith("回忆大厅")) memoryUnlockLevel else "",
                                 note = videoNote
                             )
                         }
@@ -508,7 +492,7 @@ internal fun parseGuideDetailFromObjectContentJson(raw: String, sourceUrl: Strin
                     .thenBy { guideGalleryTitleGroupKey(it.title) }
                     .thenBy { guideGalleryItemIndex(it.title) }
             )
-            .take(100)
+            .take(GUIDE_GALLERY_ITEM_LIMIT)
         val mergedProfileRows = (profileRows + giftPreferenceRows)
             .distinctBy { row ->
                 val packedImages = row.imageUrls.joinToString("|")

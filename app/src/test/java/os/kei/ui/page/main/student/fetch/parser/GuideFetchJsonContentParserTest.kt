@@ -5,6 +5,8 @@ import org.json.JSONObject
 import org.junit.Test
 import os.kei.ui.page.main.student.fetch.parseGuideDetailFromContentJson
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class GuideFetchJsonContentParserTest {
     @Test
@@ -91,6 +93,54 @@ class GuideFetchJsonContentParserTest {
         assertEquals("https://cdn.example/hutao.png", detail.galleryItems.first().mediaUrl)
     }
 
+    @Test
+    fun `array npc gallery keeps old tab info media beyond one hundred items`() {
+        val detail = parseGuideDetailFromArrayContentJson(
+            raw = arrayContentJson(
+                tabInfoNode(
+                    tab("立绘", 1, "standing"),
+                    tab("差分", 110, "expression"),
+                    tab("设定集", 2, "setting")
+                )
+            ),
+            sourceUrl = "https://www.gamekee.com/ba/161188.html"
+        )
+
+        val mediaUrls = detail.galleryItems.map { it.mediaUrl }
+        assertEquals(113, mediaUrls.size)
+        assertTrue("https://cdn.example/expression-110.png" in mediaUrls)
+        assertTrue("https://cdn.example/setting-2.png" in mediaUrls)
+        assertTrue(detail.galleryItems.any { it.title.startsWith("角色表情") })
+        assertTrue(detail.galleryItems.any { it.title.startsWith("设定集") })
+    }
+
+    @Test
+    fun `object npc gallery accepts old custom categories and inherited blank rows`() {
+        val detail = parseGuideDetailFromObjectContentJson(
+            raw = objectContentJson(
+                row("人物介绍", imageCell("//cdn.example/intro.png")),
+                row("差分（私服）", imageCell("//cdn.example/private-1.png")),
+                row("", imageCell("//cdn.example/private-2.png")),
+                row("动画设定图", imageCell("//cdn.example/animation-setting.png")),
+                row("技能图标", imageCell("//cdn.example/skill-icon.png"))
+            ),
+            sourceUrl = "https://www.gamekee.com/ba/161175.html"
+        )
+
+        val mediaUrls = detail.galleryItems.map { it.mediaUrl }
+        assertTrue("https://cdn.example/intro.png" in mediaUrls)
+        assertTrue("https://cdn.example/private-1.png" in mediaUrls)
+        assertTrue("https://cdn.example/private-2.png" in mediaUrls)
+        assertTrue("https://cdn.example/animation-setting.png" in mediaUrls)
+        assertFalse("https://cdn.example/skill-icon.png" in mediaUrls)
+        assertTrue(
+            detail.galleryItems.any {
+                it.mediaUrl == "https://cdn.example/private-2.png" &&
+                    it.title.startsWith("差分（私服）")
+            }
+        )
+    }
+
     private fun objectContentJson(vararg rows: JSONArray): String {
         return JSONObject()
             .put(
@@ -100,6 +150,50 @@ class GuideFetchJsonContentParserTest {
                 }
             )
             .toString()
+    }
+
+    private fun arrayContentJson(vararg nodes: JSONObject): String {
+        return JSONArray()
+            .apply {
+                nodes.forEach(::put)
+            }
+            .toString()
+    }
+
+    private fun tabInfoNode(vararg tabs: JSONObject): JSONObject {
+        return JSONObject()
+            .put("type", "illustrated-book")
+            .put(
+                "data",
+                JSONArray().put(
+                    JSONObject()
+                        .put("type", "tab-info")
+                        .put(
+                            "data",
+                            JSONObject()
+                                .put("title", "")
+                                .put(
+                                    "tabList",
+                                    JSONArray().apply {
+                                        tabs.forEach(::put)
+                                    }
+                                )
+                        )
+                )
+            )
+    }
+
+    private fun tab(title: String, imageCount: Int, imagePrefix: String): JSONObject {
+        return JSONObject()
+            .put("title", title)
+            .put(
+                "content",
+                JSONArray().apply {
+                    repeat(imageCount) { index ->
+                        put(JSONObject().put("url", "//cdn.example/$imagePrefix-${index + 1}.png"))
+                    }
+                }
+            )
     }
 
     private fun row(key: String, vararg cells: JSONObject): JSONArray {

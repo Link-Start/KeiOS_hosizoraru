@@ -4,6 +4,7 @@ import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideVoiceEntry
 import os.kei.ui.page.main.student.fetch.GuideDetailExtract
+import os.kei.ui.page.main.student.fetch.GUIDE_GALLERY_ITEM_LIMIT
 import os.kei.ui.page.main.student.fetch.canonicalVoiceLanguageLabel
 import os.kei.ui.page.main.student.fetch.deriveVoiceCvLegacyFields
 import os.kei.ui.page.main.student.fetch.extractAudioUrlsFromAny
@@ -372,7 +373,7 @@ internal fun parseGuideDetailFromArrayContentJson(raw: String, sourceUrl: String
                     .thenBy { guideGalleryTitleGroupKey(it.title) }
                     .thenBy { guideGalleryItemIndex(it.title) }
             )
-            .take(100)
+            .take(GUIDE_GALLERY_ITEM_LIMIT)
 
         val mergedProfileRows = accumulator.profileRows
             .distinctBy { row ->

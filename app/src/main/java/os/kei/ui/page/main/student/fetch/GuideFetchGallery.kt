@@ -1,25 +1,92 @@
 package os.kei.ui.page.main.student.fetch
 
-import os.kei.ui.page.main.student.BaGuideGalleryItem
 import org.json.JSONArray
+import os.kei.ui.page.main.student.BaGuideGalleryItem
+
+internal const val GUIDE_GALLERY_ITEM_LIMIT = 360
+
+private val guideGalleryKeywords = listOf(
+    "立绘",
+    "本家画",
+    "TV动画设定图",
+    "动画设定图",
+    "设定图",
+    "回忆大厅视频",
+    "回忆大厅",
+    "PV",
+    "Live",
+    "巧克力图",
+    "互动家具",
+    "角色表情",
+    "表情",
+    "表情包",
+    "差分",
+    "角色演示",
+    "设定集",
+    "官方介绍",
+    "官方衍生",
+    "人物介绍",
+    "公告",
+    "动态",
+    "主题曲",
+    "贺图",
+    "视觉图",
+    "插图",
+    "CG",
+    "壁纸",
+    "海报",
+    "私服",
+    "服装",
+    "女仆装",
+    "泳装",
+    "啦啦队",
+    "旗袍",
+    "A.H.A",
+    "占领战",
+    "情人节巧克力",
+    "BGM"
+)
+
+private val guideGalleryContextStartKeywords = guideGalleryKeywords + listOf("视频")
+
+private val guideNonGallerySectionKeywords = listOf(
+    "技能", "技能类型", "技能名词", "EX技能升级材料", "其他技能升级材料",
+    "专武", "爱用品", "能力解放", "礼物偏好", "初始数据", "顶级数据",
+    "学生信息", "介绍", "配音"
+)
+
+private val guideNonGalleryFallbackKeywords = listOf(
+    "头像", "技能", "图标", "语音", "台词", "专武", "武器", "装备", "材料",
+    "能力解放", "礼物偏好", "初始数据", "学生信息", "角色名称", "稀有度", "所属学园", "所属社团",
+    "战术作用", "攻击类型", "防御类型", "位置", "武器类型", "市街", "屋外", "屋内", "室内"
+)
+
+internal fun isGuideGalleryKey(raw: String): Boolean {
+    val key = stripHtml(raw).trim()
+    if (key.isBlank()) return false
+    return guideGalleryKeywords.any { key.contains(it, ignoreCase = true) }
+}
+
+internal fun isGuideGalleryContextStart(raw: String): Boolean {
+    val key = stripHtml(raw).trim()
+    if (key.isBlank()) return false
+    return guideGalleryContextStartKeywords.any { key.contains(it, ignoreCase = true) }
+}
+
+internal fun isGuideNonGallerySectionStart(raw: String): Boolean {
+    val key = stripHtml(raw).trim()
+    if (key.isBlank()) return false
+    return guideNonGallerySectionKeywords.any { key.contains(it, ignoreCase = true) }
+}
+
+internal fun isGuideNonGalleryFallbackKey(raw: String): Boolean {
+    val key = stripHtml(raw).trim()
+    if (key.isBlank()) return false
+    return guideNonGalleryFallbackKeywords.any { key.contains(it, ignoreCase = true) }
+}
 
 internal fun parseGalleryItemsFromBaseData(baseData: JSONArray, sourceUrl: String): List<BaGuideGalleryItem> {
     val out = mutableListOf<BaGuideGalleryItem>()
-    val galleryKeywords = listOf(
-        "立绘", "本家画", "TV动画设定图", "回忆大厅视频", "回忆大厅", "PV", "Live", "巧克力图",
-        "互动家具", "角色表情", "表情", "角色演示", "设定集", "官方介绍", "官方衍生", "情人节巧克力", "BGM"
-    )
-    val galleryContextStartKeywords = galleryKeywords + listOf("视频")
-    val nonGallerySectionKeywords = listOf(
-        "技能", "技能类型", "技能名词", "EX技能升级材料", "其他技能升级材料",
-        "专武", "爱用品", "能力解放", "礼物偏好", "初始数据", "顶级数据",
-        "学生信息", "介绍", "配音"
-    )
-    val nonGalleryFallbackKeywords = listOf(
-        "头像", "技能", "图标", "语音", "台词", "专武", "武器", "装备", "材料",
-        "能力解放", "礼物偏好", "初始数据", "学生信息", "角色名称", "稀有度", "所属学园", "所属社团",
-        "战术作用", "攻击类型", "防御类型", "位置", "武器类型", "市街", "屋外", "屋内", "室内"
-    )
 
     fun noteForImageIndex(texts: List<String>, index: Int, imageCount: Int): String {
         val normalized = texts.map { it.trim() }.filter { it.isNotBlank() }
@@ -28,12 +95,6 @@ internal fun parseGalleryItemsFromBaseData(baseData: JSONArray, sourceUrl: Strin
         if (normalized.size == imageCount) return normalized.getOrElse(index) { "" }
         if (normalized.size == 1) return if (index == imageCount - 1) normalized.first() else ""
         return normalized.getOrElse(index) { normalized.last() }
-    }
-
-    fun isGalleryKey(raw: String): Boolean {
-        val key = stripHtml(raw).trim()
-        if (key.isBlank()) return false
-        return galleryKeywords.any { key.contains(it, ignoreCase = true) }
     }
 
     val memoryUnlockLevel = run {
@@ -68,10 +129,8 @@ internal fun parseGalleryItemsFromBaseData(baseData: JSONArray, sourceUrl: Strin
         val key = stripHtml((row.optJSONObject(0)?.optString("value") ?: "").trim())
         if (key == "回忆大厅解锁等级") continue
         if (key.replace(" ", "").startsWith("回忆大厅文件")) continue
-        val isGalleryContextStart = galleryContextStartKeywords.any { key.contains(it, ignoreCase = true) }
-        val isNonGallerySectionStart = key.isNotBlank() && nonGallerySectionKeywords.any {
-            key.contains(it, ignoreCase = true)
-        }
+        val isGalleryContextStart = isGuideGalleryContextStart(key)
+        val isNonGallerySectionStart = isGuideNonGallerySectionStart(key)
         if (isNonGallerySectionStart && !isGalleryContextStart) {
             inGalleryContext = false
             lastGalleryTitle = ""
@@ -129,8 +188,8 @@ internal fun parseGalleryItemsFromBaseData(baseData: JSONArray, sourceUrl: Strin
         val isFallbackGallery =
             hasMedia &&
                 inGalleryContext &&
-                nonGalleryFallbackKeywords.none { key.contains(it, ignoreCase = true) }
-        if (!isGalleryKey(key) && !isFallbackGallery) continue
+                !isGuideNonGalleryFallbackKey(key)
+        if (!isGuideGalleryKey(key) && !isFallbackGallery) continue
         val galleryTitle = key.ifBlank { lastGalleryTitle.ifBlank { "影画" } }
 
         if (rowImages.isNotEmpty()) {

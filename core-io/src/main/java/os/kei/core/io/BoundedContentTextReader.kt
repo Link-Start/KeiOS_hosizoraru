@@ -11,18 +11,18 @@ import kotlinx.coroutines.yield
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
-internal const val DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES: Long = 5L * 1024L * 1024L
+const val DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES: Long = 5L * 1024L * 1024L
 
-internal data class BoundedContentTextReadResult(
+data class BoundedContentTextReadResult(
     val text: String,
     val byteCount: Long
 )
 
-internal class BoundedContentTextReadTooLargeException(
+class BoundedContentTextReadTooLargeException(
     val maxBytes: Long
 ) : IllegalArgumentException("content text exceeds $maxBytes bytes")
 
-internal suspend fun ContentResolver.readTextFromUriLimited(
+suspend fun ContentResolver.readTextFromUriLimited(
     uri: Uri,
     maxBytes: Long = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -54,7 +54,7 @@ internal suspend fun ContentResolver.readTextFromUriLimited(
     }
 }
 
-internal fun InputStream.readTextLimitedBlocking(
+fun InputStream.readTextLimitedBlocking(
     maxBytes: Long = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
 ): BoundedContentTextReadResult {
     require(maxBytes > 0L) { "maxBytes must be positive" }

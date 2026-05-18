@@ -356,6 +356,8 @@ configurations.configureEach {
 }
 
 dependencies {
+    implementation(project(":core-log"))
+    implementation(project(":core-io"))
     implementation("androidx.core:core-ktx:$coreKtxVersion")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.profileinstaller:profileinstaller:$profileInstallerVersion")

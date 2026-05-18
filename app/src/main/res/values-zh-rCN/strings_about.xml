@@ -198,7 +198,7 @@
     <string name="about_release_row_navigation">导航模式</string>
     <string name="about_release_value_navigation">经典底栏与 MIUIX iOS-like 底栏 / pager 链路可在设置中切换</string>
     <string name="about_release_row_icon">图标设计</string>
-    <string name="about_release_value_icon">Apple Designs 作为默认图标，Android Designs 保留为可切换旧版</string>
+    <string name="about_release_value_icon">Android Designs 作为默认图标，Apple Designs 保留为可切换焕新版</string>
     <string name="about_release_row_release_gate">发布门禁</string>
     <string name="about_release_value_release_gate">compile、unit test、lint、release/benchmark R8 mapping 与 diff check 已作为收口基线</string>
     <string name="about_release_row_next">下一步</string>

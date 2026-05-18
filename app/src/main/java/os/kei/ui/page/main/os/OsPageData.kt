@@ -218,6 +218,7 @@ internal fun buildSectionRows(
                 ?: getAllSystemPropertiesSnapshot(forceRefresh = forceRefresh)
             cleanRows(
                 graphicsRows(context, systemProperties) +
+                    lowLevelInfoRows(context, systemProperties) +
                     capabilityRows(context) +
                     systemProperties.toSortedMap().map { InfoRow(it.key, it.value) }
             )
@@ -287,6 +288,7 @@ internal suspend fun buildSectionRowsAsync(
             withContext(dispatcher) {
                 cleanRows(
                     graphicsRows(context, systemProperties) +
+                        lowLevelInfoRows(context, systemProperties) +
                         capabilityRows(context) +
                         systemProperties.toSortedMap().map { InfoRow(it.key, it.value) }
                 )

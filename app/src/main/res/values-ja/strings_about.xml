@@ -207,7 +207,7 @@
     <string name="about_release_row_navigation">ナビゲーションモード</string>
     <string name="about_release_value_navigation">クラシック下部バーと MIUIX iOS-like 下部バー / pager を設定で切り替え可能</string>
     <string name="about_release_row_icon">アイコンデザイン</string>
-    <string name="about_release_value_icon">Apple Designs を標準アイコンにし、Android Designs を旧版オプションとして保持</string>
+    <string name="about_release_value_icon">Android Designs を標準アイコンにし、Apple Designs を新しいオプションとして保持</string>
     <string name="about_release_row_release_gate">リリースゲート</string>
     <string name="about_release_value_release_gate">compile、unit test、lint、release/benchmark R8 mapping、diff check を収口基準化</string>
     <string name="about_release_row_next">次のステップ</string>

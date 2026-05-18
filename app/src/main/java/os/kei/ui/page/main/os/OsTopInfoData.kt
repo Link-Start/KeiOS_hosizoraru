@@ -30,30 +30,50 @@ internal data class TopInfoRowsSnapshot(
         get() = status == TopInfoRowsStatus.Fresh || status == TopInfoRowsStatus.EmptyFresh
 }
 
+private fun String.startsWithAny(vararg prefixes: String): Boolean =
+    prefixes.any { prefix -> startsWith(prefix) }
+
+private fun String.containsAny(vararg terms: String): Boolean =
+    terms.any { term -> contains(term) }
+
 internal fun topInfoTopicOf(key: String): TopInfoTopic {
     val k = key.lowercase()
     return when {
         k.startsWith("long_press_") -> TopInfoTopic(0, R.string.os_top_info_topic_long_press)
         k.contains("fbo") || k == "key_fbo_data" -> TopInfoTopic(1, R.string.os_top_info_topic_fbo)
-        k.contains("dex2oat") || k.contains("dexopt") -> TopInfoTopic(2, R.string.os_top_info_topic_dex_optimization)
-        k.startsWith("tango.") || k.contains("tango") -> TopInfoTopic(3, R.string.os_top_info_topic_tango)
-        k.contains("aod") -> TopInfoTopic(4, R.string.os_top_info_topic_aod)
-        k.contains("zygote") -> TopInfoTopic(5, R.string.os_top_info_topic_zygote)
-        k.contains("density") -> TopInfoTopic(6, R.string.os_top_info_topic_display_density)
-        k.contains("autofill") || k.contains("credential") -> TopInfoTopic(7, R.string.os_top_info_topic_autofill_credentials)
-        k.startsWith("gsm.") || k.contains("gsm") -> TopInfoTopic(8, R.string.os_top_info_topic_cellular_network)
-        k.contains("level") -> TopInfoTopic(9, R.string.os_top_info_topic_level)
-        k.startsWith("adb_") || k.contains("adb") -> TopInfoTopic(10, R.string.os_top_info_topic_adb_debugging)
-        k.startsWith("voice_") || k.contains("assistant") || k.contains("recognition") -> TopInfoTopic(11, R.string.os_top_info_topic_voice_assistant)
-        k.startsWith("share_") -> TopInfoTopic(12, R.string.os_top_info_topic_sharing)
-        k.contains("bluetooth") || k.contains("bt_") || k.contains("lc3") || k.contains("lea_") -> TopInfoTopic(13, R.string.os_top_info_topic_bluetooth_audio)
-        k.contains("usb") -> TopInfoTopic(14, R.string.os_top_info_topic_usb)
-        k.contains("vulkan") || k.contains("opengl") || k.contains("egl") || k.contains("graphics") || k.contains("hwui") -> TopInfoTopic(15, R.string.os_top_info_topic_graphics_rendering)
-        k.startsWith("miui_") || k.startsWith("ro.miui") || k.startsWith("ro.mi.") || k.contains("xiaomi") -> TopInfoTopic(16, R.string.os_top_info_topic_miui_xiaomi)
-        k.contains("version") || k.contains("build") || k.contains("fingerprint") || k.contains("security_patch") -> TopInfoTopic(17, R.string.os_top_info_topic_version_build)
+        k.startsWith("device.") ||
+            k == "ro.product.marketname" ||
+            k == "ro.product.model" ||
+            k == "ro.soc.model" -> TopInfoTopic(2, R.string.os_top_info_topic_device_identity)
+        k.startsWith("runtime.") ||
+            k.containsAny("zygote", "abilist", "cpu.abi") -> TopInfoTopic(3, R.string.os_top_info_topic_runtime_architecture)
+        k.startsWithAny("partition.", "treble.", "gsi.", "mainline.", "ro.apex", "ro.vndk", "ro.treble") ->
+            TopInfoTopic(4, R.string.os_top_info_topic_partition_mainline)
+        k.startsWithAny("verified_boot.", "security.") ||
+            k.containsAny("verifiedboot", "vbmeta", "secureboot", "security_patch") ->
+            TopInfoTopic(5, R.string.os_top_info_topic_security_integrity)
+        k.contains("dex2oat") || k.contains("dexopt") -> TopInfoTopic(6, R.string.os_top_info_topic_dex_optimization)
+        k.contains("aod") -> TopInfoTopic(7, R.string.os_top_info_topic_aod)
+        k.contains("density") || k.contains("resolution") -> TopInfoTopic(8, R.string.os_top_info_topic_display_density)
+        k.contains("autofill") || k.contains("credential") -> TopInfoTopic(9, R.string.os_top_info_topic_autofill_credentials)
+        k.startsWith("gsm.") || k.contains("gsm") -> TopInfoTopic(10, R.string.os_top_info_topic_cellular_network)
+        k.contains("level") -> TopInfoTopic(11, R.string.os_top_info_topic_level)
+        k.startsWith("adb_") || k.contains("adb") -> TopInfoTopic(12, R.string.os_top_info_topic_adb_debugging)
+        k.contains("usb") -> TopInfoTopic(13, R.string.os_top_info_topic_usb)
+        k.startsWith("webview.") -> TopInfoTopic(14, R.string.os_top_info_topic_webview)
+        k.containsAny("vulkan", "opengl", "egl", "graphics", "hwui") ->
+            TopInfoTopic(15, R.string.os_top_info_topic_graphics_rendering)
+        k.startsWithAny("miui_", "ro.miui", "ro.mi.") || k.contains("xiaomi") ->
+            TopInfoTopic(16, R.string.os_top_info_topic_miui_xiaomi)
+        k.contains("version") || k.contains("build") || k.contains("fingerprint") -> TopInfoTopic(17, R.string.os_top_info_topic_version_build)
         k.contains("time") || k.contains("timestamp") -> TopInfoTopic(18, R.string.os_top_info_topic_timestamp)
         k.startsWith("java.") || k.startsWith("android.") || k.startsWith("os.") || k.startsWith("user.") -> TopInfoTopic(19, R.string.os_top_info_topic_java_system_properties)
-        k.startsWith("env.") || k == "uname-a" || k == "proc.version" || k == "toybox --version" || k == "getenforce" -> TopInfoTopic(20, R.string.os_top_info_topic_linux_environment)
+        k.startsWith("env.") ||
+            k == "uname-a" ||
+            k == "proc.version" ||
+            k == "toybox --version" ||
+            k == "getenforce" ||
+            k.startsWith("kernel.") -> TopInfoTopic(20, R.string.os_top_info_topic_linux_environment)
         else -> TopInfoTopic(99, R.string.os_top_info_topic_other)
     }
 }

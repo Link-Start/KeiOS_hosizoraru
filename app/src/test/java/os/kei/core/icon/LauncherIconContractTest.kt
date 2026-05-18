@@ -11,10 +11,10 @@ import kotlin.test.assertTrue
 
 class LauncherIconContractTest {
     @Test
-    fun `storage id defaults to apple designs`() {
-        assertEquals(LauncherIconDesign.Apple, LauncherIconDesign.fromStorageId(null))
-        assertEquals(LauncherIconDesign.Apple, LauncherIconDesign.fromStorageId(""))
-        assertEquals(LauncherIconDesign.Apple, LauncherIconDesign.fromStorageId("unknown"))
+    fun `storage id defaults to android designs`() {
+        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId(null))
+        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId(""))
+        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId("unknown"))
         assertEquals(LauncherIconDesign.Apple, LauncherIconDesign.fromStorageId("apple"))
         assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId("android"))
     }
@@ -26,15 +26,15 @@ class LauncherIconContractTest {
     }
 
     @Test
-    fun `launcher manifest defaults to apple designs and keeps android designs disabled`() {
+    fun `launcher manifest defaults to android designs and keeps apple designs disabled`() {
         val manifest = androidManifest()
         val application =
             manifest.documentElement
                 .childElements("application")
                 .single()
 
-        assertEquals("@mipmap/ic_launcher_apple", application.androidAttr("icon"))
-        assertEquals("@mipmap/ic_launcher_round_apple", application.androidAttr("roundIcon"))
+        assertEquals("@mipmap/ic_launcher_android", application.androidAttr("icon"))
+        assertEquals("@mipmap/ic_launcher_round_android", application.androidAttr("roundIcon"))
 
         val mainActivity =
             application
@@ -43,14 +43,14 @@ class LauncherIconContractTest {
         assertFalse(mainActivity.hasLauncherFilter())
 
         val appleAlias = application.launcherAlias(".LauncherAppleDesigns")
-        assertEquals("true", appleAlias.androidAttr("enabled"))
+        assertEquals("false", appleAlias.androidAttr("enabled"))
         assertEquals("@mipmap/ic_launcher_apple", appleAlias.androidAttr("icon"))
         assertEquals("@mipmap/ic_launcher_round_apple", appleAlias.androidAttr("roundIcon"))
         assertEquals(".MainActivity", appleAlias.androidAttr("targetActivity"))
         assertTrue(appleAlias.hasLauncherFilter())
 
         val androidAlias = application.launcherAlias(".LauncherAndroidDesigns")
-        assertEquals("false", androidAlias.androidAttr("enabled"))
+        assertEquals("true", androidAlias.androidAttr("enabled"))
         assertEquals("@mipmap/ic_launcher_android", androidAlias.androidAttr("icon"))
         assertEquals("@mipmap/ic_launcher_round_android", androidAlias.androidAttr("roundIcon"))
         assertEquals(".MainActivity", androidAlias.androidAttr("targetActivity"))

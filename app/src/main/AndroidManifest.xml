@@ -34,8 +34,8 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher_apple"
-        android:roundIcon="@mipmap/ic_launcher_round_apple"
+        android:icon="@mipmap/ic_launcher_android"
+        android:roundIcon="@mipmap/ic_launcher_round_android"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:enableOnBackInvokedCallback="true"
@@ -71,7 +71,7 @@
 
         <activity-alias
             android:name=".LauncherAppleDesigns"
-            android:enabled="true"
+            android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_apple"
             android:label="@string/app_name"
@@ -86,7 +86,7 @@
 
         <activity-alias
             android:name=".LauncherAndroidDesigns"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_android"
             android:label="@string/app_name"

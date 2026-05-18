@@ -186,6 +186,10 @@
     <string name="os_section_linux_title">Linux environment</string>
     <string name="os_top_info_topic_long_press">Key long press</string>
     <string name="os_top_info_topic_fbo">FBO</string>
+    <string name="os_top_info_topic_device_identity">Device identity</string>
+    <string name="os_top_info_topic_runtime_architecture">Runtime and architecture</string>
+    <string name="os_top_info_topic_partition_mainline">Partitions / Mainline</string>
+    <string name="os_top_info_topic_security_integrity">Boot and security integrity</string>
     <string name="os_top_info_topic_dex_optimization">Dex optimization</string>
     <string name="os_top_info_topic_tango">Tango</string>
     <string name="os_top_info_topic_aod">AOD</string>
@@ -199,6 +203,7 @@
     <string name="os_top_info_topic_sharing">Sharing</string>
     <string name="os_top_info_topic_bluetooth_audio">Bluetooth audio</string>
     <string name="os_top_info_topic_usb">USB</string>
+    <string name="os_top_info_topic_webview">WebView</string>
     <string name="os_top_info_topic_graphics_rendering">Graphics rendering</string>
     <string name="os_top_info_topic_miui_xiaomi">MIUI / Xiaomi</string>
     <string name="os_top_info_topic_version_build">Version &amp; build</string>

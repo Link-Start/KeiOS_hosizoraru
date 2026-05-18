@@ -186,6 +186,10 @@
     <string name="os_section_linux_title">Linux 環境</string>
     <string name="os_top_info_topic_long_press">キー長押し</string>
     <string name="os_top_info_topic_fbo">FBO</string>
+    <string name="os_top_info_topic_device_identity">デバイス情報</string>
+    <string name="os_top_info_topic_runtime_architecture">ランタイムとアーキテクチャ</string>
+    <string name="os_top_info_topic_partition_mainline">パーティション / Mainline</string>
+    <string name="os_top_info_topic_security_integrity">起動とセキュリティ整合性</string>
     <string name="os_top_info_topic_dex_optimization">Dex 最適化</string>
     <string name="os_top_info_topic_tango">Tango</string>
     <string name="os_top_info_topic_aod">AOD</string>
@@ -199,6 +203,7 @@
     <string name="os_top_info_topic_sharing">共有</string>
     <string name="os_top_info_topic_bluetooth_audio">Bluetooth オーディオ</string>
     <string name="os_top_info_topic_usb">USB</string>
+    <string name="os_top_info_topic_webview">WebView</string>
     <string name="os_top_info_topic_graphics_rendering">グラフィック描画</string>
     <string name="os_top_info_topic_miui_xiaomi">MIUI / Xiaomi</string>
     <string name="os_top_info_topic_version_build">バージョンとビルド</string>

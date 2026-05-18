@@ -16,8 +16,8 @@
     <string name="settings_launcher_icon_design_title">应用图标设计</string>
     <string name="settings_launcher_icon_design_apple">Apple Designs</string>
     <string name="settings_launcher_icon_design_android">Android Designs</string>
-    <string name="settings_launcher_icon_design_summary_apple">使用全新 Apple Designs 图标，作为当前默认图标。</string>
-    <string name="settings_launcher_icon_design_summary_android">切回旧版 Android Designs 图标，保留原本 Android 风格。</string>
+    <string name="settings_launcher_icon_design_summary_apple">切换到全新 Apple Designs 图标，保留焕新版视觉。</string>
+    <string name="settings_launcher_icon_design_summary_android">使用 Android Designs 图标，作为当前默认图标。</string>
     <string name="settings_launcher_icon_design_scope">影响桌面启动器图标；部分桌面可能需要稍等或重新打开桌面后刷新。</string>
     <string name="settings_app_language_title">应用语言</string>
     <string name="settings_app_language_summary">打开系统的本应用语言设置，用于不切换系统语言时测试 i18n。</string>

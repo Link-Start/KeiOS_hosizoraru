@@ -153,7 +153,7 @@ object UiPrefs {
         kv().encode(KEY_PRELOADING_ENABLED, value)
     }
 
-    fun getLauncherIconDesign(defaultValue: LauncherIconDesign = LauncherIconDesign.Apple): LauncherIconDesign =
+    fun getLauncherIconDesign(defaultValue: LauncherIconDesign = LauncherIconDesign.Android): LauncherIconDesign =
         LauncherIconDesign.fromStorageId(
             kv().decodeString(KEY_LAUNCHER_ICON_DESIGN, defaultValue.storageId),
         )
@@ -323,7 +323,7 @@ object UiPrefs {
             homeIconHdrEnabled = false,
             homeDynamicFullEffectEnabled = true,
             preloadingEnabled = true,
-            launcherIconDesign = LauncherIconDesign.Apple,
+            launcherIconDesign = LauncherIconDesign.Android,
             nonHomeBackgroundEnabled = false,
             nonHomeBackgroundUri = "",
             nonHomeBackgroundOpacity = NON_HOME_BACKGROUND_OPACITY_DEFAULT,

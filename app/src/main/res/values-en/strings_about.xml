@@ -210,7 +210,7 @@
     <string name="about_release_row_navigation">Navigation modes</string>
     <string name="about_release_value_navigation">Classic bottom bar and MIUIX iOS-like bottom bar / pager paths can be switched in Settings</string>
     <string name="about_release_row_icon">Icon design</string>
-    <string name="about_release_value_icon">Apple Designs is the default icon set, with Android Designs kept as the legacy option</string>
+    <string name="about_release_value_icon">Android Designs is the default icon set, with Apple Designs kept as the refreshed option</string>
     <string name="about_release_row_release_gate">Release gates</string>
     <string name="about_release_value_release_gate">compile, unit test, lint, release/benchmark R8 mapping, and diff check are the closing baseline</string>
     <string name="about_release_row_next">Next step</string>

@@ -186,6 +186,10 @@
     <string name="os_section_linux_title">Linux environment</string>
     <string name="os_top_info_topic_long_press">按键长按</string>
     <string name="os_top_info_topic_fbo">FBO</string>
+    <string name="os_top_info_topic_device_identity">设备身份</string>
+    <string name="os_top_info_topic_runtime_architecture">运行时与架构</string>
+    <string name="os_top_info_topic_partition_mainline">分区 / Mainline</string>
+    <string name="os_top_info_topic_security_integrity">启动与安全完整性</string>
     <string name="os_top_info_topic_dex_optimization">Dex 优化</string>
     <string name="os_top_info_topic_tango">Tango</string>
     <string name="os_top_info_topic_aod">AOD</string>
@@ -199,6 +203,7 @@
     <string name="os_top_info_topic_sharing">共享相关</string>
     <string name="os_top_info_topic_bluetooth_audio">蓝牙音频</string>
     <string name="os_top_info_topic_usb">USB</string>
+    <string name="os_top_info_topic_webview">WebView</string>
     <string name="os_top_info_topic_graphics_rendering">图形渲染</string>
     <string name="os_top_info_topic_miui_xiaomi">MIUI / Xiaomi</string>
     <string name="os_top_info_topic_version_build">版本与构建</string>

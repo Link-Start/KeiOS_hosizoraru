@@ -16,8 +16,8 @@
     <string name="settings_launcher_icon_design_title">アプリアイコンデザイン</string>
     <string name="settings_launcher_icon_design_apple">Apple Designs</string>
     <string name="settings_launcher_icon_design_android">Android Designs</string>
-    <string name="settings_launcher_icon_design_summary_apple">新しい Apple Designs アイコンを現在の既定として使用します。</string>
-    <string name="settings_launcher_icon_design_summary_android">従来の Android Designs アイコンに戻します。</string>
+    <string name="settings_launcher_icon_design_summary_apple">新しい Apple Designs アイコンに切り替えます。</string>
+    <string name="settings_launcher_icon_design_summary_android">Android Designs アイコンを現在の既定として使用します。</string>
     <string name="settings_launcher_icon_design_scope">ランチャーアイコンに反映されます。一部のランチャーでは少し待つか、ホーム画面を開き直すと更新されます。</string>
     <string name="settings_app_language_title">アプリの言語</string>
     <string name="settings_app_language_summary">システム言語を変更せずに i18n をテストするため、Android 標準のアプリ言語設定を開きます。</string>

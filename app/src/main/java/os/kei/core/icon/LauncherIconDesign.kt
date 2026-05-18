@@ -16,7 +16,7 @@ enum class LauncherIconDesign(
     companion object {
         fun fromStorageId(raw: String?): LauncherIconDesign {
             val normalized = raw.orEmpty().trim()
-            return entries.firstOrNull { it.storageId == normalized } ?: Apple
+            return entries.firstOrNull { it.storageId == normalized } ?: Android
         }
     }
 }

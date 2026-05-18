@@ -17,21 +17,25 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class StartupBenchmarks {
-
     @get:Rule
     val rule = MacrobenchmarkRule()
 
     private val targetAppId: String
-        get() = InstrumentationRegistry.getArguments().getString("targetAppId")
-            ?: error("targetAppId not passed as instrumentation runner arg")
+        get() =
+            InstrumentationRegistry
+                .getArguments()
+                .getString("targetAppId")
+                ?.let { appId -> if (appId == RELEASE_APP_ID) BENCHMARK_APP_ID else appId }
+                ?: error("targetAppId not passed as instrumentation runner arg")
 
     @Test
     fun startupCompilationNone() = benchmark(CompilationMode.None())
 
     @Test
-    fun startupCompilationBaselineProfiles() = benchmark(
-        CompilationMode.Partial(BaselineProfileMode.Require)
-    )
+    fun startupCompilationBaselineProfiles() =
+        benchmark(
+            CompilationMode.Partial(BaselineProfileMode.Require),
+        )
 
     private fun benchmark(compilationMode: CompilationMode) {
         rule.measureRepeated(
@@ -45,9 +49,13 @@ class StartupBenchmarks {
             },
             measureBlock = {
                 startActivityAndWait()
-                device.wait(Until.hasObject(By.text("KeiOS")), 5_000)
+                device.wait(Until.hasObject(By.res(HOME_PAGE_ROOT)), 5_000)
                 device.waitForIdle()
-            }
+            },
         )
     }
 }
+
+private const val RELEASE_APP_ID = "os.kei"
+private const val BENCHMARK_APP_ID = "os.kei.benchmark"
+private const val HOME_PAGE_ROOT = "home_page_root"

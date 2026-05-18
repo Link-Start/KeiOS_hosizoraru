@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.host.pager
 
 import androidx.compose.foundation.layout.Box
@@ -6,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -20,6 +23,7 @@ import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.OsPage
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.testing.KeiOsTestTags
 
 @Composable
 internal fun MainPagerPageHost(
@@ -51,13 +55,18 @@ internal fun MainPagerPageHost(
     onOpenPoolGuideDetail: (String) -> Unit,
     onOpenBaGuideCatalog: () -> Unit,
     onOpenMcpSkill: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit
+    onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     val glassRuntime = remember { GlassEffectRuntime() }
     CompositionLocalProvider(
-        LocalGlassEffectRuntime provides glassRuntime
+        LocalGlassEffectRuntime provides glassRuntime,
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .testTag(pageType.pageRootTestTag()),
+        ) {
             when (pageType) {
                 BottomPage.Home -> {
                     HomePage(
@@ -78,7 +87,7 @@ internal fun MainPagerPageHost(
                         onOpenGitHubPage = onOpenGitHubPage,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -88,7 +97,7 @@ internal fun MainPagerPageHost(
                         shizukuStatus = shizukuStatus,
                         shizukuApiUtils = shizukuApiUtils,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -99,7 +108,7 @@ internal fun MainPagerPageHost(
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenPoolStudentGuide = onOpenPoolGuideDetail,
                         onOpenGuideCatalog = onOpenBaGuideCatalog,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -109,7 +118,7 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenSkill = onOpenMcpSkill,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -118,14 +127,23 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         externalRefreshTriggerToken = requestedGitHubRefreshToken,
                         externalManagedInstallConfirmToken =
-                            requestedGitHubManagedInstallConfirmToken,
+                        requestedGitHubManagedInstallConfirmToken,
                         externalActionsTrackId = requestedGitHubActionsTrackId,
                         externalActionsSheetToken = requestedGitHubActionsSheetToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged
+                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
             }
         }
     }
 }
+
+private fun BottomPage.pageRootTestTag(): String =
+    when (this) {
+        BottomPage.Home -> KeiOsTestTags.HomePageRoot
+        BottomPage.Os -> KeiOsTestTags.OsPageRoot
+        BottomPage.Mcp -> KeiOsTestTags.McpPageRoot
+        BottomPage.GitHub -> KeiOsTestTags.GitHubPageRoot
+        BottomPage.Ba -> KeiOsTestTags.BaPageRoot
+    }

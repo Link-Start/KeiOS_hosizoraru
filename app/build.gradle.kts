@@ -175,6 +175,7 @@ val projectTargetSdk = 37
 val projectGradleVersion = gradle.gradleVersion
 val projectJavaVersion = JavaVersion.VERSION_21
 val projectJvmTarget = JvmTarget.JVM_21
+val r8DexStartupOptimizationProperty = "android.experimental.r8.dex-startup-optimization"
 
 plugins {
     id("com.android.application")
@@ -305,6 +306,10 @@ android {
 }
 
 androidComponents {
+    onVariants { variant ->
+        // The generated startup profile is variant-obfuscated; ART baseline profiles remain packaged.
+        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
+    }
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(releaseVersionName)

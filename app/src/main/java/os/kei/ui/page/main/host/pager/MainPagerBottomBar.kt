@@ -59,12 +59,7 @@ internal fun MainPagerBottomBar(
                         selected = selected,
                         tabIndex = index,
                         onClick = { onPageSelected(index) },
-                        modifier =
-                            if (page == BottomPage.GitHub) {
-                                Modifier.testTag(KeiOsTestTags.MainBottomTabGitHub)
-                            } else {
-                                Modifier
-                            },
+                        modifier = Modifier.testTag(page.bottomTabTestTag()),
                     ) {
                         val tabIconModifier =
                             Modifier
@@ -151,3 +146,12 @@ internal fun MainPagerBottomBar(
         }
     }
 }
+
+private fun BottomPage.bottomTabTestTag(): String =
+    when (this) {
+        BottomPage.Home -> KeiOsTestTags.MainBottomTabHome
+        BottomPage.Os -> KeiOsTestTags.MainBottomTabOs
+        BottomPage.Mcp -> KeiOsTestTags.MainBottomTabMcp
+        BottomPage.GitHub -> KeiOsTestTags.MainBottomTabGitHub
+        BottomPage.Ba -> KeiOsTestTags.MainBottomTabBa
+    }

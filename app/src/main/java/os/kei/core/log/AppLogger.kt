@@ -1,5 +1,6 @@
 package os.kei.core.log
 
+import android.content.Context
 import android.util.Log
 import os.kei.BuildConfig
 import os.kei.KeiOSApp
@@ -8,6 +9,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Application-wide structured logger with level gating, lazy message overloads, and file-backed
+ * log storage.
+ *
+ * Module-extraction readiness: the only coupling to `:app` is the [initialize] call in
+ * [KeiOSApp.onCreate]. Once extracted to a `:core-log` module, the app module would call
+ * `AppLogger.initialize(context, defaultLevel)` and the prefs-refresh path would be injected.
+ */
 object AppLogger {
     private const val INTERNAL_TAG = "KeiLogger"
     private const val MAX_MESSAGE_LENGTH = 3200
@@ -18,10 +27,27 @@ object AppLogger {
     @JvmField
     internal var logLevel: AppLogLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
 
+    /**
+     * Context provider for [AppLogStore]. Defaults to [KeiOSApp.appContext] but can be overridden
+     * in tests or when extracted to a separate module.
+     */
+    @Volatile
+    private var contextProvider: () -> Context = { KeiOSApp.appContext }
+
     private val lineTimeFormatter = object : ThreadLocal<SimpleDateFormat>() {
         override fun initialValue(): SimpleDateFormat {
             return SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
         }
+    }
+
+    /**
+     * One-time initialization for module-extraction readiness. Call from [Application.onCreate].
+     * When `core-log` becomes its own module, this replaces the implicit [BuildConfig] and
+     * [KeiOSApp] coupling.
+     */
+    fun initialize(context: Context, defaultLevelId: String = BuildConfig.DEFAULT_LOG_LEVEL_ID) {
+        contextProvider = { context.applicationContext }
+        logLevel = AppLogLevel.fromStorageId(defaultLevelId)
     }
 
     fun refreshLevelFromPrefs() {
@@ -168,7 +194,7 @@ object AppLogger {
         }.orEmpty()
         val line = "$timestamp | $levelLabel | $tag | $compactMessage$throwablePart"
         runCatching {
-            AppLogStore.appendLine(KeiOSApp.appContext, line)
+            AppLogStore.appendLine(contextProvider(), line)
         }.onFailure {
             Log.w(INTERNAL_TAG, "append failed: ${it.message ?: it.javaClass.simpleName}")
         }

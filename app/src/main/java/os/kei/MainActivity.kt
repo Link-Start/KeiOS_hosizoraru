@@ -206,7 +206,9 @@ class MainActivity : ComponentActivity() {
         jankStats =
             AppJankMonitor.attach(
                 window = window,
-                enabled = BuildConfig.DEBUG,
+                // Enable for debug and benchmark variants so Macrobenchmark runs collect jank
+                // data for comparison. Disabled in release to avoid any frame-callback overhead.
+                enabled = BuildConfig.BUILD_TYPE != "release",
             )
     }
 
@@ -236,7 +238,12 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         jankStats?.isTrackingEnabled = false
         jankStats = null
-        runCatching { mcpServerManager.stop() }
+        // Only stop the MCP server when the user is intentionally leaving (back press / finish).
+        // If the system is reclaiming the Activity while McpKeepAliveService is running as a
+        // foreground service, the server should survive so connected clients are not dropped.
+        if (isFinishing) {
+            runCatching { mcpServerManager.stop() }
+        }
         shizukuApiUtils.detach()
         super.onDestroy()
     }

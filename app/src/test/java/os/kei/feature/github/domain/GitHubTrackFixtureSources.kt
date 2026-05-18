@@ -324,7 +324,7 @@ internal object GitHubTrackFixtureSources {
             releaseAsset(item).downloadUrl
         }
 
-        override fun loadLatestStableRelease(
+        override suspend fun loadLatestStableRelease(
             owner: String,
             repo: String,
             lookupConfig: GitHubLookupConfig
@@ -338,7 +338,7 @@ internal object GitHubTrackFixtureSources {
             )
         }
 
-        override fun fetchApkAssets(
+        override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
             release: GitHubStableReleaseTarget,
@@ -347,7 +347,7 @@ internal object GitHubTrackFixtureSources {
             return Result.success(requireTracks(owner, repo).map(::releaseAsset))
         }
 
-        override fun readAndroidManifestBytes(
+        override suspend fun readAndroidManifestBytes(
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<ByteArray> = runCatching {

@@ -2,9 +2,6 @@ package os.kei.core.log
 
 import android.content.Context
 import android.util.Log
-import os.kei.BuildConfig
-import os.kei.KeiOSApp
-import os.kei.core.prefs.UiPrefs
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -13,9 +10,9 @@ import java.util.Locale
  * Application-wide structured logger with level gating, lazy message overloads, and file-backed
  * log storage.
  *
- * Module-extraction readiness: the only coupling to `:app` is the [initialize] call in
- * [KeiOSApp.onCreate]. Once extracted to a `:core-log` module, the app module would call
- * `AppLogger.initialize(context, defaultLevel)` and the prefs-refresh path would be injected.
+ * This class has zero coupling to any app-level type (BuildConfig, Application subclass, prefs).
+ * The app module calls [initialize] once during Application.onCreate to inject context and default
+ * level. Prefs-based level refresh is handled by the app module calling [setLogLevel] directly.
  */
 object AppLogger {
     private const val INTERNAL_TAG = "KeiLogger"
@@ -25,14 +22,16 @@ object AppLogger {
     @Volatile
     @PublishedApi
     @JvmField
-    internal var logLevel: AppLogLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
+    internal var logLevel: AppLogLevel = AppLogLevel.Off
 
     /**
-     * Context provider for [AppLogStore]. Defaults to [KeiOSApp.appContext] but can be overridden
-     * in tests or when extracted to a separate module.
+     * Context provider for [AppLogStore]. Must be set via [initialize] before any log calls that
+     * write to disk. Defaults to a throwing stub to surface misconfiguration early.
      */
     @Volatile
-    private var contextProvider: () -> Context = { KeiOSApp.appContext }
+    private var contextProvider: () -> Context = {
+        error("AppLogger.initialize() was not called before logging")
+    }
 
     private val lineTimeFormatter = object : ThreadLocal<SimpleDateFormat>() {
         override fun initialValue(): SimpleDateFormat {
@@ -41,23 +40,14 @@ object AppLogger {
     }
 
     /**
-     * One-time initialization for module-extraction readiness. Call from [Application.onCreate].
-     * When `core-log` becomes its own module, this replaces the implicit [BuildConfig] and
-     * [KeiOSApp] coupling.
+     * One-time initialization. Call from Application.onCreate.
+     *
+     * @param context Application context for file-backed log storage.
+     * @param defaultLevelId Storage ID of the initial log level (e.g. "off", "debug").
      */
-    fun initialize(context: Context, defaultLevelId: String = BuildConfig.DEFAULT_LOG_LEVEL_ID) {
+    fun initialize(context: Context, defaultLevelId: String = "off") {
         contextProvider = { context.applicationContext }
         logLevel = AppLogLevel.fromStorageId(defaultLevelId)
-    }
-
-    fun refreshLevelFromPrefs() {
-        logLevel = UiPrefs.getLogLevel(
-            defaultValue = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
-        )
-    }
-
-    fun refreshEnabledFromPrefs() {
-        refreshLevelFromPrefs()
     }
 
     fun setLogLevel(level: AppLogLevel) {

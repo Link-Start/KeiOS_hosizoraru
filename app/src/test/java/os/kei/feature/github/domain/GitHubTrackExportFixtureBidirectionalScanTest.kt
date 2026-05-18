@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
@@ -47,7 +48,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     }
 
     @Test
-    fun `project address to package scanner resolves every exported tracked app`() {
+    fun `project address to package scanner resolves every exported tracked app`() = runBlocking {
         val items = GitHubTrackExportFixture.gitHubRepositoryItems
         val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
         val scanner = GitHubApkPackageNameScanner(scanSource)
@@ -81,7 +82,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     }
 
     @Test
-    fun `package to repository resolver confirms every exported tracked app from preferred repository`() {
+    fun `package to repository resolver confirms every exported tracked app from preferred repository`() = runBlocking {
         val items = GitHubTrackExportFixture.gitHubRepositoryItems
         val discovery = GitHubTrackFixtureSources.discoverySource(items)
         val scanSource = GitHubTrackFixtureSources.packageScanSource(items)
@@ -119,7 +120,7 @@ class GitHubTrackExportFixtureBidirectionalScanTest {
     }
 
     @Test
-    fun `package to repository resolver discovers every exported tracked app from package and label`() {
+    fun `package to repository resolver discovers every exported tracked app from package and label`() = runBlocking {
         val items = GitHubTrackExportFixture.gitHubRepositoryItems
         val discovery = GitHubTrackFixtureSources.discoverySource(items)
         val scanSource = GitHubTrackFixtureSources.packageScanSource(items)

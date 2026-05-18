@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -18,7 +19,7 @@ import kotlin.test.assertTrue
 
 class GitHubPackageRepositoryResolverTest {
     @Test
-    fun `resolver confirms repository by scanning latest stable apk package name`() {
+    fun `resolver confirms repository by scanning latest stable apk package name`() = runBlocking {
         val target = candidate(
             owner = "Absinthe",
             repo = "LibChecker",
@@ -87,7 +88,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver keeps multiple package-matched repositories for user choice`() {
+    fun `resolver keeps multiple package-matched repositories for user choice`() = runBlocking {
         val official = candidate(
             owner = "Absinthe",
             repo = "LibChecker",
@@ -131,7 +132,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver verifies target package when release publishes multiple app variants`() {
+    fun `resolver verifies target package when release publishes multiple app variants`() = runBlocking {
         val project = candidate(
             owner = "hosizoraru",
             repo = "KeiOS",
@@ -171,7 +172,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver rejects invalid package name before repository search`() {
+    fun `resolver rejects invalid package name before repository search`() = runBlocking {
         val discovery = FakeDiscoverySource(emptyList())
         val resolver = GitHubPackageRepositoryResolver(
             discoverySource = discovery,
@@ -191,7 +192,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver keeps atom lookup config while scanning package candidates`() {
+    fun `resolver keeps atom lookup config while scanning package candidates`() = runBlocking {
         val discovery = FakeDiscoverySource(
             listOf(
                 candidate(
@@ -225,7 +226,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver verifies preferred repository before live search`() {
+    fun `resolver verifies preferred repository before live search`() = runBlocking {
         val discovery = FakeDiscoverySource(emptyList())
         val scanSource = FakePackageScanSource(
             packagesByRepo = mapOf("yukonga/updater-kmp" to "top.yukonga.updater.kmp")
@@ -261,7 +262,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver falls back to repository search after preferred repository mismatch`() {
+    fun `resolver falls back to repository search after preferred repository mismatch`() = runBlocking {
         val target = candidate(
             owner = "example",
             repo = "RealApp",
@@ -302,7 +303,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver expands to fallback queries when exact package candidates do not match`() {
+    fun `resolver expands to fallback queries when exact package candidates do not match`() = runBlocking {
         val mismatch = candidate(
             owner = "demo",
             repo = "package-name-docs",
@@ -348,7 +349,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver matches package tail when repository uses hyphen instead of underscore`() {
+    fun `resolver matches package tail when repository uses hyphen instead of underscore`() = runBlocking {
         val target = candidate(
             owner = "frknkrc44",
             repo = "HMA-OSS",
@@ -388,7 +389,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver keeps scanning when one repository search query fails`() {
+    fun `resolver keeps scanning when one repository search query fails`() = runBlocking {
         val target = candidate(
             owner = "example",
             repo = "RealApp",
@@ -431,7 +432,7 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver throws first search error when every repository query fails`() {
+    fun `resolver throws first search error when every repository query fails`() = runBlocking {
         val discovery = QueryAwareDiscoverySource(
             failureForQuery = { query -> IllegalStateException("failed $query") },
             candidatesForQuery = { emptyList() }
@@ -574,7 +575,7 @@ class GitHubPackageRepositoryResolverTest {
         val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
             Collections.synchronizedList(mutableListOf())
 
-        override fun loadLatestStableRelease(
+        override suspend fun loadLatestStableRelease(
             owner: String,
             repo: String,
             lookupConfig: GitHubLookupConfig
@@ -587,7 +588,7 @@ class GitHubPackageRepositoryResolverTest {
             )
         }
 
-        override fun fetchApkAssets(
+        override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
             release: GitHubStableReleaseTarget,
@@ -613,7 +614,7 @@ class GitHubPackageRepositoryResolverTest {
             )
         }
 
-        override fun readAndroidManifestBytes(
+        override suspend fun readAndroidManifestBytes(
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<ByteArray> = runCatching {

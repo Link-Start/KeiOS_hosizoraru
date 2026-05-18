@@ -155,20 +155,6 @@ internal object GitHubExecution {
         }
     }
 
-    /**
-     * Bridge for callers that cannot yet be made `suspend`. Prefer the suspend version directly
-     * whenever the call site is already in a coroutine.
-     */
-    @Deprecated(
-        message = "Migrate caller to suspend and use the suspend overload directly.",
-        replaceWith = ReplaceWith("runBlockingIo is being removed; use withContext(Dispatchers.IO) { ... }")
-    )
-    fun <T> runBlockingIo(block: suspend () -> T): T {
-        return runBlocking(Dispatchers.IO) {
-            block()
-        }
-    }
-
     private const val DEFAULT_RETRY_DELAY_MS = 220L
 }
 

@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -23,7 +24,7 @@ import kotlin.test.assertTrue
 
 class GitHubApkManifestReaderTest {
     @Test
-    fun `inspect reuses one zip directory for manifest and entry metadata`() {
+    fun `inspect reuses one zip directory for manifest and entry metadata`() = runBlocking {
         val apkBytes = apkWithManifestAndNativeLib(
             manifestBytes = BinaryManifestFixture.build(
                 packageName = "os.kei.inspect",
@@ -56,7 +57,7 @@ class GitHubApkManifestReaderTest {
     }
 
     @Test
-    fun `repository reuses in-flight manifest inspect for identical asset`() {
+    fun `repository reuses in-flight manifest inspect for identical asset`() = runBlocking {
         val apkBytes = apkWithManifestAndNativeLib(
             manifestBytes = BinaryManifestFixture.build(
                 packageName = "os.kei.inspect.dedupe",
@@ -88,8 +89,10 @@ class GitHubApkManifestReaderTest {
             val futures = List(2) {
                 executor.submit<GitHubApkManifestInfo> {
                     assertTrue(start.await(2, TimeUnit.SECONDS))
-                    repository.inspect(asset = asset, lookupConfig = GitHubLookupConfig())
-                        .getOrThrow()
+                    runBlocking {
+                        repository.inspect(asset = asset, lookupConfig = GitHubLookupConfig())
+                            .getOrThrow()
+                    }
                 }
             }
             start.countDown()
@@ -106,7 +109,7 @@ class GitHubApkManifestReaderTest {
     }
 
     @Test
-    fun `repository force refresh bypasses completed manifest cache for fixed direct URL`() {
+    fun `repository force refresh bypasses completed manifest cache for fixed direct URL`() = runBlocking {
         val firstApkBytes = apkWithManifestAndNativeLib(
             manifestBytes = BinaryManifestFixture.build(
                 packageName = "org.telegram.messenger",

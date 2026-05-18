@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.domain.GitHubStrategyBenchmarkService
 import os.kei.feature.github.model.GitHubRepoTarget
 import org.junit.Assume.assumeTrue
@@ -28,7 +29,7 @@ import kotlin.test.assertTrue
  */
 class GitHubStrategyLiveBenchmarkTest {
     @Test
-    fun `live benchmark compares atom and api strategies`() {
+    fun `live benchmark compares atom and api strategies`() = runBlocking {
         assumeTrue(
             "Set keios.github.liveBenchmark=true in ~/.gradle/gradle.properties, env vars, or JVM system properties to enable",
             isLiveBenchmarkEnabled()

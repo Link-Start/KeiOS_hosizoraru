@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubRepositoryCandidate
@@ -19,7 +20,7 @@ import kotlin.test.assertTrue
 
 class GitHubRepositoryDiscoveryServiceTest {
     @Test
-    fun `starred import preview dedupes repositories and marks existing items`() {
+    fun `starred import preview dedupes repositories and marks existing items`() = runBlocking {
         val source = FakeDiscoverySource(
             publicStars = listOf(
                 candidate(owner = "alpha", repo = "one", stars = 9),
@@ -50,7 +51,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `star list url import uses list source and marks existing items`() {
+    fun `star list url import uses list source and marks existing items`() = runBlocking {
         val source = FakeDiscoverySource(
             starList = listOf(
                 candidate(
@@ -78,7 +79,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `app repository search builds app queries and ranks package matches first`() {
+    fun `app repository search builds app queries and ranks package matches first`() = runBlocking {
         val app = InstalledAppItem(
             label = "KeiOS",
             packageName = "os.kei"
@@ -128,7 +129,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `app repository search marks existing item by repo and package`() {
+    fun `app repository search marks existing item by repo and package`() = runBlocking {
         val app = InstalledAppItem(
             label = "KeiOS",
             packageName = "os.kei"
@@ -172,7 +173,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `app repository search runs fallback queries with bounded concurrency`() {
+    fun `app repository search runs fallback queries with bounded concurrency`() = runBlocking {
         val app = InstalledAppItem(
             label = "Blue Archive",
             packageName = "com.nexon.bluearchive"
@@ -209,7 +210,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `app repository search keeps successful candidates when one query fails`() {
+    fun `app repository search keeps successful candidates when one query fails`() = runBlocking {
         val app = InstalledAppItem(
             label = "Blue Archive",
             packageName = "com.nexon.bluearchive"
@@ -241,7 +242,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `app repository search throws first error when every query fails`() {
+    fun `app repository search throws first error when every query fails`() = runBlocking {
         val app = InstalledAppItem(
             label = "Blue Archive",
             packageName = "com.nexon.bluearchive"
@@ -290,7 +291,7 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `installed app search matches package tail with different separators`() {
+    fun `installed app search matches package tail with different separators`() = runBlocking {
         val app = InstalledAppItem(
             label = "Hidden Apps",
             packageName = "org.frknkrc44.hma_oss"

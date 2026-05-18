@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -11,7 +12,7 @@ import kotlin.test.assertTrue
 
 class GitHubStarImportApkVerifierTest {
     @Test
-    fun `verifier reports latest stable apk assets`() {
+    fun `verifier reports latest stable apk assets`() = runBlocking {
         val source = FakeApkVerificationSource(
             manifestBytes = BinaryManifestFixture.build("demo.app"),
             releaseAssets = GitHubStableReleaseApkAssets(
@@ -49,7 +50,7 @@ class GitHubStarImportApkVerifierTest {
     }
 
     @Test
-    fun `verifier returns cached result without calling source`() {
+    fun `verifier returns cached result without calling source`() = runBlocking {
         val cache = FakeApkVerificationCache(
             cached = GitHubStarImportApkVerification(
                 owner = "demo",
@@ -77,7 +78,7 @@ class GitHubStarImportApkVerifierTest {
     }
 
     @Test
-    fun `verifier scans later apk when first manifest is invalid`() {
+    fun `verifier scans later apk when first manifest is invalid`() = runBlocking {
         val source = FakeApkVerificationSource(
             manifestBytesByAsset = mapOf(
                 "demo-metadata.apk" to byteArrayOf(0x01, 0x02),
@@ -121,7 +122,7 @@ class GitHubStarImportApkVerifierTest {
     }
 
     @Test
-    fun `verifier converts source failure into failed verification`() {
+    fun `verifier converts source failure into failed verification`() = runBlocking {
         val result = GitHubStarImportApkVerifier(
             FakeApkVerificationSource(error = IllegalStateException("no stable release"))
         ).verify(
@@ -145,7 +146,7 @@ private class FakeApkVerificationSource(
     private val manifestBytesByAsset: Map<String, ByteArray> = emptyMap(),
     private val error: Throwable? = null
 ) : GitHubApkPackageNameScanSource {
-    override fun loadLatestStableRelease(
+    override suspend fun loadLatestStableRelease(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -153,7 +154,7 @@ private class FakeApkVerificationSource(
         return Result.failure(UnsupportedOperationException())
     }
 
-    override fun fetchApkAssets(
+    override suspend fun fetchApkAssets(
         owner: String,
         repo: String,
         release: GitHubStableReleaseTarget,
@@ -162,7 +163,7 @@ private class FakeApkVerificationSource(
         return Result.failure(UnsupportedOperationException())
     }
 
-    override fun loadLatestStableApkAssets(
+    override suspend fun loadLatestStableApkAssets(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -171,7 +172,7 @@ private class FakeApkVerificationSource(
         return Result.success(requireNotNull(releaseAssets))
     }
 
-    override fun readAndroidManifestBytes(
+    override suspend fun readAndroidManifestBytes(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray> {

@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -12,7 +13,7 @@ import kotlin.test.assertEquals
 
 class GitHubReleaseAssetRepositoryTest {
     @Test
-    fun `concurrent identical html asset fetches share one in flight request`() {
+    fun `concurrent identical html asset fetches share one in flight request`() = runBlocking {
         MockWebServer().use { server ->
             server.dispatcher = object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
@@ -35,14 +36,16 @@ class GitHubReleaseAssetRepositoryTest {
                 val futures = List(2) {
                     executor.submit<GitHubReleaseAssetBundle> {
                         start.await(2, TimeUnit.SECONDS)
-                        GitHubReleaseAssetRepository.fetchApkAssets(
-                            owner = "demo",
-                            repo = "app",
-                            rawTag = "v1",
-                            releaseUrl = server.url("/release").toString(),
-                            preferHtml = true,
-                            includeAllAssets = true
-                        ).getOrThrow()
+                        runBlocking {
+                            GitHubReleaseAssetRepository.fetchApkAssets(
+                                owner = "demo",
+                                repo = "app",
+                                rawTag = "v1",
+                                releaseUrl = server.url("/release").toString(),
+                                preferHtml = true,
+                                includeAllAssets = true
+                            ).getOrThrow()
+                        }
                     }
                 }
                 start.countDown()

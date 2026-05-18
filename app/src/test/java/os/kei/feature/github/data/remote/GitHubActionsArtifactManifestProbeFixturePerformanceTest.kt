@@ -12,6 +12,7 @@ import os.kei.feature.github.domain.GitHubTrackExportFixture
 import os.kei.feature.github.domain.GitHubTrackFixtureSources
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubLookupConfig
+import kotlinx.coroutines.runBlocking
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -40,15 +41,17 @@ class GitHubActionsArtifactManifestProbeFixturePerformanceTest {
                 )
             )
 
-            val packageName = probe.readPackageName(
-                artifact = GitHubActionsArtifact(
-                    id = expectedCount.toLong(),
-                    name = "fixture-track-artifact",
-                    sizeBytes = artifactBytes.size.toLong()
-                ),
-                resolvedDownloadUrl = server.url("/download/artifact.zip").toString(),
-                lookupConfig = GitHubLookupConfig()
-            ).getOrThrow()
+            val packageName = runBlocking {
+                probe.readPackageName(
+                    artifact = GitHubActionsArtifact(
+                        id = expectedCount.toLong(),
+                        name = "fixture-track-artifact",
+                        sizeBytes = artifactBytes.size.toLong()
+                    ),
+                    resolvedDownloadUrl = server.url("/download/artifact.zip").toString(),
+                    lookupConfig = GitHubLookupConfig()
+                ).getOrThrow()
+            }
 
             assertEquals(expectedCount, items.size)
             assertEquals(selectedItem.packageName, packageName)

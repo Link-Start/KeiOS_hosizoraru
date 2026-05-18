@@ -95,7 +95,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `workflow artifact snapshot fetches runs then run artifacts`() {
+    fun `workflow artifact snapshot fetches runs then run artifacts`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleWorkflowRunsJson()))
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 101)))
@@ -140,7 +140,7 @@ class GitHubActionsRepositoryTest {
                 apiBaseUrl = server.url("/").toString()
             )
 
-            val snapshot = repository.fetchWorkflowArtifactSnapshotAsync(
+            val snapshot = repository.fetchWorkflowArtifactSnapshot(
                 owner = "demo",
                 repo = "app",
                 workflowId = "42",
@@ -162,7 +162,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `workflow artifact snapshot can preload only recent run artifacts`() {
+    fun `workflow artifact snapshot can preload only recent run artifacts`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleWorkflowRunsJson()))
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 101)))
@@ -221,7 +221,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `workflow run status snapshot fetches artifacts after completion`() {
+    fun `workflow run status snapshot fetches artifacts after completion`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleWorkflowRunJson(status = "completed")))
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 101)))
@@ -249,7 +249,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `workflow run status snapshot skips artifacts while running`() {
+    fun `workflow run status snapshot skips artifacts while running`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleWorkflowRunJson(status = "in_progress")))
             val repository = GitHubActionsRepository(
@@ -369,7 +369,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link strategy reads latest successful artifacts from nightly link`() {
+    fun `nightly link strategy reads latest successful artifacts from nightly link`() = runBlocking {
         MockWebServer().use { nightly ->
             val githubBaseUrl = nightly.url("/github/").toString()
             val nightlyBaseUrl = nightly.url("/nightly/").toString()
@@ -438,7 +438,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link strategy falls back to public api workflow id when file preview fails`() {
+    fun `nightly link strategy falls back to public api workflow id when file preview fails`() = runBlocking {
         MockWebServer().use { server ->
             val nightlyBaseUrl = server.url("/nightly/").toString()
             val base = nightlyBaseUrl.trimEnd('/')
@@ -577,7 +577,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link strategy falls back to all branches when default branch has no artifacts`() {
+    fun `nightly link strategy falls back to all branches when default branch has no artifacts`() = runBlocking {
         MockWebServer().use { server ->
             val nightlyBaseUrl = server.url("/nightly/").toString()
             val base = nightlyBaseUrl.trimEnd('/')
@@ -795,7 +795,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link preview apk artifacts use public api metadata when available`() {
+    fun `nightly link preview apk artifacts use public api metadata when available`() = runBlocking {
         MockWebServer().use { server ->
             val nightlyBaseUrl = server.url("/nightly/").toString()
             val base = nightlyBaseUrl.trimEnd('/')
@@ -922,7 +922,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link strategy can skip run detail for background signals`() {
+    fun `nightly link strategy can skip run detail for background signals`() = runBlocking {
         MockWebServer().use { nightly ->
             val base = nightly.url("/").toString().trimEnd('/')
             nightly.enqueue(
@@ -962,7 +962,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link tries dev branch first for dev workflow file`() {
+    fun `nightly link tries dev branch first for dev workflow file`() = runBlocking {
         MockWebServer().use { nightly ->
             val base = nightly.url("/").toString().trimEnd('/')
             nightly.enqueue(
@@ -998,7 +998,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link selected workflow explains empty artifact page`() {
+    fun `nightly link selected workflow explains empty artifact page`() = runBlocking {
         MockWebServer().use { nightly ->
             nightly.enqueue(
                 MockResponse()
@@ -1027,7 +1027,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link public page failure recommends token`() {
+    fun `nightly link public page failure recommends token`() = runBlocking {
         MockWebServer().use { nightly ->
             nightly.enqueue(MockResponse().setResponseCode(404).setBody("not found"))
             val repository = GitHubActionsRepository(
@@ -1050,7 +1050,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link preview page reuses short cache`() {
+    fun `nightly link preview page reuses short cache`() = runBlocking {
         MockWebServer().use { nightly ->
             val base = nightly.url("/").toString().trimEnd('/')
             nightly.enqueue(

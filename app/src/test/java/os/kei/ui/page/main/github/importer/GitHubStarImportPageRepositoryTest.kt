@@ -157,26 +157,26 @@ class GitHubStarImportPageRepositoryTest {
     }
 
     private class FakeApkSource : GitHubApkPackageNameScanSource {
-        override fun loadLatestStableRelease(
+        override suspend fun loadLatestStableRelease(
             owner: String,
             repo: String,
             lookupConfig: GitHubLookupConfig
         ): Result<GitHubStableReleaseTarget> = Result.failure(IllegalStateException("unused"))
 
-        override fun fetchApkAssets(
+        override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
             release: GitHubStableReleaseTarget,
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> = Result.failure(IllegalStateException("unused"))
 
-        override fun loadLatestStableApkAssets(
+        override suspend fun loadLatestStableApkAssets(
             owner: String,
             repo: String,
             lookupConfig: GitHubLookupConfig
         ): Result<GitHubStableReleaseApkAssets> = Result.failure(IllegalStateException("unused"))
 
-        override fun readAndroidManifestBytes(
+        override suspend fun readAndroidManifestBytes(
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<ByteArray> = Result.failure(IllegalStateException("unused"))

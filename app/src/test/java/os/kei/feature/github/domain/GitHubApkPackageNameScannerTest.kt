@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -12,7 +13,7 @@ import kotlin.test.assertTrue
 
 class GitHubApkPackageNameScannerTest {
     @Test
-    fun `scanner resolves latest stable apk and extracts package name`() {
+    fun `scanner resolves latest stable apk and extracts package name`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.scanned")
         )
@@ -40,7 +41,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner keeps atom mode on same fast asset scan contract`() {
+    fun `scanner keeps atom mode on same fast asset scan contract`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.atom")
         )
@@ -64,7 +65,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner extracts package name from selected apk asset`() {
+    fun `scanner extracts package name from selected apk asset`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.selected")
         )
@@ -91,7 +92,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner extracts manifest version info from selected apk asset`() {
+    fun `scanner extracts manifest version info from selected apk asset`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build(
                 packageName = "os.kei.selected",
@@ -124,7 +125,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner falls back across apk assets when one manifest cannot be parsed`() {
+    fun `scanner falls back across apk assets when one manifest cannot be parsed`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.fallback"),
             assetNames = listOf("KeiOS-metadata.apk", "KeiOS-universal.apk"),
@@ -152,7 +153,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner keeps lookup strategy while scanning apk assets in parallel`() {
+    fun `scanner keeps lookup strategy while scanning apk assets in parallel`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.parallel"),
             assetNames = listOf("KeiOS-arm64.apk", "KeiOS-x86.apk")
@@ -176,7 +177,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner selects expected package from release with multiple app variants`() {
+    fun `scanner selects expected package from release with multiple app variants`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei"),
             assetNames = listOf("KeiOS-release.apk", "KeiOS-benchmark.apk", "KeiOS-debug.apk"),
@@ -203,7 +204,7 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner reports invalid repository url before network work`() {
+    fun `scanner reports invalid repository url before network work`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.scanned")
         )
@@ -234,7 +235,7 @@ class GitHubApkPackageNameScannerTest {
         val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
             Collections.synchronizedList(mutableListOf())
 
-        override fun loadLatestStableRelease(
+        override suspend fun loadLatestStableRelease(
             owner: String,
             repo: String,
             lookupConfig: GitHubLookupConfig
@@ -248,7 +249,7 @@ class GitHubApkPackageNameScannerTest {
             )
         }
 
-        override fun fetchApkAssets(
+        override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
             release: GitHubStableReleaseTarget,
@@ -267,7 +268,7 @@ class GitHubApkPackageNameScannerTest {
             )
         }
 
-        override fun readAndroidManifestBytes(
+        override suspend fun readAndroidManifestBytes(
             asset: GitHubReleaseAssetFile,
             lookupConfig: GitHubLookupConfig
         ): Result<ByteArray> {

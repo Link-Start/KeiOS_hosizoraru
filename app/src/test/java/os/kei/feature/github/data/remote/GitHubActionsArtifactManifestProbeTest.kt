@@ -10,6 +10,7 @@ import os.kei.feature.github.data.apk.ZipRangeTestFixtures.zipWithManifest
 import os.kei.feature.github.data.apk.ZipRangeTestFixtures.zipWithStoredEntry
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubLookupConfig
+import kotlinx.coroutines.runBlocking
 import kotlin.test.assertEquals
 
 class GitHubActionsArtifactManifestProbeTest {
@@ -29,15 +30,17 @@ class GitHubActionsArtifactManifestProbeTest {
                 )
             )
 
-            val packageName = probe.readPackageName(
-                artifact = GitHubActionsArtifact(
-                    id = 42L,
-                    name = "KeiOS build",
-                    sizeBytes = artifactBytes.size.toLong()
-                ),
-                resolvedDownloadUrl = server.url("/download/artifact.zip").toString(),
-                lookupConfig = GitHubLookupConfig()
-            ).getOrThrow()
+            val packageName = runBlocking {
+                probe.readPackageName(
+                    artifact = GitHubActionsArtifact(
+                        id = 42L,
+                        name = "KeiOS build",
+                        sizeBytes = artifactBytes.size.toLong()
+                    ),
+                    resolvedDownloadUrl = server.url("/download/artifact.zip").toString(),
+                    lookupConfig = GitHubLookupConfig()
+                ).getOrThrow()
+            }
 
             assertEquals("os.kei.actions", packageName)
         }

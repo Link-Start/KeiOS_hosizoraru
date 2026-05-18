@@ -98,7 +98,7 @@ internal class GitHubPageManagedInstallRunner(
             targetDisplayName = targetDisplayName
         )
         val manifestDeferred = async(Dispatchers.IO) {
-            apkInfoRepository.inspectAsync(
+            apkInfoRepository.inspect(
                 asset = asset,
                 lookupConfig = lookupConfig
             ).getOrNull()

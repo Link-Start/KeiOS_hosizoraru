@@ -95,7 +95,7 @@ internal class GitHubActionsPageRepository(
         resolveNightlyRunDetail: Boolean = true
     ): GitHubStrategyLoadTrace<GitHubActionsWorkflowArtifactsSnapshot> {
         return GitHubActionsRepository.fromLookupConfig(lookupConfig)
-            .fetchWorkflowArtifactSnapshotAsync(
+            .fetchWorkflowArtifactSnapshot(
                 owner = owner,
                 repo = repo,
                 workflowId = workflowId,
@@ -134,7 +134,7 @@ internal class GitHubActionsPageRepository(
         includeArtifactsWhenCompleted: Boolean = true
     ): GitHubStrategyLoadTrace<GitHubActionsRunStatusSnapshot> {
         return GitHubActionsRepository.fromLookupConfig(lookupConfig)
-            .fetchRunStatusSnapshotAsync(
+            .fetchRunStatusSnapshot(
                 owner = owner,
                 repo = repo,
                 runId = runId,
@@ -175,7 +175,7 @@ internal class GitHubActionsPageRepository(
                     async(ioDispatcher) {
                         val workflowId = workflowLookupId(workflow, lookupConfig)
                         val primaryBranch = if (useNightlyLink) defaultBranch else ""
-                        val recentSnapshot = actionsRepository.fetchWorkflowArtifactSnapshotAsync(
+                        val recentSnapshot = actionsRepository.fetchWorkflowArtifactSnapshot(
                             owner = owner,
                             repo = repo,
                             workflowId = workflowId,
@@ -244,7 +244,7 @@ internal class GitHubActionsPageRepository(
         return coroutineScope {
             branches.map { branch ->
                 async(ioDispatcher) {
-                    actionsRepository.fetchWorkflowArtifactSnapshotAsync(
+                    actionsRepository.fetchWorkflowArtifactSnapshot(
                         owner = owner,
                         repo = repo,
                         workflowId = workflowId,

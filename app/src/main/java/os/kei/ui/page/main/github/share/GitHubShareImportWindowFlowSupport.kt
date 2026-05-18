@@ -154,7 +154,7 @@ internal suspend fun resolvePreferredAssetUrl(
     val token = lookupConfig.apiToken.trim()
     val preferApiAsset = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
     return withContext(Dispatchers.IO) {
-        GitHubReleaseAssetRepository.resolvePreferredDownloadUrlAsync(
+        GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
             asset = asset,
             useApiAssetUrl = preferApiAsset,
             apiToken = token
@@ -186,13 +186,13 @@ internal suspend fun scanShareImportAssetManifestInfo(
         GitHubApkPackageNameScanRepository()
     )
 ): Result<GitHubApkManifestInfo> {
-    apkInfoRepository.inspectAsync(
+    apkInfoRepository.inspect(
         asset = asset,
         lookupConfig = lookupConfig
     ).getOrNull()?.let { info ->
         return Result.success(info)
     }
-    return scanner.scanAssetManifestInfoAsync(
+    return scanner.scanAssetManifestInfo(
         asset = asset,
         lookupConfig = lookupConfig
     )

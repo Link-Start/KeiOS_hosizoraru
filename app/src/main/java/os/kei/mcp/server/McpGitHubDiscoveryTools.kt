@@ -161,7 +161,7 @@ internal class McpGitHubDiscoveryTools(
     private suspend fun buildRepoPackageScanText(repoUrl: String, expectedPackageName: String): String {
         if (repoUrl.isBlank()) return "ok=false\nmessage=repoUrl_required"
         val scanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
-        return scanner.scanAsync(
+        return scanner.scan(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
                 lookupConfig = GitHubTrackStore.loadLookupConfig(),
@@ -213,7 +213,7 @@ internal class McpGitHubDiscoveryTools(
         )
         val asset = GitHubDirectApkReleaseCheckSource.buildDirectApkAsset(item)
             ?: return "ok=false\nmessage=invalid_direct_apk_url"
-        return GitHubApkInfoRepository().inspectAsync(
+        return GitHubApkInfoRepository().inspect(
             asset = asset,
             lookupConfig = GitHubTrackStore.loadLookupConfig().forTrackedItem(item),
             forceRefresh = forceRefresh
@@ -269,7 +269,7 @@ internal class McpGitHubDiscoveryTools(
             discoverySource = GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken),
             packageNameScanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
         )
-        return resolver.scanRepositoriesForPackageAsync(
+        return resolver.scanRepositoriesForPackage(
             GitHubPackageRepositoryScanRequest(
                 packageName = packageName,
                 appLabel = appLabel,
@@ -346,7 +346,7 @@ internal class McpGitHubDiscoveryTools(
         val service = GitHubRepositoryDiscoveryService(
             GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken)
         )
-        return service.previewStarredRepositoryImportAsync(
+        return service.previewStarredRepositoryImport(
             request = request,
             existingItems = GitHubTrackStore.load()
         ).fold(
@@ -391,7 +391,7 @@ internal class McpGitHubDiscoveryTools(
         output.appendLine("ok=true")
         output.appendLine("requested=${candidates.size}")
         candidates.forEachIndexed { index, candidate ->
-            val verification = verifier.verifyAsync(
+            val verification = verifier.verify(
                 candidate = candidate,
                 lookupConfig = lookupConfig,
                 refreshIntervalHours = refreshIntervalHours

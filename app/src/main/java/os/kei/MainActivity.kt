@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.toArgb
@@ -39,6 +38,8 @@ import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
+import os.kei.ui.page.main.host.main.MainHostCallbacks
+import os.kei.ui.page.main.host.main.MainHostUiState
 import os.kei.ui.page.main.host.main.MainScreen
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -62,17 +63,15 @@ class MainActivity : ComponentActivity() {
             "github_confirm_managed_install"
     }
 
-    private var shizukuStatus = mutableStateOf("Shizuku status: initializing...")
-    private var appThemeModeState = mutableStateOf(UiPrefs.getAppThemeMode())
-    private var notificationPermissionGranted by mutableStateOf(true)
-    private var requestedBottomPage by mutableStateOf<String?>(null)
-    private var requestedBottomPageToken by mutableIntStateOf(0)
-    private var requestedGitHubRefreshToken by mutableIntStateOf(0)
-    private var requestedGitHubManagedInstallConfirmToken by mutableIntStateOf(0)
-    private var requestedGitHubActionsTrackId by mutableStateOf<String?>(null)
-    private var requestedGitHubActionsSheetToken by mutableIntStateOf(0)
-    private var requestedBaBgmPlaybackToken by mutableIntStateOf(0)
-    private var transientExternalLaunchActive by mutableStateOf(false)
+    /**
+     * Single Compose-observable holder for every Activity-owned UI signal that flows into
+     * [MainScreen]. Collapsing 11 independent `mutableStateOf` fields into one [MainHostUiState]
+     * lets `MainScreen` skip recomposition by structural equality and removes 19 individual
+     * parameters from the `setContent` call site.
+     */
+    private var hostUiState by mutableStateOf(
+        MainHostUiState.Initial.copy(appThemeMode = UiPrefs.getAppThemeMode())
+    )
     private var pendingMcpServerAction: String? = null
     private var pendingShortcutAction: String? = null
     private var startMcpAfterLocalNetworkPermission = false
@@ -83,14 +82,16 @@ class MainActivity : ComponentActivity() {
     private val transientExternalLaunchGuard = TransientExternalLaunchGuard()
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            notificationPermissionGranted = granted
+            hostUiState = hostUiState.copy(
+                notificationPermissionGranted = granted,
+                transientExternalLaunchActive = false
+            )
             transientExternalLaunchGuard.clear()
-            transientExternalLaunchActive = false
         }
     private val requestLocalNetworkPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             transientExternalLaunchGuard.clear()
-            transientExternalLaunchActive = false
+            hostUiState = hostUiState.copy(transientExternalLaunchActive = false)
             val permissionGranted = granted || hasLocalNetworkPermission()
             Toast
                 .makeText(
@@ -117,8 +118,9 @@ class MainActivity : ComponentActivity() {
         LauncherIconController.applyDesign(this, UiPrefs.getLauncherIconDesign())
         applyWindowColorMode(UiPrefs.isHomeIconHdrEnabled())
         window.isNavigationBarContrastEnforced = false
-        notificationPermissionGranted = hasNotificationPermission()
-        if (!notificationPermissionGranted) {
+        val initialNotificationGranted = hasNotificationPermission()
+        hostUiState = hostUiState.copy(notificationPermissionGranted = initialNotificationGranted)
+        if (!initialNotificationGranted) {
             transientExternalLaunchGuard.markLaunching(
                 TransientExternalLaunchGuard.Reason.NotificationPermission,
             )
@@ -153,13 +155,27 @@ class MainActivity : ComponentActivity() {
         runCatching { AppShortcuts.sync(this) }
 
         shizukuApiUtils.attach { status ->
-            shizukuStatus.value = status
+            hostUiState = hostUiState.copy(shizukuStatus = status)
         }
 
+        // Stable callback bundle: created once and reused across recompositions so MainScreen does
+        // not see new lambda identities every time hostUiState changes.
+        val hostCallbacks = MainHostCallbacks(
+            onCheckOrRequestShizuku = { shizukuApiUtils.requestPermissionIfNeeded() },
+            onRequestNotificationPermission = { requestNotificationPermissionIfNeeded() },
+            onAppThemeModeChanged = { mode ->
+                hostUiState = hostUiState.copy(appThemeMode = mode)
+                UiPrefs.setAppThemeMode(mode)
+            },
+            onRequestedBottomPageConsumed = {
+                hostUiState = hostUiState.copy(requestedBottomPage = null)
+            }
+        )
+
         setContent {
-            val appThemeMode = appThemeModeState.value
+            val state = hostUiState
             val colorSchemeMode =
-                when (appThemeMode) {
+                when (state.appThemeMode) {
                     AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
                     AppThemeMode.LIGHT -> ColorSchemeMode.Light
                     AppThemeMode.DARK -> ColorSchemeMode.Dark
@@ -168,32 +184,14 @@ class MainActivity : ComponentActivity() {
 
             MiuixTheme(controller = controller) {
                 CompositionLocalProvider(LocalOverscrollFactory provides null) {
-                    SystemBarAutoStyle(appThemeMode)
+                    SystemBarAutoStyle(state.appThemeMode)
                     MainScreen(
                         appLabel = appLabel,
                         packageInfo = packageInfo,
-                        shizukuStatus = shizukuStatus.value,
-                        onCheckOrRequestShizuku = { shizukuApiUtils.requestPermissionIfNeeded() },
-                        notificationPermissionGranted = notificationPermissionGranted,
-                        onRequestNotificationPermission = { requestNotificationPermissionIfNeeded() },
+                        hostState = state,
+                        hostCallbacks = hostCallbacks,
                         shizukuApiUtils = shizukuApiUtils,
                         mcpServerManager = mcpServerManager,
-                        appThemeMode = appThemeMode,
-                        onAppThemeModeChanged = { mode ->
-                            appThemeModeState.value = mode
-                            UiPrefs.setAppThemeMode(mode)
-                        },
-                        requestedBottomPage = requestedBottomPage,
-                        requestedBottomPageToken = requestedBottomPageToken,
-                        requestedGitHubRefreshToken = requestedGitHubRefreshToken,
-                        requestedGitHubManagedInstallConfirmToken = requestedGitHubManagedInstallConfirmToken,
-                        requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
-                        requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
-                        requestedBaBgmPlaybackToken = requestedBaBgmPlaybackToken,
-                        transientExternalLaunchActive = transientExternalLaunchActive,
-                        onRequestedBottomPageConsumed = {
-                            requestedBottomPage = null
-                        },
                     )
                 }
             }
@@ -216,14 +214,16 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        transientExternalLaunchActive = transientExternalLaunchGuard.shouldDeferStopWork()
+        hostUiState = hostUiState.copy(
+            transientExternalLaunchActive = transientExternalLaunchGuard.shouldDeferStopWork()
+        )
         super.onStop()
     }
 
     override fun onResume() {
         super.onResume()
         transientExternalLaunchGuard.onResume()
-        transientExternalLaunchActive = false
+        hostUiState = hostUiState.copy(transientExternalLaunchActive = false)
     }
 
     override fun onDestroy() {
@@ -235,8 +235,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestNotificationPermissionIfNeeded() {
-        notificationPermissionGranted = hasNotificationPermission()
-        if (!notificationPermissionGranted) {
+        val granted = hasNotificationPermission()
+        hostUiState = hostUiState.copy(notificationPermissionGranted = granted)
+        if (!granted) {
             transientExternalLaunchGuard.markLaunching(
                 TransientExternalLaunchGuard.Reason.NotificationPermission,
             )
@@ -290,14 +291,21 @@ class MainActivity : ComponentActivity() {
                 rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION),
                 rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID),
             ) ?: return
-        requestedBottomPage = route.targetBottomPage
-        requestedBottomPageToken += 1
+        val previous = hostUiState
+        val nextActionsTrackId = route.githubActionsTrackId ?: previous.requestedGitHubActionsTrackId
+        val nextActionsSheetToken = if (route.githubActionsTrackId != null) {
+            previous.requestedGitHubActionsSheetToken + 1
+        } else {
+            previous.requestedGitHubActionsSheetToken
+        }
+        hostUiState = previous.copy(
+            requestedBottomPage = route.targetBottomPage,
+            requestedBottomPageToken = previous.requestedBottomPageToken + 1,
+            requestedGitHubActionsTrackId = nextActionsTrackId,
+            requestedGitHubActionsSheetToken = nextActionsSheetToken
+        )
         pendingMcpServerAction = route.mcpServerAction
         pendingShortcutAction = route.shortcutAction
-        route.githubActionsTrackId?.let { trackId ->
-            requestedGitHubActionsTrackId = trackId
-            requestedGitHubActionsSheetToken += 1
-        }
     }
 
     private fun applyPendingShortcutActions() {
@@ -353,21 +361,28 @@ class MainActivity : ComponentActivity() {
         val action = pendingShortcutAction ?: return
         if (action != SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED) return
         pendingShortcutAction = null
-        requestedGitHubRefreshToken += 1
+        hostUiState = hostUiState.copy(
+            requestedGitHubRefreshToken = hostUiState.requestedGitHubRefreshToken + 1
+        )
     }
 
     private fun applyPendingGitHubManagedInstallConfirmAction() {
         val action = pendingShortcutAction ?: return
         if (action != SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL) return
         pendingShortcutAction = null
-        requestedGitHubManagedInstallConfirmToken += 1
+        hostUiState = hostUiState.copy(
+            requestedGitHubManagedInstallConfirmToken =
+                hostUiState.requestedGitHubManagedInstallConfirmToken + 1
+        )
     }
 
     private fun applyPendingBaBgmPlaybackAction() {
         val action = pendingShortcutAction ?: return
         if (action != SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK) return
         pendingShortcutAction = null
-        requestedBaBgmPlaybackToken += 1
+        hostUiState = hostUiState.copy(
+            requestedBaBgmPlaybackToken = hostUiState.requestedBaBgmPlaybackToken + 1
+        )
     }
 }
 

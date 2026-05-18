@@ -122,7 +122,7 @@ internal class GitHubStarImportPageRepository(
                 source = source,
                 ioDispatcher = ioDispatcher
             )
-                .previewStarredRepositoryImportAsync(
+                .previewStarredRepositoryImport(
                     request = importRequest,
                     existingItems = snapshot.items
                 )
@@ -151,7 +151,7 @@ internal class GitHubStarImportPageRepository(
                 items = uniqueTargets,
                 maxConcurrency = MAX_PARALLEL_APK_VERIFICATIONS
             ) { candidate ->
-                candidate.trackedApp.id to verifier.verifyAsync(
+                candidate.trackedApp.id to verifier.verify(
                     candidate = candidate,
                     lookupConfig = snapshot.lookupConfig,
                     refreshIntervalHours = snapshot.refreshIntervalHours

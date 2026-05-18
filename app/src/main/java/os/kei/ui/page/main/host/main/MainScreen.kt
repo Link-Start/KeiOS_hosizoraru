@@ -18,7 +18,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import os.kei.R
-import os.kei.core.prefs.AppThemeMode
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
@@ -30,23 +29,10 @@ import os.kei.ui.page.main.student.BaStudentGuideStore
 fun MainScreen(
     appLabel: String,
     packageInfo: PackageInfo?,
-    shizukuStatus: String,
-    onCheckOrRequestShizuku: () -> Unit,
-    notificationPermissionGranted: Boolean,
-    onRequestNotificationPermission: () -> Unit,
+    hostState: MainHostUiState,
+    hostCallbacks: MainHostCallbacks,
     shizukuApiUtils: ShizukuApiUtils,
-    mcpServerManager: McpServerManager,
-    appThemeMode: AppThemeMode,
-    onAppThemeModeChanged: (AppThemeMode) -> Unit,
-    requestedBottomPage: String?,
-    requestedBottomPageToken: Int,
-    requestedGitHubRefreshToken: Int,
-    requestedGitHubManagedInstallConfirmToken: Int,
-    requestedGitHubActionsTrackId: String?,
-    requestedGitHubActionsSheetToken: Int,
-    requestedBaBgmPlaybackToken: Int,
-    transientExternalLaunchActive: Boolean,
-    onRequestedBottomPageConsumed: () -> Unit
+    mcpServerManager: McpServerManager
 ) {
     val backStack = remember { mutableStateListOf<NavKey>().apply { add(KeiosRoute.Main) } }
     val navigator = remember { Navigator(backStack) }
@@ -55,21 +41,21 @@ fun MainScreen(
     val view = LocalView.current
     val currentAppLabel by rememberUpdatedState(appLabel)
     val currentPackageInfo by rememberUpdatedState(packageInfo)
-    val currentShizukuStatus by rememberUpdatedState(shizukuStatus)
-    val currentNotificationPermissionGranted by rememberUpdatedState(notificationPermissionGranted)
-    val currentOnCheckOrRequestShizuku by rememberUpdatedState(onCheckOrRequestShizuku)
-    val currentOnAppThemeModeChanged by rememberUpdatedState(onAppThemeModeChanged)
+    val currentShizukuStatus by rememberUpdatedState(hostState.shizukuStatus)
+    val currentNotificationPermissionGranted by rememberUpdatedState(hostState.notificationPermissionGranted)
+    val currentOnCheckOrRequestShizuku by rememberUpdatedState(hostCallbacks.onCheckOrRequestShizuku)
+    val currentOnAppThemeModeChanged by rememberUpdatedState(hostCallbacks.onAppThemeModeChanged)
     val prefsViewModel: MainScreenPrefsViewModel = viewModel()
     var localRequestedBottomPage by rememberSaveable { mutableStateOf<String?>(null) }
     var localRequestedBottomPageToken by rememberSaveable { mutableIntStateOf(0) }
-    val externalBottomPageRequested = !requestedBottomPage.isNullOrBlank()
+    val externalBottomPageRequested = !hostState.requestedBottomPage.isNullOrBlank()
     val effectiveRequestedBottomPage = if (externalBottomPageRequested) {
-        requestedBottomPage
+        hostState.requestedBottomPage
     } else {
         localRequestedBottomPage
     }
     val effectiveRequestedBottomPageToken = if (externalBottomPageRequested) {
-        requestedBottomPageToken
+        hostState.requestedBottomPageToken
     } else {
         localRequestedBottomPageToken
     }
@@ -85,12 +71,12 @@ fun MainScreen(
             navigator.popUntil { it == KeiosRoute.Main }
         }
     )
-    LaunchedEffect(requestedBaBgmPlaybackToken) {
-        if (requestedBaBgmPlaybackToken <= 0) return@LaunchedEffect
+    LaunchedEffect(hostState.requestedBaBgmPlaybackToken) {
+        if (hostState.requestedBaBgmPlaybackToken <= 0) return@LaunchedEffect
         navigator.popUntil { it == KeiosRoute.Main }
         navigator.push(
             KeiosRoute.BaGuideCatalog(
-                openBgmPlaybackToken = requestedBaBgmPlaybackToken.toLong()
+                openBgmPlaybackToken = hostState.requestedBaBgmPlaybackToken.toLong()
             )
         )
     }
@@ -119,13 +105,13 @@ fun MainScreen(
         onOpenGuideDetail = openGuideDetail,
         requestedBottomPage = effectiveRequestedBottomPage,
         requestedBottomPageToken = effectiveRequestedBottomPageToken,
-        requestedGitHubRefreshToken = requestedGitHubRefreshToken,
-        requestedGitHubManagedInstallConfirmToken = requestedGitHubManagedInstallConfirmToken,
-        requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
-        requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
+        requestedGitHubRefreshToken = hostState.requestedGitHubRefreshToken,
+        requestedGitHubManagedInstallConfirmToken = hostState.requestedGitHubManagedInstallConfirmToken,
+        requestedGitHubActionsTrackId = hostState.requestedGitHubActionsTrackId,
+        requestedGitHubActionsSheetToken = hostState.requestedGitHubActionsSheetToken,
         onRequestedBottomPageConsumed = {
             if (externalBottomPageRequested) {
-                onRequestedBottomPageConsumed()
+                hostCallbacks.onRequestedBottomPageConsumed()
             }
             localRequestedBottomPage = null
         },
@@ -147,10 +133,10 @@ fun MainScreen(
         packageInfo = currentPackageInfo,
         onCheckOrRequestShizuku = currentOnCheckOrRequestShizuku,
         notificationPermissionGranted = currentNotificationPermissionGranted,
-        onRequestNotificationPermission = onRequestNotificationPermission,
+        onRequestNotificationPermission = hostCallbacks.onRequestNotificationPermission,
         mcpServerManager = mcpServerManager,
-        appThemeMode = appThemeMode,
-        transientExternalLaunchActive = transientExternalLaunchActive,
+        appThemeMode = hostState.appThemeMode,
+        transientExternalLaunchActive = hostState.transientExternalLaunchActive,
         onAppThemeModeChanged = currentOnAppThemeModeChanged,
     )
 }

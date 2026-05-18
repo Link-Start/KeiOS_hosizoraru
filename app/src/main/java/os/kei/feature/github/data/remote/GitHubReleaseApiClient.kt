@@ -18,15 +18,6 @@ internal class GitHubReleaseApiClient(
     private val apiBaseUrl: String = DEFAULT_GITHUB_API_BASE_URL,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    fun resolveApiAssetDownloadUrl(
-        apiAssetUrl: String,
-        apiToken: String
-    ): Result<String> {
-        return GitHubExecution.runBlockingIo {
-            resolveApiAssetDownloadUrlAsync(apiAssetUrl, apiToken)
-        }
-    }
-
     suspend fun resolveApiAssetDownloadUrlAsync(
         apiAssetUrl: String,
         apiToken: String
@@ -65,17 +56,6 @@ internal class GitHubReleaseApiClient(
         }
     }
 
-    fun resolveShortCommitSha(
-        owner: String,
-        repo: String,
-        rawTag: String,
-        apiToken: String
-    ): Result<String> {
-        return GitHubExecution.runBlockingIo {
-            resolveShortCommitShaAsync(owner, repo, rawTag, apiToken)
-        }
-    }
-
     suspend fun resolveShortCommitShaAsync(
         owner: String,
         repo: String,
@@ -87,17 +67,6 @@ internal class GitHubReleaseApiClient(
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
             Result.success("")
-        }
-    }
-
-    fun fetchReleaseByTag(
-        owner: String,
-        repo: String,
-        rawTag: String,
-        apiToken: String
-    ): Result<JSONObject> {
-        return GitHubExecution.runBlockingIo {
-            fetchReleaseByTagAsync(owner, repo, rawTag, apiToken)
         }
     }
 
@@ -114,16 +83,6 @@ internal class GitHubReleaseApiClient(
         }
     }
 
-    fun fetchReleaseList(
-        owner: String,
-        repo: String,
-        apiToken: String
-    ): Result<JSONArray> {
-        return GitHubExecution.runBlockingIo {
-            fetchReleaseListAsync(owner, repo, apiToken)
-        }
-    }
-
     suspend fun fetchReleaseListAsync(
         owner: String,
         repo: String,
@@ -132,16 +91,6 @@ internal class GitHubReleaseApiClient(
         cancellableResult {
             val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
             JSONArray(fetchJsonAsync(url, apiToken))
-        }
-    }
-
-    fun fetchLatestRelease(
-        owner: String,
-        repo: String,
-        apiToken: String
-    ): Result<JSONObject> {
-        return GitHubExecution.runBlockingIo {
-            fetchLatestReleaseAsync(owner, repo, apiToken)
         }
     }
 

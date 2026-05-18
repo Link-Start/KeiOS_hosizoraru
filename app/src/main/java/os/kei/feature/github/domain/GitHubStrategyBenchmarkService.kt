@@ -1,5 +1,7 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
@@ -471,13 +473,15 @@ object GitHubStrategyBenchmarkService {
         val scanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
-                scanner.scan(
-                    GitHubApkPackageNameScanRequest(
-                        repoUrl = target.normalizedRepoUrl,
-                        lookupConfig = lookupConfig,
-                        expectedPackageName = target.packageName
+                runBlocking(Dispatchers.IO) {
+                    scanner.scan(
+                        GitHubApkPackageNameScanRequest(
+                            repoUrl = target.normalizedRepoUrl,
+                            lookupConfig = lookupConfig,
+                            expectedPackageName = target.packageName
+                        )
                     )
-                ).getOrThrow().packageName
+                }.getOrThrow().packageName
             }
         }
     }
@@ -515,10 +519,12 @@ object GitHubStrategyBenchmarkService {
                 val asset =
                     bundle.assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
                         ?: error("No APK asset found")
-                apkInfoRepository.inspect(
-                    asset = asset,
-                    lookupConfig = lookupConfig
-                ).getOrThrow()
+                runBlocking(Dispatchers.IO) {
+                    apkInfoRepository.inspect(
+                        asset = asset,
+                        lookupConfig = lookupConfig
+                    )
+                }.getOrThrow()
             }
         }
     }
@@ -532,16 +538,18 @@ object GitHubStrategyBenchmarkService {
         )
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
-                val result = resolver.scanRepositoriesForPackage(
-                    GitHubPackageRepositoryScanRequest(
-                        packageName = target.packageName,
-                        appLabel = target.appLabel,
-                        preferredRepoUrl = target.normalizedRepoUrl,
-                        lookupConfig = lookupConfig,
-                        candidateLimit = 10,
-                        verificationLimit = 3
+                val result = runBlocking(Dispatchers.IO) {
+                    resolver.scanRepositoriesForPackage(
+                        GitHubPackageRepositoryScanRequest(
+                            packageName = target.packageName,
+                            appLabel = target.appLabel,
+                            preferredRepoUrl = target.normalizedRepoUrl,
+                            lookupConfig = lookupConfig,
+                            candidateLimit = 10,
+                            verificationLimit = 3
+                        )
                     )
-                ).getOrThrow()
+                }.getOrThrow()
                 val match = result.matchedCandidates.firstOrNull()
                     ?: error("No matching repository found")
                 "${match.repository.owner}/${match.repository.repo}"
@@ -621,16 +629,18 @@ private class GitHubBenchmarkReleaseAssetFetcher(
                             ?: snapshot.latestPreRelease
                             ?: error("No release found")
                     }
-                GitHubReleaseAssetRepository.fetchApkAssets(
-                    owner = target.owner,
-                    repo = target.repo,
-                    rawTag = release.rawTag,
-                    releaseUrl = release.link,
-                    preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed,
-                    aggressiveFiltering = false,
-                    includeAllAssets = includeAllAssets,
-                    apiToken = lookupConfig.apiToken
-                ).getOrThrow()
+                runBlocking(Dispatchers.IO) {
+                    GitHubReleaseAssetRepository.fetchApkAssets(
+                        owner = target.owner,
+                        repo = target.repo,
+                        rawTag = release.rawTag,
+                        releaseUrl = release.link,
+                        preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed,
+                        aggressiveFiltering = false,
+                        includeAllAssets = includeAllAssets,
+                        apiToken = lookupConfig.apiToken
+                    )
+                }.getOrThrow()
             }
         }.getOrThrow()
     }

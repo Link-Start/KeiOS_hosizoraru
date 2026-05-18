@@ -29,19 +29,7 @@ private data class ShareImportResolveAttempt(
 )
 
 internal object GitHubShareImportResolver {
-    fun resolve(
-        sharedText: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubShareImportAssetPlan> {
-        return GitHubExecution.runBlockingIo {
-            resolveAsync(
-                sharedText = sharedText,
-                lookupConfig = lookupConfig
-            )
-        }
-    }
-
-    suspend fun resolveAsync(
+    suspend fun resolve(
         sharedText: String,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubShareImportAssetPlan> = withContext(Dispatchers.IO) {
@@ -130,7 +118,7 @@ internal object GitHubShareImportResolver {
         val strategy = lookupConfig.selectedStrategy
         val target = resolveReleaseTarget(parsedLink, lookupConfig)
         val preferHtml = strategy == GitHubLookupStrategyOption.AtomFeed
-        val fetchedBundle = GitHubReleaseAssetRepository.fetchApkAssetsAsync(
+        val fetchedBundle = GitHubReleaseAssetRepository.fetchApkAssets(
             owner = parsedLink.owner,
             repo = parsedLink.repo,
             rawTag = target.tag,

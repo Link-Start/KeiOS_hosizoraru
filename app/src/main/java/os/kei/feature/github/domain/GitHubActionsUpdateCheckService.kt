@@ -71,7 +71,7 @@ class GitHubActionsUpdateCheckService(
                         } else {
                             ""
                         }
-                    val snapshot = repository.fetchWorkflowArtifactSnapshotAsync(
+                    val snapshot = repository.fetchWorkflowArtifactSnapshot(
                         owner = item.owner,
                         repo = item.repo,
                         workflowId = workflowId,

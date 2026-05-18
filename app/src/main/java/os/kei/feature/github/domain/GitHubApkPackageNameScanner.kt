@@ -70,15 +70,7 @@ internal class GitHubApkPackageNameScanner(
     private val source: GitHubApkPackageNameScanSource,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    fun scan(
-        request: GitHubApkPackageNameScanRequest
-    ): Result<GitHubApkPackageNameScanResult> {
-        return GitHubExecution.runBlockingIo {
-            scanAsync(request)
-        }
-    }
-
-    suspend fun scanAsync(
+    suspend fun scan(
         request: GitHubApkPackageNameScanRequest
     ): Result<GitHubApkPackageNameScanResult> = runCatching {
         val parsed = GitHubVersionUtils.parseOwnerRepo(request.repoUrl)
@@ -110,20 +102,11 @@ internal class GitHubApkPackageNameScanner(
         )
     }.preserveCancellation()
 
-    fun scanAssetPackageName(
+    suspend fun scanAssetPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<String> {
-        return GitHubExecution.runBlockingIo {
-            scanAssetPackageNameAsync(asset, lookupConfig)
-        }
-    }
-
-    suspend fun scanAssetPackageNameAsync(
-        asset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig
-    ): Result<String> {
-        return scanAssetManifestInfoAsync(
+        return scanAssetManifestInfo(
             asset = asset,
             lookupConfig = lookupConfig
         ).map { info ->
@@ -131,16 +114,7 @@ internal class GitHubApkPackageNameScanner(
         }
     }
 
-    fun scanAssetManifestInfo(
-        asset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubApkManifestInfo> {
-        return GitHubExecution.runBlockingIo {
-            scanAssetManifestInfoAsync(asset, lookupConfig)
-        }
-    }
-
-    suspend fun scanAssetManifestInfoAsync(
+    suspend fun scanAssetManifestInfo(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> {

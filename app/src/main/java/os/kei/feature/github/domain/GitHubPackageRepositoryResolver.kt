@@ -25,15 +25,7 @@ internal class GitHubPackageRepositoryResolver(
     private val packageNameScanner: GitHubApkPackageNameScanner,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    fun scanRepositoriesForPackage(
-        request: GitHubPackageRepositoryScanRequest
-    ): Result<GitHubPackageRepositoryScanResult> {
-        return GitHubExecution.runBlockingIo {
-            scanRepositoriesForPackageAsync(request)
-        }
-    }
-
-    suspend fun scanRepositoriesForPackageAsync(
+    suspend fun scanRepositoriesForPackage(
         request: GitHubPackageRepositoryScanRequest
     ): Result<GitHubPackageRepositoryScanResult> = withContext(ioDispatcher) {
         cancellableResult {
@@ -340,7 +332,7 @@ internal class GitHubPackageRepositoryResolver(
         val repoUrl = candidate.repoUrl.ifBlank {
             "https://github.com/${candidate.owner}/${candidate.repo}"
         }
-        val scanResult = packageNameScanner.scanAsync(
+        val scanResult = packageNameScanner.scan(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
                 lookupConfig = lookupConfig,

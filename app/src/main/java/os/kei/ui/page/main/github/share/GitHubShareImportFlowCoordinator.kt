@@ -49,7 +49,7 @@ internal object GitHubShareImportFlowCoordinator {
                 GitHubShareImportFlowStore.clearActiveFlow()
             }
             GitHubTrackStoreSignals.notifyChanged()
-            val plan = GitHubShareImportResolver.resolveAsync(
+            val plan = GitHubShareImportResolver.resolve(
                 sharedText = parsedIncoming.sourceUrl,
                 lookupConfig = resolvedLookupConfig
             ).getOrThrow()

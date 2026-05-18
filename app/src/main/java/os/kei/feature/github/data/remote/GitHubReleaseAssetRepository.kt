@@ -115,31 +115,7 @@ object GitHubReleaseAssetRepository {
     }
     private val inFlightAssetFetches = GitHubSingleFlight<String, GitHubReleaseAssetBundle>()
 
-    fun fetchApkAssets(
-        owner: String,
-        repo: String,
-        rawTag: String,
-        releaseUrl: String = "",
-        preferHtml: Boolean = false,
-        aggressiveFiltering: Boolean = false,
-        includeAllAssets: Boolean = false,
-        apiToken: String = ""
-    ): Result<GitHubReleaseAssetBundle> {
-        return GitHubExecution.runBlockingIo {
-            fetchApkAssetsAsync(
-                owner = owner,
-                repo = repo,
-                rawTag = rawTag,
-                releaseUrl = releaseUrl,
-                preferHtml = preferHtml,
-                aggressiveFiltering = aggressiveFiltering,
-                includeAllAssets = includeAllAssets,
-                apiToken = apiToken
-            )
-        }
-    }
-
-    suspend fun fetchApkAssetsAsync(
+    suspend fun fetchApkAssets(
         owner: String,
         repo: String,
         rawTag: String,
@@ -239,23 +215,7 @@ object GitHubReleaseAssetRepository {
         }
     }
 
-    fun fetchLatestStableApkAssets(
-        owner: String,
-        repo: String,
-        aggressiveFiltering: Boolean = false,
-        apiToken: String = ""
-    ): Result<GitHubReleaseAssetBundle> {
-        return GitHubExecution.runBlockingIo {
-            fetchLatestStableApkAssetsAsync(
-                owner = owner,
-                repo = repo,
-                aggressiveFiltering = aggressiveFiltering,
-                apiToken = apiToken
-            )
-        }
-    }
-
-    suspend fun fetchLatestStableApkAssetsAsync(
+    suspend fun fetchLatestStableApkAssets(
         owner: String,
         repo: String,
         aggressiveFiltering: Boolean = false,
@@ -285,7 +245,7 @@ object GitHubReleaseAssetRepository {
         }
     }
 
-    suspend fun fetchReleaseNotesTargetsAsync(
+    suspend fun fetchReleaseNotesTargets(
         owner: String,
         repo: String,
         apiToken: String = "",
@@ -301,21 +261,7 @@ object GitHubReleaseAssetRepository {
         }
     }
 
-    fun resolvePreferredDownloadUrl(
-        asset: GitHubReleaseAssetFile,
-        useApiAssetUrl: Boolean,
-        apiToken: String = ""
-    ): Result<String> {
-        return GitHubExecution.runBlockingIo {
-            resolvePreferredDownloadUrlAsync(
-                asset = asset,
-                useApiAssetUrl = useApiAssetUrl,
-                apiToken = apiToken
-            )
-        }
-    }
-
-    suspend fun resolvePreferredDownloadUrlAsync(
+    suspend fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,
         useApiAssetUrl: Boolean,
         apiToken: String = ""

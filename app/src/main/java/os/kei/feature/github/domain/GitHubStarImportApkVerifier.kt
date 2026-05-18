@@ -3,7 +3,6 @@ package os.kei.feature.github.domain
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
@@ -35,23 +34,7 @@ internal class GitHubStarImportApkVerifier(
         GitHubApkPackageNameScanner(source),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    fun verify(
-        candidate: GitHubRepositoryImportCandidate,
-        lookupConfig: GitHubLookupConfig,
-        refreshIntervalHours: Int = DEFAULT_REFRESH_INTERVAL_HOURS,
-        nowMillis: Long = System.currentTimeMillis()
-    ): GitHubStarImportApkVerification {
-        return GitHubExecution.runBlockingIo {
-            verifyAsync(
-                candidate = candidate,
-                lookupConfig = lookupConfig,
-                refreshIntervalHours = refreshIntervalHours,
-                nowMillis = nowMillis
-            )
-        }
-    }
-
-    suspend fun verifyAsync(
+    suspend fun verify(
         candidate: GitHubRepositoryImportCandidate,
         lookupConfig: GitHubLookupConfig,
         refreshIntervalHours: Int = DEFAULT_REFRESH_INTERVAL_HOURS,
@@ -137,7 +120,7 @@ internal class GitHubStarImportApkVerifier(
         lookupConfig: GitHubLookupConfig
     ): Pair<GitHubReleaseAssetFile, String>? {
         assets.take(MAX_PACKAGE_SCAN_ASSETS).forEach { asset ->
-            val packageName = packageNameScanner.scanAssetPackageNameAsync(
+            val packageName = packageNameScanner.scanAssetPackageName(
                 asset = asset,
                 lookupConfig = lookupConfig
             ).getOrDefault("").trim()

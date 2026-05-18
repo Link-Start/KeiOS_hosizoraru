@@ -149,7 +149,7 @@ internal class GitHubPageDiscoveryRepository(
         return GitHubRepositoryDiscoveryService(
             source = GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken),
             ioDispatcher = ioDispatcher
-        ).previewStarredRepositoryImportAsync(
+        ).previewStarredRepositoryImport(
             request = request,
             existingItems = existingItems
         )
@@ -162,7 +162,7 @@ internal class GitHubPageDiscoveryRepository(
         return GitHubRepositoryDiscoveryService(
             source = GitHubRepositoryDiscoveryRepository(apiToken = request.apiToken),
             ioDispatcher = ioDispatcher
-        ).searchRepositoriesForAppAsync(
+        ).searchRepositoriesForApp(
             request = request,
             existingItems = existingItems
         )
@@ -174,7 +174,7 @@ internal class GitHubPageDiscoveryRepository(
         return withContext(ioDispatcher) {
             GitHubApkPackageNameScanner(
                 GitHubApkPackageNameScanRepository()
-            ).scanAsync(request)
+            ).scan(request)
         }
     }
 
@@ -226,7 +226,7 @@ internal class GitHubPageDiscoveryRepository(
                     ?: directoryIndexResolution?.toAsset(asset.name)
                     ?: companionJsonResolution?.toAsset()
                     ?: asset
-                val manifest = GitHubApkInfoRepository().inspectAsync(
+                val manifest = GitHubApkInfoRepository().inspect(
                     asset = scanAsset,
                     lookupConfig = lookupConfig.copy(
                         selectedStrategy = GitHubLookupStrategyOption.AtomFeed,
@@ -265,7 +265,7 @@ internal class GitHubPageDiscoveryRepository(
                     GitHubApkPackageNameScanRepository()
                 ),
                 ioDispatcher = ioDispatcher
-            ).scanRepositoriesForPackageAsync(request)
+            ).scanRepositoriesForPackage(request)
         }
     }
 }

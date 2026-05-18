@@ -447,7 +447,7 @@ class GitHubShizukuPackageInstaller(
         val token = request.lookupConfig.apiToken.trim()
         val preferApiAsset =
             request.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
-        return GitHubReleaseAssetRepository.resolvePreferredDownloadUrlAsync(
+        return GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
             asset = request.asset,
             useApiAssetUrl = preferApiAsset,
             apiToken = token

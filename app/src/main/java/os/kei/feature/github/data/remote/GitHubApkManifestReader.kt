@@ -1,5 +1,7 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.apk.RemoteZipEntryReader
 import os.kei.feature.github.data.apk.RemoteZipSelectedEntries
@@ -186,11 +188,13 @@ internal class GitHubApkManifestReader(
                     token.isNotBlank() &&
                     asset.apiAssetUrl.isNotBlank()
         val apiTarget = if (canUseApiAsset) {
-            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-                asset = asset,
-                useApiAssetUrl = true,
-                apiToken = token
-            ).getOrNull()?.let { url ->
+            runBlocking(Dispatchers.IO) {
+                GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
+                    asset = asset,
+                    useApiAssetUrl = true,
+                    apiToken = token
+                )
+            }.getOrNull()?.let { url ->
                 ApkManifestReadTarget(
                     url = url,
                     token = token,

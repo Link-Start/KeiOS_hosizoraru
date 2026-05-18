@@ -130,6 +130,11 @@ internal object GitHubExecution {
         }
     }
 
+    /**
+     * Bridge for callers that cannot yet be made `suspend` (e.g. MCP tool handlers running on
+     * Ktor server threads, Shizuku binder callbacks). Prefer the suspend [mapOrderedBounded]
+     * directly whenever the call site is already in a coroutine.
+     */
     fun <T, R> mapOrderedBoundedBlocking(
         items: List<T>,
         maxConcurrency: Int,
@@ -147,41 +152,17 @@ internal object GitHubExecution {
         }
     }
 
-    fun <T, R> firstSuccessBoundedBlocking(
-        items: List<T>,
-        maxConcurrency: Int,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
-        block: (T) -> Result<R>
-    ): Result<R> {
-        return runBlocking(dispatcher) {
-            firstSuccessBounded(
-                items = items,
-                maxConcurrency = maxConcurrency,
-                dispatcher = dispatcher
-            ) { item ->
-                block(item)
-            }
-        }
-    }
-
+    /**
+     * Bridge for callers that cannot yet be made `suspend`. Prefer the suspend version directly
+     * whenever the call site is already in a coroutine.
+     */
+    @Deprecated(
+        message = "Migrate caller to suspend and use the suspend overload directly.",
+        replaceWith = ReplaceWith("runBlockingIo is being removed; use withContext(Dispatchers.IO) { ... }")
+    )
     fun <T> runBlockingIo(block: suspend () -> T): T {
         return runBlocking(Dispatchers.IO) {
             block()
-        }
-    }
-
-    fun <T> retryOnceBlocking(
-        delayMillis: Long = DEFAULT_RETRY_DELAY_MS,
-        shouldRetry: (Throwable) -> Boolean,
-        block: () -> T
-    ): Result<T> {
-        return runBlocking(Dispatchers.IO) {
-            retryOnce(
-                delayMillis = delayMillis,
-                shouldRetry = shouldRetry
-            ) {
-                block()
-            }
         }
     }
 

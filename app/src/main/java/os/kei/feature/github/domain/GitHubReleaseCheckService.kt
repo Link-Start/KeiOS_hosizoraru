@@ -47,23 +47,6 @@ object GitHubReleaseCheckService {
         )
     }
 
-    fun evaluateTrackedAppBlocking(
-        context: Context,
-        item: GitHubTrackedApp,
-        strategy: GitHubReleaseLookupStrategy? = null,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false
-    ): GitHubTrackedReleaseCheck {
-        return GitHubExecution.runBlockingIo {
-            evaluateTrackedApp(
-                context = context,
-                item = item,
-                strategy = strategy,
-                profilePurposeOverride = profilePurposeOverride,
-                forceRefresh = forceRefresh
-            )
-        }
-    }
 
     internal suspend fun evaluateTrackedAppForTest(
         context: Context,

@@ -11,21 +11,7 @@ import kotlin.coroutines.cancellation.CancellationException
 internal class GitHubApkInfoRepository(
     private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
 ) {
-    fun inspect(
-        asset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig,
-        forceRefresh: Boolean = false
-    ): Result<GitHubApkManifestInfo> {
-        return GitHubExecution.runBlockingIo {
-            inspectAsync(
-                asset = asset,
-                lookupConfig = lookupConfig,
-                forceRefresh = forceRefresh
-            )
-        }
-    }
-
-    suspend fun inspectAsync(
+    suspend fun inspect(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,
         forceRefresh: Boolean = false

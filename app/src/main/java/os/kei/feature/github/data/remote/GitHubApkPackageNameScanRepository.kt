@@ -1,5 +1,7 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.domain.GitHubApkPackageNameScanSource
 import os.kei.feature.github.domain.GitHubStableReleaseApkAssets
 import os.kei.feature.github.domain.GitHubStableReleaseTarget
@@ -81,12 +83,14 @@ internal class GitHubApkPackageNameScanRepository(
         repo: String,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubStableReleaseApkAssets> {
-        return GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
-            owner = owner,
-            repo = repo,
-            aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-            apiToken = lookupConfig.apiToken
-        ).map { bundle ->
+        return runBlocking(Dispatchers.IO) {
+            GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
+                owner = owner,
+                repo = repo,
+                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                apiToken = lookupConfig.apiToken
+            )
+        }.map { bundle ->
             GitHubStableReleaseApkAssets(
                 release = GitHubStableReleaseTarget(
                     tag = bundle.tagName,
@@ -123,16 +127,18 @@ internal class GitHubApkPackageNameScanRepository(
         release: GitHubStableReleaseTarget,
         lookupConfig: GitHubLookupConfig
     ): Result<List<GitHubReleaseAssetFile>> {
-        return GitHubReleaseAssetRepository.fetchApkAssets(
-            owner = owner,
-            repo = repo,
-            rawTag = release.tag,
-            releaseUrl = release.releaseUrl,
-            preferHtml = lookupConfig.scanPreferHtmlAssets,
-            aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-            includeAllAssets = false,
-            apiToken = lookupConfig.apiToken
-        ).map { bundle ->
+        return runBlocking(Dispatchers.IO) {
+            GitHubReleaseAssetRepository.fetchApkAssets(
+                owner = owner,
+                repo = repo,
+                rawTag = release.tag,
+                releaseUrl = release.releaseUrl,
+                preferHtml = lookupConfig.scanPreferHtmlAssets,
+                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                includeAllAssets = false,
+                apiToken = lookupConfig.apiToken
+            )
+        }.map { bundle ->
             bundle.assets.filter { asset ->
                 asset.name.endsWith(".apk", ignoreCase = true)
             }

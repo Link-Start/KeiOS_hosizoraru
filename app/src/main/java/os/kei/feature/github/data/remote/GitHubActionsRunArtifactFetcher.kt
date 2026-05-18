@@ -17,23 +17,7 @@ internal class GitHubActionsRunArtifactFetcher(
         limit: Int
     ) -> Result<List<GitHubActionsArtifact>>
 ) {
-    fun fetchForRuns(
-        owner: String,
-        repo: String,
-        runs: List<GitHubActionsWorkflowRun>,
-        limit: Int
-    ): List<Pair<GitHubActionsWorkflowRun, Result<List<GitHubActionsArtifact>>>> {
-        return GitHubExecution.runBlockingIo {
-            fetchForRunsAsync(
-                owner = owner,
-                repo = repo,
-                runs = runs,
-                limit = limit
-            )
-        }
-    }
-
-    suspend fun fetchForRunsAsync(
+    suspend fun fetchForRuns(
         owner: String,
         repo: String,
         runs: List<GitHubActionsWorkflowRun>,

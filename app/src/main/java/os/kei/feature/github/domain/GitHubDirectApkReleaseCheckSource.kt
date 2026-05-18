@@ -252,7 +252,7 @@ internal class GitHubDirectApkReleaseCheckSource(
         lookupConfig: GitHubLookupConfig,
         forceRefresh: Boolean
     ): Result<GitHubApkManifestInfo> {
-        return apkInfoRepository.inspectAsync(
+        return apkInfoRepository.inspect(
             asset = target.asset,
             lookupConfig = lookupConfig,
             forceRefresh = forceRefresh

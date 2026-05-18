@@ -46,19 +46,7 @@ internal class GitHubRepositoryDiscoveryService(
     private val source: GitHubRepositoryDiscoverySource,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    fun previewStarredRepositoryImport(
-        request: GitHubStarredRepositoryImportRequest,
-        existingItems: List<GitHubTrackedApp>
-    ): Result<GitHubStarredRepositoryImportPreview> {
-        return GitHubExecution.runBlockingIo {
-            previewStarredRepositoryImportAsync(
-                request = request,
-                existingItems = existingItems
-            )
-        }
-    }
-
-    suspend fun previewStarredRepositoryImportAsync(
+    suspend fun previewStarredRepositoryImport(
         request: GitHubStarredRepositoryImportRequest,
         existingItems: List<GitHubTrackedApp>
     ): Result<GitHubStarredRepositoryImportPreview> = withContext(ioDispatcher) {
@@ -127,19 +115,7 @@ internal class GitHubRepositoryDiscoveryService(
         )
     }
 
-    fun searchRepositoriesForApp(
-        request: GitHubAppRepositorySearchRequest,
-        existingItems: List<GitHubTrackedApp>
-    ): Result<GitHubAppRepositorySearchResult> {
-        return GitHubExecution.runBlockingIo {
-            searchRepositoriesForAppAsync(
-                request = request,
-                existingItems = existingItems
-            )
-        }
-    }
-
-    suspend fun searchRepositoriesForAppAsync(
+    suspend fun searchRepositoriesForApp(
         request: GitHubAppRepositorySearchRequest,
         existingItems: List<GitHubTrackedApp>
     ): Result<GitHubAppRepositorySearchResult> = withContext(ioDispatcher) {

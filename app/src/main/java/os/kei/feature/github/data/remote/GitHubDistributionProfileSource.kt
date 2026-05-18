@@ -23,7 +23,7 @@ internal object GitHubDistributionProfileSource {
             )
             return buildLocal(request, fetchedAtMillis)
         }
-        val bundleResult = GitHubReleaseAssetRepository.fetchApkAssetsAsync(
+        val bundleResult = GitHubReleaseAssetRepository.fetchApkAssets(
             owner = request.owner,
             repo = request.repo,
             rawTag = rawTag,

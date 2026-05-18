@@ -84,7 +84,7 @@ internal class GitHubPageAssetBridge(
         apiToken: String
     ): Result<GitHubReleaseAssetBundle> {
         return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.fetchApkAssetsAsync(
+            GitHubReleaseAssetRepository.fetchApkAssets(
                 owner = owner,
                 repo = repo,
                 rawTag = rawTag,
@@ -103,7 +103,7 @@ internal class GitHubPageAssetBridge(
         apiToken: String
     ): Result<List<GitHubReleaseNotesTarget>> {
         return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.fetchReleaseNotesTargetsAsync(
+            GitHubReleaseAssetRepository.fetchReleaseNotesTargets(
                 owner = owner,
                 repo = repo,
                 apiToken = apiToken
@@ -117,7 +117,7 @@ internal class GitHubPageAssetBridge(
         apiToken: String
     ): String {
         return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.resolvePreferredDownloadUrlAsync(
+            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
                 asset = asset,
                 useApiAssetUrl = useApiAssetUrl,
                 apiToken = apiToken

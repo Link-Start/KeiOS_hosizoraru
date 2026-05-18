@@ -433,7 +433,7 @@ internal class GitHubReleaseNotesActions(
             items = apkAssets,
             maxConcurrency = MAX_RELEASE_NOTES_APK_VERSION_PARALLEL
         ) { asset ->
-            asset to apkInfoRepository.inspectAsync(
+            asset to apkInfoRepository.inspect(
                 asset = asset,
                 lookupConfig = lookupConfig,
                 forceRefresh = forceRefresh

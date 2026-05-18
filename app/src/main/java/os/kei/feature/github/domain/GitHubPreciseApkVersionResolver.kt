@@ -145,7 +145,7 @@ private class DefaultGitHubPreciseApkVersionSource(
             return@runCatching signed
         }
 
-        GitHubReleaseAssetRepository.fetchApkAssetsAsync(
+        GitHubReleaseAssetRepository.fetchApkAssets(
             owner = owner,
             repo = repo,
             rawTag = rawTag,
@@ -165,6 +165,6 @@ private class DefaultGitHubPreciseApkVersionSource(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> {
-        return apkInfoRepository.inspectAsync(asset = asset, lookupConfig = lookupConfig)
+        return apkInfoRepository.inspect(asset = asset, lookupConfig = lookupConfig)
     }
 }

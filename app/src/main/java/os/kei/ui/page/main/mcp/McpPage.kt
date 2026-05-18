@@ -485,7 +485,7 @@ fun McpPage(
                 bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
                 sectionSpacing = 12.dp
             ) {
-                item {
+                item(key = "mcp-overview", contentType = "mcp_overview_section") {
                     McpOverviewCardSection(
                         backdrop = backdrops.content,
                         titleColor = titleColor,
@@ -501,7 +501,7 @@ fun McpPage(
                         onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) }
                     )
                 }
-                item {
+                item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
                     McpServiceControlSection(
                         backdrop = backdrops.content,
                         expanded = pageUiState.controlExpanded,
@@ -516,7 +516,7 @@ fun McpPage(
                         onCopyWorkflowResource = copyWorkflowResource
                     )
                 }
-                item {
+                item(key = "mcp-tools", contentType = "mcp_tools_section") {
                     McpToolsSection(
                         backdrop = backdrops.content,
                         expanded = pageUiState.configExpanded,
@@ -528,7 +528,7 @@ fun McpPage(
                         onAdvancedExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded
                     )
                 }
-                item {
+                item(key = "mcp-logs", contentType = "mcp_logs_section") {
                     McpLogsSection(
                         backdrop = backdrops.content,
                         expanded = pageUiState.logsExpanded,

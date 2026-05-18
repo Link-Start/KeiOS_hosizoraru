@@ -13,6 +13,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
@@ -151,8 +154,12 @@ class MainActivity : ComponentActivity() {
                 localMcpService = localMcpService,
             )
         applyPendingShortcutActions()
-        McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this)
-        runCatching { AppShortcuts.sync(this) }
+        // Defer non-first-frame work: shortcut sync writes to system storage, Xiaomi network
+        // restoration may trigger system calls. Neither affects the first Compose frame.
+        lifecycleScope.launch(Dispatchers.IO) {
+            runCatching { McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this@MainActivity) }
+            runCatching { AppShortcuts.sync(this@MainActivity) }
+        }
 
         shizukuApiUtils.attach { status ->
             hostUiState = hostUiState.copy(shizukuStatus = status)

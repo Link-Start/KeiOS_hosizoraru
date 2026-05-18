@@ -14,7 +14,9 @@ object AppLogger {
     private const val MAX_STACK_LENGTH = 6000
 
     @Volatile
-    private var logLevel: AppLogLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
+    @PublishedApi
+    @JvmField
+    internal var logLevel: AppLogLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
 
     private val lineTimeFormatter = object : ThreadLocal<SimpleDateFormat>() {
         override fun initialValue(): SimpleDateFormat {
@@ -50,19 +52,40 @@ object AppLogger {
         append(level = AppLogLevel.Debug, levelLabel = "D", tag = tag, message = message)
     }
 
+    /**
+     * Lazy variant: the [message] lambda is only invoked when debug logging is enabled, avoiding
+     * string concatenation and interpolation overhead on the hot path when logging is off.
+     */
+    inline fun d(tag: String, message: () -> String) {
+        if (!logLevel.allows(AppLogLevel.Debug)) return
+        val msg = message()
+        Log.d(tag, msg)
+        append(level = AppLogLevel.Debug, levelLabel = "D", tag = tag, message = msg)
+    }
+
     fun i(tag: String, message: String) {
         if (!logLevel.allows(AppLogLevel.Info)) return
         Log.i(tag, message)
         append(level = AppLogLevel.Info, levelLabel = "I", tag = tag, message = message)
     }
 
+    /**
+     * Lazy variant: the [message] lambda is only invoked when info logging is enabled.
+     */
+    inline fun i(tag: String, message: () -> String) {
+        if (!logLevel.allows(AppLogLevel.Info)) return
+        val msg = message()
+        Log.i(tag, msg)
+        append(level = AppLogLevel.Info, levelLabel = "I", tag = tag, message = msg)
+    }
+
     fun w(tag: String, message: String, throwable: Throwable? = null) {
+        if (!logLevel.allows(AppLogLevel.Warning)) return
         if (throwable == null) {
             Log.w(tag, message)
         } else {
             Log.w(tag, message, throwable)
         }
-        if (!logLevel.allows(AppLogLevel.Warning)) return
         append(
             level = AppLogLevel.Warning,
             levelLabel = "W",
@@ -72,13 +95,33 @@ object AppLogger {
         )
     }
 
+    /**
+     * Lazy variant: the [message] lambda is only invoked when warning logging is enabled.
+     */
+    inline fun w(tag: String, throwable: Throwable? = null, message: () -> String) {
+        if (!logLevel.allows(AppLogLevel.Warning)) return
+        val msg = message()
+        if (throwable == null) {
+            Log.w(tag, msg)
+        } else {
+            Log.w(tag, msg, throwable)
+        }
+        append(
+            level = AppLogLevel.Warning,
+            levelLabel = "W",
+            tag = tag,
+            message = msg,
+            throwable = throwable
+        )
+    }
+
     fun e(tag: String, message: String, throwable: Throwable? = null) {
+        if (!logLevel.allows(AppLogLevel.Error)) return
         if (throwable == null) {
             Log.e(tag, message)
         } else {
             Log.e(tag, message, throwable)
         }
-        if (!logLevel.allows(AppLogLevel.Error)) return
         append(
             level = AppLogLevel.Error,
             levelLabel = "E",
@@ -88,7 +131,28 @@ object AppLogger {
         )
     }
 
-    private fun append(
+    /**
+     * Lazy variant: the [message] lambda is only invoked when error logging is enabled.
+     */
+    inline fun e(tag: String, throwable: Throwable? = null, message: () -> String) {
+        if (!logLevel.allows(AppLogLevel.Error)) return
+        val msg = message()
+        if (throwable == null) {
+            Log.e(tag, msg)
+        } else {
+            Log.e(tag, msg, throwable)
+        }
+        append(
+            level = AppLogLevel.Error,
+            levelLabel = "E",
+            tag = tag,
+            message = msg,
+            throwable = throwable
+        )
+    }
+
+    @PublishedApi
+    internal fun append(
         level: AppLogLevel,
         levelLabel: String,
         tag: String,

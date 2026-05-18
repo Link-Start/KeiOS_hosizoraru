@@ -99,7 +99,7 @@ internal fun BaPageContent(
         ),
         verticalArrangement = Arrangement.spacedBy(pageGap),
     ) {
-        item {
+        item(key = "ba-overview", contentType = "ba_overview_card") {
             BaOverviewCard(
                 backdrop = backdrop,
                 overviewTitle = state.officeOverviewTitle,
@@ -135,7 +135,7 @@ internal fun BaPageContent(
             )
         }
 
-        item {
+        item(key = "ba-cafe", contentType = "ba_cafe_card") {
             BaCafeCard(
                 backdrop = backdrop,
                 clockState = state.clockState,

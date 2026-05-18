@@ -99,15 +99,11 @@ object GitHubReleaseAssetRepository {
     private val whitespaceRegex = Regex("""\s+""")
 
     private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+        os.kei.core.io.SharedHttpClient.base.newBuilder()
             .callTimeout(16.seconds)
             .connectTimeout(8.seconds)
             .readTimeout(12.seconds)
             .writeTimeout(8.seconds)
-            .retryOnConnectionFailure(true)
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .fastFallback(true)
             .build()
     }
     private val apiClient: GitHubReleaseApiClient by lazy {

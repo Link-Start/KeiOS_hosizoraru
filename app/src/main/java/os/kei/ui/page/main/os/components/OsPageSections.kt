@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -32,6 +35,8 @@ import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
 import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 import os.kei.ui.page.main.os.titleText
+import os.kei.ui.page.main.os.topInfoDisplayLabel
+import os.kei.ui.page.main.os.topInfoDisplayValue
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -59,7 +64,7 @@ internal fun LazyListScope.addTopInfoCard(
     noMatchedResultsText: String,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    exportAction: @Composable () -> Unit
+    exportAction: @Composable () -> Unit,
 ) {
     if (!visible) return
     item(key = "os-top-info-card") {
@@ -72,18 +77,15 @@ internal fun LazyListScope.addTopInfoCard(
             headerStartAction = {
                 OsSectionHeaderIcon(card = OsSectionCard.TOP_INFO)
             },
-            headerActions = exportAction
+            headerActions = exportAction,
         ) {
             if (displayedTopInfoRows.isEmpty()) {
                 Text(text = noMatchedResultsText, color = MiuixTheme.colorScheme.onBackgroundVariant)
             } else if (query.isBlank() && !expanded) {
-                OsVirtualizedInfoRows(
+                OsVirtualizedTopInfoRows(
                     rows = displayedTopInfoRows,
-                    valueSingleLine = true,
-                    labelMinWidth = 56.dp,
-                    labelMaxWidth = 92.dp,
-                    labelMaxLines = 1,
-                    valueMinWidth = 140.dp
+                    labelMinWidth = 104.dp,
+                    labelMaxWidth = 150.dp,
                 )
             } else {
                 OsVirtualizedGroupedTopInfoRows(groupedRows = groupedTopInfoRows)
@@ -100,7 +102,7 @@ internal fun LazyListScope.addShortcutActivityCards(
     expandedStates: Map<String, Boolean>,
     onExpandedChange: (String, Boolean) -> Unit,
     onOpenActivity: (OsActivityShortcutCard) -> Unit,
-    onHeaderLongClick: (OsActivityShortcutCard) -> Unit
+    onHeaderLongClick: (OsActivityShortcutCard) -> Unit,
 ) {
     cards.forEach { card ->
         val shortcutConfig = card.config
@@ -116,66 +118,67 @@ internal fun LazyListScope.addShortcutActivityCards(
                         packageName = shortcutConfig.packageName,
                         className = shortcutConfig.className,
                         size = 24.dp,
-                        fallbackToPackageIcon = true
+                        fallbackToPackageIcon = true,
                     )
                 },
                 headerActions = {
                     AppCompactIconAction(
                         icon = osLucideEnterIcon(),
                         contentDescription = stringResource(R.string.os_google_system_service_cd_open_activity),
-                        onClick = { onOpenActivity(card) }
+                        onClick = { onOpenActivity(card) },
                     )
                 },
-                onHeaderLongClick = { onHeaderLongClick(card) }
+                onHeaderLongClick = { onHeaderLongClick(card) },
             ) {
                 val emptyValueText = stringResource(R.string.os_google_system_service_value_data_empty)
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_app_name),
-                    value = shortcutConfig.appName
+                    value = shortcutConfig.appName,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_package_name),
-                    value = shortcutConfig.packageName
+                    value = shortcutConfig.packageName,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_class_name),
-                    value = shortcutConfig.className
+                    value = shortcutConfig.className,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_intent_action),
-                    value = shortcutConfig.intentAction
+                    value = shortcutConfig.intentAction,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_intent_category),
-                    value = shortcutConfig.intentCategory.ifBlank { emptyValueText }
+                    value = shortcutConfig.intentCategory.ifBlank { emptyValueText },
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_intent_flags),
-                    value = shortcutConfig.intentFlags.ifBlank { emptyValueText }
+                    value = shortcutConfig.intentFlags.ifBlank { emptyValueText },
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_intent_data),
-                    value = shortcutConfig.intentUriData.ifBlank { emptyValueText }
+                    value = shortcutConfig.intentUriData.ifBlank { emptyValueText },
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_google_system_service_label_intent_mime_type),
-                    value = shortcutConfig.intentMimeType.ifBlank { emptyValueText }
+                    value = shortcutConfig.intentMimeType.ifBlank { emptyValueText },
                 )
                 val normalizedExtras = normalizeShortcutIntentExtras(shortcutConfig.intentExtras)
                 if (normalizedExtras.isEmpty()) {
                     OsSectionInfoRow(
                         label = stringResource(R.string.os_google_system_service_label_intent_extras),
-                        value = emptyValueText
+                        value = emptyValueText,
                     )
                 } else {
                     normalizedExtras.forEachIndexed { index, extra ->
                         val typeLabel = stringResource(extra.type.labelResId)
                         OsSectionInfoRow(
-                            label = stringResource(
-                                R.string.os_google_system_service_label_intent_extra_indexed,
-                                index + 1
-                            ),
-                            value = "[$typeLabel] ${extra.key} = ${extra.value.ifBlank { emptyValueText }}"
+                            label =
+                                stringResource(
+                                    R.string.os_google_system_service_label_intent_extra_indexed,
+                                    index + 1,
+                                ),
+                            value = "[$typeLabel] ${extra.key} = ${extra.value.ifBlank { emptyValueText }}",
                         )
                     }
                 }
@@ -195,7 +198,7 @@ internal fun LazyListScope.addKeyValueSectionCard(
     onExpandedChange: (Boolean) -> Unit,
     rows: List<InfoRow>,
     noMatchedResultsText: String,
-    exportAction: @Composable () -> Unit
+    exportAction: @Composable () -> Unit,
 ) {
     if (!visible) return
     item(key = "os-section-${card.name}") {
@@ -208,7 +211,7 @@ internal fun LazyListScope.addKeyValueSectionCard(
             headerStartAction = {
                 OsSectionHeaderIcon(card = card)
             },
-            headerActions = exportAction
+            headerActions = exportAction,
         ) {
             if (rows.isEmpty()) {
                 Text(text = noMatchedResultsText, color = MiuixTheme.colorScheme.onBackgroundVariant)
@@ -227,7 +230,7 @@ private fun OsVirtualizedInfoRows(
     labelMinWidth: Dp = 72.dp,
     labelMaxWidth: Dp = 136.dp,
     labelMaxLines: Int = Int.MAX_VALUE,
-    valueMinWidth: Dp = Dp.Unspecified
+    valueMinWidth: Dp = Dp.Unspecified,
 ) {
     if (rows.size <= SMALL_INFO_ROW_COUNT) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -239,22 +242,23 @@ private fun OsVirtualizedInfoRows(
                     labelMinWidth = labelMinWidth,
                     labelMaxWidth = labelMaxWidth,
                     labelMaxLines = labelMaxLines,
-                    valueMinWidth = valueMinWidth
+                    valueMinWidth = valueMinWidth,
                 )
             }
         }
         return
     }
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 520.dp),
-        userScrollEnabled = true
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp),
+        userScrollEnabled = true,
     ) {
         itemsIndexed(
             items = rows,
             key = { index, row -> "${row.key}-${row.value}-$index" },
-            contentType = { _, _ -> "os_info_row" }
+            contentType = { _, _ -> "os_info_row" },
         ) { _, row ->
             OsSectionInfoRow(
                 label = row.key,
@@ -263,29 +267,36 @@ private fun OsVirtualizedInfoRows(
                 labelMinWidth = labelMinWidth,
                 labelMaxWidth = labelMaxWidth,
                 labelMaxLines = labelMaxLines,
-                valueMinWidth = valueMinWidth
+                valueMinWidth = valueMinWidth,
             )
         }
     }
 }
 
 private sealed interface TopInfoVirtualizedItem {
-    data class Header(val title: String) : TopInfoVirtualizedItem
-    data class Entry(val row: InfoRow) : TopInfoVirtualizedItem
+    data class Header(
+        val title: String,
+    ) : TopInfoVirtualizedItem
+
+    data class Entry(
+        val row: InfoRow,
+    ) : TopInfoVirtualizedItem
 }
 
 @Composable
 private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<InfoRow>>>) {
-    val rows = remember(groupedRows) {
-        buildList {
-            groupedRows.forEach { (type, entries) ->
-                if (entries.isNotEmpty()) {
-                    add(TopInfoVirtualizedItem.Header(type))
-                    entries.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
+    val context = LocalContext.current
+    val rows =
+        remember(groupedRows) {
+            buildList {
+                groupedRows.forEach { (type, entries) ->
+                    if (entries.isNotEmpty()) {
+                        add(TopInfoVirtualizedItem.Header(type))
+                        entries.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
+                    }
                 }
             }
         }
-    }
     if (rows.size <= SMALL_INFO_ROW_COUNT) {
         Column(modifier = Modifier.fillMaxWidth()) {
             rows.forEachIndexed { index, item ->
@@ -297,19 +308,16 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
                             fontSize = AppTypographyTokens.CompactTitle.fontSize,
                             lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
                             fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-                            modifier = Modifier.padding(top = if (index == 0) 0.dp else 8.dp, bottom = 2.dp)
+                            modifier = Modifier.padding(top = if (index == 0) 0.dp else 8.dp, bottom = 2.dp),
                         )
                     }
 
                     is TopInfoVirtualizedItem.Entry -> {
-                        OsSectionInfoRow(
-                            label = item.row.key,
-                            value = item.row.value,
-                            valueSingleLine = true,
+                        OsTopInfoDisplayRow(
+                            label = topInfoDisplayLabel(context, item.row.key),
+                            value = topInfoDisplayValue(context, item.row),
                             labelMinWidth = 56.dp,
-                            labelMaxWidth = 92.dp,
-                            labelMaxLines = 1,
-                            valueMinWidth = 140.dp
+                            labelMaxWidth = 156.dp,
                         )
                     }
                 }
@@ -318,10 +326,11 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
         return
     }
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 520.dp),
-        userScrollEnabled = true
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp),
+        userScrollEnabled = true,
     ) {
         itemsIndexed(
             items = rows,
@@ -336,7 +345,7 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
                     is TopInfoVirtualizedItem.Header -> "os_top_info_header"
                     is TopInfoVirtualizedItem.Entry -> "os_top_info_entry"
                 }
-            }
+            },
         ) { index, item ->
             when (item) {
                 is TopInfoVirtualizedItem.Header -> {
@@ -346,19 +355,16 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
                         fontSize = AppTypographyTokens.CompactTitle.fontSize,
                         lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
                         fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-                        modifier = Modifier.padding(top = if (index == 0) 0.dp else 8.dp, bottom = 2.dp)
+                        modifier = Modifier.padding(top = if (index == 0) 0.dp else 8.dp, bottom = 2.dp),
                     )
                 }
 
                 is TopInfoVirtualizedItem.Entry -> {
-                    OsSectionInfoRow(
-                        label = item.row.key,
-                        value = item.row.value,
-                        valueSingleLine = true,
+                    OsTopInfoDisplayRow(
+                        label = topInfoDisplayLabel(context, item.row.key),
+                        value = topInfoDisplayValue(context, item.row),
                         labelMinWidth = 56.dp,
-                        labelMaxWidth = 92.dp,
-                        labelMaxLines = 1,
-                        valueMinWidth = 140.dp
+                        labelMaxWidth = 156.dp,
                     )
                 }
             }
@@ -369,6 +375,67 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
 private const val SMALL_INFO_ROW_COUNT = 24
 
 @Composable
+private fun OsVirtualizedTopInfoRows(
+    rows: List<InfoRow>,
+    labelMinWidth: Dp = 104.dp,
+    labelMaxWidth: Dp = 156.dp,
+) {
+    val context = LocalContext.current
+    if (rows.size <= SMALL_INFO_ROW_COUNT) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            rows.forEach { row ->
+                OsTopInfoDisplayRow(
+                    label = topInfoDisplayLabel(context, row.key),
+                    value = topInfoDisplayValue(context, row),
+                    labelMinWidth = labelMinWidth,
+                    labelMaxWidth = labelMaxWidth,
+                )
+            }
+        }
+        return
+    }
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp),
+        userScrollEnabled = true,
+    ) {
+        itemsIndexed(
+            items = rows,
+            key = { index, row -> "${row.key}-${row.value}-$index" },
+            contentType = { _, _ -> "os_top_info_entry" },
+        ) { _, row ->
+            OsTopInfoDisplayRow(
+                label = topInfoDisplayLabel(context, row.key),
+                value = topInfoDisplayValue(context, row),
+                labelMinWidth = labelMinWidth,
+                labelMaxWidth = labelMaxWidth,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OsTopInfoDisplayRow(
+    label: String,
+    value: String,
+    labelMinWidth: Dp,
+    labelMaxWidth: Dp,
+) {
+    OsSectionInfoRow(
+        label = label,
+        value = value,
+        valueSingleLine = false,
+        labelMinWidth = labelMinWidth,
+        labelMaxWidth = labelMaxWidth,
+        labelMaxLines = 2,
+        valueMinWidth = 120.dp,
+        copyValueOnly = false,
+    )
+}
+
+@Composable
 internal fun OsCardVisibilityManagerSheet(
     show: Boolean,
     title: String,
@@ -376,7 +443,7 @@ internal fun OsCardVisibilityManagerSheet(
     cardsHintText: String,
     onDismissRequest: () -> Unit,
     isCardVisible: (OsSectionCard) -> Boolean,
-    onCardVisibilityChange: (OsSectionCard, Boolean) -> Unit
+    onCardVisibilityChange: (OsSectionCard, Boolean) -> Unit,
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -388,51 +455,56 @@ internal fun OsCardVisibilityManagerSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
-        }
+        },
     ) {
         SheetContentColumn(
-            verticalSpacing = 10.dp
+            verticalSpacing = 10.dp,
         ) {
             @Composable
-            fun CardLabel(card: OsSectionCard, modifier: Modifier = Modifier) {
+            fun CardLabel(
+                card: OsSectionCard,
+                modifier: Modifier = Modifier,
+            ) {
                 Row(
                     modifier = modifier,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val iconModifier = Modifier
-                        .size(18.dp)
-                        .defaultMinSize(minHeight = 18.dp)
+                    val iconModifier =
+                        Modifier
+                            .size(18.dp)
+                            .defaultMinSize(minHeight = 18.dp)
                     val icon = sectionCardIcon(card)
                     val title = card.titleText()
                     Icon(
                         imageVector = icon,
                         contentDescription = title,
                         tint = MiuixTheme.colorScheme.onBackground,
-                        modifier = iconModifier
+                        modifier = iconModifier,
                     )
                     Text(text = title, color = MiuixTheme.colorScheme.onBackground)
                 }
             }
 
             SheetSectionCard(verticalSpacing = 10.dp) {
-                OsSectionCard.entries.filter { card ->
-                    card != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
-                        card != OsSectionCard.SHELL_RUNNER
-                }.forEach { card ->
-                    SheetControlRow(
-                        labelContent = {
-                            CardLabel(card = card, modifier = Modifier.defaultMinSize(minHeight = 24.dp))
+                OsSectionCard.entries
+                    .filter { card ->
+                        card != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                            card != OsSectionCard.SHELL_RUNNER
+                    }.forEach { card ->
+                        SheetControlRow(
+                            labelContent = {
+                                CardLabel(card = card, modifier = Modifier.defaultMinSize(minHeight = 24.dp))
+                            },
+                        ) {
+                            AppSwitch(
+                                checked = isCardVisible(card),
+                                onCheckedChange = { checked -> onCardVisibilityChange(card, checked) },
+                            )
                         }
-                    ) {
-                        AppSwitch(
-                            checked = isCardVisible(card),
-                            onCheckedChange = { checked -> onCardVisibilityChange(card, checked) }
-                        )
                     }
-                }
             }
 
             SheetDescriptionText(text = cardsHintText)
@@ -452,7 +524,7 @@ internal fun OsActivityVisibilityManagerSheet(
     onExportAllCards: () -> Unit,
     onImportAllCards: () -> Unit,
     onDismissRequest: () -> Unit,
-    onCardVisibilityChange: (String, Boolean) -> Unit
+    onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -464,23 +536,24 @@ internal fun OsActivityVisibilityManagerSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
-        }
+        },
     ) {
         SheetContentColumn(
-            verticalSpacing = 10.dp
+            verticalSpacing = 10.dp,
         ) {
-            val activityVisibilityItems = cards.map { card ->
-                OsActivityVisibilityItem(
-                    id = card.id,
-                    title = card.config.title.ifBlank { defaultCardTitle },
-                    packageName = card.config.packageName,
-                    className = card.config.className,
-                    builtInSample = card.isBuiltInSample,
-                    visible = card.visible
-                )
-            }
+            val activityVisibilityItems =
+                cards.map { card ->
+                    OsActivityVisibilityItem(
+                        id = card.id,
+                        title = card.config.title.ifBlank { defaultCardTitle },
+                        packageName = card.config.packageName,
+                        className = card.config.className,
+                        builtInSample = card.isBuiltInSample,
+                        visible = card.visible,
+                    )
+                }
             SheetSectionCard(verticalSpacing = 10.dp) {
                 activityVisibilityItems.forEach { item ->
                     SheetControlRow(
@@ -488,43 +561,44 @@ internal fun OsActivityVisibilityManagerSheet(
                             Row(
                                 modifier = Modifier.defaultMinSize(minHeight = 24.dp),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 if (item.packageName.isNotBlank() || item.className.isNotBlank()) {
                                     ShortcutActivityIcon(
                                         packageName = item.packageName,
                                         className = item.className,
-                                        size = 18.dp
+                                        size = 18.dp,
                                     )
                                 } else {
                                     Icon(
                                         imageVector = osLucideEnterIcon(),
                                         contentDescription = item.title,
                                         tint = MiuixTheme.colorScheme.onBackground,
-                                        modifier = Modifier
-                                            .size(18.dp)
-                                            .defaultMinSize(minHeight = 18.dp)
+                                        modifier =
+                                            Modifier
+                                                .size(18.dp)
+                                                .defaultMinSize(minHeight = 18.dp),
                                     )
                                 }
                                 Text(
                                     text = item.title,
-                                    color = MiuixTheme.colorScheme.onBackground
+                                    color = MiuixTheme.colorScheme.onBackground,
                                 )
                                 if (item.builtInSample) {
                                     StatusPill(
                                         label = stringResource(R.string.os_activity_card_builtin_badge),
                                         color = Color(0xFF3B82F6),
-                                        size = AppStatusPillSize.Compact
+                                        size = AppStatusPillSize.Compact,
                                     )
                                 }
                             }
-                        }
+                        },
                     ) {
                         AppSwitch(
                             checked = item.visible,
                             onCheckedChange = { checked ->
                                 onCardVisibilityChange(item.id, checked)
-                            }
+                            },
                         )
                     }
                 }
@@ -532,11 +606,11 @@ internal fun OsActivityVisibilityManagerSheet(
             SheetSectionCard(verticalSpacing = 8.dp) {
                 Text(
                     text = stringResource(R.string.os_activity_sheet_transfer_title),
-                    color = MiuixTheme.colorScheme.onBackground
+                    color = MiuixTheme.colorScheme.onBackground,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         AppLiquidTextButton(
@@ -546,7 +620,7 @@ internal fun OsActivityVisibilityManagerSheet(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !transferInProgress,
                             variant = GlassVariant.SheetAction,
-                            pressOverlayEnabled = true
+                            pressOverlayEnabled = true,
                         )
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -557,7 +631,7 @@ internal fun OsActivityVisibilityManagerSheet(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !transferInProgress,
                             variant = GlassVariant.SheetAction,
-                            pressOverlayEnabled = true
+                            pressOverlayEnabled = true,
                         )
                     }
                 }

@@ -98,10 +98,13 @@ class OsTopInfoDataTest {
 
         assertEquals(TopInfoRowsStatus.Fresh, snapshot.status)
         assertTrue(InfoRow("runtime.abi.primary", "arm64-v8a") in snapshot.rows)
-        assertTrue(InfoRow("ro.product.cpu.abilist", "arm64-v8a,armeabi-v7a") in snapshot.rows)
+        assertFalse(InfoRow("ro.product.cpu.abilist", "arm64-v8a,armeabi-v7a") in snapshot.rows)
         assertFalse(snapshot.rows.any { it.key == "persist.sys.zygote.last_pid" })
         assertEquals(
-            listOf(InfoRow("persist.sys.zygote.last_pid", "1234")),
+            listOf(
+                InfoRow("ro.product.cpu.abilist", "arm64-v8a,armeabi-v7a"),
+                InfoRow("persist.sys.zygote.last_pid", "1234"),
+            ),
             removeTopInfoRows(SectionKind.ANDROID, androidRows),
         )
     }

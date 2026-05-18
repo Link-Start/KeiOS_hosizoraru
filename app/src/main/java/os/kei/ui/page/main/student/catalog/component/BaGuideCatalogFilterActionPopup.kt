@@ -23,8 +23,8 @@ import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 
-private val BaCatalogFilterMenuMinWidth = 232.dp
-private val BaCatalogFilterMenuMaxWidth = 304.dp
+private val BaCatalogFilterMenuMinWidth = 160.dp
+private val BaCatalogFilterMenuMaxWidth = 200.dp
 private val BaCatalogFilterMenuMaxHeight = 392.dp
 
 @Composable

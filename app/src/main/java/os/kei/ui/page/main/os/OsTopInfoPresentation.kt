@@ -11,13 +11,23 @@ private data class TopInfoLabelSpec(
 private val topInfoLabelSpecs =
     listOf(
         TopInfoLabelSpec("device.identity", R.string.os_top_info_label_device_identity),
+        TopInfoLabelSpec("device.model", R.string.os_top_info_label_device_model),
         TopInfoLabelSpec("device.product", R.string.os_top_info_label_device_product),
+        TopInfoLabelSpec("device.board_hardware", R.string.os_top_info_label_board_hardware),
         TopInfoLabelSpec("device.first_api_level", R.string.os_top_info_label_first_api_level),
+        TopInfoLabelSpec("build.release_summary", R.string.os_top_info_label_build_release_summary),
+        TopInfoLabelSpec("build.fingerprint", R.string.os_top_info_label_build_fingerprint),
+        TopInfoLabelSpec("runtime.cpu_summary", R.string.os_top_info_label_cpu_summary),
         TopInfoLabelSpec("runtime.abi.primary", R.string.os_top_info_label_primary_abi),
         TopInfoLabelSpec("runtime.abi.supported", R.string.os_top_info_label_supported_abis),
         TopInfoLabelSpec("runtime.abi.bitness", R.string.os_top_info_label_abi_bitness),
+        TopInfoLabelSpec("runtime.vm", R.string.os_top_info_label_runtime_vm),
         TopInfoLabelSpec("runtime.zygote.mode", R.string.os_top_info_label_zygote_mode),
         TopInfoLabelSpec("runtime.sdk_extensions", R.string.os_top_info_label_sdk_extensions),
+        TopInfoLabelSpec("memory.ram", R.string.os_top_info_label_ram_capacity),
+        TopInfoLabelSpec("storage.data", R.string.os_top_info_label_storage_capacity),
+        TopInfoLabelSpec("environment.locale_timezone", R.string.os_top_info_label_locale_timezone),
+        TopInfoLabelSpec("environment.debug_state", R.string.os_top_info_label_developer_debug_state),
         TopInfoLabelSpec("partition.update_model", R.string.os_top_info_label_update_model),
         TopInfoLabelSpec("partition.slot", R.string.os_top_info_label_current_slot),
         TopInfoLabelSpec("partition.fingerprinted", R.string.os_top_info_label_fingerprinted_partitions),
@@ -26,6 +36,7 @@ private val topInfoLabelSpecs =
         TopInfoLabelSpec("gsi.vndk", R.string.os_top_info_label_gsi_vndk),
         TopInfoLabelSpec("mainline.apex_updatable", R.string.os_top_info_label_mainline),
         TopInfoLabelSpec("verified_boot.state", R.string.os_top_info_label_verified_boot),
+        TopInfoLabelSpec("security.dm_verity", R.string.os_top_info_label_dm_verity),
         TopInfoLabelSpec("security.patch_levels", R.string.os_top_info_label_security_patch),
         TopInfoLabelSpec("webview.provider", R.string.os_top_info_label_webview_provider),
         TopInfoLabelSpec("kernel.page_size", R.string.os_top_info_label_page_size),
@@ -101,11 +112,33 @@ internal fun topInfoDisplayValue(
 
         "feature.vulkan.version" -> formatSupportValue(context, value, R.string.os_top_info_value_vulkan_supported)
 
+        "device.model",
+        "device.product",
+        "device.board_hardware",
+        "runtime.vm",
+        -> formatLabeledValues(value)
+
+        "build.release_summary" -> formatBuildReleaseSummary(context, value)
+
+        "device.first_api_level" -> formatFirstApiLevel(context, value)
+
         "runtime.abi.bitness" -> formatAbiBitness(context, value)
+
+        "runtime.cpu_summary" -> formatCpuSummary(context, value)
 
         "partition.update_model" -> formatUpdateModel(context, value)
 
         "verified_boot.state" -> formatVerifiedBoot(context, value)
+
+        "security.dm_verity" -> formatDmVerity(context, value)
+
+        "memory.ram",
+        "storage.data",
+        -> formatCapacityValue(context, value)
+
+        "environment.debug_state" -> formatDebugState(context, value)
+
+        "environment.locale_timezone" -> formatLocaleTimezone(value)
 
         "security.patch_levels" -> value.replace(" / ", "\n")
 
@@ -124,6 +157,15 @@ internal fun topInfoDisplayValue(
         else -> value
     }
 }
+
+private fun labeledParts(value: String): Map<String, String> =
+    value
+        .split(" / ")
+        .mapNotNull { part ->
+            val index = part.indexOf('=')
+            if (index <= 0) return@mapNotNull null
+            part.take(index) to part.drop(index + 1)
+        }.toMap()
 
 private fun formatSupportValue(
     context: Context,
@@ -157,6 +199,138 @@ private fun formatAbiBitness(
         has64 -> context.getString(R.string.os_top_info_value_abi_64_only, value)
         has32 -> context.getString(R.string.os_top_info_value_abi_32_only, value)
         else -> value
+    }
+}
+
+private fun formatLabeledValues(value: String): String =
+    labeledParts(value)
+        .values
+        .filter { it.isNotBlank() }
+        .joinToString(" / ")
+        .ifBlank { value }
+
+private fun formatFirstApiLevel(
+    context: Context,
+    value: String,
+): String {
+    val parts = labeledParts(value)
+    val product = parts["Product"].orEmpty()
+    val vendor = parts["Vendor"].orEmpty()
+    return if (product.isBlank() && vendor.isBlank()) {
+        value
+    } else {
+        context.getString(R.string.os_top_info_value_first_api_level, product, vendor)
+    }
+}
+
+private fun formatBuildReleaseSummary(
+    context: Context,
+    value: String,
+): String {
+    val parts = labeledParts(value)
+    val release = parts["Android"].orEmpty()
+    val api = parts["API"].orEmpty()
+    val build = parts["Build"].orEmpty()
+    val type = parts["Type"].orEmpty()
+    val tags = parts["Tags"].orEmpty()
+    return if (release.isBlank() && api.isBlank()) {
+        value
+    } else {
+        context.getString(R.string.os_top_info_value_build_release_summary, release, api, build, type, tags)
+    }
+}
+
+private fun formatCpuSummary(
+    context: Context,
+    value: String,
+): String {
+    val parts = labeledParts(value)
+    val cores = parts["Cores"].orEmpty()
+    val arch = parts["Arch"].orEmpty()
+    val abi = parts["ABI"].orEmpty()
+    val hardware = parts["Hardware"].orEmpty()
+    return if (cores.isBlank()) {
+        value
+    } else {
+        context.getString(R.string.os_top_info_value_cpu_summary, cores, arch, abi, hardware)
+    }
+}
+
+private fun formatCapacityValue(
+    context: Context,
+    value: String,
+): String {
+    val parts = labeledParts(value)
+    val total = parts["TotalBytes"]?.toLongOrNull()
+    val available = parts["AvailableBytes"]?.toLongOrNull()
+    val used = parts["UsedBytes"]?.toLongOrNull()
+    return when {
+        total != null && available != null && used != null -> {
+            context.getString(
+                R.string.os_top_info_value_capacity_used_available,
+                formatBytes(used),
+                formatBytes(available),
+                formatBytes(total),
+            )
+        }
+
+        total != null && available != null -> {
+            context.getString(
+                R.string.os_top_info_value_capacity_available,
+                formatBytes(available),
+                formatBytes(total),
+            )
+        }
+
+        else -> {
+            value
+        }
+    }
+}
+
+private fun formatDebugState(
+    context: Context,
+    value: String,
+): String {
+    val parts = labeledParts(value)
+    val developerOptions =
+        formatEnabledValue(context, parts["DeveloperOptions"].orEmpty())
+    val adb =
+        formatEnabledValue(context, parts["ADB"].orEmpty())
+    return context.getString(R.string.os_top_info_value_debug_state, developerOptions, adb)
+}
+
+private fun formatLocaleTimezone(value: String): String =
+    labeledParts(value)
+        .values
+        .filter { it.isNotBlank() }
+        .joinToString(" / ")
+        .ifBlank { value }
+
+private fun formatDmVerity(
+    context: Context,
+    value: String,
+): String =
+    when (value.lowercase()) {
+        "enforcing" -> context.getString(R.string.os_top_info_value_dm_verity_enforcing)
+        "eio" -> context.getString(R.string.os_top_info_value_dm_verity_eio)
+        "logging" -> context.getString(R.string.os_top_info_value_dm_verity_logging)
+        "disabled" -> context.getString(R.string.os_top_info_value_dm_verity_disabled)
+        else -> value
+    }
+
+private fun formatBytes(bytes: Long): String {
+    val units = listOf("B", "KB", "MB", "GB", "TB")
+    var value = bytes.toDouble()
+    var unitIndex = 0
+    while (value >= 1024.0 && unitIndex < units.lastIndex) {
+        value /= 1024.0
+        unitIndex += 1
+    }
+    return if (unitIndex == 0) {
+        "$bytes ${units[unitIndex]}"
+    } else {
+        String.format(java.util.Locale.US, "%.1f %s", value, units[unitIndex])
     }
 }
 

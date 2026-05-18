@@ -212,7 +212,7 @@ fun BaGuideCatalogPage(
     val chromeActiveTab = tabs.getOrElse(chromeActivePageIndex) { BaGuideCatalogPageTab.Student }
     LaunchedEffect(chromeActiveTab) {
         chromeScrollState.expand()
-        if (chromeActiveTab.catalogTab != BaGuideCatalogTab.Student) {
+        if (chromeActiveTab.catalogTab == null) {
             filterSortState.showFilterPopup = false
         }
     }
@@ -220,7 +220,6 @@ fun BaGuideCatalogPage(
     val chromeFilterDefinitions =
         remember(catalogDataState.catalog, chromeActiveTab) {
             chromeActiveTab.catalogTab
-                ?.takeIf { it == BaGuideCatalogTab.Student }
                 ?.let { tab ->
                     catalogDataState.catalog.filterDefinitions(tab).filter { it.type == 0 }
                 }.orEmpty()

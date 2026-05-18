@@ -17,6 +17,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
 import os.kei.ui.page.main.student.catalog.filterByQuery
+import os.kei.ui.page.main.student.catalog.selectedCatalogFilterOptionsForDefinitions
 import kotlin.math.max
 
 internal const val CATALOG_BATCH_SIZE = 20
@@ -50,12 +51,22 @@ internal fun rememberBaGuideCatalogTabListState(
                 filterDefinitions = catalog.filterDefinitions(tab),
             )
         }
+    val catalogFilterDefinitions =
+        remember(catalog, tab) {
+            catalog.filterDefinitions(tab).filter { it.type == 0 }
+        }
+    val activeSelectedFilterOptions =
+        remember(selectedFilterOptions, catalogFilterDefinitions) {
+            selectedCatalogFilterOptionsForDefinitions(
+                selectedOptionIdsByFilterId = selectedFilterOptions,
+                definitions = catalogFilterDefinitions,
+            )
+        }
     val filteredEntries =
-        remember(currentEntries, searchQuery, selectedFilterOptions, tab) {
+        remember(currentEntries, searchQuery, activeSelectedFilterOptions) {
             currentEntries
-                .filterByCatalogFilters(
-                    if (tab == BaGuideCatalogTab.Student) selectedFilterOptions else emptyMap(),
-                ).filterByQuery(searchQuery)
+                .filterByCatalogFilters(activeSelectedFilterOptions)
+                .filterByQuery(searchQuery)
         }
 
     val listState = rememberLazyListState()

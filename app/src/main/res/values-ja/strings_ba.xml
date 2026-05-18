@@ -196,7 +196,7 @@
     <string name="ba_catalog_tab_student_bgm">音楽</string>
     <string name="ba_catalog_tab_student_bgm_short">音楽</string>
     <string name="ba_catalog_tab_bgm">再生</string>
-    <string name="ba_catalog_action_filter">生徒を絞り込み</string>
+    <string name="ba_catalog_action_filter">図鑑を絞り込み</string>
     <string name="ba_catalog_action_sort">並べ替え</string>
     <string name="ba_catalog_action_refresh">リストを更新</string>
     <string name="ba_catalog_action_transfer">お気に入りデータ</string>

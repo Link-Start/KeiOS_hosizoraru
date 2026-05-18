@@ -11,7 +11,7 @@ private const val KEY_CACHE_SYNC_MS = "catalog_cache_sync_ms"
 private const val KEY_CACHE_VERSION = "catalog_cache_version"
 private const val KEY_FAVORITES_RAW = "catalog_favorites_raw"
 private const val KEY_RELEASE_DATE_INDEX_RAW = "catalog_release_date_index_raw"
-private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 3
+private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 4
 
 internal object BaGuideCatalogStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_CATALOG_KV_ID) }

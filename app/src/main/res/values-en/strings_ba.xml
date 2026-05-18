@@ -197,7 +197,7 @@
     <string name="ba_catalog_tab_student_bgm">Music</string>
     <string name="ba_catalog_tab_student_bgm_short">Music</string>
     <string name="ba_catalog_tab_bgm">Play</string>
-    <string name="ba_catalog_action_filter">Filter students</string>
+    <string name="ba_catalog_action_filter">Filter archive</string>
     <string name="ba_catalog_action_sort">Sort</string>
     <string name="ba_catalog_action_refresh">Refresh list</string>
     <string name="ba_catalog_action_transfer">Favorites data</string>

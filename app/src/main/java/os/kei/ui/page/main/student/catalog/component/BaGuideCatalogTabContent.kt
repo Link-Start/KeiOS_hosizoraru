@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.activeCatalogFilterCountForDefinitions
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
@@ -81,11 +82,10 @@ internal fun BaGuideCatalogTabContent(
             tab = tab,
             searchQuery = filterSortState.searchQuery,
             activeFilterCount =
-                if (tab == BaGuideCatalogTab.Student) {
-                    filterSortState.activeFilterCount
-                } else {
-                    0
-                },
+                activeCatalogFilterCountForDefinitions(
+                    selectedOptionIdsByFilterId = filterSortState.selectedFilterOptions,
+                    definitions = catalog.filterDefinitions(tab).filter { it.type == 0 },
+                ),
             loading = loading,
             error = error,
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),

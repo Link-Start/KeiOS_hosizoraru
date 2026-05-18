@@ -27,8 +27,7 @@ private const val BA_GUIDE_SECOND_PAGE_ID = 23941
 private const val BA_GUIDE_STUDENT_PID = 49443
 private const val BA_GUIDE_NPC_SATELLITE_PID = 107619
 private const val BA_GUIDE_INDEX_REFERER_PATH = "/ba/second/$BA_GUIDE_SECOND_PAGE_ID"
-private const val BA_GUIDE_STUDENT_FILTER_INDEX_PATH =
-    "/v1/entryFilter/getEntryFilter?entry_id=$BA_GUIDE_STUDENT_PID"
+private const val BA_GUIDE_FILTER_INDEX_PATH_PREFIX = "/v1/entryFilter/getEntryFilter?entry_id="
 private const val BA_GUIDE_RELEASE_INDEX_MAX_NETWORK_FETCH_PER_PASS = 24
 private const val BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE = 6
 private const val BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS = 120L
@@ -176,15 +175,21 @@ internal suspend fun fetchBaGuideCatalogBundle(
             BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
         }
 
-    val (studentRaw, npcSatelliteRaw, studentFilterIndex) =
+    val (studentRaw, npcSatelliteRaw, studentFilterIndex, npcSatelliteFilterIndex) =
         coroutineScope {
             val studentDeferred = async(networkDispatcher) { fetchRawEntriesByPid(BA_GUIDE_STUDENT_PID) }
             val npcSatelliteDeferred =
                 async(networkDispatcher) {
                     fetchRawEntriesByPid(BA_GUIDE_NPC_SATELLITE_PID)
                 }
-            val studentFilterDeferred = async(networkDispatcher) { fetchStudentFilterIndex() }
-            Triple(studentDeferred.await(), npcSatelliteDeferred.await(), studentFilterDeferred.await())
+            val studentFilterDeferred = async(networkDispatcher) { fetchFilterIndex(BA_GUIDE_STUDENT_PID) }
+            val npcSatelliteFilterDeferred = async(networkDispatcher) { fetchFilterIndex(BA_GUIDE_NPC_SATELLITE_PID) }
+            CatalogFetchPayload(
+                studentRaw = studentDeferred.await(),
+                npcSatelliteRaw = npcSatelliteDeferred.await(),
+                studentFilterIndex = studentFilterDeferred.await(),
+                npcSatelliteFilterIndex = npcSatelliteFilterDeferred.await(),
+            )
         }
 
     val (studentEntries, npcSatelliteEntries) =
@@ -203,7 +208,7 @@ internal suspend fun fetchBaGuideCatalogBundle(
                     raw.toCatalogEntry(
                         tab = BaGuideCatalogTab.NpcSatellite,
                         releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L,
-                        filterAttributes = BaGuideCatalogEntryFilterAttributes.EMPTY,
+                        filterAttributes = npcSatelliteFilterIndex.attributes(raw.entryId),
                     )
                 }
             studentEntries to npcSatelliteEntries
@@ -220,6 +225,7 @@ internal suspend fun fetchBaGuideCatalogBundle(
             filterDefinitionsByTab =
                 mapOf(
                     BaGuideCatalogTab.Student to studentFilterIndex.definitions,
+                    BaGuideCatalogTab.NpcSatellite to npcSatelliteFilterIndex.definitions,
                 ),
         )
     cachedCatalogBundle = bundle
@@ -228,6 +234,13 @@ internal suspend fun fetchBaGuideCatalogBundle(
     }
     return bundle
 }
+
+private data class CatalogFetchPayload(
+    val studentRaw: List<RawEntry>,
+    val npcSatelliteRaw: List<RawEntry>,
+    val studentFilterIndex: BaGuideCatalogFilterIndex,
+    val npcSatelliteFilterIndex: BaGuideCatalogFilterIndex,
+)
 
 internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     source: BaGuideCatalogBundle,
@@ -337,11 +350,11 @@ private fun fetchRawEntriesByPid(pid: Int): List<RawEntry> {
     return out
 }
 
-private fun fetchStudentFilterIndex(): BaGuideCatalogFilterIndex =
+private fun fetchFilterIndex(entryId: Int): BaGuideCatalogFilterIndex =
     runCatching {
         val body =
             GameKeeRepository.fetchBaApiJson(
-                pathOrUrl = BA_GUIDE_STUDENT_FILTER_INDEX_PATH,
+                pathOrUrl = "$BA_GUIDE_FILTER_INDEX_PATH_PREFIX$entryId",
                 refererPath = BA_GUIDE_INDEX_REFERER_PATH,
             )
         parseBaGuideCatalogFilterIndex(body)

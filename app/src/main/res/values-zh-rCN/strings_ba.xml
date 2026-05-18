@@ -197,7 +197,7 @@
     <string name="ba_catalog_tab_student_bgm">音乐</string>
     <string name="ba_catalog_tab_student_bgm_short">音乐</string>
     <string name="ba_catalog_tab_bgm">播放</string>
-    <string name="ba_catalog_action_filter">筛选学生</string>
+    <string name="ba_catalog_action_filter">筛选图鉴</string>
     <string name="ba_catalog_action_sort">排序</string>
     <string name="ba_catalog_action_refresh">刷新列表</string>
     <string name="ba_catalog_action_transfer">收藏数据</string>

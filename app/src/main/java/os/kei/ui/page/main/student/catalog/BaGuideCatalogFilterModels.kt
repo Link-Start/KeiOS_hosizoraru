@@ -6,8 +6,9 @@ import org.json.JSONObject
 internal const val BA_GUIDE_FILTER_ID_RELEASE_DATE = 3774
 internal const val BA_GUIDE_FILTER_ID_GLOBAL_SCORE = 11543
 internal const val BA_GUIDE_FILTER_ID_CN_SCORE = 13045
+internal const val BA_GUIDE_FILTER_ID_NPC_SCHOOL = 12034
 
-private val BA_GUIDE_STUDENT_FILTER_ORDER =
+private val BA_GUIDE_CATALOG_FILTER_ORDER =
     listOf(
         68,
         508,
@@ -26,6 +27,7 @@ private val BA_GUIDE_STUDENT_FILTER_ORDER =
         BA_GUIDE_FILTER_ID_GLOBAL_SCORE,
         BA_GUIDE_FILTER_ID_CN_SCORE,
         BA_GUIDE_FILTER_ID_RELEASE_DATE,
+        BA_GUIDE_FILTER_ID_NPC_SCHOOL,
     )
 
 internal data class BaGuideCatalogFilterOption(
@@ -193,6 +195,22 @@ internal fun List<BaGuideCatalogEntry>.filterByCatalogFilters(selectedOptionIdsB
     }
 }
 
+internal fun selectedCatalogFilterOptionsForDefinitions(
+    selectedOptionIdsByFilterId: Map<Int, Set<Int>>,
+    definitions: List<BaGuideCatalogFilterDefinition>,
+): Map<Int, Set<Int>> {
+    if (selectedOptionIdsByFilterId.isEmpty() || definitions.isEmpty()) return emptyMap()
+    val definitionIds = definitions.mapTo(mutableSetOf()) { it.id }
+    return selectedOptionIdsByFilterId
+        .filterKeys { it in definitionIds }
+        .filterValues { it.isNotEmpty() }
+}
+
+internal fun activeCatalogFilterCountForDefinitions(
+    selectedOptionIdsByFilterId: Map<Int, Set<Int>>,
+    definitions: List<BaGuideCatalogFilterDefinition>,
+): Int = selectedCatalogFilterOptionsForDefinitions(selectedOptionIdsByFilterId, definitions).size
+
 internal fun scoreRankForSort(
     entry: BaGuideCatalogEntry,
     filterId: Int,
@@ -202,7 +220,7 @@ internal fun scoreRankForSort(
 private fun parseFilterDefinitions(rawFilters: JSONArray?): List<BaGuideCatalogFilterDefinition> {
     rawFilters ?: return emptyList()
     val orderRank =
-        BA_GUIDE_STUDENT_FILTER_ORDER
+        BA_GUIDE_CATALOG_FILTER_ORDER
             .mapIndexed { index, id -> id to index }
             .toMap()
     return buildList {

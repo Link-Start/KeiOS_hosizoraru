@@ -10,12 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -34,6 +38,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -68,6 +73,7 @@ internal fun BaGuideCatalogMusicTopBar(
     val sortIcon = appLucideSortIcon()
     val refreshIcon = appLucideRefreshIcon()
     val moreIcon = appLucideMoreIcon()
+    var actionBarAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     Box(
         modifier =
             modifier
@@ -85,7 +91,9 @@ internal fun BaGuideCatalogMusicTopBar(
                 onClick = onBack,
                 backdrop = backdrop,
             )
-            Box {
+            Box(
+                modifier = Modifier.capturePopupAnchor { actionBarAnchorBounds = it },
+            ) {
                 LiquidActionBar(
                     modifier = Modifier.height(AppChromeTokens.liquidActionBarOuterHeight),
                     backdrop = backdrop,
@@ -136,7 +144,7 @@ internal fun BaGuideCatalogMusicTopBar(
                         0 -> {
                             BaGuideCatalogFilterActionPopup(
                                 show = showFilterPopup && filterEnabled,
-                                anchorBounds = popupAnchorBounds,
+                                anchorBounds = actionBarAnchorBounds ?: popupAnchorBounds,
                                 definitions = filterDefinitions,
                                 selectedOptionIdsByFilterId = selectedFilterOptions,
                                 onDismissRequest = onDismissFilter,

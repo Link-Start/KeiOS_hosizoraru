@@ -505,7 +505,8 @@ internal object OsActivityShortcutCardStore {
                     } else {
                         card.copy(isBuiltInSample = false)
                     }
-                }.toMutableList()
+                }.let(::deduplicateActivityShortcutCardsById)
+                .toMutableList()
         if (appendMissingBuiltIns) {
             builtIns.forEach { builtIn ->
                 val alreadyPresent =
@@ -518,6 +519,13 @@ internal object OsActivityShortcutCardStore {
             }
         }
         return migrated
+    }
+
+    private fun deduplicateActivityShortcutCardsById(cards: List<OsActivityShortcutCard>): List<OsActivityShortcutCard> {
+        val seenIds = mutableSetOf<String>()
+        return cards.filter { card ->
+            seenIds.add(card.id)
+        }
     }
 
     private fun upgradeBuiltInActivityShortcutCard(

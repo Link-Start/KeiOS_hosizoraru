@@ -325,6 +325,47 @@ class OsCardTransferServiceTest {
         assertTrue(payload.cards.single().isBuiltInSample)
     }
 
+    @Test
+    fun `built in activity migration deduplicates upgraded Google settings card`() {
+        val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
+        val google =
+            builtInActivityShortcutCard(
+                id = BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID,
+                title = "Google Settings",
+                subtitle = "Google entry",
+                appName = "Google Settings",
+                packageName = "com.google.android.gms",
+                className = "com.google.android.gms.app.settings.GoogleSettingsLink",
+                intentAction = "android.intent.action.VIEW",
+                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
+                defaults = defaults,
+            )
+        val legacy =
+            OsActivityShortcutCard(
+                id = "legacy-google-system-service",
+                isBuiltInSample = false,
+                config =
+                    google.config.copy(
+                        title = "Google Settings",
+                        className = "com.google.android.gms.app.settings.GoogleSettingsActivity",
+                    ),
+            )
+
+        val migrated =
+            OsActivityShortcutCardStore.migrateBuiltInActivityShortcutCards(
+                cards = listOf(legacy, google),
+                builtInSampleDefaults = google.config,
+                builtInActivityShortcutCards = listOf(google),
+            )
+
+        assertEquals(listOf(BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID), migrated.map { it.id })
+        assertEquals(
+            migrated.map { it.id }.distinct(),
+            migrated.map { it.id },
+        )
+    }
+
+    @Test
     fun `built in activity migration upgrades legacy Google settings card`() {
         val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
         val google =

@@ -143,6 +143,12 @@
     <string name="os_sheet_visible_shell_cards_desc">Manage the shell console and command cards separately. Re-enabled items appear immediately.</string>
     <string name="os_shell_sheet_transfer_title">Shell card backup</string>
     <string name="os_shell_sheet_transfer_desc">Export current Shell card backup JSON. Import previews recognized results and merge changes before writing.</string>
+    <string name="os_visibility_search_activity_label">Search activity cards</string>
+    <string name="os_visibility_search_shell_label">Search shell cards</string>
+    <string name="os_visibility_group_built_in">Built-in</string>
+    <string name="os_visibility_group_custom">Custom</string>
+    <string name="os_visibility_group_shell_runner">Built-in feature</string>
+    <string name="os_visibility_group_title_count">%1$s · %2$s</string>
     <string name="os_activity_sheet_action_export_backup">Export activities</string>
     <string name="os_activity_sheet_action_import_backup">Import activities</string>
     <string name="os_shell_sheet_action_export_backup">Export Shell</string>

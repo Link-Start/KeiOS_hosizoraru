@@ -143,6 +143,12 @@
     <string name="os_sheet_visible_shell_cards_desc">Shell コンソールとコマンドカードを個別に管理します。再有効化した項目はすぐ表示されます。</string>
     <string name="os_shell_sheet_transfer_title">Shell カードバックアップ</string>
     <string name="os_shell_sheet_transfer_desc">現在の Shell カードバックアップ JSON をエクスポートします。インポート時は認識結果をプレビューし、変更をマージしてから書き込みます。</string>
+    <string name="os_visibility_search_activity_label">Activity card を検索</string>
+    <string name="os_visibility_search_shell_label">shell card を検索</string>
+    <string name="os_visibility_group_built_in">内蔵</string>
+    <string name="os_visibility_group_custom">カスタム</string>
+    <string name="os_visibility_group_shell_runner">内蔵機能</string>
+    <string name="os_visibility_group_title_count">%1$s · %2$s</string>
     <string name="os_activity_sheet_action_export_backup">Activity をエクスポート</string>
     <string name="os_activity_sheet_action_import_backup">Activity をインポート</string>
     <string name="os_shell_sheet_action_export_backup">Shell をエクスポート</string>

@@ -17,12 +17,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -42,6 +46,7 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -49,6 +54,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
@@ -543,6 +549,7 @@ internal fun OsActivityVisibilityManagerSheet(
         SheetContentColumn(
             verticalSpacing = 10.dp,
         ) {
+            var query by remember(show) { mutableStateOf("") }
             val activityVisibilityItems =
                 cards.map { card ->
                     OsActivityVisibilityItem(
@@ -554,55 +561,39 @@ internal fun OsActivityVisibilityManagerSheet(
                         visible = card.visible,
                     )
                 }
-            SheetSectionCard(verticalSpacing = 10.dp) {
-                activityVisibilityItems.forEach { item ->
-                    SheetControlRow(
-                        labelContent = {
-                            Row(
-                                modifier = Modifier.defaultMinSize(minHeight = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                if (item.packageName.isNotBlank() || item.className.isNotBlank()) {
-                                    ShortcutActivityIcon(
-                                        packageName = item.packageName,
-                                        className = item.className,
-                                        size = 18.dp,
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = osLucideEnterIcon(),
-                                        contentDescription = item.title,
-                                        tint = MiuixTheme.colorScheme.onBackground,
-                                        modifier =
-                                            Modifier
-                                                .size(18.dp)
-                                                .defaultMinSize(minHeight = 18.dp),
-                                    )
-                                }
-                                Text(
-                                    text = item.title,
-                                    color = MiuixTheme.colorScheme.onBackground,
-                                )
-                                if (item.builtInSample) {
-                                    StatusPill(
-                                        label = stringResource(R.string.os_activity_card_builtin_badge),
-                                        color = Color(0xFF3B82F6),
-                                        size = AppStatusPillSize.Compact,
-                                    )
-                                }
-                            }
-                        },
-                    ) {
-                        AppSwitch(
-                            checked = item.visible,
-                            onCheckedChange = { checked ->
-                                onCardVisibilityChange(item.id, checked)
-                            },
-                        )
+            val filteredActivityVisibilityItems =
+                remember(activityVisibilityItems, query) {
+                    activityVisibilityItems.filter { item ->
+                        item.matchesActivityVisibilityQuery(query)
                     }
                 }
+            val builtInItems = filteredActivityVisibilityItems.filter { it.builtInSample }
+            val customItems = filteredActivityVisibilityItems.filterNot { it.builtInSample }
+            SheetSectionCard(verticalSpacing = 8.dp) {
+                AppLiquidSearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = stringResource(R.string.os_visibility_search_activity_label),
+                    backdrop = sheetBackdrop,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = GlassVariant.SheetInput,
+                    textColor = MiuixTheme.colorScheme.primary,
+                )
             }
+            ActivityVisibilityGroup(
+                title = stringResource(R.string.os_visibility_group_built_in),
+                items = builtInItems,
+                emptySearchActive = query.isNotBlank() && filteredActivityVisibilityItems.isEmpty(),
+                noMatchedResultsText = stringResource(R.string.common_no_matched_results),
+                onCardVisibilityChange = onCardVisibilityChange,
+            )
+            ActivityVisibilityGroup(
+                title = stringResource(R.string.os_visibility_group_custom),
+                items = customItems,
+                emptySearchActive = false,
+                noMatchedResultsText = stringResource(R.string.common_no_matched_results),
+                onCardVisibilityChange = onCardVisibilityChange,
+            )
             SheetSectionCard(verticalSpacing = 8.dp) {
                 Text(
                     text = stringResource(R.string.os_activity_sheet_transfer_title),
@@ -641,3 +632,109 @@ internal fun OsActivityVisibilityManagerSheet(
         }
     }
 }
+
+@Composable
+private fun ActivityVisibilityGroup(
+    title: String,
+    items: List<OsActivityVisibilityItem>,
+    emptySearchActive: Boolean,
+    noMatchedResultsText: String,
+    onCardVisibilityChange: (String, Boolean) -> Unit,
+) {
+    if (items.isEmpty() && !emptySearchActive) return
+    SheetSectionTitle(
+        text = visibilityGroupTitle(title, items.size),
+    )
+    SheetSectionCard(verticalSpacing = 10.dp) {
+        if (items.isEmpty()) {
+            Text(
+                text = noMatchedResultsText,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+            )
+            return@SheetSectionCard
+        }
+        items.forEach { item ->
+            ActivityVisibilityRow(
+                item = item,
+                onCardVisibilityChange = onCardVisibilityChange,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityVisibilityRow(
+    item: OsActivityVisibilityItem,
+    onCardVisibilityChange: (String, Boolean) -> Unit,
+) {
+    SheetControlRow(
+        labelContent = {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (item.packageName.isNotBlank() || item.className.isNotBlank()) {
+                    ShortcutActivityIcon(
+                        packageName = item.packageName,
+                        className = item.className,
+                        size = 18.dp,
+                    )
+                } else {
+                    Icon(
+                        imageVector = osLucideEnterIcon(),
+                        contentDescription = item.title,
+                        tint = MiuixTheme.colorScheme.onBackground,
+                        modifier =
+                            Modifier
+                                .size(18.dp)
+                                .defaultMinSize(minHeight = 18.dp),
+                    )
+                }
+                Text(
+                    text = item.title,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (item.builtInSample) {
+                    StatusPill(
+                        label = stringResource(R.string.os_activity_card_builtin_badge),
+                        color = Color(0xFF3B82F6),
+                        size = AppStatusPillSize.Compact,
+                    )
+                }
+            }
+        },
+    ) {
+        AppSwitch(
+            checked = item.visible,
+            onCheckedChange = { checked ->
+                onCardVisibilityChange(item.id, checked)
+            },
+        )
+    }
+}
+
+private fun OsActivityVisibilityItem.matchesActivityVisibilityQuery(query: String): Boolean {
+    val normalized = query.trim()
+    if (normalized.isBlank()) return true
+    return title.contains(normalized, ignoreCase = true) ||
+        packageName.contains(normalized, ignoreCase = true) ||
+        className.contains(normalized, ignoreCase = true)
+}
+
+@Composable
+internal fun visibilityGroupTitle(
+    title: String,
+    count: Int,
+): String =
+    stringResource(
+        R.string.os_visibility_group_title_count,
+        title,
+        stringResource(R.string.common_item_count, count),
+    )

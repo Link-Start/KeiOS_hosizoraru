@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -55,7 +62,7 @@ internal fun LazyListScope.addShellCommandCards(
     runningCardIds: Set<String>,
     onExpandedChange: (String, Boolean) -> Unit,
     onHeaderLongClick: (OsShellCommandCard) -> Unit,
-    onRunCard: (OsShellCommandCard) -> Unit
+    onRunCard: (OsShellCommandCard) -> Unit,
 ) {
     cards.forEach { card ->
         item(key = "os-shell-command-${card.id}") {
@@ -71,9 +78,10 @@ internal fun LazyListScope.addShellCommandCards(
                         imageVector = osLucideCardIcon(),
                         contentDescription = card.title,
                         tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(22.dp)
-                            .defaultMinSize(minHeight = 22.dp)
+                        modifier =
+                            Modifier
+                                .size(22.dp)
+                                .defaultMinSize(minHeight = 22.dp),
                     )
                 },
                 headerActions = {
@@ -83,47 +91,50 @@ internal fun LazyListScope.addShellCommandCards(
                             size = 16.dp,
                             strokeWidth = 2.dp,
                             activeColor = MiuixTheme.colorScheme.primary,
-                            inactiveColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.24f)
+                            inactiveColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.24f),
                         )
                     } else {
                         AppCompactIconAction(
                             icon = osLucideRunIcon(),
                             contentDescription = stringResource(R.string.os_shell_card_cd_run_saved),
-                            onClick = { onRunCard(card) }
+                            onClick = { onRunCard(card) },
                         )
                     }
                 },
-                onHeaderLongClick = { onHeaderLongClick(card) }
+                onHeaderLongClick = { onHeaderLongClick(card) },
             ) {
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_shell_card_saved_command_label),
                     value = card.command,
-                    copyValueOnly = true
+                    copyValueOnly = true,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_shell_card_run_output_label),
-                    value = card.runOutput.ifBlank {
-                        stringResource(R.string.os_shell_card_run_output_not_ran)
-                    },
-                    copyValueOnly = true
+                    value =
+                        card.runOutput.ifBlank {
+                            stringResource(R.string.os_shell_card_run_output_not_ran)
+                        },
+                    copyValueOnly = true,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_shell_card_last_ran_at_label),
-                    value = if (card.lastRunAtMillis > 0L) {
-                        formatEpochMillis(card.lastRunAtMillis)
-                    } else {
-                        stringResource(R.string.os_shell_card_run_output_not_ran)
-                    },
-                    copyValueOnly = true
+                    value =
+                        if (card.lastRunAtMillis > 0L) {
+                            formatEpochMillis(card.lastRunAtMillis)
+                        } else {
+                            stringResource(R.string.os_shell_card_run_output_not_ran)
+                        },
+                    copyValueOnly = true,
                 )
                 OsSectionInfoRow(
                     label = stringResource(R.string.os_shell_card_updated_at_label),
-                    value = if (card.updatedAtMillis > 0L) {
-                        formatEpochMillis(card.updatedAtMillis)
-                    } else {
-                        stringResource(R.string.common_unknown)
-                    },
-                    copyValueOnly = true
+                    value =
+                        if (card.updatedAtMillis > 0L) {
+                            formatEpochMillis(card.updatedAtMillis)
+                        } else {
+                            stringResource(R.string.common_unknown)
+                        },
+                    copyValueOnly = true,
                 )
             }
         }
@@ -144,7 +155,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
     onExportAllCards: () -> Unit,
     onImportAllCards: () -> Unit,
     onDismissRequest: () -> Unit,
-    onCardVisibilityChange: (String, Boolean) -> Unit
+    onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SnapshotWindowBottomSheet(
         show = show,
@@ -156,65 +167,84 @@ internal fun OsShellCommandVisibilityManagerSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
-        }
+        },
     ) {
         SheetContentColumn(
-            verticalSpacing = 10.dp
+            verticalSpacing = 10.dp,
         ) {
-            SheetSectionCard(verticalSpacing = 10.dp) {
-                SheetControlRow(
-                    labelContent = {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.os_shell_card_title),
-                                color = MiuixTheme.colorScheme.onBackground
-                            )
-                            StatusPill(
-                                label = stringResource(R.string.os_shell_card_builtin_badge),
-                                color = Color(0xFF3B82F6),
-                                size = AppStatusPillSize.Compact
-                            )
-                        }
+            var query by remember(show) { mutableStateOf("") }
+            val shellRunnerTitle = stringResource(R.string.os_shell_card_title)
+            val filteredCards =
+                remember(cards, query) {
+                    cards.filter { card ->
+                        card.matchesShellVisibilityQuery(query)
                     }
-                ) {
-                    AppSwitch(
-                        checked = shellRunnerVisible,
-                        onCheckedChange = onShellRunnerVisibilityChange
+                }
+            val showShellRunner =
+                shellRunnerTitle.contains(query.trim(), ignoreCase = true) ||
+                    query.isBlank()
+            SheetSectionCard(verticalSpacing = 8.dp) {
+                AppLiquidSearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = stringResource(R.string.os_visibility_search_shell_label),
+                    backdrop = sheetBackdrop,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = GlassVariant.SheetInput,
+                    textColor = MiuixTheme.colorScheme.primary,
+                )
+            }
+            if (showShellRunner) {
+                SheetSectionTitle(
+                    text =
+                        visibilityGroupTitle(
+                            title = stringResource(R.string.os_visibility_group_shell_runner),
+                            count = 1,
+                        ),
+                )
+                SheetSectionCard(verticalSpacing = 10.dp) {
+                    ShellRunnerVisibilityRow(
+                        title = shellRunnerTitle,
+                        visible = shellRunnerVisible,
+                        onVisibleChange = onShellRunnerVisibilityChange,
                     )
                 }
-                cards.forEach { item ->
-                    SheetControlRow(
-                        labelContent = {
-                            Text(
-                                text = item.title.ifBlank { defaultOsShellCommandCardTitle(item.command) },
-                                color = MiuixTheme.colorScheme.onBackground,
-                                maxLines = Int.MAX_VALUE,
-                                overflow = TextOverflow.Clip,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    ) {
-                        AppSwitch(
-                            checked = item.visible,
-                            onCheckedChange = { checked ->
-                                onCardVisibilityChange(item.id, checked)
-                            }
+            }
+            if (filteredCards.isNotEmpty()) {
+                SheetSectionTitle(
+                    text =
+                        visibilityGroupTitle(
+                            title = stringResource(R.string.os_visibility_group_custom),
+                            count = filteredCards.size,
+                        ),
+                )
+                SheetSectionCard(verticalSpacing = 10.dp) {
+                    filteredCards.forEach { item ->
+                        ShellCommandVisibilityRow(
+                            card = item,
+                            onCardVisibilityChange = onCardVisibilityChange,
                         )
                     }
+                }
+            }
+            if (!showShellRunner && filteredCards.isEmpty()) {
+                SheetSectionCard(verticalSpacing = 10.dp) {
+                    Text(
+                        text = stringResource(R.string.common_no_matched_results),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    )
                 }
             }
             SheetSectionCard(verticalSpacing = 8.dp) {
                 Text(
                     text = stringResource(R.string.os_shell_sheet_transfer_title),
-                    color = MiuixTheme.colorScheme.onBackground
+                    color = MiuixTheme.colorScheme.onBackground,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         AppLiquidTextButton(
@@ -224,7 +254,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !transferInProgress,
                             variant = GlassVariant.SheetAction,
-                            pressOverlayEnabled = true
+                            pressOverlayEnabled = true,
                         )
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -235,7 +265,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !transferInProgress,
                             variant = GlassVariant.SheetAction,
-                            pressOverlayEnabled = true
+                            pressOverlayEnabled = true,
                         )
                     }
                 }
@@ -244,6 +274,74 @@ internal fun OsShellCommandVisibilityManagerSheet(
             SheetDescriptionText(text = shellHintText)
         }
     }
+}
+
+@Composable
+private fun ShellRunnerVisibilityRow(
+    title: String,
+    visible: Boolean,
+    onVisibleChange: (Boolean) -> Unit,
+) {
+    SheetControlRow(
+        labelContent = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                StatusPill(
+                    label = stringResource(R.string.os_shell_card_builtin_badge),
+                    color = Color(0xFF3B82F6),
+                    size = AppStatusPillSize.Compact,
+                )
+            }
+        },
+    ) {
+        AppSwitch(
+            checked = visible,
+            onCheckedChange = onVisibleChange,
+        )
+    }
+}
+
+@Composable
+private fun ShellCommandVisibilityRow(
+    card: OsShellCommandCard,
+    onCardVisibilityChange: (String, Boolean) -> Unit,
+) {
+    SheetControlRow(
+        labelContent = {
+            Text(
+                text = card.title.ifBlank { defaultOsShellCommandCardTitle(card.command) },
+                color = MiuixTheme.colorScheme.onBackground,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+    ) {
+        AppSwitch(
+            checked = card.visible,
+            onCheckedChange = { checked ->
+                onCardVisibilityChange(card.id, checked)
+            },
+        )
+    }
+}
+
+private fun OsShellCommandCard.matchesShellVisibilityQuery(query: String): Boolean {
+    val normalized = query.trim()
+    if (normalized.isBlank()) return true
+    return title.contains(normalized, ignoreCase = true) ||
+        subtitle.contains(normalized, ignoreCase = true) ||
+        command.contains(normalized, ignoreCase = true)
 }
 
 @Composable
@@ -257,12 +355,13 @@ internal fun OsShellCommandCardEditorSheet(
     hasUnsavedChanges: Boolean,
     onDelete: () -> Unit,
     onDismissRequest: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
 ) {
-    val dismissHandler = rememberUnsavedSheetDismissHandler(
-        hasUnsavedChanges = hasUnsavedChanges,
-        onDismissRequest = onDismissRequest
-    )
+    val dismissHandler =
+        rememberUnsavedSheetDismissHandler(
+            hasUnsavedChanges = hasUnsavedChanges,
+            onDismissRequest = onDismissRequest,
+        )
     SnapshotWindowBottomSheet(
         show = show,
         title = title,
@@ -275,7 +374,7 @@ internal fun OsShellCommandCardEditorSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = dismissHandler.requestDismiss
+                onClick = dismissHandler.requestDismiss,
             )
         },
         endAction = {
@@ -284,9 +383,9 @@ internal fun OsShellCommandCardEditorSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideConfirmIcon(),
                 contentDescription = stringResource(R.string.common_save),
-                onClick = onSave
+                onClick = onSave,
             )
-        }
+        },
     ) {
         SheetContentColumn(verticalSpacing = 10.dp) {
             SheetSectionCard(verticalSpacing = 10.dp) {
@@ -299,7 +398,7 @@ internal fun OsShellCommandCardEditorSheet(
                         variant = GlassVariant.SheetInput,
                         textColor = MiuixTheme.colorScheme.primary,
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 SheetFieldBlock(title = stringResource(R.string.os_shell_card_field_subtitle)) {
@@ -311,7 +410,7 @@ internal fun OsShellCommandCardEditorSheet(
                         variant = GlassVariant.SheetInput,
                         textColor = MiuixTheme.colorScheme.primary,
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 SheetFieldBlock(title = stringResource(R.string.os_shell_card_field_command)) {
@@ -320,14 +419,14 @@ internal fun OsShellCommandCardEditorSheet(
                         onValueChange = { onDraftChange(draft.copy(command = it)) },
                         label = stringResource(R.string.os_shell_card_hint_command),
                         minHeight = 132.dp,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
             if (showDeleteAction) {
                 SheetSectionTitle(
                     text = stringResource(R.string.os_shell_card_danger_title),
-                    danger = true
+                    danger = true,
                 )
                 SheetSectionCard {
                     AppLiquidTextButton(
@@ -335,7 +434,7 @@ internal fun OsShellCommandCardEditorSheet(
                         variant = GlassVariant.SheetDangerAction,
                         text = stringResource(R.string.common_delete),
                         textColor = MiuixTheme.colorScheme.error,
-                        onClick = onDelete
+                        onClick = onDelete,
                     )
                 }
             }
@@ -344,6 +443,6 @@ internal fun OsShellCommandCardEditorSheet(
     UnsavedSheetDismissConfirmDialog(
         show = dismissHandler.showConfirmDialog,
         onKeepEditing = dismissHandler.keepEditing,
-        onDiscardChanges = dismissHandler.discardChanges
+        onDiscardChanges = dismissHandler.discardChanges,
     )
 }

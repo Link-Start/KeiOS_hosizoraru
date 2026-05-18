@@ -8,10 +8,20 @@ import java.util.UUID
 
 internal const val LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID = "legacy-google-system-service"
 internal const val BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID = "builtin-google-settings-sample"
+internal const val BUILTIN_EXTRA_DIM_CARD_ID = "builtin-settings-extra-dim"
+internal const val BUILTIN_APP_BATTERY_USAGE_CARD_ID = "builtin-settings-app-battery-usage"
+internal const val BUILTIN_RUNNING_SERVICES_CARD_ID = "builtin-settings-running-services"
+internal const val BUILTIN_NOTIFICATION_SETTINGS_CARD_ID = "builtin-settings-notification-settings"
+internal const val BUILTIN_APP_MANAGEMENT_CARD_ID = "builtin-settings-app-management"
+internal const val BUILTIN_DEFAULT_APPS_CARD_ID = "builtin-settings-default-apps"
+internal const val BUILTIN_APP_MEMORY_USAGE_CARD_ID = "builtin-settings-app-memory-usage"
+internal const val BUILTIN_APP_LANGUAGE_CARD_ID = "builtin-settings-app-language"
+internal const val BUILTIN_LANGUAGE_SETTINGS_CARD_ID = "builtin-settings-language-settings"
+internal const val BUILTIN_CROSS_DEVICE_SERVICES_CARD_ID = "builtin-gms-cross-device-services"
 
 internal enum class OsActivityCardEditMode {
     Add,
-    Edit
+    Edit,
 }
 
 @Immutable
@@ -19,12 +29,12 @@ internal data class OsActivityShortcutCard(
     val id: String,
     val visible: Boolean = true,
     val isBuiltInSample: Boolean = false,
-    val config: OsGoogleSystemServiceConfig
+    val config: OsGoogleSystemServiceConfig,
 )
 
 internal enum class ShortcutIntentExtraType(
     val rawValue: String,
-    val labelResId: Int
+    val labelResId: Int,
 ) {
     String("string", R.string.os_google_system_service_intent_extra_type_string),
     Boolean("boolean", R.string.os_google_system_service_intent_extra_type_boolean),
@@ -32,7 +42,8 @@ internal enum class ShortcutIntentExtraType(
     Long("long", R.string.os_google_system_service_intent_extra_type_long),
     Float("float", R.string.os_google_system_service_intent_extra_type_float),
     Double("double", R.string.os_google_system_service_intent_extra_type_double),
-    Uri("uri", R.string.os_google_system_service_intent_extra_type_uri);
+    Uri("uri", R.string.os_google_system_service_intent_extra_type_uri),
+    ;
 
     companion object {
         fun fromRaw(raw: String): ShortcutIntentExtraType {
@@ -46,18 +57,21 @@ internal enum class ShortcutIntentExtraType(
 internal data class ShortcutIntentExtra(
     val key: String = "",
     val type: ShortcutIntentExtraType = ShortcutIntentExtraType.String,
-    val value: String = ""
+    val value: String = "",
 )
 
 internal fun newOsActivityShortcutCardId(): String {
-    val compactUuid = UUID.randomUUID().toString().replace("-", "").take(12)
+    val compactUuid =
+        UUID
+            .randomUUID()
+            .toString()
+            .replace("-", "")
+            .take(12)
     return "activity-${compactUuid.lowercase(Locale.ROOT)}"
 }
 
-internal fun createDefaultActivityShortcutDraft(
-    defaults: OsGoogleSystemServiceConfig
-): OsGoogleSystemServiceConfig {
-    return defaults.copy(
+internal fun createDefaultActivityShortcutDraft(defaults: OsGoogleSystemServiceConfig): OsGoogleSystemServiceConfig =
+    defaults.copy(
         title = "",
         subtitle = "",
         appName = "",
@@ -68,24 +82,25 @@ internal fun createDefaultActivityShortcutDraft(
         intentFlags = defaults.intentFlags,
         intentUriData = "",
         intentMimeType = "",
-        intentExtras = listOf(ShortcutIntentExtra())
+        intentExtras = listOf(ShortcutIntentExtra()),
     )
-}
 
 internal fun normalizeActivityShortcutConfig(
     config: OsGoogleSystemServiceConfig,
-    defaults: OsGoogleSystemServiceConfig
+    defaults: OsGoogleSystemServiceConfig,
 ): OsGoogleSystemServiceConfig {
     val trimmedPackageName = config.packageName.trim()
     val trimmedAppName = config.appName.trim()
-    val resolvedAppName = trimmedAppName.ifBlank {
-        if (trimmedPackageName.isNotBlank()) trimmedPackageName else defaults.appName
-    }
+    val resolvedAppName =
+        trimmedAppName.ifBlank {
+            if (trimmedPackageName.isNotBlank()) trimmedPackageName else defaults.appName
+        }
     val normalizedExtras = normalizeShortcutIntentExtras(config.intentExtras)
     return config.copy(
-        title = config.title.trim().ifBlank {
-            if (resolvedAppName.isNotBlank()) resolvedAppName else defaults.title
-        },
+        title =
+            config.title.trim().ifBlank {
+                if (resolvedAppName.isNotBlank()) resolvedAppName else defaults.title
+            },
         subtitle = config.subtitle.trim(),
         appName = resolvedAppName,
         packageName = trimmedPackageName,
@@ -95,35 +110,27 @@ internal fun normalizeActivityShortcutConfig(
         intentFlags = config.intentFlags.trim().ifBlank { defaults.intentFlags },
         intentUriData = config.intentUriData.trim(),
         intentMimeType = config.intentMimeType.trim(),
-        intentExtras = normalizedExtras
+        intentExtras = normalizedExtras,
     )
 }
 
-internal fun normalizeShortcutIntentExtras(
-    extras: List<ShortcutIntentExtra>
-): List<ShortcutIntentExtra> {
-    return extras.map { extra ->
-        extra.copy(
-            key = extra.key.trim(),
-            value = extra.value.trim()
-        )
-    }.filter { it.key.isNotBlank() }
-}
+internal fun normalizeShortcutIntentExtras(extras: List<ShortcutIntentExtra>): List<ShortcutIntentExtra> =
+    extras
+        .map { extra ->
+            extra.copy(
+                key = extra.key.trim(),
+                value = extra.value.trim(),
+            )
+        }.filter { it.key.isNotBlank() }
 
-internal fun ensureEditorShortcutIntentExtras(
-    extras: List<ShortcutIntentExtra>
-): List<ShortcutIntentExtra> {
-    return if (extras.isEmpty()) {
+internal fun ensureEditorShortcutIntentExtras(extras: List<ShortcutIntentExtra>): List<ShortcutIntentExtra> =
+    if (extras.isEmpty()) {
         listOf(ShortcutIntentExtra())
     } else {
         extras
     }
-}
 
-internal fun ensureEditorActivityShortcutDraft(
-    config: OsGoogleSystemServiceConfig
-): OsGoogleSystemServiceConfig {
-    return config.copy(
-        intentExtras = ensureEditorShortcutIntentExtras(config.intentExtras)
+internal fun ensureEditorActivityShortcutDraft(config: OsGoogleSystemServiceConfig): OsGoogleSystemServiceConfig =
+    config.copy(
+        intentExtras = ensureEditorShortcutIntentExtras(config.intentExtras),
     )
-}

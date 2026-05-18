@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
@@ -24,7 +24,7 @@ internal data class OsPageRuntimeState(
     val uiStatePersistenceReady: Boolean = false,
     val refreshing: Boolean = false,
     val refreshProgress: Float = 0f,
-    val runningShellCommandCardIds: Set<String> = emptySet()
+    val runningShellCommandCardIds: Set<String> = emptySet(),
 )
 
 @OptIn(FlowPreview::class)
@@ -38,12 +38,14 @@ internal class OsPageViewModel : ViewModel() {
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
 
-    val persistentState: StateFlow<OsPagePersistentState> = repository.observePersistentState()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = repository.observePersistentState().value
-        )
+    val persistentState: StateFlow<OsPagePersistentState> =
+        repository
+            .observePersistentState()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = repository.observePersistentState().value,
+            )
 
     private val _queryInput = MutableStateFlow("")
     val queryInput: StateFlow<String> = _queryInput.asStateFlow()
@@ -61,11 +63,12 @@ internal class OsPageViewModel : ViewModel() {
                 .distinctUntilChanged()
                 .collect { q ->
                     val normalized = q.trim()
-                    _queryApplied.value = when {
-                        normalized.isBlank() -> ""
-                        normalized.length < MIN_FILTER_QUERY_LENGTH -> ""
-                        else -> normalized
-                    }
+                    _queryApplied.value =
+                        when {
+                            normalized.isBlank() -> ""
+                            normalized.length < MIN_FILTER_QUERY_LENGTH -> ""
+                            else -> normalized
+                        }
                 }
         }
     }
@@ -76,12 +79,12 @@ internal class OsPageViewModel : ViewModel() {
 
     fun loadPersistentState(
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-        googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig
+        builtInActivityShortcutCards: List<OsActivityShortcutCard>,
     ) {
         viewModelScope.launch {
             repository.loadPersistentState(
                 googleSystemServiceDefaults = googleSystemServiceDefaults,
-                googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults
+                builtInActivityShortcutCards = builtInActivityShortcutCards,
             )
         }
     }
@@ -102,7 +105,7 @@ internal class OsPageViewModel : ViewModel() {
 
     suspend fun hydrateInitialCache(
         isPageActive: Boolean,
-        ensureLoad: suspend (SectionKind, Boolean) -> Unit
+        ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     ) {
         var ensuredVisibleCards = persistentState.value.uiSnapshot.visibleCards
         if (!ensuredVisibleCards.contains(OsSectionCard.GOOGLE_SYSTEM_SERVICE)) {
@@ -118,29 +121,36 @@ internal class OsPageViewModel : ViewModel() {
         val snapshot = repository.readInfoCache(visibleSections)
         _runtimeState.update { state ->
             state.copy(
-                sectionStates = mapOf(
-                    SectionKind.SYSTEM to SectionState(
-                        rows = if (visibleSections.contains(SectionKind.SYSTEM)) snapshot.cached.system else emptyList()
+                sectionStates =
+                    mapOf(
+                        SectionKind.SYSTEM to
+                            SectionState(
+                                rows = if (visibleSections.contains(SectionKind.SYSTEM)) snapshot.cached.system else emptyList(),
+                            ),
+                        SectionKind.SECURE to
+                            SectionState(
+                                rows = if (visibleSections.contains(SectionKind.SECURE)) snapshot.cached.secure else emptyList(),
+                            ),
+                        SectionKind.GLOBAL to
+                            SectionState(
+                                rows = if (visibleSections.contains(SectionKind.GLOBAL)) snapshot.cached.global else emptyList(),
+                            ),
+                        SectionKind.ANDROID to
+                            SectionState(
+                                rows = if (visibleSections.contains(SectionKind.ANDROID)) snapshot.cached.android else emptyList(),
+                            ),
+                        SectionKind.JAVA to
+                            SectionState(
+                                rows = if (visibleSections.contains(SectionKind.JAVA)) snapshot.cached.java else emptyList(),
+                            ),
+                        SectionKind.LINUX to
+                            SectionState(
+                                rows = if (visibleSections.contains(SectionKind.LINUX)) snapshot.cached.linux else emptyList(),
+                            ),
                     ),
-                    SectionKind.SECURE to SectionState(
-                        rows = if (visibleSections.contains(SectionKind.SECURE)) snapshot.cached.secure else emptyList()
-                    ),
-                    SectionKind.GLOBAL to SectionState(
-                        rows = if (visibleSections.contains(SectionKind.GLOBAL)) snapshot.cached.global else emptyList()
-                    ),
-                    SectionKind.ANDROID to SectionState(
-                        rows = if (visibleSections.contains(SectionKind.ANDROID)) snapshot.cached.android else emptyList()
-                    ),
-                    SectionKind.JAVA to SectionState(
-                        rows = if (visibleSections.contains(SectionKind.JAVA)) snapshot.cached.java else emptyList()
-                    ),
-                    SectionKind.LINUX to SectionState(
-                        rows = if (visibleSections.contains(SectionKind.LINUX)) snapshot.cached.linux else emptyList()
-                    )
-                ),
                 cachePersisted = snapshot.hasPersistedCache,
                 cacheLoaded = true,
-                uiStatePersistenceReady = true
+                uiStatePersistenceReady = true,
             )
         }
         if (isPageActive) {
@@ -160,7 +170,7 @@ internal class OsPageViewModel : ViewModel() {
 
     fun updateSection(
         section: SectionKind,
-        transform: (SectionState) -> SectionState
+        transform: (SectionState) -> SectionState,
     ) {
         _runtimeState.update { state ->
             val updated = state.sectionStates.toMutableMap()
@@ -175,7 +185,7 @@ internal class OsPageViewModel : ViewModel() {
             SectionKind.SYSTEM,
             SectionKind.SECURE,
             SectionKind.GLOBAL,
-            SectionKind.LINUX
+            SectionKind.LINUX,
         ).forEach { section ->
             updateSection(section) { it.copy(loadedFresh = false) }
         }
@@ -238,13 +248,12 @@ internal class OsPageViewModel : ViewModel() {
     }
 }
 
-private fun defaultOsSectionStates(): Map<SectionKind, SectionState> {
-    return mapOf(
+private fun defaultOsSectionStates(): Map<SectionKind, SectionState> =
+    mapOf(
         SectionKind.SYSTEM to SectionState(),
         SectionKind.SECURE to SectionState(),
         SectionKind.GLOBAL to SectionState(),
         SectionKind.ANDROID to SectionState(),
         SectionKind.JAVA to SectionState(),
-        SectionKind.LINUX to SectionState()
+        SectionKind.LINUX to SectionState(),
     )
-}

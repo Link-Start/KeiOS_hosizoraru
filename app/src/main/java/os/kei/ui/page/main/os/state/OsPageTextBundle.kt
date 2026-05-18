@@ -6,6 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.shortcut.rememberBuiltInActivityShortcutCards
 
 internal data class OsPageTextBundle(
     val exportSuccessText: String,
@@ -38,6 +40,7 @@ internal data class OsPageTextBundle(
     val googleSystemServiceDefaultIntentFlags: String,
     val googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     val googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
+    val builtInActivityShortcutCards: List<OsActivityShortcutCard>,
 )
 
 @Composable
@@ -86,38 +89,45 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
     val googleSystemServiceDefaultIntentFlags =
         stringResource(R.string.os_google_system_service_default_intent_flags)
 
-    val googleSystemServiceDefaults = remember(
-        googleSystemServiceDefaultTitle,
-        googleSystemServiceDefaultSubtitle,
-        googleSystemServiceDefaultAppName,
-        googleSystemServiceDefaultIntentFlags
-    ) {
-        OsGoogleSystemServiceConfig(
-            title = googleSystemServiceDefaultTitle,
-            subtitle = googleSystemServiceDefaultSubtitle,
-            appName = googleSystemServiceDefaultAppName,
-            intentFlags = googleSystemServiceDefaultIntentFlags
-        ).normalized()
-    }
-    val googleSettingsBuiltInSampleDefaults = remember(
-        activityBuiltInGoogleSettingsTitle,
-        activityBuiltInGoogleSettingsSubtitle,
-        activityBuiltInGoogleSettingsAppName,
-        activityBuiltInGoogleSettingsPackage,
-        activityBuiltInGoogleSettingsClass,
-        googleSystemServiceDefaultIntentFlags,
-        googleSystemServiceDefaults
-    ) {
-        OsGoogleSystemServiceConfig(
-            title = activityBuiltInGoogleSettingsTitle,
-            subtitle = activityBuiltInGoogleSettingsSubtitle,
-            appName = activityBuiltInGoogleSettingsAppName,
-            packageName = activityBuiltInGoogleSettingsPackage,
-            className = activityBuiltInGoogleSettingsClass,
-            intentAction = Intent.ACTION_VIEW,
-            intentFlags = googleSystemServiceDefaultIntentFlags
-        ).normalized(googleSystemServiceDefaults)
-    }
+    val googleSystemServiceDefaults =
+        remember(
+            googleSystemServiceDefaultTitle,
+            googleSystemServiceDefaultSubtitle,
+            googleSystemServiceDefaultAppName,
+            googleSystemServiceDefaultIntentFlags,
+        ) {
+            OsGoogleSystemServiceConfig(
+                title = googleSystemServiceDefaultTitle,
+                subtitle = googleSystemServiceDefaultSubtitle,
+                appName = googleSystemServiceDefaultAppName,
+                intentFlags = googleSystemServiceDefaultIntentFlags,
+            ).normalized()
+        }
+    val googleSettingsBuiltInSampleDefaults =
+        remember(
+            activityBuiltInGoogleSettingsTitle,
+            activityBuiltInGoogleSettingsSubtitle,
+            activityBuiltInGoogleSettingsAppName,
+            activityBuiltInGoogleSettingsPackage,
+            activityBuiltInGoogleSettingsClass,
+            googleSystemServiceDefaultIntentFlags,
+            googleSystemServiceDefaults,
+        ) {
+            OsGoogleSystemServiceConfig(
+                title = activityBuiltInGoogleSettingsTitle,
+                subtitle = activityBuiltInGoogleSettingsSubtitle,
+                appName = activityBuiltInGoogleSettingsAppName,
+                packageName = activityBuiltInGoogleSettingsPackage,
+                className = activityBuiltInGoogleSettingsClass,
+                intentAction = Intent.ACTION_VIEW,
+                intentFlags = googleSystemServiceDefaultIntentFlags,
+            ).normalized(googleSystemServiceDefaults)
+        }
+    val builtInActivityShortcutCards =
+        rememberBuiltInActivityShortcutCards(
+            defaults = googleSystemServiceDefaults,
+            defaultIntentFlags = googleSystemServiceDefaultIntentFlags,
+        )
 
     return remember(
         exportSuccessText,
@@ -149,7 +159,8 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
         noMatchedResultsText,
         googleSystemServiceDefaultIntentFlags,
         googleSystemServiceDefaults,
-        googleSettingsBuiltInSampleDefaults
+        googleSettingsBuiltInSampleDefaults,
+        builtInActivityShortcutCards,
     ) {
         OsPageTextBundle(
             exportSuccessText = exportSuccessText,
@@ -182,6 +193,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
             googleSystemServiceDefaultIntentFlags = googleSystemServiceDefaultIntentFlags,
             googleSystemServiceDefaults = googleSystemServiceDefaults,
             googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+            builtInActivityShortcutCards = builtInActivityShortcutCards,
         )
     }
 }

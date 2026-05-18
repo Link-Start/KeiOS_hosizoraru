@@ -16,11 +16,11 @@ internal data class OsPagePersistentState(
     val uiSnapshot: OsUiSnapshot = OsUiSnapshot(),
     val activityShortcutCards: List<OsActivityShortcutCard> = emptyList(),
     val shellCommandCards: List<OsShellCommandCard> = emptyList(),
-    val loaded: Boolean = false
+    val loaded: Boolean = false,
 )
 
 internal class OsPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val persistentState = MutableStateFlow(OsPagePersistentState())
 
@@ -28,26 +28,32 @@ internal class OsPageRepository(
 
     suspend fun loadPersistentState(
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-        googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig
+        builtInActivityShortcutCards: List<OsActivityShortcutCard>,
     ) {
-        val loaded = withContext(ioDispatcher) {
-            OsPagePersistentState(
-                uiSnapshot = OsUiStateStore.loadSnapshot(),
-                activityShortcutCards = OsActivityShortcutCardStore.loadCards(
-                    defaults = googleSystemServiceDefaults,
-                    builtInSampleDefaults = googleSettingsBuiltInSampleDefaults
-                ),
-                shellCommandCards = OsShellCommandCardStore.loadCards(),
-                loaded = true
-            )
-        }
+        val loaded =
+            withContext(ioDispatcher) {
+                OsPagePersistentState(
+                    uiSnapshot = OsUiStateStore.loadSnapshot(),
+                    activityShortcutCards =
+                        OsActivityShortcutCardStore.loadCards(
+                            defaults = googleSystemServiceDefaults,
+                            builtInSampleDefaults =
+                                builtInActivityShortcutCards.firstOrNull()?.config
+                                    ?: googleSystemServiceDefaults,
+                            builtInActivityShortcutCards = builtInActivityShortcutCards,
+                        ),
+                    shellCommandCards = OsShellCommandCardStore.loadCards(),
+                    loaded = true,
+                )
+            }
         persistentState.value = loaded
     }
 
     suspend fun reloadShellCommandCards() {
-        val cards = withContext(ioDispatcher) {
-            OsShellCommandCardStore.loadCards()
-        }
+        val cards =
+            withContext(ioDispatcher) {
+                OsShellCommandCardStore.loadCards()
+            }
         persistentState.update { state -> state.copy(shellCommandCards = cards) }
     }
 
@@ -64,11 +70,10 @@ internal class OsPageRepository(
         }
     }
 
-    suspend fun readInfoCache(visibleSections: Set<SectionKind>): CachedSectionsSnapshot {
-        return withContext(ioDispatcher) {
+    suspend fun readInfoCache(visibleSections: Set<SectionKind>): CachedSectionsSnapshot =
+        withContext(ioDispatcher) {
             OsInfoCache.readSnapshot(visibleSections)
         }
-    }
 
     suspend fun saveExpandedStateSnapshot(snapshot: OsUiSnapshot) {
         withContext(ioDispatcher) {
@@ -84,37 +89,45 @@ internal class OsPageRepository(
         persistentState.update { state -> state.copy(shellCommandCards = cards) }
     }
 
-    fun updateTopInfoExpanded(value: Boolean) = updateUiSnapshot {
-        copy(topInfoExpanded = value)
-    }
+    fun updateTopInfoExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(topInfoExpanded = value)
+        }
 
-    fun updateShellRunnerExpanded(value: Boolean) = updateUiSnapshot {
-        copy(shellRunnerExpanded = value)
-    }
+    fun updateShellRunnerExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(shellRunnerExpanded = value)
+        }
 
-    fun updateSystemTableExpanded(value: Boolean) = updateUiSnapshot {
-        copy(systemTableExpanded = value)
-    }
+    fun updateSystemTableExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(systemTableExpanded = value)
+        }
 
-    fun updateSecureTableExpanded(value: Boolean) = updateUiSnapshot {
-        copy(secureTableExpanded = value)
-    }
+    fun updateSecureTableExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(secureTableExpanded = value)
+        }
 
-    fun updateGlobalTableExpanded(value: Boolean) = updateUiSnapshot {
-        copy(globalTableExpanded = value)
-    }
+    fun updateGlobalTableExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(globalTableExpanded = value)
+        }
 
-    fun updateAndroidPropsExpanded(value: Boolean) = updateUiSnapshot {
-        copy(androidPropsExpanded = value)
-    }
+    fun updateAndroidPropsExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(androidPropsExpanded = value)
+        }
 
-    fun updateJavaPropsExpanded(value: Boolean) = updateUiSnapshot {
-        copy(javaPropsExpanded = value)
-    }
+    fun updateJavaPropsExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(javaPropsExpanded = value)
+        }
 
-    fun updateLinuxEnvExpanded(value: Boolean) = updateUiSnapshot {
-        copy(linuxEnvExpanded = value)
-    }
+    fun updateLinuxEnvExpanded(value: Boolean) =
+        updateUiSnapshot {
+            copy(linuxEnvExpanded = value)
+        }
 
     private fun updateUiSnapshot(reducer: OsUiSnapshot.() -> OsUiSnapshot) {
         persistentState.update { state ->

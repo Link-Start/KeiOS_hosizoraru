@@ -1,8 +1,11 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
@@ -10,13 +13,17 @@ import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 
+private val BaCatalogSortMenuMinWidth = 184.dp
+private val BaCatalogSortMenuMaxWidth = 216.dp
+private val BaCatalogSortMenuMaxHeight = 336.dp
+
 @Composable
 internal fun BaGuideCatalogSortActionPopup(
     show: Boolean,
     anchorBounds: IntRect?,
     sortMode: BaGuideCatalogSortMode,
     onDismissRequest: () -> Unit,
-    onSelectSortMode: (BaGuideCatalogSortMode) -> Unit
+    onSelectSortMode: (BaGuideCatalogSortMode) -> Unit,
 ) {
     if (!show) return
     SnapshotWindowListPopup(
@@ -25,9 +32,13 @@ internal fun BaGuideCatalogSortActionPopup(
         anchorBounds = anchorBounds,
         placement = SnapshotPopupPlacement.ActionBarCenter,
         onDismissRequest = onDismissRequest,
-        enableWindowDim = false
+        enableWindowDim = false,
     ) {
-        LiquidGlassDropdownColumn {
+        LiquidGlassDropdownColumn(
+            minWidth = BaCatalogSortMenuMinWidth,
+            maxWidth = BaCatalogSortMenuMaxWidth,
+            maxHeight = BaCatalogSortMenuMaxHeight,
+        ) {
             val modes = BaGuideCatalogSortMode.entries
             modes.forEachIndexed { index, mode ->
                 LiquidGlassDropdownSingleChoiceItem(
@@ -37,7 +48,7 @@ internal fun BaGuideCatalogSortActionPopup(
                     index = index,
                     onSelectedIndexChange = { selectedIndex ->
                         onSelectSortMode(modes[selectedIndex])
-                    }
+                    },
                 )
             }
         }

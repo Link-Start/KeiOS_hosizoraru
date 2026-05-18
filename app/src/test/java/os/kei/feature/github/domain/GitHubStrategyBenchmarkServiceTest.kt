@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -17,7 +18,7 @@ import kotlin.test.assertTrue
 
 class GitHubStrategyBenchmarkServiceTest {
     @Test
-    fun `benchmark runs strategies concurrently`() {
+    fun `benchmark runs strategies concurrently`() = runBlocking {
         val activeLoads = AtomicInteger(0)
         val maxActiveLoads = AtomicInteger(0)
         val firstColdWave = CountDownLatch(2)
@@ -37,7 +38,7 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark runs targets concurrently within each strategy`() {
+    fun `benchmark runs targets concurrently within each strategy`() = runBlocking {
         val activeLoads = AtomicInteger(0)
         val maxActiveLoads = AtomicInteger(0)
         val firstColdWave = CountDownLatch(2)
@@ -102,7 +103,7 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark keeps exported track fixture bounded across dual mode tasks`() {
+    fun `benchmark keeps exported track fixture bounded across dual mode tasks`() = runBlocking {
         val items = GitHubTrackExportFixture.trackedItems
         val expectedTargetCount = GitHubTrackExportFixture.gitHubRepositoryItems
             .distinctBy { item -> "${item.owner.lowercase()}/${item.repo.lowercase()}" }
@@ -186,7 +187,7 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark includes package and repository scan samples`() {
+    fun `benchmark includes package and repository scan samples`() = runBlocking {
         val runner = benchmarkRunner(
             strategyId = "atom",
             activeLoads = AtomicInteger(0),
@@ -229,7 +230,7 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark includes release asset notes and apk manifest samples`() {
+    fun `benchmark includes release asset notes and apk manifest samples`() = runBlocking {
         val runner = benchmarkRunner(
             strategyId = "atom",
             activeLoads = AtomicInteger(0),
@@ -289,7 +290,7 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark runs extended dual mode tasks concurrently`() {
+    fun `benchmark runs extended dual mode tasks concurrently`() = runBlocking {
         val activeLoads = AtomicInteger(0)
         val maxActiveLoads = AtomicInteger(0)
         val firstExtraWave = CountDownLatch(3)
@@ -343,11 +344,11 @@ class GitHubStrategyBenchmarkServiceTest {
         activeLoads: AtomicInteger,
         maxActiveLoads: AtomicInteger,
         firstColdWave: CountDownLatch,
-        loadReleaseAssets: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
-        loadReleaseNotes: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
-        inspectApkManifest: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo>)? = null,
-        scanPackageName: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null,
-        scanRepository: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null
+        loadReleaseAssets: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
+        loadReleaseNotes: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
+        inspectApkManifest: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo>)? = null,
+        scanPackageName: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null,
+        scanRepository: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null
     ): GitHubStrategyBenchmarkRunner {
         return GitHubStrategyBenchmarkRunner(
             strategyId = strategyId,

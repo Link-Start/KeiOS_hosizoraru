@@ -1,7 +1,5 @@
 package os.kei.feature.github.data.remote
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.apk.RemoteZipEntryReader
 import os.kei.feature.github.data.apk.RemoteZipSelectedEntries
@@ -17,7 +15,7 @@ import java.security.cert.X509Certificate
 internal class GitHubApkManifestReader(
     private val zipEntryReader: RemoteZipEntryReader = RemoteZipEntryReader()
 ) {
-    fun inspect(
+    suspend fun inspect(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> = runCatching {
@@ -40,7 +38,7 @@ internal class GitHubApkManifestReader(
         )
     }
 
-    fun readPackageName(
+    suspend fun readPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<String> {
@@ -49,7 +47,7 @@ internal class GitHubApkManifestReader(
         }
     }
 
-    fun readNestedApkPackageName(
+    suspend fun readNestedApkPackageName(
         asset: GitHubReleaseAssetFile,
         nestedApkEntryName: String,
         lookupConfig: GitHubLookupConfig
@@ -66,7 +64,7 @@ internal class GitHubApkManifestReader(
         }
     }
 
-    fun readSelectedNestedApkPackageName(
+    suspend fun readSelectedNestedApkPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,
         selectNestedApkEntryNames: (List<String>) -> List<String>
@@ -87,14 +85,14 @@ internal class GitHubApkManifestReader(
         return AndroidBinaryXmlPackageNameParser.parsePackageName(manifestBytes)
     }
 
-    fun readAndroidManifestBytes(
+    suspend fun readAndroidManifestBytes(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray> {
         return readAndroidManifestPayload(asset, lookupConfig).map { it.value }
     }
 
-    fun listEntryNames(
+    suspend fun listEntryNames(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<List<String>> {
@@ -103,7 +101,7 @@ internal class GitHubApkManifestReader(
         }.map { it.value }
     }
 
-    private fun readAndroidManifestPayload(
+    private suspend fun readAndroidManifestPayload(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ManifestReadPayload<ByteArray>> {
@@ -116,7 +114,7 @@ internal class GitHubApkManifestReader(
         }
     }
 
-    private fun readInspectPayload(
+    private suspend fun readInspectPayload(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ManifestReadPayload<RemoteZipSelectedEntries>> {
@@ -156,7 +154,7 @@ internal class GitHubApkManifestReader(
         )
     }
 
-    private fun <T> readWithFallback(
+    private suspend fun <T> readWithFallback(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,
         read: (String, String) -> Result<T>
@@ -178,7 +176,7 @@ internal class GitHubApkManifestReader(
         )
     }
 
-    private fun resolveReadTargets(
+    private suspend fun resolveReadTargets(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): List<ApkManifestReadTarget> {
@@ -188,13 +186,11 @@ internal class GitHubApkManifestReader(
                     token.isNotBlank() &&
                     asset.apiAssetUrl.isNotBlank()
         val apiTarget = if (canUseApiAsset) {
-            runBlocking(Dispatchers.IO) {
-                GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-                    asset = asset,
-                    useApiAssetUrl = true,
-                    apiToken = token
-                )
-            }.getOrNull()?.let { url ->
+            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
+                asset = asset,
+                useApiAssetUrl = true,
+                apiToken = token
+            ).getOrNull()?.let { url ->
                 ApkManifestReadTarget(
                     url = url,
                     token = token,

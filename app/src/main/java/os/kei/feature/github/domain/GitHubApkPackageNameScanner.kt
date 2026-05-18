@@ -25,20 +25,20 @@ internal data class GitHubStableReleaseApkAssets(
 )
 
 internal interface GitHubApkPackageNameScanSource {
-    fun loadLatestStableRelease(
+    suspend fun loadLatestStableRelease(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubStableReleaseTarget>
 
-    fun fetchApkAssets(
+    suspend fun fetchApkAssets(
         owner: String,
         repo: String,
         release: GitHubStableReleaseTarget,
         lookupConfig: GitHubLookupConfig
     ): Result<List<GitHubReleaseAssetFile>>
 
-    fun loadLatestStableApkAssets(
+    suspend fun loadLatestStableApkAssets(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -60,7 +60,7 @@ internal interface GitHubApkPackageNameScanSource {
         )
     }
 
-    fun readAndroidManifestBytes(
+    suspend fun readAndroidManifestBytes(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray>

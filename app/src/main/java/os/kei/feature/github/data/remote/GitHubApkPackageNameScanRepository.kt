@@ -1,7 +1,5 @@
 package os.kei.feature.github.data.remote
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.domain.GitHubApkPackageNameScanSource
 import os.kei.feature.github.domain.GitHubStableReleaseApkAssets
 import os.kei.feature.github.domain.GitHubStableReleaseTarget
@@ -12,7 +10,7 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 internal class GitHubApkPackageNameScanRepository(
     private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
 ) : GitHubApkPackageNameScanSource {
-    override fun loadLatestStableRelease(
+    override suspend fun loadLatestStableRelease(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -42,7 +40,7 @@ internal class GitHubApkPackageNameScanRepository(
         )
     }
 
-    override fun loadLatestStableApkAssets(
+    override suspend fun loadLatestStableApkAssets(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -78,19 +76,17 @@ internal class GitHubApkPackageNameScanRepository(
         }
     }
 
-    private fun loadLatestStableApkAssetsFromApi(
+    private suspend fun loadLatestStableApkAssetsFromApi(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubStableReleaseApkAssets> {
-        return runBlocking(Dispatchers.IO) {
-            GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
-                owner = owner,
-                repo = repo,
-                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                apiToken = lookupConfig.apiToken
-            )
-        }.map { bundle ->
+        return GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
+            owner = owner,
+            repo = repo,
+            aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+            apiToken = lookupConfig.apiToken
+        ).map { bundle ->
             GitHubStableReleaseApkAssets(
                 release = GitHubStableReleaseTarget(
                     tag = bundle.tagName,
@@ -105,7 +101,7 @@ internal class GitHubApkPackageNameScanRepository(
         }
     }
 
-    private fun loadLatestStableApkAssetsFromSelectedStrategy(
+    private suspend fun loadLatestStableApkAssetsFromSelectedStrategy(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -121,31 +117,29 @@ internal class GitHubApkPackageNameScanRepository(
         }
     }
 
-    override fun fetchApkAssets(
+    override suspend fun fetchApkAssets(
         owner: String,
         repo: String,
         release: GitHubStableReleaseTarget,
         lookupConfig: GitHubLookupConfig
     ): Result<List<GitHubReleaseAssetFile>> {
-        return runBlocking(Dispatchers.IO) {
-            GitHubReleaseAssetRepository.fetchApkAssets(
-                owner = owner,
-                repo = repo,
-                rawTag = release.tag,
-                releaseUrl = release.releaseUrl,
-                preferHtml = lookupConfig.scanPreferHtmlAssets,
-                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                includeAllAssets = false,
-                apiToken = lookupConfig.apiToken
-            )
-        }.map { bundle ->
+        return GitHubReleaseAssetRepository.fetchApkAssets(
+            owner = owner,
+            repo = repo,
+            rawTag = release.tag,
+            releaseUrl = release.releaseUrl,
+            preferHtml = lookupConfig.scanPreferHtmlAssets,
+            aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+            includeAllAssets = false,
+            apiToken = lookupConfig.apiToken
+        ).map { bundle ->
             bundle.assets.filter { asset ->
                 asset.name.endsWith(".apk", ignoreCase = true)
             }
         }
     }
 
-    override fun readAndroidManifestBytes(
+    override suspend fun readAndroidManifestBytes(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ByteArray> {

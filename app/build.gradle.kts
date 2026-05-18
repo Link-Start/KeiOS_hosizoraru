@@ -153,6 +153,7 @@ val mmkvVersion = "2.4.0"
 val mcpKotlinSdkVersion = "0.12.0"
 val ktorVersion = "3.5.0"
 val okhttpVersion = "5.3.2"
+val kotlinxSerializationJsonVersion = "1.8.1"
 val jsonVersion = "20251224"
 val xmlPullVersion = "1.1.3.4d_b4_min"
 val kxml2Version = "2.3.0"
@@ -181,6 +182,7 @@ plugins {
     id("com.android.application")
     id("io.github.takahirom.roborazzi")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("androidx.baselineprofile")
 }
 
@@ -386,7 +388,7 @@ dependencies {
     implementation("io.modelcontextprotocol:kotlin-sdk:$mcpKotlinSdkVersion")
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
     implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
-    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:$okhttpVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationJsonVersion")
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-session:$media3Version")
     implementation("androidx.media3:media3-ui:$media3Version")

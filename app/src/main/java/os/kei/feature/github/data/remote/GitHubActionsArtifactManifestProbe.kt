@@ -6,7 +6,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 internal class GitHubActionsArtifactManifestProbe(
     private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
 ) {
-    fun readPackageName(
+    suspend fun readPackageName(
         artifact: GitHubActionsArtifact,
         resolvedDownloadUrl: String,
         lookupConfig: GitHubLookupConfig
@@ -28,7 +28,7 @@ internal class GitHubActionsArtifactManifestProbe(
             ?: readDirectPackageName(asset, lookupConfig).getOrThrow()
     }
 
-    private fun readDirectPackageName(
+    private suspend fun readDirectPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<String> {
@@ -38,7 +38,7 @@ internal class GitHubActionsArtifactManifestProbe(
         ).mapCatching(::validatedPackageName)
     }
 
-    private fun readNestedApkPackageName(
+    private suspend fun readNestedApkPackageName(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<String> {

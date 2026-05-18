@@ -1,7 +1,5 @@
 package os.kei.feature.github.domain
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
@@ -63,7 +61,7 @@ object GitHubStrategyBenchmarkService {
             .take(limit)
     }
 
-    fun compareTargets(
+    suspend fun compareTargets(
         targets: List<GitHubRepoTarget>,
         apiToken: String = ""
     ): GitHubStrategyBenchmarkReport {
@@ -136,7 +134,7 @@ object GitHubStrategyBenchmarkService {
         )
     }
 
-    internal fun compareTargetsWithRunners(
+    internal suspend fun compareTargetsWithRunners(
         targets: List<GitHubRepoTarget>,
         runners: List<GitHubStrategyBenchmarkRunner>,
         maxConcurrency: Int = DEFAULT_BENCHMARK_CONCURRENCY
@@ -161,7 +159,7 @@ object GitHubStrategyBenchmarkService {
         )
     }
 
-    private fun GitHubStrategyBenchmarkRunner.run(
+    private suspend fun GitHubStrategyBenchmarkRunner.run(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): GitHubStrategyBenchmarkResult {
@@ -190,12 +188,12 @@ object GitHubStrategyBenchmarkService {
         )
     }
 
-    private fun GitHubStrategyBenchmarkRunner.loadExtraSamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.loadExtraSamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<List<SampleEnvelope>> {
         val assetTargets = targets.take(DEFAULT_ASSET_TARGET_LIMIT)
-        val tasks = listOf<() -> List<SampleEnvelope>>(
+        val tasks = listOf<suspend () -> List<SampleEnvelope>>(
             {
                 loadReleaseAssetsSamples(
                     targets = assetTargets,
@@ -237,7 +235,7 @@ object GitHubStrategyBenchmarkService {
         ) { task -> task() }
     }
 
-    private fun GitHubStrategyBenchmarkRunner.loadReleaseAssetsSamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.loadReleaseAssetsSamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<SampleEnvelope> {
@@ -250,7 +248,7 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun GitHubStrategyBenchmarkRunner.loadReleaseNotesSamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.loadReleaseNotesSamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<SampleEnvelope> {
@@ -263,7 +261,7 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun GitHubStrategyBenchmarkRunner.inspectApkManifestSamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.inspectApkManifestSamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<SampleEnvelope> {
@@ -276,7 +274,7 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun GitHubStrategyBenchmarkRunner.loadSamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.loadSamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<SampleEnvelope> {
@@ -288,7 +286,7 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun GitHubStrategyBenchmarkRunner.scanPackageNameSamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.scanPackageNameSamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<SampleEnvelope> {
@@ -301,7 +299,7 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun GitHubStrategyBenchmarkRunner.scanRepositorySamples(
+    private suspend fun GitHubStrategyBenchmarkRunner.scanRepositorySamples(
         targets: List<GitHubRepoTarget>,
         maxConcurrency: Int
     ): List<SampleEnvelope> {
@@ -314,12 +312,12 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun <T, R> runConcurrently(
+    private suspend fun <T, R> runConcurrently(
         items: List<T>,
         maxConcurrency: Int,
-        block: (T) -> R
+        block: suspend (T) -> R
     ): List<R> {
-        return GitHubExecution.mapOrderedBoundedBlocking(
+        return GitHubExecution.mapOrderedBounded(
             items = items,
             maxConcurrency = maxConcurrency,
             block = block
@@ -469,19 +467,17 @@ object GitHubStrategyBenchmarkService {
 
     private fun packageNameScanLoader(
         lookupConfig: GitHubLookupConfig
-    ): (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String> {
+    ): suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String> {
         val scanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
-                runBlocking(Dispatchers.IO) {
-                    scanner.scan(
-                        GitHubApkPackageNameScanRequest(
-                            repoUrl = target.normalizedRepoUrl,
-                            lookupConfig = lookupConfig,
-                            expectedPackageName = target.packageName
-                        )
+                scanner.scan(
+                    GitHubApkPackageNameScanRequest(
+                        repoUrl = target.normalizedRepoUrl,
+                        lookupConfig = lookupConfig,
+                        expectedPackageName = target.packageName
                     )
-                }.getOrThrow().packageName
+                ).getOrThrow().packageName
             }
         }
     }
@@ -489,7 +485,7 @@ object GitHubStrategyBenchmarkService {
     private fun releaseAssetsLoader(
         lookupConfig: GitHubLookupConfig,
         assetFetcher: GitHubBenchmarkReleaseAssetFetcher
-    ): (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle> {
+    ): suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle> {
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
                 assetFetcher.loadBundle(target, includeAllAssets = false)
@@ -500,7 +496,7 @@ object GitHubStrategyBenchmarkService {
     private fun releaseNotesLoader(
         lookupConfig: GitHubLookupConfig,
         assetFetcher: GitHubBenchmarkReleaseAssetFetcher
-    ): (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle> {
+    ): suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle> {
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
                 assetFetcher.loadBundle(target, includeAllAssets = true)
@@ -511,7 +507,7 @@ object GitHubStrategyBenchmarkService {
     private fun apkManifestLoader(
         lookupConfig: GitHubLookupConfig,
         assetFetcher: GitHubBenchmarkReleaseAssetFetcher
-    ): (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo> {
+    ): suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo> {
         val apkInfoRepository = GitHubApkInfoRepository()
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
@@ -519,37 +515,33 @@ object GitHubStrategyBenchmarkService {
                 val asset =
                     bundle.assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
                         ?: error("No APK asset found")
-                runBlocking(Dispatchers.IO) {
-                    apkInfoRepository.inspect(
-                        asset = asset,
-                        lookupConfig = lookupConfig
-                    )
-                }.getOrThrow()
+                apkInfoRepository.inspect(
+                    asset = asset,
+                    lookupConfig = lookupConfig
+                ).getOrThrow()
             }
         }
     }
 
     private fun repositoryScanLoader(
         lookupConfig: GitHubLookupConfig
-    ): (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String> {
+    ): suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String> {
         val resolver = GitHubPackageRepositoryResolver(
             discoverySource = GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken),
             packageNameScanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
         )
         return { target ->
             timedTrace(authMode = lookupConfig.authModeOrNull()) {
-                val result = runBlocking(Dispatchers.IO) {
-                    resolver.scanRepositoriesForPackage(
-                        GitHubPackageRepositoryScanRequest(
-                            packageName = target.packageName,
-                            appLabel = target.appLabel,
-                            preferredRepoUrl = target.normalizedRepoUrl,
-                            lookupConfig = lookupConfig,
-                            candidateLimit = 10,
-                            verificationLimit = 3
-                        )
+                val result = resolver.scanRepositoriesForPackage(
+                    GitHubPackageRepositoryScanRequest(
+                        packageName = target.packageName,
+                        appLabel = target.appLabel,
+                        preferredRepoUrl = target.normalizedRepoUrl,
+                        lookupConfig = lookupConfig,
+                        candidateLimit = 10,
+                        verificationLimit = 3
                     )
-                }.getOrThrow()
+                ).getOrThrow()
                 val match = result.matchedCandidates.firstOrNull()
                     ?: error("No matching repository found")
                 "${match.repository.owner}/${match.repository.repo}"
@@ -557,12 +549,12 @@ object GitHubStrategyBenchmarkService {
         }
     }
 
-    private fun <T> timedTrace(
+    private suspend fun <T> timedTrace(
         authMode: os.kei.feature.github.model.GitHubApiAuthMode?,
-        block: () -> T
+        block: suspend () -> T
     ): GitHubStrategyLoadTrace<T> {
         val startedAt = System.currentTimeMillis()
-        val result = runCatching(block)
+        val result = runCatching { block() }
         return GitHubStrategyLoadTrace(
             result = result,
             fromCache = false,
@@ -589,12 +581,12 @@ internal data class GitHubStrategyBenchmarkRunner(
     val strategyId: String,
     val displayName: String,
     val clearCaches: () -> Unit,
-    val load: (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot>,
-    val loadReleaseAssets: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
-    val loadReleaseNotes: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
-    val inspectApkManifest: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo>)? = null,
-    val scanPackageName: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null,
-    val scanRepository: ((GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null
+    val load: suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot>,
+    val loadReleaseAssets: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
+    val loadReleaseNotes: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubReleaseAssetBundle>)? = null,
+    val inspectApkManifest: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubApkManifestInfo>)? = null,
+    val scanPackageName: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null,
+    val scanRepository: (suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<String>)? = null
 )
 
 private class GitHubBenchmarkReleaseAssetFetcher(
@@ -606,7 +598,7 @@ private class GitHubBenchmarkReleaseAssetFetcher(
     private val bundleCache =
         ConcurrentHashMap<String, Result<GitHubReleaseAssetBundle>>()
 
-    fun loadBundle(
+    suspend fun loadBundle(
         target: GitHubRepoTarget,
         includeAllAssets: Boolean
     ): GitHubReleaseAssetBundle {
@@ -620,29 +612,28 @@ private class GitHubBenchmarkReleaseAssetFetcher(
             }
         }
         val key = "${target.id}|all=$includeAllAssets"
-        return bundleCache.computeIfAbsent(key) {
-            runCatching {
-                val release = loadSnapshotResult(target)
-                    .getOrThrow()
-                    .let { snapshot ->
-                        snapshot.latestStable.takeIf { snapshot.hasStableRelease }
-                            ?: snapshot.latestPreRelease
-                            ?: error("No release found")
-                    }
-                runBlocking(Dispatchers.IO) {
-                    GitHubReleaseAssetRepository.fetchApkAssets(
-                        owner = target.owner,
-                        repo = target.repo,
-                        rawTag = release.rawTag,
-                        releaseUrl = release.link,
-                        preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed,
-                        aggressiveFiltering = false,
-                        includeAllAssets = includeAllAssets,
-                        apiToken = lookupConfig.apiToken
-                    )
-                }.getOrThrow()
-            }
-        }.getOrThrow()
+        bundleCache[key]?.let { cached -> return cached.getOrThrow() }
+        val result = runCatching {
+            val release = loadSnapshotResult(target)
+                .getOrThrow()
+                .let { snapshot ->
+                    snapshot.latestStable.takeIf { snapshot.hasStableRelease }
+                        ?: snapshot.latestPreRelease
+                        ?: error("No release found")
+                }
+            GitHubReleaseAssetRepository.fetchApkAssets(
+                owner = target.owner,
+                repo = target.repo,
+                rawTag = release.rawTag,
+                releaseUrl = release.link,
+                preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed,
+                aggressiveFiltering = false,
+                includeAllAssets = includeAllAssets,
+                apiToken = lookupConfig.apiToken
+            ).getOrThrow()
+        }
+        bundleCache.putIfAbsent(key, result)
+        return (bundleCache[key] ?: result).getOrThrow()
     }
 
     private fun loadSnapshotResult(target: GitHubRepoTarget): Result<GitHubRepositoryReleaseSnapshot> {

@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.SharedHttpClient
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -666,11 +667,7 @@ class GitHubShizukuPackageInstaller(
 
     companion object {
         private val defaultClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
-                .followRedirects(true)
-                .followSslRedirects(true)
-                .retryOnConnectionFailure(true)
-                .build()
+            SharedHttpClient.base
         }
     }
 }

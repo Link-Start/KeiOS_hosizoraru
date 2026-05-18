@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
@@ -404,12 +405,10 @@ internal class GitHubDirectApkDirectoryIndexResolver(
         val versionInFileRegex = Regex(
             """(?i)(\d+(?:\.\d+){1,4})(?:[\s._-]*(alpha|beta|rc|preview|pre|nightly|canary|snapshot|unstable|dev)\s*([0-9]+)?)?"""
         )
-        val defaultClient: OkHttpClient = OkHttpClient.Builder()
+        val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
             .connectTimeout(12.seconds)
             .readTimeout(20.seconds)
             .callTimeout(28.seconds)
-            .followRedirects(true)
-            .followSslRedirects(true)
             .build()
     }
 }

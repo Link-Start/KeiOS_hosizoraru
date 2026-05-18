@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.core.io.SharedHttpClient
 import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
@@ -129,12 +130,10 @@ internal class GitHubDirectApkJsonFallbackResolver(
 
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
-        val defaultClient: OkHttpClient = OkHttpClient.Builder()
+        val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
             .connectTimeout(12.seconds)
             .readTimeout(20.seconds)
             .callTimeout(28.seconds)
-            .followRedirects(true)
-            .followSslRedirects(true)
             .build()
     }
 }

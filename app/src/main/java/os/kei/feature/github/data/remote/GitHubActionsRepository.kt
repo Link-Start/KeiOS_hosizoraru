@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactDownloadResolution
@@ -653,15 +654,9 @@ class GitHubActionsRepository(
         private val RAW_ANDROID_ARTIFACT_EXTENSIONS = setOf(".apk", ".apks", ".aab")
 
         private val githubClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
+            SharedHttpClient.base.newBuilder()
                 .callTimeout(18.seconds)
-                .connectTimeout(10.seconds)
                 .readTimeout(14.seconds)
-                .writeTimeout(10.seconds)
-                .retryOnConnectionFailure(true)
-                .followRedirects(true)
-                .followSslRedirects(true)
-                .fastFallback(true)
                 .build()
         }
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.yield
@@ -37,6 +38,7 @@ internal object GitHubExecution {
                     while (true) {
                         val index = nextIndex.getAndIncrement()
                         if (index >= items.size) break
+                        ensureActive()
                         results[index] = block(items[index])
                         yield()
                     }
@@ -79,6 +81,7 @@ internal object GitHubExecution {
                     while (true) {
                         val index = nextIndex.getAndIncrement()
                         if (index >= items.size) break
+                        ensureActive()
                         val result = try {
                             block(items[index])
                         } catch (error: Throwable) {

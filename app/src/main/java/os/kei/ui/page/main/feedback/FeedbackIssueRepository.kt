@@ -14,6 +14,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import os.kei.BuildConfig
+import os.kei.core.io.SharedHttpClient
 import os.kei.core.log.AppLogStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import java.text.SimpleDateFormat
@@ -25,7 +26,7 @@ private const val ISSUE_API_URL = "https://api.github.com/repos/hosizoraru/KeiOS
 internal class FeedbackIssueRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val httpClient: OkHttpClient = OkHttpClient()
+    private val httpClient: OkHttpClient = SharedHttpClient.base
 ) {
     suspend fun loadDeviceInfo(context: Context): FeedbackDeviceInfo {
         return withContext(ioDispatcher) {

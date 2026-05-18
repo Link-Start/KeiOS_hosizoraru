@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
@@ -265,12 +266,10 @@ internal class GitHubDirectApkVersionedDirectoryResolver(
         val versionSegmentRegex =
             Regex("""^[vV]?(\d+(?:\.\d+){1,4})(?:[-_]?([A-Za-z][A-Za-z0-9._-]*))?/?$""")
         val suffixNumberRegex = Regex("""\d+$""")
-        val defaultClient: OkHttpClient = OkHttpClient.Builder()
+        val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
             .connectTimeout(12.seconds)
             .readTimeout(20.seconds)
             .callTimeout(28.seconds)
-            .followRedirects(true)
-            .followSslRedirects(true)
             .build()
     }
 }

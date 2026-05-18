@@ -5,6 +5,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -454,15 +455,9 @@ class GitHubApiTokenReleaseStrategy(
             ConcurrentHashMap<String, GitHubApiCachedValue<Result<GitHubApiCredentialStatus>>>()
 
         private val githubClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
+            SharedHttpClient.base.newBuilder()
                 .callTimeout(18.seconds)
-                .connectTimeout(10.seconds)
                 .readTimeout(14.seconds)
-                .writeTimeout(10.seconds)
-                .retryOnConnectionFailure(true)
-                .followRedirects(true)
-                .followSslRedirects(true)
-                .fastFallback(true)
                 .build()
         }
 

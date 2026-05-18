@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONObject
+import os.kei.core.io.SharedHttpClient
 import kotlin.time.Duration.Companion.seconds
 
 internal class GitHubRepositoryProfileHttpClient(
@@ -120,15 +121,11 @@ internal class GitHubRepositoryProfileHttpClient(
         private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
 
         val githubClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
+            SharedHttpClient.base.newBuilder()
                 .callTimeout(18.seconds)
                 .connectTimeout(8.seconds)
                 .readTimeout(14.seconds)
                 .writeTimeout(8.seconds)
-                .retryOnConnectionFailure(true)
-                .followRedirects(true)
-                .followSslRedirects(true)
-                .fastFallback(true)
                 .build()
         }
     }

@@ -2,6 +2,7 @@ package os.kei.feature.github.data.apk
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.SharedHttpClient
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.util.zip.Inflater
@@ -623,15 +624,9 @@ internal class RemoteZipEntryReader(
         private const val DEFAULT_BUFFER_SIZE = 8 * 1024
 
         private val defaultClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
+            SharedHttpClient.base.newBuilder()
                 .callTimeout(18.seconds)
-                .connectTimeout(10.seconds)
                 .readTimeout(14.seconds)
-                .writeTimeout(10.seconds)
-                .retryOnConnectionFailure(true)
-                .followRedirects(true)
-                .followSslRedirects(true)
-                .fastFallback(true)
                 .build()
         }
     }

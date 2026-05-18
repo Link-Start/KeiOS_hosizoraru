@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
+import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseSignalSource
@@ -36,15 +37,9 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
     private val stableCache = ConcurrentHashMap<String, CachedValue<Result<GitHubAtomLatestStableLookup>>>()
 
     private val githubClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+        SharedHttpClient.base.newBuilder()
             .callTimeout(18.seconds)
-            .connectTimeout(10.seconds)
             .readTimeout(14.seconds)
-            .writeTimeout(10.seconds)
-            .retryOnConnectionFailure(true)
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .fastFallback(true)
             .build()
     }
 

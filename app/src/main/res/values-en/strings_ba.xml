@@ -197,6 +197,7 @@
     <string name="ba_catalog_tab_student_bgm">Music</string>
     <string name="ba_catalog_tab_student_bgm_short">Music</string>
     <string name="ba_catalog_tab_bgm">Play</string>
+    <string name="ba_catalog_action_filter">Filter students</string>
     <string name="ba_catalog_action_sort">Sort</string>
     <string name="ba_catalog_action_refresh">Refresh list</string>
     <string name="ba_catalog_action_transfer">Favorites data</string>
@@ -258,6 +259,7 @@
     <string name="ba_catalog_empty_title">No results</string>
     <string name="ba_catalog_empty_subtitle_default">No entries in this category.</string>
     <string name="ba_catalog_empty_subtitle_search">No matching entries.</string>
+    <string name="ba_catalog_empty_subtitle_filter">No students match the current filters.</string>
     <string name="ba_catalog_loading_more">Loading more entries…</string>
     <string name="ba_catalog_student_bgm_title">Student Memorial Lobby BGM</string>
     <string name="ba_catalog_student_bgm_overview_subtitle">Favorited students stay on top. Tap a student to fetch and preview.</string>
@@ -389,9 +391,16 @@
     <string name="ba_catalog_bgm_import_failed">BGM favorites import failed.</string>
     <string name="ba_catalog_cd_favorite_student">Favorite student</string>
     <string name="ba_catalog_cd_unfavorite_student">Unfavorite student</string>
+    <string name="ba_catalog_filter_all">All</string>
+    <string name="ba_catalog_filter_clear">Clear filters</string>
+    <string name="ba_catalog_filter_selected_count">%1$d selected</string>
     <string name="ba_catalog_sort_default">Default order</string>
     <string name="ba_catalog_sort_release_date_desc">Release date: newest first</string>
     <string name="ba_catalog_sort_release_date_asc">Release date: oldest first</string>
+    <string name="ba_catalog_sort_global_score_desc">Global score: high to low</string>
+    <string name="ba_catalog_sort_global_score_asc">Global score: low to high</string>
+    <string name="ba_catalog_sort_cn_score_desc">CN score: high to low</string>
+    <string name="ba_catalog_sort_cn_score_asc">CN score: low to high</string>
 
     <string name="guide_page_title_default">Student Guide</string>
     <string name="guide_media_save_success">Saved: %1$s</string>

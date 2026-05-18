@@ -1,9 +1,9 @@
 package os.kei.ui.page.main.student.catalog
 
 import com.tencent.mmkv.MMKV
-import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.core.prefs.KeiMmkv
 
 private const val BA_GUIDE_CATALOG_KV_ID = "ba_guide_catalog"
 private const val KEY_CACHE_RAW = "catalog_cache_raw"
@@ -11,7 +11,7 @@ private const val KEY_CACHE_SYNC_MS = "catalog_cache_sync_ms"
 private const val KEY_CACHE_VERSION = "catalog_cache_version"
 private const val KEY_FAVORITES_RAW = "catalog_favorites_raw"
 private const val KEY_RELEASE_DATE_INDEX_RAW = "catalog_release_date_index_raw"
-private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 2
+private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 3
 
 internal object BaGuideCatalogStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_CATALOG_KV_ID) }
@@ -20,40 +20,58 @@ internal object BaGuideCatalogStore {
 
     fun saveBundle(bundle: BaGuideCatalogBundle) {
         val store = kv()
-        val raw = JSONObject().apply {
-            put("syncedAtMs", bundle.syncedAtMs.coerceAtLeast(0L))
-            put(
-                "tabs",
-                JSONObject().apply {
-                    BaGuideCatalogTab.entries.forEach { tab ->
-                        put(
-                            tab.name,
-                            JSONArray().apply {
-                                bundle.entries(tab).forEach { entry ->
-                                    put(
-                                        JSONObject().apply {
-                                            put("entryId", entry.entryId)
-                                            put("pid", entry.pid)
-                                            put("contentId", entry.contentId)
-                                            put("name", entry.name)
-                                            put("alias", entry.alias)
-                                            put("aliasDisplay", entry.aliasDisplay)
-                                            put("iconUrl", entry.iconUrl)
-                                            put("type", entry.type)
-                                            put("order", entry.order)
-                                            put("createdAtSec", entry.createdAtSec)
-                                            put("releaseDateSec", entry.releaseDateSec)
-                                            put("releaseDateProbeAtMs", entry.releaseDateProbeAtMs)
-                                            put("detailUrl", entry.detailUrl)
+        val raw =
+            JSONObject()
+                .apply {
+                    put("syncedAtMs", bundle.syncedAtMs.coerceAtLeast(0L))
+                    put(
+                        "tabs",
+                        JSONObject().apply {
+                            BaGuideCatalogTab.entries.forEach { tab ->
+                                put(
+                                    tab.name,
+                                    JSONArray().apply {
+                                        bundle.entries(tab).forEach { entry ->
+                                            put(
+                                                JSONObject().apply {
+                                                    put("entryId", entry.entryId)
+                                                    put("pid", entry.pid)
+                                                    put("contentId", entry.contentId)
+                                                    put("name", entry.name)
+                                                    put("alias", entry.alias)
+                                                    put("aliasDisplay", entry.aliasDisplay)
+                                                    put("iconUrl", entry.iconUrl)
+                                                    put("type", entry.type)
+                                                    put("order", entry.order)
+                                                    put("createdAtSec", entry.createdAtSec)
+                                                    put("releaseDateSec", entry.releaseDateSec)
+                                                    put("releaseDateProbeAtMs", entry.releaseDateProbeAtMs)
+                                                    put("detailUrl", entry.detailUrl)
+                                                    put("filterAttributes", entry.filterAttributes.toJson())
+                                                },
+                                            )
                                         }
-                                    )
-                                }
+                                    },
+                                )
                             }
-                        )
-                    }
-                }
-            )
-        }.toString()
+                        },
+                    )
+                    put(
+                        "filterDefinitions",
+                        JSONObject().apply {
+                            BaGuideCatalogTab.entries.forEach { tab ->
+                                put(
+                                    tab.name,
+                                    JSONArray().apply {
+                                        bundle.filterDefinitions(tab).forEach { definition ->
+                                            put(definition.toJson())
+                                        }
+                                    },
+                                )
+                            }
+                        },
+                    )
+                }.toString()
         store.encode(KEY_CACHE_RAW, raw)
         store.encode(KEY_CACHE_SYNC_MS, bundle.syncedAtMs.coerceAtLeast(0L))
         store.encode(KEY_CACHE_VERSION, BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION)
@@ -70,55 +88,82 @@ internal object BaGuideCatalogStore {
         return runCatching {
             val root = JSONObject(raw)
             val tabsObj = root.optJSONObject("tabs") ?: JSONObject()
-            val entriesByTab = BaGuideCatalogTab.entries.associateWith { tab ->
-                val arr = tabsObj.optJSONArray(tab.name) ?: JSONArray()
-                buildList {
-                    for (index in 0 until arr.length()) {
-                        val item = arr.optJSONObject(index) ?: continue
-                        val contentId = item.optLong("contentId", 0L)
-                        val name = item.optString("name").trim()
-                        if (contentId <= 0L || name.isBlank()) continue
-                        val alias = item.optString("alias").trim()
-                        val aliasDisplay = item.optString("aliasDisplay").trim().ifBlank {
-                            alias
-                                .split(",")
-                                .map { it.trim() }
-                                .filter { it.isNotBlank() }
-                                .joinToString(" · ")
+            val definitionsObj = root.optJSONObject("filterDefinitions") ?: JSONObject()
+            val filterDefinitionsByTab =
+                BaGuideCatalogTab.entries.associateWith { tab ->
+                    val arr = definitionsObj.optJSONArray(tab.name) ?: JSONArray()
+                    buildList {
+                        for (index in 0 until arr.length()) {
+                            val definition = arr.optJSONObject(index).toFilterDefinitionOrNull()
+                            if (definition != null) add(definition)
                         }
-                        add(
-                            BaGuideCatalogEntry(
-                                entryId = item.optInt("entryId", 0),
-                                pid = item.optInt("pid", 0),
-                                contentId = contentId,
-                                name = name,
-                                alias = alias,
-                                aliasDisplay = aliasDisplay,
-                                iconUrl = item.optString("iconUrl").trim(),
-                                type = item.optInt("type", 0),
-                                order = item.optInt("order", index),
-                                createdAtSec = item.optLong("createdAtSec", 0L),
-                                releaseDateSec = item.optLong("releaseDateSec", 0L)
-                                    .takeIf { it > 0L }
-                                    ?: releaseDateIndex[contentId]
-                                    ?: 0L,
-                                releaseDateProbeAtMs = item.optLong("releaseDateProbeAtMs", 0L)
-                                    .coerceAtLeast(0L),
-                                detailUrl = item.optString("detailUrl").trim()
-                                    .ifBlank { "https://www.gamekee.com/ba/tj/$contentId.html" },
-                                tab = tab
-                            )
-                        )
                     }
                 }
-            }
-            val syncedAtMs = root.optLong(
-                "syncedAtMs",
-                store.decodeLong(KEY_CACHE_SYNC_MS, 0L)
-            ).coerceAtLeast(0L)
+            val entriesByTab =
+                BaGuideCatalogTab.entries.associateWith { tab ->
+                    val arr = tabsObj.optJSONArray(tab.name) ?: JSONArray()
+                    buildList {
+                        for (index in 0 until arr.length()) {
+                            val item = arr.optJSONObject(index) ?: continue
+                            val contentId = item.optLong("contentId", 0L)
+                            val name = item.optString("name").trim()
+                            if (contentId <= 0L || name.isBlank()) continue
+                            val alias = item.optString("alias").trim()
+                            val aliasDisplay =
+                                item.optString("aliasDisplay").trim().ifBlank {
+                                    alias
+                                        .split(",")
+                                        .map { it.trim() }
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(" · ")
+                                }
+                            add(
+                                BaGuideCatalogEntry(
+                                    entryId = item.optInt("entryId", 0),
+                                    pid = item.optInt("pid", 0),
+                                    contentId = contentId,
+                                    name = name,
+                                    alias = alias,
+                                    aliasDisplay = aliasDisplay,
+                                    iconUrl = item.optString("iconUrl").trim(),
+                                    type = item.optInt("type", 0),
+                                    order = item.optInt("order", index),
+                                    createdAtSec = item.optLong("createdAtSec", 0L),
+                                    releaseDateSec =
+                                        item
+                                            .optLong("releaseDateSec", 0L)
+                                            .takeIf { it > 0L }
+                                            ?: releaseDateIndex[contentId]
+                                            ?: 0L,
+                                    releaseDateProbeAtMs =
+                                        item
+                                            .optLong("releaseDateProbeAtMs", 0L)
+                                            .coerceAtLeast(0L),
+                                    detailUrl =
+                                        item
+                                            .optString("detailUrl")
+                                            .trim()
+                                            .ifBlank { "https://www.gamekee.com/ba/tj/$contentId.html" },
+                                    tab = tab,
+                                    filterAttributes =
+                                        BaGuideCatalogEntryFilterAttributes.fromJson(
+                                            item.optJSONObject("filterAttributes"),
+                                        ),
+                                ),
+                            )
+                        }
+                    }
+                }
+            val syncedAtMs =
+                root
+                    .optLong(
+                        "syncedAtMs",
+                        store.decodeLong(KEY_CACHE_SYNC_MS, 0L),
+                    ).coerceAtLeast(0L)
             BaGuideCatalogBundle(
                 entriesByTab = entriesByTab,
-                syncedAtMs = syncedAtMs
+                syncedAtMs = syncedAtMs,
+                filterDefinitionsByTab = filterDefinitionsByTab,
             )
         }.getOrNull()
     }
@@ -165,11 +210,13 @@ internal object BaGuideCatalogStore {
             }
         }
         if (merged.isEmpty()) return
-        val raw = JSONObject().apply {
-            merged.forEach { (contentId, releaseDateSec) ->
-                put(contentId.toString(), releaseDateSec)
-            }
-        }.toString()
+        val raw =
+            JSONObject()
+                .apply {
+                    merged.forEach { (contentId, releaseDateSec) ->
+                        put(contentId.toString(), releaseDateSec)
+                    }
+                }.toString()
         kv().encode(KEY_RELEASE_DATE_INDEX_RAW, raw)
     }
 
@@ -185,10 +232,9 @@ internal object BaGuideCatalogStore {
         }
     }
 
-    fun latestSyncedAtMs(): Long {
-        return loadBundle()?.syncedAtMs
+    fun latestSyncedAtMs(): Long =
+        loadBundle()?.syncedAtMs
             ?: kv().decodeLong(KEY_CACHE_SYNC_MS, 0L)
-    }
 
     fun actualDataBytes(): Long = kv().actualSize()
 
@@ -227,17 +273,22 @@ internal object BaGuideCatalogStore {
             kv().removeValueForKey(KEY_FAVORITES_RAW)
             return
         }
-        val raw = JSONObject().apply {
-            favorites.forEach { (contentId, favoritedAtMs) ->
-                if (contentId > 0L && favoritedAtMs > 0L) {
-                    put(contentId.toString(), favoritedAtMs)
-                }
-            }
-        }.toString()
+        val raw =
+            JSONObject()
+                .apply {
+                    favorites.forEach { (contentId, favoritedAtMs) ->
+                        if (contentId > 0L && favoritedAtMs > 0L) {
+                            put(contentId.toString(), favoritedAtMs)
+                        }
+                    }
+                }.toString()
         kv().encode(KEY_FAVORITES_RAW, raw)
     }
 
-    fun toggleFavorite(contentId: Long, nowMs: Long = System.currentTimeMillis()): Boolean {
+    fun toggleFavorite(
+        contentId: Long,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Boolean {
         if (contentId <= 0L) return false
         val current = loadFavorites().toMutableMap()
         return if (current.containsKey(contentId)) {
@@ -250,4 +301,54 @@ internal object BaGuideCatalogStore {
             true
         }
     }
+}
+
+private fun BaGuideCatalogFilterDefinition.toJson(): JSONObject =
+    JSONObject().apply {
+        put("id", id)
+        put("name", name)
+        put("type", type)
+        put(
+            "options",
+            JSONArray().apply {
+                options.forEach { option ->
+                    put(
+                        JSONObject().apply {
+                            put("id", option.id)
+                            put("name", option.name)
+                            put("iconUrl", option.iconUrl)
+                        },
+                    )
+                }
+            },
+        )
+    }
+
+private fun JSONObject?.toFilterDefinitionOrNull(): BaGuideCatalogFilterDefinition? {
+    this ?: return null
+    val id = optInt("id", 0)
+    val name = optString("name").trim()
+    if (id <= 0 || name.isBlank()) return null
+    val rawOptions = optJSONArray("options") ?: JSONArray()
+    return BaGuideCatalogFilterDefinition(
+        id = id,
+        name = name,
+        type = optInt("type", 0),
+        options =
+            buildList {
+                for (index in 0 until rawOptions.length()) {
+                    val item = rawOptions.optJSONObject(index) ?: continue
+                    val optionId = item.optInt("id", 0)
+                    val optionName = item.optString("name").trim()
+                    if (optionId <= 0 || optionName.isBlank()) continue
+                    add(
+                        BaGuideCatalogFilterOption(
+                            id = optionId,
+                            name = optionName,
+                            iconUrl = item.optString("iconUrl").trim(),
+                        ),
+                    )
+                }
+            },
+    )
 }

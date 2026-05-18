@@ -212,8 +212,20 @@ fun BaGuideCatalogPage(
     val chromeActiveTab = tabs.getOrElse(chromeActivePageIndex) { BaGuideCatalogPageTab.Student }
     LaunchedEffect(chromeActiveTab) {
         chromeScrollState.expand()
+        if (chromeActiveTab.catalogTab != BaGuideCatalogTab.Student) {
+            filterSortState.showFilterPopup = false
+        }
     }
     val chromeCurrentTitle = stringResource(id = chromeActiveTab.labelRes)
+    val chromeFilterDefinitions =
+        remember(catalogDataState.catalog, chromeActiveTab) {
+            chromeActiveTab.catalogTab
+                ?.takeIf { it == BaGuideCatalogTab.Student }
+                ?.let { tab ->
+                    catalogDataState.catalog.filterDefinitions(tab).filter { it.type == 0 }
+                }.orEmpty()
+        }
+    val chromeFilterEnabled = chromeFilterDefinitions.isNotEmpty()
     val chromeSearchQuery = searchQueries[chromeActiveTab.name].orEmpty()
     val chromeSearchPlaceholder =
         stringResource(
@@ -412,9 +424,17 @@ fun BaGuideCatalogPage(
                 onBack = onBack,
                 showSortPopup = filterSortState.showSortPopup,
                 sortMode = filterSortState.sortMode,
-                onSort = { filterSortState.showSortPopup = true },
+                showFilterPopup = filterSortState.showFilterPopup,
+                filterEnabled = chromeFilterEnabled,
+                filterDefinitions = chromeFilterDefinitions,
+                selectedFilterOptions = filterSortState.selectedFilterOptions,
+                onSort = filterSortState::openSortPopup,
                 onDismissSort = { filterSortState.showSortPopup = false },
                 onSelectSortMode = filterSortState::selectSortMode,
+                onFilter = filterSortState::openFilterPopup,
+                onDismissFilter = { filterSortState.showFilterPopup = false },
+                onToggleFilterOption = filterSortState::toggleFilterOption,
+                onClearFilters = filterSortState::clearFilters,
                 onTransfer = { showTransferSheet = true },
                 onRefresh = catalogViewModel::requestRefresh,
                 backdrop = pageChromeBackdrop,

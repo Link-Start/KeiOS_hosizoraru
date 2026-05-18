@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Box
@@ -39,59 +41,70 @@ internal fun BaGuideCatalogTabContent(
     renderHeavyContent: Boolean,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
-    onOpenGuide: (String) -> Unit
+    onOpenGuide: (String) -> Unit,
 ) {
     if (!renderHeavyContent) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                    bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                    start = AppChromeTokens.pageHorizontalPadding,
-                    end = AppChromeTokens.pageHorizontalPadding
-                ),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                        bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = stringResource(tab.labelRes),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = 13.sp
+                fontSize = 13.sp,
             )
         }
         return
     }
 
-    val tabListState = rememberBaGuideCatalogTabListState(
-        tab = tab,
-        catalog = catalog,
-        sortMode = filterSortState.sortMode,
-        favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
-        searchQuery = filterSortState.searchQuery,
-        loading = loading,
-        isPageActive = isPageActive
-    )
-    val tabContentUiState = rememberBaGuideCatalogTabContentUiState(
-        tab = tab,
-        searchQuery = filterSortState.searchQuery,
-        loading = loading,
-        error = error,
-        filteredEntriesEmpty = tabListState.filteredEntries.isEmpty()
-    )
+    val tabListState =
+        rememberBaGuideCatalogTabListState(
+            tab = tab,
+            catalog = catalog,
+            sortMode = filterSortState.sortMode,
+            favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
+            selectedFilterOptions = filterSortState.selectedFilterOptions,
+            searchQuery = filterSortState.searchQuery,
+            loading = loading,
+            isPageActive = isPageActive,
+        )
+    val tabContentUiState =
+        rememberBaGuideCatalogTabContentUiState(
+            tab = tab,
+            searchQuery = filterSortState.searchQuery,
+            activeFilterCount =
+                if (tab == BaGuideCatalogTab.Student) {
+                    filterSortState.activeFilterCount
+                } else {
+                    0
+                },
+            loading = loading,
+            error = error,
+            filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
+        )
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow {
-            tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
-        }
-            .distinctUntilChanged()
+        snapshotFlowManager
+            .snapshotFlow {
+                tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
+            }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
     LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow { tabListState.listState.isScrollInProgress }
+        snapshotFlowManager
+            .snapshotFlow { tabListState.listState.isScrollInProgress }
             .distinctUntilChanged()
             .collect { scrolling ->
                 onListScrollInProgressChange(scrolling)
@@ -109,6 +122,6 @@ internal fun BaGuideCatalogTabContent(
         hasMoreEntries = tabListState.hasMoreEntries,
         favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
         onOpenGuide = onOpenGuide,
-        onToggleFavorite = filterSortState::toggleFavorite
+        onToggleFavorite = filterSortState::toggleFavorite,
     )
 }

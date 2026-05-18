@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Arrangement
@@ -34,66 +36,77 @@ internal fun BaGuideCatalogV2ListContent(
     nestedScrollConnection: NestedScrollConnection,
     isPageActive: Boolean,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
-    onOpenGuide: (String) -> Unit
+    onOpenGuide: (String) -> Unit,
 ) {
-    val tabListState = rememberBaGuideCatalogTabListState(
-        tab = tab,
-        catalog = catalog,
-        sortMode = filterSortState.sortMode,
-        favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
-        searchQuery = searchQuery,
-        loading = loading,
-        isPageActive = isPageActive
-    )
-    val uiState = rememberBaGuideCatalogTabContentUiState(
-        tab = tab,
-        searchQuery = searchQuery,
-        loading = loading,
-        error = error,
-        filteredEntriesEmpty = tabListState.filteredEntries.isEmpty()
-    )
+    val tabListState =
+        rememberBaGuideCatalogTabListState(
+            tab = tab,
+            catalog = catalog,
+            sortMode = filterSortState.sortMode,
+            favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
+            selectedFilterOptions = filterSortState.selectedFilterOptions,
+            searchQuery = searchQuery,
+            loading = loading,
+            isPageActive = isPageActive,
+        )
+    val uiState =
+        rememberBaGuideCatalogTabContentUiState(
+            tab = tab,
+            searchQuery = searchQuery,
+            activeFilterCount =
+                if (tab == BaGuideCatalogTab.Student) {
+                    filterSortState.activeFilterCount
+                } else {
+                    0
+                },
+            loading = loading,
+            error = error,
+            filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
+        )
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow {
-            tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
-        }
-            .distinctUntilChanged()
+        snapshotFlowManager
+            .snapshotFlow {
+                tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
+            }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
     LazyColumn(
         state = tabListState.listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection),
-        contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-            bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-            start = AppChromeTokens.pageHorizontalPadding,
-            end = AppChromeTokens.pageHorizontalPadding
-        ),
-        verticalArrangement = Arrangement.spacedBy(AppChromeTokens.pageSectionGap)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
+        contentPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+                start = AppChromeTokens.pageHorizontalPadding,
+                end = AppChromeTokens.pageHorizontalPadding,
+            ),
+        verticalArrangement = Arrangement.spacedBy(AppChromeTokens.pageSectionGap),
     ) {
         if (uiState.showError) {
             item(
                 key = "ba-guide-catalog-error-${tab.name}",
-                contentType = "ba_guide_catalog_status"
+                contentType = "ba_guide_catalog_status",
             ) {
                 LiquidInfoBlock(
                     backdrop = null,
                     title = uiState.syncStatusTitle,
                     subtitle = uiState.errorText,
                     body = uiState.syncStatusBody,
-                    accent = Color(0xFFEF4444)
+                    accent = Color(0xFFEF4444),
                 )
             }
         }
         if (uiState.showLoading) {
             item(
                 key = "ba-guide-catalog-loading-${tab.name}",
-                contentType = "ba_guide_catalog_loading"
+                contentType = "ba_guide_catalog_loading",
             ) {
                 AppAronaLoadingPanel(accent = accent)
             }
@@ -101,13 +114,13 @@ internal fun BaGuideCatalogV2ListContent(
         if (uiState.showEmpty) {
             item(
                 key = "ba-guide-catalog-empty-${tab.name}",
-                contentType = "ba_guide_catalog_status"
+                contentType = "ba_guide_catalog_status",
             ) {
                 LiquidInfoBlock(
                     backdrop = null,
                     title = uiState.emptyTitle,
                     subtitle = uiState.emptySubtitle,
-                    accent = accent
+                    accent = accent,
                 )
             }
         } else if (!uiState.showLoading) {
@@ -118,7 +131,7 @@ internal fun BaGuideCatalogV2ListContent(
                 accent = accent,
                 loadingMoreText = uiState.loadingMoreText,
                 onOpenGuide = onOpenGuide,
-                onToggleFavorite = filterSortState::toggleFavorite
+                onToggleFavorite = filterSortState::toggleFavorite,
             )
         }
     }

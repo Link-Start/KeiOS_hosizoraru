@@ -27,6 +27,8 @@ private const val BA_GUIDE_SECOND_PAGE_ID = 23941
 private const val BA_GUIDE_STUDENT_PID = 49443
 private const val BA_GUIDE_NPC_SATELLITE_PID = 107619
 private const val BA_GUIDE_INDEX_REFERER_PATH = "/ba/second/$BA_GUIDE_SECOND_PAGE_ID"
+private const val BA_GUIDE_STUDENT_FILTER_INDEX_PATH =
+    "/v1/entryFilter/getEntryFilter?entry_id=$BA_GUIDE_STUDENT_PID"
 private const val BA_GUIDE_RELEASE_INDEX_MAX_NETWORK_FETCH_PER_PASS = 24
 private const val BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE = 6
 private const val BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS = 120L
@@ -38,17 +40,17 @@ private var cachedCatalogBundle: BaGuideCatalogBundle? = null
 internal enum class BaGuideCatalogTab(
     val label: String,
     @param:StringRes val labelRes: Int,
-    val iconRes: Int
+    val iconRes: Int,
 ) {
     Student(
         label = "实装学生",
         labelRes = R.string.ba_catalog_tab_student,
-        iconRes = R.drawable.ba_tab_profile
+        iconRes = R.drawable.ba_tab_profile,
     ),
     NpcSatellite(
         label = "NPC及卫星",
         labelRes = R.string.ba_catalog_tab_npc_satellite,
-        iconRes = R.drawable.ba_tab_skill
+        iconRes = R.drawable.ba_tab_skill,
     ),
 }
 
@@ -66,22 +68,28 @@ internal data class BaGuideCatalogEntry(
     val releaseDateSec: Long = 0L,
     val releaseDateProbeAtMs: Long = 0L,
     val detailUrl: String,
-    val tab: BaGuideCatalogTab
+    val tab: BaGuideCatalogTab,
+    val filterAttributes: BaGuideCatalogEntryFilterAttributes =
+        BaGuideCatalogEntryFilterAttributes.EMPTY,
 )
 
 internal data class BaGuideCatalogBundle(
     val entriesByTab: Map<BaGuideCatalogTab, List<BaGuideCatalogEntry>>,
-    val syncedAtMs: Long
+    val syncedAtMs: Long,
+    val filterDefinitionsByTab: Map<BaGuideCatalogTab, List<BaGuideCatalogFilterDefinition>> =
+        emptyMap(),
 ) {
-    fun entries(tab: BaGuideCatalogTab): List<BaGuideCatalogEntry> {
-        return entriesByTab[tab].orEmpty()
-    }
+    fun entries(tab: BaGuideCatalogTab): List<BaGuideCatalogEntry> = entriesByTab[tab].orEmpty()
+
+    fun filterDefinitions(tab: BaGuideCatalogTab): List<BaGuideCatalogFilterDefinition> = filterDefinitionsByTab[tab].orEmpty()
 
     companion object {
-        val EMPTY = BaGuideCatalogBundle(
-            entriesByTab = BaGuideCatalogTab.entries.associateWith { emptyList() },
-            syncedAtMs = 0L
-        )
+        val EMPTY =
+            BaGuideCatalogBundle(
+                entriesByTab = BaGuideCatalogTab.entries.associateWith { emptyList() },
+                syncedAtMs = 0L,
+                filterDefinitionsByTab = emptyMap(),
+            )
     }
 }
 
@@ -94,22 +102,20 @@ private data class RawEntry(
     val iconUrl: String,
     val type: Int,
     val order: Int,
-    val createdAtSec: Long
+    val createdAtSec: Long,
 )
 
 private data class CatalogReleaseDatePatch(
     val releaseDateSecByContentId: Map<Long, Long> = emptyMap(),
-    val probeAtMsByContentId: Map<Long, Long> = emptyMap()
+    val probeAtMsByContentId: Map<Long, Long> = emptyMap(),
 ) {
-    fun isEmpty(): Boolean {
-        return releaseDateSecByContentId.isEmpty() && probeAtMsByContentId.isEmpty()
-    }
+    fun isEmpty(): Boolean = releaseDateSecByContentId.isEmpty() && probeAtMsByContentId.isEmpty()
 }
 
 private data class CatalogReleaseDateProbeResult(
     val contentId: Long,
     val probeAtMs: Long,
-    val releaseDateSec: Long
+    val releaseDateSec: Long,
 )
 
 internal fun loadCachedBaGuideCatalogBundle(): BaGuideCatalogBundle? {
@@ -124,18 +130,19 @@ internal fun isBaGuideCatalogBundleComplete(bundle: BaGuideCatalogBundle?): Bool
     bundle ?: return false
     return BaGuideCatalogTab.entries.all { tab ->
         val entries = bundle.entries(tab)
-        entries.isNotEmpty() && entries.all { entry ->
-            entry.contentId > 0L &&
-                entry.name.isNotBlank() &&
-                entry.detailUrl.isNotBlank()
-        }
+        entries.isNotEmpty() &&
+            entries.all { entry ->
+                entry.contentId > 0L &&
+                    entry.name.isNotBlank() &&
+                    entry.detailUrl.isNotBlank()
+            }
     }
 }
 
 internal fun isBaGuideCatalogCacheExpired(
     bundle: BaGuideCatalogBundle?,
     refreshIntervalHours: Int,
-    nowMs: Long = System.currentTimeMillis()
+    nowMs: Long = System.currentTimeMillis(),
 ): Boolean {
     bundle ?: return true
     val intervalMs = refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
@@ -152,52 +159,69 @@ internal fun clearBaGuideCatalogCache(context: Context? = null) {
 internal suspend fun fetchBaGuideCatalogBundle(
     forceRefresh: Boolean = false,
     networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default
+    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ): BaGuideCatalogBundle {
     if (!forceRefresh) {
-        val cached = withContext(networkDispatcher) {
-            loadCachedBaGuideCatalogBundle()
-        }
+        val cached =
+            withContext(networkDispatcher) {
+                loadCachedBaGuideCatalogBundle()
+            }
         if (isBaGuideCatalogBundleComplete(cached)) {
             return cached!!
         }
     }
     val now = System.currentTimeMillis()
-    val releaseDateIndex = withContext(networkDispatcher) {
-        BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
-    }
-
-    val (studentRaw, npcSatelliteRaw) = coroutineScope {
-        val studentDeferred = async(networkDispatcher) { fetchRawEntriesByPid(BA_GUIDE_STUDENT_PID) }
-        val npcSatelliteDeferred = async(networkDispatcher) {
-            fetchRawEntriesByPid(BA_GUIDE_NPC_SATELLITE_PID)
+    val releaseDateIndex =
+        withContext(networkDispatcher) {
+            BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
         }
-        studentDeferred.await() to npcSatelliteDeferred.await()
-    }
 
-    val (studentEntries, npcSatelliteEntries) = withContext(parseDispatcher) {
-        val studentEntries = studentRaw.map { raw ->
-            raw.toCatalogEntry(
-                tab = BaGuideCatalogTab.Student,
-                releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L
-            )
+    val (studentRaw, npcSatelliteRaw, studentFilterIndex) =
+        coroutineScope {
+            val studentDeferred = async(networkDispatcher) { fetchRawEntriesByPid(BA_GUIDE_STUDENT_PID) }
+            val npcSatelliteDeferred =
+                async(networkDispatcher) {
+                    fetchRawEntriesByPid(BA_GUIDE_NPC_SATELLITE_PID)
+                }
+            val studentFilterDeferred = async(networkDispatcher) { fetchStudentFilterIndex() }
+            Triple(studentDeferred.await(), npcSatelliteDeferred.await(), studentFilterDeferred.await())
         }
-        val npcSatelliteEntries = npcSatelliteRaw.map { raw ->
-            raw.toCatalogEntry(
-                tab = BaGuideCatalogTab.NpcSatellite,
-                releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L
-            )
-        }
-        studentEntries to npcSatelliteEntries
-    }
 
-    val bundle = BaGuideCatalogBundle(
-        entriesByTab = mapOf(
-            BaGuideCatalogTab.Student to studentEntries,
-            BaGuideCatalogTab.NpcSatellite to npcSatelliteEntries,
-        ),
-        syncedAtMs = now
-    )
+    val (studentEntries, npcSatelliteEntries) =
+        withContext(parseDispatcher) {
+            val studentEntries =
+                studentRaw.map { raw ->
+                    val filterReleaseDateSec = studentFilterIndex.releaseDateSec(raw.entryId)
+                    raw.toCatalogEntry(
+                        tab = BaGuideCatalogTab.Student,
+                        releaseDateSec = releaseDateIndex[raw.contentId] ?: filterReleaseDateSec,
+                        filterAttributes = studentFilterIndex.attributes(raw.entryId),
+                    )
+                }
+            val npcSatelliteEntries =
+                npcSatelliteRaw.map { raw ->
+                    raw.toCatalogEntry(
+                        tab = BaGuideCatalogTab.NpcSatellite,
+                        releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L,
+                        filterAttributes = BaGuideCatalogEntryFilterAttributes.EMPTY,
+                    )
+                }
+            studentEntries to npcSatelliteEntries
+        }
+
+    val bundle =
+        BaGuideCatalogBundle(
+            entriesByTab =
+                mapOf(
+                    BaGuideCatalogTab.Student to studentEntries,
+                    BaGuideCatalogTab.NpcSatellite to npcSatelliteEntries,
+                ),
+            syncedAtMs = now,
+            filterDefinitionsByTab =
+                mapOf(
+                    BaGuideCatalogTab.Student to studentFilterIndex.definitions,
+                ),
+        )
     cachedCatalogBundle = bundle
     withContext(networkDispatcher) {
         BaGuideCatalogStore.saveBundle(bundle)
@@ -212,18 +236,20 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     requestThrottleMs: Long = BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS,
     networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    onBundleUpdated: (BaGuideCatalogBundle) -> Unit = {}
+    onBundleUpdated: (BaGuideCatalogBundle) -> Unit = {},
 ): BaGuideCatalogBundle {
     if (source.entriesByTab.values.all { it.isEmpty() }) return source
     var working = source
 
-    val localPatch = withContext(networkDispatcher) {
-        collectReleaseDatePatchFromGuideCache(working)
-    }
-    if (!localPatch.isEmpty()) {
-        val updated = withContext(networkDispatcher) {
-            applyAndPersistReleaseDatePatch(working, localPatch)
+    val localPatch =
+        withContext(networkDispatcher) {
+            collectReleaseDatePatchFromGuideCache(working)
         }
+    if (!localPatch.isEmpty()) {
+        val updated =
+            withContext(networkDispatcher) {
+                applyAndPersistReleaseDatePatch(working, localPatch)
+            }
         if (updated !== working) {
             working = updated
             onBundleUpdated(working)
@@ -233,22 +259,25 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     var remainingFetch = maxNetworkFetchPerPass.coerceAtLeast(0)
     val batchLimit = networkBatchSize.coerceAtLeast(1)
     while (remainingFetch > 0) {
-        val candidates = working.pendingReleaseDateProbeCandidates(
-            limit = minOf(batchLimit, remainingFetch)
-        )
+        val candidates =
+            working.pendingReleaseDateProbeCandidates(
+                limit = minOf(batchLimit, remainingFetch),
+            )
         if (candidates.isEmpty()) break
-        val networkPatch = collectReleaseDatePatchFromNetwork(
-            entries = candidates,
-            requestThrottleMs = requestThrottleMs,
-            networkDispatcher = networkDispatcher,
-            parseDispatcher = parseDispatcher
-        )
+        val networkPatch =
+            collectReleaseDatePatchFromNetwork(
+                entries = candidates,
+                requestThrottleMs = requestThrottleMs,
+                networkDispatcher = networkDispatcher,
+                parseDispatcher = parseDispatcher,
+            )
         remainingFetch -= candidates.size
         if (networkPatch.isEmpty()) continue
         val hasReleaseDateUpdates = networkPatch.releaseDateSecByContentId.isNotEmpty()
-        val updated = withContext(networkDispatcher) {
-            applyAndPersistReleaseDatePatch(working, networkPatch)
-        }
+        val updated =
+            withContext(networkDispatcher) {
+                applyAndPersistReleaseDatePatch(working, networkPatch)
+            }
         if (updated !== working) {
             working = updated
             if (hasReleaseDateUpdates) {
@@ -271,10 +300,11 @@ internal fun List<BaGuideCatalogEntry>.filterByQuery(query: String): List<BaGuid
 }
 
 private fun fetchRawEntriesByPid(pid: Int): List<RawEntry> {
-    val body = GameKeeRepository.fetchBaCatalogTreeJson(
-        pid = pid,
-        refererPath = BA_GUIDE_INDEX_REFERER_PATH
-    )
+    val body =
+        GameKeeRepository.fetchBaCatalogTreeJson(
+            pid = pid,
+            refererPath = BA_GUIDE_INDEX_REFERER_PATH,
+        )
     val root = JSONObject(body)
     if (root.optInt("code", -1) != 0) {
         error("catalog api code=${root.optInt("code", -1)} pid=$pid")
@@ -285,30 +315,46 @@ private fun fetchRawEntriesByPid(pid: Int): List<RawEntry> {
         val item = data.optJSONObject(index) ?: continue
         val contentId = item.optLong("content_id", 0L)
         if (contentId <= 0L) continue
-        val name = item.optString("name")
-            .trim()
-            .ifBlank { item.optString("title").trim() }
+        val name =
+            item
+                .optString("name")
+                .trim()
+                .ifBlank { item.optString("title").trim() }
         if (name.isBlank()) continue
-        out += RawEntry(
-            entryId = item.optInt("id", 0),
-            pid = item.optInt("pid", pid),
-            contentId = contentId,
-            name = name,
-            alias = item.optString("name_alias").trim(),
-            iconUrl = normalizeCatalogImageUrl(item.optString("icon")),
-            type = item.optInt("type", 0),
-            order = index,
-            createdAtSec = item.optLong("created_at", 0L)
-        )
+        out +=
+            RawEntry(
+                entryId = item.optInt("id", 0),
+                pid = item.optInt("pid", pid),
+                contentId = contentId,
+                name = name,
+                alias = item.optString("name_alias").trim(),
+                iconUrl = normalizeCatalogImageUrl(item.optString("icon")),
+                type = item.optInt("type", 0),
+                order = index,
+                createdAtSec = item.optLong("created_at", 0L),
+            )
     }
     return out
 }
 
+private fun fetchStudentFilterIndex(): BaGuideCatalogFilterIndex =
+    runCatching {
+        val body =
+            GameKeeRepository.fetchBaApiJson(
+                pathOrUrl = BA_GUIDE_STUDENT_FILTER_INDEX_PATH,
+                refererPath = BA_GUIDE_INDEX_REFERER_PATH,
+            )
+        parseBaGuideCatalogFilterIndex(body)
+    }.getOrElse {
+        BaGuideCatalogFilterIndex.EMPTY
+    }
+
 private fun RawEntry.toCatalogEntry(
     tab: BaGuideCatalogTab,
-    releaseDateSec: Long
-): BaGuideCatalogEntry {
-    return BaGuideCatalogEntry(
+    releaseDateSec: Long,
+    filterAttributes: BaGuideCatalogEntryFilterAttributes,
+): BaGuideCatalogEntry =
+    BaGuideCatalogEntry(
         entryId = entryId,
         pid = pid,
         contentId = contentId,
@@ -322,38 +368,42 @@ private fun RawEntry.toCatalogEntry(
         releaseDateSec = releaseDateSec.coerceAtLeast(0L),
         releaseDateProbeAtMs = 0L,
         detailUrl = "https://www.gamekee.com/ba/tj/$contentId.html",
-        tab = tab
+        tab = tab,
+        filterAttributes = filterAttributes,
     )
-}
 
 private fun BaGuideCatalogBundle.pendingReleaseDateProbeCandidates(limit: Int): List<BaGuideCatalogEntry> {
     if (limit <= 0) return emptyList()
-    return BaGuideCatalogTab.entries.asSequence()
+    return BaGuideCatalogTab.entries
+        .asSequence()
         .flatMap { tab -> entries(tab).asSequence() }
         .filter { entry ->
             entry.contentId > 0L &&
                 entry.detailUrl.isNotBlank() &&
                 entry.releaseDateSec <= 0L &&
                 entry.releaseDateProbeAtMs <= 0L
-        }
-        .take(limit)
+        }.take(limit)
         .toList()
 }
 
 private fun collectReleaseDatePatchFromGuideCache(bundle: BaGuideCatalogBundle): CatalogReleaseDatePatch {
     val cachedSourceUrls = BaStudentGuideStore.cachedSourceUrls()
     if (cachedSourceUrls.isEmpty()) return CatalogReleaseDatePatch()
-    val normalizedCached = cachedSourceUrls.asSequence()
-        .map { normalizeGuideUrl(it).trim() }
-        .filter { it.isNotBlank() }
-        .toSet()
+    val normalizedCached =
+        cachedSourceUrls
+            .asSequence()
+            .map { normalizeGuideUrl(it).trim() }
+            .filter { it.isNotBlank() }
+            .toSet()
     if (normalizedCached.isEmpty()) return CatalogReleaseDatePatch()
 
     val releaseDateUpdates = mutableMapOf<Long, Long>()
-    val targets = bundle.entriesByTab.values.asSequence()
-        .flatten()
-        .filter { it.releaseDateSec <= 0L && it.contentId > 0L && it.detailUrl.isNotBlank() }
-        .toList()
+    val targets =
+        bundle.entriesByTab.values
+            .asSequence()
+            .flatten()
+            .filter { it.releaseDateSec <= 0L && it.contentId > 0L && it.detailUrl.isNotBlank() }
+            .toList()
 
     targets.forEach { entry ->
         val normalizedUrl = normalizeGuideUrl(entry.detailUrl).trim()
@@ -372,23 +422,25 @@ private suspend fun collectReleaseDatePatchFromNetwork(
     entries: List<BaGuideCatalogEntry>,
     requestThrottleMs: Long,
     networkDispatcher: CoroutineDispatcher,
-    parseDispatcher: CoroutineDispatcher
+    parseDispatcher: CoroutineDispatcher,
 ): CatalogReleaseDatePatch {
     if (entries.isEmpty()) return CatalogReleaseDatePatch()
-    val results = coroutineScope {
-        entries.mapIndexed { index, entry ->
-            async {
-                if (requestThrottleMs > 0L && index > 0) {
-                    delay((requestThrottleMs * index).milliseconds)
-                }
-                probeReleaseDateFromNetwork(
-                    entry = entry,
-                    networkDispatcher = networkDispatcher,
-                    parseDispatcher = parseDispatcher
-                )
-            }
-        }.awaitAll()
-    }
+    val results =
+        coroutineScope {
+            entries
+                .mapIndexed { index, entry ->
+                    async {
+                        if (requestThrottleMs > 0L && index > 0) {
+                            delay((requestThrottleMs * index).milliseconds)
+                        }
+                        probeReleaseDateFromNetwork(
+                            entry = entry,
+                            networkDispatcher = networkDispatcher,
+                            parseDispatcher = parseDispatcher,
+                        )
+                    }
+                }.awaitAll()
+        }
     val releaseDateUpdates = mutableMapOf<Long, Long>()
     val probeUpdates = mutableMapOf<Long, Long>()
     results.forEach { result ->
@@ -402,45 +454,48 @@ private suspend fun collectReleaseDatePatchFromNetwork(
     }
     return CatalogReleaseDatePatch(
         releaseDateSecByContentId = releaseDateUpdates,
-        probeAtMsByContentId = probeUpdates
+        probeAtMsByContentId = probeUpdates,
     )
 }
 
 private suspend fun probeReleaseDateFromNetwork(
     entry: BaGuideCatalogEntry,
     networkDispatcher: CoroutineDispatcher,
-    parseDispatcher: CoroutineDispatcher
+    parseDispatcher: CoroutineDispatcher,
 ): CatalogReleaseDateProbeResult {
     val contentId = entry.contentId
     if (contentId <= 0L || entry.detailUrl.isBlank()) {
         return CatalogReleaseDateProbeResult(
             contentId = contentId,
             probeAtMs = 0L,
-            releaseDateSec = 0L
+            releaseDateSec = 0L,
         )
     }
     val probedAtMs = System.currentTimeMillis().coerceAtLeast(1L)
     return try {
-        val contentDetail = withContext(networkDispatcher) {
-            GameKeeRepository.fetchBaContentDetail(
-                contentId = contentId,
-                refererPath = "/ba/tj/$contentId.html"
-            )
-        }
-        val releaseDateSec = withContext(parseDispatcher) {
-            val detail = parseGuideDetailFromContentJson(
-                raw = contentDetail.resolvedContentJson,
-                sourceUrl = entry.detailUrl
-            )
-            extractReleaseDateSec(
-                profileRows = detail.profileRows,
-                stats = detail.stats
-            )
-        }
+        val contentDetail =
+            withContext(networkDispatcher) {
+                GameKeeRepository.fetchBaContentDetail(
+                    contentId = contentId,
+                    refererPath = "/ba/tj/$contentId.html",
+                )
+            }
+        val releaseDateSec =
+            withContext(parseDispatcher) {
+                val detail =
+                    parseGuideDetailFromContentJson(
+                        raw = contentDetail.resolvedContentJson,
+                        sourceUrl = entry.detailUrl,
+                    )
+                extractReleaseDateSec(
+                    profileRows = detail.profileRows,
+                    stats = detail.stats,
+                )
+            }
         CatalogReleaseDateProbeResult(
             contentId = contentId,
             probeAtMs = probedAtMs,
-            releaseDateSec = releaseDateSec.coerceAtLeast(0L)
+            releaseDateSec = releaseDateSec.coerceAtLeast(0L),
         )
     } catch (error: CancellationException) {
         throw error
@@ -448,14 +503,14 @@ private suspend fun probeReleaseDateFromNetwork(
         CatalogReleaseDateProbeResult(
             contentId = contentId,
             probeAtMs = probedAtMs,
-            releaseDateSec = 0L
+            releaseDateSec = 0L,
         )
     }
 }
 
 private fun applyAndPersistReleaseDatePatch(
     bundle: BaGuideCatalogBundle,
-    patch: CatalogReleaseDatePatch
+    patch: CatalogReleaseDatePatch,
 ): BaGuideCatalogBundle {
     val (updatedBundle, changed) = bundle.applyReleaseDatePatch(patch)
     if (!changed) return bundle
@@ -467,53 +522,52 @@ private fun applyAndPersistReleaseDatePatch(
     return updatedBundle
 }
 
-private fun BaGuideCatalogBundle.applyReleaseDatePatch(
-    patch: CatalogReleaseDatePatch
-): Pair<BaGuideCatalogBundle, Boolean> {
+private fun BaGuideCatalogBundle.applyReleaseDatePatch(patch: CatalogReleaseDatePatch): Pair<BaGuideCatalogBundle, Boolean> {
     if (patch.isEmpty()) return this to false
     var changed = false
-    val updatedEntriesByTab = entriesByTab.mapValues { (_, entries) ->
-        entries.map { entry ->
-            val releaseDateSec = patch.releaseDateSecByContentId[entry.contentId] ?: entry.releaseDateSec
-            val probeAtMs = patch.probeAtMsByContentId[entry.contentId] ?: entry.releaseDateProbeAtMs
-            if (releaseDateSec != entry.releaseDateSec || probeAtMs != entry.releaseDateProbeAtMs) {
-                changed = true
-                entry.copy(
-                    releaseDateSec = releaseDateSec.coerceAtLeast(0L),
-                    releaseDateProbeAtMs = probeAtMs.coerceAtLeast(0L)
-                )
-            } else {
-                entry
+    val updatedEntriesByTab =
+        entriesByTab.mapValues { (_, entries) ->
+            entries.map { entry ->
+                val releaseDateSec = patch.releaseDateSecByContentId[entry.contentId] ?: entry.releaseDateSec
+                val probeAtMs = patch.probeAtMsByContentId[entry.contentId] ?: entry.releaseDateProbeAtMs
+                if (releaseDateSec != entry.releaseDateSec || probeAtMs != entry.releaseDateProbeAtMs) {
+                    changed = true
+                    entry.copy(
+                        releaseDateSec = releaseDateSec.coerceAtLeast(0L),
+                        releaseDateProbeAtMs = probeAtMs.coerceAtLeast(0L),
+                    )
+                } else {
+                    entry
+                }
             }
         }
-    }
     if (!changed) return this to false
     return copy(entriesByTab = updatedEntriesByTab) to true
 }
 
-private fun extractReleaseDateSec(info: BaStudentGuideInfo): Long {
-    return extractReleaseDateSec(
+private fun extractReleaseDateSec(info: BaStudentGuideInfo): Long =
+    extractReleaseDateSec(
         profileRows = info.profileRows,
-        stats = info.stats
+        stats = info.stats,
     )
-}
 
 private fun extractReleaseDateSec(
     profileRows: List<BaGuideRow>,
-    stats: List<Pair<String, String>>
+    stats: List<Pair<String, String>>,
 ): Long {
-    val candidates = sequence {
-        profileRows.forEach { row ->
-            if (row.key.contains("实装日期", ignoreCase = true)) {
-                yield(row.value)
+    val candidates =
+        sequence {
+            profileRows.forEach { row ->
+                if (row.key.contains("实装日期", ignoreCase = true)) {
+                    yield(row.value)
+                }
+            }
+            stats.forEach { (key, value) ->
+                if (key.contains("实装日期", ignoreCase = true)) {
+                    yield(value)
+                }
             }
         }
-        stats.forEach { (key, value) ->
-            if (key.contains("实装日期", ignoreCase = true)) {
-                yield(value)
-            }
-        }
-    }
     return candidates
         .map { parseReleaseDateSec(it) }
         .firstOrNull { it > 0L }
@@ -522,10 +576,11 @@ private fun extractReleaseDateSec(
 
 private fun parseReleaseDateSec(raw: String): Long {
     if (raw.isBlank()) return 0L
-    val compact = raw
-        .substringBefore("<-")
-        .substringBefore("←")
-        .trim()
+    val compact =
+        raw
+            .substringBefore("<-")
+            .substringBefore("←")
+            .trim()
     if (compact.isBlank()) return 0L
 
     val classic = RELEASE_DATE_CLASSIC_REGEX.find(compact)
@@ -533,7 +588,7 @@ private fun parseReleaseDateSec(raw: String): Long {
         return releaseDateToEpochSecond(
             year = classic.groupValues.getOrNull(1)?.toIntOrNull(),
             month = classic.groupValues.getOrNull(2)?.toIntOrNull(),
-            day = classic.groupValues.getOrNull(3)?.toIntOrNull()
+            day = classic.groupValues.getOrNull(3)?.toIntOrNull(),
         )
     }
 
@@ -542,13 +597,17 @@ private fun parseReleaseDateSec(raw: String): Long {
         return releaseDateToEpochSecond(
             year = packed.groupValues.getOrNull(1)?.toIntOrNull(),
             month = packed.groupValues.getOrNull(2)?.toIntOrNull(),
-            day = packed.groupValues.getOrNull(3)?.toIntOrNull()
+            day = packed.groupValues.getOrNull(3)?.toIntOrNull(),
         )
     }
     return 0L
 }
 
-private fun releaseDateToEpochSecond(year: Int?, month: Int?, day: Int?): Long {
+private fun releaseDateToEpochSecond(
+    year: Int?,
+    month: Int?,
+    day: Int?,
+): Long {
     if (year == null || month == null || day == null) return 0L
     if (year < 2000 || month !in 1..12 || day !in 1..31) return 0L
     return runCatching {
@@ -559,13 +618,12 @@ private fun releaseDateToEpochSecond(year: Int?, month: Int?, day: Int?): Long {
 private val RELEASE_DATE_CLASSIC_REGEX = Regex("""(20\d{2})[^\d]{1,4}(\d{1,2})[^\d]{1,4}(\d{1,2})""")
 private val RELEASE_DATE_PACKED_REGEX = Regex("""(20\d{2})(\d{2})(\d{2})""")
 
-private fun formatAliasDisplay(alias: String): String {
-    return alias
+private fun formatAliasDisplay(alias: String): String =
+    alias
         .split(",")
         .map { it.trim() }
         .filter { it.isNotBlank() }
         .joinToString(" · ")
-}
 
 private fun normalizeCatalogImageUrl(raw: String): String {
     val value = raw.trim()
@@ -580,6 +638,4 @@ private fun normalizeCatalogImageUrl(raw: String): String {
     }
 }
 
-private fun String.upgradeHttpSchemeToHttps(): String {
-    return replaceFirst(Regex("^http://", RegexOption.IGNORE_CASE), "https://")
-}
+private fun String.upgradeHttpSchemeToHttps(): String = replaceFirst(Regex("^http://", RegexOption.IGNORE_CASE), "https://")

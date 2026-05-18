@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.page
 
 import androidx.compose.foundation.layout.Arrangement
@@ -17,9 +19,12 @@ import androidx.compose.ui.unit.Dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
+import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogFilterActionPopup
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogSortActionPopup
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -39,80 +44,117 @@ internal fun BaGuideCatalogMusicTopBar(
     onBack: () -> Unit,
     showSortPopup: Boolean,
     sortMode: BaGuideCatalogSortMode,
+    showFilterPopup: Boolean,
+    filterEnabled: Boolean,
+    filterDefinitions: List<BaGuideCatalogFilterDefinition>,
+    selectedFilterOptions: Map<Int, Set<Int>>,
     onSort: () -> Unit,
     onDismissSort: () -> Unit,
     onSelectSortMode: (BaGuideCatalogSortMode) -> Unit,
+    onFilter: () -> Unit,
+    onDismissFilter: () -> Unit,
+    onToggleFilterOption: (filterId: Int, optionId: Int) -> Unit,
+    onClearFilters: () -> Unit,
     onTransfer: () -> Unit,
     onRefresh: () -> Unit,
     backdrop: Backdrop,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    val filterContentDescription = stringResource(R.string.ba_catalog_action_filter)
     val sortContentDescription = stringResource(R.string.ba_catalog_action_sort)
     val refreshContentDescription = stringResource(R.string.ba_catalog_action_refresh)
     val transferContentDescription = stringResource(R.string.ba_catalog_action_transfer)
+    val filterIcon = appLucideFilterIcon()
     val sortIcon = appLucideSortIcon()
     val refreshIcon = appLucideRefreshIcon()
     val moreIcon = appLucideMoreIcon()
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(AppChromeTokens.liquidActionBarOuterHeight)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(AppChromeTokens.liquidActionBarOuterHeight),
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),
                 contentDescription = stringResource(R.string.common_close),
                 onClick = onBack,
-                backdrop = backdrop
+                backdrop = backdrop,
             )
             Box {
                 LiquidActionBar(
                     modifier = Modifier.height(AppChromeTokens.liquidActionBarOuterHeight),
                     backdrop = backdrop,
                     selectedIndex = 0,
-                    items = remember(
-                        sortContentDescription,
-                        transferContentDescription,
-                        refreshContentDescription,
-                        sortIcon,
-                        moreIcon,
-                        refreshIcon,
-                        onSort,
-                        onTransfer,
-                        onRefresh
-                    ) {
-                        listOf(
-                            LiquidActionItem(
-                                icon = sortIcon,
-                                contentDescription = sortContentDescription,
-                                onClick = onSort
-                            ),
-                            LiquidActionItem(
-                                icon = moreIcon,
-                                contentDescription = transferContentDescription,
-                                onClick = onTransfer
-                            ),
-                            LiquidActionItem(
-                                icon = refreshIcon,
-                                contentDescription = refreshContentDescription,
-                                onClick = onRefresh
+                    items =
+                        remember(
+                            filterContentDescription,
+                            sortContentDescription,
+                            transferContentDescription,
+                            refreshContentDescription,
+                            filterIcon,
+                            sortIcon,
+                            moreIcon,
+                            refreshIcon,
+                            filterEnabled,
+                            onFilter,
+                            onSort,
+                            onTransfer,
+                            onRefresh,
+                        ) {
+                            listOf(
+                                LiquidActionItem(
+                                    icon = filterIcon,
+                                    contentDescription = filterContentDescription,
+                                    onClick = onFilter,
+                                    enabled = filterEnabled,
+                                ),
+                                LiquidActionItem(
+                                    icon = sortIcon,
+                                    contentDescription = sortContentDescription,
+                                    onClick = onSort,
+                                ),
+                                LiquidActionItem(
+                                    icon = moreIcon,
+                                    contentDescription = transferContentDescription,
+                                    onClick = onTransfer,
+                                ),
+                                LiquidActionItem(
+                                    icon = refreshIcon,
+                                    contentDescription = refreshContentDescription,
+                                    onClick = onRefresh,
+                                ),
                             )
-                        )
-                    }
+                        },
                 )
-                LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
-                    if (slotIndex != 0) return@LiquidActionBarPopupAnchors
-                    BaGuideCatalogSortActionPopup(
-                        show = showSortPopup,
-                        anchorBounds = popupAnchorBounds,
-                        sortMode = sortMode,
-                        onDismissRequest = onDismissSort,
-                        onSelectSortMode = onSelectSortMode
-                    )
+                LiquidActionBarPopupAnchors(itemCount = 4) { slotIndex, popupAnchorBounds ->
+                    when (slotIndex) {
+                        0 -> {
+                            BaGuideCatalogFilterActionPopup(
+                                show = showFilterPopup && filterEnabled,
+                                anchorBounds = popupAnchorBounds,
+                                definitions = filterDefinitions,
+                                selectedOptionIdsByFilterId = selectedFilterOptions,
+                                onDismissRequest = onDismissFilter,
+                                onToggleOption = onToggleFilterOption,
+                                onClearFilters = onClearFilters,
+                            )
+                        }
+
+                        1 -> {
+                            BaGuideCatalogSortActionPopup(
+                                show = showSortPopup,
+                                anchorBounds = popupAnchorBounds,
+                                sortMode = sortMode,
+                                onDismissRequest = onDismissSort,
+                                onSelectSortMode = onSelectSortMode,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -121,9 +163,10 @@ internal fun BaGuideCatalogMusicTopBar(
             backdrop = backdrop,
             startReserve = AppChromeTokens.topBarTitleNavigationReserve,
             endReserve = AppChromeTokens.topBarTitleActionReserve,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth(),
         )
     }
 }
@@ -132,24 +175,25 @@ internal fun BaGuideCatalogMusicTopBar(
 internal fun BaGuideCatalogMusicPlaceholder(
     label: String,
     topPadding: Dp,
-    bottomPadding: Dp
+    bottomPadding: Dp,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                top = topPadding,
-                bottom = bottomPadding,
-                start = AppChromeTokens.pageHorizontalPadding,
-                end = AppChromeTokens.pageHorizontalPadding
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(
+                    top = topPadding,
+                    bottom = bottomPadding,
+                    start = AppChromeTokens.pageHorizontalPadding,
+                    end = AppChromeTokens.pageHorizontalPadding,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             color = MiuixTheme.colorScheme.onBackgroundVariant,
             fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight
+            lineHeight = AppTypographyTokens.Body.lineHeight,
         )
     }
 }

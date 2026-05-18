@@ -196,6 +196,7 @@
     <string name="ba_catalog_tab_student_bgm">音楽</string>
     <string name="ba_catalog_tab_student_bgm_short">音楽</string>
     <string name="ba_catalog_tab_bgm">再生</string>
+    <string name="ba_catalog_action_filter">生徒を絞り込み</string>
     <string name="ba_catalog_action_sort">並べ替え</string>
     <string name="ba_catalog_action_refresh">リストを更新</string>
     <string name="ba_catalog_action_transfer">お気に入りデータ</string>
@@ -261,6 +262,7 @@
     <string name="ba_catalog_empty_title">結果なし</string>
     <string name="ba_catalog_empty_subtitle_default">このカテゴリに表示できる項目はありません。</string>
     <string name="ba_catalog_empty_subtitle_search">一致する項目はありません。</string>
+    <string name="ba_catalog_empty_subtitle_filter">現在の絞り込みに一致する生徒はいません。</string>
     <string name="ba_catalog_loading_more">さらに読み込み中…</string>
     <string name="ba_catalog_student_bgm_title">生徒メモリアルロビー BGM</string>
     <string name="ba_catalog_student_bgm_overview_subtitle">お気に入りの生徒を上部に表示し、タップで取得と試聴ができます。</string>
@@ -392,9 +394,16 @@
     <string name="ba_catalog_bgm_import_failed">BGM お気に入りのインポートに失敗しました。</string>
     <string name="ba_catalog_cd_favorite_student">生徒をお気に入り</string>
     <string name="ba_catalog_cd_unfavorite_student">生徒のお気に入りを解除</string>
+    <string name="ba_catalog_filter_all">すべて</string>
+    <string name="ba_catalog_filter_clear">絞り込みをクリア</string>
+    <string name="ba_catalog_filter_selected_count">%1$d 件選択</string>
     <string name="ba_catalog_sort_default">デフォルト順</string>
     <string name="ba_catalog_sort_release_date_desc">実装日: 新しい順</string>
     <string name="ba_catalog_sort_release_date_asc">実装日: 古い順</string>
+    <string name="ba_catalog_sort_global_score_desc">海外評価: 高い順</string>
+    <string name="ba_catalog_sort_global_score_asc">海外評価: 低い順</string>
+    <string name="ba_catalog_sort_cn_score_desc">中国版評価: 高い順</string>
+    <string name="ba_catalog_sort_cn_score_asc">中国版評価: 低い順</string>
     <string name="guide_page_title_default">生徒情報</string>
     <string name="guide_media_save_success">保存しました: %1$s</string>
     <string name="guide_media_save_failed">保存に失敗しました</string>

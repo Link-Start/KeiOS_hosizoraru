@@ -9,19 +9,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import os.kei.R
+import os.kei.ui.page.main.student.catalog.BA_GUIDE_FILTER_ID_CN_SCORE
+import os.kei.ui.page.main.student.catalog.BA_GUIDE_FILTER_ID_GLOBAL_SCORE
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
+import os.kei.ui.page.main.student.catalog.scoreRankForSort
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 
-internal enum class BaGuideCatalogSortMode(@get:StringRes val labelRes: Int) {
+internal enum class BaGuideCatalogSortMode(
+    @get:StringRes val labelRes: Int,
+) {
     Default(R.string.ba_catalog_sort_default),
     ReleaseDateDesc(R.string.ba_catalog_sort_release_date_desc),
     ReleaseDateAsc(R.string.ba_catalog_sort_release_date_asc),
+    GlobalScoreDesc(R.string.ba_catalog_sort_global_score_desc),
+    GlobalScoreAsc(R.string.ba_catalog_sort_global_score_asc),
+    CnScoreDesc(R.string.ba_catalog_sort_cn_score_desc),
+    CnScoreAsc(R.string.ba_catalog_sort_cn_score_asc),
 }
 
 @Composable
 internal fun rememberCatalogSyncProgress(
     loading: Boolean,
-    animationsEnabled: Boolean
+    animationsEnabled: Boolean,
 ): Float {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(loading, animationsEnabled) {
@@ -33,25 +43,28 @@ internal fun rememberCatalogSyncProgress(
             progress.snapTo(0.12f)
             progress.animateTo(
                 targetValue = 0.68f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(520, animationsEnabled),
-                    easing = FastOutSlowInEasing
-                ),
+                animationSpec =
+                    tween(
+                        durationMillis = resolvedMotionDuration(520, animationsEnabled),
+                        easing = FastOutSlowInEasing,
+                    ),
             )
             progress.animateTo(
                 targetValue = 0.90f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(1800, animationsEnabled),
-                    easing = LinearEasing
-                ),
+                animationSpec =
+                    tween(
+                        durationMillis = resolvedMotionDuration(1800, animationsEnabled),
+                        easing = LinearEasing,
+                    ),
             )
         } else {
             progress.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(
-                    durationMillis = resolvedMotionDuration(260, animationsEnabled),
-                    easing = FastOutSlowInEasing
-                ),
+                animationSpec =
+                    tween(
+                        durationMillis = resolvedMotionDuration(260, animationsEnabled),
+                        easing = FastOutSlowInEasing,
+                    ),
             )
         }
     }
@@ -60,39 +73,86 @@ internal fun rememberCatalogSyncProgress(
 
 internal fun List<BaGuideCatalogEntry>.sortedByMode(
     mode: BaGuideCatalogSortMode,
-    favoriteCatalogEntries: Map<Long, Long>
+    favoriteCatalogEntries: Map<Long, Long>,
+    filterDefinitions: List<BaGuideCatalogFilterDefinition> = emptyList(),
 ): List<BaGuideCatalogEntry> {
-    val sortedBase = when (mode) {
-        BaGuideCatalogSortMode.Default -> sortedBy { it.order }
-        BaGuideCatalogSortMode.ReleaseDateDesc -> sortedWith(
-            compareByDescending<BaGuideCatalogEntry> {
-                when {
-                    it.releaseDateSec > 0L -> it.releaseDateSec
-                    it.createdAtSec > 0L -> it.createdAtSec
-                    else -> Long.MIN_VALUE
-                }
-            }.thenBy { it.order }
-        )
-        BaGuideCatalogSortMode.ReleaseDateAsc -> sortedWith(
-            compareBy<BaGuideCatalogEntry> {
-                when {
-                    it.releaseDateSec > 0L -> it.releaseDateSec
-                    it.createdAtSec > 0L -> it.createdAtSec
-                    else -> Long.MAX_VALUE
-                }
-            }.thenBy { it.order }
-        )
-    }
+    val definitionsById = filterDefinitions.associateBy { it.id }
+    val sortedBase =
+        when (mode) {
+            BaGuideCatalogSortMode.Default -> {
+                sortedBy { it.order }
+            }
+
+            BaGuideCatalogSortMode.ReleaseDateDesc -> {
+                sortedWith(
+                    compareByDescending<BaGuideCatalogEntry> {
+                        when {
+                            it.releaseDateSec > 0L -> it.releaseDateSec
+                            it.createdAtSec > 0L -> it.createdAtSec
+                            else -> Long.MIN_VALUE
+                        }
+                    }.thenBy { it.order },
+                )
+            }
+
+            BaGuideCatalogSortMode.ReleaseDateAsc -> {
+                sortedWith(
+                    compareBy<BaGuideCatalogEntry> {
+                        when {
+                            it.releaseDateSec > 0L -> it.releaseDateSec
+                            it.createdAtSec > 0L -> it.createdAtSec
+                            else -> Long.MAX_VALUE
+                        }
+                    }.thenBy { it.order },
+                )
+            }
+
+            BaGuideCatalogSortMode.GlobalScoreDesc -> {
+                sortedWith(
+                    compareByDescending<BaGuideCatalogEntry> {
+                        scoreRankForSort(it, BA_GUIDE_FILTER_ID_GLOBAL_SCORE, definitionsById)
+                    }.thenBy { it.order },
+                )
+            }
+
+            BaGuideCatalogSortMode.GlobalScoreAsc -> {
+                sortedWith(
+                    compareBy<BaGuideCatalogEntry> {
+                        val rank = scoreRankForSort(it, BA_GUIDE_FILTER_ID_GLOBAL_SCORE, definitionsById)
+                        if (rank > 0) rank else Int.MAX_VALUE
+                    }.thenBy { it.order },
+                )
+            }
+
+            BaGuideCatalogSortMode.CnScoreDesc -> {
+                sortedWith(
+                    compareByDescending<BaGuideCatalogEntry> {
+                        scoreRankForSort(it, BA_GUIDE_FILTER_ID_CN_SCORE, definitionsById)
+                    }.thenBy { it.order },
+                )
+            }
+
+            BaGuideCatalogSortMode.CnScoreAsc -> {
+                sortedWith(
+                    compareBy<BaGuideCatalogEntry> {
+                        val rank = scoreRankForSort(it, BA_GUIDE_FILTER_ID_CN_SCORE, definitionsById)
+                        if (rank > 0) rank else Int.MAX_VALUE
+                    }.thenBy { it.order },
+                )
+            }
+        }
     if (favoriteCatalogEntries.isEmpty()) return sortedBase
-    val pinnedFavorites = sortedBase
-        .filter { entry -> favoriteCatalogEntries.containsKey(entry.contentId) }
-        .sortedWith(
-            compareBy<BaGuideCatalogEntry> {
-                favoriteCatalogEntries[it.contentId] ?: Long.MAX_VALUE
-            }.thenBy { it.order }
-        )
-    val regularEntries = sortedBase.filterNot { entry ->
-        favoriteCatalogEntries.containsKey(entry.contentId)
-    }
+    val pinnedFavorites =
+        sortedBase
+            .filter { entry -> favoriteCatalogEntries.containsKey(entry.contentId) }
+            .sortedWith(
+                compareBy<BaGuideCatalogEntry> {
+                    favoriteCatalogEntries[it.contentId] ?: Long.MAX_VALUE
+                }.thenBy { it.order },
+            )
+    val regularEntries =
+        sortedBase.filterNot { entry ->
+            favoriteCatalogEntries.containsKey(entry.contentId)
+        }
     return pinnedFavorites + regularEntries
 }

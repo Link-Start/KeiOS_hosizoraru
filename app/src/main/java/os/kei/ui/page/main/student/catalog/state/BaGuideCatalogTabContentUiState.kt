@@ -18,27 +18,29 @@ internal data class BaGuideCatalogTabContentUiState(
     val showEmpty: Boolean,
     val emptyTitle: String,
     val emptySubtitle: String,
-    val loadingMoreText: String
+    val loadingMoreText: String,
 )
 
 @Composable
 internal fun rememberBaGuideCatalogTabContentUiState(
     tab: BaGuideCatalogTab,
     searchQuery: String,
+    activeFilterCount: Int,
     loading: Boolean,
     error: String?,
-    filteredEntriesEmpty: Boolean
+    filteredEntriesEmpty: Boolean,
 ): BaGuideCatalogTabContentUiState {
     val tabLabel = stringResource(tab.labelRes)
     val tabTitle = stringResource(R.string.ba_catalog_tab_title, tabLabel)
     val syncStatusTitle = stringResource(R.string.ba_catalog_sync_status_title)
     val syncStatusBody = stringResource(R.string.ba_catalog_sync_status_body_retry)
     val emptyTitle = stringResource(R.string.ba_catalog_empty_title)
-    val emptySubtitle = if (searchQuery.isBlank()) {
-        stringResource(R.string.ba_catalog_empty_subtitle_default)
-    } else {
-        stringResource(R.string.ba_catalog_empty_subtitle_search)
-    }
+    val emptySubtitle =
+        when {
+            searchQuery.isNotBlank() -> stringResource(R.string.ba_catalog_empty_subtitle_search)
+            activeFilterCount > 0 -> stringResource(R.string.ba_catalog_empty_subtitle_filter)
+            else -> stringResource(R.string.ba_catalog_empty_subtitle_default)
+        }
     val loadingMoreText = stringResource(R.string.ba_catalog_loading_more)
     return remember(
         tab,
@@ -49,9 +51,10 @@ internal fun rememberBaGuideCatalogTabContentUiState(
         loading,
         error,
         filteredEntriesEmpty,
+        activeFilterCount,
         emptyTitle,
         emptySubtitle,
-        loadingMoreText
+        loadingMoreText,
     ) {
         BaGuideCatalogTabContentUiState(
             tabTitle = tabTitle,
@@ -63,7 +66,7 @@ internal fun rememberBaGuideCatalogTabContentUiState(
             showEmpty = !loading && filteredEntriesEmpty,
             emptyTitle = emptyTitle,
             emptySubtitle = emptySubtitle,
-            loadingMoreText = loadingMoreText
+            loadingMoreText = loadingMoreText,
         )
     }
 }

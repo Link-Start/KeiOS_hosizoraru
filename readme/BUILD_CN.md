@@ -6,7 +6,8 @@
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
 - 当前公开标签基线为 [KeiOS v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0)。
-- `master` 当前承载 v1.6.0 发布工作，覆盖订阅项目追踪、MCP 产品化、BA 图鉴解析、MIUIX 导航模式和发布前收口。
+- `master` 当前作为 v1.6.0 发布基线，覆盖订阅项目追踪、MCP 产品化、BA 图鉴解析、MIUIX 导航模式、TopInfo
+  精修和发布前收口。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -20,7 +21,7 @@
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。
 - Gradle Wrapper：`9.5.1`；Kotlin 插件：`2.3.21`；Android Gradle Plugin：`9.2.1`；
-  Compose 运行库：`1.11.1`。
+  Compose 运行库：`1.11.1`；Ktor：`3.5.0`。
 - Release 与 Benchmark APK 会合入 `app/src/main/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
 
@@ -75,6 +76,25 @@ JDK 兜底示例路径：
 # 运行单元测试
 ./gradlew :app:testDebugUnitTest
 ```
+
+### v1.6.0 发布门禁
+
+打 tag 或发布稳定版 APK 前建议跑完：
+
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+./gradlew :app:assembleRelease :app:assembleBenchmark
+git diff --check
+```
+
+本次发布建议重点复查：
+
+- 学生图鉴目录筛选、NPC / 卫星学园筛选、排序 / 筛选下拉菜单宽度。
+- OS TopInfo 可读摘要卡与原始 Android Properties 兜底。
+- 小屏与高 DPI 配置下的经典导航模式和 MIUIX 导航模式。
+- Release 与 Benchmark APK 启动，以及已生成 Baseline Profiles 的打包情况。
+- GitHub Release 发布文案可直接参考 [Release Notes v1.6.0](RELEASE_V1.6.0.md)。
 
 ### 截图基线
 

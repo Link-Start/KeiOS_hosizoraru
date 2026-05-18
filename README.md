@@ -94,16 +94,20 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 - MCP is organized around entrypoint, workflow, and advanced tools, with typed catalog metadata, JSON
   schemas, structured outputs, workflow blueprints, resource/help registries, a redesigned MCP Skill
   page, and lighter runtime-log/session monitoring.
+- OS TopInfo now presents device, build, CPU, runtime, memory, storage, locale, developer-state, and
+  verified-boot signals as readable summaries, while raw properties stay available in the Android
+  Properties tables.
 - BA Student Guide adapts NPC and satellite entries with leaner profile labels, related-role
   grouping, broader gallery parsing, media export, favorite-data migration, and older GameKee page
-  compatibility.
+  compatibility. Catalog filters now cover implemented-student attributes, school filtering for
+  NPC/satellite entries, and tighter dropdown sizing for sort/filter menus.
 - Settings can switch between the existing bottom bar / pager path and the MIUIX iOS-like bottom bar
   / pager path, with shared sizing fixes for different display densities.
-- App icons gained a refreshed Apple Designs default while keeping Android Designs as the legacy
-  selectable icon set.
+- App icon selection keeps Android Designs as the default icon set and offers Apple Designs as the
+  refreshed alternate set.
 - Release hardening covered bottom-bar visibility recovery, benchmark package startup, Gradle
-  configuration-cache hygiene, test coverage, R8 keep-rule review, and release/benchmark mapping
-  verification.
+  configuration-cache hygiene, Ktor 3.5.0, broader Baseline Profiles, test coverage, R8 keep-rule
+  review, and release/benchmark mapping verification.
 
 Read the full feature tour:
 
@@ -116,12 +120,13 @@ Read the full feature tour:
 - Current stable tag: [v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
-  Compose `1.11.1`, Android Gradle Plugin `9.2.1`.
+  Compose `1.11.1`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
+- [Release Notes v1.6.0](readme/RELEASE_V1.6.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

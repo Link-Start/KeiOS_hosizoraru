@@ -7,8 +7,8 @@
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
   is [KeiOS v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0).
-- `master` currently tracks v1.6.0 release work for subscription-project tracking, MCP
-  productization, BA guide parsing, MIUIX navigation mode, and release hardening.
+- `master` is the v1.6.0 release baseline for subscription-project tracking, MCP productization, BA
+  guide parsing, MIUIX navigation mode, TopInfo refinement, and release hardening.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -22,7 +22,7 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
 - Gradle Wrapper: `9.5.1`; Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.1`;
-  Compose runtime: `1.11.1`.
+  Compose runtime: `1.11.1`; Ktor: `3.5.0`.
 - Release and benchmark APKs include generated Baseline Profiles from
   `app/src/main/generated/baselineProfiles/`.
 - Keep local JDK paths and tokens in untracked local config files.
@@ -81,6 +81,25 @@ JDK fallback examples:
 # unit tests
 ./gradlew :app:testDebugUnitTest
 ```
+
+### v1.6.0 Release Gate
+
+Use this gate before tagging or publishing a stable APK:
+
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+./gradlew :app:assembleRelease :app:assembleBenchmark
+git diff --check
+```
+
+Recommended focused checks for this release:
+
+- Student Guide catalog filters, NPC/satellite school filter, and sort/filter dropdown widths.
+- OS TopInfo readable summary cards plus raw Android Properties fallback.
+- Classic and MIUIX navigation modes on a small phone profile and a higher-DPI profile.
+- Release and benchmark APK startup, with generated Baseline Profiles included.
+- GitHub release upload notes copied from [Release Notes v1.6.0](RELEASE_V1.6.0.md).
 
 ### Screenshot Baseline
 

@@ -19,6 +19,8 @@ Home summary-card visibility from the top action area.
 The OS page focuses on device and system inspection:
 
 - TopInfo and key-value sections for System, Secure, Global, Android properties, Java properties, and Linux environment.
+- TopInfo highlights readable device, build, CPU, runtime, memory, storage, locale, developer-state,
+  and verified-boot summaries before the raw property tables.
 - Search across OS parameters and activity entries.
 - Configurable activity shortcut cards, including a Google System Service sample card.
 - Separate import/export flows for activity cards and shell cards with preview and merge handling.
@@ -111,7 +113,8 @@ The BA page acts as a Blue Archive office dashboard:
 
 The student guide expands the BA workflow into catalog and media browsing:
 
-- Catalog tabs for students and related entries, with search, sort, compact localized labels, sync status, and local caching.
+- Catalog tabs for students and related entries, with search, sort, compact localized labels, sync
+  status, local caching, implemented-student filters, and school filters for NPC/satellite entries.
 - Student and related-entry detail pages with profile, strategy/simulation sections, NPC/satellite
   label grouping, gallery media, localized voice-language labels, audio/video content, and source
   sharing.
@@ -133,8 +136,8 @@ Settings collect the runtime controls in one place:
   full-effect policy during scrolling, and scoped card press feedback.
 - Toggleable main navigation style between the existing bottom bar / pager chain and the MIUIX
   iOS-like bottom bar / pager chain.
-- Icon design selector with Apple Designs as the refreshed default and Android Designs as the legacy
-  option.
+- Icon design selector with Android Designs as the default set and Apple Designs as the refreshed
+  alternate set.
 - Custom non-Home background image and opacity controls.
 - Notification permission, battery optimization, OEM autostart, app-list access, and Shizuku status.
 - Super Island notification style, HyperOS compatibility bypass, and restore-delay tuning.

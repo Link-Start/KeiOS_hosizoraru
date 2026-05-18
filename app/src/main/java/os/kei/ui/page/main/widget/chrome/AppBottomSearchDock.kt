@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "PropertyName")
+
 package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.animation.core.animateDpAsState
@@ -7,6 +9,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -45,6 +48,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchSurface
+import os.kei.ui.page.main.widget.glass.appLiquidSearchPlaceholderColor
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
@@ -77,35 +81,40 @@ fun AppBottomSearchDock(
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val windowWidth = appWindowWidthDp()
-    val maxExpandedWidth = (
+    val maxExpandedWidth =
+        (
             windowWidth -
-                    horizontalInset * 2 -
-                    compactDockReservedWidth -
-                    AppChromeTokens.pageSectionGap
-            ).coerceAtLeast(size)
+                horizontalInset * 2 -
+                compactDockReservedWidth -
+                AppChromeTokens.pageSectionGap
+        ).coerceAtLeast(size)
     val targetWidth = if (expanded) expandedWidth ?: maxExpandedWidth else size
     val animatedWidth by animateDpAsState(
         targetValue = targetWidth,
-        animationSpec = tween(
-            durationMillis = resolvedMotionDuration(
-                AppBottomSearchDockWidthMotionMs,
-                animationsEnabled,
+        animationSpec =
+            tween(
+                durationMillis =
+                    resolvedMotionDuration(
+                        AppBottomSearchDockWidthMotionMs,
+                        animationsEnabled,
+                    ),
             ),
-        ),
         label = "app_bottom_search_dock_width",
     )
     val width = if (expandedWidth == null) animatedWidth else targetWidth
-    val contentTransition = updateTransition(
-        targetState = expanded,
-        label = "app_bottom_search_dock_content",
-    )
+    val contentTransition =
+        updateTransition(
+            targetState = expanded,
+            label = "app_bottom_search_dock_content",
+        )
     val fieldAlpha by contentTransition.animateFloat(
         transitionSpec = {
             tween(
-                durationMillis = resolvedMotionDuration(
-                    AppBottomSearchDockContentFadeMs,
-                    animationsEnabled,
-                ),
+                durationMillis =
+                    resolvedMotionDuration(
+                        AppBottomSearchDockContentFadeMs,
+                        animationsEnabled,
+                    ),
             )
         },
         label = "app_bottom_search_field_alpha",
@@ -115,10 +124,11 @@ fun AppBottomSearchDock(
     val iconAlpha by contentTransition.animateFloat(
         transitionSpec = {
             tween(
-                durationMillis = resolvedMotionDuration(
-                    AppBottomSearchDockContentFadeMs,
-                    animationsEnabled,
-                ),
+                durationMillis =
+                    resolvedMotionDuration(
+                        AppBottomSearchDockContentFadeMs,
+                        animationsEnabled,
+                    ),
             )
         },
         label = "app_bottom_search_icon_alpha",
@@ -134,28 +144,31 @@ fun AppBottomSearchDock(
     }
 
     AppLiquidSearchSurface(
-        modifier = modifier
-            .width(width)
-            .height(size),
+        modifier =
+            modifier
+                .width(width)
+                .height(size),
         shape = if (expanded) ContinuousCapsule else CircleShape,
         backdrop = backdrop,
         focused = expanded,
         pressed = !expanded && dockPressed,
+        compactMaterial = !expanded,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (expanded) {
-                        Modifier
-                    } else {
-                        Modifier.clickable(
-                            interactionSource = dockInteractionSource,
-                            indication = null,
-                            onClick = { onExpandedChange(true) }
-                        )
-                    }
-                )
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (expanded) {
+                            Modifier
+                        } else {
+                            Modifier.clickable(
+                                interactionSource = dockInteractionSource,
+                                indication = null,
+                                onClick = { onExpandedChange(true) },
+                            )
+                        },
+                    ),
         ) {
             if (fieldAlpha > AppBottomSearchDockVisibleAlpha) {
                 AppBottomSearchField(
@@ -169,9 +182,10 @@ fun AppBottomSearchDock(
                     searchIcon = searchIcon,
                     placeholder = placeholder,
                     accent = accent,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = fieldAlpha },
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = fieldAlpha },
                 )
             }
             if (iconAlpha > AppBottomSearchDockVisibleAlpha) {
@@ -179,16 +193,17 @@ fun AppBottomSearchDock(
                     imageVector = searchIcon,
                     contentDescription = contentDescription,
                     tint = accent,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(17.dp)
-                        .size(iconSize)
-                        .graphicsLayer {
-                            alpha = iconAlpha
-                            val scale = 0.90f + 0.10f * iconAlpha
-                            scaleX = scale
-                            scaleY = scale
-                        },
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(17.dp)
+                            .size(iconSize)
+                            .graphicsLayer {
+                                alpha = iconAlpha
+                                val scale = 0.90f + 0.10f * iconAlpha
+                                scaleX = scale
+                                scaleY = scale
+                            },
                 )
             }
         }
@@ -214,6 +229,14 @@ private fun AppBottomSearchField(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val interactionSource = remember { MutableInteractionSource() }
+    val isDark = isSystemInDarkTheme()
+    val contentColor = MiuixTheme.colorScheme.onBackground
+    val placeholderColor =
+        appLiquidSearchPlaceholderColor(
+            contentColor = contentColor,
+            variantColor = MiuixTheme.colorScheme.onBackgroundVariant,
+            isDark = isDark,
+        )
     LaunchedEffect(autoFocus) {
         if (autoFocus) {
             focusRequester.requestFocus()
@@ -222,23 +245,24 @@ private fun AppBottomSearchField(
             keyboardController?.hide()
         }
     }
-    val textStyle = TextStyle(
-        color = MiuixTheme.colorScheme.onBackground,
-        fontSize = AppTypographyTokens.CardHeader.fontSize,
-        lineHeight = AppTypographyTokens.CardHeader.lineHeight,
-        platformStyle = PlatformTextStyle(includeFontPadding = false),
-    )
+    val textStyle =
+        TextStyle(
+            color = contentColor,
+            fontSize = AppTypographyTokens.CardHeader.fontSize,
+            lineHeight = AppTypographyTokens.CardHeader.lineHeight,
+            platformStyle = PlatformTextStyle(includeFontPadding = false),
+        )
     Row(
-        modifier = modifier
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-            ) {
-                onFocusActiveChange(true)
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            }
-            .padding(horizontal = 18.dp),
+        modifier =
+            modifier
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                ) {
+                    onFocusActiveChange(true)
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                }.padding(horizontal = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -255,25 +279,27 @@ private fun AppBottomSearchField(
             textStyle = textStyle,
             cursorBrush = SolidColor(accent),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    onFocusActiveChange(false)
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                },
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .defaultMinSize(minHeight = 24.dp)
-                .focusRequester(focusRequester)
-                .onFocusChanged { state ->
-                    onFocusActiveChange(state.isFocused)
-                },
+            keyboardActions =
+                KeyboardActions(
+                    onSearch = {
+                        onFocusActiveChange(false)
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    },
+                ),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .defaultMinSize(minHeight = 24.dp)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { state ->
+                        onFocusActiveChange(state.isFocused)
+                    },
             decorationBox = { innerTextField ->
                 if (query.isBlank()) {
                     Text(
                         text = placeholder,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
+                        color = placeholderColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         fontSize = AppTypographyTokens.CardHeader.fontSize,

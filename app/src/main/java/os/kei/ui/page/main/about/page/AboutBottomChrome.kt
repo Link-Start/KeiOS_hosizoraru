@@ -27,8 +27,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -50,6 +50,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun AboutBottomChrome(
+    visible: Boolean,
     navigationBarBottom: Dp,
     categories: List<AboutCategory>,
     selectedPage: Int,
@@ -67,6 +68,7 @@ internal fun AboutBottomChrome(
     miuixMainNavigationEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
 ) {
+    if (!visible && !searchExpanded) return
     val safeSelectedPage = selectedPage.coerceIn(0, categories.lastIndex)
     val size = AppChromeTokens.floatingBottomBarOuterHeight
     val gap = AboutBottomChromeSearchGap
@@ -126,8 +128,7 @@ internal fun AboutBottomChrome(
                     with(density) {
                         IntOffset(x = 0, y = -keyboardLift.roundToPx())
                     }
-                }
-                .padding(
+                }.padding(
                     start = outerPadding,
                     end = outerPadding,
                     top = 12.dp,

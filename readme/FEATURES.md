@@ -22,8 +22,10 @@ The OS page focuses on device and system inspection:
 - TopInfo highlights readable device, build, CPU, runtime, memory, storage, locale, developer-state,
   and verified-boot summaries before the raw property tables.
 - Search across OS parameters and activity entries.
-- Configurable activity shortcut cards, including a Google System Service sample card.
-- Separate import/export flows for activity cards and shell cards with preview and merge handling.
+- Configurable activity shortcut cards, including built-in AOSP/Google system entries for hidden
+  system settings.
+- Searchable, grouped activity-card and shell-card sheets with separate import/export flows,
+  preview, and merge handling.
 - Background shortcut action execution for refresh and page-entry flows.
 - Shizuku-powered shell runner with command history, formatted output, timeout controls, dangerous-command confirmation, and save-to-card support.
 - Cached system snapshots for faster return visits.

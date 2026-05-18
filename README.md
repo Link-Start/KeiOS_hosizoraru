@@ -56,7 +56,8 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 ## Main Features
 
 - Home dashboard with compact status pills and MCP, GitHub, and BA summary cards.
-- OS tools for system tables, Android/Java/Linux properties, activity shortcuts, Shizuku shell cards, and card import/export.
+- OS tools for system tables, Android/Java/Linux properties, built-in activity shortcuts,
+  searchable activity/shell card sheets, Shizuku shell cards, and card import/export.
 - Local MCP server controls with config copy, runtime logs, foreground service support, Claw
   onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 45 tools
   across runtime, Home, OS, GitHub discovery/tracking, and BA cache inspection.
@@ -96,7 +97,8 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   page, and lighter runtime-log/session monitoring.
 - OS TopInfo now presents device, build, CPU, runtime, memory, storage, locale, developer-state, and
   verified-boot signals as readable summaries, while raw properties stay available in the Android
-  Properties tables.
+  Properties tables. Activity and shell card sheets gained search and grouped sections for heavier
+  personal card sets.
 - BA Student Guide adapts NPC and satellite entries with leaner profile labels, related-role
   grouping, broader gallery parsing, media export, favorite-data migration, and older GameKee page
   compatibility. Catalog filters now cover implemented-student attributes, school filtering for
@@ -105,9 +107,9 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   / pager path, with shared sizing fixes for different display densities.
 - App icon selection keeps Android Designs as the default icon set and offers Apple Designs as the
   refreshed alternate set.
-- Release hardening covered bottom-bar visibility recovery, benchmark package startup, Gradle
-  configuration-cache hygiene, Ktor 3.5.0, broader Baseline Profiles, test coverage, R8 keep-rule
-  review, and release/benchmark mapping verification.
+- Release hardening covered About/Settings chrome visibility, dark search readability, benchmark
+  package startup, Gradle configuration-cache hygiene, Ktor 3.5.0, broader Baseline Profiles, test
+  coverage, R8 keep-rule review, and release/benchmark mapping verification.
 
 Read the full feature tour:
 

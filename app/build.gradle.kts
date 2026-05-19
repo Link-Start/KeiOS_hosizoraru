@@ -277,6 +277,19 @@ android {
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
             matchingFallbacks += listOf("release")
         }
+
+        // The androidx.baselineprofile plugin auto-creates `nonMinifiedRelease` and
+        // `benchmarkRelease` build types on `:app`. They have no counterpart in our
+        // library modules (`:core-io`, `:core-log`, which only define debug/release),
+        // which makes Gradle fail to resolve a matching variant — Android Studio
+        // surfaces this as "No build type in module ':core-io' matches build type
+        // 'benchmarkRelease'". Add `matchingFallbacks = release` so library
+        // resolution falls back to the release variant for those generated types.
+        configureEach {
+            if (name == "nonMinifiedRelease" || name == "benchmarkRelease") {
+                matchingFallbacks += listOf("release")
+            }
+        }
     }
 
     compileOptions {

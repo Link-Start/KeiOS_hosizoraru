@@ -2,6 +2,10 @@ package os.kei.ui.page.main.widget.sheet
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -57,9 +61,43 @@ enum class SnapshotPopupPlacement {
     ActionBarCenter
 }
 
-private val SnapshotPopupFractionAnimationSpec = ListPopupDefaults.FractionAnimationSpec
-private val SnapshotPopupAlphaEnterAnimationSpec = ListPopupDefaults.AlphaEnterAnimationSpec
-private val SnapshotPopupAlphaExitAnimationSpec = ListPopupDefaults.AlphaExitAnimationSpec
+/**
+ * Liquid glass popup expansion animation.
+ *
+ * Spring-based for a natural, elastic feel — slightly underdamped so the popup settles smoothly
+ * without an obvious overshoot. Replaces the linear-feeling Miuix default fraction spec.
+ */
+private val SnapshotPopupFractionAnimationSpec = spring<Float>(
+    dampingRatio = 0.82f,
+    stiffness = 420f,
+    visibilityThreshold = 0.001f
+)
+
+/**
+ * Liquid glass popup collapse animation — quicker and more linear, so dismissal feels decisive.
+ */
+private val SnapshotPopupFractionExitAnimationSpec = tween<Float>(
+    durationMillis = 180,
+    easing = FastOutLinearInEasing
+)
+
+/** Alpha fades in slightly slower than the geometric reveal so content remains crisp. */
+private val SnapshotPopupAlphaEnterAnimationSpec = tween<Float>(
+    durationMillis = 220,
+    easing = LinearOutSlowInEasing
+)
+
+/** Alpha fades out faster than the geometric collapse to avoid lingering ghost frames. */
+private val SnapshotPopupAlphaExitAnimationSpec = tween<Float>(
+    durationMillis = 140,
+    easing = FastOutLinearInEasing
+)
+
+/** Initial scale of the popup before expansion — subtle so it grows into place rather than popping. */
+private const val SnapshotPopupInitialScale = 0.88f
+
+/** Vertical offset (in dp) the popup translates from before settling — adds directional cue. */
+private const val SnapshotPopupTranslationDp = 8f
 
 @Composable
 fun SnapshotWindowListPopup(
@@ -185,7 +223,7 @@ fun SnapshotWindowListPopup(
             if (!popupRender && !wasVisible) return@LaunchedEffect
             if (transitionAnimationsEnabled) {
                 launch {
-                    fractionProgress.animateTo(0f, SnapshotPopupFractionAnimationSpec)
+                    fractionProgress.animateTo(0f, SnapshotPopupFractionExitAnimationSpec)
                 }
                 alphaProgress.animateTo(0f, SnapshotPopupAlphaExitAnimationSpec)
                 fractionProgress.stop()
@@ -213,7 +251,19 @@ fun SnapshotWindowListPopup(
             )
         ) {
             val fraction = fractionProgress.value.coerceIn(0f, 1f)
-            val scale = 0.15f + 0.85f * fraction
+            // Smooth, non-linear easing on scale + translation: starts at 0.88 (subtle) and grows
+            // to 1.0 with the spring. Linear interpolation here would feel mechanical against the
+            // spring-based fraction curve.
+            val scale = SnapshotPopupInitialScale + (1f - SnapshotPopupInitialScale) * fraction
+            // Directional translation: slides from above when opening downward, from below when
+            // opening upward. The pivot Y already provides the visual anchor; this adds spatial
+            // continuity from the trigger button.
+            val translationOffsetPx = with(density) { SnapshotPopupTranslationDp.dp.toPx() }
+            val translationY = if (popupShowBelow) {
+                -translationOffsetPx * (1f - fraction)
+            } else {
+                translationOffsetPx * (1f - fraction)
+            }
             Box(
                 modifier = popupModifier
                     .defaultMinSize(minWidth = popupMinWidth)
@@ -222,6 +272,7 @@ fun SnapshotWindowListPopup(
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
+                        this.translationY = translationY
                         alpha = alphaProgress.value.coerceIn(0f, 1f)
                         transformOrigin = popupTransformOrigin
                     }

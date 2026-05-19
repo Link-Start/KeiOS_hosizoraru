@@ -3,7 +3,12 @@ package os.kei.ui.page.main.widget.glass
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -182,17 +187,18 @@ fun LiquidGlassActionMenu(
     AppLiquidGlassDropdownColumn(
         modifier = modifier
             .animateContentSize(
-                animationSpec = tween(
-                    durationMillis = if (transitionAnimationsEnabled) {
-                        if (expandedSubmenu == null) {
-                            AppMotionTokens.expandSizeOutMs
-                        } else {
-                            AppMotionTokens.expandSizeInMs
-                        }
+                animationSpec = if (transitionAnimationsEnabled) {
+                    // Spring-based size transitions for submenu in/out — feels elastic and tied to
+                    // the user's interaction. Slightly stiffer for opening (faster reveal) and
+                    // slightly softer for collapsing (gentler settle).
+                    if (expandedSubmenu == null) {
+                        spring(dampingRatio = 0.92f, stiffness = 380f)
                     } else {
-                        AppMotionTokens.disabledDurationMs
+                        spring(dampingRatio = 0.85f, stiffness = 460f)
                     }
-                )
+                } else {
+                    tween(durationMillis = AppMotionTokens.disabledDurationMs)
+                }
             )
             .semantics { testTagsAsResourceId = true },
         minWidth = minWidth,
@@ -361,8 +367,20 @@ private fun LiquidGlassActionMenuSubmenuPanel(
     )
     AnimatedVisibility(
         visibleState = choicesVisibleState,
-        enter = appExpandIn(),
-        exit = appExpandOut(),
+        // Submenu reveal: spring-based fade + vertical expand. Feels organic and nests well inside
+        // the parent menu's container-size spring without competing animation curves.
+        enter = fadeIn(
+            animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f)
+        ) + expandVertically(
+            animationSpec = spring(dampingRatio = 0.85f, stiffness = 460f),
+            expandFrom = Alignment.Top
+        ),
+        exit = fadeOut(
+            animationSpec = spring(dampingRatio = 0.95f, stiffness = 700f)
+        ) + shrinkVertically(
+            animationSpec = spring(dampingRatio = 0.92f, stiffness = 600f),
+            shrinkTowards = Alignment.Top
+        ),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

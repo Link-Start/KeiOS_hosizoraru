@@ -1,5 +1,13 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -94,16 +102,28 @@ fun LiquidGlassDropdownItem(
         variant = variant
     )
     val contentHighlighted = highlighted && highlightContent
-    val textColor = (contentTint ?: if (contentHighlighted) {
+    val targetTextColor = (contentTint ?: if (contentHighlighted) {
         itemAccent
     } else {
         MiuixTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.96f else 0.92f)
     }).let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
-    val iconColor = (contentTint ?: if (contentHighlighted) {
+    val targetIconColor = (contentTint ?: if (contentHighlighted) {
         itemAccent
     } else {
         MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.88f else 0.78f)
     }).let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
+    // Smooth color transitions when selection changes — prevents the abrupt "blink" that a plain
+    // ternary produces. Spring keeps it feeling natural and tied to the user's selection gesture.
+    val textColor by animateColorAsState(
+        targetValue = targetTextColor,
+        animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
+        label = "liquid_glass_dropdown_item_text_color"
+    )
+    val iconColor by animateColorAsState(
+        targetValue = targetIconColor,
+        animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
+        label = "liquid_glass_dropdown_item_icon_color"
+    )
     val checkColor = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f)
     val selectedSurface = liquidGlassDropdownSelectedSurfaceColor(
         isDark = isDark,
@@ -158,18 +178,29 @@ fun LiquidGlassDropdownItem(
     } else {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
-        val scale by appMotionFloatState(
+        // Spring-based press feedback feels alive — settles quickly without overshoot,
+        // matches the elastic feel of iOS/Liquid Glass interactions.
+        val scale by animateFloatAsState(
             targetValue = if (pressed && enabled) AppInteractiveTokens.pressedScale else 1f,
-            durationMillis = 110,
+            animationSpec = spring(dampingRatio = 0.78f, stiffness = 700f),
             label = "liquid_glass_dropdown_item_scale"
         )
-        val pressedAlpha by appMotionFloatState(
+        // Pressed overlay alpha: faster spring with mild damping keeps the highlight visually
+        // tied to the press gesture (no perceptible lag) while still smoothing out micro-jitter.
+        val pressedAlpha by animateFloatAsState(
             targetValue = appControlPressedOverlayAlpha(pressed && enabled, isDark),
-            durationMillis = 110,
+            animationSpec = spring(dampingRatio = 0.88f, stiffness = 900f),
             label = "liquid_glass_dropdown_item_pressed_alpha"
         )
         val showHighlightedPill = highlighted && material != LiquidGlassDropdownMaterial.ActionMenu
         val showSelectionPill = showHighlightedPill || pressed
+        // Smooth pill alpha transition when selection changes — avoids the sudden flash that
+        // a plain boolean produces. Critical for selection feedback in dropdowns.
+        val pillAlpha by animateFloatAsState(
+            targetValue = if (showSelectionPill) 1f else 0f,
+            animationSpec = spring(dampingRatio = 0.92f, stiffness = 600f),
+            label = "liquid_glass_dropdown_item_pill_alpha"
+        )
         val pillSurface = if (showHighlightedPill) {
             selectedSurface
         } else {
@@ -186,24 +217,24 @@ fun LiquidGlassDropdownItem(
                     scaleY = scale
                 }
                 .then(
-                    if (showSelectionPill) {
+                    if (pillAlpha > 0.01f) {
                         Modifier.shadow(
-                            elevation = if (material == LiquidGlassDropdownMaterial.ActionMenu) 6.dp else 10.dp,
+                            elevation = (if (material == LiquidGlassDropdownMaterial.ActionMenu) 6.dp else 10.dp) * pillAlpha,
                             shape = rowShape,
                             clip = false,
                             ambientColor = Color.Black.copy(
-                                alpha = if (material == LiquidGlassDropdownMaterial.ActionMenu) {
+                                alpha = (if (material == LiquidGlassDropdownMaterial.ActionMenu) {
                                     if (isDark) 0.10f else 0.05f
                                 } else {
                                     if (isDark) 0.18f else 0.10f
-                                }
+                                }) * pillAlpha
                             ),
                             spotColor = Color.Black.copy(
-                                alpha = if (material == LiquidGlassDropdownMaterial.ActionMenu) {
+                                alpha = (if (material == LiquidGlassDropdownMaterial.ActionMenu) {
                                     if (isDark) 0.08f else 0.04f
                                 } else {
                                     if (isDark) 0.16f else 0.08f
-                                }
+                                }) * pillAlpha
                             )
                         )
                     } else {
@@ -211,15 +242,23 @@ fun LiquidGlassDropdownItem(
                     }
                 )
                 .clip(rowShape)
-                .background(if (showSelectionPill) pillSurface else Color.Transparent, rowShape)
+                .background(
+                    color = if (pillAlpha > 0.01f) {
+                        pillSurface.copy(alpha = pillSurface.alpha * pillAlpha)
+                    } else {
+                        Color.Transparent
+                    },
+                    shape = rowShape
+                )
                 .then(
-                    if (showSelectionPill) {
+                    if (pillAlpha > 0.01f) {
+                        val borderColor = liquidGlassDropdownSelectedBorderColor(
+                            isDark = isDark,
+                            material = material
+                        )
                         Modifier.border(
                             width = 1.dp,
-                            color = liquidGlassDropdownSelectedBorderColor(
-                                isDark = isDark,
-                                material = material
-                            ),
+                            color = borderColor.copy(alpha = borderColor.alpha * pillAlpha),
                             shape = rowShape
                         )
                     } else {
@@ -391,15 +430,36 @@ private fun LiquidGlassDropdownRowContent(
         horizontalArrangement = Arrangement.spacedBy(rowSpacing)
     ) {
         if (actionMenuLeadingCheck) {
-            if (showCheck) {
-                Icon(
-                    imageVector = MiuixIcons.Basic.Check,
-                    contentDescription = null,
-                    tint = checkColor,
-                    modifier = Modifier.size(LiquidGlassDropdownCheckSize)
-                )
-            } else {
-                Spacer(modifier = Modifier.size(LiquidGlassDropdownCheckSize))
+            // Leading check slot: always reserves space (Box matches the icon size).
+            // Fade + scale the icon based on showCheck so selection changes feel smooth.
+            val checkAlpha by animateFloatAsState(
+                targetValue = if (showCheck) 1f else 0f,
+                animationSpec = spring(dampingRatio = 0.85f, stiffness = 700f),
+                label = "liquid_glass_dropdown_leading_check_alpha"
+            )
+            val checkScale by animateFloatAsState(
+                targetValue = if (showCheck) 1f else 0.6f,
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
+                label = "liquid_glass_dropdown_leading_check_scale"
+            )
+            Box(
+                modifier = Modifier.size(LiquidGlassDropdownCheckSize),
+                contentAlignment = Alignment.Center
+            ) {
+                if (checkAlpha > 0.01f) {
+                    Icon(
+                        imageVector = MiuixIcons.Basic.Check,
+                        contentDescription = null,
+                        tint = checkColor,
+                        modifier = Modifier
+                            .size(LiquidGlassDropdownCheckSize)
+                            .graphicsLayer {
+                                alpha = checkAlpha
+                                scaleX = checkScale
+                                scaleY = checkScale
+                            }
+                    )
+                }
             }
         } else if (leadingIcon != null) {
             Icon(
@@ -443,13 +503,29 @@ private fun LiquidGlassDropdownRowContent(
             )
         }
         trailingContent?.invoke(this)
-        if (showCheck && !actionMenuLeadingCheck) {
-            Icon(
-                imageVector = MiuixIcons.Basic.Check,
-                contentDescription = null,
-                tint = checkColor,
-                modifier = Modifier.size(LiquidGlassDropdownCheckSize)
-            )
+        if (!actionMenuLeadingCheck) {
+            // Trailing check: AnimatedVisibility with fade + scale gives iOS-style feedback when
+            // selection changes. Layout shifts naturally as the icon slot appears/disappears.
+            AnimatedVisibility(
+                visible = showCheck,
+                enter = fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 700f)) +
+                    scaleIn(
+                        animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
+                        initialScale = 0.6f
+                    ),
+                exit = fadeOut(animationSpec = spring(dampingRatio = 0.95f, stiffness = 900f)) +
+                    scaleOut(
+                        animationSpec = spring(dampingRatio = 0.95f, stiffness = 900f),
+                        targetScale = 0.6f
+                    )
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Basic.Check,
+                    contentDescription = null,
+                    tint = checkColor,
+                    modifier = Modifier.size(LiquidGlassDropdownCheckSize)
+                )
+            }
         }
     }
 }

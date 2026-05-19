@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -265,9 +266,24 @@ fun LiquidGlassBottomSheet(
         ) {
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
-            // Official Backdrop recommendation: simple semi-transparent white surface.
-            // Liquid glass effect comes from lens refraction, not complex color layering.
-            val surfaceColor = Color.White.copy(alpha = 0.5f)
+            // Multi-layer frosted glass surface — simulates liquid glass without Backdrop's
+            // drawBackdrop (which crashes on Xiaomi due to MiBackgroundBlurBlend SIGSEGV in Dialog).
+            // Uses layered semi-transparent fills + border + sheen to create depth and glass feel.
+            val surfaceColor = if (isDark) {
+                Color(0xFF141420).copy(alpha = 0.92f)
+            } else {
+                Color(0xFFF8F9FC).copy(alpha = 0.88f)
+            }
+            val sheenColor = if (isDark) {
+                Color.White.copy(alpha = 0.06f)
+            } else {
+                Color.White.copy(alpha = 0.28f)
+            }
+            val borderColor = if (isDark) {
+                Color.White.copy(alpha = 0.12f)
+            } else {
+                Color.White.copy(alpha = 0.65f)
+            }
             val dragHandleColor = if (isDark) {
                 Color.White.copy(alpha = 0.28f)
             } else {
@@ -289,6 +305,8 @@ fun LiquidGlassBottomSheet(
                     }
                     .clip(sheetShape)
                     .background(surfaceColor, sheetShape)
+                    .background(sheenColor, sheetShape)
+                    .border(width = 0.5.dp, color = borderColor, shape = sheetShape)
                     // Block clicks from passing through to scrim
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

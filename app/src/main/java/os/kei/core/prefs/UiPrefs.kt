@@ -8,12 +8,6 @@ import os.kei.BuildConfig
 import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 
-enum class AppThemeMode {
-    FOLLOW_SYSTEM,
-    LIGHT,
-    DARK,
-}
-
 data class UiPrefsSnapshot(
     val liquidBottomBarEnabled: Boolean,
     val miuixMainNavigationEnabled: Boolean,

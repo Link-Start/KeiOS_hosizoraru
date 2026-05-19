@@ -44,6 +44,14 @@ fun Context.showToast(@StringRes stringRes: Int, duration: Int = Toast.LENGTH_SH
 }
 
 /**
+ * Shows a short Toast with a formatted string resource.
+ * Replaces `Toast.makeText(context, context.getString(R.string.x, arg1, arg2), duration).show()`.
+ */
+fun Context.showToast(@StringRes stringRes: Int, vararg formatArgs: Any, duration: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, getString(stringRes, *formatArgs), duration).show()
+}
+
+/**
  * Shows a short Toast with the given message string.
  */
 fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {

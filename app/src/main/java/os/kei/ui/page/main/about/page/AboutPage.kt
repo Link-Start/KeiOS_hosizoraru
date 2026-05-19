@@ -3,7 +3,7 @@
 package os.kei.ui.page.main.about.page
 
 import android.content.pm.PackageInfo
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -318,7 +318,7 @@ fun AboutPage(
                         onExpandedChange = { expansionState.githubExpanded = it },
                         onOpenProjectUrl = { url ->
                             if (!openExternalUrl(context, url)) {
-                                Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
+                                context.showToast(openLinkFailed)
                             }
                         },
                     )
@@ -426,7 +426,7 @@ fun AboutPage(
                         onExpandedChange = { expansionState.projectLicenseExpanded = it },
                         onOpenLicenseUrl = { url ->
                             if (!openExternalUrl(context, url)) {
-                                Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
+                                context.showToast(openLinkFailed)
                             }
                         },
                     )
@@ -441,7 +441,7 @@ fun AboutPage(
                         onExpandedChange = { expansionState.licenseExpanded = it },
                         onOpenSourceUrl = { url ->
                             if (!openExternalUrl(context, url)) {
-                                Toast.makeText(context, openLinkFailed, Toast.LENGTH_SHORT).show()
+                                context.showToast(openLinkFailed)
                             }
                         },
                     )

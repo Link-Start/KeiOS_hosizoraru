@@ -292,6 +292,7 @@ android {
     packaging {
         jniLibs {
             excludes += "lib/*/libandroidx.graphics.path.so"
+            keepDebugSymbols += "**/libmmkv.so"
         }
     }
 

@@ -184,6 +184,9 @@
     <string name="settings_liquid_toast_title">Liquid Glass Toast</string>
     <string name="settings_liquid_toast_summary_enabled">Use v2 Liquid Glass Toast, displayed at the upper-center of the screen to avoid obscuring content.</string>
     <string name="settings_liquid_toast_summary_disabled">Use Android system Toast, displayed at the bottom of the screen.</string>
+    <string name="settings_liquid_sheet_title">Liquid Glass Sheet</string>
+    <string name="settings_liquid_sheet_summary_enabled">Use v2 Liquid Glass bottom sheet with frosted-glass refraction and spring animations.</string>
+    <string name="settings_liquid_sheet_summary_disabled">Use Miuix standard bottom sheet style.</string>
     <string name="settings_cache_scope_disabled">Only disables Settings-page cache diagnostics. Page caches and normal usage remain active.</string>
     <string name="settings_cache_disabled_desc">Cache diagnostics are disabled. Settings will skip cache size, update time, and cleanup stats.</string>
     <string name="settings_cache_loading_desc">Reading cache summaries across pages</string>

@@ -54,6 +54,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setLiquidSheetEnabled(value: Boolean) {
+        updateAndPersist({ copy(liquidSheetEnabled = value) }) {
+            UiPrefs.setLiquidSheetEnabled(value)
+        }
+    }
+
     suspend fun setTransitionAnimationsEnabled(value: Boolean) {
         updateAndPersist({ copy(transitionAnimationsEnabled = value) }) {
             UiPrefs.setTransitionAnimationsEnabled(value)

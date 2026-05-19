@@ -118,6 +118,8 @@ internal fun MainScreenNavHost(
                     onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
                     liquidToastEnabled = prefsState.liquidToastEnabled,
                     onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
+                    liquidSheetEnabled = prefsState.liquidSheetEnabled,
+                    onLiquidSheetChanged = prefsState::updateLiquidSheetEnabled,
                     transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
                     onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
                     predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,

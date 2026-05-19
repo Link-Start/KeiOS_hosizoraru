@@ -330,6 +330,23 @@ fun SnapshotWindowBottomSheet(
     enableNestedScroll: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    // Route to Liquid Glass BottomSheet when the user preference is enabled.
+    if (os.kei.core.prefs.UiPrefs.isLiquidSheetEnabled()) {
+        LiquidGlassBottomSheet(
+            show = show,
+            modifier = modifier,
+            title = title,
+            startAction = startAction,
+            endAction = endAction,
+            onDismissRequest = onDismissRequest,
+            onDismissFinished = onDismissFinished,
+            allowDismiss = allowDismiss,
+            onBlockedDismissRequest = onBlockedDismissRequest,
+            content = content
+        )
+        return
+    }
+
     val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
     var blockedDismissPromptToken by remember { mutableIntStateOf(0) }
     LaunchedEffect(blockedDismissPromptToken) {

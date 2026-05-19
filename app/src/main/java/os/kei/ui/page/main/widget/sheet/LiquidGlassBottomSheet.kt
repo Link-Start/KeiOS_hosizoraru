@@ -3,9 +3,10 @@ package os.kei.ui.page.main.widget.sheet
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -33,16 +33,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
@@ -58,17 +58,11 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * v2 Liquid Glass BottomSheet — a frosted-glass bottom sheet with iOS-style spring animations.
+ * v2 Liquid Glass BottomSheet — frosted-glass bottom sheet with spring animations.
  *
- * Design principles:
- * - Frosted glass surface with blur, lens distortion, vibrancy, and depth shadow
- * - Spring-based slide-up/down animation (no linear tween)
- * - Drag-to-dismiss with velocity-aware fling detection
- * - Scrim dim that fades with sheet position
- * - Rounded top corners with continuous curvature (ContinuousRoundedRectangle)
- * - Drag handle pill at the top
- * - Optional title bar with start/end action slots
- * - Navigation bar inset padding
+ * Uses [Dialog] (not Popup) to guarantee finite layout constraints from the window — this is the
+ * same approach as Material 3 ModalBottomSheet and Miuix WindowBottomSheet. Popup gives unbounded
+ * height which crashes any scrollable content inside.
  */
 
 private val LiquidSheetCornerRadius = 28.dp
@@ -80,7 +74,6 @@ private val LiquidSheetBlurRadius = 16.dp
 private val LiquidSheetLensStart = 24.dp
 private val LiquidSheetLensEnd = 48.dp
 private const val LiquidSheetDismissThreshold = 0.35f
-private const val LiquidSheetDismissVelocityThreshold = 800f
 private const val LiquidSheetScrimAlpha = 0.42f
 
 @Composable
@@ -128,15 +121,10 @@ fun LiquidGlassBottomSheet(
 
     if (!isRendered && !show) return
 
-    BackHandler(enabled = show) {
-        if (allowDismiss) {
-            currentOnDismissRequest?.invoke()
-        } else {
-            currentOnBlockedDismissRequest?.invoke()
-        }
-    }
-
-    Popup(
+    // Dialog creates a full-screen window with finite constraints — unlike Popup which can give
+    // unbounded height. This is critical: callers' content contains LazyColumn/verticalScroll
+    // which crash under infinite height measurement.
+    Dialog(
         onDismissRequest = {
             if (allowDismiss) {
                 currentOnDismissRequest?.invoke()
@@ -144,46 +132,39 @@ fun LiquidGlassBottomSheet(
                 currentOnBlockedDismissRequest?.invoke()
             }
         },
-        properties = PopupProperties(
-            focusable = true,
-            dismissOnBackPress = false, // handled by BackHandler above
-            dismissOnClickOutside = allowDismiss
+        properties = DialogProperties(
+            dismissOnBackPress = allowDismiss,
+            dismissOnClickOutside = false, // we handle scrim tap manually for animation
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
         )
     ) {
         val progress = sheetProgress.value.coerceIn(0f, 1f)
         val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
-        // Scrim
+        BackHandler(enabled = true) {
+            if (allowDismiss) {
+                currentOnDismissRequest?.invoke()
+            } else {
+                currentOnBlockedDismissRequest?.invoke()
+            }
+        }
+
+        // Full-screen container: scrim + sheet at bottom
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = LiquidSheetScrimAlpha * progress))
-                .pointerInput(allowDismiss) {
-                    if (allowDismiss) {
-                        detectVerticalDragGestures { _, _ -> }
-                        // Tap on scrim to dismiss
-                    }
-                }
-                .then(
-                    if (allowDismiss) {
-                        Modifier.pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    // Only dismiss on tap (not drag)
-                                    if (event.changes.all { !it.isConsumed && it.pressed }) {
-                                        // Will be handled by Popup's dismissOnClickOutside
-                                    }
-                                }
-                            }
-                        }
-                    } else Modifier
-                ),
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    enabled = allowDismiss
+                ) {
+                    currentOnDismissRequest?.invoke()
+                },
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Sheet container — heightIn on the outer Box ensures all children (including caller's
-            // scrollable content) receive finite height constraints from the Popup's unbounded space.
-            val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+            // Sheet surface
             val sheetBackdrop = rememberLayerBackdrop()
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
@@ -197,29 +178,22 @@ fun LiquidGlassBottomSheet(
             } else {
                 Color.White.copy(alpha = 0.32f)
             }
-            val borderColor = if (isDark) {
-                Color.White.copy(alpha = 0.14f)
-            } else {
-                Color.White.copy(alpha = 0.60f)
-            }
             val dragHandleColor = if (isDark) {
                 Color.White.copy(alpha = 0.28f)
             } else {
                 Color.Black.copy(alpha = 0.18f)
             }
 
-            Box(
+            Column(
                 modifier = modifier
                     .widthIn(max = LiquidSheetMaxWidth)
-                    .heightIn(max = screenHeightDp * 0.75f)
                     .fillMaxWidth()
                     .graphicsLayer {
                         val offsetY = size.height * (1f - progress)
                         translationY = offsetY
-                        // Subtle scale for depth feel
                         val scale = 0.96f + 0.04f * progress
                         scaleX = scale
-                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                        transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)
                     .layerBackdrop(sheetBackdrop)
@@ -252,6 +226,11 @@ fun LiquidGlassBottomSheet(
                             drawRect(sheenColor)
                         }
                     )
+                    // Block clicks from passing through sheet to scrim
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {}
                     .pointerInput(allowDismiss) {
                         if (!allowDismiss) return@pointerInput
                         var totalDrag = 0f
@@ -259,7 +238,8 @@ fun LiquidGlassBottomSheet(
                             onDragStart = { totalDrag = 0f },
                             onDragEnd = {
                                 val currentProgress = sheetProgress.value
-                                val shouldDismiss = currentProgress < (1f - LiquidSheetDismissThreshold)
+                                val shouldDismiss =
+                                    currentProgress < (1f - LiquidSheetDismissThreshold)
                                 if (shouldDismiss) {
                                     currentOnDismissRequest?.invoke()
                                 } else {
@@ -275,7 +255,8 @@ fun LiquidGlassBottomSheet(
                                 totalDrag += dragAmount
                                 if (totalDrag > 0f) {
                                     val heightPx = with(density) { 400.dp.toPx() }
-                                    val newProgress = (1f - totalDrag / heightPx).coerceIn(0f, 1f)
+                                    val newProgress =
+                                        (1f - totalDrag / heightPx).coerceIn(0f, 1f)
                                     scope.launch {
                                         sheetProgress.snapTo(newProgress)
                                     }
@@ -283,72 +264,58 @@ fun LiquidGlassBottomSheet(
                             }
                         )
                     }
+                    .padding(bottom = navBarPadding.calculateBottomPadding()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Use BoxWithConstraints to guarantee finite height propagation into content.
-                // Popup gives unbounded constraints; BoxWithConstraints + heightIn on the outer
-                // Box resolves to a finite maxHeight that we can pass down explicitly.
-                androidx.compose.foundation.layout.BoxWithConstraints(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    val availableHeight = maxHeight
-                    Column(
+                // Drag handle
+                Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
+                Box(
+                    modifier = Modifier
+                        .width(LiquidSheetDragHandleWidth)
+                        .height(LiquidSheetDragHandleHeight)
+                        .clip(RoundedRectangle(2.dp))
+                        .background(dragHandleColor)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Title bar
+                if (title != null || startAction != null || endAction != null) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = availableHeight)
-                            .padding(bottom = navBarPadding.calculateBottomPadding()),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Drag handle
-                        Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
-                        Box(
-                            modifier = Modifier
-                                .width(LiquidSheetDragHandleWidth)
-                                .height(LiquidSheetDragHandleHeight)
-                                .clip(RoundedRectangle(2.dp))
-                                .background(dragHandleColor)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Title bar
-                        if (title != null || startAction != null || endAction != null) {
-                            Row(
+                        startAction?.invoke()
+                        if (title != null) {
+                            Text(
+                                text = title,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                startAction?.invoke()
-                                if (title != null) {
-                                    Text(
-                                        text = title,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .padding(horizontal = 12.dp),
-                                        color = MiuixTheme.colorScheme.onBackground,
-                                        fontSize = 17.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                                endAction?.invoke()
-                            }
+                                    .weight(1f)
+                                    .padding(horizontal = 12.dp),
+                                color = MiuixTheme.colorScheme.onBackground,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
-
-                        // Content — weight(1f) is safe here because Column has finite heightIn(max)
-                        // from BoxWithConstraints. Callers can use LazyColumn/verticalScroll freely.
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f, fill = false)
-                                .padding(horizontal = 20.dp)
-                                .padding(bottom = 16.dp)
-                        ) {
-                            content()
-                        }
+                        endAction?.invoke()
                     }
+                }
+
+                // Content — Dialog guarantees finite height constraints from the window,
+                // so callers can freely use LazyColumn, verticalScroll, etc.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 16.dp)
+                ) {
+                    content()
                 }
             }
         }

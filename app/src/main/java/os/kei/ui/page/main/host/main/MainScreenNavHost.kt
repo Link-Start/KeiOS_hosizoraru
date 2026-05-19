@@ -7,12 +7,15 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -43,6 +46,10 @@ import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
+import os.kei.ui.page.main.widget.glass.AppToastBridge
+import os.kei.ui.page.main.widget.glass.BindLiquidToastBridge
+import os.kei.ui.page.main.widget.glass.LiquidToastHost
+import os.kei.ui.page.main.widget.glass.rememberLiquidToastState
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 
@@ -238,6 +245,12 @@ internal fun MainScreenNavHost(
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
         LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled,
     ) {
+        // Liquid Glass Toast host — overlays all navigation content.
+        val liquidToastState = rememberLiquidToastState()
+        val liquidToastBackdrop = rememberLayerBackdrop()
+        BindLiquidToastBridge(liquidToastState)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().layerBackdrop(liquidToastBackdrop)) {
         if (routePredictiveBackEnabled) {
             NavigationBackHandler(
                 sceneState = sceneState,
@@ -257,6 +270,12 @@ internal fun MainScreenNavHost(
             source = BackNavigationSource.MainRoute,
         ) {
             handleMainScreenBack(backStack, navigator, pagerCoordinator)
+        }
+            }
+            LiquidToastHost(
+                state = liquidToastState,
+                backdrop = liquidToastBackdrop
+            )
         }
     }
 }

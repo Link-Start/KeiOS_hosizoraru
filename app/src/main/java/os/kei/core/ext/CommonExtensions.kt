@@ -3,6 +3,8 @@ package os.kei.core.ext
 import android.content.Context
 import android.widget.Toast
 import androidx.annotation.StringRes
+import os.kei.ui.page.main.widget.glass.AppToastBridge
+import os.kei.ui.page.main.widget.glass.LiquidToastDuration
 
 /**
  * Common extension functions to reduce boilerplate across the codebase.
@@ -36,26 +38,55 @@ fun String?.trimOrDefault(default: String): String {
 fun String?.trimOrEmpty(): String = this?.trim().orEmpty()
 
 /**
- * Shows a short Toast with the given string resource.
- * Replaces `Toast.makeText(context, getString(R.string.x), Toast.LENGTH_SHORT).show()`.
+ * Shows a toast message, automatically routing to Liquid Glass Toast when enabled.
+ *
+ * This is the primary toast entry point for the entire app. It checks [AppToastBridge] first:
+ * - If Liquid Toast is enabled and the Compose host is active → shows Liquid Glass Toast
+ * - Otherwise → falls back to Android system Toast
+ *
+ * All 99+ call sites using `context.showToast(...)` automatically get Liquid Toast support
+ * without any code changes.
  */
 fun Context.showToast(@StringRes stringRes: Int, duration: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, getString(stringRes), duration).show()
+    AppToastBridge.show(
+        context = this,
+        message = getString(stringRes),
+        duration = if (duration == Toast.LENGTH_LONG) {
+            LiquidToastDuration.Long
+        } else {
+            LiquidToastDuration.Short
+        }
+    )
 }
 
 /**
- * Shows a short Toast with a formatted string resource.
- * Replaces `Toast.makeText(context, context.getString(R.string.x, arg1, arg2), duration).show()`.
+ * Shows a toast with a formatted string resource, routing through [AppToastBridge].
  */
 fun Context.showToast(@StringRes stringRes: Int, vararg formatArgs: Any, duration: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, getString(stringRes, *formatArgs), duration).show()
+    AppToastBridge.show(
+        context = this,
+        message = getString(stringRes, *formatArgs),
+        duration = if (duration == Toast.LENGTH_LONG) {
+            LiquidToastDuration.Long
+        } else {
+            LiquidToastDuration.Short
+        }
+    )
 }
 
 /**
- * Shows a short Toast with the given message string.
+ * Shows a toast with the given message string, routing through [AppToastBridge].
  */
 fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, message, duration).show()
+    AppToastBridge.show(
+        context = this,
+        message = message,
+        duration = if (duration == Toast.LENGTH_LONG) {
+            LiquidToastDuration.Long
+        } else {
+            LiquidToastDuration.Short
+        }
+    )
 }
 
 /**

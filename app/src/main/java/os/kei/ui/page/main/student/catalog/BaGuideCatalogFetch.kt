@@ -166,8 +166,8 @@ internal suspend fun fetchBaGuideCatalogBundle(
             withContext(networkDispatcher) {
                 loadCachedBaGuideCatalogBundle()
             }
-        if (isBaGuideCatalogBundleComplete(cached)) {
-            return cached!!
+        if (cached != null && isBaGuideCatalogBundleComplete(cached)) {
+            return cached
         }
     }
     val now = System.currentTimeMillis()

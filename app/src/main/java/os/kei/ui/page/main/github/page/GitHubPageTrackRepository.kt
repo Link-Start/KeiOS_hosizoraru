@@ -2,9 +2,9 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
@@ -21,7 +21,7 @@ import os.kei.ui.page.main.github.share.toShareImportResult
 import os.kei.ui.page.main.github.share.toShareImportTrack
 
 internal class GitHubPageTrackRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun loadTrackSnapshot(): GitHubTrackSnapshot {
         return withContext(ioDispatcher) {

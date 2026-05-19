@@ -3,8 +3,6 @@ package os.kei.core.platform
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-
 object LocalNetworkPermissionCompat {
     fun requiredPermissionOrNull(): String? {
         return when {
@@ -16,6 +14,6 @@ object LocalNetworkPermissionCompat {
 
     fun hasPermission(context: Context): Boolean {
         val permission = requiredPermissionOrNull() ?: return true
-        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 }

@@ -18,6 +18,7 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteImportResult
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.page.support.createUniqueDocumentInTree
 import java.io.Writer
+import os.kei.core.concurrency.AppDispatchers
 
 private const val EXPORT_WRITE_CHUNK_CHARS = 16 * 1024
 private const val EXPORT_WRITE_YIELD_CHARS = 256 * 1024
@@ -38,7 +39,7 @@ internal suspend fun buildBaGuideCatalogImportPreviewAsync(
     uri: Uri,
     kind: BaGuideCatalogImportKind,
     currentFavorites: Map<Long, Long>,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default
 ): BaGuideCatalogImportPreviewState {
     val raw = readBaGuideCatalogImportTextAsync(
@@ -92,7 +93,7 @@ internal suspend fun buildBaGuideCatalogImportPreviewAsync(
 
 internal suspend fun applyBaGuideCatalogFavoritesImportAsync(
     preview: BaGuideCatalogImportPreviewState,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default
 ): BaGuideCatalogImportApplyResult = coroutineScope {
     val studentFavorites = when (preview.kind) {
@@ -120,7 +121,7 @@ internal suspend fun applyBaGuideCatalogFavoritesImportAsync(
 internal suspend fun readBaGuideCatalogImportTextAsync(
     context: Context,
     uri: Uri,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo
 ): String {
     return context.contentResolver.readTextFromUriLimited(
         uri = uri,
@@ -138,7 +139,7 @@ internal suspend fun buildCatalogFavoritesExportJsonAsync(
 
 internal suspend fun buildCatalogAllFavoritesExportJsonAsync(
     favorites: Map<Long, Long>,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default
 ): String {
     val bgmFavoritesJson = withContext(ioDispatcher) {
@@ -153,7 +154,7 @@ internal suspend fun buildCatalogAllFavoritesExportJsonAsync(
 }
 
 internal suspend fun buildBgmFavoritesExportJsonAsync(
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo
 ): String = withContext(ioDispatcher) {
     GuideBgmFavoriteStore.buildFavoritesExportJson()
 }
@@ -162,7 +163,7 @@ internal suspend fun writeBaGuideCatalogJsonExportAsync(
     context: Context,
     uri: Uri,
     request: BaGuideCatalogJsonExportRequest,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo
 ): Boolean {
     if (request.payload.isBlank()) return false
     return try {
@@ -184,7 +185,7 @@ internal suspend fun writeBaGuideCatalogJsonExportToTreeAsync(
     context: Context,
     treeUri: Uri,
     request: BaGuideCatalogJsonExportRequest,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo
 ): Boolean {
     if (request.payload.isBlank() || request.fileName.isBlank()) return false
     return try {

@@ -6,9 +6,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
+import os.kei.core.concurrency.AppDispatchers
 
 internal class KeiOSJsonImportRepository(
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val sourceReader = KeiOSJsonImportSourceReader(ioDispatcher)

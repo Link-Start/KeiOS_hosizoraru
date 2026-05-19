@@ -2,12 +2,12 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 
 internal class GitHubPageRefreshNotificationBridge(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun notifyProgress(
         context: Context,

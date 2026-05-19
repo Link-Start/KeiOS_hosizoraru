@@ -13,7 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -36,6 +35,7 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.coroutines.cancellation.CancellationException
+import os.kei.core.concurrency.AppDispatchers
 
 internal fun normalizeGuidePlaybackSource(raw: String): String {
     val value = raw.trim()
@@ -479,7 +479,7 @@ internal suspend fun copyGuideMediaToUriAsync(
     context: Context,
     sourceUrl: String,
     outputUri: Uri,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media,
 ): Boolean {
     return withContext(ioDispatcher) {
         try {
@@ -597,7 +597,7 @@ internal suspend fun copyGuideMediaPackToUriAsync(
     context: Context,
     request: GuideMediaPackSaveRequest,
     outputUri: Uri,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media,
 ): GuideMediaPackSaveResult {
     return withContext(ioDispatcher) {
         val total = request.entries.size
@@ -669,7 +669,7 @@ internal suspend fun createUniqueDocumentUriInTreeAsync(
     treeUri: Uri,
     mimeType: String,
     fileName: String,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media,
 ): Uri? =
     withContext(ioDispatcher) {
         val treeDoc = DocumentFile.fromTreeUri(context, treeUri) ?: return@withContext null

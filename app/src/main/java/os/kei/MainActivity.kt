@@ -14,7 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
+import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.metrics.performance.JankStats
 import os.kei.core.icon.LauncherIconController
@@ -156,7 +155,7 @@ class MainActivity : ComponentActivity() {
         applyPendingShortcutActions()
         // Defer non-first-frame work: shortcut sync writes to system storage, Xiaomi network
         // restoration may trigger system calls. Neither affects the first Compose frame.
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(AppDispatchers.fileIo) {
             runCatching { McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this@MainActivity) }
             runCatching { AppShortcuts.sync(this@MainActivity) }
         }
@@ -260,10 +259,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun hasNotificationPermission() =
-        ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
+        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     private fun requestLocalNetworkPermissionIfNeeded(startMcpAfterGrant: Boolean = false): Boolean {
         if (hasLocalNetworkPermission()) return true

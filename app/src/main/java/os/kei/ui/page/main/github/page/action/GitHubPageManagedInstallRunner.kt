@@ -3,9 +3,9 @@ package os.kei.ui.page.main.github.page.action
 import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.log.AppLogger
@@ -97,13 +97,13 @@ internal class GitHubPageManagedInstallRunner(
             packageName = item.packageName,
             targetDisplayName = targetDisplayName
         )
-        val manifestDeferred = async(Dispatchers.IO) {
+        val manifestDeferred = async(AppDispatchers.githubNetwork) {
             apkInfoRepository.inspect(
                 asset = asset,
                 lookupConfig = lookupConfig
             ).getOrNull()
         }
-        val urlDeferred = async(Dispatchers.IO) {
+        val urlDeferred = async(AppDispatchers.githubNetwork) {
             resolvePreferredAssetUrl(asset)
         }
         val manifestInfo = manifestDeferred.await()

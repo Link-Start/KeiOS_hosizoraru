@@ -1,10 +1,10 @@
 package os.kei.ui.page.main.os
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropertiesSnapshot
@@ -45,7 +45,7 @@ internal fun commandRows(command: String, shizukuApiUtils: ShizukuApiUtils): Lis
 internal suspend fun commandRowsAsync(
     command: String,
     shizukuApiUtils: ShizukuApiUtils,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): List<InfoRow> {
     val shizuku = shizukuApiUtils.execCommandCancellable(command)
     val runtime = if (shizuku.isNullOrBlank()) execRuntimeCommandAsync(command) else null
@@ -93,7 +93,7 @@ internal data class OsPageDataSnapshot(
 
         suspend fun loadForExportAsync(
             shizukuApiUtils: ShizukuApiUtils,
-            dispatcher: CoroutineDispatcher = Dispatchers.IO
+            dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
         ): OsPageDataSnapshot = coroutineScope {
             val systemProperties = async {
                 getAllSystemPropertiesSnapshotAsync(forceRefresh = true, dispatcher = dispatcher)
@@ -127,7 +127,7 @@ internal fun settingsRowsForSection(
 internal suspend fun settingsRowsForSectionAsync(
     section: SectionKind,
     shizukuApiUtils: ShizukuApiUtils,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): List<InfoRow> {
     return commandRowsAsync(settingsListCommand(section), shizukuApiUtils, dispatcher)
 }
@@ -142,7 +142,7 @@ internal fun loadSettingsSectionSnapshot(shizukuApiUtils: ShizukuApiUtils): OsSe
 
 internal suspend fun loadSettingsSectionSnapshotAsync(
     shizukuApiUtils: ShizukuApiUtils,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): OsSettingsSectionSnapshot {
     val shizuku = shizukuApiUtils.execCommandCancellable(
         command = settingsProbeCommand,
@@ -202,7 +202,7 @@ internal fun loadLinuxProbeSnapshot(shizukuApiUtils: ShizukuApiUtils): OsLinuxPr
 
 internal suspend fun loadLinuxProbeSnapshotAsync(
     shizukuApiUtils: ShizukuApiUtils,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): OsLinuxProbeSnapshot = coroutineScope {
     val runtime = async {
         execRuntimeCommandAsync(linuxProbeCommand)

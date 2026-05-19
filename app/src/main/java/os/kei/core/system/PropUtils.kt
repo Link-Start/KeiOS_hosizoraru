@@ -2,9 +2,9 @@ package os.kei.core.system
 
 import android.annotation.SuppressLint
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Method
+import os.kei.core.concurrency.AppDispatchers
 
 private inline fun <T> safeOf(default: T, block: () -> T): T = runCatching(block).getOrDefault(default)
 
@@ -151,7 +151,7 @@ fun getAllJavaPropertiesSnapshot(forceRefresh: Boolean = false): Map<String, Str
 
 suspend fun getAllJavaPropertiesSnapshotAsync(
     forceRefresh: Boolean = false,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): Map<String, String> {
     return withContext(dispatcher) {
         getAllJavaPropertiesSnapshot(forceRefresh)
@@ -167,7 +167,7 @@ fun getAllSystemPropertiesSnapshot(forceRefresh: Boolean = false): Map<String, S
 
 suspend fun getAllSystemPropertiesSnapshotAsync(
     forceRefresh: Boolean = false,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): Map<String, String> {
     return PropSnapshotStore.systemPropertiesAsync(forceRefresh, dispatcher)
 }

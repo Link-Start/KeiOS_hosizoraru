@@ -1,8 +1,12 @@
 package os.kei.feature.github.domain
 
+import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.min
+import kotlin.math.sqrt
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
@@ -15,15 +19,11 @@ import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
-import java.util.Locale
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.min
-import kotlin.math.sqrt
 
 internal class GitHubPackageRepositoryResolver(
     private val discoverySource: GitHubRepositoryDiscoverySource,
     private val packageNameScanner: GitHubApkPackageNameScanner,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun scanRepositoriesForPackage(
         request: GitHubPackageRepositoryScanRequest

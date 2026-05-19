@@ -28,9 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.capsule.ContinuousCapsule
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -206,7 +206,7 @@ internal fun AppIcon(
     ) {
         if (normalizedPackageName.isBlank()) return@produceState
         if (value == null) {
-            value = withContext(Dispatchers.IO) {
+            value = withContext(AppDispatchers.githubNetwork) {
                 AppIconCache.getOrLoad(context, normalizedPackageName)
             }
         }

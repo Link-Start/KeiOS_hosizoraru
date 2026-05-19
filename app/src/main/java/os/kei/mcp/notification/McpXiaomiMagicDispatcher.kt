@@ -5,7 +5,6 @@ import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -17,6 +16,7 @@ import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.system.ShizukuApiUtils
 import kotlin.time.Duration.Companion.milliseconds
+import os.kei.core.concurrency.AppDispatchers
 
 internal object McpXiaomiMagicDispatcher {
     private const val TAG = "McpXiaomiMagic"
@@ -29,7 +29,7 @@ internal object McpXiaomiMagicDispatcher {
     }
 
     private val shizukuApiUtils = ShizukuApiUtils()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.mcpServer)
     private val networkMutex = Mutex()
 
     @Volatile

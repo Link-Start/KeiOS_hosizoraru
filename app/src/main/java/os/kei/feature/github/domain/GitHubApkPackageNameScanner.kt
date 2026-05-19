@@ -1,8 +1,9 @@
 package os.kei.feature.github.domain
 
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -12,7 +13,6 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
-import kotlin.coroutines.cancellation.CancellationException
 
 internal data class GitHubStableReleaseTarget(
     val tag: String,
@@ -68,7 +68,7 @@ internal interface GitHubApkPackageNameScanSource {
 
 internal class GitHubApkPackageNameScanner(
     private val source: GitHubApkPackageNameScanSource,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun scan(
         request: GitHubApkPackageNameScanRequest

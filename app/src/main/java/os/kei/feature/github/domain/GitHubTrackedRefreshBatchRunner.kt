@@ -1,9 +1,9 @@
 package os.kei.feature.github.domain
 
 import android.content.Context
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -12,12 +12,12 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.yield
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
-import java.util.concurrent.atomic.AtomicInteger
 
 internal data class GitHubTrackedRefreshBatchResult(
     val totalCount: Int,
@@ -53,7 +53,7 @@ internal object GitHubTrackedRefreshBatchRunner {
         items: List<GitHubTrackedApp>,
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size),
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         evaluator: suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck =
             GitHubReleaseCheckService::evaluateTrackedApp
@@ -72,7 +72,7 @@ internal object GitHubTrackedRefreshBatchRunner {
         trackedItems: List<GitHubTrackedApp>,
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(trackedItems.size),
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck
     ): GitHubTrackedRefreshBatchResult {

@@ -5,24 +5,24 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.SystemClock
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.model.GitHubLookupStrategyOption
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.minutes
 
 private const val GITHUB_SHIZUKU_INSTALLER_TAG = "GitHubShizukuInstaller"
 private const val APK_STREAM_BUFFER_SIZE = 1024 * 1024
@@ -76,7 +76,7 @@ interface GitHubManagedApkInstaller {
 class GitHubShizukuPackageInstaller(
     private val bridge: ShizukuPackageInstallerBridge = ShizukuPackageInstallerBridge(),
     private val client: OkHttpClient = defaultClient,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) : GitHubManagedApkInstaller {
     override suspend fun cancel(context: Context, sessionId: Int) = withContext(ioDispatcher) {
         if (sessionId <= 0) return@withContext

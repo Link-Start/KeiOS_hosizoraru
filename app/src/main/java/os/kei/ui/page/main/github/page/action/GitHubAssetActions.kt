@@ -2,9 +2,9 @@ package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
 import android.content.pm.PackageManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
@@ -132,7 +132,7 @@ internal class GitHubAssetActions(
         state.apkInfoLoading[key] = true
         state.apkInfoErrors.remove(key)
         scope.launch {
-            val result = withContext(Dispatchers.IO) {
+            val result = withContext(AppDispatchers.githubNetwork) {
                 apkInfoRepository.inspect(
                     asset = asset,
                     lookupConfig = state.lookupConfig,

@@ -3,11 +3,11 @@ package os.kei.ui.page.main.github.share
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
@@ -18,7 +18,7 @@ import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 private const val GITHUB_SHARE_IMPORT_DELIVERY_RUNNER_TAG = "GitHubShareImportDelivery"
 
 internal object GitHubShareImportDeliveryRunner {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.githubNetwork)
     private val lock = Any()
     private var activeJob: Job? = null
 
@@ -94,7 +94,7 @@ internal object GitHubShareImportDeliveryRunner {
     }
 
     private suspend fun shouldCommitActiveManagedInstall(): Boolean {
-        val activeManagedInstall = withContext(Dispatchers.IO) {
+        val activeManagedInstall = withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.loadActiveManagedInstall()
         } ?: return false
         return activeManagedInstall.sessionId > 0 &&
@@ -110,7 +110,7 @@ internal object GitHubShareImportDeliveryRunner {
             selectedAssetName = selectedAsset.name,
             sendInstallActionEnabled = true
         )
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.saveActivePreview(selected.toPendingPreviewRecord())
         }
         GitHubTrackStoreSignals.notifyChanged()

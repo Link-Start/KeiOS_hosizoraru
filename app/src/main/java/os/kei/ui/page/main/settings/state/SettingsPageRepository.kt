@@ -12,9 +12,10 @@ import os.kei.core.prefs.CacheStores
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import os.kei.core.concurrency.AppDispatchers
 
 internal class SettingsPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     suspend fun listCacheEntries(context: Context): List<CacheEntrySummary> {

@@ -1,14 +1,14 @@
 package os.kei.feature.github.domain
 
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
 import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
-import kotlin.coroutines.cancellation.CancellationException
 
 internal interface GitHubStarImportApkVerificationCache {
     fun load(
@@ -32,7 +32,7 @@ internal class GitHubStarImportApkVerifier(
     private val cache: GitHubStarImportApkVerificationCache? = null,
     private val packageNameScanner: GitHubApkPackageNameScanner =
         GitHubApkPackageNameScanner(source),
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun verify(
         candidate: GitHubRepositoryImportCandidate,

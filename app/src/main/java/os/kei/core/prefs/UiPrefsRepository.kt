@@ -1,7 +1,6 @@
 package os.kei.core.prefs
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,9 +8,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
+import os.kei.core.concurrency.AppDispatchers
 
 class UiPrefsRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
 ) {
     private val snapshots = MutableStateFlow(UiPrefs.defaultSnapshot())
 

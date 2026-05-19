@@ -5,6 +5,7 @@ import android.content.Intent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.InstalledAppItem
@@ -14,7 +15,7 @@ import os.kei.ui.page.main.github.query.queryDownloaderOptions
 import os.kei.ui.page.main.github.query.queryOnlineShareTargetOptions
 
 internal class GitHubPageInstalledAppRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     suspend fun queryOnlineShareTargets(

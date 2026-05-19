@@ -3,7 +3,7 @@ package os.kei.ui.page.main.ba
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -53,7 +53,7 @@ internal data class BaRuntimePersistenceUpdate(
 }
 
 internal class BaRuntimePersistenceCoordinator(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val debounceMs: Long = 250L,
 ) {
     private val updates = Channel<BaRuntimePersistenceUpdate>(capacity = Channel.BUFFERED)

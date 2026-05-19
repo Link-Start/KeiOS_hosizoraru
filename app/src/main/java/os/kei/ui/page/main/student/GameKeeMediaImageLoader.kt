@@ -3,11 +3,11 @@ package os.kei.ui.page.main.student
 import android.content.Context
 import android.graphics.Bitmap
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
+import os.kei.core.concurrency.AppDispatchers
 
 internal object GameKeeMediaImageLoader {
     private val keyLock = Any()
@@ -17,7 +17,7 @@ internal object GameKeeMediaImageLoader {
         context: Context,
         source: String,
         maxDecodeDimension: Int = 2048,
-        ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        ioDispatcher: CoroutineDispatcher = AppDispatchers.media,
         onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null
     ): Bitmap? {
         val target = normalizeGuideMediaSource(source)
@@ -38,7 +38,7 @@ internal object GameKeeMediaImageLoader {
     suspend fun loadCatalogIcon(
         context: Context,
         imageUrl: String,
-        ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+        ioDispatcher: CoroutineDispatcher = AppDispatchers.media
     ): Bitmap? {
         val target = imageUrl.trim()
         if (target.isBlank()) return null
@@ -53,7 +53,7 @@ internal object GameKeeMediaImageLoader {
     suspend fun resolveInlineGifTarget(
         context: Context,
         target: String,
-        ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+        ioDispatcher: CoroutineDispatcher = AppDispatchers.media
     ): String {
         val normalized = normalizeGuideMediaSource(target)
         if (normalized.isBlank() || !isHttpMediaSource(normalized)) return normalized

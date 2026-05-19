@@ -4,18 +4,18 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.core.log.AppLogger
 import java.util.concurrent.atomic.AtomicBoolean
+import os.kei.core.concurrency.AppDispatchers
 
 object BackgroundAsyncReceiverRunner {
     private const val DEFAULT_RECEIVER_TIMEOUT_MS = 45_000L
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.mcpServer)
 
     fun launch(
         receiver: BroadcastReceiver,

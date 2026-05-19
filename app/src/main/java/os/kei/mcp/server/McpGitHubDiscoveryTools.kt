@@ -1,7 +1,6 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -27,6 +26,7 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.forTrackedItem
 import java.util.Locale
+import os.kei.core.concurrency.AppDispatchers
 
 internal class McpGitHubDiscoveryTools(
     private val environment: McpToolEnvironment
@@ -139,7 +139,7 @@ internal class McpGitHubDiscoveryTools(
         val source = GitHubRepositoryDiscoveryRepository(
             apiToken = GitHubTrackStore.loadLookupConfig().apiToken
         )
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.mcpServer) {
             source.searchRepositories(query, limit)
         }.fold(
             onSuccess = { repositories ->

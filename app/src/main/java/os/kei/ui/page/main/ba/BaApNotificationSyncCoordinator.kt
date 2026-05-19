@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 
@@ -85,7 +85,7 @@ internal object BaApNotificationSyncCoordinator {
 
     private suspend fun withNotificationTimeout(block: () -> Boolean): Boolean {
         return withTimeoutOrNull(NOTIFICATION_SYNC_TIMEOUT_MS) {
-            withContext(Dispatchers.IO) { block() }
+            withContext(AppDispatchers.baFetch) { block() }
         } ?: false
     }
 

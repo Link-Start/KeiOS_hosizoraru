@@ -12,6 +12,7 @@ import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
 import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
 import kotlin.coroutines.cancellation.CancellationException
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaGuideCatalogLoadResult(
     val catalog: BaGuideCatalogBundle,
@@ -19,7 +20,7 @@ internal data class BaGuideCatalogLoadResult(
 )
 
 internal class BaGuideCatalogRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val refreshIntervalLoader: () -> Int = BASettingsStore::loadCalendarRefreshIntervalHours,
     private val cachedBundleLoader: () -> BaGuideCatalogBundle? = ::loadCachedBaGuideCatalogBundle,

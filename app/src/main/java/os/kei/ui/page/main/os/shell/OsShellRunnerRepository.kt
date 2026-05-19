@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.os.shell
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +13,7 @@ import os.kei.ui.page.main.os.shell.state.appendShellRunnerOutput
 import os.kei.ui.page.main.os.shell.state.emptyShellRunnerOutputState
 import os.kei.ui.page.main.os.shell.state.formatShellRunnerOutput
 import os.kei.ui.page.main.os.shell.state.normalizeShellRunnerOutputState
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class OsShellRunnerChromePrefs(
     val appThemeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
@@ -31,7 +31,7 @@ internal data class OsShellRunnerPersistentState(
 )
 
 internal class OsShellRunnerRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ) {
     private val persistentState = MutableStateFlow(OsShellRunnerPersistentState())
     private val chromePrefs = MutableStateFlow(OsShellRunnerChromePrefs())

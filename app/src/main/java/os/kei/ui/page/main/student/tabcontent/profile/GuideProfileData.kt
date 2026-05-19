@@ -2,12 +2,12 @@ package os.kei.ui.page.main.student.tabcontent.profile
 
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.feature.ba.data.remote.GameKeeRepository
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import java.util.concurrent.ConcurrentHashMap
+import os.kei.core.concurrency.AppDispatchers
 
 internal val profileLinkTitleCache = ConcurrentHashMap<String, String>()
 
@@ -54,7 +54,7 @@ internal fun resolveProfileLinkTitle(url: String): String {
 
 internal suspend fun resolveProfileLinkTitleAsync(
     url: String,
-    networkDispatcher: CoroutineDispatcher = Dispatchers.IO
+    networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch
 ): String {
     if (url.isBlank()) return ""
     profileLinkTitleCache[url]?.let { return it }

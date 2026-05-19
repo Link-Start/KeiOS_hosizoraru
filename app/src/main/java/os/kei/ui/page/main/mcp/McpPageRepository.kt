@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.mcp.util.buildMcpLogsExportJson
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class McpServiceDraft(
     val serverName: String,
@@ -29,7 +30,7 @@ internal sealed interface McpSaveConfigResult {
 }
 
 internal class McpPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.mcpServer,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     suspend fun toggleServer(

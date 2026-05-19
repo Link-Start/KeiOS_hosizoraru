@@ -1,21 +1,21 @@
 package os.kei.feature.github.data.remote
 
+import java.util.Locale
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsWorkflowRun
 import os.kei.feature.github.model.GitHubRepositoryActionsProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryProfileSourceState
-import java.util.Locale
 
 internal class GitHubActionsProfileSource(
     private val client: okhttp3.OkHttpClient,
     private val apiBaseUrl: String,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun fetch(
         request: GitHubRepositoryProfileRequest,

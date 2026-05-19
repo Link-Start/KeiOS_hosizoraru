@@ -22,6 +22,7 @@ import java.time.ZoneOffset
 import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
+import os.kei.core.concurrency.AppDispatchers
 
 private const val BA_GUIDE_SECOND_PAGE_ID = 23941
 private const val BA_GUIDE_STUDENT_PID = 49443
@@ -157,7 +158,7 @@ internal fun clearBaGuideCatalogCache(context: Context? = null) {
 
 internal suspend fun fetchBaGuideCatalogBundle(
     forceRefresh: Boolean = false,
-    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ): BaGuideCatalogBundle {
     if (!forceRefresh) {
@@ -247,7 +248,7 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     maxNetworkFetchPerPass: Int = BA_GUIDE_RELEASE_INDEX_MAX_NETWORK_FETCH_PER_PASS,
     networkBatchSize: Int = BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE,
     requestThrottleMs: Long = BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS,
-    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
     onBundleUpdated: (BaGuideCatalogBundle) -> Unit = {},
 ): BaGuideCatalogBundle {

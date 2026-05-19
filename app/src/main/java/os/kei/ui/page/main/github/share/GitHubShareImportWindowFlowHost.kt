@@ -16,11 +16,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.model.GitHubShareImportFlowMode
+
 
 @Composable
 internal fun GitHubShareImportWindowFlowHost(
@@ -191,7 +193,7 @@ internal fun GitHubShareImportWindowFlowHost(
         attachCandidate = null
         managedInstallProgress = null
         attachDuplicateExists = false
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.clearActiveFlow()
         }
         try {

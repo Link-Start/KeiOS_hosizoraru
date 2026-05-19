@@ -5,13 +5,13 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
 import os.kei.core.prefs.KeiMmkv
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.ba.data.remote.GameKeeNetworkClient
 import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
@@ -142,7 +142,7 @@ internal object BaCalendarPoolImageCache {
         category: Category,
         serverIndex: Int,
         rawUrls: List<String>
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(AppDispatchers.baFetch) {
         val targets = rawUrls
             .map(::normalizeRemoteTarget)
             .filter { it.isNotBlank() }
@@ -155,7 +155,7 @@ internal object BaCalendarPoolImageCache {
         coroutineScope {
             val semaphore = Semaphore(UiPerformanceBudget.mediaCacheParallelDownloads)
             targets.map { url ->
-                async(Dispatchers.IO) {
+                async(AppDispatchers.baFetch) {
                     semaphore.withPermit {
                         val file = targetFile(context, category, serverIndex, url)
                         if (file.exists() && file.length() > 0L) return@withPermit
@@ -204,7 +204,7 @@ internal object BaCalendarPoolImageCache {
         category: Category,
         serverIndex: Int,
         rawUrls: List<String>
-    ) = withContext(Dispatchers.IO) {
+    ) = withContext(AppDispatchers.baFetch) {
         val dir = categoryDir(context, category, serverIndex)
         if (!dir.exists()) return@withContext
 

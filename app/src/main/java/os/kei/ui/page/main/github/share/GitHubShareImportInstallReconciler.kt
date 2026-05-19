@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.github.share
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -13,7 +13,7 @@ internal class GitHubShareImportInstallReconciler(
     suspend fun reconcileRecentInstall(
         pendingTrack: GitHubPendingShareImportTrackRecord
     ): ShareImportInstallReconcileResult {
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.githubNetwork) {
             val packageSnapshot = findRecentInstalledCandidateForPendingTrack(context, pendingTrack)
                 ?: return@withContext ShareImportInstallReconcileResult.None
             packageSnapshot.toReconcileResult(
@@ -41,7 +41,7 @@ internal class GitHubShareImportInstallReconciler(
         if (event.action !in shareImportAttachActions) {
             return ShareImportInstallReconcileResult.None
         }
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.githubNetwork) {
             val packageSnapshot = loadInstalledPackageSnapshot(context, packageName)
                 ?: return@withContext ShareImportInstallReconcileResult.None
             if (

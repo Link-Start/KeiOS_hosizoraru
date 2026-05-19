@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
@@ -47,7 +47,7 @@ internal sealed interface StarImportLoadResult {
 }
 
 internal class GitHubStarImportPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val snapshotLoader: () -> GitHubTrackSnapshot = GitHubTrackStore::loadSnapshot,
     private val discoverySourceFactory: (String) -> GitHubRepositoryDiscoverySource = { apiToken ->
         GitHubRepositoryDiscoveryRepository(apiToken = apiToken)

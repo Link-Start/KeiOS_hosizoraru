@@ -20,11 +20,12 @@ import os.kei.feature.github.data.local.GitHubTrackStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import os.kei.core.concurrency.AppDispatchers
 
 private const val ISSUE_API_URL = "https://api.github.com/repos/hosizoraru/KeiOS/issues"
 
 internal class FeedbackIssueRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val httpClient: OkHttpClient = SharedHttpClient.base
 ) {

@@ -1,11 +1,13 @@
 package os.kei.feature.github.domain
 
 import android.os.Build
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubActionsDownloadHistoryStore
 import os.kei.feature.github.data.remote.GitHubActionsRepository
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
@@ -18,10 +20,9 @@ import os.kei.feature.github.model.GitHubActionsWorkflowSelectionOptions
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
-import kotlin.coroutines.cancellation.CancellationException
 
 class GitHubActionsUpdateCheckService(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     suspend fun fetchRecommendedRunSnapshot(

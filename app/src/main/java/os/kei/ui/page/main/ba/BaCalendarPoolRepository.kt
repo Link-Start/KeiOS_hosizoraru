@@ -2,8 +2,8 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_CALENDAR_CACHE_SCHEMA_VERSION
@@ -53,7 +53,7 @@ internal object BaCalendarPoolRepository {
                 lastSyncMs = 0L
             )
         }
-        val cacheSnapshot = withContext(Dispatchers.IO) {
+        val cacheSnapshot = withContext(AppDispatchers.baFetch) {
             BASettingsStore.loadCalendarCacheSnapshot(serverIndex)
         }
         val hasCache = cacheSnapshot.raw.isNotBlank()
@@ -113,7 +113,7 @@ internal object BaCalendarPoolRepository {
             )
         }
 
-        val result = withContext(Dispatchers.IO) {
+        val result = withContext(AppDispatchers.baFetch) {
             runCatching {
                 runWithHardTimeout(15_000L) {
                     fetchBaCalendarRemoteResult(serverIndex, now)
@@ -183,7 +183,7 @@ internal object BaCalendarPoolRepository {
                 lastSyncMs = 0L
             )
         }
-        val cacheSnapshot = withContext(Dispatchers.IO) {
+        val cacheSnapshot = withContext(AppDispatchers.baFetch) {
             BASettingsStore.loadPoolCacheSnapshot(serverIndex)
         }
         val hasCache = cacheSnapshot.raw.isNotBlank()
@@ -248,7 +248,7 @@ internal object BaCalendarPoolRepository {
             )
         }
 
-        val result = withContext(Dispatchers.IO) {
+        val result = withContext(AppDispatchers.baFetch) {
             runCatching {
                 runWithHardTimeout(15_000L) {
                     fetchBaPoolRemoteResult(serverIndex, now)

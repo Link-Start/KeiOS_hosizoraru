@@ -18,7 +18,6 @@ import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.shortcut.loadActivityClassOptions
 import os.kei.ui.page.main.os.shortcut.loadInstalledAppOptions
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -26,6 +25,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import kotlin.collections.plus
+import os.kei.core.concurrency.AppDispatchers
 
 @Composable
 @OptIn(FlowPreview::class)
@@ -207,7 +207,7 @@ internal fun BindOsActivitySuggestionLoadEffect(
             ShortcutSuggestionField.PackageName -> {
                 onPackageSuggestionsLoadingChange(true)
                 runCatching {
-                    withContext(Dispatchers.IO) { loadInstalledAppOptions(context) }
+                    withContext(AppDispatchers.osOperations) { loadInstalledAppOptions(context) }
                 }.onSuccess(onPackageSuggestionsChange)
                     .onFailure { onPackageSuggestionsChange(emptyList()) }
                 onPackageSuggestionsLoadingChange(false)
@@ -221,7 +221,7 @@ internal fun BindOsActivitySuggestionLoadEffect(
                 }
                 onClassSuggestionsLoadingChange(true)
                 runCatching {
-                    withContext(Dispatchers.IO) {
+                    withContext(AppDispatchers.osOperations) {
                         loadActivityClassOptions(
                             context = context,
                             packageName = targetPackageName

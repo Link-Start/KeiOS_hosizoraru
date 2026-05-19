@@ -11,6 +11,7 @@ import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
 import kotlin.coroutines.cancellation.CancellationException
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaStudentGuideLoadResult(
     val info: BaStudentGuideInfo?,
@@ -18,7 +19,7 @@ internal data class BaStudentGuideLoadResult(
 )
 
 internal class BaStudentGuideRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     fun loadCurrentUrl(): String = BaStudentGuideStore.loadCurrentUrl()

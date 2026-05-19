@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -39,7 +40,7 @@ private const val tokenApiSignalWorkflowBatchSize = 3
 private const val tokenApiSignalBranchProbeLimit = 2
 
 internal class GitHubActionsPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val artifactManifestProbe = GitHubActionsArtifactManifestProbe()

@@ -15,11 +15,11 @@ import os.kei.ui.page.main.os.shortcut.normalizeActivityShortcutConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,7 +77,7 @@ internal suspend fun ensureOsSectionLoaded(
         updateSection(section) {
             it.copy(rows = fresh, loading = false, loadedFresh = true, loadFailed = false)
         }
-        val hasPersistedCache = withContext(Dispatchers.IO) {
+        val hasPersistedCache = withContext(AppDispatchers.osOperations) {
             OsInfoCache.write(section, fresh)
             OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
         }
@@ -116,7 +116,7 @@ internal suspend fun applyOsCardVisibility(
         if (visible) add(card) else remove(card)
     }.toSet()
     updateVisibleCards(updated)
-    withContext(Dispatchers.IO) { OsCardVisibilityStore.saveVisibleCards(updated) }
+    withContext(AppDispatchers.osOperations) { OsCardVisibilityStore.saveVisibleCards(updated) }
     when (card) {
         OsSectionCard.TOP_INFO -> {
             if (!visible) setTopInfoExpanded(false)
@@ -129,7 +129,7 @@ internal suspend fun applyOsCardVisibility(
             if (!visible) {
                 setSystemTableExpanded(false)
                 updateSection(SectionKind.SYSTEM) { SectionState() }
-                withContext(Dispatchers.IO) { OsInfoCache.clear(SectionKind.SYSTEM) }
+                withContext(AppDispatchers.osOperations) { OsInfoCache.clear(SectionKind.SYSTEM) }
             } else {
                 ensureLoad(SectionKind.SYSTEM, true)
             }
@@ -138,7 +138,7 @@ internal suspend fun applyOsCardVisibility(
             if (!visible) {
                 setSecureTableExpanded(false)
                 updateSection(SectionKind.SECURE) { SectionState() }
-                withContext(Dispatchers.IO) { OsInfoCache.clear(SectionKind.SECURE) }
+                withContext(AppDispatchers.osOperations) { OsInfoCache.clear(SectionKind.SECURE) }
             } else {
                 ensureLoad(SectionKind.SECURE, true)
             }
@@ -147,7 +147,7 @@ internal suspend fun applyOsCardVisibility(
             if (!visible) {
                 setGlobalTableExpanded(false)
                 updateSection(SectionKind.GLOBAL) { SectionState() }
-                withContext(Dispatchers.IO) { OsInfoCache.clear(SectionKind.GLOBAL) }
+                withContext(AppDispatchers.osOperations) { OsInfoCache.clear(SectionKind.GLOBAL) }
             } else {
                 ensureLoad(SectionKind.GLOBAL, true)
             }
@@ -156,7 +156,7 @@ internal suspend fun applyOsCardVisibility(
             if (!visible) {
                 setAndroidPropsExpanded(false)
                 updateSection(SectionKind.ANDROID) { SectionState() }
-                withContext(Dispatchers.IO) { OsInfoCache.clear(SectionKind.ANDROID) }
+                withContext(AppDispatchers.osOperations) { OsInfoCache.clear(SectionKind.ANDROID) }
             } else {
                 ensureLoad(SectionKind.ANDROID, true)
             }
@@ -165,7 +165,7 @@ internal suspend fun applyOsCardVisibility(
             if (!visible) {
                 setJavaPropsExpanded(false)
                 updateSection(SectionKind.JAVA) { SectionState() }
-                withContext(Dispatchers.IO) { OsInfoCache.clear(SectionKind.JAVA) }
+                withContext(AppDispatchers.osOperations) { OsInfoCache.clear(SectionKind.JAVA) }
             } else {
                 ensureLoad(SectionKind.JAVA, true)
             }
@@ -174,13 +174,13 @@ internal suspend fun applyOsCardVisibility(
             if (!visible) {
                 setLinuxEnvExpanded(false)
                 updateSection(SectionKind.LINUX) { SectionState() }
-                withContext(Dispatchers.IO) { OsInfoCache.clear(SectionKind.LINUX) }
+                withContext(AppDispatchers.osOperations) { OsInfoCache.clear(SectionKind.LINUX) }
             } else {
                 ensureLoad(SectionKind.LINUX, true)
             }
         }
     }
-    val hasPersistedCache = withContext(Dispatchers.IO) {
+    val hasPersistedCache = withContext(AppDispatchers.osOperations) {
         OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
     }
     onCachePersistedChanged(hasPersistedCache)
@@ -197,7 +197,7 @@ internal suspend fun applyOsActivityCardVisibility(
         if (card.id == cardId) card.copy(visible = visible) else card
     }
     updateCards(updatedCards)
-    withContext(Dispatchers.IO) {
+    withContext(AppDispatchers.osOperations) {
         OsActivityShortcutCardStore.saveCards(
             cards = updatedCards,
             defaults = defaults
@@ -210,7 +210,7 @@ internal suspend fun applyOsShellCommandCardVisibility(
     visible: Boolean,
     updateCards: (List<OsShellCommandCard>) -> Unit
 ) {
-    val updatedCards = withContext(Dispatchers.IO) {
+    val updatedCards = withContext(AppDispatchers.osOperations) {
         OsShellCommandCardStore.setCardVisible(cardId = cardId, visible = visible)
     }
     updateCards(updatedCards)
@@ -241,13 +241,13 @@ internal suspend fun runOsShellCommandCard(
     }
     updateRunningCardIds(runningCardIdsProvider() + card.id)
     try {
-        val output = withContext(Dispatchers.IO) {
+        val output = withContext(AppDispatchers.osOperations) {
             shizukuApiUtils.execCommandCancellable(
                 command = command,
                 timeoutMs = 300_000L
             )
         }.orEmpty().trim().ifBlank { shellRunNoOutputText }
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.osOperations) {
             OsShellCommandCardStore.updateCardRunResult(
                 cardId = card.id,
                 runOutput = output

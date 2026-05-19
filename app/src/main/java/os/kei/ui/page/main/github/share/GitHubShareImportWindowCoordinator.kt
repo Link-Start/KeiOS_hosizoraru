@@ -2,9 +2,9 @@ package os.kei.ui.page.main.github.share
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -35,7 +35,7 @@ internal sealed interface GitHubShareImportRestoreResult {
 }
 
 internal class GitHubShareImportWindowCoordinator(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun loadStoredSnapshot(): GitHubShareImportStoredFlowSnapshot {
         return withContext(ioDispatcher) {

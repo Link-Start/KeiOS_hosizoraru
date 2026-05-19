@@ -24,11 +24,11 @@ import os.kei.R
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import com.kyant.capsule.ContinuousCapsule
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
+import os.kei.core.concurrency.AppDispatchers
 
 private object ActivityIconBitmapCache {
     private const val MAX_ICON_CACHE_ENTRIES = 96
@@ -90,7 +90,7 @@ internal fun ShortcutActivityIcon(
         if (ActivityIconBitmapCache.isMissing(iconCacheKey)) return@produceState
         if (value != null) return@produceState
 
-        value = withContext(Dispatchers.IO) {
+        value = withContext(AppDispatchers.fileIo) {
             val activityBitmap = loadActivityIconBitmap(
                 context = context,
                 packageName = normalizedPackageName,

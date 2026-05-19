@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
@@ -17,7 +17,7 @@ internal object BaCalendarPoolCacheWriter {
         localOnly: Boolean
     ): List<BaCalendarEntry> {
         if (entries.isEmpty()) return emptyList()
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.baFetch) {
             BaCalendarPoolImageCache.applyCachedCalendarImageUrls(
                 context = context,
                 serverIndex = serverIndex,
@@ -34,7 +34,7 @@ internal object BaCalendarPoolCacheWriter {
         localOnly: Boolean
     ): List<BaPoolEntry> {
         if (entries.isEmpty()) return emptyList()
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.baFetch) {
             BaCalendarPoolImageCache.applyCachedPoolImageUrls(
                 context = context,
                 serverIndex = serverIndex,
@@ -50,7 +50,7 @@ internal object BaCalendarPoolCacheWriter {
         entries: List<BaCalendarEntry>,
         nowMs: Long
     ): List<BaCalendarEntry> {
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveCalendarCache(
                 serverIndex,
                 encodeBaCalendarEntries(entries),
@@ -71,7 +71,7 @@ internal object BaCalendarPoolCacheWriter {
         entries: List<BaPoolEntry>,
         nowMs: Long
     ): List<BaPoolEntry> {
-        return withContext(Dispatchers.IO) {
+        return withContext(AppDispatchers.baFetch) {
             BASettingsStore.savePoolCache(
                 serverIndex,
                 encodeBaPoolEntries(entries),

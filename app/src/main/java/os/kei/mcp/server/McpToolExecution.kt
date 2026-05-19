@@ -22,15 +22,16 @@ import kotlinx.serialization.json.put
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import os.kei.core.concurrency.AppDispatchers
 
 enum class McpToolExecutionProfile(
     val timeout: Duration,
     val dispatcher: CoroutineDispatcher
 ) {
-    CacheRead(4.seconds, Dispatchers.IO),
-    NormalWrite(8.seconds, Dispatchers.IO),
-    Network(30.seconds, Dispatchers.IO),
-    DeepScan(60.seconds, Dispatchers.IO),
+    CacheRead(4.seconds, AppDispatchers.mcpServer),
+    NormalWrite(8.seconds, AppDispatchers.mcpServer),
+    Network(30.seconds, AppDispatchers.mcpServer),
+    DeepScan(60.seconds, AppDispatchers.mcpServer),
     Cpu(4.seconds, Dispatchers.Default)
 }
 

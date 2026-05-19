@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.domain.GitHubStarImportClassifier
@@ -27,7 +29,6 @@ import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.StarImportApplyResult
-import kotlin.time.Duration.Companion.milliseconds
 
 @Immutable
 internal data class GitHubStarImportUiState(
@@ -109,7 +110,7 @@ internal class GitHubStarImportViewModel(
     init {
         viewModelScope.launch {
             GitHubTrackStoreSignals.version.collect {
-                val snapshot = withContext(Dispatchers.IO) { GitHubTrackStore.loadSnapshot() }
+                val snapshot = withContext(AppDispatchers.githubNetwork) { GitHubTrackStore.loadSnapshot() }
                 _uiState.update { state ->
                     state.copy(apiTokenAvailable = snapshot.lookupConfig.apiToken.isNotBlank())
                 }

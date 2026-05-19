@@ -1,8 +1,12 @@
 package os.kei.feature.github.domain
 
+import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.min
+import kotlin.math.sqrt
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
@@ -16,10 +20,6 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
-import java.util.Locale
-import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.min
-import kotlin.math.sqrt
 
 internal interface GitHubRepositoryDiscoverySource {
     val supportsParallelSearch: Boolean
@@ -44,7 +44,7 @@ internal interface GitHubRepositoryDiscoverySource {
 
 internal class GitHubRepositoryDiscoveryService(
     private val source: GitHubRepositoryDiscoverySource,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun previewStarredRepositoryImport(
         request: GitHubStarredRepositoryImportRequest,

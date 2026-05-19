@@ -19,8 +19,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.ba.data.remote.GameKeeNetworkClient
 import os.kei.feature.ba.data.remote.GameKeeNetworkResult
 import java.text.SimpleDateFormat
@@ -95,12 +95,12 @@ internal fun GameKeeCoverImage(
             if (localPath.isBlank()) {
                 return@LaunchedEffect
             }
-            val low = withContext(Dispatchers.IO) { decodeSampledLocalBitmap(localPath, 720) }
+            val low = withContext(AppDispatchers.media) { decodeSampledLocalBitmap(localPath, 720) }
             if (low != null) {
                 bitmap = low
                 cacheGameKeeCoverBitmap(normalizedUrl, low)
             }
-            val high = withContext(Dispatchers.IO) { decodeSampledLocalBitmap(localPath, 1280) }
+            val high = withContext(AppDispatchers.media) { decodeSampledLocalBitmap(localPath, 1280) }
             if (high != null) {
                 val current = bitmap
                 val shouldUpgrade = current == null ||
@@ -112,7 +112,7 @@ internal fun GameKeeCoverImage(
             }
             return@LaunchedEffect
         }
-        val loaded = withContext(Dispatchers.IO) {
+        val loaded = withContext(AppDispatchers.media) {
             when (val result = GameKeeNetworkClient.fetchImage(
                 imageUrl = normalizedUrl,
                 maxDecodeDimension = 720

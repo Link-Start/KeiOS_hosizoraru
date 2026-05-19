@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -12,7 +12,7 @@ import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
 
 internal class BaPoolStudentGuideUrlRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
 ) {
     private val mutex = Mutex()
     private var cachedCatalogResolver: BaPoolStudentGuideUrlResolver? = null

@@ -12,6 +12,7 @@ import os.kei.ui.page.main.student.fetchGuideInfo
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.isGuideBgmFavoriteCandidateTitle
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaGuideStudentBgmResolvedItem(
     val favorite: GuideBgmFavoriteItem,
@@ -38,7 +39,7 @@ internal fun fetchStudentBgmFavorite(
 
 internal suspend fun fetchStudentBgmFavoriteAsync(
     entry: BaGuideCatalogEntry,
-    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default
 ): BaGuideStudentBgmResolvedItem? {
     val cached = withContext(networkDispatcher) {

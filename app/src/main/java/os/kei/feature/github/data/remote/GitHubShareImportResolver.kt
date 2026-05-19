@@ -1,13 +1,13 @@
 package os.kei.feature.github.data.remote
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import os.kei.feature.github.GitHubExecution
-import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubLookupStrategyOption
-import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubLookupStrategyOption
 
 internal data class GitHubShareImportAssetPlan(
     val parsedLink: GitHubSharedReleaseLink,
@@ -32,7 +32,7 @@ internal object GitHubShareImportResolver {
     suspend fun resolve(
         sharedText: String,
         lookupConfig: GitHubLookupConfig
-    ): Result<GitHubShareImportAssetPlan> = withContext(Dispatchers.IO) {
+    ): Result<GitHubShareImportAssetPlan> = withContext(AppDispatchers.githubNetwork) {
         cancellableResult {
             val parsedLink = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
                 ?: error("No valid GitHub link was detected")

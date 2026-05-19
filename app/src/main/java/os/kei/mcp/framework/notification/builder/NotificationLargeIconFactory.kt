@@ -8,7 +8,6 @@ import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
-import androidx.core.content.ContextCompat
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -25,7 +24,7 @@ internal object NotificationLargeIconFactory {
     ): Bitmap? {
         if (resId == null) return null
         bitmapCache[resId]?.let { return it }
-        val drawable = ContextCompat.getDrawable(context, resId) ?: return null
+        val drawable = context.getDrawable(resId) ?: return null
         val bitmap = drawable.renderCenteredBitmap(context)
         bitmapCache[resId] = bitmap
         return bitmap

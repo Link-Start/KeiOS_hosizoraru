@@ -1,11 +1,11 @@
 package os.kei.ui.page.main.github.page.action
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -91,13 +91,13 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         service: GitHubActionsUpdateCheckService = GitHubActionsUpdateCheckService()
     ) {
         if (!item.checkActionsUpdates) {
-            withContext(Dispatchers.IO) {
+            withContext(AppDispatchers.githubNetwork) {
                 GitHubActionsRecommendedRunStore.remove(item.id)
             }
             state.actionsRecommendedRunSnapshots.remove(item.id)
             return
         }
-        val previous = withContext(Dispatchers.IO) {
+        val previous = withContext(AppDispatchers.githubNetwork) {
             GitHubActionsRecommendedRunStore.load(item.id)
         }
         val current = service.fetchRecommendedRunSnapshot(
@@ -107,7 +107,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         ).getOrNull() ?: return
         val activeItem = state.trackedItems.firstOrNull { it.id == item.id } ?: return
         if (!activeItem.checkActionsUpdates) return
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.githubNetwork) {
             GitHubActionsRecommendedRunStore.save(current)
         }
         state.actionsRecommendedRunSnapshots[item.id] = current

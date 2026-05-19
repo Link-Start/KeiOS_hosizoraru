@@ -7,12 +7,12 @@ import android.content.Context
 import android.content.Intent
 import androidx.annotation.StringRes
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
@@ -35,7 +35,7 @@ internal object GitHubShareImportFlowCoordinator {
         lookupConfig: GitHubLookupConfig? = null
     ): ShareImportIncomingCoordinatorResult {
         val appContext = context.applicationContext
-        val resolvedLookupConfig = lookupConfig ?: withContext(Dispatchers.IO) {
+        val resolvedLookupConfig = lookupConfig ?: withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.loadLookupConfig()
         }
         val notificationFirst =
@@ -44,7 +44,7 @@ internal object GitHubShareImportFlowCoordinator {
         return try {
             val parsedIncoming = GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
                 ?: error(appContext.getString(R.string.github_share_import_error_no_valid_link))
-            withContext(Dispatchers.IO) {
+            withContext(AppDispatchers.githubNetwork) {
                 GitHubTrackStore.savePendingShareImportTrack(null)
                 GitHubShareImportFlowStore.clearActiveFlow()
             }
@@ -55,7 +55,7 @@ internal object GitHubShareImportFlowCoordinator {
             ).getOrThrow()
             if (plan.assets.isEmpty()) {
                 val reason = appContext.getString(R.string.github_toast_share_import_no_apk)
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubShareImportFlowStore.clearActiveFlow()
                     GitHubShareImportFlowStore.saveActiveResult(
                         GitHubShareImportResult(
@@ -116,7 +116,7 @@ internal object GitHubShareImportFlowCoordinator {
                     notificationFirst = notificationFirst
                 )
             }
-            withContext(Dispatchers.IO) {
+            withContext(AppDispatchers.githubNetwork) {
                 GitHubShareImportFlowStore.clearActiveFlow()
             }
             val reason = localizedGitHubShareImportErrorMessage(
@@ -124,7 +124,7 @@ internal object GitHubShareImportFlowCoordinator {
                 rawMessage = error.message?.takeIf { it.isNotBlank() }
                     ?: error.javaClass.simpleName
             )
-            withContext(Dispatchers.IO) {
+            withContext(AppDispatchers.githubNetwork) {
                 GitHubShareImportFlowStore.saveActiveResult(
                     GitHubShareImportResult(
                         kind = GitHubShareImportResultKind.Failed,
@@ -157,7 +157,7 @@ internal object GitHubShareImportFlowCoordinator {
             },
             sendInstallActionEnabled = sendInstallActionEnabled && selectedAsset != null
         )
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.savePendingShareImportTrack(null)
             GitHubShareImportFlowStore.saveActivePreview(readyPreview.toPendingPreviewRecord())
         }
@@ -181,7 +181,7 @@ internal object GitHubShareImportFlowCoordinator {
         context: Context
     ): ShareImportDeliveryCoordinatorResult {
         val appContext = context.applicationContext
-        val preview = withContext(Dispatchers.IO) {
+        val preview = withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.loadActivePreview()?.toShareImportPreview()
         }
         if (preview == null) {
@@ -212,7 +212,7 @@ internal object GitHubShareImportFlowCoordinator {
                 R.string.github_share_import_error_no_usable_apk
             )
         }
-        val lookupConfig = withContext(Dispatchers.IO) {
+        val lookupConfig = withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.loadLookupConfig()
         }
         return startDelivery(
@@ -264,7 +264,7 @@ internal object GitHubShareImportFlowCoordinator {
                 )
             }
         )
-        val scannedManifestInfoDeferred = async(Dispatchers.IO) {
+        val scannedManifestInfoDeferred = async(AppDispatchers.githubNetwork) {
             scanShareImportAssetManifestInfo(
                 asset = selectedAsset,
                 lookupConfig = lookupConfig
@@ -305,7 +305,7 @@ internal object GitHubShareImportFlowCoordinator {
                     ).ifBlank { preview.targetDisplayName },
                     armedAtMillis = System.currentTimeMillis()
                 )
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubTrackStore.savePendingShareImportTrack(pending)
                     GitHubShareImportFlowStore.clearActiveFlow()
                 }
@@ -336,7 +336,7 @@ internal object GitHubShareImportFlowCoordinator {
         event: AppPackageChangedEvent? = null
     ): ShareImportCoordinatorResult {
         val appContext = context.applicationContext
-        val pending = withContext(Dispatchers.IO) {
+        val pending = withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.loadPendingShareImportTrack()
         } ?: return ShareImportCoordinatorResult.None
         val age = (System.currentTimeMillis() - pending.armedAtMillis).coerceAtLeast(0L)
@@ -349,7 +349,7 @@ internal object GitHubShareImportFlowCoordinator {
         }
 
         val reconciler = GitHubShareImportInstallReconciler(appContext)
-        val currentCandidate = withContext(Dispatchers.IO) {
+        val currentCandidate = withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.loadActiveAttachCandidate()?.toShareImportAttachCandidate()
         }
         val reconcileResult = if (event != null) {
@@ -373,7 +373,7 @@ internal object GitHubShareImportFlowCoordinator {
         prefetchLatestCheck: Boolean = true
     ): ShareImportCoordinatorResult {
         val appContext = context.applicationContext
-        val candidate = withContext(Dispatchers.IO) {
+        val candidate = withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.loadActiveAttachCandidate()
                 ?.toShareImportAttachCandidate()
         } ?: return refreshPendingInstall(appContext)
@@ -398,7 +398,7 @@ internal object GitHubShareImportFlowCoordinator {
             )
         ) {
             ShareImportAttachResult.Duplicate -> {
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubShareImportFlowStore.clearActiveAttachCandidate()
                     GitHubShareImportFlowStore.saveActiveResult(
                         candidate.toShareImportResult(GitHubShareImportResultKind.AlreadyTracked)
@@ -423,7 +423,7 @@ internal object GitHubShareImportFlowCoordinator {
             }
 
             is ShareImportAttachResult.Failed -> {
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubShareImportFlowStore.saveActiveResult(
                         candidate.toShareImportResult(
                             kind = GitHubShareImportResultKind.Failed,
@@ -437,7 +437,7 @@ internal object GitHubShareImportFlowCoordinator {
             }
 
             is ShareImportAttachResult.Added -> {
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubShareImportFlowStore.clearActiveAttachCandidate()
                     GitHubShareImportFlowStore.saveActiveResult(
                         candidate.toShareImportResult(
@@ -469,7 +469,7 @@ internal object GitHubShareImportFlowCoordinator {
         val appContext = context.applicationContext
         GitHubShareImportManagedInstallCoordinator.cancelActive(appContext)
         val result = buildCancelledResult(appContext)
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.clearActiveFlow()
             GitHubTrackStore.savePendingShareImportTrack(null)
             if (result != null) {
@@ -525,7 +525,7 @@ internal object GitHubShareImportFlowCoordinator {
 
             is ShareImportInstallReconcileResult.Duplicate -> {
                 val candidate = result.candidate
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportFlowStore.clearActiveFlow()
                     GitHubShareImportFlowStore.saveActiveResult(
@@ -553,7 +553,7 @@ internal object GitHubShareImportFlowCoordinator {
 
             is ShareImportInstallReconcileResult.Detected -> {
                 val candidate = result.candidate
-                withContext(Dispatchers.IO) {
+                withContext(AppDispatchers.githubNetwork) {
                     GitHubTrackStore.savePendingShareImportTrack(null)
                     GitHubShareImportFlowStore.clearActivePreview()
                     GitHubShareImportFlowStore.saveActiveAttachCandidate(
@@ -589,7 +589,7 @@ internal object GitHubShareImportFlowCoordinator {
             kind = GitHubShareImportResultKind.Cancelled,
             message = context.getString(R.string.github_share_import_notify_content_cancelled)
         )
-        withContext(Dispatchers.IO) {
+        withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.savePendingShareImportTrack(null)
             GitHubShareImportFlowStore.clearActiveFlow()
             GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
@@ -624,7 +624,7 @@ internal object GitHubShareImportFlowCoordinator {
         return null
     }
 
-    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val backgroundScope = CoroutineScope(SupervisorJob() + AppDispatchers.githubNetwork)
 }
 
 internal sealed interface ShareImportDeliveryCoordinatorResult {

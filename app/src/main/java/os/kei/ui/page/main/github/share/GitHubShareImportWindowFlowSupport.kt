@@ -5,10 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.system.AppPackageChangedEvent
@@ -31,6 +31,7 @@ import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
+
 
 internal const val shareImportTrackMaxAgeMs = 25 * 60 * 1000L
 internal const val shareImportTrackUpdateToleranceMs = 2 * 60 * 1000L
@@ -153,7 +154,7 @@ internal suspend fun resolvePreferredAssetUrl(
 ): String {
     val token = lookupConfig.apiToken.trim()
     val preferApiAsset = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
-    return withContext(Dispatchers.IO) {
+    return withContext(AppDispatchers.githubNetwork) {
         GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
             asset = asset,
             useApiAssetUrl = preferApiAsset,
@@ -215,7 +216,7 @@ internal suspend fun attachCandidateToTracked(
     candidate: GitHubPendingShareImportAttachCandidate,
     prefetchLatestCheck: Boolean = true
 ): ShareImportAttachResult {
-    return withContext(Dispatchers.IO) {
+    return withContext(AppDispatchers.githubNetwork) {
         val trackedItems = GitHubTrackStore.load().toMutableList()
         val candidateId = "${candidate.owner}/${candidate.repo}|${candidate.packageName}"
         if (trackedItems.any { it.id == candidateId }) {
@@ -305,7 +306,7 @@ internal suspend fun loadInstalledPackageSnapshot(
     context: Context,
     packageName: String
 ): ShareImportInstalledPackageSnapshot? {
-    return withContext(Dispatchers.IO) {
+    return withContext(AppDispatchers.githubNetwork) {
         loadInstalledPackageSnapshotBlocking(context, packageName)
     }
 }

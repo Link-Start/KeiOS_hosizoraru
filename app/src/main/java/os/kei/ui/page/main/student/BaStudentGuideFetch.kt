@@ -16,6 +16,7 @@ import os.kei.ui.page.main.student.fetch.parseGuideDetailFromContentJson
 import os.kei.ui.page.main.student.fetch.parser.firstImageFromAny
 import os.kei.ui.page.main.student.fetch.stripHtml
 import kotlin.coroutines.cancellation.CancellationException
+import os.kei.core.concurrency.AppDispatchers
 
 private fun fetchGuideInfoByApi(sourceUrl: String): BaStudentGuideInfo {
     val target = normalizeGuideUrl(sourceUrl)
@@ -208,7 +209,7 @@ fun fetchGuideInfo(sourceUrl: String): BaStudentGuideInfo {
 
 suspend fun fetchGuideInfoAsync(
     sourceUrl: String,
-    networkDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = Dispatchers.Default
 ): BaStudentGuideInfo {
     val apiResult = runCatchingCancellable {

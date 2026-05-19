@@ -3,7 +3,6 @@ package os.kei.ui.page.main.about.page
 import android.content.Context
 import android.content.pm.PackageInfo
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.about.model.AboutComponentEntry
@@ -11,6 +10,7 @@ import os.kei.ui.page.main.about.model.AboutPermissionEntry
 import os.kei.ui.page.main.about.model.buildComponentEntries
 import os.kei.ui.page.main.about.model.buildPermissionEntries
 import os.kei.ui.page.main.about.model.loadPackageDetailInfo
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class AboutPageDetailsState(
     val packageDetailInfo: PackageInfo? = null,
@@ -21,7 +21,7 @@ internal data class AboutPageDetailsState(
 )
 
 internal class AboutPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo
 ) {
     suspend fun loadDetails(
         context: Context,

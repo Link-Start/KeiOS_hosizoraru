@@ -2,7 +2,6 @@ package os.kei.feature.home.data
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,13 +32,14 @@ import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
+import os.kei.core.concurrency.AppDispatchers
 
 private const val TAG = "HomeOverviewRepository"
 
 internal class HomeOverviewRepository(
     private val context: Context,
     private val mcpUiState: StateFlow<McpServerUiState>,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo
 ) {
     private val appContext = context.applicationContext
     private val refreshRequests = MutableSharedFlow<String>(

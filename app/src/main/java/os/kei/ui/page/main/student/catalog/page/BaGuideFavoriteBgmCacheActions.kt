@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -31,6 +30,7 @@ import os.kei.ui.page.main.student.catalog.component.clearFavoriteBgmCache
 import os.kei.ui.page.main.student.catalog.component.favoriteBgmCachedBytes
 import os.kei.ui.page.main.student.catalog.component.favoriteCacheScope
 import os.kei.ui.page.main.student.catalog.component.isFavoriteBgmCached
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaGuideFavoriteBgmCacheSnapshot(
     val cachedAudioUrls: Set<String> = emptySet(),
@@ -110,7 +110,7 @@ internal fun rememberBaGuideFavoriteBgmOfflineCacheState(
 internal suspend fun cacheMissingFavoriteBgmsAsync(
     context: Context,
     favorites: List<GuideBgmFavoriteItem>,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media
 ): Int {
     val appContext = context.applicationContext
     val targets = withContext(ioDispatcher) {
@@ -151,7 +151,7 @@ internal suspend fun cacheMissingFavoriteBgmsAsync(
 internal suspend fun cleanInvalidFavoriteBgmCacheAsync(
     context: Context,
     favorites: List<GuideBgmFavoriteItem>,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media
 ): Int = withContext(ioDispatcher) {
     val appContext = context.applicationContext
     var cleaned = 0
@@ -173,7 +173,7 @@ internal suspend fun cleanInvalidFavoriteBgmCacheAsync(
 internal suspend fun loadFavoriteBgmCachedAudioUrlsAsync(
     context: Context,
     favorites: List<GuideBgmFavoriteItem>,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media
 ): Set<String> = loadFavoriteBgmCacheSnapshotAsync(
     context = context,
     favorites = favorites,
@@ -183,7 +183,7 @@ internal suspend fun loadFavoriteBgmCachedAudioUrlsAsync(
 internal suspend fun loadFavoriteBgmCacheSnapshotAsync(
     context: Context,
     favorites: List<GuideBgmFavoriteItem>,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media
 ): BaGuideFavoriteBgmCacheSnapshot = withContext(ioDispatcher) {
     val appContext = context.applicationContext
     val cachedAudioUrls = mutableSetOf<String>()
@@ -210,7 +210,7 @@ internal suspend fun loadFavoriteBgmCacheSnapshotAsync(
 internal suspend fun cacheFavoriteBgmAsync(
     context: Context,
     favorite: GuideBgmFavoriteItem,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media
 ): Boolean {
     if (favorite.audioUrl.isBlank()) return false
     val appContext = context.applicationContext
@@ -228,7 +228,7 @@ internal suspend fun cacheFavoriteBgmAsync(
 internal suspend fun clearFavoriteBgmCacheAsync(
     context: Context,
     favorite: GuideBgmFavoriteItem,
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ioDispatcher: CoroutineDispatcher = AppDispatchers.media
 ) = withContext(ioDispatcher) {
     clearFavoriteBgmCache(context.applicationContext, favorite)
 }

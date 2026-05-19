@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -346,7 +345,7 @@ class McpKeepAliveService : Service() {
                 putExtra(EXTRA_HEARTBEAT_ENABLED, heartbeatEnabled)
             }
             if (forceStart) {
-                ContextCompat.startForegroundService(context, intent)
+                context.startForegroundService(intent)
             } else {
                 context.startService(intent)
             }

@@ -7,6 +7,7 @@ import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.mcp.skill.state.McpSkillPageContentState
 import os.kei.ui.page.main.mcp.skill.support.buildSkillSections
 import os.kei.ui.page.main.mcp.skill.support.parseMarkdownBlocks
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class McpSkillPageContentRequest(
     val emptyMarkdown: String,
@@ -17,7 +18,7 @@ internal data class McpSkillPageContentRequest(
 )
 
 internal class McpSkillPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.mcpServer,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     suspend fun loadContent(

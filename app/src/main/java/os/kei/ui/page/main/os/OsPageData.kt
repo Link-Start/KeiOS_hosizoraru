@@ -6,7 +6,6 @@ import android.content.pm.FeatureInfo
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -18,6 +17,7 @@ import os.kei.core.system.getAllSystemPropertiesSnapshotAsync
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import os.kei.core.concurrency.AppDispatchers
 
 internal fun matches(row: InfoRow, query: String): Boolean {
     if (query.isBlank()) return true
@@ -263,7 +263,7 @@ internal suspend fun buildSectionRowsAsync(
     shizukuApiUtils: ShizukuApiUtils,
     forceRefresh: Boolean = false,
     dataSnapshot: OsPageDataSnapshot? = null,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): List<InfoRow> {
     return when (section) {
         SectionKind.SYSTEM,
@@ -384,7 +384,7 @@ internal suspend fun buildExportSectionsAsync(
     context: Context,
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): ExportSections {
     val snapshot = OsPageDataSnapshot.loadForExportAsync(
         shizukuApiUtils = shizukuApiUtils,

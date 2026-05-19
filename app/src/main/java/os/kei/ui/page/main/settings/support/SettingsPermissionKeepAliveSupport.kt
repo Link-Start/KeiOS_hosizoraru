@@ -16,12 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.core.system.findPropString
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.core.concurrency.AppDispatchers
 
 internal enum class SettingsAppListAccessMode {
     Direct,
@@ -88,7 +88,7 @@ internal class SettingsPermissionKeepAliveController(
         oemAutoStartActionAvailable = oemAutoStartSnapshot.settingsActionAvailable
 
         appListSettingsActionAvailable = GitHubVersionUtils.buildAppListPermissionIntent(appContext) != null
-        val appListState = withContext(Dispatchers.IO) {
+        val appListState = withContext(AppDispatchers.fileIo) {
             resolveAppListAccessState(appContext, shizukuApiUtils)
         }
         appListAccessMode = appListState.mode

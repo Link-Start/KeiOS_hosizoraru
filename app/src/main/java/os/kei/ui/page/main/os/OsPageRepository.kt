@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.os
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,6 +10,7 @@ import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class OsPagePersistentState(
     val uiSnapshot: OsUiSnapshot = OsUiSnapshot(),
@@ -20,7 +20,7 @@ internal data class OsPagePersistentState(
 )
 
 internal class OsPageRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.osOperations,
 ) {
     private val persistentState = MutableStateFlow(OsPagePersistentState())
 

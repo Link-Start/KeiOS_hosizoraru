@@ -3,7 +3,6 @@ package os.kei.ui.page.main.student.catalog.component
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -27,7 +26,7 @@ internal class BaGuideBgmNativeMediaController(
     artworkDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val appContext = context.applicationContext
-    private val mainExecutor = ContextCompat.getMainExecutor(appContext)
+    private val mainExecutor = appContext.mainExecutor
     private val artworkScope = CoroutineScope(SupervisorJob() + artworkDispatcher)
     private val lock = Any()
     private val pendingCommands = ArrayDeque<(MediaController) -> Unit>()

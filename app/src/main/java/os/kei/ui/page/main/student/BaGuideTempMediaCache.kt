@@ -7,7 +7,6 @@ import androidx.core.net.toUri
 import com.tencent.mmkv.MMKV
 import os.kei.core.prefs.KeiMmkv
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -26,6 +25,7 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaGuideMediaCacheMetadata(
     val sourceUrl: String,
@@ -314,7 +314,7 @@ object BaGuideTempMediaCache {
         sourceUrl: String,
         rawUrls: List<String>,
         forceReDownload: Boolean = false,
-        ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+        ioDispatcher: CoroutineDispatcher = AppDispatchers.media
     ) = withContext(ioDispatcher) {
         val dir = sessionDir(context, sourceUrl)
         dir.mkdirs()

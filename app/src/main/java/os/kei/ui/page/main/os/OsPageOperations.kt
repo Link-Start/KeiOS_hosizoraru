@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.os
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
@@ -230,13 +230,13 @@ internal suspend fun runOsShellCommandCard(
 ) {
     val command = card.command.trim()
     if (command.isBlank()) {
-        Toast.makeText(context, shellCardCommandRequiredToast, Toast.LENGTH_SHORT).show()
+        context.showToast(shellCardCommandRequiredToast)
         return
     }
     if (runningCardIdsProvider().contains(card.id)) return
     if (!shizukuApiUtils.canUseCommand()) {
         shizukuApiUtils.requestPermissionIfNeeded()
-        Toast.makeText(context, shellRunNoPermissionToast, Toast.LENGTH_SHORT).show()
+        context.showToast(shellRunNoPermissionToast)
         return
     }
     updateRunningCardIds(runningCardIdsProvider() + card.id)
@@ -257,11 +257,7 @@ internal suspend fun runOsShellCommandCard(
     } catch (throwable: CancellationException) {
         throw throwable
     } catch (throwable: Throwable) {
-        Toast.makeText(
-            context,
-            runFailedMessage(throwable),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(runFailedMessage(throwable))
     } finally {
         updateRunningCardIds(runningCardIdsProvider() - card.id)
     }
@@ -285,11 +281,9 @@ internal suspend fun refreshAllOsSections(
             ensureLoad(section, true)
             setRefreshProgress((index + 1).toFloat() / sectionCount.toFloat())
         }
-        Toast.makeText(
-            context,
-            if (targets.isEmpty()) noRefreshableCardText else refreshCompletedText,
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(
+            if (targets.isEmpty()) noRefreshableCardText else refreshCompletedText
+        )
     } finally {
         setRefreshing(false)
     }
@@ -375,11 +369,9 @@ internal suspend fun exportOsPageCard(
         shizukuStatus = shizukuStatus,
         launchExport = launchExport,
         onExportFailed = { throwable ->
-            Toast.makeText(
-                context,
-                context.getString(R.string.common_export_failed_with_reason, throwable.javaClass.simpleName),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(
+                context.getString(R.string.common_export_failed_with_reason, throwable.javaClass.simpleName)
+            )
         }
     )
 }
@@ -396,7 +388,7 @@ internal fun openOsActivityShortcutCard(
         defaults = defaults
     )
     if (normalized.packageName.isBlank()) {
-        Toast.makeText(context, invalidTargetMessage, Toast.LENGTH_SHORT).show()
+        context.showToast(invalidTargetMessage)
         return
     }
     runCatching {
@@ -406,11 +398,7 @@ internal fun openOsActivityShortcutCard(
             defaults = defaults
         )
     }.onFailure { error ->
-        Toast.makeText(
-            context,
-            openFailedMessage(error),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(openFailedMessage(error))
     }
 }
 

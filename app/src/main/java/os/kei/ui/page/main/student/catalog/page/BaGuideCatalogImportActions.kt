@@ -2,7 +2,7 @@ package os.kei.ui.page.main.student.catalog.page
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,20 +44,12 @@ internal fun rememberBaGuideCatalogImportActions(
                 if (preview.hasImportableData) {
                     onPreviewStateChange(preview)
                 } else {
-                    Toast.makeText(
-                        context,
-                        context.getString(failureMessageRes),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(failureMessageRes)
                 }
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Throwable) {
-                Toast.makeText(
-                    context,
-                    context.getString(failureMessageRes),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(failureMessageRes)
             }
         }
     }
@@ -142,15 +134,11 @@ private fun confirmFavoritesImport(
                 )
             }
             onPreviewStateChange(null)
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            context.showToast(message)
         } catch (error: CancellationException) {
             throw error
         } catch (_: Throwable) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.ba_catalog_transfer_import_failed),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(R.string.ba_catalog_transfer_import_failed)
         }
     }
 }

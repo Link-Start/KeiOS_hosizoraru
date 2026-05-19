@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -69,11 +69,9 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 uri = uri,
                 request = request
             )
-            Toast.makeText(
-                context,
-                if (success) request.successToast.ifBlank { exportDoneText } else exportFailedText,
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(
+                if (success) request.successToast.ifBlank { exportDoneText } else exportFailedText
+            )
         }
     }
     val fixedExportFolderLauncher = rememberLauncherForActivityResult(
@@ -114,11 +112,9 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 treeUri = treeUri,
                 request = request
             )
-            Toast.makeText(
-                context,
-                if (success) request.successToast.ifBlank { exportDoneText } else exportFailedText,
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(
+                if (success) request.successToast.ifBlank { exportDoneText } else exportFailedText
+            )
         }
     }
 
@@ -162,11 +158,9 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 request = request
             )
             if (success) {
-                Toast.makeText(
-                    context,
-                    request.successToast.ifBlank { exportDoneText },
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(
+                    request.successToast.ifBlank { exportDoneText }
+                )
             } else {
                 BASettingsStore.saveMediaSaveFixedTreeUri("")
                 mediaSaveFixedTreeUri = ""
@@ -201,11 +195,11 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 } catch (error: CancellationException) {
                     throw error
                 } catch (_: Throwable) {
-                    Toast.makeText(context, exportFailedText, Toast.LENGTH_SHORT).show()
+                    context.showToast(exportFailedText)
                     return@launch
                 }
                 if (request.payload.isBlank()) {
-                    Toast.makeText(context, exportFailedText, Toast.LENGTH_SHORT).show()
+                    context.showToast(exportFailedText)
                     return@launch
                 }
                 dispatchExportRequest(request)

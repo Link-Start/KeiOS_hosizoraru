@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.widget.support
 
 import android.content.ClipData
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -52,7 +52,7 @@ internal fun rememberLightTextCopyAction(copyPayload: String): (() -> Unit)? {
         {
             scope.launch {
                 clipboard.setClipEntry(ClipData.newPlainText("plain text", copyPayload).toClipEntry())
-                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                context.showToast(copiedToast)
             }
         }
     }

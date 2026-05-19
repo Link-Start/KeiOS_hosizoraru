@@ -2,6 +2,7 @@ package os.kei.mcp.notification
 
 import android.app.Notification
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -139,8 +140,7 @@ internal object McpXiaomiMagicDispatcher {
 
     private fun resolveXmsfUid(context: Context): Int? {
         return runCatching {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageUid(XMSF_PACKAGE_NAME, 0)
+            context.packageManager.getPackageUid(XMSF_PACKAGE_NAME, PackageManager.PackageInfoFlags.of(0))
         }.getOrNull()?.takeIf { it > 0 }
     }
 

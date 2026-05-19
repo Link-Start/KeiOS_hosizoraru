@@ -309,9 +309,6 @@ internal class GitHubPageManagedInstallRunner(
                 normalizedPackageName,
                 PackageManager.PackageInfoFlags.of(0)
             )
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageInfo(normalizedPackageName, 0)
         }.getOrNull() ?: return null
         val applicationInfo = packageInfo.applicationInfo
         return GitHubInstalledPackageInfo(

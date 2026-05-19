@@ -320,9 +320,6 @@ private fun loadInstalledPackageSnapshotBlocking(
     val pm = context.packageManager
     val info = runCatching {
         pm.getPackageInfo(normalizedPackageName, PackageManager.PackageInfoFlags.of(0))
-    }.recoverCatching {
-        @Suppress("DEPRECATION")
-        pm.getPackageInfo(normalizedPackageName, 0)
     }.getOrNull() ?: return null
 
     val label = runCatching {
@@ -330,10 +327,6 @@ private fun loadInstalledPackageSnapshotBlocking(
             normalizedPackageName,
             PackageManager.ApplicationInfoFlags.of(0)
         )
-        pm.getApplicationLabel(appInfo).toString().trim()
-    }.recoverCatching {
-        @Suppress("DEPRECATION")
-        val appInfo = info.applicationInfo ?: pm.getApplicationInfo(normalizedPackageName, 0)
         pm.getApplicationLabel(appInfo).toString().trim()
     }.getOrDefault("")
 
@@ -384,10 +377,6 @@ internal fun findRecentInstalledCandidateForPendingTrack(
                     packageName,
                     PackageManager.ApplicationInfoFlags.of(0)
                 )
-                pm.getApplicationLabel(appInfo).toString().trim()
-            }.recoverCatching {
-                @Suppress("DEPRECATION")
-                val appInfo = info.applicationInfo ?: pm.getApplicationInfo(packageName, 0)
                 pm.getApplicationLabel(appInfo).toString().trim()
             }.getOrDefault("")
 

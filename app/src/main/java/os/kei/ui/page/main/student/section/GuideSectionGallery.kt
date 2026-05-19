@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.section
 
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -240,11 +240,7 @@ fun GuideGalleryCardItem(
             bgmFavoriteContentDescription = favoriteContentDescription,
             onToggleBgmFavorite = {
                 val added = GuideBgmFavoriteStore.toggleFavorite(bgmFavoriteItem)
-                Toast.makeText(
-                    context,
-                    if (added) favoriteAddedText else favoriteRemovedText,
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(if (added) favoriteAddedText else favoriteRemovedText)
             },
             showAudioLoopAction = showAudioLoopAction,
             onToggleAudioLoop = {

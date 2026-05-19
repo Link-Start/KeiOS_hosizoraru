@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.section.gallery
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -91,7 +91,7 @@ internal class GuideGalleryAudioPlayerState(
 
     fun play(context: Context, restart: Boolean = false) {
         val currentPlayer = ensurePlayer() ?: run {
-            Toast.makeText(context, context.getString(R.string.guide_media_audio_url_invalid), Toast.LENGTH_SHORT).show()
+            context.showToast(R.string.guide_media_audio_url_invalid)
             return
         }
         runCatching {
@@ -107,13 +107,13 @@ internal class GuideGalleryAudioPlayerState(
             isPlaying = true
         }.onFailure {
             loadError = it.message
-            Toast.makeText(context, context.getString(R.string.guide_media_audio_play_failed), Toast.LENGTH_SHORT).show()
+            context.showToast(R.string.guide_media_audio_play_failed)
         }
     }
 
     fun togglePlay(context: Context) {
         val currentPlayer = ensurePlayer() ?: run {
-            Toast.makeText(context, context.getString(R.string.guide_media_audio_url_invalid), Toast.LENGTH_SHORT).show()
+            context.showToast(R.string.guide_media_audio_url_invalid)
             return
         }
         runCatching {
@@ -125,7 +125,7 @@ internal class GuideGalleryAudioPlayerState(
             }
         }.onFailure {
             loadError = it.message
-            Toast.makeText(context, context.getString(R.string.guide_media_audio_play_failed), Toast.LENGTH_SHORT).show()
+            context.showToast(R.string.guide_media_audio_play_failed)
         }
     }
 

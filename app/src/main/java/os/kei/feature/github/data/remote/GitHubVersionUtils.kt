@@ -207,9 +207,6 @@ object GitHubVersionUtils {
         val pm = context.packageManager
         val pkgInfo = runCatching {
             pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            pm.getPackageInfo(packageName, 0)
         }.getOrElse { error ->
             if (error is PackageManager.NameNotFoundException) {
                 return null

@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.provider.DocumentsContract
 import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -70,11 +71,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_save_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.guide_media_save_failed)
             }
         }
     }
@@ -116,11 +113,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_save_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.guide_media_save_failed)
             }
         }
     }
@@ -133,11 +126,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                 rawPrefix = studentNamePrefixState.value()
             )
             if (request == null) {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_save_empty),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.guide_media_save_empty)
             } else {
                 val useFixedSaveLocation = BASettingsStore.loadMediaSaveCustomEnabled()
                 if (!useFixedSaveLocation) {
@@ -243,11 +232,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_pack_save_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.guide_media_pack_save_failed)
             }
         }
     }
@@ -298,11 +283,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_pack_save_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.guide_media_pack_save_failed)
             }
         }
     }
@@ -315,11 +296,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                 rawPrefix = studentNamePrefixState.value()
             )
             if (request == null) {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_save_empty),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.guide_media_save_empty)
             } else {
                 val useFixedSaveLocation = BASettingsStore.loadMediaSaveCustomEnabled()
                 if (!useFixedSaveLocation) {
@@ -357,11 +334,7 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else if (targetUri != null) {
-                                Toast.makeText(
-                                    context,
-                                    context.resolveString(R.string.guide_media_pack_save_failed),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(R.string.guide_media_pack_save_failed)
                             } else {
                                 BASettingsStore.saveMediaSaveFixedTreeUri("")
                                 pendingFixedPackSaveRequest = request
@@ -438,7 +411,7 @@ internal fun rememberBaStudentGuidePageActions(
                 val raw = info?.sourceUrl?.ifBlank { sourceUrl } ?: sourceUrl
                 val target = normalizeGuideUrl(raw)
                 if (target.isBlank()) {
-                    Toast.makeText(context, shareSourceEmptyText, Toast.LENGTH_SHORT).show()
+                    context.showToast(shareSourceEmptyText)
                 } else {
                     runCatching {
                         val intent = SafeExternalIntents.textShareIntent(text = target)
@@ -447,7 +420,7 @@ internal fun rememberBaStudentGuidePageActions(
                         }
                         context.startActivity(chooser)
                     }.onFailure {
-                        Toast.makeText(context, shareSourceFailedText, Toast.LENGTH_SHORT).show()
+                        context.showToast(shareSourceFailedText)
                     }
                 }
             },
@@ -455,7 +428,7 @@ internal fun rememberBaStudentGuidePageActions(
                 val target = normalizeGuideUrl(rawUrl)
                 if (target.isNotBlank()) {
                     if (!SafeExternalIntents.startBrowsableUrl(context, target, newTask = true)) {
-                        Toast.makeText(context, openLinkFailedText, Toast.LENGTH_SHORT).show()
+                        context.showToast(openLinkFailedText)
                     }
                 }
             },

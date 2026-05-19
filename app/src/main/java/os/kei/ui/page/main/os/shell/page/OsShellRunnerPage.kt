@@ -2,7 +2,7 @@ package os.kei.ui.page.main.os.shell.page
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -194,7 +194,7 @@ fun OsShellRunnerPage(
                     ?: textBundle.noOutputText
                 appendOutput(command, output)
                 if (settings.completionToast) {
-                    Toast.makeText(context, textBundle.commandCompletedToast, Toast.LENGTH_SHORT).show()
+                    context.showToast(textBundle.commandCompletedToast)
                 }
             } catch (_: CancellationException) {
                 if (suppressStopOutputAppend) {
@@ -204,7 +204,7 @@ fun OsShellRunnerPage(
                         appendOutput(command, textBundle.commandStoppedText)
                     }
                     if (settings.completionToast) {
-                        Toast.makeText(context, textBundle.commandStoppedText, Toast.LENGTH_SHORT).show()
+                        context.showToast(textBundle.commandStoppedText)
                     }
                 }
             } finally {
@@ -238,7 +238,7 @@ fun OsShellRunnerPage(
     fun openSaveCommandSheet() {
         val command = commandInput.trim()
         if (command.isBlank()) {
-            Toast.makeText(context, textBundle.commandSaveEmptyToast, Toast.LENGTH_SHORT).show()
+            context.showToast(textBundle.commandSaveEmptyToast)
             return
         }
         scope.launch {
@@ -253,12 +253,12 @@ fun OsShellRunnerPage(
     fun saveCommandToCard() {
         val command = commandInput.trim()
         if (command.isBlank()) {
-            Toast.makeText(context, textBundle.commandSaveEmptyToast, Toast.LENGTH_SHORT).show()
+            context.showToast(textBundle.commandSaveEmptyToast)
             return
         }
         val title = saveTitleInput.trim()
         if (title.isBlank()) {
-            Toast.makeText(context, textBundle.saveSheetTitleRequiredToast, Toast.LENGTH_SHORT).show()
+            context.showToast(textBundle.saveSheetTitleRequiredToast)
             return
         }
         val subtitle = saveSubtitleInput.trim()
@@ -271,7 +271,7 @@ fun OsShellRunnerPage(
             )
             if (saved) {
                 showSaveSheet = false
-                Toast.makeText(context, textBundle.commandSavedToast, Toast.LENGTH_SHORT).show()
+                context.showToast(textBundle.commandSavedToast)
             }
         }
     }
@@ -284,18 +284,18 @@ fun OsShellRunnerPage(
             outputText = outputText
         )
         if (output.isBlank()) {
-            Toast.makeText(context, textBundle.outputCopyEmptyToast, Toast.LENGTH_SHORT).show()
+            context.showToast(textBundle.outputCopyEmptyToast)
             return
         }
         val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
         clipboard.setPrimaryClip(ClipData.newPlainText("shell_output", output))
-        Toast.makeText(context, textBundle.outputCopiedToast, Toast.LENGTH_SHORT).show()
+        context.showToast(textBundle.outputCopiedToast)
     }
 
     fun formatOutput() {
         val output = outputText.trim()
         if (output.isBlank()) {
-            Toast.makeText(context, textBundle.outputFormatEmptyToast, Toast.LENGTH_SHORT).show()
+            context.showToast(textBundle.outputFormatEmptyToast)
             return
         }
         scope.launch {
@@ -304,7 +304,7 @@ fun OsShellRunnerPage(
                 outputResultLabel = textBundle.outputResultLabel,
                 outputTimeLabel = textBundle.outputTimeLabel
             )
-            Toast.makeText(context, textBundle.outputFormattedToast, Toast.LENGTH_SHORT).show()
+            context.showToast(textBundle.outputFormattedToast)
         }
     }
 
@@ -316,7 +316,7 @@ fun OsShellRunnerPage(
         stopCommand(showStoppedOutput = false)
         shellRunnerViewModel.updateCommandInput("")
         clearOutput()
-        Toast.makeText(context, textBundle.clearAllToast, Toast.LENGTH_SHORT).show()
+        context.showToast(textBundle.clearAllToast)
     }
 
     fun applyCloseCleanup() {

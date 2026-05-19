@@ -3,7 +3,7 @@ package os.kei.ui.page.main.ba
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -437,11 +437,7 @@ private fun openBaPoolGuideLink(
 ) {
     val normalized = normalizeGuideUrl(rawUrl)
     if (normalized.isBlank()) {
-        Toast.makeText(
-            context,
-            context.getString(R.string.main_toast_pool_guide_missing),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(R.string.main_toast_pool_guide_missing)
         return
     }
     val uri = runCatching { normalized.toUri() }.getOrNull()
@@ -454,11 +450,7 @@ private fun openBaPoolGuideLink(
             onOpenGuide()
             return
         }
-        Toast.makeText(
-            context,
-            context.getString(R.string.main_toast_pool_guide_missing),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(R.string.main_toast_pool_guide_missing)
         return
     }
     openBaStandaloneExternalLink(context, normalized)
@@ -470,18 +462,10 @@ private fun openBaStandaloneExternalLink(
 ) {
     val intent = SafeExternalIntents.browsableViewIntent(url, newTask = true)
     if (intent == null) {
-        Toast.makeText(
-            context,
-            context.getString(R.string.ba_error_open_activity_link),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(R.string.ba_error_open_activity_link)
         return
     }
     runCatching { context.startActivity(intent) }.onFailure {
-        Toast.makeText(
-            context,
-            context.getString(R.string.ba_error_open_activity_link),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(R.string.ba_error_open_activity_link)
     }
 }

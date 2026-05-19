@@ -2,7 +2,7 @@ package os.kei.ui.page.main.os.state
 
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import os.kei.R
@@ -86,7 +86,7 @@ internal fun rememberOsPageOverlayEditorActions(
             onSaveShellCommandCard = {
                 val targetId = overlayState.editingShellCommandCardId.orEmpty().trim()
                 if (targetId.isBlank()) {
-                    Toast.makeText(context, shellCardCommandRequiredToast, Toast.LENGTH_SHORT).show()
+                    context.showToast(shellCardCommandRequiredToast)
                     return@OsPageOverlayEditorActions
                 }
                 val updated = OsShellCommandCardStore.updateCard(
@@ -96,11 +96,11 @@ internal fun rememberOsPageOverlayEditorActions(
                     command = overlayState.shellCommandCardDraft.command
                 )
                 if (updated == null) {
-                    Toast.makeText(context, shellCardCommandRequiredToast, Toast.LENGTH_SHORT).show()
+                    context.showToast(shellCardCommandRequiredToast)
                     return@OsPageOverlayEditorActions
                 }
                 onShellCommandCardsChange(OsShellCommandCardStore.loadCards())
-                Toast.makeText(context, shellCardSavedToast, Toast.LENGTH_SHORT).show()
+                context.showToast(shellCardSavedToast)
                 overlayState.onShowShellCommandCardEditorChange(false)
                 overlayState.onShowShellCardDeleteConfirmChange(false)
             },
@@ -165,11 +165,7 @@ internal fun rememberOsPageOverlayEditorActions(
                     cards = updatedCards,
                     defaults = googleSystemServiceDefaults
                 )
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.os_google_system_service_toast_saved),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.os_google_system_service_toast_saved)
                 overlayState.onShowActivityShortcutEditorChange(false)
                 overlayState.onShowActivityCardDeleteConfirmChange(false)
                 overlayState.onEditingActivityShortcutBuiltInChange(false)
@@ -222,7 +218,7 @@ internal fun rememberOsPageOverlayEditorActions(
                 onRemoveShellCommandCardExpanded(targetId)
                 overlayState.onEditingShellCommandCardIdChange(null)
                 overlayState.onShowShellCommandCardEditorChange(false)
-                Toast.makeText(context, shellCardDeletedToast, Toast.LENGTH_SHORT).show()
+                context.showToast(shellCardDeletedToast)
             },
             onDismissActivityCardDeleteConfirm = {
                 overlayState.onShowActivityCardDeleteConfirmChange(false)
@@ -242,7 +238,7 @@ internal fun rememberOsPageOverlayEditorActions(
                 overlayState.onShowActivityShortcutEditorChange(false)
                 overlayState.onShowActivitySuggestionSheetChange(false)
                 overlayState.onEditingActivityShortcutBuiltInChange(false)
-                Toast.makeText(context, activityCardDeletedToast, Toast.LENGTH_SHORT).show()
+                context.showToast(activityCardDeletedToast)
             }
         )
     }

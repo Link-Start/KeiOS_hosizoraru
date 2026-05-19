@@ -572,9 +572,6 @@ class GitHubShizukuPackageInstaller(
                 apkFile.absolutePath,
                 PackageManager.PackageInfoFlags.of(0)
             )
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            pm.getPackageArchiveInfo(apkFile.absolutePath, 0)
         }.getOrNull() ?: return ApkArchiveInfo()
         val appInfo = packageInfo.applicationInfo?.applyArchiveSource(apkFile)
         val label = appInfo?.let { info ->
@@ -620,19 +617,12 @@ class GitHubShizukuPackageInstaller(
         val pm = context.packageManager
         val info = runCatching {
             pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            pm.getPackageInfo(packageName, 0)
         }.getOrNull() ?: return null
         val label = runCatching {
             val appInfo = info.applicationInfo ?: pm.getApplicationInfo(
                 packageName,
                 PackageManager.ApplicationInfoFlags.of(0)
             )
-            pm.getApplicationLabel(appInfo).toString().trim()
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            val appInfo = info.applicationInfo ?: pm.getApplicationInfo(packageName, 0)
             pm.getApplicationLabel(appInfo).toString().trim()
         }.getOrDefault("")
         return InstalledPackageInfo(

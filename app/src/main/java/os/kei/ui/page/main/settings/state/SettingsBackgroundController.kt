@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -80,11 +81,7 @@ internal fun rememberSettingsBackgroundController(
         if (!latestBackgroundEnabled) {
             latestOnBackgroundEnabledChange(true)
         }
-        Toast.makeText(
-            context,
-            context.resolveString(R.string.settings_non_home_background_toast_selected),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(R.string.settings_non_home_background_toast_selected)
     }
 
     val pickerLauncher = rememberLauncherForActivityResult(
@@ -149,11 +146,7 @@ internal fun rememberSettingsBackgroundController(
             clearBackground = {
                 deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
                 latestOnBackgroundUriChange("")
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.settings_non_home_background_toast_cleared),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.settings_non_home_background_toast_cleared)
             }
         )
     }

@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -597,7 +597,7 @@ private fun notifyBaDebugResult(
     } else {
         R.string.ba_toast_notification_permission_required
     }
-    Toast.makeText(context, context.resolveString(messageRes), Toast.LENGTH_SHORT).show()
+    context.showToast(messageRes)
 }
 
 private fun resolveCalendarDebugEntries(
@@ -626,11 +626,7 @@ private fun resolveCalendarDebugEntries(
             entries.filter { it.endAtMs == targetTime }
         }
     }
-    Toast.makeText(
-        context,
-        context.resolveString(R.string.ba_toast_calendar_pool_real_data_missing),
-        Toast.LENGTH_SHORT
-    ).show()
+    context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
     return null
 }
 
@@ -660,11 +656,7 @@ private fun resolvePoolDebugEntries(
             entries.filter { it.endAtMs == targetTime }
         }
     }
-    Toast.makeText(
-        context,
-        context.resolveString(R.string.ba_toast_calendar_pool_real_data_missing),
-        Toast.LENGTH_SHORT
-    ).show()
+    context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
     return null
 }
 
@@ -688,10 +680,6 @@ private fun resolveRealChangeDebugDetail(
         .filter { it.isNotBlank() }
         .joinToString(separator = " / ")
     if (detail.isNotBlank()) return detail
-    Toast.makeText(
-        context,
-        context.resolveString(R.string.ba_toast_calendar_pool_real_data_missing),
-        Toast.LENGTH_SHORT
-    ).show()
+    context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
     return null
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineScope
@@ -57,11 +58,7 @@ internal fun handleGitHubTrackExportDestinationResult(
         }
         githubPageViewModel.finishTrackedExport()
         result.onSuccess {
-            Toast.makeText(
-                context,
-                context.getString(R.string.github_toast_track_exported),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(R.string.github_toast_track_exported)
         }.onFailure {
             Toast.makeText(
                 context,
@@ -140,11 +137,7 @@ internal fun buildGitHubPageTrackTransferCallbacks(
                 ) {
                     GitHubTrackedExportStartResult.Busy -> Unit
                     GitHubTrackedExportStartResult.Empty -> {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.github_toast_require_track_item),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context.showToast(R.string.github_toast_require_track_item)
                     }
 
                     is GitHubTrackedExportStartResult.Failed -> {
@@ -218,11 +211,7 @@ internal fun buildGitHubPageTrackTransferCallbacks(
                                         importResult.updatedCount +
                                         importResult.unchangedCount
                                 if (effectiveCount == 0) {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.github_toast_track_import_no_valid),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    context.showToast(R.string.github_toast_track_import_no_valid)
                                 } else {
                                     Toast.makeText(
                                         context,

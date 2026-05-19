@@ -2,6 +2,7 @@ package os.kei.ui.page.main.settings.page
 
 import android.content.Context
 import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -29,11 +30,7 @@ internal fun BindSettingsLogExportAction(
             val result = settingsPageViewModel.exportLogZip(context, uri)
             settingsPageViewModel.finishLogExport()
             if (result.isSuccess) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_log_toast_exported),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.settings_log_toast_exported)
             } else {
                 val reason = result.errorPreview.ifBlank {
                     context.getString(R.string.common_unknown)

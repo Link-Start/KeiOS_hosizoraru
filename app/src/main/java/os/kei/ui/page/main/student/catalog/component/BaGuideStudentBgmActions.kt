@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -132,7 +132,7 @@ internal fun rememberBaGuideStudentBgmActions(
             resolveEntry(entry = entry, allowNetwork = true) { resolved ->
                 val favorite = resolved?.favorite
                 if (favorite == null) {
-                    Toast.makeText(context, bgmMissingText, Toast.LENGTH_SHORT).show()
+                    context.showToast(bgmMissingText)
                 } else if (selectedAudioUrl == favorite.audioUrl) {
                     togglePlayback(favorite)
                 } else {
@@ -147,22 +147,20 @@ internal fun rememberBaGuideStudentBgmActions(
                 val savedFavorite = favoriteForEntry(entry)
                 if (savedFavorite != null) {
                     GuideBgmFavoriteStore.removeFavorite(savedFavorite.audioUrl)
-                    Toast.makeText(context, favoriteRemovedText, Toast.LENGTH_SHORT).show()
+                    context.showToast(favoriteRemovedText)
                     return
                 }
             }
             resolveEntry(entry = entry, allowNetwork = true) { resolved ->
                 val favorite = resolved?.favorite
                 if (favorite == null) {
-                    Toast.makeText(context, bgmResolveFailedText, Toast.LENGTH_SHORT).show()
+                    context.showToast(bgmResolveFailedText)
                     return@resolveEntry
                 }
                 val added = GuideBgmFavoriteStore.toggleFavorite(favorite)
-                Toast.makeText(
-                    context,
-                    if (added) favoriteAddedText else favoriteRemovedText,
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(
+                    if (added) favoriteAddedText else favoriteRemovedText
+                )
             }
         }
 

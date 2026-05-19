@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.host.main
 
 import android.content.Intent
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,11 +49,11 @@ internal fun rememberMainScreenOpenGuideDetailAction(
         { rawUrl ->
             val normalized = normalizeGuideUrl(rawUrl)
             if (normalized.isBlank()) {
-                Toast.makeText(context, latestMissingToastText, Toast.LENGTH_SHORT).show()
+                context.showToast(latestMissingToastText)
             } else if (isMainScreenGuideDetailLink(normalized)) {
                 val contentId = extractGuideContentIdFromUrl(normalized)
                 if (contentId == null || contentId <= 0L) {
-                    Toast.makeText(context, latestMissingToastText, Toast.LENGTH_SHORT).show()
+                    context.showToast(latestMissingToastText)
                 } else {
                     latestNavigate("https://www.gamekee.com/ba/tj/$contentId.html")
                 }
@@ -61,7 +61,7 @@ internal fun rememberMainScreenOpenGuideDetailAction(
                 openMainScreenExternalLink(
                     url = normalized,
                     onFailure = {
-                        Toast.makeText(context, latestExternalOpenFailureText, Toast.LENGTH_SHORT).show()
+                        context.showToast(latestExternalOpenFailureText)
                     },
                     launch = { intent -> context.startActivity(intent) }
                 )

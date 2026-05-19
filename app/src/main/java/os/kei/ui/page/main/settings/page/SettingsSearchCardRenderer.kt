@@ -2,6 +2,8 @@ package os.kei.ui.page.main.settings.page
 
 import android.content.Context
 import android.widget.Toast
+import os.kei.core.ext.showToast
+
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.CoroutineScope
@@ -168,11 +170,7 @@ internal data class SettingsSearchCardRenderInput(
         scope.launch {
             val result = settingsPageViewModel.clearAllCaches(context)
             if (result.isSuccess) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_cache_toast_cleared_all),
-                    Toast.LENGTH_SHORT,
-                ).show()
+                context.showToast(R.string.settings_cache_toast_cleared_all)
             } else {
                 val reason = result.exceptionOrNull()?.javaClass?.simpleName
                     ?: context.getString(R.string.common_unknown)
@@ -195,11 +193,7 @@ internal data class SettingsSearchCardRenderInput(
         scope.launch {
             val result = settingsPageViewModel.clearLogs(context)
             if (result.isSuccess) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_log_toast_cleared),
-                    Toast.LENGTH_SHORT,
-                ).show()
+                context.showToast(R.string.settings_log_toast_cleared)
             } else {
                 val reason = result.exceptionOrNull()?.javaClass?.simpleName
                     ?: context.getString(R.string.common_unknown)

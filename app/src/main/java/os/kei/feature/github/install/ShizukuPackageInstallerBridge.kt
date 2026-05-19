@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Process
+import os.kei.core.ext.userMessage
 import org.lsposed.hiddenapibypass.LSPass
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
@@ -50,7 +51,7 @@ open class ShizukuPackageInstallerBridge {
             ShizukuPackageInstallerCapability(
                 available = false,
                 failureReason = GitHubApkInstallFailureReason.ShizukuUnavailable,
-                message = error.message.orEmpty().ifBlank { error.javaClass.simpleName }
+                message = error.userMessage()
             )
         }
     }

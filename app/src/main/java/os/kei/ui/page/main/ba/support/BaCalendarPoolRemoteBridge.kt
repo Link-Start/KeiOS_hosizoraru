@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba.support
 
 import org.json.JSONObject
+import os.kei.core.ext.userMessage
 import os.kei.feature.ba.data.remote.GameKeeRepository
 
 internal enum class BaCalendarPoolRemoteSource {
@@ -74,7 +75,7 @@ internal fun fetchBaPoolRemoteResult(
             }
         },
         onFailure = { error ->
-            sourceErrors += error.message.orEmpty().ifBlank { error.javaClass.simpleName }
+            sourceErrors += error.userMessage()
         }
     )
     if (merged.isEmpty() && sourceErrors.isNotEmpty()) {

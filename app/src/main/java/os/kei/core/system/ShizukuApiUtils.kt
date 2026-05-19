@@ -9,6 +9,7 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import os.kei.core.ext.userMessage
 import os.kei.core.log.AppLogger
 import rikka.shizuku.Shizuku
 import java.io.ByteArrayOutputStream
@@ -174,7 +175,7 @@ class ShizukuApiUtils(
         }.getOrElse { error ->
             AppCommandResult(
                 stdout = "",
-                stderr = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
+                stderr = error.userMessage(),
                 exitCode = null,
                 timedOut = false,
                 cancelled = error is CancellationException

@@ -59,10 +59,6 @@ internal fun queryOnlineShareTargetOptions(
                 PackageManager.PackageInfoFlags.of(0)
             )
             true
-        }.recoverCatching {
-            @Suppress("DEPRECATION")
-            context.packageManager.getPackageInfo(target.packageName, 0)
-            true
         }.getOrDefault(false)
     }
 }
@@ -76,9 +72,6 @@ internal fun queryDownloaderOptions(context: Context): List<DownloaderOption> {
             intent,
             PackageManager.ResolveInfoFlags.of(0)
         )
-    }.recoverCatching {
-        @Suppress("DEPRECATION")
-        context.packageManager.queryIntentActivities(intent, 0)
     }.getOrDefault(emptyList<ResolveInfo>())
 
     return resolved.mapNotNull { it.toDownloaderOptionOrNull(context) }
@@ -96,10 +89,6 @@ internal fun isPackageInstalled(context: Context, packageName: String): Boolean 
             packageName,
             PackageManager.PackageInfoFlags.of(0)
         )
-        true
-    }.recoverCatching {
-        @Suppress("DEPRECATION")
-        context.packageManager.getPackageInfo(packageName, 0)
         true
     }.getOrDefault(false)
 }

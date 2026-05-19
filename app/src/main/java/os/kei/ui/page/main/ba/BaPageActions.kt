@@ -6,6 +6,7 @@ import android.content.Context
 import android.widget.Toast
 import org.json.JSONArray
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
@@ -52,7 +53,7 @@ internal fun openBaExternalLink(
     failureMessage: String = context.getString(R.string.ba_error_open_activity_link),
 ) {
     if (!SafeExternalIntents.startBrowsableUrl(context, url, newTask = true)) {
-        Toast.makeText(context, failureMessage, Toast.LENGTH_SHORT).show()
+        context.showToast(failureMessage)
     }
 }
 

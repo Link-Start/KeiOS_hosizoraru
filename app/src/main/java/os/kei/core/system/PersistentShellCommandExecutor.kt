@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import os.kei.core.ext.userMessage
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
@@ -143,7 +144,7 @@ internal class PersistentShellCommandExecutor(
             closeCurrentSession(current)
             AppCommandResult(
                 stdout = "",
-                stderr = error.message.orEmpty().ifBlank { error.javaClass.simpleName },
+                stderr = error.userMessage(),
                 exitCode = null,
                 timedOut = false,
                 cancelled = false

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.ba
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -178,7 +179,7 @@ internal class BaOfficeController(
     fun saveIdFriendCodeFromInput(context: Context, serverIndex: Int) {
         val sanitized = sanitizeBaFriendCodeInput(idFriendCodeInput)
         if (sanitized.length != 8) {
-            Toast.makeText(context, context.getString(R.string.ba_toast_friend_code_invalid), Toast.LENGTH_SHORT).show()
+            context.showToast(R.string.ba_toast_friend_code_invalid)
             idFriendCodeInput = idFriendCode
             return
         }
@@ -362,7 +363,7 @@ internal class BaOfficeController(
         applyCafeStorage()
         val claim = applyBaCafeClaim(cafeStoredAp)
         if (claim <= 0.0) {
-            Toast.makeText(context, context.getString(R.string.ba_toast_cafe_no_ap), Toast.LENGTH_SHORT).show()
+            context.showToast(R.string.ba_toast_cafe_no_ap)
             return
         }
         addCurrentAp(claim, markSync = true)
@@ -451,11 +452,7 @@ internal class BaOfficeController(
         )
         if (!sent) {
             if (showToast) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_toast_notification_permission_required),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.ba_toast_notification_permission_required)
             }
             return false
         }
@@ -467,7 +464,7 @@ internal class BaOfficeController(
                     R.string.ba_toast_ap_notification_sent
                 }
             )
-            Toast.makeText(context, notifyText, Toast.LENGTH_SHORT).show()
+            context.showToast(notifyText)
         }
         return true
     }
@@ -488,20 +485,12 @@ internal class BaOfficeController(
         )
         if (!sent) {
             if (showToast) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_toast_notification_permission_required),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.ba_toast_notification_permission_required)
             }
             return false
         }
         if (showToast) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.ba_toast_cafe_ap_notification_sent),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(R.string.ba_toast_cafe_ap_notification_sent)
         }
         return true
     }
@@ -522,20 +511,12 @@ internal class BaOfficeController(
         )
         if (!sent) {
             if (showToast) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_toast_notification_permission_required),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.ba_toast_notification_permission_required)
             }
             return false
         }
         if (showToast) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.ba_toast_cafe_visit_notification_sent),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(R.string.ba_toast_cafe_visit_notification_sent)
         }
         return true
     }
@@ -556,20 +537,12 @@ internal class BaOfficeController(
         )
         if (!sent) {
             if (showToast) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.ba_toast_notification_permission_required),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(R.string.ba_toast_notification_permission_required)
             }
             return false
         }
         if (showToast) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.ba_toast_arena_refresh_notification_sent),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(R.string.ba_toast_arena_refresh_notification_sent)
         }
         return true
     }

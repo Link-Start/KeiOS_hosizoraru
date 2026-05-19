@@ -611,6 +611,17 @@ internal fun SettingsComponentEffectsSection(
             infoValue = stringResource(R.string.settings_liquid_switch_scope),
         )
         SettingsToggleItem(
+            title = stringResource(R.string.settings_liquid_toast_title),
+            summary =
+                if (state.liquidToastEnabled) {
+                    stringResource(R.string.settings_liquid_toast_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_liquid_toast_summary_disabled)
+                },
+            checked = state.liquidToastEnabled,
+            onCheckedChange = actions.onLiquidToastChanged,
+        )
+        SettingsToggleItem(
             title = stringResource(R.string.settings_bottom_bar_title),
             summary = stringResource(R.string.settings_bottom_bar_summary),
             checked = state.liquidBottomBarEnabled,

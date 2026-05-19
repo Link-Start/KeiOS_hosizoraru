@@ -109,6 +109,8 @@ internal fun MainScreenNavHost(
                     onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
                     liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
                     onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
+                    liquidToastEnabled = prefsState.liquidToastEnabled,
+                    onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
                     transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
                     onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
                     predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,

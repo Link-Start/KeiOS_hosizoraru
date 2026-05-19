@@ -30,6 +30,7 @@ data class UiPrefsSnapshot(
     val logLevel: AppLogLevel,
     val textCopyCapabilityExpanded: Boolean,
     val cacheDiagnosticsEnabled: Boolean,
+    val liquidToastEnabled: Boolean,
     val appThemeMode: AppThemeMode,
     val visibleBottomPageNames: Set<String>,
 )
@@ -58,6 +59,7 @@ object UiPrefs {
     private const val KEY_LOG_LEVEL = "log_level"
     private const val KEY_TEXT_COPY_CAPABILITY_EXPANDED = "text_copy_capability_expanded"
     private const val KEY_CACHE_DIAGNOSTICS = "cache_diagnostics"
+    private const val KEY_LIQUID_TOAST = "liquid_toast"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_VISIBLE_BOTTOM_PAGES = "visible_bottom_pages"
     private const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
@@ -275,6 +277,12 @@ object UiPrefs {
         kv().encode(KEY_CACHE_DIAGNOSTICS, value)
     }
 
+    fun isLiquidToastEnabled(defaultValue: Boolean = true): Boolean = kv().decodeBool(KEY_LIQUID_TOAST, defaultValue)
+
+    fun setLiquidToastEnabled(value: Boolean) {
+        kv().encode(KEY_LIQUID_TOAST, value)
+    }
+
     fun getAppThemeMode(defaultValue: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): AppThemeMode {
         val raw = kv().decodeString(KEY_THEME_MODE, null) ?: return defaultValue
         return AppThemeMode.entries.firstOrNull { it.name == raw } ?: defaultValue
@@ -327,6 +335,7 @@ object UiPrefs {
             logLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID),
             textCopyCapabilityExpanded = false,
             cacheDiagnosticsEnabled = true,
+            liquidToastEnabled = true,
             appThemeMode = appThemeMode,
             visibleBottomPageNames = DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES,
         )
@@ -360,6 +369,7 @@ object UiPrefs {
             logLevel = getLogLevel(),
             textCopyCapabilityExpanded = store.decodeBool(KEY_TEXT_COPY_CAPABILITY_EXPANDED, false),
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
+            liquidToastEnabled = store.decodeBool(KEY_LIQUID_TOAST, true),
             appThemeMode = getAppThemeMode(),
             visibleBottomPageNames = loadVisibleBottomPageNames(),
         )

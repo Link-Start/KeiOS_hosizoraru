@@ -23,6 +23,7 @@ internal class MainScreenUiPrefsState(
     val miuixMainNavigationEnabled: Boolean get() = snapshot.miuixMainNavigationEnabled
     val liquidActionBarLayeredStyleEnabled: Boolean get() = snapshot.liquidActionBarLayeredStyleEnabled
     val liquidSwitchEnabled: Boolean get() = snapshot.liquidSwitchEnabled
+    val liquidToastEnabled: Boolean get() = snapshot.liquidToastEnabled
     val transitionAnimationsEnabled: Boolean get() = snapshot.transitionAnimationsEnabled
     val predictiveBackAnimationsEnabled: Boolean get() = snapshot.predictiveBackAnimationsEnabled
     val searchAutoFocusEnabled: Boolean get() = snapshot.searchAutoFocusEnabled
@@ -56,6 +57,10 @@ internal class MainScreenUiPrefsState(
 
     fun updateLiquidSwitchEnabled(value: Boolean) {
         viewModel.updateLiquidSwitchEnabled(value)
+    }
+
+    fun updateLiquidToastEnabled(value: Boolean) {
+        viewModel.updateLiquidToastEnabled(value)
     }
 
     fun updateTransitionAnimationsEnabled(value: Boolean) {

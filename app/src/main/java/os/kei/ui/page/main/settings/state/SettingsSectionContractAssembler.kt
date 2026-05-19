@@ -51,6 +51,7 @@ internal fun rememberSettingsSectionContractBundle(
     predictiveBackAnimationsEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     liquidSwitchEnabled: Boolean,
+    liquidToastEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
     miuixMainNavigationEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
@@ -82,6 +83,7 @@ internal fun rememberSettingsSectionContractBundle(
     onPredictiveBackAnimationsChanged: (Boolean) -> Unit,
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     onLiquidSwitchChanged: (Boolean) -> Unit,
+    onLiquidToastChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
     onMiuixMainNavigationChanged: (Boolean) -> Unit,
     onSearchAutoFocusChanged: (Boolean) -> Unit,
@@ -229,6 +231,7 @@ internal fun rememberSettingsSectionContractBundle(
             SettingsComponentEffectsSectionState(
                 liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 liquidSwitchEnabled = liquidSwitchEnabled,
+                liquidToastEnabled = liquidToastEnabled,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
                 miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                 searchAutoFocusEnabled = searchAutoFocusEnabled,
@@ -239,6 +242,7 @@ internal fun rememberSettingsSectionContractBundle(
         remember(
             onLiquidActionBarLayeredStyleChanged,
             onLiquidSwitchChanged,
+            onLiquidToastChanged,
             onLiquidBottomBarChanged,
             onMiuixMainNavigationChanged,
             onSearchAutoFocusChanged,
@@ -247,6 +251,7 @@ internal fun rememberSettingsSectionContractBundle(
             SettingsComponentEffectsSectionActions(
                 onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
                 onLiquidSwitchChanged = onLiquidSwitchChanged,
+                onLiquidToastChanged = onLiquidToastChanged,
                 onLiquidBottomBarChanged = onLiquidBottomBarChanged,
                 onMiuixMainNavigationChanged = onMiuixMainNavigationChanged,
                 onSearchAutoFocusChanged = onSearchAutoFocusChanged,

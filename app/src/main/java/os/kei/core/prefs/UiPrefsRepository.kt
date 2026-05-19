@@ -48,6 +48,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setLiquidToastEnabled(value: Boolean) {
+        updateAndPersist({ copy(liquidToastEnabled = value) }) {
+            UiPrefs.setLiquidToastEnabled(value)
+        }
+    }
+
     suspend fun setTransitionAnimationsEnabled(value: Boolean) {
         updateAndPersist({ copy(transitionAnimationsEnabled = value) }) {
             UiPrefs.setTransitionAnimationsEnabled(value)

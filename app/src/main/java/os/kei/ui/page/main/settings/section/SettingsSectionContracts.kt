@@ -75,6 +75,7 @@ internal data class SettingsAnimationSectionActions(
 internal data class SettingsComponentEffectsSectionState(
     val liquidActionBarLayeredStyleEnabled: Boolean,
     val liquidSwitchEnabled: Boolean,
+    val liquidToastEnabled: Boolean,
     val liquidBottomBarEnabled: Boolean,
     val miuixMainNavigationEnabled: Boolean,
     val searchAutoFocusEnabled: Boolean,
@@ -84,6 +85,7 @@ internal data class SettingsComponentEffectsSectionState(
 internal data class SettingsComponentEffectsSectionActions(
     val onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     val onLiquidSwitchChanged: (Boolean) -> Unit,
+    val onLiquidToastChanged: (Boolean) -> Unit,
     val onLiquidBottomBarChanged: (Boolean) -> Unit,
     val onMiuixMainNavigationChanged: (Boolean) -> Unit,
     val onSearchAutoFocusChanged: (Boolean) -> Unit,

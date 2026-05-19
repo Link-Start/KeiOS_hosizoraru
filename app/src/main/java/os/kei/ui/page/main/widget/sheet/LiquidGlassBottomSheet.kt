@@ -194,7 +194,7 @@ fun LiquidGlassBottomSheet(
                     val currentFraction = heightFraction.value
 
                     // User scrolling UP (dy < 0) and sheet is NOT at full → expand sheet first.
-                    // This is the key behavior: content doesn't scroll until sheet is maximized.
+                    // Content doesn't scroll until sheet is maximized.
                     if (dy < 0f && currentFraction < DETENT_FULL) {
                         val consumed = -dy / availableHeightPx
                         val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
@@ -203,15 +203,9 @@ fun LiquidGlassBottomSheet(
                         return Offset(0f, -actualConsumed)
                     }
 
-                    // User scrolling DOWN (dy > 0) and sheet is above half → shrink sheet first.
-                    if (dy > 0f && currentFraction > DETENT_HALF) {
-                        val consumed = dy / availableHeightPx
-                        val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_HALF)
-                        scope.launch { heightFraction.snapTo(newFraction) }
-                        val actualConsumed = (currentFraction - newFraction) * availableHeightPx
-                        return Offset(0f, actualConsumed)
-                    }
-
+                    // User scrolling DOWN (dy > 0): do NOT intercept here.
+                    // Let content scroll back to top first. Only after content can't scroll
+                    // anymore (onPostScroll receives leftover), we shrink the sheet.
                     return Offset.Zero
                 }
 
@@ -223,18 +217,31 @@ fun LiquidGlassBottomSheet(
                     val dy = available.y
                     val currentFraction = heightFraction.value
 
-                    // Content at top boundary, pulling down → shrink sheet below half (dismiss zone)
-                    if (dy > 0f && currentFraction <= DETENT_HALF) {
-                        if (allowDismiss) {
-                            val consumed = dy / availableHeightPx
-                            val newFraction = (currentFraction - consumed).coerceAtLeast(0f)
-                            scope.launch { heightFraction.snapTo(newFraction) }
-                            return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
-                        } else if (currentFraction > DETENT_BOUNCE) {
-                            val consumed = dy / availableHeightPx
-                            val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_BOUNCE * 0.8f)
-                            scope.launch { heightFraction.snapTo(newFraction) }
-                            return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                    // Content has consumed what it can. Leftover dy > 0 means content is at
+                    // the top and can't scroll down anymore → now shrink the sheet.
+                    if (dy > 0f) {
+                        when {
+                            // Sheet above half → shrink toward half
+                            currentFraction > DETENT_HALF -> {
+                                val delta = dy / availableHeightPx
+                                val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_HALF)
+                                scope.launch { heightFraction.snapTo(newFraction) }
+                                return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                            }
+                            // Sheet at or below half → dismiss zone
+                            allowDismiss -> {
+                                val delta = dy / availableHeightPx
+                                val newFraction = (currentFraction - delta).coerceAtLeast(0f)
+                                scope.launch { heightFraction.snapTo(newFraction) }
+                                return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                            }
+                            // Not dismissable: allow slight over-drag for bounce feedback
+                            currentFraction > DETENT_BOUNCE * 0.8f -> {
+                                val delta = dy / availableHeightPx
+                                val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_BOUNCE * 0.8f)
+                                scope.launch { heightFraction.snapTo(newFraction) }
+                                return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                            }
                         }
                     }
 

@@ -112,6 +112,18 @@ private const val DETENT_BOUNCE = 0.35f
  */
 private const val DETENT_SOLIDNESS_START = 0.75f
 
+/**
+ * Initial detent the sheet animates to when [LiquidGlassBottomSheet.show] flips to `true`.
+ * Most sheets default to [Half], but content-heavy sheets (long lists, editors, immersive
+ * detail views) can opt into [Full] so they don't waste a drag gesture before the user can
+ * see what they came for. The sheet always remains user-resizable across all three detents.
+ */
+enum class LiquidSheetInitialDetent(internal val fraction: Float) {
+    Half(DETENT_HALF),
+    ThreeQuarter(DETENT_THREE_QUARTER),
+    Full(DETENT_FULL),
+}
+
 @Composable
 fun LiquidGlassBottomSheet(
     show: Boolean,
@@ -123,6 +135,7 @@ fun LiquidGlassBottomSheet(
     onDismissFinished: (() -> Unit)? = null,
     allowDismiss: Boolean = true,
     onBlockedDismissRequest: (() -> Unit)? = null,
+    initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.Half,
     content: @Composable () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
@@ -136,12 +149,13 @@ fun LiquidGlassBottomSheet(
     val heightFraction = remember { Animatable(0f) }
     var isRendered by remember { mutableStateOf(false) }
 
-    LaunchedEffect(show) {
+    LaunchedEffect(show, initialDetent) {
         if (show) {
             isRendered = true
-            // Always open to half-screen detent
+            // Animate to the caller-requested initial detent. The sheet remains
+            // user-resizable across all three detents after this.
             heightFraction.animateTo(
-                targetValue = DETENT_HALF,
+                targetValue = initialDetent.fraction,
                 animationSpec = spring(dampingRatio = 0.88f, stiffness = 350f)
             )
         } else {
@@ -434,31 +448,40 @@ fun LiquidGlassBottomSheet(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Title bar
+                // Title bar — title is centered as an overlay so asymmetric start/end action
+                // widths don't shift it off-center. Actions are positioned absolutely so the
+                // title's true horizontal center aligns with the sheet's center, matching the
+                // visual balance of iOS sheets.
                 if (title != null || startAction != null || endAction != null) {
-                    Row(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        contentAlignment = Alignment.Center
                     ) {
-                        startAction?.invoke()
                         if (title != null) {
                             Text(
                                 text = title,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 12.dp),
+                                // Reserve horizontal space so a long title is ellipsised
+                                // before colliding with the actions instead of overlapping.
+                                modifier = Modifier.padding(horizontal = 56.dp),
                                 color = MiuixTheme.colorScheme.onBackground,
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                        } else {
-                            Spacer(modifier = Modifier.weight(1f))
                         }
-                        endAction?.invoke()
+                        if (startAction != null) {
+                            Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                                startAction.invoke()
+                            }
+                        }
+                        if (endAction != null) {
+                            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                                endAction.invoke()
+                            }
+                        }
                     }
                 }
 

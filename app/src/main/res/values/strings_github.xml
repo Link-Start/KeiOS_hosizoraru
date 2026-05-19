@@ -13,7 +13,7 @@
     <string name="github_refresh_island_completed">已完成</string>
     <string name="github_refresh_failed_short_with_count">失败 %1$d</string>
     <string name="github_actions_update_notification_title">GitHub Actions 有新构建</string>
-    <string name="github_actions_update_notification_content">%1$s 推荐 Run 更新到 %2$s · %3$s</string>
+    <string name="github_actions_update_notification_content">%1$s %2$s · %3$s</string>
     <string name="github_actions_update_island_content">Actions</string>
     <string name="github_actions_update_debug_toast_sent">已发送 KeiOS Actions 更新测试通知</string>
     <string name="github_actions_update_debug_toast_failed">通知权限未开启，测试通知未发送</string>

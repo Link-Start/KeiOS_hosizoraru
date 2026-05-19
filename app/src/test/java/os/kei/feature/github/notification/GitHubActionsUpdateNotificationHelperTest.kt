@@ -17,15 +17,17 @@ import org.robolectric.annotation.Config
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.notification.NotificationActionReceiver
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
     application = GitHubActionsUpdateNotificationHelperTestApp::class,
-    sdk = [35]
+    sdk = [35],
 )
 class GitHubActionsUpdateNotificationHelperTest {
     @Test
@@ -37,10 +39,11 @@ class GitHubActionsUpdateNotificationHelperTest {
             addPackage(
                 PackageInfo().apply {
                     packageName = trackedPackageName
-                    applicationInfo = ApplicationInfo().apply {
-                        packageName = trackedPackageName
-                    }
-                }
+                    applicationInfo =
+                        ApplicationInfo().apply {
+                            packageName = trackedPackageName
+                        }
+                },
             )
             setApplicationIcon(trackedPackageName, ColorDrawable(Color.MAGENTA))
         }
@@ -48,10 +51,12 @@ class GitHubActionsUpdateNotificationHelperTest {
         val notification = invokeMiIslandNotification(context, snapshot)
         val openAction = notification.focusAction("github_actions_update_open")
         val markReadAction = notification.focusAction("github_actions_update_read")
+        val notificationId = GitHubActionsUpdateNotificationHelper.notificationId(snapshot)
         val displayIcon = notification.focusPicture("mi_focus_display")
         val expandedIcon = notification.focusPicture("mi_focus_expanded")
         val contentIntent = Shadows.shadowOf(notification.contentIntent).savedIntent
         val focusOpenIntent = Shadows.shadowOf(openAction.actionIntent).savedIntent
+        val markReadIntent = Shadows.shadowOf(markReadAction.actionIntent).savedIntent
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertNotNull(notification.getLargeIcon())
@@ -68,31 +73,75 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("\"actionTitle\":\"${context.getString(R.string.common_open)}\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"actionTitleColor\":\"#FFFFFF\""))
+        assertTrue(focusParam.contains("\"notifyId\":\"$notificationId\""))
         assertFalse(
             focusParam.contains(
-                "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\""
-            )
+                "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\"",
+            ),
         )
         assertEquals(
             MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
-            contentIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE)
+            contentIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
         )
         assertEquals(
             snapshot.trackId,
-            contentIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID)
+            contentIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID),
         )
         assertEquals(
             MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
-            focusOpenIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE)
+            focusOpenIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
         )
         assertEquals(
             snapshot.trackId,
-            focusOpenIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID)
+            focusOpenIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID),
+        )
+        assertEquals(
+            notificationId,
+            markReadIntent.getIntExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, -1),
         )
     }
 
-    private fun createSnapshot(packageName: String): GitHubActionsRecommendedRunSnapshot {
-        return GitHubActionsRecommendedRunSnapshot(
+    @Test
+    fun `notification id is scoped by tracked item`() {
+        val first = createSnapshot("me.him188.ani")
+        val sameItemNewRun =
+            first.copy(
+                runId = first.runId + 1,
+                runNumber = first.runNumber + 1,
+                runDisplayName = "Build #45",
+            )
+        val second =
+            createSnapshot("os.kei").copy(
+                trackId = "hosizoraru/KeiOS|os.kei",
+                owner = "hosizoraru",
+                repo = "KeiOS",
+                appLabel = "KeiOS",
+            )
+
+        assertEquals(
+            GitHubActionsUpdateNotificationHelper.notificationId(first),
+            GitHubActionsUpdateNotificationHelper.notificationId(sameItemNewRun),
+        )
+        assertNotEquals(
+            GitHubActionsUpdateNotificationHelper.notificationId(first),
+            GitHubActionsUpdateNotificationHelper.notificationId(second),
+        )
+    }
+
+    @Test
+    fun `notification content keeps app label and run label compact`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val snapshot = createSnapshot("me.him188.ani")
+        val notification = invokeFrameworkNotification(context, snapshot)
+
+        assertEquals(
+            "Animeko #44 · CI / Benchmark APK",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+    }
+
+    private fun createSnapshot(packageName: String): GitHubActionsRecommendedRunSnapshot =
+        GitHubActionsRecommendedRunSnapshot(
             trackId = "open-ani/animeko|$packageName",
             owner = "open-ani",
             repo = "animeko",
@@ -114,27 +163,56 @@ class GitHubActionsUpdateNotificationHelperTest {
             androidArtifactCount = 1,
             createdAtMillis = 1778000000000L,
             updatedAtMillis = 1778000100000L,
-            checkedAtMillis = 1778000200000L
+            checkedAtMillis = 1778000200000L,
         )
-    }
 
     private fun invokeMiIslandNotification(
         context: Application,
-        snapshot: GitHubActionsRecommendedRunSnapshot
+        snapshot: GitHubActionsRecommendedRunSnapshot,
     ): Notification {
-        val method = GitHubActionsUpdateNotificationHelper::class.java.getDeclaredMethod(
-            "buildMiIslandNotification",
-            android.content.Context::class.java,
-            GitHubActionsRecommendedRunSnapshot::class.java,
-            Boolean::class.javaPrimitiveType
-        ).apply {
-            isAccessible = true
-        }
+        val method =
+            GitHubActionsUpdateNotificationHelper::class.java
+                .getDeclaredMethod(
+                    "buildMiIslandNotification",
+                    android.content.Context::class.java,
+                    GitHubActionsRecommendedRunSnapshot::class.java,
+                    Boolean::class.javaPrimitiveType,
+                    Int::class.javaPrimitiveType,
+                ).apply {
+                    isAccessible = true
+                }
+        val notificationId = GitHubActionsUpdateNotificationHelper.notificationId(snapshot)
         return method.invoke(
             GitHubActionsUpdateNotificationHelper,
             context,
             snapshot,
-            true
+            true,
+            notificationId,
+        ) as Notification
+    }
+
+    private fun invokeFrameworkNotification(
+        context: Application,
+        snapshot: GitHubActionsRecommendedRunSnapshot,
+    ): Notification {
+        val method =
+            GitHubActionsUpdateNotificationHelper::class.java
+                .getDeclaredMethod(
+                    "buildFrameworkNotification",
+                    android.content.Context::class.java,
+                    GitHubActionsRecommendedRunSnapshot::class.java,
+                    Boolean::class.javaPrimitiveType,
+                    Int::class.javaPrimitiveType,
+                ).apply {
+                    isAccessible = true
+                }
+        val notificationId = GitHubActionsUpdateNotificationHelper.notificationId(snapshot)
+        return method.invoke(
+            GitHubActionsUpdateNotificationHelper,
+            context,
+            snapshot,
+            true,
+            notificationId,
         ) as Notification
     }
 
@@ -151,16 +229,14 @@ class GitHubActionsUpdateNotificationHelperTest {
     }
 
     @Suppress("DEPRECATION")
-    private fun Bundle.getActionCompat(key: String): Notification.Action {
-        return getParcelable<Notification.Action>(key)
+    private fun Bundle.getActionCompat(key: String): Notification.Action =
+        getParcelable<Notification.Action>(key)
             ?: error("Missing focus action: $key")
-    }
 
     @Suppress("DEPRECATION")
-    private fun Bundle.getIconCompat(key: String): Icon {
-        return getParcelable<Icon>(key)
+    private fun Bundle.getIconCompat(key: String): Icon =
+        getParcelable<Icon>(key)
             ?: error("Missing focus picture: $key")
-    }
 }
 
 class GitHubActionsUpdateNotificationHelperTestApp : Application()

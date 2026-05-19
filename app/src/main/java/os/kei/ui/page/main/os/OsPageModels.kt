@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
 import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 
@@ -92,6 +93,12 @@ internal data class OsGoogleSystemServiceConfig(
             intentExtras = normalizeShortcutIntentExtras(intentExtras)
         )
     }
+}
+
+internal fun osActivityShortcutCardsForUi(
+    persistentState: OsPagePersistentState
+): List<OsActivityShortcutCard> {
+    return if (persistentState.loaded) persistentState.activityShortcutCards else emptyList()
 }
 
 @Immutable

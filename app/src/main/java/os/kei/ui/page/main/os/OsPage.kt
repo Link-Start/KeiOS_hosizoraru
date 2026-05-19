@@ -87,12 +87,7 @@ fun OsPage(
     val javaPropsExpanded = uiSnapshot.javaPropsExpanded
     val linuxEnvExpanded = uiSnapshot.linuxEnvExpanded
     val visibleCards = uiSnapshot.visibleCards
-    val activityShortcutCards =
-        if (persistentState.loaded) {
-            persistentState.activityShortcutCards
-        } else {
-            textBundle.builtInActivityShortcutCards
-        }
+    val activityShortcutCards = osActivityShortcutCardsForUi(persistentState)
     val activityCardExpanded = remember { mutableStateMapOf<String, Boolean>() }
     val overlayState = rememberOsPageOverlayState(textBundle.googleSystemServiceDefaults)
     val scrollBehavior = MiuixScrollBehavior()

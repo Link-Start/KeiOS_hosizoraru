@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kyant.shapes.RoundedRectangle
@@ -101,6 +102,15 @@ private const val DETENT_DISMISS = 0.18f
 
 /** Below this fraction from half, blocked-dismiss bounce triggers (when allowDismiss = false). */
 private const val DETENT_BOUNCE = 0.35f
+
+/**
+ * Detent at which the iOS-style "fade to solid" begins. Below this, the sheet stays at full
+ * frosted-glass transparency (semi-transparent surface + visible blurred backdrop). Above this,
+ * the sheet progressively becomes more opaque, reaching near-solid by [DETENT_FULL]. This
+ * matches iOS behavior: half-screen sheets feel like glass over your content, but full-screen
+ * sheets become a solid reading surface for better contrast and readability.
+ */
+private const val DETENT_SOLIDNESS_START = 0.75f
 
 @Composable
 fun LiquidGlassBottomSheet(
@@ -273,23 +283,39 @@ fun LiquidGlassBottomSheet(
         ) {
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
+            // iOS-style "fade to solid" — derived from the current detent fraction.
+            // - 0 below DETENT_SOLIDNESS_START → full frosted glass (semi-transparent surface,
+            //   visible sheen/border for that liquid-glass look).
+            // - 1 at DETENT_FULL → near-opaque solid (white in light / near-black in dark) for
+            //   readability when the sheet covers the screen, with sheen/border faded out
+            //   because there's no longer a backdrop to refract against.
+            // Smoothstep curve gives a natural ease so the transition feels organic during drag
+            // rather than a linear fade.
+            val solidnessLinear =
+                ((fraction - DETENT_SOLIDNESS_START) /
+                    (DETENT_FULL - DETENT_SOLIDNESS_START)).coerceIn(0f, 1f)
+            val solidnessProgress = solidnessLinear * solidnessLinear * (3f - 2f * solidnessLinear)
+
             // Multi-layer frosted glass surface — simulates liquid glass without Backdrop's
             // drawBackdrop (which crashes on Xiaomi due to MiBackgroundBlurBlend SIGSEGV in Dialog).
             // Uses layered semi-transparent fills + border + sheen to create depth and glass feel.
+            // Surface alpha lerps toward near-solid as the sheet expands toward full.
             val surfaceColor = if (isDark) {
-                Color(0xFF141420).copy(alpha = 0.92f)
+                Color(0xFF141420).copy(alpha = lerp(0.88f, 0.985f, solidnessProgress))
             } else {
-                Color(0xFFF8F9FC).copy(alpha = 0.88f)
+                Color(0xFFF8F9FC).copy(alpha = lerp(0.84f, 0.985f, solidnessProgress))
             }
+            // Sheen and border fade as the sheet becomes solid — at full opacity there's no
+            // backdrop to refract against, so glass highlights would just look like noise.
             val sheenColor = if (isDark) {
-                Color.White.copy(alpha = 0.06f)
+                Color.White.copy(alpha = lerp(0.06f, 0.02f, solidnessProgress))
             } else {
-                Color.White.copy(alpha = 0.28f)
+                Color.White.copy(alpha = lerp(0.28f, 0.08f, solidnessProgress))
             }
             val borderColor = if (isDark) {
-                Color.White.copy(alpha = 0.12f)
+                Color.White.copy(alpha = lerp(0.12f, 0.04f, solidnessProgress))
             } else {
-                Color.White.copy(alpha = 0.65f)
+                Color.White.copy(alpha = lerp(0.65f, 0.18f, solidnessProgress))
             }
             val dragHandleColor = if (isDark) {
                 Color.White.copy(alpha = 0.28f)

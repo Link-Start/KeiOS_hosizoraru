@@ -8,12 +8,14 @@ import kotlin.test.assertTrue
 
 class GitHubWorkflowContractTest {
     @Test
-    fun `unit test workflow runs the same debug unit test task as local verification`() {
-        val workflow = workflowText("ci-unit-tests.yml")
+    fun `debug apk workflow includes unit tests as parallel job`() {
+        val workflow = workflowText("ci-debug-apk.yml")
 
+        // Unit tests run as a parallel job inside the debug APK workflow
         assertContains(workflow, "./gradlew :app:testDebugUnitTest --stacktrace")
-        assertWorkflowTriggersAppAndBuildChanges(workflow)
+        assertContains(workflow, "./gradlew :core-log:compileDebugKotlin :core-io:compileDebugKotlin --stacktrace")
         assertContains(workflow, "cache-read-only: \"true\"")
+        assertWorkflowTriggersAppAndBuildChanges(workflow)
     }
 
     @Test
@@ -45,7 +47,6 @@ class GitHubWorkflowContractTest {
             listOf(
                 "ci-benchmark-apk.yml",
                 "ci-debug-apk.yml",
-                "ci-unit-tests.yml",
             ),
             workflows,
         )

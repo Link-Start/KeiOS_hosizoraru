@@ -10,6 +10,8 @@ on:
       - ".github/actions/setup-android-gradle-build/**"
       - ".github/workflows/ci-debug-apk.yml"
       - "app/**"
+      - "core-log/**"
+      - "core-io/**"
       - "baselineprofile/**"
       - "build.gradle.kts"
       - "gradle.properties"
@@ -31,6 +33,8 @@ on:
       - ".github/actions/setup-android-gradle-build/**"
       - ".github/workflows/ci-debug-apk.yml"
       - "app/**"
+      - "core-log/**"
+      - "core-io/**"
       - "baselineprofile/**"
       - "build.gradle.kts"
       - "gradle.properties"
@@ -64,6 +68,7 @@ defaults:
     shell: bash
 
 jobs:
+  # Job 1: Build debug APK + verify signing
   build-debug-apk:
     name: Build debug APK
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
@@ -156,4 +161,58 @@ jobs:
             echo "- Commit: \`${{ steps.context.outputs.commit_sha }}\`"
             echo "- Run number: \`${{ steps.context.outputs.run_number }}\`"
             echo "- Digest: \`${{ steps.upload_apk.outputs.artifact-digest }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  # Job 2: Unit tests — runs in PARALLEL with build-debug-apk.
+  # Separate job so test failures don't block APK artifact upload, and both complete faster
+  # than running sequentially (total time = max(build, test) instead of build + test).
+  unit-tests:
+    name: Unit tests
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_BUILD_TOOLS_VERSION: "37.0.0"
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.commit || github.sha }}
+
+      - name: Setup Android Gradle build
+        uses: ./.github/actions/setup-android-gradle-build
+        with:
+          android-build-tools-version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
+          github-actor: ${{ env.GITHUB_ACTOR }}
+          github-token: ${{ env.GITHUB_TOKEN }}
+          cache-read-only: "true"
+          build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
+
+      - name: Compile library modules
+        run: ./gradlew :core-log:compileDebugKotlin :core-io:compileDebugKotlin --stacktrace
+
+      - name: Run debug unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-results
+          path: app/build/reports/tests/testDebugUnitTest/
+          retention-days: 7
+
+      - name: Write test summary
+        if: always()
+        run: |
+          {
+            echo "### Debug unit tests"
+            echo ""
+            echo "- Tasks: \`:core-log:compileDebugKotlin\`, \`:core-io:compileDebugKotlin\`, \`:app:testDebugUnitTest\`"
+            echo "- Commit: \`$(git rev-parse HEAD)\`"
+            echo "- Run number: \`${GITHUB_RUN_NUMBER}\`"
           } >> "${GITHUB_STEP_SUMMARY}"

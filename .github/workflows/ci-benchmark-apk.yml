@@ -10,6 +10,8 @@ on:
       - ".github/actions/setup-android-gradle-build/**"
       - ".github/workflows/ci-benchmark-apk.yml"
       - "app/**"
+      - "core-log/**"
+      - "core-io/**"
       - "baselineprofile/**"
       - "build.gradle.kts"
       - "gradle.properties"

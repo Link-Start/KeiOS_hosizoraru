@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,53 +82,59 @@ private data class LiquidGlassDropdownMetrics(
 
 private fun liquidGlassDropdownMetrics(material: LiquidGlassDropdownMaterial): LiquidGlassDropdownMetrics {
     return when (material) {
-        LiquidGlassDropdownMaterial.Default -> LiquidGlassDropdownMetrics(
-            containerRadius = LiquidGlassDropdownContainerRadius,
-            contentPadding = LiquidGlassDropdownContentPadding,
-            blurRadius = 8.dp,
-            lensStart = 18.dp,
-            lensEnd = 34.dp,
-            shadowElevation = 18.dp,
-            innerShadowRadius = 10.dp,
-            vibrancy = true,
-            chromaticAberration = true,
-            depthEffect = true,
-            lightHighlightAlpha = 0.86f,
-            darkHighlightAlpha = 0.72f,
-            lightOuterShadowAlpha = 0.12f,
-            darkOuterShadowAlpha = 0.22f,
-            lightSpotShadowAlpha = 0.10f,
-            darkSpotShadowAlpha = 0.18f,
-            lightShadowAlpha = 0.14f,
-            darkShadowAlpha = 0.22f,
-            lightInnerShadowAlpha = 0.12f,
-            darkInnerShadowAlpha = 0.20f
-        )
-
-        LiquidGlassDropdownMaterial.ActionMenu -> LiquidGlassDropdownMetrics(
-            containerRadius = 30.dp,
-            contentPadding = 5.dp,
-            blurRadius = 32.dp,
-            lensStart = 34.dp,
-            lensEnd = 64.dp,
-            shadowElevation = 26.dp,
-            innerShadowRadius = 14.dp,
-            vibrancy = false,
-            chromaticAberration = true,
-            depthEffect = true,
-            lightHighlightAlpha = 0.88f,
-            darkHighlightAlpha = 0.62f,
-            lightOuterShadowAlpha = 0.14f,
-            darkOuterShadowAlpha = 0.22f,
-            lightSpotShadowAlpha = 0.10f,
-            darkSpotShadowAlpha = 0.18f,
-            lightShadowAlpha = 0.14f,
-            darkShadowAlpha = 0.22f,
-            lightInnerShadowAlpha = 0.12f,
-            darkInnerShadowAlpha = 0.18f
-        )
+        LiquidGlassDropdownMaterial.Default -> LiquidGlassDropdownMetricsDefault
+        LiquidGlassDropdownMaterial.ActionMenu -> LiquidGlassDropdownMetricsActionMenu
     }
 }
+
+// Hoisted to top-level constants: the metrics are pure values (no composition state),
+// so allocating a fresh data class on every recomposition was pure overhead. Reusing
+// these instances also keeps structural equality intact for any downstream skip checks.
+private val LiquidGlassDropdownMetricsDefault = LiquidGlassDropdownMetrics(
+    containerRadius = LiquidGlassDropdownContainerRadius,
+    contentPadding = LiquidGlassDropdownContentPadding,
+    blurRadius = 8.dp,
+    lensStart = 18.dp,
+    lensEnd = 34.dp,
+    shadowElevation = 18.dp,
+    innerShadowRadius = 10.dp,
+    vibrancy = true,
+    chromaticAberration = true,
+    depthEffect = true,
+    lightHighlightAlpha = 0.86f,
+    darkHighlightAlpha = 0.72f,
+    lightOuterShadowAlpha = 0.12f,
+    darkOuterShadowAlpha = 0.22f,
+    lightSpotShadowAlpha = 0.10f,
+    darkSpotShadowAlpha = 0.18f,
+    lightShadowAlpha = 0.14f,
+    darkShadowAlpha = 0.22f,
+    lightInnerShadowAlpha = 0.12f,
+    darkInnerShadowAlpha = 0.20f
+)
+
+private val LiquidGlassDropdownMetricsActionMenu = LiquidGlassDropdownMetrics(
+    containerRadius = 30.dp,
+    contentPadding = 5.dp,
+    blurRadius = 32.dp,
+    lensStart = 34.dp,
+    lensEnd = 64.dp,
+    shadowElevation = 26.dp,
+    innerShadowRadius = 14.dp,
+    vibrancy = false,
+    chromaticAberration = true,
+    depthEffect = true,
+    lightHighlightAlpha = 0.88f,
+    darkHighlightAlpha = 0.62f,
+    lightOuterShadowAlpha = 0.14f,
+    darkOuterShadowAlpha = 0.22f,
+    lightSpotShadowAlpha = 0.10f,
+    darkSpotShadowAlpha = 0.18f,
+    lightShadowAlpha = 0.14f,
+    darkShadowAlpha = 0.22f,
+    lightInnerShadowAlpha = 0.12f,
+    darkInnerShadowAlpha = 0.18f
+)
 
 @Composable
 fun LiquidGlassDropdownColumn(
@@ -357,6 +364,27 @@ private fun liquidGlassDropdownContainerColors(
     accentColor: Color,
     material: LiquidGlassDropdownMaterial
 ): LiquidGlassDropdownContainerColors {
+    val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
+    // Memoize the entire container-colors bundle. Without `remember`, every recomposition
+    // allocates 2 fresh Brush instances (linearGradient + radialGradient) plus the data
+    // class wrapper — and Brush instances are non-trivial (each holds a colors list and
+    // an offset list internally). Inputs cover everything the result depends on.
+    return remember(isDark, accentColor, material, surfaceContainer) {
+        buildLiquidGlassDropdownContainerColors(
+            isDark = isDark,
+            accentColor = accentColor,
+            material = material,
+            surfaceContainer = surfaceContainer
+        )
+    }
+}
+
+private fun buildLiquidGlassDropdownContainerColors(
+    isDark: Boolean,
+    accentColor: Color,
+    material: LiquidGlassDropdownMaterial,
+    surfaceContainer: Color
+): LiquidGlassDropdownContainerColors {
     return when (material) {
         LiquidGlassDropdownMaterial.ActionMenu -> if (isDark) {
             LiquidGlassDropdownContainerColors(
@@ -412,10 +440,10 @@ private fun liquidGlassDropdownContainerColors(
 
         LiquidGlassDropdownMaterial.Default -> if (isDark) {
             LiquidGlassDropdownContainerColors(
-                surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+                surfaceColor = surfaceContainer.copy(alpha = 0.64f),
                 topSheen = Color.White.copy(alpha = 0.16f),
                 borderColor = Color.White.copy(alpha = 0.24f),
-                fallbackBaseColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f),
+                fallbackBaseColor = surfaceContainer.copy(alpha = 0.94f),
                 fallbackMiddleBrush = Brush.linearGradient(
                     colors = listOf(
                         Color.White.copy(alpha = 0.30f),

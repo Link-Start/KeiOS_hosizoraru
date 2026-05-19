@@ -184,22 +184,26 @@ fun LiquidGlassActionMenu(
             expandedSubmenuId = id
         }
     }
+    // Cache the two spring specs once. Without `remember`, every recomposition allocates
+    // a fresh `spring(...)` instance and Compose's animateContentSize cannot reuse its
+    // internal interpolator state — defeating spec caching.
+    val collapseSpec = remember {
+        spring<androidx.compose.ui.unit.IntSize>(dampingRatio = 0.92f, stiffness = 380f)
+    }
+    val expandSpec = remember {
+        spring<androidx.compose.ui.unit.IntSize>(dampingRatio = 0.85f, stiffness = 460f)
+    }
+    val disabledSpec = remember {
+        tween<androidx.compose.ui.unit.IntSize>(durationMillis = AppMotionTokens.disabledDurationMs)
+    }
+    val resolvedSpec = when {
+        !transitionAnimationsEnabled -> disabledSpec
+        expandedSubmenu == null -> collapseSpec
+        else -> expandSpec
+    }
     AppLiquidGlassDropdownColumn(
         modifier = modifier
-            .animateContentSize(
-                animationSpec = if (transitionAnimationsEnabled) {
-                    // Spring-based size transitions for submenu in/out — feels elastic and tied to
-                    // the user's interaction. Slightly stiffer for opening (faster reveal) and
-                    // slightly softer for collapsing (gentler settle).
-                    if (expandedSubmenu == null) {
-                        spring(dampingRatio = 0.92f, stiffness = 380f)
-                    } else {
-                        spring(dampingRatio = 0.85f, stiffness = 460f)
-                    }
-                } else {
-                    tween(durationMillis = AppMotionTokens.disabledDurationMs)
-                }
-            )
+            .animateContentSize(animationSpec = resolvedSpec)
             .semantics { testTagsAsResourceId = true },
         minWidth = minWidth,
         maxWidth = maxWidth,

@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -213,20 +212,8 @@ private fun LiquidToastContent(
     backdrop: Backdrop,
     data: LiquidToastData
 ) {
-    val isDark = isSystemInDarkTheme()
-    // Tint gives the glass a subtle color cast — warm white in light mode, cool dark in dark mode.
-    // This makes the glass effect clearly visible even against uniform backgrounds.
-    val glassTint = if (isDark) {
-        Color(0xFF1A1A2E).copy(alpha = 0.55f)
-    } else {
-        Color(0xFFF8F9FF).copy(alpha = 0.50f)
-    }
-    val glassSurfaceColor = if (isDark) {
-        Color.White.copy(alpha = 0.06f)
-    } else {
-        Color.White.copy(alpha = 0.35f)
-    }
-
+    // Official Backdrop recommendation: simple semi-transparent white surface overlay.
+    // The liquid glass effect comes from lens refraction, not from complex color layering.
     LiquidSurface(
         backdrop = backdrop,
         modifier = Modifier
@@ -234,11 +221,8 @@ private fun LiquidToastContent(
             .padding(horizontal = 16.dp),
         shape = ContinuousCapsule,
         isInteractive = false,
-        tint = glassTint,
-        surfaceColor = glassSurfaceColor,
-        // Elevated blur for strong frosted-glass appearance
-        blurRadius = 12.dp,
-        // Larger lens for visible refraction/distortion — the "liquid" in liquid glass
+        surfaceColor = Color.White.copy(alpha = 0.5f),
+        blurRadius = 4.dp,
         lensRadius = 32.dp,
         chromaticAberration = true,
         depthEffect = true,

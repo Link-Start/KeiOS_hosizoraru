@@ -77,7 +77,7 @@ fun LiquidInfoBlock(
                             shape = RoundedRectangle(999.dp),
                             isInteractive = false,
                             surfaceColor = accent.copy(alpha = 0.18f),
-                            blurRadius = 6.dp,
+                            blurRadius = 4.dp,
                             lensRadius = 18.dp,
                             shadow = false
                         ) {

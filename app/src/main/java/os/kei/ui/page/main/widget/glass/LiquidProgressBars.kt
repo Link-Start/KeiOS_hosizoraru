@@ -104,7 +104,7 @@ fun LiquidLinearProgressBar(
                     shape = { ContinuousCapsule },
                     effects = {
                         vibrancy()
-                        blur(6.dp.toPx())
+                        blur(4.dp.toPx())
                         lens(
                             12.dp.toPx(),
                             20.dp.toPx(),

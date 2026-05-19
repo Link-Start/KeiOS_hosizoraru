@@ -5,7 +5,7 @@ import androidx.compose.ui.unit.dp
 
 object UiPerformanceBudget {
     val maxGlassBlur: Dp = 11.dp
-    val backdropBlur: Dp = 8.dp
+    val backdropBlur: Dp = 4.dp
     val backdropLens: Dp = 24.dp
     const val catalogPagerBeyondViewportPageCount: Int = 0
     const val guidePagerBeyondViewportPageCount: Int = 0

@@ -121,7 +121,7 @@ fun AppLiquidCheckbox(
                             shape = { ContinuousCapsule },
                             effects = {
                                 vibrancy()
-                                blur(6.dp.toPx())
+                                blur(4.dp.toPx())
                                 lens(
                                     16.dp.toPx(),
                                     24.dp.toPx(),

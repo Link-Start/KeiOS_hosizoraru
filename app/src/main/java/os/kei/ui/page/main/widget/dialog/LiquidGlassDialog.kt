@@ -62,7 +62,6 @@ fun LiquidGlassDialog(
 ) {
     if (!show) return
 
-    val isDark = isSystemInDarkTheme()
     val scale by animateFloatAsState(
         targetValue = if (show) 1f else 0.85f,
         animationSpec = spring(dampingRatio = 0.82f, stiffness = 450f),
@@ -91,16 +90,8 @@ fun LiquidGlassDialog(
         top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects()
 
         val dialogShape = RoundedRectangle(LiquidDialogCornerRadius)
-        val surfaceColor = if (isDark) {
-            Color(0xFF121218).copy(alpha = 0.94f)
-        } else {
-            Color(0xFFFCFCFF).copy(alpha = 0.94f)
-        }
-        val sheenColor = if (isDark) {
-            Color.White.copy(alpha = 0.05f)
-        } else {
-            Color.White.copy(alpha = 0.18f)
-        }
+        // Official Backdrop recommendation: simple semi-transparent white surface.
+        val surfaceColor = Color.White.copy(alpha = 0.5f)
         val titleColor = MiuixTheme.colorScheme.onBackground
         val summaryColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
 
@@ -131,7 +122,6 @@ fun LiquidGlassDialog(
                     }
                     .clip(dialogShape)
                     .background(surfaceColor, dialogShape)
-                    .background(sheenColor, dialogShape)
                     // Block clicks from passing through to scrim
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

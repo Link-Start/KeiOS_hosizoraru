@@ -43,15 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
@@ -165,7 +156,6 @@ fun LiquidGlassBottomSheet(
             contentAlignment = Alignment.BottomCenter
         ) {
             // Sheet surface
-            val sheetBackdrop = rememberLayerBackdrop()
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
             val surfaceColor = if (isDark) {
@@ -196,36 +186,13 @@ fun LiquidGlassBottomSheet(
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)
-                    .layerBackdrop(sheetBackdrop)
-                    .drawBackdrop(
-                        backdrop = sheetBackdrop,
-                        shape = { sheetShape },
-                        effects = {
-                            vibrancy()
-                            blur(LiquidSheetBlurRadius.toPx())
-                            lens(
-                                LiquidSheetLensStart.toPx(),
-                                LiquidSheetLensEnd.toPx(),
-                                chromaticAberration = true,
-                                depthEffect = true
-                            )
-                        },
-                        highlight = {
-                            Highlight.Default.copy(alpha = if (isDark) 0.58f else 0.82f)
-                        },
-                        shadow = {
-                            Shadow.Default.copy(
-                                color = Color.Black.copy(alpha = if (isDark) 0.28f else 0.16f)
-                            )
-                        },
-                        innerShadow = {
-                            InnerShadow(radius = 12.dp, alpha = if (isDark) 0.18f else 0.10f)
-                        },
-                        onDrawSurface = {
-                            drawRect(surfaceColor)
-                            drawRect(sheenColor)
-                        }
-                    )
+                    // Dialog creates a separate window — Backdrop's layerBackdrop cannot capture
+                    // content from the parent window, and on Xiaomi devices the system's
+                    // MiBackgroundBlurBlend causes a native stack overflow (SIGSEGV) when
+                    // processing blur nodes in a Dialog's render tree. Use a solid frosted-glass
+                    // appearance via background colors instead of real-time backdrop effects.
+                    .background(surfaceColor, sheetShape)
+                    .background(sheenColor, sheetShape)
                     // Block clicks from passing through sheet to scrim
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

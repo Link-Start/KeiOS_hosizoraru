@@ -3,7 +3,6 @@ package os.kei.ui.page.main.student.page.state
 import android.app.Activity
 import android.content.Intent
 import android.provider.DocumentsContract
-import android.widget.Toast
 import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,11 +64,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
         pageScope.launch {
             val success = copyGuideMediaToUriAsync(context, request.sourceUrl, targetUri)
             if (success) {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_save_success, request.fileName),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(R.string.guide_media_save_success, request.fileName))
             } else {
                 context.showToast(R.string.guide_media_save_failed)
             }
@@ -107,11 +102,7 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                 copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
             } == true
             if (success) {
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.guide_media_save_success, request.fileName),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(R.string.guide_media_save_success, request.fileName))
             } else {
                 context.showToast(R.string.guide_media_save_failed)
             }
@@ -154,14 +145,10 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                                 copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
                             } == true
                             if (success) {
-                                Toast.makeText(
-                                    context,
-                                    context.resolveString(
-                                        R.string.guide_media_save_success,
-                                        request.fileName
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(context.resolveString(
+                                    R.string.guide_media_save_success,
+                                    request.fileName
+                                ))
                             } else {
                                 BASettingsStore.saveMediaSaveFixedTreeUri("")
                                 pendingFixedSaveRequest = request
@@ -221,16 +208,12 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                 outputUri = targetUri
             )
             if (result.success) {
-                Toast.makeText(
-                    context,
-                    context.resolveString(
-                        R.string.guide_media_pack_save_success,
-                        result.savedCount,
-                        result.totalCount,
-                        request.fileName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(
+                    R.string.guide_media_pack_save_success,
+                    result.savedCount,
+                    result.totalCount,
+                    request.fileName
+                ))
             } else {
                 context.showToast(R.string.guide_media_pack_save_failed)
             }
@@ -272,16 +255,12 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                 )
             }
             if (result?.success == true) {
-                Toast.makeText(
-                    context,
-                    context.resolveString(
-                        R.string.guide_media_pack_save_success,
-                        result.savedCount,
-                        result.totalCount,
-                        request.fileName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(
+                    R.string.guide_media_pack_save_success,
+                    result.savedCount,
+                    result.totalCount,
+                    request.fileName
+                ))
             } else {
                 context.showToast(R.string.guide_media_pack_save_failed)
             }
@@ -323,16 +302,12 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                                 )
                             }
                             if (result?.success == true) {
-                                Toast.makeText(
-                                    context,
-                                    context.resolveString(
-                                        R.string.guide_media_pack_save_success,
-                                        result.savedCount,
-                                        result.totalCount,
-                                        request.fileName
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(context.resolveString(
+                                    R.string.guide_media_pack_save_success,
+                                    result.savedCount,
+                                    result.totalCount,
+                                    request.fileName
+                                ))
                             } else if (targetUri != null) {
                                 context.showToast(R.string.guide_media_pack_save_failed)
                             } else {
@@ -483,14 +458,10 @@ internal fun rememberBaStudentGuidePageActions(
                         onPlayingVoiceUrlChange("")
                         onIsVoicePlayingChange(false)
                         onVoicePlayProgressChange(0f)
-                        Toast.makeText(
-                            context,
-                            context.resolveString(
-                                R.string.guide_toast_voice_play_failed_with_reason,
-                                error.javaClass.simpleName
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context.showToast(context.resolveString(
+                            R.string.guide_toast_voice_play_failed_with_reason,
+                            error.javaClass.simpleName
+                        ))
                     }
                 }
             },

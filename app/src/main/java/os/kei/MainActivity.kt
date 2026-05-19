@@ -8,7 +8,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -95,18 +95,13 @@ class MainActivity : ComponentActivity() {
             transientExternalLaunchGuard.clear()
             hostUiState = hostUiState.copy(transientExternalLaunchActive = false)
             val permissionGranted = granted || hasLocalNetworkPermission()
-            Toast
-                .makeText(
-                    this,
-                    getString(
-                        if (permissionGranted) {
-                            R.string.mcp_toast_local_network_permission_granted
-                        } else {
-                            R.string.mcp_toast_local_network_permission_denied
-                        },
-                    ),
-                    Toast.LENGTH_SHORT,
-                ).show()
+            showToast(getString(
+                if (permissionGranted) {
+                    R.string.mcp_toast_local_network_permission_granted
+                } else {
+                    R.string.mcp_toast_local_network_permission_denied
+                },
+            ))
             val shouldStartMcp = startMcpAfterLocalNetworkPermission && permissionGranted
             startMcpAfterLocalNetworkPermission = false
             if (shouldStartMcp) {
@@ -269,12 +264,7 @@ class MainActivity : ComponentActivity() {
             TransientExternalLaunchGuard.Reason.LocalNetworkPermission,
         )
         requestLocalNetworkPermissionLauncher.launch(permission)
-        Toast
-            .makeText(
-                this,
-                getString(R.string.mcp_toast_local_network_permission_requested),
-                Toast.LENGTH_SHORT,
-            ).show()
+        showToast(getString(R.string.mcp_toast_local_network_permission_requested))
         return false
     }
 
@@ -358,12 +348,7 @@ class MainActivity : ComponentActivity() {
         pendingShortcutAction = null
         val sent = BaApIslandShortcutNotificationCoordinator.send(this)
         if (!sent) {
-            Toast
-                .makeText(
-                    this,
-                    getString(R.string.ba_toast_notification_permission_required),
-                    Toast.LENGTH_SHORT,
-                ).show()
+            showToast(getString(R.string.ba_toast_notification_permission_required))
         }
     }
 

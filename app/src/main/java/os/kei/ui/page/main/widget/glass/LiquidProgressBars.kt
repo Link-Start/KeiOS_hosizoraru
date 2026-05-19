@@ -34,6 +34,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
@@ -102,21 +103,22 @@ fun LiquidLinearProgressBar(
                     backdrop = progressBackdrop,
                     shape = { ContinuousCapsule },
                     effects = {
-                        blur(3.dp.toPx())
+                        vibrancy()
+                        blur(6.dp.toPx())
                         lens(
-                            5.dp.toPx(),
-                            8.dp.toPx(),
+                            12.dp.toPx(),
+                            20.dp.toPx(),
                             depthEffect = true
                         )
                     },
                     highlight = {
-                        Highlight.Ambient.copy(alpha = 0.42f)
+                        Highlight.Ambient.copy(alpha = 0.52f)
                     },
                     shadow = {
-                        Shadow(radius = 2.dp, color = Color.Black.copy(alpha = 0.04f))
+                        Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.06f))
                     },
                     innerShadow = {
-                        InnerShadow(radius = 2.dp, alpha = 0.14f)
+                        InnerShadow(radius = 3.dp, alpha = 0.18f)
                     },
                     onDrawSurface = {
                         drawRect(activeColor)

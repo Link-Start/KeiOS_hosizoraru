@@ -311,11 +311,12 @@ private fun LiquidSwitchToggle(
                     shape = { Capsule() },
                     effects = {
                         val progress = dampedDragAnimation.pressProgress
-                        blur(8.dp.toPx() * (1f - progress))
+                        blur(8.dp.toPx() * (1f - progress * 0.3f))
                         lens(
-                            5.dp.toPx() * progress,
-                            10.dp.toPx() * progress,
-                            chromaticAberration = true
+                            12.dp.toPx() * progress,
+                            22.dp.toPx() * progress,
+                            chromaticAberration = true,
+                            depthEffect = true
                         )
                     },
                     highlight = {

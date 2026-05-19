@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.section.gallery
 
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -113,11 +113,7 @@ internal fun GuideGalleryCardContent(
                     variant = GlassVariant.Compact,
                     onClick = {
                         if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
-                            Toast.makeText(
-                                context,
-                                context.resolveString(R.string.guide_media_video_url_invalid),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
                         } else if (!gestureState.videoInlineExpanded) {
                             gestureState.videoInlineExpanded = true
                         } else {
@@ -134,11 +130,7 @@ internal fun GuideGalleryCardContent(
                     onClick = {
                         val normalized = normalizeGuideMediaSource(displayMediaUrl)
                         if (normalized.isBlank()) {
-                            Toast.makeText(
-                                context,
-                                context.resolveString(R.string.guide_media_video_url_invalid),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
                         } else {
                             GuideVideoFullscreenActivity.launch(
                                 context = context,

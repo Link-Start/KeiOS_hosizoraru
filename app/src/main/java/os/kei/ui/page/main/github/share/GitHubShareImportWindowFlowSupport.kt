@@ -3,7 +3,7 @@ package os.kei.ui.page.main.github.share
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import os.kei.R
@@ -489,7 +489,7 @@ internal fun toast(
     resId: Int,
     vararg args: Any
 ) {
-    Toast.makeText(context, context.getString(resId, *args), Toast.LENGTH_SHORT).show()
+    context.showToast(context.getString(resId, *args))
 }
 
 internal fun Throwable.shouldSuppressShareImportFailureToast(): Boolean {

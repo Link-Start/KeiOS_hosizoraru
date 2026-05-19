@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.page.state
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -113,14 +113,10 @@ internal fun BindBaStudentGuideVoiceListenerEffect(
                     onPlayingVoiceUrlChange("")
                     onIsVoicePlayingChange(false)
                     onVoicePlayProgressChange(0f)
-                    Toast.makeText(
-                        context,
-                        context.getString(
-                            R.string.guide_toast_voice_play_failed_with_reason,
-                            error.errorCodeName
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.getString(
+                        R.string.guide_toast_voice_play_failed_with_reason,
+                        error.errorCodeName
+                    ))
                 }
             }
             voicePlayer.addListener(listener)

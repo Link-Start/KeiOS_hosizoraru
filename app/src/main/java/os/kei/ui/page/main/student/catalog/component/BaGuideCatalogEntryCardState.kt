@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import android.content.ClipData
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -95,7 +95,7 @@ internal fun rememberBaGuideCatalogEntryCopyAction(
         {
             scope.launch {
                 clipboard.setClipEntry(ClipData.newPlainText("plain text", copyPayload).toClipEntry())
-                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                context.showToast(copiedToast)
             }
         }
     }

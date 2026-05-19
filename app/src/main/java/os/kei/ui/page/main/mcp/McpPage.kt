@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.mcp
 
 import android.content.Context
-import android.widget.Toast
 import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -138,14 +137,10 @@ fun McpPage(
                 }
 
                 is McpToggleServerResult.Failed -> {
-                    Toast.makeText(
-                        context,
-                        context.resolveString(
-                            R.string.mcp_toast_start_failed,
-                            result.reason ?: unknownText
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.resolveString(
+                        R.string.mcp_toast_start_failed,
+                        result.reason ?: unknownText
+                    ))
                 }
 
                 McpToggleServerResult.Started -> {
@@ -162,17 +157,13 @@ fun McpPage(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         localNetworkPermissionGranted = granted || hasMcpLocalNetworkPermission(context)
-        Toast.makeText(
-            context,
-            context.resolveString(
-                if (localNetworkPermissionGranted) {
-                    R.string.mcp_toast_local_network_permission_granted
-                } else {
-                    R.string.mcp_toast_local_network_permission_denied
-                }
-            ),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(context.resolveString(
+            if (localNetworkPermissionGranted) {
+                R.string.mcp_toast_local_network_permission_granted
+            } else {
+                R.string.mcp_toast_local_network_permission_denied
+            }
+        ))
         val shouldStartServer = startAfterLocalNetworkPermission && localNetworkPermissionGranted
         startAfterLocalNetworkPermission = false
         if (shouldStartServer && !mcpServerManager.uiState.value.running) {
@@ -256,14 +247,10 @@ fun McpPage(
                 }
 
                 is McpSaveConfigResult.Failed -> {
-                    Toast.makeText(
-                        context,
-                        context.resolveString(
-                            R.string.common_save_failed_with_reason,
-                            result.reason ?: unknownText
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.resolveString(
+                        R.string.common_save_failed_with_reason,
+                        result.reason ?: unknownText
+                    ))
                 }
 
                 McpSaveConfigResult.Success -> {
@@ -281,31 +268,23 @@ fun McpPage(
                     context.showToast(R.string.mcp_toast_test_notification_sent)
                 }
                 .onFailure {
-                    Toast.makeText(
-                        context,
-                        context.resolveString(
-                            R.string.common_send_failed_with_reason,
-                            it.message ?: unknownText
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.resolveString(
+                        R.string.common_send_failed_with_reason,
+                        it.message ?: unknownText
+                    ))
                 }
         }
     }
     val resetConfig: () -> Unit = {
         scope.launch {
             val requiresRestart = mcpPageViewModel.resetConfigPreservingToken(mcpServerManager)
-            Toast.makeText(
-                context,
-                context.resolveString(
-                    if (requiresRestart) {
-                        R.string.mcp_toast_config_reset_requires_restart
-                    } else {
-                        R.string.mcp_toast_config_reset
-                    }
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(context.resolveString(
+                if (requiresRestart) {
+                    R.string.mcp_toast_config_reset_requires_restart
+                } else {
+                    R.string.mcp_toast_config_reset
+                }
+            ))
             mcpPageViewModel.updateResetConfigConfirmVisible(false)
         }
     }
@@ -349,14 +328,10 @@ fun McpPage(
             result.onSuccess {
                 context.showToast(R.string.mcp_toast_logs_exported)
             }.onFailure {
-                Toast.makeText(
-                    context,
-                    context.resolveString(
-                        R.string.mcp_toast_logs_export_failed,
-                        it.javaClass.simpleName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(
+                    R.string.mcp_toast_logs_export_failed,
+                    it.javaClass.simpleName
+                ))
             }
         }
     }
@@ -498,14 +473,10 @@ fun McpPage(
                                 logsExportLauncher.launch(fileName)
                             }.onFailure {
                                 mcpPageViewModel.finishLogsExport()
-                                Toast.makeText(
-                                    context,
-                                    context.resolveString(
-                                        R.string.mcp_toast_logs_export_failed,
-                                        it.javaClass.simpleName
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(context.resolveString(
+                                    R.string.mcp_toast_logs_export_failed,
+                                    it.javaClass.simpleName
+                                ))
                             }
                         },
                         onClearLogs = {

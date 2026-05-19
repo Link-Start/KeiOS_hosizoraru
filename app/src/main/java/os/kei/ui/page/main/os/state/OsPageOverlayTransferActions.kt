@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.os.state
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import os.kei.R
@@ -44,14 +44,10 @@ internal fun rememberOsPageOverlayTransferActions(
                     overlayState.onPendingExportContentChange(payload)
                     cardTransferState.exportLauncher.launch("keios-os-activity-cards.json")
                 }.onFailure { error ->
-                    Toast.makeText(
-                        context,
-                        context.getString(
-                            R.string.common_export_failed_with_reason,
-                            error.message ?: error.javaClass.simpleName
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.getString(
+                        R.string.common_export_failed_with_reason,
+                        error.message ?: error.javaClass.simpleName
+                    ))
                 }
             },
             onImportAllActivityCards = {
@@ -66,14 +62,10 @@ internal fun rememberOsPageOverlayTransferActions(
                     overlayState.onPendingExportContentChange(payload)
                     cardTransferState.exportLauncher.launch("keios-os-shell-cards.json")
                 }.onFailure { error ->
-                    Toast.makeText(
-                        context,
-                        context.getString(
-                            R.string.common_export_failed_with_reason,
-                            error.message ?: error.javaClass.simpleName
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.getString(
+                        R.string.common_export_failed_with_reason,
+                        error.message ?: error.javaClass.simpleName
+                    ))
                 }
             },
             onImportAllShellCards = {

@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.mcp.skill.component
 
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
@@ -46,7 +46,7 @@ internal fun McpSkillContentList(
     var referenceExpanded by rememberSaveable { mutableStateOf(false) }
     fun copyText(label: String, text: String, toastText: String = textBundle.copiedToast) {
         copyToClipboard(context, label, text)
-        Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
+        context.showToast(toastText)
     }
 
     val copyActions = buildMcpSkillCopyActions(

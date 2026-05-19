@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.settings.page
 
 import android.content.Context
-import android.widget.Toast
 import os.kei.core.ext.showToast
 
 import androidx.compose.foundation.lazy.LazyListScope
@@ -174,11 +173,7 @@ internal data class SettingsSearchCardRenderInput(
             } else {
                 val reason = result.exceptionOrNull()?.javaClass?.simpleName
                     ?: context.getString(R.string.common_unknown)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_cache_toast_clear_all_failed, reason),
-                    Toast.LENGTH_SHORT,
-                ).show()
+                context.showToast(context.getString(R.string.settings_cache_toast_clear_all_failed, reason))
             }
         }
     }
@@ -197,11 +192,7 @@ internal data class SettingsSearchCardRenderInput(
             } else {
                 val reason = result.exceptionOrNull()?.javaClass?.simpleName
                     ?: context.getString(R.string.common_unknown)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_log_toast_clear_failed, reason),
-                    Toast.LENGTH_SHORT,
-                ).show()
+                context.showToast(context.getString(R.string.settings_log_toast_clear_failed, reason))
             }
         }
     }

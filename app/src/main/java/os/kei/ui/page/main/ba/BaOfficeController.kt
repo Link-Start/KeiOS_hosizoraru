@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import os.kei.core.ext.showToast
 import androidx.compose.runtime.Stable
@@ -371,11 +370,7 @@ internal class BaOfficeController(
         cafeApLastNotifiedLevel = -1
         BASettingsStore.saveCafeStoredAp(0.0)
         BASettingsStore.saveCafeApLastNotifiedLevel(-1)
-        Toast.makeText(
-            context,
-            context.getString(R.string.ba_toast_cafe_claimed_ap, claim.roundToInt()),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(context.getString(R.string.ba_toast_cafe_claimed_ap, claim.roundToInt()))
     }
 
     fun testCafePlus3Hours(context: Context) {
@@ -386,11 +381,7 @@ internal class BaOfficeController(
         )
         cafeStoredAp = nextStoredAp
         BASettingsStore.saveCafeStoredAp(cafeStoredAp)
-        Toast.makeText(
-            context,
-            context.getString(R.string.ba_toast_cafe_debug_added, gainedInt),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(context.getString(R.string.ba_toast_cafe_debug_added, gainedInt))
     }
 
     fun copyFriendCodeToClipboard(context: Context) {

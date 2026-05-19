@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -88,11 +88,7 @@ class FeedbackIssueActivity : ComponentActivity() {
                                     url = viewModel.buildBrowserIssueUrl()
                                 )
                                 if (!opened) {
-                                    Toast.makeText(
-                                        this@FeedbackIssueActivity,
-                                        getString(R.string.common_open_link_failed),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    showToast(getString(R.string.common_open_link_failed))
                                 }
                             },
                             onConfirmApiSubmit = {

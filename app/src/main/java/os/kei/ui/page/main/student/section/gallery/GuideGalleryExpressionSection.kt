@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.student.section.gallery
 
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -324,11 +324,7 @@ fun GuideGalleryExpressionCardItem(
                         variant = GlassVariant.Compact,
                         onClick = {
                             if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
-                                Toast.makeText(
-                                    context,
-                                    context.resolveString(R.string.guide_media_video_url_invalid),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
                             } else if (!videoInlineExpanded) {
                                 videoInlineExpanded = true
                             } else {
@@ -345,11 +341,7 @@ fun GuideGalleryExpressionCardItem(
                         onClick = {
                             val normalized = normalizeGuideMediaSource(displayMediaUrl)
                             if (normalized.isBlank()) {
-                                Toast.makeText(
-                                    context,
-                                    context.resolveString(R.string.guide_media_video_url_invalid),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
                             } else {
                                 GuideVideoFullscreenActivity.launch(
                                     context = context,

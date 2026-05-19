@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.github.importer
 
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -61,14 +61,10 @@ internal fun GitHubStarImportPage(
             when (event) {
                 is GitHubStarImportEvent.Imported -> {
                     onImported(event.result)
-                    Toast.makeText(
-                        context,
-                        context.resolveString(
-                            R.string.github_star_import_toast_imported,
-                            event.result.changedCount
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    context.showToast(context.resolveString(
+                        R.string.github_star_import_toast_imported,
+                        event.result.changedCount
+                    ))
                 }
 
                 GitHubStarImportEvent.Close -> onClose()

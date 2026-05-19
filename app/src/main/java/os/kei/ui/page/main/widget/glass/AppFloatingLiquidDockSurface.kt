@@ -98,7 +98,7 @@ internal fun AppFloatingLiquidVerticalDockSurface(
                         },
                         effects = {
                             vibrancy()
-                            blur(4.dp.toPx())
+                            blur(7.dp.toPx())
                             lens(
                                 28.dp.toPx(),
                                 54.dp.toPx(),

@@ -274,10 +274,10 @@ private fun AppLiquidIconButtonContainer(
                         },
                         effects = {
                             vibrancy()
-                            blur(2.dp.toPx())
+                            blur(6.dp.toPx())
                             lens(
-                                12.dp.toPx(),
-                                24.dp.toPx(),
+                                16.dp.toPx(),
+                                28.dp.toPx(),
                                 chromaticAberration = variant != GlassVariant.Compact,
                                 depthEffect = true
                             )
@@ -515,10 +515,10 @@ fun AppLiquidTextButton(
                         },
                         effects = {
                             vibrancy()
-                            blur(2.dp.toPx())
+                            blur(6.dp.toPx())
                             lens(
-                                12.dp.toPx(),
-                                24.dp.toPx(),
+                                16.dp.toPx(),
+                                28.dp.toPx(),
                                 chromaticAberration = variant != GlassVariant.Compact,
                                 depthEffect = true
                             )

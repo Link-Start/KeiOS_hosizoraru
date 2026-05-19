@@ -3,7 +3,6 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import os.kei.core.ext.showToast
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.Immutable
@@ -60,14 +59,10 @@ internal fun handleGitHubTrackExportDestinationResult(
         result.onSuccess {
             context.showToast(R.string.github_toast_track_exported)
         }.onFailure {
-            Toast.makeText(
-                context,
-                context.getString(
-                    R.string.github_toast_track_export_failed,
-                    it.javaClass.simpleName
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(context.getString(
+                R.string.github_toast_track_export_failed,
+                it.javaClass.simpleName
+            ))
         }
     }
 }
@@ -96,14 +91,10 @@ internal fun handleGitHubTrackImportSourceResult(
         result.onSuccess { preview ->
             state.pendingTrackImportPreview = preview
         }.onFailure {
-            Toast.makeText(
-                context,
-                context.getString(
-                    R.string.github_toast_track_import_failed,
-                    it.javaClass.simpleName
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(context.getString(
+                R.string.github_toast_track_import_failed,
+                it.javaClass.simpleName
+            ))
         }
     }
 }
@@ -141,14 +132,10 @@ internal fun buildGitHubPageTrackTransferCallbacks(
                     }
 
                     is GitHubTrackedExportStartResult.Failed -> {
-                        Toast.makeText(
-                            context,
-                            context.getString(
-                                R.string.github_toast_track_export_failed,
-                                result.reason ?: result.javaClass.simpleName
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context.showToast(context.getString(
+                            R.string.github_toast_track_export_failed,
+                            result.reason ?: result.javaClass.simpleName
+                        ))
                     }
 
                     GitHubTrackedExportStartResult.Ready -> {
@@ -156,14 +143,10 @@ internal fun buildGitHubPageTrackTransferCallbacks(
                             launchTrackedExport(exportFileName)
                         }.onFailure {
                             githubPageViewModel.finishTrackedExport()
-                            Toast.makeText(
-                                context,
-                                context.getString(
-                                    R.string.github_toast_track_export_failed,
-                                    it.javaClass.simpleName
-                                ),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            context.showToast(context.getString(
+                                R.string.github_toast_track_export_failed,
+                                it.javaClass.simpleName
+                            ))
                         }
                     }
                 }
@@ -177,14 +160,10 @@ internal fun buildGitHubPageTrackTransferCallbacks(
                         launchTrackedImport(arrayOf("application/json", "text/plain"))
                     }.onFailure {
                         githubPageViewModel.finishTrackedImport()
-                        Toast.makeText(
-                            context,
-                            context.getString(
-                                R.string.github_toast_track_import_failed,
-                                it.javaClass.simpleName
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context.showToast(context.getString(
+                            R.string.github_toast_track_import_failed,
+                            it.javaClass.simpleName
+                        ))
                     }
                 }
             }
@@ -213,27 +192,19 @@ internal fun buildGitHubPageTrackTransferCallbacks(
                                 if (effectiveCount == 0) {
                                     context.showToast(R.string.github_toast_track_import_no_valid)
                                 } else {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(
-                                            R.string.github_toast_track_imported_summary,
-                                            importResult.addedCount,
-                                            importResult.updatedCount,
-                                            importResult.unchangedCount,
-                                            importResult.invalidCount + importResult.duplicateCount
-                                        ),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    context.showToast(context.getString(
+                                        R.string.github_toast_track_imported_summary,
+                                        importResult.addedCount,
+                                        importResult.updatedCount,
+                                        importResult.unchangedCount,
+                                        importResult.invalidCount + importResult.duplicateCount
+                                    ))
                                 }
                             }.onFailure {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(
-                                        R.string.github_toast_track_import_failed,
-                                        it.javaClass.simpleName
-                                    ),
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                context.showToast(context.getString(
+                                    R.string.github_toast_track_import_failed,
+                                    it.javaClass.simpleName
+                                ))
                             }
                         }
                     }

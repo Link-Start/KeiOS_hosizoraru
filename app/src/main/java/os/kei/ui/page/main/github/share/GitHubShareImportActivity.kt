@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -104,11 +104,7 @@ class GitHubShareImportActivity : ComponentActivity() {
                                         onNavigateToGitHubPage = {
                                             val launched = openGitHubPage()
                                             if (!launched) {
-                                                Toast.makeText(
-                                                    this@GitHubShareImportActivity,
-                                                    getString(R.string.common_open_link_failed),
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
+                                                showToast(getString(R.string.common_open_link_failed))
                                             }
                                             finishSafely()
                                         },

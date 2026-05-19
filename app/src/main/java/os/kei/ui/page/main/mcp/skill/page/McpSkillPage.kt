@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.mcp.skill.page
 
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -61,11 +61,7 @@ fun McpSkillPage(
     val copyCurrentConfig: () -> Unit = {
         val json = mcpServerManager.buildConfigJson()
         copyToClipboard(context, "mcp-config", json)
-        Toast.makeText(
-            context,
-            context.resolveString(R.string.mcp_toast_config_copied),
-            Toast.LENGTH_SHORT
-        ).show()
+        context.showToast(context.resolveString(R.string.mcp_toast_config_copied))
     }
 
     AppPageScaffold(

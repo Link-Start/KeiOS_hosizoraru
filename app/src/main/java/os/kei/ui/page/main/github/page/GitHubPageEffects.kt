@@ -2,7 +2,7 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -116,11 +116,7 @@ internal fun BindGitHubPageLifecycleCoordinator(
             if (intent != null) {
                 onLaunchAppListPermission(intent)
             } else {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.github_toast_open_permission_page_failed),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.getString(R.string.github_toast_open_permission_page_failed))
             }
         }
     }

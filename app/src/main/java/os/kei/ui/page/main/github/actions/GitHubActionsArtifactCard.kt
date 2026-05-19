@@ -3,7 +3,7 @@ package os.kei.ui.page.main.github.actions
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -184,8 +184,7 @@ internal fun GitHubActionsArtifactCard(
                                     clipboard?.setPrimaryClip(
                                         ClipData.newPlainText("sha256", artifact.digest)
                                     )
-                                    Toast.makeText(context, digestCopiedToast, Toast.LENGTH_SHORT)
-                                        .show()
+                                    context.showToast(digestCopiedToast)
                                 }
                             } else {
                                 Modifier

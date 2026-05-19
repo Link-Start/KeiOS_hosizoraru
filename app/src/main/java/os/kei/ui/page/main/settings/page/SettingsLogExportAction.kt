@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.settings.page
 
 import android.content.Context
-import android.widget.Toast
 import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,11 +34,7 @@ internal fun BindSettingsLogExportAction(
                 val reason = result.errorPreview.ifBlank {
                     context.getString(R.string.common_unknown)
                 }
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.settings_log_toast_export_failed, reason),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.getString(R.string.settings_log_toast_export_failed, reason))
             }
             settingsPageViewModel.reloadLogStats(context)
         }

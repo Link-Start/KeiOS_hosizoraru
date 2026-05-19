@@ -5,7 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -281,7 +281,7 @@ internal fun GitHubActionsArtifactDetailSheet(
                         modifier = Modifier.weight(1f),
                         onClick = {
                             copyTextToClipboard(context, "github_artifact_metadata", copyPayload)
-                            Toast.makeText(context, copyToast, Toast.LENGTH_SHORT).show()
+                            context.showToast(copyToast)
                         }
                     )
                 }
@@ -471,7 +471,7 @@ private fun GitHubReleaseNotesDetailContent(
                         chooserTitle = translateLabel
                     )
                     if (!launched) {
-                        Toast.makeText(context, translateFailed, Toast.LENGTH_SHORT).show()
+                        context.showToast(translateFailed)
                     }
                 }
             )

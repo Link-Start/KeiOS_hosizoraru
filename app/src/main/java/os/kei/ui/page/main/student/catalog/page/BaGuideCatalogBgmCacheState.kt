@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,11 +58,7 @@ internal fun rememberBaGuideCatalogBgmCacheState(
                     favorites = currentFavorites
                 )
                 revision += 1
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.ba_catalog_bgm_cache_batch_done, targetCount),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(R.string.ba_catalog_bgm_cache_batch_done, targetCount))
             }
         }
     }
@@ -74,11 +70,7 @@ internal fun rememberBaGuideCatalogBgmCacheState(
                     favorites = favoritesState.value
                 )
                 revision += 1
-                Toast.makeText(
-                    context,
-                    context.resolveString(R.string.ba_catalog_bgm_cache_cleaned, cleaned),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(R.string.ba_catalog_bgm_cache_cleaned, cleaned))
             }
         }
     }

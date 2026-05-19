@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,7 +75,7 @@ internal fun rememberBaGuideFavoriteBgmOfflineCacheState(
                 clearFavoriteBgmCacheAsync(appContext, favorite)
                 offlineAudioUrls = offlineAudioUrls - favorite.audioUrl
                 revision += 1
-                Toast.makeText(context, cacheRemovedText, Toast.LENGTH_SHORT).show()
+                context.showToast(cacheRemovedText)
             }
         } else if (favorite.audioUrl.isNotBlank() && favorite.audioUrl !in cachingAudioUrls) {
             cachingAudioUrls = cachingAudioUrls + favorite.audioUrl
@@ -93,11 +93,7 @@ internal fun rememberBaGuideFavoriteBgmOfflineCacheState(
                     offlineAudioUrls = offlineAudioUrls + favorite.audioUrl
                 }
                 revision += 1
-                Toast.makeText(
-                    context,
-                    if (success) cacheSuccessText else cacheFailedText,
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(if (success) cacheSuccessText else cacheFailedText)
             }
         }
     }

@@ -3,7 +3,6 @@ package os.kei.ui.page.main.settings.state
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
-import android.widget.Toast
 import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -52,27 +51,19 @@ internal fun rememberSettingsBackgroundController(
                 val reason = cropError.javaClass.simpleName.ifBlank {
                     context.resolveString(R.string.common_unknown)
                 }
-                Toast.makeText(
-                    context,
-                    context.resolveString(
-                        R.string.settings_non_home_background_toast_crop_failed,
-                        reason
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
+                context.showToast(context.resolveString(
+                    R.string.settings_non_home_background_toast_crop_failed,
+                    reason
+                ))
             }
             return@rememberLauncherForActivityResult
         }
 
         val outputUri = data?.let { UCrop.getOutput(it) } ?: run {
-            Toast.makeText(
-                context,
-                context.resolveString(
-                    R.string.settings_non_home_background_toast_crop_failed,
-                    context.resolveString(R.string.common_unknown)
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(context.resolveString(
+                R.string.settings_non_home_background_toast_crop_failed,
+                context.resolveString(R.string.common_unknown)
+            ))
             return@rememberLauncherForActivityResult
         }
 
@@ -118,14 +109,10 @@ internal fun rememberSettingsBackgroundController(
             val reason = error.javaClass.simpleName.ifBlank {
                 context.resolveString(R.string.common_unknown)
             }
-            Toast.makeText(
-                context,
-                context.resolveString(
-                    R.string.settings_non_home_background_toast_crop_failed,
-                    reason
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            context.showToast(context.resolveString(
+                R.string.settings_non_home_background_toast_crop_failed,
+                reason
+            ))
             return@rememberLauncherForActivityResult
         }
 

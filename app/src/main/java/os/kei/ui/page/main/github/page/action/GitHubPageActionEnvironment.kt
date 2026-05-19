@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Context
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.annotation.StringRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -24,12 +24,12 @@ internal class GitHubPageActionEnvironment(
     }
 
     fun toast(@StringRes resId: Int, vararg args: Any) {
-        Toast.makeText(context, string(resId, *args), Toast.LENGTH_SHORT).show()
+        context.showToast(string(resId, *args))
     }
 
     fun toast(message: String?) {
         if (message.isNullOrBlank()) return
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        context.showToast(message)
     }
 
     fun saveTrackedItems(

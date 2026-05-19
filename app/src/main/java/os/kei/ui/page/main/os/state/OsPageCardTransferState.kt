@@ -2,7 +2,7 @@ package os.kei.ui.page.main.os.state
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,14 +60,9 @@ internal fun rememberOsPageCardTransferState(
                     writer?.write(content)
                 }
             }.onSuccess {
-                Toast.makeText(context, exportSuccessText, Toast.LENGTH_SHORT).show()
+                context.showToast(exportSuccessText)
             }.onFailure {
-                Toast
-                    .makeText(
-                        context,
-                        context.getString(R.string.common_export_failed_with_reason, it.javaClass.simpleName),
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                context.showToast(context.getString(R.string.common_export_failed_with_reason, it.javaClass.simpleName))
             }
         }
 
@@ -88,17 +83,14 @@ internal fun rememberOsPageCardTransferState(
             overlayState.onShowActivityCardDeleteConfirmChange(false)
             overlayState.onEditingActivityShortcutCardIdChange(null)
         }
-        Toast
-            .makeText(
-                context,
-                context.getString(
-                    R.string.os_activity_card_toast_imported_summary,
-                    result.addedCount,
-                    result.updatedCount,
-                    result.unchangedCount,
-                ),
-                Toast.LENGTH_SHORT,
-            ).show()
+        context.showToast(
+            context.getString(
+                R.string.os_activity_card_toast_imported_summary,
+                result.addedCount,
+                result.updatedCount,
+                result.unchangedCount,
+            )
+        )
     }
 
     fun applyShellImport(payload: OsShellCardImportPayload) {
@@ -115,17 +107,14 @@ internal fun rememberOsPageCardTransferState(
             overlayState.onShowShellCardDeleteConfirmChange(false)
             overlayState.onEditingShellCommandCardIdChange(null)
         }
-        Toast
-            .makeText(
-                context,
-                context.getString(
-                    R.string.os_shell_card_toast_imported_summary,
-                    result.addedCount,
-                    result.updatedCount,
-                    result.unchangedCount,
-                ),
-                Toast.LENGTH_SHORT,
-            ).show()
+        context.showToast(
+            context.getString(
+                R.string.os_shell_card_toast_imported_summary,
+                result.addedCount,
+                result.updatedCount,
+                result.unchangedCount,
+            )
+        )
     }
 
     val importLauncher =
@@ -160,15 +149,12 @@ internal fun rememberOsPageCardTransferState(
                 }.onSuccess { preview ->
                     overlayState.onPendingCardImportPreviewChange(preview)
                 }.onFailure { error ->
-                    Toast
-                        .makeText(
-                            context,
-                            String.format(
-                                cardImportFailedWithReason,
-                                error.localizedOsCardImportMessage(context),
-                            ),
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                    context.showToast(
+                        String.format(
+                            cardImportFailedWithReason,
+                            error.localizedOsCardImportMessage(context),
+                        )
+                    )
                 }
                 overlayState.onCardTransferInProgressChange(false)
             }
@@ -189,15 +175,12 @@ internal fun rememberOsPageCardTransferState(
                     is OsUnknownCardImportPayload -> throw OsCardImportException(OsCardImportError.NoImportableData)
                 }
             }.onFailure { error ->
-                Toast
-                    .makeText(
-                        context,
-                        String.format(
-                            cardImportFailedWithReason,
-                            error.localizedOsCardImportMessage(context),
-                        ),
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                context.showToast(
+                    String.format(
+                        cardImportFailedWithReason,
+                        error.localizedOsCardImportMessage(context),
+                    )
+                )
             }
             overlayState.onPendingCardImportPreviewChange(null)
             overlayState.onCardTransferInProgressChange(false)

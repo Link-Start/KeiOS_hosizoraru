@@ -3,7 +3,7 @@ package os.kei.core.shortcut
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.widget.Toast
+import os.kei.core.ext.showToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.MainActivity
@@ -109,13 +109,13 @@ internal object AppShortcutActionHandler {
 
     private suspend fun Context.toast(resId: Int) {
         withContext(Dispatchers.Main.immediate) {
-            Toast.makeText(this@toast, getString(resId), Toast.LENGTH_SHORT).show()
+            showToast(getString(resId))
         }
     }
 
     private suspend fun Context.toast(resId: Int, vararg args: Any) {
         withContext(Dispatchers.Main.immediate) {
-            Toast.makeText(this@toast, getString(resId, *args), Toast.LENGTH_SHORT).show()
+            showToast(getString(resId, *args))
         }
     }
 }

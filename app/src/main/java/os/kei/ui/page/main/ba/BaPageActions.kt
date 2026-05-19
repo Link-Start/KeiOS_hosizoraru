@@ -3,7 +3,6 @@ package os.kei.ui.page.main.ba
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import org.json.JSONArray
 import os.kei.R
 import os.kei.core.ext.showToast
@@ -44,7 +43,7 @@ internal fun copyBaFriendCodeToClipboard(
     clipboard.setPrimaryClip(
         ClipData.newPlainText(context.getString(R.string.ba_friend_code_clipboard_label), friendCode)
     )
-    Toast.makeText(context, context.getString(R.string.ba_toast_friend_code_copied), Toast.LENGTH_SHORT).show()
+    context.showToast(R.string.ba_toast_friend_code_copied)
 }
 
 internal fun openBaExternalLink(

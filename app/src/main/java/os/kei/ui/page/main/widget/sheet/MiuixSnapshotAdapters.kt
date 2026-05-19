@@ -335,6 +335,7 @@ fun SnapshotWindowBottomSheet(
     allowDismiss: Boolean = true,
     onBlockedDismissRequest: (() -> Unit)? = null,
     enableNestedScroll: Boolean = true,
+    initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
     content: @Composable () -> Unit,
 ) {
     // Route to Liquid Glass BottomSheet when the user preference is enabled.
@@ -349,6 +350,7 @@ fun SnapshotWindowBottomSheet(
             onDismissFinished = onDismissFinished,
             allowDismiss = allowDismiss,
             onBlockedDismissRequest = onBlockedDismissRequest,
+            initialDetent = initialDetent,
             content = content
         )
         return

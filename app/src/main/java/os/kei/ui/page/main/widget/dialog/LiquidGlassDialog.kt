@@ -87,6 +87,9 @@ fun LiquidGlassDialog(
             decorFitsSystemWindows = false
         )
     ) {
+        // Remove system's default dim background — we draw our own scrim.
+        top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects()
+
         val dialogShape = RoundedRectangle(LiquidDialogCornerRadius)
         val surfaceColor = if (isDark) {
             Color(0xFF121218).copy(alpha = 0.94f)

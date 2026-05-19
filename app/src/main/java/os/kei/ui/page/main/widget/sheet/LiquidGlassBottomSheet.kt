@@ -153,6 +153,11 @@ fun LiquidGlassBottomSheet(
             decorFitsSystemWindows = false
         )
     ) {
+        // Remove the system's default dim background (FLAG_DIM_BEHIND) — we draw our own scrim.
+        // Without this, closing the sheet leaves a residual gray overlay from the Dialog window
+        // that persists until the Dialog composable is fully removed from the tree.
+        top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects()
+
         val fraction = heightFraction.value.coerceIn(0f, DETENT_FULL)
         val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

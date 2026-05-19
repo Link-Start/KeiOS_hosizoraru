@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,10 +69,15 @@ fun SheetContentColumn(
     verticalSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     content: @Composable () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+    val overflowReporter by rememberUpdatedState(LocalLiquidSheetContentOverflowReporter.current)
     val scrollModifier = if (scrollable) {
-        Modifier.verticalScroll(rememberScrollState())
+        Modifier.verticalScroll(scrollState)
     } else {
         Modifier
+    }
+    LaunchedEffect(scrollable, scrollState.maxValue) {
+        overflowReporter(scrollable && scrollState.maxValue > 0)
     }
     Column(
         modifier = modifier

@@ -1,0 +1,106 @@
+package os.kei.ui.page.main.widget.sheet
+
+import android.app.Application
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertTrue
+
+private const val SheetTag = "liquid-sheet"
+
+@RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(
+    application = LiquidGlassBottomSheetTestApp::class,
+    sdk = [35],
+    qualifiers = "w411dp-h891dp-xxhdpi"
+)
+class LiquidGlassBottomSheetTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun opensAtThreeQuarterDetentForShortContent() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SheetTag),
+                    title = "Sheet"
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .background(Color.Gray)
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        val height = sheetHeight()
+        assertTrue(height in 600.dp..720.dp, "Expected 3/4 detent height, got $height")
+    }
+
+    @Test
+    fun expandsToFullDetentWhenOpeningDetentOverflows() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SheetTag),
+                    title = "Sheet"
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(24) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .background(Color.Gray)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(3_000)
+        composeRule.waitForIdle()
+
+        val height = sheetHeight()
+        assertTrue(height >= 820.dp, "Expected full detent height, got $height")
+    }
+
+    private fun sheetHeight(): Dp {
+        val heightPx = composeRule.onNodeWithTag(SheetTag)
+            .fetchSemanticsNode()
+            .boundsInRoot
+            .height
+        return with(composeRule.density) { heightPx.toDp() }
+    }
+}
+
+class LiquidGlassBottomSheetTestApp : Application()

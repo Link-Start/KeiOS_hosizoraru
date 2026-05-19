@@ -24,7 +24,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +62,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * v2 Liquid Glass BottomSheet — iOS-style multi-detent bottom sheet.
  *
  * Behavior:
- * - Opens at half-screen height (50%) regardless of content amount — doesn't overwhelm the user
+ * - Opens at three-quarter height (75%) for a useful default reading surface
+ * - Auto-expands to full height when the content cannot fit at the opening detent
  * - User can drag up to expand (max = screen minus status bar)
  * - User can drag down to shrink or dismiss
  * - When expanded to max, content inside becomes scrollable
@@ -70,8 +73,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - When [allowDismiss] is true: dragging below 20% of available height dismisses the sheet.
  *
  * Detents:
- * - Half (0.5): default resting position on open
- * - Three-quarter (0.75): intermediate expansion
+ * - Half (0.5): compact resting position for peeking at the background page
+ * - Three-quarter (0.75): default resting position on open
  * - Full (1.0): maximum expanded (below status bar), content scrolls
  * - Dismiss (0.0): sheet is off-screen
  *
@@ -114,15 +117,18 @@ private const val DETENT_SOLIDNESS_START = 0.75f
 
 /**
  * Initial detent the sheet animates to when [LiquidGlassBottomSheet.show] flips to `true`.
- * Most sheets default to [Half], but content-heavy sheets (long lists, editors, immersive
- * detail views) can opt into [Full] so they don't waste a drag gesture before the user can
- * see what they came for. The sheet always remains user-resizable across all three detents.
+ * Most sheets default to [ThreeQuarter]. [Half] remains available as a compact user-controlled
+ * resting point for peeking at the background page, and [Full] stays available for callers that
+ * know their content needs the largest surface immediately.
  */
 enum class LiquidSheetInitialDetent(internal val fraction: Float) {
     Half(DETENT_HALF),
     ThreeQuarter(DETENT_THREE_QUARTER),
     Full(DETENT_FULL),
 }
+
+internal val LocalLiquidSheetContentOverflowReporter =
+    compositionLocalOf<(Boolean) -> Unit> { {} }
 
 @Composable
 fun LiquidGlassBottomSheet(
@@ -135,7 +141,7 @@ fun LiquidGlassBottomSheet(
     onDismissFinished: (() -> Unit)? = null,
     allowDismiss: Boolean = true,
     onBlockedDismissRequest: (() -> Unit)? = null,
-    initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.Half,
+    initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
     content: @Composable () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
@@ -148,16 +154,25 @@ fun LiquidGlassBottomSheet(
     // heightFraction: 0 = off-screen, DETENT_HALF = half screen, DETENT_FULL = max height
     val heightFraction = remember { Animatable(0f) }
     var isRendered by remember { mutableStateOf(false) }
+    var contentOverflowsOpeningDetent by remember { mutableStateOf(false) }
+    var userAdjustedDetent by remember { mutableStateOf(false) }
+    var autoExpandedForContent by remember { mutableStateOf(false) }
+    var openingDetentReady by remember { mutableStateOf(false) }
 
     LaunchedEffect(show, initialDetent) {
         if (show) {
             isRendered = true
+            userAdjustedDetent = false
+            autoExpandedForContent = false
+            contentOverflowsOpeningDetent = false
+            openingDetentReady = false
             // Animate to the caller-requested initial detent. The sheet remains
             // user-resizable across all three detents after this.
             heightFraction.animateTo(
                 targetValue = initialDetent.fraction,
                 animationSpec = spring(dampingRatio = 0.88f, stiffness = 350f)
             )
+            openingDetentReady = true
         } else {
             if (isRendered) {
                 heightFraction.animateTo(
@@ -168,6 +183,19 @@ fun LiquidGlassBottomSheet(
                 currentOnDismissFinished?.invoke()
             }
         }
+    }
+
+    LaunchedEffect(show, initialDetent, contentOverflowsOpeningDetent, userAdjustedDetent, openingDetentReady) {
+        if (!show) return@LaunchedEffect
+        if (initialDetent != LiquidSheetInitialDetent.ThreeQuarter) return@LaunchedEffect
+        if (!openingDetentReady || !contentOverflowsOpeningDetent || userAdjustedDetent || autoExpandedForContent) {
+            return@LaunchedEffect
+        }
+        autoExpandedForContent = true
+        heightFraction.animateTo(
+            targetValue = DETENT_FULL,
+            animationSpec = spring(dampingRatio = 0.86f, stiffness = 360f)
+        )
     }
 
     if (!isRendered && !show) return
@@ -220,6 +248,7 @@ fun LiquidGlassBottomSheet(
                     // User scrolling UP (dy < 0) and sheet is NOT at full → expand sheet first.
                     // Content doesn't scroll until sheet is maximized.
                     if (dy < 0f && currentFraction < DETENT_FULL) {
+                        userAdjustedDetent = true
                         val consumed = -dy / availableHeightPx
                         val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
                         scope.launch { heightFraction.snapTo(newFraction) }
@@ -247,6 +276,7 @@ fun LiquidGlassBottomSheet(
                         when {
                             // Sheet above half → shrink toward half
                             currentFraction > DETENT_HALF -> {
+                                userAdjustedDetent = true
                                 val delta = dy / availableHeightPx
                                 val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_HALF)
                                 scope.launch { heightFraction.snapTo(newFraction) }
@@ -254,6 +284,7 @@ fun LiquidGlassBottomSheet(
                             }
                             // Sheet at or below half → dismiss zone
                             allowDismiss -> {
+                                userAdjustedDetent = true
                                 val delta = dy / availableHeightPx
                                 val newFraction = (currentFraction - delta).coerceAtLeast(0f)
                                 scope.launch { heightFraction.snapTo(newFraction) }
@@ -261,6 +292,7 @@ fun LiquidGlassBottomSheet(
                             }
                             // Not dismissable: allow slight over-drag for bounce feedback
                             currentFraction > DETENT_BOUNCE * 0.8f -> {
+                                userAdjustedDetent = true
                                 val delta = dy / availableHeightPx
                                 val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_BOUNCE * 0.8f)
                                 scope.launch { heightFraction.snapTo(newFraction) }
@@ -366,6 +398,7 @@ fun LiquidGlassBottomSheet(
 
                         detectVerticalDragGestures(
                             onDragStart = {
+                                userAdjustedDetent = true
                                 dragStartFraction = heightFraction.value
                             },
                             onDragEnd = {
@@ -495,7 +528,13 @@ fun LiquidGlassBottomSheet(
                         .padding(horizontal = 20.dp)
                         .padding(bottom = 16.dp)
                 ) {
-                    content()
+                    CompositionLocalProvider(
+                        LocalLiquidSheetContentOverflowReporter provides { overflows ->
+                            contentOverflowsOpeningDetent = overflows
+                        }
+                    ) {
+                        content()
+                    }
                 }
             }
         }

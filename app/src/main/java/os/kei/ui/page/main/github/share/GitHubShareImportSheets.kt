@@ -46,6 +46,7 @@ import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
+import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetLiquidChoiceIndicator
@@ -64,10 +65,15 @@ private val shareImportSheetInsideMargin = DpSize(
 )
 private const val shareImportInfoLabelWeight = 0.24f
 
-private fun Modifier.shareImportSheetSafeArea(): Modifier {
+private fun Modifier.shareImportSheetTags(): Modifier {
     return this
         .fillMaxWidth()
         .semantics { testTagsAsResourceId = true }
+}
+
+private fun Modifier.shareImportSheetSafeArea(): Modifier {
+    return this
+        .shareImportSheetTags()
         .navigationBarsPadding()
         .imePadding()
         .padding(bottom = 12.dp)
@@ -180,9 +186,9 @@ internal fun GitHubShareImportSheet(
         val safeSelectedIndex = selectedIndex.coerceIn(0, preview.assets.lastIndex)
         val selectedAsset = preview.assets.getOrNull(safeSelectedIndex)
 
-        Column(
-            modifier = Modifier.shareImportSheetSafeArea(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        SheetContentColumn(
+            modifier = Modifier.shareImportSheetTags(),
+            verticalSpacing = 10.dp
         ) {
             SheetSectionCard(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
@@ -519,9 +525,9 @@ internal fun GitHubShareImportPendingSheet(
         GitHubShareImportWindowBlurEffect(useBlur = pending != null)
         val pendingTrack = pending ?: return@SnapshotWindowBottomSheet
         val remainingMinutes = shareImportRemainingMinutes(pendingTrack.armedAtMillis)
-        Column(
-            modifier = Modifier.shareImportSheetSafeArea(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        SheetContentColumn(
+            modifier = Modifier.shareImportSheetTags(),
+            verticalSpacing = 10.dp
         ) {
             SheetDescriptionText(
                 text = stringResource(
@@ -614,9 +620,9 @@ internal fun GitHubShareImportAttachConfirmSheet(
     ) {
         GitHubShareImportWindowBlurEffect(useBlur = candidate != null)
         val attachCandidate = candidate ?: return@SnapshotWindowBottomSheet
-        Column(
-            modifier = Modifier.shareImportSheetSafeArea(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        SheetContentColumn(
+            modifier = Modifier.shareImportSheetTags(),
+            verticalSpacing = 10.dp
         ) {
             SheetSectionCard(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),

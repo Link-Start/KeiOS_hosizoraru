@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -327,11 +328,12 @@ fun LiquidGlassBottomSheet(
                         }
                     }
 
-                    // Content
+                    // Content — use heightIn instead of weight to avoid infinite-height crash in Popup
+                    val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f, fill = false)
+                            .heightIn(max = screenHeightDp * 0.65f)
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = 20.dp)
                             .padding(bottom = 16.dp)

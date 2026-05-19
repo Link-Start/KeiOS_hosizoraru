@@ -284,61 +284,70 @@ fun LiquidGlassBottomSheet(
                         )
                     }
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = navBarPadding.calculateBottomPadding()),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Use BoxWithConstraints to guarantee finite height propagation into content.
+                // Popup gives unbounded constraints; BoxWithConstraints + heightIn on the outer
+                // Box resolves to a finite maxHeight that we can pass down explicitly.
+                androidx.compose.foundation.layout.BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Drag handle
-                    Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
-                    Box(
-                        modifier = Modifier
-                            .width(LiquidSheetDragHandleWidth)
-                            .height(LiquidSheetDragHandleHeight)
-                            .clip(RoundedRectangle(2.dp))
-                            .background(dragHandleColor)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Title bar
-                    if (title != null || startAction != null || endAction != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            startAction?.invoke()
-                            if (title != null) {
-                                Text(
-                                    text = title,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(horizontal = 12.dp),
-                                    color = MiuixTheme.colorScheme.onBackground,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            } else {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                            endAction?.invoke()
-                        }
-                    }
-
-                    // Content — no weight/verticalScroll here. The outer sheet Box has
-                    // heightIn(max) which propagates finite constraints down through Column.
-                    // Callers provide their own scrollable containers inside content().
-                    Box(
+                    val availableHeight = maxHeight
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .padding(bottom = 16.dp)
+                            .heightIn(max = availableHeight)
+                            .padding(bottom = navBarPadding.calculateBottomPadding()),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        content()
+                        // Drag handle
+                        Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
+                        Box(
+                            modifier = Modifier
+                                .width(LiquidSheetDragHandleWidth)
+                                .height(LiquidSheetDragHandleHeight)
+                                .clip(RoundedRectangle(2.dp))
+                                .background(dragHandleColor)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Title bar
+                        if (title != null || startAction != null || endAction != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                startAction?.invoke()
+                                if (title != null) {
+                                    Text(
+                                        text = title,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(horizontal = 12.dp),
+                                        color = MiuixTheme.colorScheme.onBackground,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                                endAction?.invoke()
+                            }
+                        }
+
+                        // Content — weight(1f) is safe here because Column has finite heightIn(max)
+                        // from BoxWithConstraints. Callers can use LazyColumn/verticalScroll freely.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f, fill = false)
+                                .padding(horizontal = 20.dp)
+                                .padding(bottom = 16.dp)
+                        ) {
+                            content()
+                        }
                     }
                 }
             }

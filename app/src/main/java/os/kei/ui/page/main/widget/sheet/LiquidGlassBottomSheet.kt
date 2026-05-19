@@ -181,7 +181,9 @@ fun LiquidGlassBottomSheet(
                 ),
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Sheet container
+            // Sheet container — heightIn on the outer Box ensures all children (including caller's
+            // scrollable content) receive finite height constraints from the Popup's unbounded space.
+            val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
             val sheetBackdrop = rememberLayerBackdrop()
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
@@ -209,6 +211,7 @@ fun LiquidGlassBottomSheet(
             Box(
                 modifier = modifier
                     .widthIn(max = LiquidSheetMaxWidth)
+                    .heightIn(max = screenHeightDp * 0.75f)
                     .fillMaxWidth()
                     .graphicsLayer {
                         val offsetY = size.height * (1f - progress)
@@ -326,14 +329,12 @@ fun LiquidGlassBottomSheet(
                         }
                     }
 
-                    // Content — no verticalScroll here because callers (e.g. SheetContentColumn)
-                    // already provide their own scrollable container. Adding one here would nest
-                    // scrollable components and crash with infinite-height measurement.
-                    val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+                    // Content — no weight/verticalScroll here. The outer sheet Box has
+                    // heightIn(max) which propagates finite constraints down through Column.
+                    // Callers provide their own scrollable containers inside content().
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = screenHeightDp * 0.70f)
                             .padding(horizontal = 20.dp)
                             .padding(bottom = 16.dp)
                     ) {

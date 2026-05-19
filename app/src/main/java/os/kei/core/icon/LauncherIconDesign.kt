@@ -28,22 +28,27 @@ object LauncherIconController {
     ) {
         val appContext = context.applicationContext
         val packageManager = appContext.packageManager
-        val packageName = appContext.packageName
-        val targetComponent = design.componentName(packageName)
-        packageManager.setComponentEnabledSetting(
-            targetComponent,
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP,
-        )
-        LauncherIconDesign.entries
-            .filter { it != design }
-            .forEach { inactiveDesign ->
-                packageManager.setComponentEnabledSetting(
-                    inactiveDesign.componentName(packageName),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
-            }
+        // Activity-alias components are registered under the base package (os.kei), not the
+        // suffixed debug/benchmark package. Use MANIFEST_COMPONENT_PACKAGE for the ComponentName
+        // package so the system can resolve the alias regardless of applicationIdSuffix.
+        val componentPackage = BuildConfig.MANIFEST_COMPONENT_PACKAGE
+        val targetComponent = design.componentName(componentPackage)
+        runCatching {
+            packageManager.setComponentEnabledSetting(
+                targetComponent,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+            LauncherIconDesign.entries
+                .filter { it != design }
+                .forEach { inactiveDesign ->
+                    packageManager.setComponentEnabledSetting(
+                        inactiveDesign.componentName(componentPackage),
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP,
+                    )
+                }
+        }
     }
 }
 

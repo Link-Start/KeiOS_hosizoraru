@@ -8,7 +8,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import os.kei.core.prefs.UiPrefs
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Global toast bridge that routes toast messages to either [LiquidToastState] (when the Compose
@@ -41,20 +40,24 @@ import java.util.concurrent.atomic.AtomicReference
  * ```
  */
 object AppToastBridge {
-    private val activeState = AtomicReference<LiquidToastState?>(null)
+    // WeakReference prevents memory leaks if DisposableEffect.onDispose fails to call unregister.
+    // The Compose tree won't be held alive by this global singleton.
+    private var activeStateRef = java.lang.ref.WeakReference<LiquidToastState?>(null)
 
     /**
      * Register the active [LiquidToastState]. Called by [BindLiquidToastBridge].
      */
     internal fun register(state: LiquidToastState) {
-        activeState.set(state)
+        activeStateRef = java.lang.ref.WeakReference(state)
     }
 
     /**
      * Unregister the active state. Called when the Compose host is disposed.
      */
     internal fun unregister(state: LiquidToastState) {
-        activeState.compareAndSet(state, null)
+        if (activeStateRef.get() === state) {
+            activeStateRef.clear()
+        }
     }
 
     /**
@@ -67,7 +70,7 @@ object AppToastBridge {
         iconTint: Color = Color.Unspecified,
         duration: LiquidToastDuration = LiquidToastDuration.Short
     ) {
-        val state = activeState.get()
+        val state = activeStateRef.get()
         if (state != null && UiPrefs.isLiquidToastEnabled()) {
             state.show(message = message, icon = icon, iconTint = iconTint, duration = duration)
         } else {

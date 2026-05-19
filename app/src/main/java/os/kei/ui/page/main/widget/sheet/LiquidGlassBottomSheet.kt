@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
@@ -34,15 +33,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -53,19 +55,22 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * v2 Liquid Glass BottomSheet.
+ * v2 Liquid Glass BottomSheet — iOS-style multi-detent bottom sheet.
  *
- * Height behavior:
- * - Default (resting) height: 50% of screen (half-sheet, doesn't obscure too much content)
- * - Maximum height: screen height minus status bar (never covers the status bar)
- * - Minimum height before dismiss: 15% of screen
- * - User can drag up/down to resize between min and max
+ * Behavior:
+ * - Opens at half-screen height (50%) regardless of content amount — doesn't overwhelm the user
+ * - User can drag up to expand (max = screen minus status bar)
+ * - User can drag down to shrink or dismiss
+ * - When expanded to max, content inside becomes scrollable
+ * - When [allowDismiss] is false: dragging down is allowed for resizing, but releasing below the
+ *   half detent triggers a bounce-back animation + calls [onBlockedDismissRequest] as a visual
+ *   cue (like Miuix's "unsaved changes" prompt). The sheet never fully closes.
+ * - When [allowDismiss] is true: dragging below 20% of available height dismisses the sheet.
  *
- * Dismiss protection:
- * - When [allowDismiss] is false, drag-to-dismiss is completely disabled (prevents accidental
- *   data loss when the sheet has unsaved changes)
- * - When [allowDismiss] is true, user must drag past 50% of the dismiss threshold with intent
- *   (not just a casual swipe) — requires dragging below 25% of screen height
+ * Detents:
+ * - Half (0.5): default resting position
+ * - Full (1.0): maximum expanded, content scrolls
+ * - Dismiss (0.0): sheet is off-screen
  */
 
 private val LiquidSheetCornerRadius = 28.dp
@@ -73,16 +78,19 @@ private val LiquidSheetMaxWidth = 480.dp
 private val LiquidSheetDragHandleWidth = 36.dp
 private val LiquidSheetDragHandleHeight = 4.dp
 private val LiquidSheetDragHandleTopPadding = 10.dp
-private const val LiquidSheetScrimAlpha = 0.42f
+private const val LiquidSheetScrimAlpha = 0.38f
 
-/** Default sheet height as fraction of available space (below status bar). */
-private const val LiquidSheetDefaultHeightFraction = 0.50f
+/** Half-screen detent: sheet rests here on open. */
+private const val DETENT_HALF = 0.50f
 
-/** Maximum sheet height as fraction of available space (below status bar). */
-private const val LiquidSheetMaxHeightFraction = 1.0f
+/** Full-screen detent: max expansion (below status bar). */
+private const val DETENT_FULL = 1.0f
 
-/** Below this fraction the sheet will dismiss (when allowDismiss = true). */
-private const val LiquidSheetDismissFraction = 0.20f
+/** Below this fraction, sheet dismisses (when allowDismiss = true). */
+private const val DETENT_DISMISS = 0.18f
+
+/** Below this fraction from half, blocked-dismiss bounce triggers (when allowDismiss = false). */
+private const val DETENT_BOUNCE = 0.35f
 
 @Composable
 fun LiquidGlassBottomSheet(
@@ -104,20 +112,21 @@ fun LiquidGlassBottomSheet(
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
     val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
 
-    // Progress: 0f = hidden, 1f = at default height (half screen)
-    val sheetProgress = remember { Animatable(0f) }
+    // heightFraction: 0 = off-screen, DETENT_HALF = half screen, DETENT_FULL = max height
+    val heightFraction = remember { Animatable(0f) }
     var isRendered by remember { mutableStateOf(false) }
 
     LaunchedEffect(show) {
         if (show) {
             isRendered = true
-            sheetProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(dampingRatio = 0.86f, stiffness = 380f)
+            // Always open to half-screen detent
+            heightFraction.animateTo(
+                targetValue = DETENT_HALF,
+                animationSpec = spring(dampingRatio = 0.88f, stiffness = 350f)
             )
         } else {
             if (isRendered) {
-                sheetProgress.animateTo(
+                heightFraction.animateTo(
                     targetValue = 0f,
                     animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f)
                 )
@@ -144,17 +153,75 @@ fun LiquidGlassBottomSheet(
             decorFitsSystemWindows = false
         )
     ) {
-        val progress = sheetProgress.value.coerceIn(0f, 1f)
+        val fraction = heightFraction.value.coerceIn(0f, DETENT_FULL)
         val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        // Available height = screen - status bar (sheet never covers status bar)
-        val availableHeight = screenHeightDp - statusBarHeight
-        // Default resting height = half of available
-        val defaultHeight = availableHeight * LiquidSheetDefaultHeightFraction
-        // Max height = full available (up to status bar)
-        val maxSheetHeight = availableHeight * LiquidSheetMaxHeightFraction
+        // Available height = screen minus status bar
+        val availableHeightDp = screenHeightDp - statusBarHeight
+        val availableHeightPx = with(density) { availableHeightDp.toPx() }
+        // Current sheet height based on fraction
+        val sheetHeightDp = availableHeightDp * fraction
+        // Scrim alpha scales with how much of the screen is covered
+        val scrimAlpha = LiquidSheetScrimAlpha * (fraction / DETENT_FULL).coerceIn(0f, 1f)
+        // Visibility progress for enter/exit animation (0 when hidden, 1 when at half or above)
+        val visibilityProgress = (fraction / DETENT_HALF).coerceIn(0f, 1f)
+
+        // Nested scroll connection: when content scrolls to top and user keeps pulling down,
+        // the sheet shrinks. When content is at top and user pushes up, sheet expands.
+        // This creates the iOS-style "scroll content OR resize sheet" behavior.
+        val sheetNestedScrollConnection = remember(allowDismiss) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    val dy = available.y
+                    val currentFraction = heightFraction.value
+                    // User scrolling down (dy > 0) and sheet is above half → shrink sheet first
+                    if (dy > 0f && currentFraction > DETENT_HALF) {
+                        val consumed = dy / availableHeightPx
+                        val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_HALF)
+                        scope.launch { heightFraction.snapTo(newFraction) }
+                        val actualConsumed = (currentFraction - newFraction) * availableHeightPx
+                        return Offset(0f, actualConsumed)
+                    }
+                    return Offset.Zero
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource
+                ): Offset {
+                    val dy = available.y
+                    val currentFraction = heightFraction.value
+                    // Content couldn't consume the scroll (at boundary):
+                    // - Pulling up (dy < 0) at top of content → expand sheet
+                    // - Pulling down (dy > 0) at top of content → shrink sheet
+                    if (dy < 0f && currentFraction < DETENT_FULL) {
+                        // Expand
+                        val consumed = -dy / availableHeightPx
+                        val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
+                        scope.launch { heightFraction.snapTo(newFraction) }
+                        return Offset(0f, -(newFraction - currentFraction) * availableHeightPx)
+                    }
+                    if (dy > 0f && currentFraction > DETENT_HALF) {
+                        // Shrink (content at top, pulling down)
+                        val consumed = dy / availableHeightPx
+                        val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_HALF)
+                        scope.launch { heightFraction.snapTo(newFraction) }
+                        return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                    }
+                    if (dy > 0f && currentFraction <= DETENT_HALF && allowDismiss) {
+                        // Below half, pulling down → dismiss gesture
+                        val consumed = dy / availableHeightPx
+                        val newFraction = (currentFraction - consumed).coerceAtLeast(0f)
+                        scope.launch { heightFraction.snapTo(newFraction) }
+                        return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                    }
+                    return Offset.Zero
+                }
+            }
+        }
 
         BackHandler(enabled = true) {
             if (allowDismiss) {
@@ -167,7 +234,7 @@ fun LiquidGlassBottomSheet(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = LiquidSheetScrimAlpha * progress))
+                .background(Color.Black.copy(alpha = scrimAlpha))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -180,14 +247,14 @@ fun LiquidGlassBottomSheet(
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
             val surfaceColor = if (isDark) {
-                Color(0xFF0D0D12).copy(alpha = 0.92f)
+                Color(0xFF0F0F14).copy(alpha = 0.94f)
             } else {
-                Color(0xFFFCFCFF).copy(alpha = 0.88f)
+                Color(0xFFFBFBFF).copy(alpha = 0.92f)
             }
             val sheenColor = if (isDark) {
-                Color.White.copy(alpha = 0.06f)
+                Color.White.copy(alpha = 0.05f)
             } else {
-                Color.White.copy(alpha = 0.24f)
+                Color.White.copy(alpha = 0.20f)
             }
             val dragHandleColor = if (isDark) {
                 Color.White.copy(alpha = 0.28f)
@@ -195,17 +262,17 @@ fun LiquidGlassBottomSheet(
                 Color.Black.copy(alpha = 0.18f)
             }
 
-            // Sheet height is controlled by progress:
-            // progress 0 → off screen (translationY = full height)
-            // progress 1 → at default height
             Column(
                 modifier = modifier
                     .widthIn(max = LiquidSheetMaxWidth)
                     .fillMaxWidth()
-                    .heightIn(max = maxSheetHeight)
+                    .height(sheetHeightDp.coerceAtLeast(0.dp))
                     .graphicsLayer {
-                        // Slide from bottom: at progress=0 sheet is fully below screen
-                        translationY = size.height * (1f - progress)
+                        // Subtle scale on enter for depth
+                        val scale = 0.95f + 0.05f * visibilityProgress
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = visibilityProgress
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)
@@ -216,37 +283,65 @@ fun LiquidGlassBottomSheet(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {}
-                    // Drag gesture: only when allowDismiss is true
+                    // Drag gesture for resizing
                     .pointerInput(allowDismiss) {
-                        if (!allowDismiss) return@pointerInput
-                        var totalDrag = 0f
+                        val availableHeightPx = with(density) { availableHeightDp.toPx() }
+                        var dragStartFraction = 0f
+
                         detectVerticalDragGestures(
-                            onDragStart = { totalDrag = 0f },
+                            onDragStart = {
+                                dragStartFraction = heightFraction.value
+                            },
                             onDragEnd = {
-                                val currentProgress = sheetProgress.value
-                                // Dismiss only if dragged below the dismiss threshold
-                                if (currentProgress < LiquidSheetDismissFraction) {
-                                    currentOnDismissRequest?.invoke()
-                                } else {
-                                    // Snap back to full
-                                    scope.launch {
-                                        sheetProgress.animateTo(
-                                            1f,
-                                            spring(dampingRatio = 0.82f, stiffness = 500f)
-                                        )
+                                val current = heightFraction.value
+                                scope.launch {
+                                    when {
+                                        // Dismiss zone
+                                        allowDismiss && current < DETENT_DISMISS -> {
+                                            currentOnDismissRequest?.invoke()
+                                        }
+                                        // Below half: snap to half (or bounce if not dismissable)
+                                        current < DETENT_HALF -> {
+                                            if (!allowDismiss && current < DETENT_BOUNCE) {
+                                                // Bounce back + notify blocked dismiss
+                                                currentOnBlockedDismissRequest?.invoke()
+                                            }
+                                            heightFraction.animateTo(
+                                                DETENT_HALF,
+                                                spring(dampingRatio = 0.82f, stiffness = 450f)
+                                            )
+                                        }
+                                        // Between half and 75%: snap to half
+                                        current < (DETENT_HALF + DETENT_FULL) / 2f -> {
+                                            heightFraction.animateTo(
+                                                DETENT_HALF,
+                                                spring(dampingRatio = 0.85f, stiffness = 400f)
+                                            )
+                                        }
+                                        // Above 75%: snap to full
+                                        else -> {
+                                            heightFraction.animateTo(
+                                                DETENT_FULL,
+                                                spring(dampingRatio = 0.85f, stiffness = 400f)
+                                            )
+                                        }
                                     }
                                 }
                             },
                             onVerticalDrag = { _, dragAmount ->
-                                totalDrag += dragAmount
-                                // Only allow downward drag (positive = down)
-                                if (totalDrag > 0f) {
-                                    val sheetHeightPx = with(density) { defaultHeight.toPx() }
-                                    val newProgress =
-                                        (1f - totalDrag / sheetHeightPx).coerceIn(0f, 1f)
-                                    scope.launch {
-                                        sheetProgress.snapTo(newProgress)
-                                    }
+                                // Convert drag pixels to fraction change
+                                // Negative dragAmount = drag up = expand
+                                // Positive dragAmount = drag down = shrink
+                                val fractionDelta = -dragAmount / availableHeightPx
+                                val newFraction = (heightFraction.value + fractionDelta)
+                                    .coerceIn(
+                                        // Allow dragging below half for dismiss gesture feel,
+                                        // but clamp at 0 (fully hidden)
+                                        if (allowDismiss) 0f else DETENT_DISMISS * 0.5f,
+                                        DETENT_FULL
+                                    )
+                                scope.launch {
+                                    heightFraction.snapTo(newFraction)
                                 }
                             }
                         )
@@ -293,11 +388,13 @@ fun LiquidGlassBottomSheet(
                     }
                 }
 
-                // Content
+                // Content — nested scroll connection allows content scroll to expand/shrink
+                // the sheet when at scroll boundaries (iOS-style behavior).
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f, fill = false)
+                        .nestedScroll(sheetNestedScrollConnection)
                         .padding(horizontal = 20.dp)
                         .padding(bottom = 16.dp)
                 ) {

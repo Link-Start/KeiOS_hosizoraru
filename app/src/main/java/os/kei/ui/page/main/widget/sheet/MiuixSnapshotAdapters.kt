@@ -222,11 +222,18 @@ fun SnapshotWindowListPopup(
         } else {
             if (!popupRender && !wasVisible) return@LaunchedEffect
             if (transitionAnimationsEnabled) {
-                launch {
+                // Run both animations in parallel and wait for BOTH to complete before
+                // removing the Popup. Previously fractionProgress.stop() was called after
+                // alpha finished, which killed the fraction animation mid-flight and caused
+                // the dropdown to "flash disappear" without a visible collapse.
+                val fractionJob = launch {
                     fractionProgress.animateTo(0f, SnapshotPopupFractionExitAnimationSpec)
                 }
-                alphaProgress.animateTo(0f, SnapshotPopupAlphaExitAnimationSpec)
-                fractionProgress.stop()
+                val alphaJob = launch {
+                    alphaProgress.animateTo(0f, SnapshotPopupAlphaExitAnimationSpec)
+                }
+                fractionJob.join()
+                alphaJob.join()
             } else {
                 fractionProgress.snapTo(0f)
                 alphaProgress.snapTo(0f)

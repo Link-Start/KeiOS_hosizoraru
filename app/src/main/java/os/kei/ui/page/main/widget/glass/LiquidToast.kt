@@ -85,14 +85,21 @@ data class LiquidToastData(
 
 /**
  * State holder for [LiquidToastHost]. Create via [rememberLiquidToastState].
+ *
+ * Supports a simple FIFO queue: if a toast is already showing, new messages are enqueued and
+ * displayed sequentially after the current one dismisses. This matches system Toast behavior
+ * where rapid calls don't lose messages.
  */
 @Stable
 class LiquidToastState {
     internal var currentToast by mutableStateOf<LiquidToastData?>(null)
         private set
 
+    private val queue = java.util.concurrent.ConcurrentLinkedQueue<LiquidToastData>()
+
     /**
-     * Show a toast message. If a toast is already showing, it will be replaced immediately.
+     * Show a toast message. If a toast is already showing, the new message is enqueued and will
+     * display after the current one dismisses.
      */
     fun show(
         message: String,
@@ -100,19 +107,24 @@ class LiquidToastState {
         iconTint: Color = Color.Unspecified,
         duration: LiquidToastDuration = LiquidToastDuration.Short
     ) {
-        currentToast = LiquidToastData(
+        val data = LiquidToastData(
             message = message,
             icon = icon,
             iconTint = iconTint,
             duration = duration
         )
+        if (currentToast == null) {
+            currentToast = data
+        } else {
+            queue.offer(data)
+        }
     }
 
     /**
-     * Dismiss the current toast immediately.
+     * Dismiss the current toast. If there are queued messages, the next one is shown immediately.
      */
     fun dismiss() {
-        currentToast = null
+        currentToast = queue.poll()
     }
 }
 

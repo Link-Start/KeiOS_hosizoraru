@@ -187,6 +187,9 @@
     <string name="settings_liquid_sheet_title">Liquid Glass Sheet</string>
     <string name="settings_liquid_sheet_summary_enabled">Use v2 Liquid Glass bottom sheet with frosted-glass refraction and spring animations.</string>
     <string name="settings_liquid_sheet_summary_disabled">Use Miuix standard bottom sheet style.</string>
+    <string name="settings_liquid_dialog_title">Liquid Glass Dialog</string>
+    <string name="settings_liquid_dialog_summary_enabled">Use v2 Liquid Glass confirmation dialogs with frosted-glass appearance and spring animations.</string>
+    <string name="settings_liquid_dialog_summary_disabled">Use Miuix standard dialog style.</string>
     <string name="settings_cache_scope_disabled">Only disables Settings-page cache diagnostics. Page caches and normal usage remain active.</string>
     <string name="settings_cache_disabled_desc">Cache diagnostics are disabled. Settings will skip cache size, update time, and cleanup stats.</string>
     <string name="settings_cache_loading_desc">Reading cache summaries across pages</string>

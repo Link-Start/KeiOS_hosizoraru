@@ -187,6 +187,9 @@
     <string name="settings_liquid_sheet_title">リキッドグラス シート</string>
     <string name="settings_liquid_sheet_summary_enabled">v2 Liquid Glass ボトムシートを使用し、すりガラス屈折効果とスプリングアニメーション付き。</string>
     <string name="settings_liquid_sheet_summary_disabled">Miuix 標準のボトムシートスタイルを使用します。</string>
+    <string name="settings_liquid_dialog_title">リキッドグラス ダイアログ</string>
+    <string name="settings_liquid_dialog_summary_enabled">v2 Liquid Glass 確認ダイアログを使用し、すりガラス外観とスプリングアニメーション付き。</string>
+    <string name="settings_liquid_dialog_summary_disabled">Miuix 標準のダイアログスタイルを使用します。</string>
     <string name="settings_cache_scope_disabled">設定ページのキャッシュ診断だけを無効にします。ページキャッシュと通常利用は有効のままです。</string>
     <string name="settings_cache_disabled_desc">キャッシュ診断は無効です。設定はキャッシュサイズ、更新時刻、クリーンアップ統計を読みません。</string>
     <string name="settings_cache_loading_desc">ページ横断でキャッシュ概要を読み取り中</string>

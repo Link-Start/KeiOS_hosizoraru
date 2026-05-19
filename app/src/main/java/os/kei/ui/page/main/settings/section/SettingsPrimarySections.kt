@@ -633,6 +633,17 @@ internal fun SettingsComponentEffectsSection(
             onCheckedChange = actions.onLiquidSheetChanged,
         )
         SettingsToggleItem(
+            title = stringResource(R.string.settings_liquid_dialog_title),
+            summary =
+                if (state.liquidDialogEnabled) {
+                    stringResource(R.string.settings_liquid_dialog_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_liquid_dialog_summary_disabled)
+                },
+            checked = state.liquidDialogEnabled,
+            onCheckedChange = actions.onLiquidDialogChanged,
+        )
+        SettingsToggleItem(
             title = stringResource(R.string.settings_bottom_bar_title),
             summary = stringResource(R.string.settings_bottom_bar_summary),
             checked = state.liquidBottomBarEnabled,

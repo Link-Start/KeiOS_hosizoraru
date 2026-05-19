@@ -60,6 +60,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setLiquidDialogEnabled(value: Boolean) {
+        updateAndPersist({ copy(liquidDialogEnabled = value) }) {
+            UiPrefs.setLiquidDialogEnabled(value)
+        }
+    }
+
     suspend fun setTransitionAnimationsEnabled(value: Boolean) {
         updateAndPersist({ copy(transitionAnimationsEnabled = value) }) {
             UiPrefs.setTransitionAnimationsEnabled(value)

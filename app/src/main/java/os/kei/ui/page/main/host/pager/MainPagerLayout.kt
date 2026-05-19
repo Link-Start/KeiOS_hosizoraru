@@ -124,23 +124,28 @@ internal fun MainPagerLayout(
                 }
             }
         }
-    DisposableEffect(
-        context,
-        homeIconHdrEnabled,
-        coordinator.tabs,
-        coordinator.pagerState.currentPage,
-        coordinator.pagerState.targetPage,
-        coordinator.pagerState.settledPage,
-    ) {
+    // Derive the Home-visible boolean OUTSIDE the DisposableEffect. During a swipe
+    // currentPage/targetPage/settledPage change every frame, but the boolean only flips
+    // when one of them crosses into / out of the Home slot. Keying the effect on the
+    // boolean instead of the raw indices avoids running the JNI `Window.setColorMode`
+    // call on every frame of every page swipe.
+    val homeVisibleInPager =
+        remember(
+            coordinator.tabs,
+            coordinator.pagerState.currentPage,
+            coordinator.pagerState.targetPage,
+            coordinator.pagerState.settledPage,
+        ) {
+            val homeIndex = coordinator.tabs.indexOf(BottomPage.Home)
+            homeIndex >= 0 &&
+                (
+                    coordinator.pagerState.currentPage == homeIndex ||
+                        coordinator.pagerState.targetPage == homeIndex ||
+                        coordinator.pagerState.settledPage == homeIndex
+                )
+        }
+    DisposableEffect(context, homeIconHdrEnabled, homeVisibleInPager) {
         val activity = context as? Activity
-        val homeVisibleInPager =
-            listOf(
-                coordinator.pagerState.currentPage,
-                coordinator.pagerState.targetPage,
-                coordinator.pagerState.settledPage,
-            ).any { pageIndex ->
-                coordinator.tabs.getOrElse(pageIndex) { BottomPage.Home } == BottomPage.Home
-            }
         runCatching {
             activity?.window?.colorMode =
                 if (homeIconHdrEnabled && homeVisibleInPager) {
@@ -235,33 +240,59 @@ internal fun MainPagerLayout(
                 )
             val pageContent: @Composable (Int) -> Unit = { pageIndex ->
                 val pageType = coordinator.tabs[pageIndex]
-                val pageRuntime =
-                    coordinator.pagerRuntime.pageRuntime(
-                        pageIndex = pageIndex,
-                        contentTopPadding = if (pageType == BottomPage.Home) insets.homeTopInset else 0.dp,
-                        contentBottomPadding =
-                            if (pageType == BottomPage.Home) {
-                                insets.homeBottomInset
-                            } else {
-                                insets.bottomOverlayPadding
-                            },
-                        bottomBarVisible = coordinator.showBottomBar,
-                        floatingDockSide = floatingDockSide,
-                        scrollToTopSignal =
-                            when (pageType) {
-                                BottomPage.Home -> 0
-                                BottomPage.Os -> coordinator.osScrollToTopSignal
-                                BottomPage.Ba -> coordinator.baScrollToTopSignal
-                                BottomPage.Mcp -> coordinator.mcpScrollToTopSignal
-                                BottomPage.GitHub -> coordinator.githubScrollToTopSignal
-                            },
-                        hasActivated = activationState.hasActivated(pageType),
-                        contentReady = activationState.contentReady(pageType),
-                        contentWorkAllowed =
-                            backNavigationRuntime.contentWorkAllowed &&
-                                !transientExternalLaunchActive,
-                    )
                 key(pageType.name) {
+                    // Memoize per-page MainPageRuntime so we don't allocate a fresh
+                    // @Immutable instance on every recomposition. During a swipe with
+                    // beyondViewportPageCount = 1, ~3 pages recompose every frame —
+                    // without this remember, that's ~3 allocations/frame plus broken
+                    // equality skip checks downstream into each page composable.
+                    // Inputs cover everything pageRuntime() reads.
+                    val contentTopPadding =
+                        if (pageType == BottomPage.Home) insets.homeTopInset else 0.dp
+                    val contentBottomPadding =
+                        if (pageType == BottomPage.Home) {
+                            insets.homeBottomInset
+                        } else {
+                            insets.bottomOverlayPadding
+                        }
+                    val scrollToTopSignal =
+                        when (pageType) {
+                            BottomPage.Home -> 0
+                            BottomPage.Os -> coordinator.osScrollToTopSignal
+                            BottomPage.Ba -> coordinator.baScrollToTopSignal
+                            BottomPage.Mcp -> coordinator.mcpScrollToTopSignal
+                            BottomPage.GitHub -> coordinator.githubScrollToTopSignal
+                        }
+                    val hasActivated = activationState.hasActivated(pageType)
+                    val contentReady = activationState.contentReady(pageType)
+                    val contentWorkAllowed =
+                        backNavigationRuntime.contentWorkAllowed &&
+                            !transientExternalLaunchActive
+                    val pageRuntime =
+                        remember(
+                            coordinator.pagerRuntime,
+                            pageIndex,
+                            contentTopPadding,
+                            contentBottomPadding,
+                            coordinator.showBottomBar,
+                            floatingDockSide,
+                            scrollToTopSignal,
+                            hasActivated,
+                            contentReady,
+                            contentWorkAllowed,
+                        ) {
+                            coordinator.pagerRuntime.pageRuntime(
+                                pageIndex = pageIndex,
+                                contentTopPadding = contentTopPadding,
+                                contentBottomPadding = contentBottomPadding,
+                                bottomBarVisible = coordinator.showBottomBar,
+                                floatingDockSide = floatingDockSide,
+                                scrollToTopSignal = scrollToTopSignal,
+                                hasActivated = hasActivated,
+                                contentReady = contentReady,
+                                contentWorkAllowed = contentWorkAllowed,
+                            )
+                        }
                     MainPagerPageHost(
                         pageType = pageType,
                         runtime = pageRuntime,

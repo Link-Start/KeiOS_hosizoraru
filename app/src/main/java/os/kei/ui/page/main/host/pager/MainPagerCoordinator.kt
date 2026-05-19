@@ -129,16 +129,27 @@ internal fun rememberMainPagerCoordinator(
     val targetWarmDataActive = rememberPagerTargetWarmDataActive(pagerState).value
 
     val pagerRuntime =
-        buildMainPagerRuntimeSnapshot(
-            tabs = tabs,
-            currentPageIndex = pagerState.currentPage,
-            targetPageIndex = pagerState.targetPage,
-            settledPageIndex = pagerState.settledPage,
-            isPagerScrollInProgress = pagerState.isScrollInProgress,
-            preloadPolicy = preloadPolicy,
-            hasNonHomeBackground = backgroundState.hasNonHomeBackground,
-            targetWarmDataActive = targetWarmDataActive,
-        )
+        remember(
+            tabs,
+            pagerState.currentPage,
+            pagerState.targetPage,
+            pagerState.settledPage,
+            pagerState.isScrollInProgress,
+            preloadPolicy,
+            backgroundState.hasNonHomeBackground,
+            targetWarmDataActive,
+        ) {
+            buildMainPagerRuntimeSnapshot(
+                tabs = tabs,
+                currentPageIndex = pagerState.currentPage,
+                targetPageIndex = pagerState.targetPage,
+                settledPageIndex = pagerState.settledPage,
+                isPagerScrollInProgress = pagerState.isScrollInProgress,
+                preloadPolicy = preloadPolicy,
+                hasNonHomeBackground = backgroundState.hasNonHomeBackground,
+                targetWarmDataActive = targetWarmDataActive,
+            )
+        }
     BindMainPagerCoordinatorEffects(
         tabsSize = tabs.size,
         pagerState = pagerState,

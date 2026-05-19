@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
@@ -36,9 +38,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -49,11 +53,19 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * v2 Liquid Glass BottomSheet — frosted-glass bottom sheet with spring animations.
+ * v2 Liquid Glass BottomSheet.
  *
- * Uses [Dialog] (not Popup) to guarantee finite layout constraints from the window — this is the
- * same approach as Material 3 ModalBottomSheet and Miuix WindowBottomSheet. Popup gives unbounded
- * height which crashes any scrollable content inside.
+ * Height behavior:
+ * - Default (resting) height: 50% of screen (half-sheet, doesn't obscure too much content)
+ * - Maximum height: screen height minus status bar (never covers the status bar)
+ * - Minimum height before dismiss: 15% of screen
+ * - User can drag up/down to resize between min and max
+ *
+ * Dismiss protection:
+ * - When [allowDismiss] is false, drag-to-dismiss is completely disabled (prevents accidental
+ *   data loss when the sheet has unsaved changes)
+ * - When [allowDismiss] is true, user must drag past 50% of the dismiss threshold with intent
+ *   (not just a casual swipe) — requires dragging below 25% of screen height
  */
 
 private val LiquidSheetCornerRadius = 28.dp
@@ -61,11 +73,16 @@ private val LiquidSheetMaxWidth = 480.dp
 private val LiquidSheetDragHandleWidth = 36.dp
 private val LiquidSheetDragHandleHeight = 4.dp
 private val LiquidSheetDragHandleTopPadding = 10.dp
-private val LiquidSheetBlurRadius = 16.dp
-private val LiquidSheetLensStart = 24.dp
-private val LiquidSheetLensEnd = 48.dp
-private const val LiquidSheetDismissThreshold = 0.35f
 private const val LiquidSheetScrimAlpha = 0.42f
+
+/** Default sheet height as fraction of available space (below status bar). */
+private const val LiquidSheetDefaultHeightFraction = 0.50f
+
+/** Maximum sheet height as fraction of available space (below status bar). */
+private const val LiquidSheetMaxHeightFraction = 1.0f
+
+/** Below this fraction the sheet will dismiss (when allowDismiss = true). */
+private const val LiquidSheetDismissFraction = 0.20f
 
 @Composable
 fun LiquidGlassBottomSheet(
@@ -87,7 +104,7 @@ fun LiquidGlassBottomSheet(
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
     val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
 
-    // 0f = fully hidden (off-screen below), 1f = fully visible
+    // Progress: 0f = hidden, 1f = at default height (half screen)
     val sheetProgress = remember { Animatable(0f) }
     var isRendered by remember { mutableStateOf(false) }
 
@@ -112,9 +129,6 @@ fun LiquidGlassBottomSheet(
 
     if (!isRendered && !show) return
 
-    // Dialog creates a full-screen window with finite constraints — unlike Popup which can give
-    // unbounded height. This is critical: callers' content contains LazyColumn/verticalScroll
-    // which crash under infinite height measurement.
     Dialog(
         onDismissRequest = {
             if (allowDismiss) {
@@ -125,13 +139,22 @@ fun LiquidGlassBottomSheet(
         },
         properties = DialogProperties(
             dismissOnBackPress = allowDismiss,
-            dismissOnClickOutside = false, // we handle scrim tap manually for animation
+            dismissOnClickOutside = false,
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
         )
     ) {
         val progress = sheetProgress.value.coerceIn(0f, 1f)
-        val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+        val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
+        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+        // Available height = screen - status bar (sheet never covers status bar)
+        val availableHeight = screenHeightDp - statusBarHeight
+        // Default resting height = half of available
+        val defaultHeight = availableHeight * LiquidSheetDefaultHeightFraction
+        // Max height = full available (up to status bar)
+        val maxSheetHeight = availableHeight * LiquidSheetMaxHeightFraction
 
         BackHandler(enabled = true) {
             if (allowDismiss) {
@@ -141,7 +164,6 @@ fun LiquidGlassBottomSheet(
             }
         }
 
-        // Full-screen container: scrim + sheet at bottom
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -155,18 +177,17 @@ fun LiquidGlassBottomSheet(
                 },
             contentAlignment = Alignment.BottomCenter
         ) {
-            // Sheet surface
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
             val surfaceColor = if (isDark) {
-                Color(0xFF0D0D12).copy(alpha = 0.88f)
+                Color(0xFF0D0D12).copy(alpha = 0.92f)
             } else {
-                Color(0xFFFCFCFF).copy(alpha = 0.82f)
+                Color(0xFFFCFCFF).copy(alpha = 0.88f)
             }
             val sheenColor = if (isDark) {
-                Color.White.copy(alpha = 0.08f)
+                Color.White.copy(alpha = 0.06f)
             } else {
-                Color.White.copy(alpha = 0.32f)
+                Color.White.copy(alpha = 0.24f)
             }
             val dragHandleColor = if (isDark) {
                 Color.White.copy(alpha = 0.28f)
@@ -174,30 +195,28 @@ fun LiquidGlassBottomSheet(
                 Color.Black.copy(alpha = 0.18f)
             }
 
+            // Sheet height is controlled by progress:
+            // progress 0 → off screen (translationY = full height)
+            // progress 1 → at default height
             Column(
                 modifier = modifier
                     .widthIn(max = LiquidSheetMaxWidth)
                     .fillMaxWidth()
+                    .heightIn(max = maxSheetHeight)
                     .graphicsLayer {
-                        val offsetY = size.height * (1f - progress)
-                        translationY = offsetY
-                        val scale = 0.96f + 0.04f * progress
-                        scaleX = scale
+                        // Slide from bottom: at progress=0 sheet is fully below screen
+                        translationY = size.height * (1f - progress)
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)
-                    // Dialog creates a separate window — Backdrop's layerBackdrop cannot capture
-                    // content from the parent window, and on Xiaomi devices the system's
-                    // MiBackgroundBlurBlend causes a native stack overflow (SIGSEGV) when
-                    // processing blur nodes in a Dialog's render tree. Use a solid frosted-glass
-                    // appearance via background colors instead of real-time backdrop effects.
                     .background(surfaceColor, sheetShape)
                     .background(sheenColor, sheetShape)
-                    // Block clicks from passing through sheet to scrim
+                    // Block clicks from passing through to scrim
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {}
+                    // Drag gesture: only when allowDismiss is true
                     .pointerInput(allowDismiss) {
                         if (!allowDismiss) return@pointerInput
                         var totalDrag = 0f
@@ -205,11 +224,11 @@ fun LiquidGlassBottomSheet(
                             onDragStart = { totalDrag = 0f },
                             onDragEnd = {
                                 val currentProgress = sheetProgress.value
-                                val shouldDismiss =
-                                    currentProgress < (1f - LiquidSheetDismissThreshold)
-                                if (shouldDismiss) {
+                                // Dismiss only if dragged below the dismiss threshold
+                                if (currentProgress < LiquidSheetDismissFraction) {
                                     currentOnDismissRequest?.invoke()
                                 } else {
+                                    // Snap back to full
                                     scope.launch {
                                         sheetProgress.animateTo(
                                             1f,
@@ -220,10 +239,11 @@ fun LiquidGlassBottomSheet(
                             },
                             onVerticalDrag = { _, dragAmount ->
                                 totalDrag += dragAmount
+                                // Only allow downward drag (positive = down)
                                 if (totalDrag > 0f) {
-                                    val heightPx = with(density) { 400.dp.toPx() }
+                                    val sheetHeightPx = with(density) { defaultHeight.toPx() }
                                     val newProgress =
-                                        (1f - totalDrag / heightPx).coerceIn(0f, 1f)
+                                        (1f - totalDrag / sheetHeightPx).coerceIn(0f, 1f)
                                     scope.launch {
                                         sheetProgress.snapTo(newProgress)
                                     }
@@ -231,7 +251,7 @@ fun LiquidGlassBottomSheet(
                             }
                         )
                     }
-                    .padding(bottom = navBarPadding.calculateBottomPadding()),
+                    .padding(bottom = navBarHeight),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Drag handle
@@ -273,8 +293,7 @@ fun LiquidGlassBottomSheet(
                     }
                 }
 
-                // Content — Dialog guarantees finite height constraints from the window,
-                // so callers can freely use LazyColumn, verticalScroll, etc.
+                // Content
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

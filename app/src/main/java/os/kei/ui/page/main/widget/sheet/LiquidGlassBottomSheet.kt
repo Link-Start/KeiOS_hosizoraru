@@ -68,9 +68,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - When [allowDismiss] is true: dragging below 20% of available height dismisses the sheet.
  *
  * Detents:
- * - Half (0.5): default resting position
- * - Full (1.0): maximum expanded, content scrolls
+ * - Half (0.5): default resting position on open
+ * - Three-quarter (0.75): intermediate expansion
+ * - Full (1.0): maximum expanded (below status bar), content scrolls
  * - Dismiss (0.0): sheet is off-screen
+ *
+ * Scroll priority:
+ * - When sheet is NOT at full height: upward scroll EXPANDS the sheet (priority over content scroll)
+ * - When sheet IS at full height: upward scroll scrolls content normally
+ * - Downward scroll at content top: SHRINKS the sheet first
  */
 
 private val LiquidSheetCornerRadius = 28.dp
@@ -82,6 +88,9 @@ private const val LiquidSheetScrimAlpha = 0.38f
 
 /** Half-screen detent: sheet rests here on open. */
 private const val DETENT_HALF = 0.50f
+
+/** Three-quarter detent: intermediate expansion. */
+private const val DETENT_THREE_QUARTER = 0.75f
 
 /** Full-screen detent: max expansion (below status bar). */
 private const val DETENT_FULL = 1.0f
@@ -173,15 +182,27 @@ fun LiquidGlassBottomSheet(
         // Visibility progress for enter/exit animation (0 when hidden, 1 when at half or above)
         val visibilityProgress = (fraction / DETENT_HALF).coerceIn(0f, 1f)
 
-        // Nested scroll connection: when content scrolls to top and user keeps pulling down,
-        // the sheet shrinks. When content is at top and user pushes up, sheet expands.
-        // This creates the iOS-style "scroll content OR resize sheet" behavior.
+        // Nested scroll connection: implements iOS-style smart scroll priority.
+        // When sheet is NOT at full height: upward scroll EXPANDS the sheet (not scroll content).
+        // When sheet IS at full height: upward scroll scrolls content normally.
+        // Downward scroll at content top: SHRINKS the sheet first.
         val sheetNestedScrollConnection = remember(allowDismiss) {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     val dy = available.y
                     val currentFraction = heightFraction.value
-                    // User scrolling down (dy > 0) and sheet is above half → shrink sheet first
+
+                    // User scrolling UP (dy < 0) and sheet is NOT at full → expand sheet first.
+                    // This is the key behavior: content doesn't scroll until sheet is maximized.
+                    if (dy < 0f && currentFraction < DETENT_FULL) {
+                        val consumed = -dy / availableHeightPx
+                        val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
+                        scope.launch { heightFraction.snapTo(newFraction) }
+                        val actualConsumed = (newFraction - currentFraction) * availableHeightPx
+                        return Offset(0f, -actualConsumed)
+                    }
+
+                    // User scrolling DOWN (dy > 0) and sheet is above half → shrink sheet first.
                     if (dy > 0f && currentFraction > DETENT_HALF) {
                         val consumed = dy / availableHeightPx
                         val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_HALF)
@@ -189,6 +210,7 @@ fun LiquidGlassBottomSheet(
                         val actualConsumed = (currentFraction - newFraction) * availableHeightPx
                         return Offset(0f, actualConsumed)
                     }
+
                     return Offset.Zero
                 }
 
@@ -199,30 +221,22 @@ fun LiquidGlassBottomSheet(
                 ): Offset {
                     val dy = available.y
                     val currentFraction = heightFraction.value
-                    // Content couldn't consume the scroll (at boundary):
-                    // - Pulling up (dy < 0) at top of content → expand sheet
-                    // - Pulling down (dy > 0) at top of content → shrink sheet
-                    if (dy < 0f && currentFraction < DETENT_FULL) {
-                        // Expand
-                        val consumed = -dy / availableHeightPx
-                        val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
-                        scope.launch { heightFraction.snapTo(newFraction) }
-                        return Offset(0f, -(newFraction - currentFraction) * availableHeightPx)
+
+                    // Content at top boundary, pulling down → shrink sheet below half (dismiss zone)
+                    if (dy > 0f && currentFraction <= DETENT_HALF) {
+                        if (allowDismiss) {
+                            val consumed = dy / availableHeightPx
+                            val newFraction = (currentFraction - consumed).coerceAtLeast(0f)
+                            scope.launch { heightFraction.snapTo(newFraction) }
+                            return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                        } else if (currentFraction > DETENT_BOUNCE) {
+                            val consumed = dy / availableHeightPx
+                            val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_BOUNCE * 0.8f)
+                            scope.launch { heightFraction.snapTo(newFraction) }
+                            return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                        }
                     }
-                    if (dy > 0f && currentFraction > DETENT_HALF) {
-                        // Shrink (content at top, pulling down)
-                        val consumed = dy / availableHeightPx
-                        val newFraction = (currentFraction - consumed).coerceAtLeast(DETENT_HALF)
-                        scope.launch { heightFraction.snapTo(newFraction) }
-                        return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
-                    }
-                    if (dy > 0f && currentFraction <= DETENT_HALF && allowDismiss) {
-                        // Below half, pulling down → dismiss gesture
-                        val consumed = dy / availableHeightPx
-                        val newFraction = (currentFraction - consumed).coerceAtLeast(0f)
-                        scope.launch { heightFraction.snapTo(newFraction) }
-                        return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
-                    }
+
                     return Offset.Zero
                 }
             }
@@ -291,6 +305,7 @@ fun LiquidGlassBottomSheet(
                             },
                             onDragEnd = {
                                 val current = heightFraction.value
+                                val draggedUp = current > dragStartFraction
                                 scope.launch {
                                     when {
                                         // Dismiss zone
@@ -300,7 +315,6 @@ fun LiquidGlassBottomSheet(
                                         // Below half: snap to half (or bounce if not dismissable)
                                         current < DETENT_HALF -> {
                                             if (!allowDismiss && current < DETENT_BOUNCE) {
-                                                // Bounce back + notify blocked dismiss
                                                 currentOnBlockedDismissRequest?.invoke()
                                             }
                                             heightFraction.animateTo(
@@ -308,14 +322,26 @@ fun LiquidGlassBottomSheet(
                                                 spring(dampingRatio = 0.82f, stiffness = 450f)
                                             )
                                         }
-                                        // Between half and 75%: snap to half
-                                        current < (DETENT_HALF + DETENT_FULL) / 2f -> {
+                                        // Three-detent snapping based on position + direction:
+                                        // Between half and three-quarter midpoint
+                                        current < (DETENT_HALF + DETENT_THREE_QUARTER) / 2f -> {
+                                            // If dragging up, go to three-quarter; otherwise snap back to half
+                                            val target = if (draggedUp) DETENT_THREE_QUARTER else DETENT_HALF
                                             heightFraction.animateTo(
-                                                DETENT_HALF,
+                                                target,
                                                 spring(dampingRatio = 0.85f, stiffness = 400f)
                                             )
                                         }
-                                        // Above 75%: snap to full
+                                        // Around three-quarter zone
+                                        current < (DETENT_THREE_QUARTER + DETENT_FULL) / 2f -> {
+                                            // Snap to three-quarter (closest detent)
+                                            val target = if (draggedUp) DETENT_FULL else DETENT_THREE_QUARTER
+                                            heightFraction.animateTo(
+                                                target,
+                                                spring(dampingRatio = 0.85f, stiffness = 400f)
+                                            )
+                                        }
+                                        // Above three-quarter-full midpoint: snap to full
                                         else -> {
                                             heightFraction.animateTo(
                                                 DETENT_FULL,

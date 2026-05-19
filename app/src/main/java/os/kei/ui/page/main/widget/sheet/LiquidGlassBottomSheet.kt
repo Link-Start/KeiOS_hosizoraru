@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -328,13 +326,14 @@ fun LiquidGlassBottomSheet(
                         }
                     }
 
-                    // Content — use heightIn instead of weight to avoid infinite-height crash in Popup
+                    // Content — no verticalScroll here because callers (e.g. SheetContentColumn)
+                    // already provide their own scrollable container. Adding one here would nest
+                    // scrollable components and crash with infinite-height measurement.
                     val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = screenHeightDp * 0.65f)
-                            .verticalScroll(rememberScrollState())
+                            .heightIn(max = screenHeightDp * 0.70f)
                             .padding(horizontal = 20.dp)
                             .padding(bottom = 16.dp)
                     ) {

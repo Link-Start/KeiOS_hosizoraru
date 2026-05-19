@@ -24,6 +24,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertTrue
 
 private const val SheetTag = "liquid-sheet"
+private const val FirstContentTag = "liquid-sheet-first-content"
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -92,6 +93,47 @@ class LiquidGlassBottomSheetTest {
 
         val height = sheetHeight()
         assertTrue(height >= 820.dp, "Expected full detent height, got $height")
+    }
+
+    @Test
+    fun keepsContentBelowTopChrome() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SheetTag),
+                    title = "Actions"
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        Box(
+                            modifier = Modifier
+                                .testTag(FirstContentTag)
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .background(Color.Gray)
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        val sheetTop = composeRule.onNodeWithTag(SheetTag)
+            .fetchSemanticsNode()
+            .boundsInRoot
+            .top
+        val contentTop = composeRule.onNodeWithTag(FirstContentTag, useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .boundsInRoot
+            .top
+        val minimumTopChromeHeight = with(composeRule.density) { 56.dp.toPx() }
+
+        assertTrue(
+            actual = contentTop - sheetTop >= minimumTopChromeHeight,
+            message = "Expected sheet content to start below top chrome, sheetTop=$sheetTop contentTop=$contentTop"
+        )
     }
 
     private fun sheetHeight(): Dp {

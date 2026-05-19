@@ -87,7 +87,7 @@ private val LiquidSheetMaxWidth = 480.dp
 private val LiquidSheetDragHandleWidth = 36.dp
 private val LiquidSheetDragHandleHeight = 4.dp
 private val LiquidSheetDragHandleTopPadding = 10.dp
-private val LiquidSheetTransparentHeaderBottomPadding = 8.dp
+private val LiquidSheetHeaderBottomPadding = 10.dp
 private const val LiquidSheetScrimAlpha = 0.38f
 
 /** Half-screen detent: sheet rests here on open. */
@@ -362,7 +362,16 @@ fun LiquidGlassBottomSheet(
             } else {
                 Color.White.copy(alpha = lerp(0.65f, 0.18f, solidnessProgress))
             }
-            val headerContentColor = Color.White.copy(alpha = if (isDark) 0.82f else 0.88f)
+            val headerContentColor = if (isDark) {
+                Color.White.copy(alpha = 0.88f)
+            } else {
+                Color.Black.copy(alpha = 0.78f)
+            }
+            val dragHandleColor = if (isDark) {
+                Color.White.copy(alpha = lerp(0.34f, 0.26f, solidnessProgress))
+            } else {
+                Color.Black.copy(alpha = lerp(0.24f, 0.18f, solidnessProgress))
+            }
 
             Box(
                 modifier = modifier
@@ -378,6 +387,8 @@ fun LiquidGlassBottomSheet(
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)
+                    .background(surfaceColor, sheetShape)
+                    .background(sheenColor, sheetShape)
                     .border(width = 0.5.dp, color = borderColor, shape = sheetShape)
                     // Block clicks from passing through to scrim
                     .clickable(
@@ -466,15 +477,13 @@ fun LiquidGlassBottomSheet(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Transparent top chrome: handle and actions float over the dimmed page so
-                    // full sheets avoid a heavy white cap while the content surface stays readable.
                     Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
                     Box(
                         modifier = Modifier
                             .width(LiquidSheetDragHandleWidth)
                             .height(LiquidSheetDragHandleHeight)
                             .clip(RoundedRectangle(2.dp))
-                            .background(headerContentColor)
+                            .background(dragHandleColor)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -515,7 +524,7 @@ fun LiquidGlassBottomSheet(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(LiquidSheetTransparentHeaderBottomPadding))
+                    Spacer(modifier = Modifier.height(LiquidSheetHeaderBottomPadding))
 
                     // Content — nested scroll connection allows content scroll to expand/shrink
                     // the sheet when at scroll boundaries (iOS-style behavior).
@@ -523,11 +532,9 @@ fun LiquidGlassBottomSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .background(surfaceColor)
-                            .background(sheenColor)
                             .nestedScroll(sheetNestedScrollConnection)
                             .padding(horizontal = 20.dp)
-                            .padding(top = 16.dp, bottom = 16.dp)
+                            .padding(top = 12.dp, bottom = 16.dp)
                     ) {
                         CompositionLocalProvider(
                             LocalLiquidSheetContentOverflowReporter provides { overflows ->

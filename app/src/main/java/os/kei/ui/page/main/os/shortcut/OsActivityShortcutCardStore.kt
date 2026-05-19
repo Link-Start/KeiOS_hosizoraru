@@ -52,12 +52,15 @@ internal object OsActivityShortcutCardStore {
     private const val KEY_EXPORT_ITEMS = "items"
     private const val LEGACY_GOOGLE_SETTINGS_ACTIVITY_CLASS =
         "com.google.android.gms.app.settings.GoogleSettingsActivity"
+    private const val DEPRECATED_BUILTIN_DEFAULT_APPS_CARD_ID = "builtin-settings-default-apps"
+    private const val DEPRECATED_BUILTIN_APP_LANGUAGE_CARD_ID = "builtin-settings-app-language"
+    private const val DEPRECATED_BUILTIN_RUNNING_SERVICES_CARD_ID = "builtin-settings-running-services"
 
     private val deprecatedBuiltInActivityCardIds =
         setOf(
-            BUILTIN_DEFAULT_APPS_CARD_ID,
-            BUILTIN_APP_LANGUAGE_CARD_ID,
-            BUILTIN_RUNNING_SERVICES_CARD_ID,
+            DEPRECATED_BUILTIN_DEFAULT_APPS_CARD_ID,
+            DEPRECATED_BUILTIN_APP_LANGUAGE_CARD_ID,
+            DEPRECATED_BUILTIN_RUNNING_SERVICES_CARD_ID,
         )
 
     private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }

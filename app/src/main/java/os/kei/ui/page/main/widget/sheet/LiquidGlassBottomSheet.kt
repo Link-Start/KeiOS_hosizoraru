@@ -11,7 +11,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -56,7 +55,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * v2 Liquid Glass BottomSheet — iOS-style multi-detent bottom sheet.
@@ -89,6 +87,7 @@ private val LiquidSheetMaxWidth = 480.dp
 private val LiquidSheetDragHandleWidth = 36.dp
 private val LiquidSheetDragHandleHeight = 4.dp
 private val LiquidSheetDragHandleTopPadding = 10.dp
+private val LiquidSheetTransparentHeaderBottomPadding = 8.dp
 private const val LiquidSheetScrimAlpha = 0.38f
 
 /** Half-screen detent: sheet rests here on open. */
@@ -363,13 +362,9 @@ fun LiquidGlassBottomSheet(
             } else {
                 Color.White.copy(alpha = lerp(0.65f, 0.18f, solidnessProgress))
             }
-            val dragHandleColor = if (isDark) {
-                Color.White.copy(alpha = 0.28f)
-            } else {
-                Color.Black.copy(alpha = 0.18f)
-            }
+            val headerContentColor = Color.White.copy(alpha = if (isDark) 0.82f else 0.88f)
 
-            Column(
+            Box(
                 modifier = modifier
                     .widthIn(max = LiquidSheetMaxWidth)
                     .fillMaxWidth()
@@ -383,8 +378,6 @@ fun LiquidGlassBottomSheet(
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)
-                    .background(surfaceColor, sheetShape)
-                    .background(sheenColor, sheetShape)
                     .border(width = 0.5.dp, color = borderColor, shape = sheetShape)
                     // Block clicks from passing through to scrim
                     .clickable(
@@ -468,72 +461,81 @@ fun LiquidGlassBottomSheet(
                         )
                     }
                     .padding(bottom = navBarHeight),
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Drag handle
-                Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
-                Box(
-                    modifier = Modifier
-                        .width(LiquidSheetDragHandleWidth)
-                        .height(LiquidSheetDragHandleHeight)
-                        .clip(RoundedRectangle(2.dp))
-                        .background(dragHandleColor)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Title bar — title is centered as an overlay so asymmetric start/end action
-                // widths don't shift it off-center. Actions are positioned absolutely so the
-                // title's true horizontal center aligns with the sheet's center, matching the
-                // visual balance of iOS sheets.
-                if (title != null || startAction != null || endAction != null) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Transparent top chrome: handle and actions float over the dimmed page so
+                    // full sheets avoid a heavy white cap while the content surface stays readable.
+                    Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (title != null) {
-                            Text(
-                                text = title,
-                                // Reserve horizontal space so a long title is ellipsised
-                                // before colliding with the actions instead of overlapping.
-                                modifier = Modifier.padding(horizontal = 56.dp),
-                                color = MiuixTheme.colorScheme.onBackground,
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        if (startAction != null) {
-                            Box(modifier = Modifier.align(Alignment.CenterStart)) {
-                                startAction.invoke()
+                            .width(LiquidSheetDragHandleWidth)
+                            .height(LiquidSheetDragHandleHeight)
+                            .clip(RoundedRectangle(2.dp))
+                            .background(headerContentColor)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Title bar — title is centered as an overlay so asymmetric start/end action
+                    // widths don't shift it off-center. Actions are positioned absolutely so the
+                    // title's true horizontal center aligns with the sheet's center, matching the
+                    // visual balance of iOS sheets.
+                    if (title != null || startAction != null || endAction != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (title != null) {
+                                Text(
+                                    text = title,
+                                    // Reserve horizontal space so a long title is ellipsised
+                                    // before colliding with the actions instead of overlapping.
+                                    modifier = Modifier.padding(horizontal = 56.dp),
+                                    color = headerContentColor,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
-                        }
-                        if (endAction != null) {
-                            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-                                endAction.invoke()
+                            if (startAction != null) {
+                                Box(modifier = Modifier.align(Alignment.CenterStart)) {
+                                    startAction.invoke()
+                                }
+                            }
+                            if (endAction != null) {
+                                Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+                                    endAction.invoke()
+                                }
                             }
                         }
                     }
-                }
 
-                // Content — nested scroll connection allows content scroll to expand/shrink
-                // the sheet when at scroll boundaries (iOS-style behavior).
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .nestedScroll(sheetNestedScrollConnection)
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 16.dp)
-                ) {
-                    CompositionLocalProvider(
-                        LocalLiquidSheetContentOverflowReporter provides { overflows ->
-                            contentOverflowsOpeningDetent = overflows
-                        }
+                    Spacer(modifier = Modifier.height(LiquidSheetTransparentHeaderBottomPadding))
+
+                    // Content — nested scroll connection allows content scroll to expand/shrink
+                    // the sheet when at scroll boundaries (iOS-style behavior).
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .background(surfaceColor)
+                            .background(sheenColor)
+                            .nestedScroll(sheetNestedScrollConnection)
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 16.dp, bottom = 16.dp)
                     ) {
-                        content()
+                        CompositionLocalProvider(
+                            LocalLiquidSheetContentOverflowReporter provides { overflows ->
+                                contentOverflowsOpeningDetent = overflows
+                            }
+                        ) {
+                            content()
+                        }
                     }
                 }
             }

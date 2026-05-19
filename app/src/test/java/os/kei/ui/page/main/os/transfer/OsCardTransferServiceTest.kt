@@ -4,12 +4,9 @@ import org.json.JSONObject
 import org.junit.Test
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.BUILTIN_APP_LANGUAGE_CARD_ID
-import os.kei.ui.page.main.os.shortcut.BUILTIN_DEFAULT_APPS_CARD_ID
 import os.kei.ui.page.main.os.shortcut.BUILTIN_EXTRA_DIM_CARD_ID
 import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.BUILTIN_LANGUAGE_SETTINGS_CARD_ID
-import os.kei.ui.page.main.os.shortcut.BUILTIN_RUNNING_SERVICES_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.shortcut.builtInActivityShortcutCard
@@ -18,6 +15,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class OsCardTransferServiceTest {
+    private companion object {
+        const val DeprecatedDefaultAppsCardId = "builtin-settings-default-apps"
+        const val DeprecatedAppLanguageCardId = "builtin-settings-app-language"
+        const val DeprecatedRunningServicesCardId = "builtin-settings-running-services"
+    }
+
     @Test
     fun `parse root detects activity card export schema`() {
         val root =
@@ -254,9 +257,9 @@ class OsCardTransferServiceTest {
         val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
         val dropped =
             listOf(
-                BUILTIN_DEFAULT_APPS_CARD_ID,
-                BUILTIN_APP_LANGUAGE_CARD_ID,
-                BUILTIN_RUNNING_SERVICES_CARD_ID,
+                DeprecatedDefaultAppsCardId,
+                DeprecatedAppLanguageCardId,
+                DeprecatedRunningServicesCardId,
             ).map { id ->
                 builtInActivityShortcutCard(
                     id = id,

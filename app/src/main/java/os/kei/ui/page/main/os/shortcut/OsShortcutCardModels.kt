@@ -10,12 +10,9 @@ internal const val LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID = "legacy-google-system-
 internal const val BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID = "builtin-google-settings-sample"
 internal const val BUILTIN_EXTRA_DIM_CARD_ID = "builtin-settings-extra-dim"
 internal const val BUILTIN_APP_BATTERY_USAGE_CARD_ID = "builtin-settings-app-battery-usage"
-internal const val BUILTIN_RUNNING_SERVICES_CARD_ID = "builtin-settings-running-services"
 internal const val BUILTIN_NOTIFICATION_SETTINGS_CARD_ID = "builtin-settings-notification-settings"
 internal const val BUILTIN_APP_MANAGEMENT_CARD_ID = "builtin-settings-app-management"
-internal const val BUILTIN_DEFAULT_APPS_CARD_ID = "builtin-settings-default-apps"
 internal const val BUILTIN_APP_MEMORY_USAGE_CARD_ID = "builtin-settings-app-memory-usage"
-internal const val BUILTIN_APP_LANGUAGE_CARD_ID = "builtin-settings-app-language"
 internal const val BUILTIN_LANGUAGE_SETTINGS_CARD_ID = "builtin-settings-language-settings"
 internal const val BUILTIN_CROSS_DEVICE_SERVICES_CARD_ID = "builtin-gms-cross-device-services"
 

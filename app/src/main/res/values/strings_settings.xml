@@ -191,6 +191,9 @@
     <string name="settings_liquid_toast_title">液态玻璃 Toast</string>
     <string name="settings_liquid_toast_summary_enabled">使用 v2 Liquid Glass Toast，显示在屏幕上方居中位置，不遮挡操作内容。</string>
     <string name="settings_liquid_toast_summary_disabled">使用 Android 系统原生 Toast，显示在屏幕底部。</string>
+    <string name="settings_reduce_toast_interruption_title">减少轻提示打扰</string>
+    <string name="settings_reduce_toast_interruption_summary_enabled">隐藏运行完成、复制完成、清空完成等低优先级提示；错误和权限提示仍会显示。</string>
+    <string name="settings_reduce_toast_interruption_summary_disabled">允许低优先级提示通过液态玻璃 Toast 轻量显示。</string>
     <string name="settings_liquid_sheet_title">液态玻璃弹出面板</string>
     <string name="settings_liquid_sheet_summary_enabled">使用 v2 Liquid Glass 弹出面板，带毛玻璃折射效果和弹性动画。</string>
     <string name="settings_liquid_sheet_summary_disabled">使用 Miuix 标准弹出面板样式。</string>

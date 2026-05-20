@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.animation.AnimatedVisibility
@@ -29,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,9 +69,11 @@ private const val TOAST_VERTICAL_BIAS = -0.40f
 /**
  * Toast display duration presets.
  */
-enum class LiquidToastDuration(internal val durationMs: Long) {
+enum class LiquidToastDuration(
+    internal val durationMs: Long,
+) {
     Short(TOAST_DEFAULT_DISPLAY_MS),
-    Long(TOAST_LONG_DISPLAY_MS)
+    Long(TOAST_LONG_DISPLAY_MS),
 }
 
 /**
@@ -79,7 +83,7 @@ data class LiquidToastData(
     val message: String,
     val icon: ImageVector? = null,
     val iconTint: Color = Color.Unspecified,
-    val duration: LiquidToastDuration = LiquidToastDuration.Short
+    val duration: LiquidToastDuration = LiquidToastDuration.Short,
 )
 
 /**
@@ -104,14 +108,15 @@ class LiquidToastState {
         message: String,
         icon: ImageVector? = null,
         iconTint: Color = Color.Unspecified,
-        duration: LiquidToastDuration = LiquidToastDuration.Short
+        duration: LiquidToastDuration = LiquidToastDuration.Short,
     ) {
-        val data = LiquidToastData(
-            message = message,
-            icon = icon,
-            iconTint = iconTint,
-            duration = duration
-        )
+        val data =
+            LiquidToastData(
+                message = message,
+                icon = icon,
+                iconTint = iconTint,
+                duration = duration,
+            )
         if (currentToast == null) {
             currentToast = data
         } else {
@@ -131,9 +136,7 @@ class LiquidToastState {
  * Remember a [LiquidToastState] across recompositions.
  */
 @Composable
-fun rememberLiquidToastState(): LiquidToastState {
-    return remember { LiquidToastState() }
-}
+fun rememberLiquidToastState(): LiquidToastState = remember { LiquidToastState() }
 
 /**
  * Host composable that displays liquid glass toasts at the upper-third of the screen (iOS style).
@@ -149,10 +152,16 @@ fun rememberLiquidToastState(): LiquidToastState {
 fun LiquidToastHost(
     state: LiquidToastState,
     backdrop: Backdrop,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val toast = state.currentToast
     val visibleState = remember { MutableTransitionState(false) }
+    var renderedToast by remember { mutableStateOf<LiquidToastData?>(null) }
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            renderedToast = toast
+        }
+    }
     visibleState.targetState = toast != null
 
     // Auto-dismiss after duration
@@ -162,35 +171,48 @@ fun LiquidToastHost(
             state.dismiss()
         }
     }
+    LaunchedEffect(
+        visibleState.isIdle,
+        visibleState.currentState,
+        toast,
+    ) {
+        if (visibleState.isIdle && !visibleState.currentState && toast == null) {
+            renderedToast = null
+        }
+    }
 
     Box(
         modifier = modifier.fillMaxSize(),
         // Vertical bias -0.40 places the toast at roughly 30% from the top — the iOS HUD zone.
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
-        val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+        val screenHeight = LocalWindowInfo.current.containerDpSize.height
         val verticalOffset = screenHeight * TOAST_VERTICAL_BIAS / 2
 
         AnimatedVisibility(
             visibleState = visibleState,
             modifier = Modifier.offset(y = verticalOffset),
-            enter = scaleIn(
-                animationSpec = spring(dampingRatio = 0.65f, stiffness = 400f),
-                initialScale = 0.70f
-            ) + fadeIn(
-                animationSpec = tween(TOAST_ENTER_DURATION_MS)
-            ),
-            exit = scaleOut(
-                animationSpec = tween(TOAST_EXIT_DURATION_MS),
-                targetScale = 0.85f
-            ) + fadeOut(
-                animationSpec = tween(TOAST_EXIT_DURATION_MS)
-            )
+            enter =
+                scaleIn(
+                    animationSpec = spring(dampingRatio = 0.65f, stiffness = 400f),
+                    initialScale = 0.70f,
+                ) +
+                    fadeIn(
+                        animationSpec = tween(TOAST_ENTER_DURATION_MS),
+                    ),
+            exit =
+                scaleOut(
+                    animationSpec = tween(TOAST_EXIT_DURATION_MS),
+                    targetScale = 0.85f,
+                ) +
+                    fadeOut(
+                        animationSpec = tween(TOAST_EXIT_DURATION_MS),
+                    ),
         ) {
-            toast?.let { data ->
+            renderedToast?.let { data ->
                 LiquidToastContent(
                     backdrop = backdrop,
-                    data = data
+                    data = data,
                 )
             }
         }
@@ -210,15 +232,16 @@ fun LiquidToastHost(
 @Composable
 private fun LiquidToastContent(
     backdrop: Backdrop,
-    data: LiquidToastData
+    data: LiquidToastData,
 ) {
     // Official Backdrop recommendation: simple semi-transparent white surface overlay.
     // The liquid glass effect comes from lens refraction, not from complex color layering.
     LiquidSurface(
         backdrop = backdrop,
-        modifier = Modifier
-            .widthIn(min = 140.dp, max = 300.dp)
-            .padding(horizontal = 16.dp),
+        modifier =
+            Modifier
+                .widthIn(min = 140.dp, max = 300.dp)
+                .padding(horizontal = 16.dp),
         shape = ContinuousCapsule,
         isInteractive = false,
         surfaceColor = Color.White.copy(alpha = 0.5f),
@@ -226,27 +249,30 @@ private fun LiquidToastContent(
         lensRadius = 32.dp,
         chromaticAberration = true,
         depthEffect = true,
-        shadow = true
+        shadow = true,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             data.icon?.let { icon ->
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier
-                        .padding(end = 10.dp)
-                        .size(20.dp),
-                    tint = if (data.iconTint.isSpecified) {
-                        data.iconTint
-                    } else {
-                        MiuixTheme.colorScheme.onBackground.copy(alpha = 0.90f)
-                    }
+                    modifier =
+                        Modifier
+                            .padding(end = 10.dp)
+                            .size(20.dp),
+                    tint =
+                        if (data.iconTint.isSpecified) {
+                            data.iconTint
+                        } else {
+                            MiuixTheme.colorScheme.onBackground.copy(alpha = 0.90f)
+                        },
                 )
             }
             Text(
@@ -256,7 +282,7 @@ private fun LiquidToastContent(
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

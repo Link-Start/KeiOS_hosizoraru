@@ -1,11 +1,13 @@
+@file:Suppress("FunctionName", "PropertyName")
+
 package os.kei.ui.page.main.widget.dialog
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,8 +17,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,8 +36,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kyant.shapes.RoundedRectangle
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
 
 /**
  * v2 Liquid Glass Dialog — a frosted-glass confirmation dialog with spring scale animation.
@@ -48,8 +56,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 
 private val LiquidDialogCornerRadius = 24.dp
-private val LiquidDialogMaxWidth = 320.dp
+private val LiquidDialogMaxWidth = 420.dp
 private const val LiquidDialogScrimAlpha = 0.38f
+private const val LiquidDialogExitDurationMillis = 220
 
 @Composable
 fun LiquidGlassDialog(
@@ -57,21 +66,52 @@ fun LiquidGlassDialog(
     title: String? = null,
     summary: String? = null,
     onDismissRequest: (() -> Unit)? = null,
+    onDismissFinished: (() -> Unit)? = null,
     dismissible: Boolean = true,
-    content: @Composable () -> Unit = {}
+    content: @Composable () -> Unit = {},
 ) {
-    if (!show) return
+    var renderDialog by remember { mutableStateOf(show) }
+    val scale = remember { Animatable(0.85f) }
+    val alpha = remember { Animatable(0f) }
+    val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
 
-    val scale by animateFloatAsState(
-        targetValue = if (show) 1f else 0.85f,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 450f),
-        label = "liquid_glass_dialog_scale"
-    )
-    val alpha by animateFloatAsState(
-        targetValue = if (show) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.92f, stiffness = 600f),
-        label = "liquid_glass_dialog_alpha"
-    )
+    LaunchedEffect(show) {
+        if (show) {
+            renderDialog = true
+            launch {
+                scale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(dampingRatio = 0.82f, stiffness = 450f),
+                )
+            }
+            alpha.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(dampingRatio = 0.92f, stiffness = 600f),
+            )
+        } else {
+            if (!renderDialog) return@LaunchedEffect
+            val scaleJob =
+                launch {
+                    scale.animateTo(
+                        targetValue = 0.92f,
+                        animationSpec = tween(durationMillis = LiquidDialogExitDurationMillis),
+                    )
+                }
+            val alphaJob =
+                launch {
+                    alpha.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(durationMillis = LiquidDialogExitDurationMillis),
+                    )
+                }
+            scaleJob.join()
+            alphaJob.join()
+            renderDialog = false
+            currentOnDismissFinished?.invoke()
+        }
+    }
+
+    if (!renderDialog) return
 
     Dialog(
         onDismissRequest = {
@@ -79,15 +119,16 @@ fun LiquidGlassDialog(
                 onDismissRequest?.invoke()
             }
         },
-        properties = DialogProperties(
-            dismissOnBackPress = dismissible,
-            dismissOnClickOutside = dismissible,
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+        properties =
+            DialogProperties(
+                dismissOnBackPress = dismissible,
+                dismissOnClickOutside = dismissible,
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
     ) {
         // Remove system's default dim background — we draw our own scrim.
-        top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects()
+        RemovePlatformDialogDefaultEffects()
 
         val dialogShape = RoundedRectangle(LiquidDialogCornerRadius)
         // Official Backdrop recommendation: simple semi-transparent white surface.
@@ -97,38 +138,39 @@ fun LiquidGlassDialog(
 
         // Scrim
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = LiquidDialogScrimAlpha))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    enabled = dismissible
-                ) {
-                    onDismissRequest?.invoke()
-                },
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = LiquidDialogScrimAlpha))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = dismissible,
+                    ) {
+                        onDismissRequest?.invoke()
+                    },
+            contentAlignment = Alignment.Center,
         ) {
             // Dialog card
             Column(
-                modifier = Modifier
-                    .widthIn(max = LiquidDialogMaxWidth)
-                    .fillMaxWidth(0.85f)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        this.alpha = alpha
-                        transformOrigin = TransformOrigin.Center
-                    }
-                    .clip(dialogShape)
-                    .background(surfaceColor, dialogShape)
-                    // Block clicks from passing through to scrim
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {}
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier =
+                    Modifier
+                        .widthIn(max = LiquidDialogMaxWidth)
+                        .fillMaxWidth(0.88f)
+                        .graphicsLayer {
+                            scaleX = scale.value
+                            scaleY = scale.value
+                            this.alpha = alpha.value
+                            transformOrigin = TransformOrigin.Center
+                        }.clip(dialogShape)
+                        .background(surfaceColor, dialogShape)
+                        // Block clicks from passing through to scrim
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {}
+                        .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Title
                 if (!title.isNullOrBlank()) {
@@ -138,7 +180,7 @@ fun LiquidGlassDialog(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -151,7 +193,7 @@ fun LiquidGlassDialog(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Normal,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
 

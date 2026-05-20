@@ -1,6 +1,9 @@
 package os.kei.ui.page.main.os.state
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.sync.Mutex
 import os.kei.R
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.os.InfoRow
@@ -18,9 +21,6 @@ import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.state.PageActionState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.sync.Mutex
 
 internal data class OsPageActionState(
     val ensureLoad: suspend (SectionKind, Boolean) -> Unit,
@@ -28,7 +28,7 @@ internal data class OsPageActionState(
     val applyActivityCardVisibility: suspend (String, Boolean) -> Unit,
     val applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit,
     val runShellCommandCard: suspend (OsShellCommandCard) -> Unit,
-    val refreshAllSections: suspend () -> Unit
+    val refreshAllSections: suspend () -> Unit,
 ) : PageActionState
 
 internal fun createOsPageActionState(
@@ -60,10 +60,11 @@ internal fun createOsPageActionState(
     onRefreshingChange: (Boolean) -> Unit,
     onRefreshProgressChange: (Float) -> Unit,
     shellCardCommandRequiredToast: String,
+    shellCardRunCompletedToast: String,
     shellRunNoPermissionText: String,
     shellRunNoOutputText: String,
     noRefreshableCardText: String,
-    refreshCompletedText: String
+    refreshCompletedText: String,
 ): OsPageActionState {
     val ensureLoad: suspend (SectionKind, Boolean) -> Unit = { section, forceRefresh ->
         ensureOsSectionLoaded(
@@ -78,7 +79,7 @@ internal fun createOsPageActionState(
             shizukuStatus = shizukuStatus,
             shizukuApiUtils = shizukuApiUtils,
             updateSection = updateSection,
-            onCachePersistedChanged = onCachePersistedChanged
+            onCachePersistedChanged = onCachePersistedChanged,
         )
     }
 
@@ -99,7 +100,7 @@ internal fun createOsPageActionState(
             updateSection = updateSection,
             ensureLoad = ensureLoad,
             visibleCardsProvider = visibleCardsProvider,
-            onCachePersistedChanged = onCachePersistedChanged
+            onCachePersistedChanged = onCachePersistedChanged,
         )
     }
 
@@ -109,7 +110,7 @@ internal fun createOsPageActionState(
             visible = visible,
             currentCards = activityShortcutCardsProvider(),
             defaults = googleSystemServiceDefaults,
-            updateCards = updateActivityShortcutCards
+            updateCards = updateActivityShortcutCards,
         )
     }
 
@@ -117,7 +118,7 @@ internal fun createOsPageActionState(
         applyOsShellCommandCardVisibility(
             cardId = cardId,
             visible = visible,
-            updateCards = updateShellCommandCards
+            updateCards = updateShellCommandCards,
         )
     }
 
@@ -127,6 +128,7 @@ internal fun createOsPageActionState(
             context = context,
             shizukuApiUtils = shizukuApiUtils,
             shellCardCommandRequiredToast = shellCardCommandRequiredToast,
+            shellCardRunCompletedToast = shellCardRunCompletedToast,
             shellRunNoPermissionToast = shellRunNoPermissionText,
             shellRunNoOutputText = shellRunNoOutputText,
             runningCardIdsProvider = runningShellCommandCardIdsProvider,
@@ -135,9 +137,9 @@ internal fun createOsPageActionState(
             runFailedMessage = { throwable ->
                 context.getString(
                     R.string.os_shell_card_toast_run_failed,
-                    throwable.javaClass.simpleName
+                    throwable.javaClass.simpleName,
                 )
-            }
+            },
         )
     }
 
@@ -149,7 +151,7 @@ internal fun createOsPageActionState(
             setRefreshProgress = onRefreshProgressChange,
             ensureLoad = ensureLoad,
             noRefreshableCardText = noRefreshableCardText,
-            refreshCompletedText = refreshCompletedText
+            refreshCompletedText = refreshCompletedText,
         )
     }
 
@@ -159,6 +161,6 @@ internal fun createOsPageActionState(
         applyActivityCardVisibility = applyActivityCardVisibility,
         applyShellCommandCardVisibility = applyShellCommandCardVisibility,
         runShellCommandCard = runShellCommandCard,
-        refreshAllSections = refreshAllSections
+        refreshAllSections = refreshAllSections,
     )
 }

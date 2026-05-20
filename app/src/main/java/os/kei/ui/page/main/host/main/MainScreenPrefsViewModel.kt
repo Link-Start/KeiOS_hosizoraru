@@ -62,6 +62,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateReduceToastInterruptionEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setReduceToastInterruptionEnabled(value)
+        }
+    }
+
     fun updateLiquidSheetEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setLiquidSheetEnabled(value)

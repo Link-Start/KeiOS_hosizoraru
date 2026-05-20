@@ -1,8 +1,17 @@
 package os.kei.ui.page.main.os
 
 import android.content.Context
-import os.kei.core.ext.showToast
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.ext.showLiquidToastOnly
+import os.kei.core.ext.showToast
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
@@ -12,14 +21,6 @@ import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.shortcut.ensureEditorActivityShortcutDraft
 import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.shortcut.normalizeActivityShortcutConfig
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,7 +37,7 @@ internal suspend fun ensureOsSectionLoaded(
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
     updateSection: (SectionKind, (SectionState) -> SectionState) -> Unit,
-    onCachePersistedChanged: (Boolean) -> Unit
+    onCachePersistedChanged: (Boolean) -> Unit,
 ) {
     if (!visibleSectionKinds(visibleCardsProvider()).contains(section)) return
     val current = sectionStatesProvider()[section] ?: SectionState()
@@ -55,15 +56,16 @@ internal suspend fun ensureOsSectionLoaded(
                 inFlight?.cancel()
             }
             updateSection(section) { it.copy(loading = true, loadFailed = false) }
-            loadDeferred = scope.async {
-                buildSectionRowsAsync(
-                    section = section,
-                    context = context,
-                    shizukuStatus = shizukuStatus,
-                    shizukuApiUtils = shizukuApiUtils,
-                    forceRefresh = forceRefresh
-                )
-            }
+            loadDeferred =
+                scope.async {
+                    buildSectionRowsAsync(
+                        section = section,
+                        context = context,
+                        shizukuStatus = shizukuStatus,
+                        shizukuApiUtils = shizukuApiUtils,
+                        forceRefresh = forceRefresh,
+                    )
+                }
             sectionLoadDeferreds[section] = loadDeferred
             isLoadOwner = true
         }
@@ -77,10 +79,11 @@ internal suspend fun ensureOsSectionLoaded(
         updateSection(section) {
             it.copy(rows = fresh, loading = false, loadedFresh = true, loadFailed = false)
         }
-        val hasPersistedCache = withContext(AppDispatchers.osOperations) {
-            OsInfoCache.write(section, fresh)
-            OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
-        }
+        val hasPersistedCache =
+            withContext(AppDispatchers.osOperations) {
+                OsInfoCache.write(section, fresh)
+                OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
+            }
         onCachePersistedChanged(hasPersistedCache)
     } catch (throwable: Throwable) {
         if (throwable is CancellationException) throw throwable
@@ -110,21 +113,29 @@ internal suspend fun applyOsCardVisibility(
     updateSection: (SectionKind, (SectionState) -> SectionState) -> Unit,
     ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     visibleCardsProvider: () -> Set<OsSectionCard>,
-    onCachePersistedChanged: (Boolean) -> Unit
+    onCachePersistedChanged: (Boolean) -> Unit,
 ) {
-    val updated = currentVisibleCards.toMutableSet().apply {
-        if (visible) add(card) else remove(card)
-    }.toSet()
+    val updated =
+        currentVisibleCards
+            .toMutableSet()
+            .apply {
+                if (visible) add(card) else remove(card)
+            }.toSet()
     updateVisibleCards(updated)
     withContext(AppDispatchers.osOperations) { OsCardVisibilityStore.saveVisibleCards(updated) }
     when (card) {
         OsSectionCard.TOP_INFO -> {
             if (!visible) setTopInfoExpanded(false)
         }
+
         OsSectionCard.SHELL_RUNNER -> {
             if (!visible) setShellRunnerExpanded(false)
         }
-        OsSectionCard.GOOGLE_SYSTEM_SERVICE -> Unit
+
+        OsSectionCard.GOOGLE_SYSTEM_SERVICE -> {
+            Unit
+        }
+
         OsSectionCard.SYSTEM -> {
             if (!visible) {
                 setSystemTableExpanded(false)
@@ -134,6 +145,7 @@ internal suspend fun applyOsCardVisibility(
                 ensureLoad(SectionKind.SYSTEM, true)
             }
         }
+
         OsSectionCard.SECURE -> {
             if (!visible) {
                 setSecureTableExpanded(false)
@@ -143,6 +155,7 @@ internal suspend fun applyOsCardVisibility(
                 ensureLoad(SectionKind.SECURE, true)
             }
         }
+
         OsSectionCard.GLOBAL -> {
             if (!visible) {
                 setGlobalTableExpanded(false)
@@ -152,6 +165,7 @@ internal suspend fun applyOsCardVisibility(
                 ensureLoad(SectionKind.GLOBAL, true)
             }
         }
+
         OsSectionCard.ANDROID -> {
             if (!visible) {
                 setAndroidPropsExpanded(false)
@@ -161,6 +175,7 @@ internal suspend fun applyOsCardVisibility(
                 ensureLoad(SectionKind.ANDROID, true)
             }
         }
+
         OsSectionCard.JAVA -> {
             if (!visible) {
                 setJavaPropsExpanded(false)
@@ -170,6 +185,7 @@ internal suspend fun applyOsCardVisibility(
                 ensureLoad(SectionKind.JAVA, true)
             }
         }
+
         OsSectionCard.LINUX -> {
             if (!visible) {
                 setLinuxEnvExpanded(false)
@@ -180,9 +196,10 @@ internal suspend fun applyOsCardVisibility(
             }
         }
     }
-    val hasPersistedCache = withContext(AppDispatchers.osOperations) {
-        OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
-    }
+    val hasPersistedCache =
+        withContext(AppDispatchers.osOperations) {
+            OsInfoCache.readSnapshot(visibleSectionKinds(visibleCardsProvider())).hasPersistedCache
+        }
     onCachePersistedChanged(hasPersistedCache)
 }
 
@@ -191,16 +208,17 @@ internal suspend fun applyOsActivityCardVisibility(
     visible: Boolean,
     currentCards: List<OsActivityShortcutCard>,
     defaults: OsGoogleSystemServiceConfig,
-    updateCards: (List<OsActivityShortcutCard>) -> Unit
+    updateCards: (List<OsActivityShortcutCard>) -> Unit,
 ) {
-    val updatedCards = currentCards.map { card ->
-        if (card.id == cardId) card.copy(visible = visible) else card
-    }
+    val updatedCards =
+        currentCards.map { card ->
+            if (card.id == cardId) card.copy(visible = visible) else card
+        }
     updateCards(updatedCards)
     withContext(AppDispatchers.osOperations) {
         OsActivityShortcutCardStore.saveCards(
             cards = updatedCards,
-            defaults = defaults
+            defaults = defaults,
         )
     }
 }
@@ -208,11 +226,12 @@ internal suspend fun applyOsActivityCardVisibility(
 internal suspend fun applyOsShellCommandCardVisibility(
     cardId: String,
     visible: Boolean,
-    updateCards: (List<OsShellCommandCard>) -> Unit
+    updateCards: (List<OsShellCommandCard>) -> Unit,
 ) {
-    val updatedCards = withContext(AppDispatchers.osOperations) {
-        OsShellCommandCardStore.setCardVisible(cardId = cardId, visible = visible)
-    }
+    val updatedCards =
+        withContext(AppDispatchers.osOperations) {
+            OsShellCommandCardStore.setCardVisible(cardId = cardId, visible = visible)
+        }
     updateCards(updatedCards)
 }
 
@@ -221,12 +240,13 @@ internal suspend fun runOsShellCommandCard(
     context: Context,
     shizukuApiUtils: ShizukuApiUtils,
     shellCardCommandRequiredToast: String,
+    shellCardRunCompletedToast: String,
     shellRunNoPermissionToast: String,
     shellRunNoOutputText: String,
     runningCardIdsProvider: () -> Set<String>,
     updateRunningCardIds: (Set<String>) -> Unit,
     onCardsReload: () -> Unit,
-    runFailedMessage: (Throwable) -> String
+    runFailedMessage: (Throwable) -> String,
 ) {
     val command = card.command.trim()
     if (command.isBlank()) {
@@ -241,19 +261,21 @@ internal suspend fun runOsShellCommandCard(
     }
     updateRunningCardIds(runningCardIdsProvider() + card.id)
     try {
-        val output = withContext(AppDispatchers.osOperations) {
-            shizukuApiUtils.execCommandCancellable(
-                command = command,
-                timeoutMs = 300_000L
-            )
-        }.orEmpty().trim().ifBlank { shellRunNoOutputText }
+        val output =
+            withContext(AppDispatchers.osOperations) {
+                shizukuApiUtils.execCommandCancellable(
+                    command = command,
+                    timeoutMs = 300_000L,
+                )
+            }.orEmpty().trim().ifBlank { shellRunNoOutputText }
         withContext(AppDispatchers.osOperations) {
             OsShellCommandCardStore.updateCardRunResult(
                 cardId = card.id,
-                runOutput = output
+                runOutput = output,
             )
         }
         onCardsReload()
+        context.showLiquidToastOnly(shellCardRunCompletedToast)
     } catch (throwable: CancellationException) {
         throw throwable
     } catch (throwable: Throwable) {
@@ -270,7 +292,7 @@ internal suspend fun refreshAllOsSections(
     setRefreshProgress: (Float) -> Unit,
     ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     noRefreshableCardText: String,
-    refreshCompletedText: String
+    refreshCompletedText: String,
 ) {
     setRefreshing(true)
     setRefreshProgress(0f)
@@ -282,7 +304,7 @@ internal suspend fun refreshAllOsSections(
             setRefreshProgress((index + 1).toFloat() / sectionCount.toFloat())
         }
         context.showToast(
-            if (targets.isEmpty()) noRefreshableCardText else refreshCompletedText
+            if (targets.isEmpty()) noRefreshableCardText else refreshCompletedText,
         )
     } finally {
         setRefreshing(false)
@@ -301,7 +323,7 @@ internal suspend fun exportOsSectionCard(
     context: Context,
     shizukuStatus: String,
     launchExport: (fileName: String, payload: String) -> Unit,
-    onExportFailed: (Throwable) -> Unit
+    onExportFailed: (Throwable) -> Unit,
 ) {
     if (currentExportingCard != null) return
     updateExportingCard(card)
@@ -312,27 +334,31 @@ internal suspend fun exportOsSectionCard(
                     ensureLoad(section, false)
                 }
             }
+
             else -> {
                 sectionKindByCard(card)?.let { section ->
                     ensureLoad(section, false)
                 }
             }
         }
-        val rows = currentRowsForCard(
-            card = card,
-            sectionStates = sectionStatesProvider(),
-            googleSystemServiceConfig = activityShortcutCardsProvider().firstOrNull()?.config
-                ?: googleSystemServiceDefaults,
-            googleSystemServiceDefaults = googleSystemServiceDefaults,
-            context = context
-        )
+        val rows =
+            currentRowsForCard(
+                card = card,
+                sectionStates = sectionStatesProvider(),
+                googleSystemServiceConfig =
+                    activityShortcutCardsProvider().firstOrNull()?.config
+                        ?: googleSystemServiceDefaults,
+                googleSystemServiceDefaults = googleSystemServiceDefaults,
+                context = context,
+            )
         val generatedAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-        val payload = buildOsCardJson(
-            generatedAt = generatedAt,
-            shizukuStatus = shizukuStatus,
-            cardTitle = card.title(context),
-            rows = rows
-        )
+        val payload =
+            buildOsCardJson(
+                generatedAt = generatedAt,
+                shizukuStatus = shizukuStatus,
+                cardTitle = card.title(context),
+                rows = rows,
+            )
         val exportStamp = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.getDefault()).format(Date())
         val fileName = "keios-os-${exportSlug(card)}-$exportStamp.json"
         launchExport(fileName, payload)
@@ -354,7 +380,7 @@ internal suspend fun exportOsPageCard(
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     context: Context,
     shizukuStatus: String,
-    launchExport: (fileName: String, payload: String) -> Unit
+    launchExport: (fileName: String, payload: String) -> Unit,
 ) {
     exportOsSectionCard(
         card = card,
@@ -370,9 +396,9 @@ internal suspend fun exportOsPageCard(
         launchExport = launchExport,
         onExportFailed = { throwable ->
             context.showToast(
-                context.getString(R.string.common_export_failed_with_reason, throwable.javaClass.simpleName)
+                context.getString(R.string.common_export_failed_with_reason, throwable.javaClass.simpleName),
             )
-        }
+        },
     )
 }
 
@@ -381,12 +407,13 @@ internal fun openOsActivityShortcutCard(
     card: OsActivityShortcutCard,
     defaults: OsGoogleSystemServiceConfig,
     invalidTargetMessage: String,
-    openFailedMessage: (Throwable) -> String
+    openFailedMessage: (Throwable) -> String,
 ) {
-    val normalized = normalizeActivityShortcutConfig(
-        config = card.config,
-        defaults = defaults
-    )
+    val normalized =
+        normalizeActivityShortcutConfig(
+            config = card.config,
+            defaults = defaults,
+        )
     if (normalized.packageName.isBlank()) {
         context.showToast(invalidTargetMessage)
         return
@@ -395,7 +422,7 @@ internal fun openOsActivityShortcutCard(
         launchGoogleSystemServiceActivity(
             context = context,
             config = normalized,
-            defaults = defaults
+            defaults = defaults,
         )
     }.onFailure { error ->
         context.showToast(openFailedMessage(error))
@@ -409,7 +436,7 @@ internal fun beginEditingOsActivityShortcutCard(
     onEditingCardIdChange: (String?) -> Unit,
     onEditingBuiltInChange: (Boolean) -> Unit,
     onDraftChange: (OsGoogleSystemServiceConfig) -> Unit,
-    onShowEditorChange: (Boolean) -> Unit
+    onShowEditorChange: (Boolean) -> Unit,
 ) {
     onEditModeChange(OsActivityCardEditMode.Edit)
     onEditingCardIdChange(card.id)
@@ -418,9 +445,9 @@ internal fun beginEditingOsActivityShortcutCard(
         ensureEditorActivityShortcutDraft(
             normalizeActivityShortcutConfig(
                 config = card.config,
-                defaults = defaults
-            )
-        )
+                defaults = defaults,
+            ),
+        ),
     )
     onShowEditorChange(true)
 }

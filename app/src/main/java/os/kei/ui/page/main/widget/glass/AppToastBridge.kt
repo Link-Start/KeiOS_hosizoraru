@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import android.content.Context
@@ -68,18 +70,35 @@ object AppToastBridge {
         message: String,
         icon: ImageVector? = null,
         iconTint: Color = Color.Unspecified,
-        duration: LiquidToastDuration = LiquidToastDuration.Short
+        duration: LiquidToastDuration = LiquidToastDuration.Short,
     ) {
         val state = activeStateRef.get()
         if (state != null && UiPrefs.isLiquidToastEnabled()) {
             state.show(message = message, icon = icon, iconTint = iconTint, duration = duration)
         } else {
-            val toastDuration = if (duration == LiquidToastDuration.Long) {
-                Toast.LENGTH_LONG
-            } else {
-                Toast.LENGTH_SHORT
-            }
+            val toastDuration =
+                if (duration == LiquidToastDuration.Long) {
+                    Toast.LENGTH_LONG
+                } else {
+                    Toast.LENGTH_SHORT
+                }
             Toast.makeText(context, message, toastDuration).show()
+        }
+    }
+
+    /**
+     * Show a low-priority hint only through Liquid Toast. These hints stay silent when Liquid
+     * Toast is disabled or when the user reduces toast interruption.
+     */
+    fun showLiquidOnly(
+        message: String,
+        icon: ImageVector? = null,
+        iconTint: Color = Color.Unspecified,
+        duration: LiquidToastDuration = LiquidToastDuration.Short,
+    ) {
+        val state = activeStateRef.get() ?: return
+        if (UiPrefs.isLiquidToastEnabled() && !UiPrefs.isReduceToastInterruptionEnabled()) {
+            state.show(message = message, icon = icon, iconTint = iconTint, duration = duration)
         }
     }
 
@@ -91,14 +110,14 @@ object AppToastBridge {
         @StringRes stringRes: Int,
         icon: ImageVector? = null,
         iconTint: Color = Color.Unspecified,
-        duration: LiquidToastDuration = LiquidToastDuration.Short
+        duration: LiquidToastDuration = LiquidToastDuration.Short,
     ) {
         show(
             context = context,
             message = context.getString(stringRes),
             icon = icon,
             iconTint = iconTint,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -111,14 +130,14 @@ object AppToastBridge {
         vararg formatArgs: Any,
         icon: ImageVector? = null,
         iconTint: Color = Color.Unspecified,
-        duration: LiquidToastDuration = LiquidToastDuration.Short
+        duration: LiquidToastDuration = LiquidToastDuration.Short,
     ) {
         show(
             context = context,
             message = context.getString(stringRes, *formatArgs),
             icon = icon,
             iconTint = iconTint,
-            duration = duration
+            duration = duration,
         )
     }
 }

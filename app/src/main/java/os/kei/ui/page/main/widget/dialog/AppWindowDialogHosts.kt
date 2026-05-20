@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.dialog
 
 import androidx.compose.runtime.Composable
@@ -11,20 +13,22 @@ fun AppWindowDialogHost(
     show: Boolean,
     onDismissRequest: (() -> Unit)? = null,
     dismissible: Boolean = true,
-    content: @Composable () -> Unit
+    onDismissFinished: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
 ) {
-    if (!show) return
-
     // Route to Liquid Glass Dialog when the user preference is enabled.
     if (UiPrefs.isLiquidDialogEnabled()) {
         LiquidGlassDialog(
-            show = true,
+            show = show,
             onDismissRequest = onDismissRequest,
             dismissible = dismissible,
-            content = content
+            onDismissFinished = onDismissFinished,
+            content = content,
         )
         return
     }
+
+    if (!show) return
 
     Dialog(
         onDismissRequest = {
@@ -32,7 +36,7 @@ fun AppWindowDialogHost(
                 onDismissRequest?.invoke()
             }
         },
-        properties = platformDialogProperties()
+        properties = platformDialogProperties(),
     ) {
         RemovePlatformDialogDefaultEffects()
         content()

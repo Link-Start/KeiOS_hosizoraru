@@ -6,9 +6,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
-import os.kei.core.concurrency.AppDispatchers
 
 class UiPrefsRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
@@ -51,6 +51,12 @@ class UiPrefsRepository(
     suspend fun setLiquidToastEnabled(value: Boolean) {
         updateAndPersist({ copy(liquidToastEnabled = value) }) {
             UiPrefs.setLiquidToastEnabled(value)
+        }
+    }
+
+    suspend fun setReduceToastInterruptionEnabled(value: Boolean) {
+        updateAndPersist({ copy(reduceToastInterruptionEnabled = value) }) {
+            UiPrefs.setReduceToastInterruptionEnabled(value)
         }
     }
 

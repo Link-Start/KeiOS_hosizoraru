@@ -29,6 +29,7 @@ internal data class OsPageTextBundle(
     val shellCardSavedToast: String,
     val shellCardDeletedToast: String,
     val shellCardCommandRequiredToast: String,
+    val shellCardRunCompletedToast: String,
     val shellCardDeleteDialogTitle: String,
     val shellRunNoPermissionText: String,
     val shellRunNoOutputText: String,
@@ -69,6 +70,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
     val shellCardSavedToast = stringResource(R.string.os_shell_card_toast_saved)
     val shellCardDeletedToast = stringResource(R.string.os_shell_card_toast_deleted)
     val shellCardCommandRequiredToast = stringResource(R.string.os_shell_card_toast_command_required)
+    val shellCardRunCompletedToast = stringResource(R.string.os_shell_card_toast_run_completed)
     val shellCardDeleteDialogTitle = stringResource(R.string.os_shell_card_delete_dialog_title)
     val shellRunNoPermissionText = stringResource(R.string.os_shell_run_requires_permission)
     val shellRunNoOutputText = stringResource(R.string.os_shell_run_empty_output)
@@ -151,6 +153,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
         shellCardSavedToast,
         shellCardDeletedToast,
         shellCardCommandRequiredToast,
+        shellCardRunCompletedToast,
         shellCardDeleteDialogTitle,
         shellRunNoPermissionText,
         shellRunNoOutputText,
@@ -185,6 +188,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
             shellCardSavedToast = shellCardSavedToast,
             shellCardDeletedToast = shellCardDeletedToast,
             shellCardCommandRequiredToast = shellCardCommandRequiredToast,
+            shellCardRunCompletedToast = shellCardRunCompletedToast,
             shellCardDeleteDialogTitle = shellCardDeleteDialogTitle,
             shellRunNoPermissionText = shellRunNoPermissionText,
             shellRunNoOutputText = shellRunNoOutputText,

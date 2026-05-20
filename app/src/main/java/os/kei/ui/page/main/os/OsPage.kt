@@ -196,6 +196,7 @@ fun OsPage(
             onRefreshingChange = osPageViewModel::updateRefreshing,
             onRefreshProgressChange = osPageViewModel::updateRefreshProgress,
             shellCardCommandRequiredToast = textBundle.shellCardCommandRequiredToast,
+            shellCardRunCompletedToast = textBundle.shellCardRunCompletedToast,
             shellRunNoPermissionText = textBundle.shellRunNoPermissionText,
             shellRunNoOutputText = textBundle.shellRunNoOutputText,
             noRefreshableCardText = textBundle.noRefreshableCardText,

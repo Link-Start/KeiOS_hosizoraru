@@ -31,6 +31,7 @@ data class UiPrefsSnapshot(
     val textCopyCapabilityExpanded: Boolean,
     val cacheDiagnosticsEnabled: Boolean,
     val liquidToastEnabled: Boolean,
+    val reduceToastInterruptionEnabled: Boolean,
     val liquidSheetEnabled: Boolean,
     val liquidDialogEnabled: Boolean,
     val appThemeMode: AppThemeMode,
@@ -62,6 +63,7 @@ object UiPrefs {
     private const val KEY_TEXT_COPY_CAPABILITY_EXPANDED = "text_copy_capability_expanded"
     private const val KEY_CACHE_DIAGNOSTICS = "cache_diagnostics"
     private const val KEY_LIQUID_TOAST = "liquid_toast"
+    private const val KEY_REDUCE_TOAST_INTERRUPTION = "reduce_toast_interruption"
     private const val KEY_LIQUID_SHEET = "liquid_sheet"
     private const val KEY_LIQUID_DIALOG = "liquid_dialog"
     private const val KEY_THEME_MODE = "theme_mode"
@@ -287,6 +289,13 @@ object UiPrefs {
         kv().encode(KEY_LIQUID_TOAST, value)
     }
 
+    fun isReduceToastInterruptionEnabled(defaultValue: Boolean = false): Boolean =
+        kv().decodeBool(KEY_REDUCE_TOAST_INTERRUPTION, defaultValue)
+
+    fun setReduceToastInterruptionEnabled(value: Boolean) {
+        kv().encode(KEY_REDUCE_TOAST_INTERRUPTION, value)
+    }
+
     fun isLiquidSheetEnabled(defaultValue: Boolean = true): Boolean = kv().decodeBool(KEY_LIQUID_SHEET, defaultValue)
 
     fun setLiquidSheetEnabled(value: Boolean) {
@@ -352,6 +361,7 @@ object UiPrefs {
             textCopyCapabilityExpanded = false,
             cacheDiagnosticsEnabled = true,
             liquidToastEnabled = true,
+            reduceToastInterruptionEnabled = false,
             liquidSheetEnabled = true,
             liquidDialogEnabled = true,
             appThemeMode = appThemeMode,
@@ -388,6 +398,7 @@ object UiPrefs {
             textCopyCapabilityExpanded = store.decodeBool(KEY_TEXT_COPY_CAPABILITY_EXPANDED, false),
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
             liquidToastEnabled = store.decodeBool(KEY_LIQUID_TOAST, true),
+            reduceToastInterruptionEnabled = store.decodeBool(KEY_REDUCE_TOAST_INTERRUPTION, false),
             liquidSheetEnabled = store.decodeBool(KEY_LIQUID_SHEET, true),
             liquidDialogEnabled = store.decodeBool(KEY_LIQUID_DIALOG, true),
             appThemeMode = getAppThemeMode(),

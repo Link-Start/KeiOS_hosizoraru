@@ -575,6 +575,7 @@ internal fun SettingsComponentEffectsSection(
         state.liquidActionBarLayeredStyleEnabled ||
             state.liquidSwitchEnabled ||
             state.liquidToastEnabled ||
+            state.reduceToastInterruptionEnabled ||
             state.liquidSheetEnabled ||
             state.liquidDialogEnabled ||
             state.liquidBottomBarEnabled ||
@@ -623,6 +624,17 @@ internal fun SettingsComponentEffectsSection(
                 },
             checked = state.liquidToastEnabled,
             onCheckedChange = actions.onLiquidToastChanged,
+        )
+        SettingsToggleItem(
+            title = stringResource(R.string.settings_reduce_toast_interruption_title),
+            summary =
+                if (state.reduceToastInterruptionEnabled) {
+                    stringResource(R.string.settings_reduce_toast_interruption_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_reduce_toast_interruption_summary_disabled)
+                },
+            checked = state.reduceToastInterruptionEnabled,
+            onCheckedChange = actions.onReduceToastInterruptionChanged,
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_liquid_sheet_title),

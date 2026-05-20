@@ -6,7 +6,7 @@ import androidx.annotation.StringRes
 import os.kei.ui.page.main.widget.glass.AppToastBridge
 import os.kei.ui.page.main.widget.glass.LiquidToastDuration
 
-/**
+/*
  * Common extension functions to reduce boilerplate across the codebase.
  *
  * These replace repeated patterns like:
@@ -47,45 +47,94 @@ fun String?.trimOrEmpty(): String = this?.trim().orEmpty()
  * All 99+ call sites using `context.showToast(...)` automatically get Liquid Toast support
  * without any code changes.
  */
-fun Context.showToast(@StringRes stringRes: Int, duration: Int = Toast.LENGTH_SHORT) {
+fun Context.showToast(
+    @StringRes stringRes: Int,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
     AppToastBridge.show(
         context = this,
         message = getString(stringRes),
-        duration = if (duration == Toast.LENGTH_LONG) {
-            LiquidToastDuration.Long
-        } else {
-            LiquidToastDuration.Short
-        }
+        duration =
+            if (duration == Toast.LENGTH_LONG) {
+                LiquidToastDuration.Long
+            } else {
+                LiquidToastDuration.Short
+            },
     )
 }
 
 /**
  * Shows a toast with a formatted string resource, routing through [AppToastBridge].
  */
-fun Context.showToast(@StringRes stringRes: Int, vararg formatArgs: Any, duration: Int = Toast.LENGTH_SHORT) {
+fun Context.showToast(
+    @StringRes stringRes: Int,
+    vararg formatArgs: Any,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
     AppToastBridge.show(
         context = this,
         message = getString(stringRes, *formatArgs),
-        duration = if (duration == Toast.LENGTH_LONG) {
-            LiquidToastDuration.Long
-        } else {
-            LiquidToastDuration.Short
-        }
+        duration =
+            if (duration == Toast.LENGTH_LONG) {
+                LiquidToastDuration.Long
+            } else {
+                LiquidToastDuration.Short
+            },
     )
 }
 
 /**
  * Shows a toast with the given message string, routing through [AppToastBridge].
  */
-fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
+fun Context.showToast(
+    message: String,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
     AppToastBridge.show(
         context = this,
         message = message,
-        duration = if (duration == Toast.LENGTH_LONG) {
-            LiquidToastDuration.Long
-        } else {
-            LiquidToastDuration.Short
-        }
+        duration =
+            if (duration == Toast.LENGTH_LONG) {
+                LiquidToastDuration.Long
+            } else {
+                LiquidToastDuration.Short
+            },
+    )
+}
+
+/**
+ * Shows a low-priority hint only when Liquid Glass Toast is active.
+ */
+fun Context.showLiquidToastOnly(
+    @StringRes stringRes: Int,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
+    AppToastBridge.showLiquidOnly(
+        message = getString(stringRes),
+        duration =
+            if (duration == Toast.LENGTH_LONG) {
+                LiquidToastDuration.Long
+            } else {
+                LiquidToastDuration.Short
+            },
+    )
+}
+
+/**
+ * Shows a low-priority hint string only when Liquid Glass Toast is active.
+ */
+fun Context.showLiquidToastOnly(
+    message: String,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
+    AppToastBridge.showLiquidOnly(
+        message = message,
+        duration =
+            if (duration == Toast.LENGTH_LONG) {
+                LiquidToastDuration.Long
+            } else {
+                LiquidToastDuration.Short
+            },
     )
 }
 
@@ -94,6 +143,4 @@ fun Context.showToast(message: String, duration: Int = Toast.LENGTH_SHORT) {
  * otherwise the simple class name.
  * Replaces `.message.orEmpty().ifBlank { javaClass.simpleName }` (9+ occurrences).
  */
-fun Throwable.userMessage(): String {
-    return message?.trim()?.ifBlank { null } ?: javaClass.simpleName
-}
+fun Throwable.userMessage(): String = message?.trim()?.ifBlank { null } ?: javaClass.simpleName

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.animation.core.RepeatMode
@@ -48,83 +50,90 @@ fun LiquidLinearProgressBar(
     activeColor: Color = liquidProgressDefaultActiveColor(),
     inactiveColor: Color = liquidProgressDefaultInactiveColor(),
     height: Dp = 4.dp,
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     val progressBackdrop = rememberLayerBackdrop()
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .semantics {
-                contentDescriptionState?.let { this.contentDescription = it }
-                progressBarRangeInfo = ProgressBarRangeInfo(
-                    progress().coerceIn(valueRange),
-                    valueRange,
-                    steps = 0
-                )
-            },
-        contentAlignment = Alignment.CenterStart
-    ) {
-        val safeFraction = liquidProgressFraction(
-            value = progress(),
-            valueRange = valueRange
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(progressBackdrop)
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(ContinuousCapsule)
-                .background(inactiveColor)
-        )
-        Box(
-            modifier = Modifier
+        modifier =
+            modifier
+                .fillMaxWidth()
                 .height(height)
-                .layout { measurable, constraints ->
-                    val width = (constraints.maxWidth * safeFraction)
-                        .fastRoundToInt()
-                        .coerceIn(0, constraints.maxWidth)
-                    val placeable = measurable.measure(
-                        constraints.copy(
-                            minWidth = width,
-                            maxWidth = width
+                .semantics {
+                    contentDescriptionState?.let { this.contentDescription = it }
+                    progressBarRangeInfo =
+                        ProgressBarRangeInfo(
+                            progress().coerceIn(valueRange),
+                            valueRange,
+                            steps = 0,
                         )
-                    )
-                    layout(width, placeable.height) {
-                        placeable.place(0, 0)
-                    }
-                }
-                .clip(ContinuousCapsule)
-                .drawBackdrop(
-                    backdrop = progressBackdrop,
-                    shape = { ContinuousCapsule },
-                    effects = {
-                        vibrancy()
-                        blur(4.dp.toPx())
-                        lens(
-                            12.dp.toPx(),
-                            20.dp.toPx(),
-                            depthEffect = true
-                        )
-                    },
-                    highlight = {
-                        Highlight.Ambient.copy(alpha = 0.52f)
-                    },
-                    shadow = {
-                        Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.06f))
-                    },
-                    innerShadow = {
-                        InnerShadow(radius = 3.dp, alpha = 0.18f)
-                    },
-                    onDrawSurface = {
-                        drawRect(activeColor)
-                        drawRect(Color.White.copy(alpha = 0.10f))
-                    }
-                )
+                },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        val safeFraction =
+            liquidProgressFraction(
+                value = progress(),
+                valueRange = valueRange,
+            )
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(progressBackdrop),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .clip(ContinuousCapsule)
+                    .background(inactiveColor),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .height(height)
+                    .layout { measurable, constraints ->
+                        val width =
+                            (constraints.maxWidth * safeFraction)
+                                .fastRoundToInt()
+                                .coerceIn(0, constraints.maxWidth)
+                        val placeable =
+                            measurable.measure(
+                                constraints.copy(
+                                    minWidth = width,
+                                    maxWidth = width,
+                                ),
+                            )
+                        layout(width, placeable.height) {
+                            placeable.place(0, 0)
+                        }
+                    }.clip(ContinuousCapsule)
+                    .drawBackdrop(
+                        backdrop = progressBackdrop,
+                        shape = { ContinuousCapsule },
+                        effects = {
+                            vibrancy()
+                            blur(4.dp.toPx())
+                            lens(
+                                12.dp.toPx(),
+                                20.dp.toPx(),
+                                depthEffect = true,
+                            )
+                        },
+                        highlight = {
+                            Highlight.Ambient.copy(alpha = 0.52f)
+                        },
+                        shadow = {
+                            Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.06f))
+                        },
+                        innerShadow = {
+                            InnerShadow(radius = 3.dp, alpha = 0.18f)
+                        },
+                        onDrawSurface = {
+                            drawRect(activeColor)
+                            drawRect(Color.White.copy(alpha = 0.10f))
+                        },
+                    ),
         )
     }
 }
@@ -136,7 +145,7 @@ fun LiquidMusicProgressBar(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     activeColor: Color = liquidProgressDefaultActiveColor(),
     inactiveColor: Color = liquidProgressDefaultInactiveColor(),
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     LiquidLinearProgressBar(
         progress = progress,
@@ -145,7 +154,7 @@ fun LiquidMusicProgressBar(
         activeColor = activeColor,
         inactiveColor = inactiveColor,
         height = 3.dp,
-        contentDescription = contentDescription
+        contentDescription = contentDescription,
     )
 }
 
@@ -158,105 +167,130 @@ fun LiquidCircularProgressBar(
     inactiveColor: Color = liquidProgressDefaultInactiveColor(),
     size: Dp = 18.dp,
     strokeWidth: Dp = 2.dp,
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     val contentDescriptionState = remember(contentDescription) { contentDescription }
-    val infiniteTransition = rememberInfiniteTransition(label = "liquid-circular-progress")
-    val indeterminateRotation = infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "liquid-circular-progress-rotation"
-    )
-    val indeterminatePulse = infiniteTransition.animateFloat(
-        initialValue = 0.22f,
-        targetValue = 0.66f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "liquid-circular-progress-pulse"
-    )
     val progressProvider = progress
+    val indeterminateValues =
+        if (progressProvider == null) {
+            val infiniteTransition = rememberInfiniteTransition(label = "liquid-circular-progress")
+            val rotation =
+                infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 1100),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                    label = "liquid-circular-progress-rotation",
+                )
+            val pulse =
+                infiniteTransition.animateFloat(
+                    initialValue = 0.22f,
+                    targetValue = 0.66f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 900),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                    label = "liquid-circular-progress-pulse",
+                )
+            rotation.value to pulse.value
+        } else {
+            null
+        }
     Canvas(
-        modifier = modifier
-            .size(size)
-            .semantics {
-                contentDescriptionState?.let { this.contentDescription = it }
-                progressProvider?.let { provider ->
-                    progressBarRangeInfo = ProgressBarRangeInfo(
-                        provider().coerceIn(valueRange),
-                        valueRange,
-                        steps = 0
-                    )
-                }
-            }
+        modifier =
+            modifier
+                .size(size)
+                .semantics {
+                    contentDescriptionState?.let { this.contentDescription = it }
+                    if (progressProvider == null) {
+                        progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate
+                    } else {
+                        progressBarRangeInfo =
+                            ProgressBarRangeInfo(
+                                progressProvider().coerceIn(valueRange),
+                                valueRange,
+                                steps = 0,
+                            )
+                    }
+                },
     ) {
         val strokePx = strokeWidth.toPx()
         val arcInset = strokePx / 2f
-        val arcSize = androidx.compose.ui.geometry.Size(
-            width = this.size.width - strokePx,
-            height = this.size.height - strokePx
-        )
+        val arcSize =
+            androidx.compose.ui.geometry.Size(
+                width = this.size.width - strokePx,
+                height = this.size.height - strokePx,
+            )
         drawArc(
             color = inactiveColor,
             startAngle = 0f,
             sweepAngle = 360f,
             useCenter = false,
-            topLeft = androidx.compose.ui.geometry.Offset(arcInset, arcInset),
+            topLeft =
+                androidx.compose.ui.geometry
+                    .Offset(arcInset, arcInset),
             size = arcSize,
-            style = Stroke(width = strokePx, cap = StrokeCap.Round)
+            style = Stroke(width = strokePx, cap = StrokeCap.Round),
         )
-        val fraction = progressProvider?.let { provider ->
-            liquidProgressFraction(provider(), valueRange)
-        }
-        val startAngle = if (fraction == null) indeterminateRotation.value - 90f else -90f
-        val sweepAngle = if (fraction == null) {
-            72f + 148f * indeterminatePulse.value
-        } else {
-            (fraction * 360f).coerceIn(0f, 360f)
-        }
+        val fraction =
+            progressProvider?.let { provider ->
+                liquidProgressFraction(provider(), valueRange)
+            }
+        val startAngle =
+            if (fraction == null) {
+                (indeterminateValues?.first ?: 0f) - 90f
+            } else {
+                -90f
+            }
+        val sweepAngle =
+            if (fraction == null) {
+                72f + 148f * (indeterminateValues?.second ?: 0f)
+            } else {
+                (fraction * 360f).coerceIn(0f, 360f)
+            }
         drawArc(
             color = activeColor,
             startAngle = startAngle,
             sweepAngle = sweepAngle,
             useCenter = false,
-            topLeft = androidx.compose.ui.geometry.Offset(arcInset, arcInset),
+            topLeft =
+                androidx.compose.ui.geometry
+                    .Offset(arcInset, arcInset),
             size = arcSize,
-            style = Stroke(width = strokePx, cap = StrokeCap.Round)
+            style = Stroke(width = strokePx, cap = StrokeCap.Round),
         )
         drawArc(
             color = Color.White.copy(alpha = 0.18f),
             startAngle = startAngle,
             sweepAngle = sweepAngle.coerceAtMost(120f),
             useCenter = false,
-            topLeft = androidx.compose.ui.geometry.Offset(arcInset, arcInset),
+            topLeft =
+                androidx.compose.ui.geometry
+                    .Offset(arcInset, arcInset),
             size = arcSize,
-            style = Stroke(width = (strokePx * 0.46f).coerceAtLeast(1f), cap = StrokeCap.Round)
+            style = Stroke(width = (strokePx * 0.46f).coerceAtLeast(1f), cap = StrokeCap.Round),
         )
     }
 }
 
 @Composable
-private fun liquidProgressDefaultActiveColor(): Color {
-    return if (isSystemInDarkTheme()) Color(0xFF5DAEFF) else Color(0xFF0088FF)
-}
+private fun liquidProgressDefaultActiveColor(): Color = if (isSystemInDarkTheme()) Color(0xFF5DAEFF) else Color(0xFF0088FF)
 
 @Composable
-private fun liquidProgressDefaultInactiveColor(): Color {
-    return if (isSystemInDarkTheme()) {
+private fun liquidProgressDefaultInactiveColor(): Color =
+    if (isSystemInDarkTheme()) {
         Color.White.copy(alpha = 0.18f)
     } else {
         Color(0xFF1D1D1F).copy(alpha = 0.15f)
     }
-}
 
 private fun liquidProgressFraction(
     value: Float,
-    valueRange: ClosedFloatingPointRange<Float>
+    valueRange: ClosedFloatingPointRange<Float>,
 ): Float {
     val span = valueRange.endInclusive - valueRange.start
     if (span <= 0f) return 0f

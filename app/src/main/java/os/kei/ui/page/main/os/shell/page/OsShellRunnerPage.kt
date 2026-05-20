@@ -1,8 +1,9 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.shell.page
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.ext.showLiquidToastOnly
+import os.kei.core.ext.showToast
 import os.kei.ui.page.main.back.BackNavigationSource
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
@@ -79,7 +82,7 @@ fun OsShellRunnerPage(
     canRunShellCommand: Boolean,
     onRequestShizukuPermission: () -> Unit,
     onRunShellCommand: suspend (String, Long) -> String?,
-    onClose: () -> Unit
+    onClose: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -90,12 +93,12 @@ fun OsShellRunnerPage(
     LaunchedEffect(
         textBundle.commandStoppedText,
         textBundle.outputResultLabel,
-        textBundle.outputTimeLabel
+        textBundle.outputTimeLabel,
     ) {
         shellRunnerViewModel.loadPersistentState(
             commandStoppedText = textBundle.commandStoppedText,
             outputResultLabel = textBundle.outputResultLabel,
-            outputTimeLabel = textBundle.outputTimeLabel
+            outputTimeLabel = textBundle.outputTimeLabel,
         )
     }
     LaunchedEffect(shellRunnerViewModel) {
@@ -111,20 +114,22 @@ fun OsShellRunnerPage(
     val liquidActionBarLayeredStyleEnabled = chromePrefs.liquidActionBarLayeredStyleEnabled
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                shellRunnerViewModel.refreshChromePrefs()
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    shellRunnerViewModel.refreshChromePrefs()
+                }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val surfaceColor = MiuixTheme.colorScheme.surface
-    val topBarBackdrop = rememberLayerBackdrop {
-        drawRect(surfaceColor)
-        drawContent()
-    }
+    val topBarBackdrop =
+        rememberLayerBackdrop {
+            drawRect(surfaceColor)
+            drawContent()
+        }
 
     val commandInput = persistentState.commandInput
     val settings = persistentState.settings
@@ -160,13 +165,16 @@ fun OsShellRunnerPage(
 
     val latestOutputEntry = remember(outputEntries) { outputEntries.lastOrNull() }
 
-    suspend fun appendOutput(command: String, result: String) {
+    suspend fun appendOutput(
+        command: String,
+        result: String,
+    ) {
         shellRunnerViewModel.appendOutput(
             command = command,
             result = result,
             commandStoppedText = textBundle.commandStoppedText,
             outputResultLabel = textBundle.outputResultLabel,
-            outputTimeLabel = textBundle.outputTimeLabel
+            outputTimeLabel = textBundle.outputTimeLabel,
         )
     }
 
@@ -181,37 +189,38 @@ fun OsShellRunnerPage(
     fun executeCommand(command: String) {
         if (runningCommand) return
         val timeoutMs = settings.commandTimeoutSeconds.coerceAtLeast(5) * 1_000L
-        val job = scope.launch {
-            runningCommand = true
-            try {
-                val output = runCatching { onRunShellCommand(command, timeoutMs) }
-                    .getOrElse { throwable ->
-                        if (throwable is CancellationException) throw throwable
-                        throwable.localizedMessage?.takeIf { it.isNotBlank() }
-                            ?: throwable.javaClass.simpleName
-                    }
-                    ?.takeIf { it.isNotBlank() }
-                    ?: textBundle.noOutputText
-                appendOutput(command, output)
-                if (settings.completionToast) {
-                    context.showToast(textBundle.commandCompletedToast)
-                }
-            } catch (_: CancellationException) {
-                if (suppressStopOutputAppend) {
-                    suppressStopOutputAppend = false
-                } else {
-                    withContext(NonCancellable) {
-                        appendOutput(command, textBundle.commandStoppedText)
-                    }
+        val job =
+            scope.launch {
+                runningCommand = true
+                try {
+                    val output =
+                        runCatching { onRunShellCommand(command, timeoutMs) }
+                            .getOrElse { throwable ->
+                                if (throwable is CancellationException) throw throwable
+                                throwable.localizedMessage?.takeIf { it.isNotBlank() }
+                                    ?: throwable.javaClass.simpleName
+                            }?.takeIf { it.isNotBlank() }
+                            ?: textBundle.noOutputText
+                    appendOutput(command, output)
                     if (settings.completionToast) {
-                        context.showToast(textBundle.commandStoppedText)
+                        context.showLiquidToastOnly(textBundle.commandCompletedToast)
                     }
+                } catch (_: CancellationException) {
+                    if (suppressStopOutputAppend) {
+                        suppressStopOutputAppend = false
+                    } else {
+                        withContext(NonCancellable) {
+                            appendOutput(command, textBundle.commandStoppedText)
+                        }
+                        if (settings.completionToast) {
+                            context.showLiquidToastOnly(textBundle.commandStoppedText)
+                        }
+                    }
+                } finally {
+                    runningCommand = false
+                    runningJob = null
                 }
-            } finally {
-                runningCommand = false
-                runningJob = null
             }
-        }
         runningJob = job
     }
 
@@ -220,11 +229,13 @@ fun OsShellRunnerPage(
         val command = commandInput.trim()
         if (command.isBlank()) {
             shellRunnerViewModel.replaceOutputMessage(textBundle.emptyCommandText)
+            context.showToast(textBundle.emptyCommandText)
             return
         }
         if (!canRunShellCommand) {
             onRequestShizukuPermission()
             shellRunnerViewModel.replaceOutputMessage(textBundle.missingPermissionText)
+            context.showToast(textBundle.missingPermissionText)
             return
         }
         if (settings.dangerousCommandConfirm && isPotentiallyDangerousShellCommand(command)) {
@@ -263,33 +274,35 @@ fun OsShellRunnerPage(
         }
         val subtitle = saveSubtitleInput.trim()
         scope.launch {
-            val saved = shellRunnerViewModel.createShellCommandCard(
-                command = command,
-                title = title,
-                subtitle = subtitle,
-                runOutput = latestRunResultOutput
-            )
+            val saved =
+                shellRunnerViewModel.createShellCommandCard(
+                    command = command,
+                    title = title,
+                    subtitle = subtitle,
+                    runOutput = latestRunResultOutput,
+                )
             if (saved) {
                 showSaveSheet = false
-                context.showToast(textBundle.commandSavedToast)
+                context.showLiquidToastOnly(textBundle.commandSavedToast)
             }
         }
     }
 
     fun copyOutput() {
-        val output = resolveShellOutputCopyText(
-            settings = settings,
-            latestOutputEntry = latestOutputEntry,
-            latestRunResultOutput = latestRunResultOutput,
-            outputText = outputText
-        )
+        val output =
+            resolveShellOutputCopyText(
+                settings = settings,
+                latestOutputEntry = latestOutputEntry,
+                latestRunResultOutput = latestRunResultOutput,
+                outputText = outputText,
+            )
         if (output.isBlank()) {
             context.showToast(textBundle.outputCopyEmptyToast)
             return
         }
         val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
         clipboard.setPrimaryClip(ClipData.newPlainText("shell_output", output))
-        context.showToast(textBundle.outputCopiedToast)
+        context.showLiquidToastOnly(textBundle.outputCopiedToast)
     }
 
     fun formatOutput() {
@@ -302,21 +315,24 @@ fun OsShellRunnerPage(
             shellRunnerViewModel.formatOutput(
                 commandStoppedText = textBundle.commandStoppedText,
                 outputResultLabel = textBundle.outputResultLabel,
-                outputTimeLabel = textBundle.outputTimeLabel
+                outputTimeLabel = textBundle.outputTimeLabel,
             )
-            context.showToast(textBundle.outputFormattedToast)
+            context.showLiquidToastOnly(textBundle.outputFormattedToast)
         }
     }
 
-    fun clearOutput() {
+    fun clearOutput(showToast: Boolean = true) {
         shellRunnerViewModel.clearOutput()
+        if (showToast) {
+            context.showLiquidToastOnly(textBundle.outputClearedToast)
+        }
     }
 
     fun clearAllContent() {
         stopCommand(showStoppedOutput = false)
         shellRunnerViewModel.updateCommandInput("")
-        clearOutput()
-        context.showToast(textBundle.clearAllToast)
+        clearOutput(showToast = false)
+        context.showLiquidToastOnly(textBundle.clearAllToast)
     }
 
     fun applyCloseCleanup() {
@@ -324,13 +340,17 @@ fun OsShellRunnerPage(
         closeCleanupApplied = true
         stopCommand(showStoppedOutput = false)
         when (latestExitCleanupMode.value) {
-            OsShellRunnerExitCleanupMode.KeepAll -> Unit
+            OsShellRunnerExitCleanupMode.KeepAll -> {
+                Unit
+            }
+
             OsShellRunnerExitCleanupMode.ClearInput -> {
                 shellRunnerViewModel.updateCommandInput("")
                 shellRunnerViewModel.clearSavedInput()
             }
+
             OsShellRunnerExitCleanupMode.ClearOutput -> {
-                clearOutput()
+                clearOutput(showToast = false)
                 shellRunnerViewModel.clearSavedOutput()
             }
         }
@@ -355,20 +375,22 @@ fun OsShellRunnerPage(
         showOutputSettingsSheet = false
     }
     OsShellBackHandler(
-        enabled = !showSaveSheet &&
+        enabled =
+            !showSaveSheet &&
                 !showBehaviorSettingsSheet &&
                 !showOutputSettingsSheet &&
-                showDangerousCommandConfirm
+                showDangerousCommandConfirm,
     ) {
         showDangerousCommandConfirm = false
         pendingDangerousCommand = ""
     }
     KeiOSActivityRootBackHandler(
-        enabled = !showSaveSheet &&
+        enabled =
+            !showSaveSheet &&
                 !showBehaviorSettingsSheet &&
                 !showOutputSettingsSheet &&
                 !showDangerousCommandConfirm,
-        needsInterception = false
+        needsInterception = false,
     ) {
         requestClose()
     }
@@ -377,29 +399,30 @@ fun OsShellRunnerPage(
     val outputSettingsIcon = appLucideNotesIcon()
     val behaviorSettingsDescription = stringResource(R.string.os_shell_action_behavior_settings)
     val outputSettingsDescription = stringResource(R.string.os_shell_action_output_settings)
-    val actionItems = remember(
-        textBundle.clearAllActionDescription,
-        behaviorSettingsDescription,
-        outputSettingsDescription
-    ) {
-        listOf(
-            LiquidActionItem(
-                icon = clearAllIcon,
-                contentDescription = textBundle.clearAllActionDescription,
-                onClick = { clearAllContent() }
-            ),
-            LiquidActionItem(
-                icon = behaviorSettingsIcon,
-                contentDescription = behaviorSettingsDescription,
-                onClick = { showBehaviorSettingsSheet = true }
-            ),
-            LiquidActionItem(
-                icon = outputSettingsIcon,
-                contentDescription = outputSettingsDescription,
-                onClick = { showOutputSettingsSheet = true }
+    val actionItems =
+        remember(
+            textBundle.clearAllActionDescription,
+            behaviorSettingsDescription,
+            outputSettingsDescription,
+        ) {
+            listOf(
+                LiquidActionItem(
+                    icon = clearAllIcon,
+                    contentDescription = textBundle.clearAllActionDescription,
+                    onClick = { clearAllContent() },
+                ),
+                LiquidActionItem(
+                    icon = behaviorSettingsIcon,
+                    contentDescription = behaviorSettingsDescription,
+                    onClick = { showBehaviorSettingsSheet = true },
+                ),
+                LiquidActionItem(
+                    icon = outputSettingsIcon,
+                    contentDescription = outputSettingsDescription,
+                    onClick = { showOutputSettingsSheet = true },
+                ),
             )
-        )
-    }
+        }
 
     BindOsShellRunnerPersistEffects(
         persistInputEnabled = settings.persistInput,
@@ -407,12 +430,12 @@ fun OsShellRunnerPage(
         commandInput = commandInput,
         outputText = outputText,
         onPersistInput = shellRunnerViewModel::persistInput,
-        onPersistOutput = shellRunnerViewModel::persistOutput
+        onPersistOutput = shellRunnerViewModel::persistOutput,
     )
     BindOsShellRunnerAutoScrollEffect(
         outputText = outputText,
         outputScrollState = outputScrollState,
-        enabled = settings.autoScrollOutput
+        enabled = settings.autoScrollOutput,
     )
 
     AppPageScaffold(
@@ -427,25 +450,26 @@ fun OsShellRunnerPage(
                 contentDescription = stringResource(R.string.common_close),
                 onClick = { requestClose() },
                 backdrop = topBarBackdrop,
-                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled
+                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             )
         },
         actions = {
             LiquidActionBar(
                 backdrop = topBarBackdrop,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                items = actionItems
+                items = actionItems,
             )
-        }
+        },
     ) { innerPadding ->
         AppPageLazyColumn(
             innerPadding = innerPadding,
             state = pageListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .layerBackdrop(topBarBackdrop),
-            sectionSpacing = AppChromeTokens.pageSectionGap
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .layerBackdrop(topBarBackdrop),
+            sectionSpacing = AppChromeTokens.pageSectionGap,
         ) {
             item(key = "shell_input_card") {
                 OsShellRunnerInputCard(
@@ -460,7 +484,7 @@ fun OsShellRunnerPage(
                     focusRequestToken = startupFocusRequestToken,
                     onRunCommand = { runCommand() },
                     onStopCommand = { stopCommand() },
-                    onOpenSaveCommandSheet = { openSaveCommandSheet() }
+                    onOpenSaveCommandSheet = { openSaveCommandSheet() },
                 )
             }
             item(key = "shell_output_card") {
@@ -475,7 +499,7 @@ fun OsShellRunnerPage(
                     clearOutputActionDescription = textBundle.clearOutputActionDescription,
                     onFormatOutput = { formatOutput() },
                     onCopyOutput = { copyOutput() },
-                    onClearOutput = { clearOutput() }
+                    onClearOutput = { clearOutput() },
                 )
             }
         }
@@ -496,7 +520,8 @@ fun OsShellRunnerPage(
         onSaveTitleInputChange = { saveTitleInput = it },
         saveSubtitleInput = saveSubtitleInput,
         onSaveSubtitleInputChange = { saveSubtitleInput = it },
-        hasUnsavedChanges = saveTitleInput.trim().isNotBlank() ||
+        hasUnsavedChanges =
+            saveTitleInput.trim().isNotBlank() ||
                 saveSubtitleInput.trim() != saveInitialSubtitleInput.trim(),
         shellCommandAccentColor = shellCommandAccentColor,
         shellSuccessAccentColor = shellSuccessAccentColor,
@@ -509,7 +534,7 @@ fun OsShellRunnerPage(
                 saveInitialSubtitleInput = ""
             }
         },
-        onConfirm = { saveCommandToCard() }
+        onConfirm = { saveCommandToCard() },
     )
 
     CompositionLocalProvider(LocalLiquidControlsEnabled provides chromePrefs.liquidSwitchEnabled) {
@@ -541,7 +566,7 @@ fun OsShellRunnerPage(
                     limit = limit,
                     commandStoppedText = textBundle.commandStoppedText,
                     outputResultLabel = textBundle.outputResultLabel,
-                    outputTimeLabel = textBundle.outputTimeLabel
+                    outputTimeLabel = textBundle.outputTimeLabel,
                 )
             },
             onOutputSaveModeChange = { mode ->
@@ -549,23 +574,25 @@ fun OsShellRunnerPage(
                     mode = mode,
                     commandStoppedText = textBundle.commandStoppedText,
                     outputResultLabel = textBundle.outputResultLabel,
-                    outputTimeLabel = textBundle.outputTimeLabel
+                    outputTimeLabel = textBundle.outputTimeLabel,
                 )
             },
             onCopyModeChange = shellRunnerViewModel::updateCopyMode,
         )
     }
 
-    val dangerousCommandPreview = remember(pendingDangerousCommand) {
-        pendingDangerousCommand.trim().replace('\n', ' ').take(120)
-    }
+    val dangerousCommandPreview =
+        remember(pendingDangerousCommand) {
+            pendingDangerousCommand.trim().replace('\n', ' ').take(120)
+        }
     OsShellDangerousCommandConfirmDialog(
         show = showDangerousCommandConfirm,
         title = textBundle.dangerousCommandDialogTitle,
-        summary = stringResource(
-            R.string.os_shell_dangerous_command_dialog_summary,
-            dangerousCommandPreview.ifBlank { "-" }
-        ),
+        summary =
+            stringResource(
+                R.string.os_shell_dangerous_command_dialog_summary,
+                dangerousCommandPreview.ifBlank { "-" },
+            ),
         confirmText = textBundle.dangerousCommandConfirmText,
         onDismissRequest = {
             showDangerousCommandConfirm = false
@@ -578,7 +605,7 @@ fun OsShellRunnerPage(
             if (command.isNotBlank()) {
                 executeCommand(command)
             }
-        }
+        },
     )
 }
 
@@ -586,11 +613,11 @@ fun OsShellRunnerPage(
 private fun OsShellBackHandler(
     enabled: Boolean,
     source: BackNavigationSource = BackNavigationSource.Modal,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     KeiOSBackNavigationHandler(
         enabled = enabled,
-        source = source
+        source = source,
     ) {
         onBack()
     }
@@ -603,30 +630,30 @@ private fun OsShellDangerousCommandConfirmDialog(
     summary: String,
     confirmText: String,
     onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     WindowDialog(
         show = show,
         title = title,
         summary = summary,
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
     ) {
         Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             AppLiquidDialogActionButton(
                 modifier = Modifier.weight(1f),
                 text = stringResource(R.string.common_cancel),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
             AppLiquidDialogActionButton(
                 modifier = Modifier.weight(1f),
                 text = confirmText,
                 containerColor = MiuixTheme.colorScheme.error,
                 variant = GlassVariant.SheetDangerAction,
-                onClick = onConfirm
+                onClick = onConfirm,
             )
         }
     }

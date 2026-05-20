@@ -24,6 +24,7 @@ internal class MainScreenUiPrefsState(
     val liquidActionBarLayeredStyleEnabled: Boolean get() = snapshot.liquidActionBarLayeredStyleEnabled
     val liquidSwitchEnabled: Boolean get() = snapshot.liquidSwitchEnabled
     val liquidToastEnabled: Boolean get() = snapshot.liquidToastEnabled
+    val reduceToastInterruptionEnabled: Boolean get() = snapshot.reduceToastInterruptionEnabled
     val liquidSheetEnabled: Boolean get() = snapshot.liquidSheetEnabled
     val liquidDialogEnabled: Boolean get() = snapshot.liquidDialogEnabled
     val transitionAnimationsEnabled: Boolean get() = snapshot.transitionAnimationsEnabled
@@ -63,6 +64,10 @@ internal class MainScreenUiPrefsState(
 
     fun updateLiquidToastEnabled(value: Boolean) {
         viewModel.updateLiquidToastEnabled(value)
+    }
+
+    fun updateReduceToastInterruptionEnabled(value: Boolean) {
+        viewModel.updateReduceToastInterruptionEnabled(value)
     }
 
     fun updateLiquidSheetEnabled(value: Boolean) {

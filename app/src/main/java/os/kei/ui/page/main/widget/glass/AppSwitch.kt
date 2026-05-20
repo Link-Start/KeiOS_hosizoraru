@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,6 +14,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -22,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
@@ -51,6 +53,7 @@ import kotlinx.coroutines.flow.collectLatest
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import androidx.compose.ui.graphics.lerp as lerpColor
 
 val LocalLiquidControlsEnabled = staticCompositionLocalOf { true }
 
@@ -62,17 +65,18 @@ fun AppSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
-    val touchModifier = modifier
-        .requiredSize(width = 64.dp, height = 48.dp)
+    val touchModifier =
+        modifier
+            .requiredSize(width = 64.dp, height = 48.dp)
 
     if (!LocalLiquidControlsEnabled.current) {
         AppFallbackSwitchToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
             modifier = touchModifier,
-            enabled = enabled
+            enabled = enabled,
         )
         return
     }
@@ -80,7 +84,7 @@ fun AppSwitch(
     val switchBackdrop = rememberLayerBackdrop()
     Box(
         modifier = touchModifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Box(modifier = Modifier.matchParentSize().layerBackdrop(switchBackdrop))
         LiquidSwitchToggle(
@@ -89,11 +93,12 @@ fun AppSwitch(
             backdrop = switchBackdrop,
             enabled = enabled,
             modifier = Modifier.matchParentSize(),
-            checkedColor = if (androidx.compose.foundation.isSystemInDarkTheme()) {
-                AppLiquidSwitchDarkBlue
-            } else {
-                AppLiquidSwitchLightBlue
-            }
+            checkedColor =
+                if (androidx.compose.foundation.isSystemInDarkTheme()) {
+                    AppLiquidSwitchDarkBlue
+                } else {
+                    AppLiquidSwitchLightBlue
+                },
         )
     }
 }
@@ -103,67 +108,67 @@ private fun AppFallbackSwitchToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     val isLightTheme = !androidx.compose.foundation.isSystemInDarkTheme()
     val accentColor = if (isLightTheme) AppLiquidSwitchLightBlue else AppLiquidSwitchDarkBlue
-    val trackColor = if (isLightTheme) {
-        Color(0xFF787878).copy(alpha = 0.20f)
-    } else {
-        Color(0xFF787880).copy(alpha = 0.36f)
-    }
+    val trackColor =
+        if (isLightTheme) {
+            Color(0xFF787878).copy(alpha = 0.20f)
+        } else {
+            Color(0xFF787880).copy(alpha = 0.36f)
+        }
     val thumbColor = if (isLightTheme) Color.White else Color(0xFFE5E7EB)
     val progress by appMotionFloatState(
         targetValue = if (checked) 1f else 0f,
         durationMillis = 160,
-        label = "app_fallback_switch_progress"
+        label = "app_fallback_switch_progress",
     )
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(
-        modifier = modifier
-            .toggleable(
-                value = checked,
-                enabled = enabled,
-                role = Role.Switch,
-                interactionSource = interactionSource,
-                indication = null,
-                onValueChange = onCheckedChange
-            )
-            .graphicsLayer {
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-            }
-            .semantics {
-                role = Role.Switch
-                toggleableState = ToggleableState(checked)
-            },
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .toggleable(
+                    value = checked,
+                    enabled = enabled,
+                    role = Role.Switch,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onValueChange = onCheckedChange,
+                ).graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                }.semantics {
+                    role = Role.Switch
+                    toggleableState = ToggleableState(checked)
+                },
+        contentAlignment = Alignment.Center,
     ) {
         Box(
-            modifier = Modifier
-                .clip(Capsule())
-                .drawBehind {
-                    drawRect(lerpColor(trackColor, accentColor, progress))
-                }
-                .size(52.dp, 28.dp)
+            modifier =
+                Modifier
+                    .clip(Capsule())
+                    .drawBehind {
+                        drawRect(lerpColor(trackColor, accentColor, progress))
+                    }.size(52.dp, 28.dp),
         )
         Box(
-            modifier = Modifier
-                .graphicsLayer {
-                    val padding = 2.dp.toPx()
-                    val travel = 24.dp.toPx()
-                    translationX = if (isLtr) {
-                        lerp(-travel / 2f + padding, travel / 2f - padding, progress)
-                    } else {
-                        lerp(travel / 2f - padding, -travel / 2f + padding, progress)
-                    }
-                }
-                .clip(Capsule())
-                .drawBehind {
-                    drawRect(thumbColor)
-                }
-                .size(24.dp)
+            modifier =
+                Modifier
+                    .graphicsLayer {
+                        val padding = 2.dp.toPx()
+                        val travel = 24.dp.toPx()
+                        translationX =
+                            if (isLtr) {
+                                lerp(-travel / 2f + padding, travel / 2f - padding, progress)
+                            } else {
+                                lerp(travel / 2f - padding, -travel / 2f + padding, progress)
+                            }
+                    }.clip(Capsule())
+                    .drawBehind {
+                        drawRect(thumbColor)
+                    }.size(24.dp),
         )
     }
 }
@@ -175,74 +180,82 @@ private fun LiquidSwitchToggle(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    checkedColor: Color = Color.Unspecified
+    checkedColor: Color = Color.Unspecified,
 ) {
     val isLightTheme = !androidx.compose.foundation.isSystemInDarkTheme()
-    val accentColor = if (checkedColor.isSpecified) {
-        checkedColor
-    } else if (isLightTheme) {
-        Color(0xFF34C759)
-    } else {
-        Color(0xFF30D158)
-    }
-    val trackColor = if (isLightTheme) {
-        Color(0xFF787878).copy(alpha = 0.20f)
-    } else {
-        Color(0xFF787880).copy(alpha = 0.36f)
-    }
+    val accentColor =
+        if (checkedColor.isSpecified) {
+            checkedColor
+        } else if (isLightTheme) {
+            Color(0xFF34C759)
+        } else {
+            Color(0xFF30D158)
+        }
+    val trackColor =
+        if (isLightTheme) {
+            Color(0xFF787878).copy(alpha = 0.20f)
+        } else {
+            Color(0xFF787880).copy(alpha = 0.36f)
+        }
     val density = LocalDensity.current
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val touchSlop = LocalViewConfiguration.current.touchSlop
+    val currentOnSelect by rememberUpdatedState(onSelect)
+    val currentSelected by rememberUpdatedState(selected)
+    val currentEnabled by rememberUpdatedState(enabled)
     val dragWidth = with(density) { 20.dp.toPx() }
     val animationScope = rememberCoroutineScope()
     var didDrag by remember { mutableStateOf(false) }
     var dragDistancePx by remember { mutableFloatStateOf(0f) }
     var fraction by remember { mutableFloatStateOf(if (selected()) 1f else 0f) }
     val toggleInteractionSource = remember { MutableInteractionSource() }
-    val dampedDragAnimation = remember(animationScope, dragWidth, isLtr, touchSlop) {
-        DampedDragAnimation(
-            animationScope = animationScope,
-            initialValue = fraction,
-            valueRange = 0f..1f,
-            visibilityThreshold = 0.001f,
-            initialScale = 1f,
-            pressedScale = 1.5f,
-            consumeDragChanges = true,
-            onDragStarted = {
-                dragDistancePx = 0f
-            },
-            onDragStopped = {
-                if (!enabled) return@DampedDragAnimation
-                if (didDrag) {
-                    fraction = if (targetValue >= 0.5f) 1f else 0f
-                    onSelect(fraction == 1f)
-                } else {
-                    fraction = if (selected()) 1f else 0f
-                }
-                didDrag = false
-                dragDistancePx = 0f
-            },
-            onDrag = { _, dragAmount ->
-                if (!enabled) return@DampedDragAnimation
-                dragDistancePx += dragAmount.getDistance()
-                if (!didDrag) {
-                    didDrag = dragDistancePx > touchSlop
-                }
-                if (!didDrag) {
-                    return@DampedDragAnimation
-                }
-                val delta = dragAmount.x / dragWidth
-                fraction = if (isLtr) {
-                    (fraction + delta).fastCoerceIn(0f, 1f)
-                } else {
-                    (fraction - delta).fastCoerceIn(0f, 1f)
-                }
-            }
-        )
-    }
+    val dampedDragAnimation =
+        remember(animationScope, dragWidth, isLtr, touchSlop) {
+            DampedDragAnimation(
+                animationScope = animationScope,
+                initialValue = fraction,
+                valueRange = 0f..1f,
+                visibilityThreshold = 0.001f,
+                initialScale = 1f,
+                pressedScale = 1.5f,
+                consumeDragChanges = true,
+                onDragStarted = {
+                    dragDistancePx = 0f
+                },
+                onDragStopped = {
+                    if (!currentEnabled) return@DampedDragAnimation
+                    if (didDrag) {
+                        fraction = if (targetValue >= 0.5f) 1f else 0f
+                        currentOnSelect(fraction == 1f)
+                    } else {
+                        fraction = if (currentSelected()) 1f else 0f
+                    }
+                    didDrag = false
+                    dragDistancePx = 0f
+                },
+                onDrag = { _, dragAmount ->
+                    if (!currentEnabled) return@DampedDragAnimation
+                    dragDistancePx += dragAmount.getDistance()
+                    if (!didDrag) {
+                        didDrag = dragDistancePx > touchSlop
+                    }
+                    if (!didDrag) {
+                        return@DampedDragAnimation
+                    }
+                    val delta = dragAmount.x / dragWidth
+                    fraction =
+                        if (isLtr) {
+                            (fraction + delta).fastCoerceIn(0f, 1f)
+                        } else {
+                            (fraction - delta).fastCoerceIn(0f, 1f)
+                        }
+                },
+            )
+        }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(dampedDragAnimation, snapshotFlowManager) {
-        snapshotFlowManager.snapshotFlow { fraction }
+        snapshotFlowManager
+            .snapshotFlow { fraction }
             .collectLatest { value -> dampedDragAnimation.updateValue(value) }
     }
     val externalSelected = selected()
@@ -255,35 +268,35 @@ private fun LiquidSwitchToggle(
     }
 
     val trackBackdrop = rememberLayerBackdrop()
-    val combinedBackdrop = rememberCombinedBackdrop(
-        backdrop,
-        rememberBackdrop(trackBackdrop) { drawBackdrop ->
-            val progress = dampedDragAnimation.pressProgress
-            val scaleX = lerp(2f / 3f, 0.75f, progress)
-            val scaleY = lerp(0f, 0.75f, progress)
-            scale(scaleX, scaleY) { drawBackdrop() }
-        }
-    )
+    val combinedBackdrop =
+        rememberCombinedBackdrop(
+            backdrop,
+            rememberBackdrop(trackBackdrop) { drawBackdrop ->
+                val progress = dampedDragAnimation.pressProgress
+                val scaleX = lerp(2f / 3f, 0.75f, progress)
+                val scaleY = lerp(0f, 0.75f, progress)
+                scale(scaleX, scaleY) { drawBackdrop() }
+            },
+        )
 
     Box(
-        modifier = modifier
-            .then(if (enabled) dampedDragAnimation.modifier else Modifier)
-            .toggleable(
-                value = externalSelected,
-                enabled = enabled,
-                role = Role.Switch,
-                interactionSource = toggleInteractionSource,
-                indication = null,
-                onValueChange = onSelect
-            )
-            .graphicsLayer {
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-            }
-            .semantics {
-                role = Role.Switch
-                toggleableState = ToggleableState(externalSelected)
-            },
-        contentAlignment = Alignment.CenterStart
+        modifier =
+            modifier
+                .then(if (enabled) dampedDragAnimation.modifier else Modifier)
+                .toggleable(
+                    value = externalSelected,
+                    enabled = enabled,
+                    role = Role.Switch,
+                    interactionSource = toggleInteractionSource,
+                    indication = null,
+                    onValueChange = onSelect,
+                ).graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                }.semantics {
+                    role = Role.Switch
+                    toggleableState = ToggleableState(externalSelected)
+                },
+        contentAlignment = Alignment.CenterStart,
     ) {
         Box(
             Modifier
@@ -291,21 +304,20 @@ private fun LiquidSwitchToggle(
                 .clip(Capsule())
                 .drawBehind {
                     drawRect(lerpColor(trackColor, accentColor, dampedDragAnimation.value))
-                }
-                .size(64.dp, 28.dp)
+                }.size(64.dp, 28.dp),
         )
 
         Box(
             Modifier
                 .graphicsLayer {
                     val padding = 2.dp.toPx()
-                    translationX = if (isLtr) {
-                        lerp(padding, padding + dragWidth, dampedDragAnimation.value)
-                    } else {
-                        lerp(-padding, -(padding + dragWidth), dampedDragAnimation.value)
-                    }
-                }
-                .semantics { role = Role.Switch }
+                    translationX =
+                        if (isLtr) {
+                            lerp(padding, padding + dragWidth, dampedDragAnimation.value)
+                        } else {
+                            lerp(-padding, -(padding + dragWidth), dampedDragAnimation.value)
+                        }
+                }.semantics { role = Role.Switch }
                 .drawBackdrop(
                     backdrop = combinedBackdrop,
                     shape = { Capsule() },
@@ -316,7 +328,7 @@ private fun LiquidSwitchToggle(
                             12.dp.toPx() * progress,
                             22.dp.toPx() * progress,
                             chromaticAberration = true,
-                            depthEffect = true
+                            depthEffect = true,
                         )
                     },
                     highlight = {
@@ -324,13 +336,13 @@ private fun LiquidSwitchToggle(
                         Highlight.Ambient.copy(
                             width = Highlight.Ambient.width / 1.5f,
                             blurRadius = Highlight.Ambient.blurRadius / 1.5f,
-                            alpha = progress
+                            alpha = progress,
                         )
                     },
                     shadow = {
                         Shadow(
                             radius = 4.dp,
-                            color = Color.Black.copy(alpha = 0.05f)
+                            color = Color.Black.copy(alpha = 0.05f),
                         )
                     },
                     innerShadow = {
@@ -346,9 +358,8 @@ private fun LiquidSwitchToggle(
                     },
                     onDrawSurface = {
                         drawRect(Color.White.copy(alpha = 1f - dampedDragAnimation.pressProgress))
-                    }
-                )
-                .size(40.dp, 24.dp)
+                    },
+                ).size(40.dp, 24.dp),
         )
     }
 }

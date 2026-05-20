@@ -38,11 +38,12 @@ internal data class OsShellRunnerTextBundle(
     val outputFormatEmptyToast: String,
     val outputCopiedToast: String,
     val outputCopyEmptyToast: String,
+    val outputClearedToast: String,
     val clearAllToast: String,
     val inputHint: String,
     val commandCompletedToast: String,
     val dangerousCommandDialogTitle: String,
-    val dangerousCommandConfirmText: String
+    val dangerousCommandConfirmText: String,
 )
 
 @Composable
@@ -79,6 +80,7 @@ internal fun rememberOsShellRunnerTextBundle(): OsShellRunnerTextBundle {
     val outputFormatEmptyToast = stringResource(R.string.os_shell_toast_output_format_empty)
     val outputCopiedToast = stringResource(R.string.os_shell_toast_output_copied)
     val outputCopyEmptyToast = stringResource(R.string.os_shell_toast_output_empty)
+    val outputClearedToast = stringResource(R.string.os_shell_toast_output_cleared)
     val clearAllToast = stringResource(R.string.os_shell_toast_cleared_all)
     val inputHint = stringResource(R.string.os_shell_input_hint)
     val commandCompletedToast = stringResource(R.string.os_shell_toast_command_completed)
@@ -118,11 +120,12 @@ internal fun rememberOsShellRunnerTextBundle(): OsShellRunnerTextBundle {
         outputFormatEmptyToast,
         outputCopiedToast,
         outputCopyEmptyToast,
+        outputClearedToast,
         clearAllToast,
         inputHint,
         commandCompletedToast,
         dangerousCommandDialogTitle,
-        dangerousCommandConfirmText
+        dangerousCommandConfirmText,
     ) {
         OsShellRunnerTextBundle(
             shellPageTitle = shellPageTitle,
@@ -157,11 +160,12 @@ internal fun rememberOsShellRunnerTextBundle(): OsShellRunnerTextBundle {
             outputFormatEmptyToast = outputFormatEmptyToast,
             outputCopiedToast = outputCopiedToast,
             outputCopyEmptyToast = outputCopyEmptyToast,
+            outputClearedToast = outputClearedToast,
             clearAllToast = clearAllToast,
             inputHint = inputHint,
             commandCompletedToast = commandCompletedToast,
             dangerousCommandDialogTitle = dangerousCommandDialogTitle,
-            dangerousCommandConfirmText = dangerousCommandConfirmText
+            dangerousCommandConfirmText = dangerousCommandConfirmText,
         )
     }
 }

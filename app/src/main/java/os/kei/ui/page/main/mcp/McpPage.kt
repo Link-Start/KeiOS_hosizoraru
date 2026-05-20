@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
 import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -164,11 +165,11 @@ fun McpPage(
                 }
 
                 McpToggleServerResult.Started -> {
-                    context.showToast(R.string.mcp_toast_service_started)
+                    context.showLiquidToastOnly(R.string.mcp_toast_service_started)
                 }
 
                 McpToggleServerResult.Stopped -> {
-                    context.showToast(R.string.mcp_toast_service_stopped)
+                    context.showLiquidToastOnly(R.string.mcp_toast_service_stopped)
                 }
             }
         }
@@ -254,16 +255,16 @@ fun McpPage(
                     serverState = uiState,
                 )
             copyToClipboard(context, "mcp-config", json)
-            context.showToast(R.string.mcp_toast_config_copied)
+            context.showLiquidToastOnly(R.string.mcp_toast_config_copied)
         }
     }
     val copySkillResource: () -> Unit = {
         copyToClipboard(context, "mcp-skill-resource", SKILL_RESOURCE_URI)
-        context.showToast(resourceCopiedText)
+        context.showLiquidToastOnly(resourceCopiedText)
     }
     val copyWorkflowResource: () -> Unit = {
         copyToClipboard(context, "mcp-workflow-resource", WORKFLOW_RESOURCE_URI)
-        context.showToast(resourceCopiedText)
+        context.showLiquidToastOnly(resourceCopiedText)
     }
     val refreshMcpNow: () -> Unit = {
         if (!refreshRunning) {
@@ -271,7 +272,7 @@ fun McpPage(
                 refreshRunning = true
                 try {
                     mcpPageViewModel.refreshNow(mcpServerManager)
-                    context.showToast(R.string.common_refreshed)
+                    context.showLiquidToastOnly(R.string.common_refreshed)
                 } finally {
                     refreshRunning = false
                 }
@@ -375,7 +376,7 @@ fun McpPage(
                 mcpPageViewModel.finishLogsExport()
                 result
                     .onSuccess {
-                        context.showToast(R.string.mcp_toast_logs_exported)
+                        context.showLiquidToastOnly(R.string.mcp_toast_logs_exported)
                     }.onFailure {
                         context.showToast(
                             context.resolveString(

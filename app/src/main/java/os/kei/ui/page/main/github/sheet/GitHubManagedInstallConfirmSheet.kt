@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.core.ui.resource.resolveString
+import os.kei.feature.github.data.remote.isGitHubActionsApkArtifactArchive
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.ui.page.main.github.GitHubApkTrustReason
@@ -66,6 +67,7 @@ internal fun GitHubManagedInstallConfirmSheet(
     request ?: return
     val context = LocalContext.current
     val asset = request.asset
+    val canConfirmWithoutManifest = asset.isGitHubActionsApkArtifactArchive()
     val supportedAbis = remember { Build.SUPPORTED_ABIS?.toList().orEmpty() }
     val trustSignal = remember(asset, supportedAbis) {
         buildGitHubApkTrustSignal(asset, supportedAbis)
@@ -251,7 +253,7 @@ internal fun GitHubManagedInstallConfirmSheet(
                     leadingIcon = appLucidePackageIcon(),
                     containerColor = actionColor,
                     onClick = onConfirm,
-                    enabled = info != null && !loading && !running && error.isBlank()
+                    enabled = (info != null || canConfirmWithoutManifest) && !loading && !running
                 )
             }
         }

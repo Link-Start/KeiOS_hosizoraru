@@ -13,6 +13,7 @@ import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.data.remote.isGitHubActionsApkArtifactArchive
 import os.kei.feature.github.install.GitHubPageManagedInstallConfirmRegistry
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
@@ -109,7 +110,7 @@ internal class GitHubAssetActions(
         loadApkInfo(asset = asset, forceRefresh = forceRefresh)
     }
 
-    private fun openManagedInstallConfirm(
+    fun openManagedInstallConfirm(
         item: GitHubTrackedApp,
         asset: GitHubReleaseAssetFile
     ) {
@@ -211,7 +212,7 @@ internal class GitHubAssetActions(
             packageName = info?.packageName.orEmpty().ifBlank { item.packageName },
             versionName = info?.versionName.orEmpty(),
             targetDisplayName = item.appLabel.ifBlank { assetDisplayName(asset.name) },
-            confirmActionEnabled = info != null
+            confirmActionEnabled = info != null || asset.isGitHubActionsApkArtifactArchive()
         )
     }
 

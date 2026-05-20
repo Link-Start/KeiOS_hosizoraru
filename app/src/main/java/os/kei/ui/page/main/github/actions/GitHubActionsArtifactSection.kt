@@ -14,6 +14,7 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunMatch
+import os.kei.feature.github.model.supportsManagedApkInstall
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactFilter
 import os.kei.ui.page.main.github.page.GitHubPageState
@@ -113,6 +114,7 @@ internal fun GitHubActionsArtifactsSection(
                         artifactMatch = artifactMatch,
                         recommended = index == 0,
                         hasToken = canResolveArtifacts,
+                        managedInstallEnabled = artifactMatch.supportsManagedApkInstall(state.lookupConfig),
                         downloading = state.actionsArtifactDownloadLoadingId == artifactMatch.artifact.id,
                         sharing = state.actionsArtifactShareLoadingId == artifactMatch.artifact.id,
                         context = context,

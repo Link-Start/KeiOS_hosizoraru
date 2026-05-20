@@ -25,6 +25,7 @@ import os.kei.ui.page.main.github.asset.assetRelativeTimeLabel
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
@@ -39,6 +40,7 @@ internal fun GitHubActionsArtifactCard(
     artifactMatch: GitHubActionsArtifactMatch,
     recommended: Boolean,
     hasToken: Boolean,
+    managedInstallEnabled: Boolean,
     downloading: Boolean,
     sharing: Boolean,
     context: Context,
@@ -211,9 +213,14 @@ internal fun GitHubActionsArtifactCard(
                     completed = runMatch.traits.completed,
                     expired = artifact.expired,
                     downloading = downloading,
+                    managedInstallEnabled = managedInstallEnabled,
                     readyLabel = artifactSizeLabel
                 ),
-                leadingIcon = appLucideDownloadIcon(),
+                leadingIcon = if (managedInstallEnabled) {
+                    appLucidePackageIcon()
+                } else {
+                    appLucideDownloadIcon()
+                },
                 enabled = canDownload,
                 textColor = actionColor,
                 iconTint = actionColor,

@@ -129,6 +129,42 @@ internal class RemoteZipEntryReader(
         throw lastFailure ?: IllegalStateException("No readable nested ZIP entry was found")
     }
 
+    fun readSelectedNestedStoredZipEntries(
+        url: String,
+        apiToken: String = "",
+        selectOuterEntryNames: (List<String>) -> List<String>,
+        selectInnerEntryNames: (List<String>) -> List<String>
+    ): Result<RemoteZipSelectedEntries> = runCatching {
+        val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
+        val outerEntries = parseCentralDirectoryEntries(outerDirectory.bytes)
+        val entriesByName = outerEntries.associateBy { it.name }
+        val selectedNames = selectOuterEntryNames(outerEntries.map { it.name }).distinct()
+        check(selectedNames.isNotEmpty()) {
+            "No nested ZIP entry was selected"
+        }
+
+        var lastFailure: Throwable? = null
+        selectedNames.forEach { outerEntryName ->
+            val outerEntry = entriesByName[outerEntryName]
+            if (outerEntry == null) {
+                lastFailure = IllegalStateException("$outerEntryName was not found in ZIP")
+                return@forEach
+            }
+            runCatching {
+                readSelectedNestedStoredZipEntriesFromDirectory(
+                    outerDirectory = outerDirectory,
+                    outerEntry = outerEntry,
+                    apiToken = apiToken,
+                    selectInnerEntryNames = selectInnerEntryNames
+                )
+            }.fold(
+                onSuccess = { return@runCatching it },
+                onFailure = { error -> lastFailure = error }
+            )
+        }
+        throw lastFailure ?: IllegalStateException("No readable nested ZIP entry was found")
+    }
+
     private fun readNestedStoredZipEntryFromDirectory(
         outerDirectory: CentralDirectoryBytes,
         outerEntry: CentralDirectoryEntry,
@@ -171,6 +207,57 @@ internal class RemoteZipEntryReader(
             ZIP_METHOD_DEFLATED -> inflateRaw(compressedBytes, innerEntry.uncompressedSize)
             else -> error("Nested APK entry compression method is unsupported: ${innerEntry.compressionMethod}")
         }
+    }
+
+    private fun readSelectedNestedStoredZipEntriesFromDirectory(
+        outerDirectory: CentralDirectoryBytes,
+        outerEntry: CentralDirectoryEntry,
+        apiToken: String,
+        selectInnerEntryNames: (List<String>) -> List<String>
+    ): RemoteZipSelectedEntries {
+        check(outerEntry.compressionMethod == ZIP_METHOD_STORED) {
+            "Nested APK entry is compressed and cannot be scanned by range"
+        }
+        check(outerEntry.compressedSize == outerEntry.uncompressedSize) {
+            "Nested APK stored entry size is inconsistent"
+        }
+        check(outerEntry.uncompressedSize > 0L) {
+            "Nested APK entry is empty"
+        }
+
+        val outerEntryDataStart = fetchEntryDataStart(
+            url = outerDirectory.resolvedUrl,
+            entry = outerEntry,
+            baseOffset = 0L,
+            apiToken = apiToken
+        )
+        val nestedDirectory = fetchCentralDirectoryAtBase(
+            url = outerDirectory.resolvedUrl,
+            baseOffset = outerEntryDataStart,
+            zipSize = outerEntry.uncompressedSize,
+            apiToken = apiToken
+        )
+        val innerEntries = parseCentralDirectoryEntries(nestedDirectory.bytes)
+        val entriesByName = innerEntries.associateBy { it.name }
+        val entryNames = innerEntries.map { it.name }
+        val selectedNames = selectInnerEntryNames(entryNames).distinct()
+        check(selectedNames.isNotEmpty()) {
+            "No nested APK entry content was selected"
+        }
+        val selectedEntries = linkedMapOf<String, ByteArray>()
+        selectedNames.forEach { entryName ->
+            val entry = entriesByName[entryName] ?: error("$entryName was not found in nested APK")
+            selectedEntries[entryName] = readEntryFromDirectory(
+                directory = nestedDirectory,
+                entry = entry,
+                apiToken = apiToken,
+                baseOffset = outerEntryDataStart
+            )
+        }
+        return RemoteZipSelectedEntries(
+            entryNames = entryNames,
+            entries = selectedEntries
+        )
     }
 
     fun readEntry(

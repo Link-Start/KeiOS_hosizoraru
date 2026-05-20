@@ -45,6 +45,7 @@ import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
@@ -162,6 +163,7 @@ internal fun GitHubActionsArtifactDetailSheet(
     request: GitHubActionsArtifactDetailRequest?,
     backdrop: LayerBackdrop,
     hasToken: Boolean,
+    managedInstallEnabled: Boolean,
     downloading: Boolean,
     sharing: Boolean,
     onDismissRequest: () -> Unit,
@@ -291,8 +293,18 @@ internal fun GitHubActionsArtifactDetailSheet(
                     AppLiquidTextButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
-                        text = stringResource(R.string.common_download),
-                        leadingIcon = appLucideDownloadIcon(),
+                        text = stringResource(
+                            when {
+                                managedInstallEnabled && downloading -> R.string.github_apk_info_action_installing
+                                managedInstallEnabled -> R.string.github_page_install_status_install
+                                else -> R.string.common_download
+                            }
+                        ),
+                        leadingIcon = if (managedInstallEnabled) {
+                            appLucidePackageIcon()
+                        } else {
+                            appLucideDownloadIcon()
+                        },
                         enabled = canAct,
                         modifier = Modifier.weight(1f),
                         onClick = { onDownload(run.id, artifact.id) }

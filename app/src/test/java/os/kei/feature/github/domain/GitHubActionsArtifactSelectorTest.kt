@@ -6,7 +6,9 @@ import os.kei.feature.github.model.GitHubActionsArtifactKind
 import os.kei.feature.github.model.GitHubActionsArtifactPlatform
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubReleaseChannel
+import os.kei.feature.github.model.supportsManagedApkInstall
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -228,6 +230,21 @@ class GitHubActionsArtifactSelectorTest {
         assertEquals("app-universal-release.apk", matches.first().artifact.name)
         assertTrue(matches.first().reasons.contains("last-downloaded"))
         assertEquals(20L, matches.first().lastDownload?.artifactId)
+    }
+
+    @Test
+    fun `managed install takeover applies only to apk artifacts when enabled`() {
+        val apkMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
+            artifacts = listOf(artifact("app-arm64-v8a-release.apk"))
+        ).single()
+        val archiveMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
+            artifacts = listOf(artifact("app-universal-release.zip"))
+        ).single()
+        val enabledConfig = GitHubLookupConfig(appManagedShareInstallEnabled = true)
+
+        assertTrue(apkMatch.supportsManagedApkInstall(enabledConfig))
+        assertFalse(archiveMatch.supportsManagedApkInstall(enabledConfig))
+        assertFalse(apkMatch.supportsManagedApkInstall(GitHubLookupConfig()))
     }
 
     private fun artifact(

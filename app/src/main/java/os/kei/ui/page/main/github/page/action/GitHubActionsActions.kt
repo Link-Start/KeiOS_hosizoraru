@@ -25,7 +25,8 @@ import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class GitHubActionsActions(
-    private val env: GitHubPageActionEnvironment
+    private val env: GitHubPageActionEnvironment,
+    assetActions: GitHubAssetActions
 ) {
     private val context get() = env.context
     private val scope get() = env.scope
@@ -34,6 +35,7 @@ internal class GitHubActionsActions(
     private val artifactActions = GitHubActionsArtifactActions(
         env = env,
         actionsRepository = actionsRepository,
+        assetActions = assetActions,
         onDownloadHistoryChanged = { reselectActionsMatchesAfterHistoryChange() }
     )
 

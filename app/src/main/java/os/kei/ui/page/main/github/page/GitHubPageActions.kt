@@ -62,7 +62,7 @@ internal class GitHubPageActions(
     )
     private val assetActions = GitHubAssetActions(env)
     private val refreshActions = GitHubRefreshActions(env, assetActions)
-    private val actionsActions = GitHubActionsActions(env)
+    private val actionsActions = GitHubActionsActions(env, assetActions)
     private val configActions = GitHubConfigActions(env, refreshActions, assetActions)
     private val trackActions = GitHubTrackActions(env, refreshActions, assetActions)
 

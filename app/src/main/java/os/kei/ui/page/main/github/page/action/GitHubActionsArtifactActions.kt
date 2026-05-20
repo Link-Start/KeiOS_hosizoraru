@@ -7,8 +7,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.R
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
+import os.kei.feature.github.data.remote.GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
+import os.kei.feature.github.model.supportsManagedApkInstall
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
 import kotlin.time.Duration.Companion.milliseconds
@@ -19,6 +22,7 @@ private val invalidArchiveFileNameRegex = Regex("""[\\/:*?"<>|]+""")
 internal class GitHubActionsArtifactActions(
     private val env: GitHubPageActionEnvironment,
     private val actionsRepository: GitHubActionsPageRepository,
+    private val assetActions: GitHubAssetActions,
     private val onDownloadHistoryChanged: suspend () -> Unit
 ) {
     private val context get() = env.context
@@ -62,6 +66,13 @@ internal class GitHubActionsArtifactActions(
                 ).getOrThrow()
                 val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolution.downloadUrl)
                     ?: error(context.getString(R.string.github_actions_error_download_url_invalid))
+                if (artifactMatch.supportsManagedApkInstall(state.lookupConfig)) {
+                    assetActions.openManagedInstallConfirm(
+                        item = item,
+                        asset = artifact.toManagedInstallAsset(resolvedUrl)
+                    )
+                    return@launch
+                }
                 val fileName = artifactArchiveFileName(artifact)
                 val artifactPackageNameDeferred = if (artifactMatch.traits.androidLike) {
                     async {
@@ -270,5 +281,19 @@ internal class GitHubActionsArtifactActions(
             .replace(invalidArchiveFileNameRegex, "_")
             .ifBlank { "artifact-${artifact.id}" }
         return if (baseName.endsWith(".zip", ignoreCase = true)) baseName else "$baseName.zip"
+    }
+
+    private fun GitHubActionsArtifact.toManagedInstallAsset(
+        resolvedDownloadUrl: String
+    ): GitHubReleaseAssetFile {
+        return GitHubReleaseAssetFile(
+            name = name.ifBlank { "actions-artifact-$id.apk" },
+            downloadUrl = resolvedDownloadUrl,
+            sizeBytes = sizeBytes,
+            downloadCount = 0,
+            contentType = GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE,
+            updatedAtMillis = updatedAtMillis,
+            digest = digest
+        )
     }
 }

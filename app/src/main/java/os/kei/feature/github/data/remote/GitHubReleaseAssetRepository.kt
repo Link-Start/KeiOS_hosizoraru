@@ -27,6 +27,12 @@ data class GitHubReleaseAssetFile(
     val digest: String = ""
 )
 
+const val GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE =
+    "application/vnd.keios.github-actions.apk-artifact+zip"
+
+fun GitHubReleaseAssetFile.isGitHubActionsApkArtifactArchive(): Boolean =
+    contentType.equals(GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE, ignoreCase = true)
+
 data class GitHubReleaseAssetBundle(
     val releaseName: String,
     val tagName: String,

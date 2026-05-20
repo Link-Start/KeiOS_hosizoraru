@@ -123,13 +123,21 @@ internal fun artifactDownloadLabel(
     completed: Boolean,
     expired: Boolean,
     downloading: Boolean,
+    managedInstallEnabled: Boolean,
     readyLabel: String
 ): String {
     return when {
-        downloading -> stringResource(R.string.github_actions_action_downloading)
+        downloading -> stringResource(
+            if (managedInstallEnabled) {
+                R.string.github_apk_info_action_installing
+            } else {
+                R.string.github_actions_action_downloading
+            }
+        )
         !hasToken -> stringResource(R.string.github_actions_action_need_token)
         expired -> stringResource(R.string.github_actions_action_expired)
         !completed -> stringResource(R.string.github_actions_action_wait_run)
+        managedInstallEnabled -> stringResource(R.string.github_page_install_status_install)
         else -> readyLabel
     }
 }

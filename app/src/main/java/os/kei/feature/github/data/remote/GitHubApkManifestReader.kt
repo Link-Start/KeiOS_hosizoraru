@@ -20,22 +20,7 @@ internal class GitHubApkManifestReader(
         lookupConfig: GitHubLookupConfig
     ): Result<GitHubApkManifestInfo> = runCatching {
         val inspectPayload = readInspectPayload(asset, lookupConfig).getOrThrow()
-        val entries = inspectPayload.value
-        val manifest = entries.entries[ANDROID_MANIFEST_ENTRY]
-            ?: error("$ANDROID_MANIFEST_ENTRY was not found in APK")
-        val signatureEntry = entries.entryNames.firstSignatureEntry()
-        val signatureInfo = signatureEntry?.let { entryName ->
-            entries.entries[entryName]?.let { certBytes ->
-                parseSignatureInfo(entryName, certBytes).getOrNull()
-            }
-        }
-        AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest).getOrThrow()
-            .copy(
-            assetName = asset.name,
-            fetchSource = inspectPayload.source,
-            nativeAbis = entries.entryNames.extractNativeAbis(),
-            signatureInfo = signatureInfo
-        )
+        inspectPayload.toManifestInfo(asset.name).getOrThrow()
     }
 
     suspend fun readPackageName(
@@ -118,11 +103,30 @@ internal class GitHubApkManifestReader(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
     ): Result<ManifestReadPayload<RemoteZipSelectedEntries>> {
+        if (asset.isGitHubActionsApkArtifactArchive()) {
+            readNestedInspectPayload(asset, lookupConfig).getOrNull()?.let { nestedPayload ->
+                return Result.success(nestedPayload)
+            }
+        }
         return readWithFallback(asset, lookupConfig) { url, token ->
             zipEntryReader.readSelectedEntries(
                 url = url,
                 apiToken = token,
                 selectEntryNames = ::selectInspectEntryNames
+            )
+        }
+    }
+
+    private suspend fun readNestedInspectPayload(
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
+    ): Result<ManifestReadPayload<RemoteZipSelectedEntries>> {
+        return readWithFallback(asset, lookupConfig) { url, token ->
+            zipEntryReader.readSelectedNestedStoredZipEntries(
+                url = url,
+                apiToken = token,
+                selectOuterEntryNames = ::selectNestedApkEntryNames,
+                selectInnerEntryNames = ::selectInspectEntryNames
             )
         }
     }
@@ -152,6 +156,27 @@ internal class GitHubApkManifestReader(
             notAfterMillis = certificate.notAfter.time,
             sha256 = certBytes.sha256Hex()
         )
+    }
+
+    private fun ManifestReadPayload<RemoteZipSelectedEntries>.toManifestInfo(
+        assetName: String
+    ): Result<GitHubApkManifestInfo> = runCatching {
+        val entries = value
+        val manifest = entries.entries[ANDROID_MANIFEST_ENTRY]
+            ?: error("$ANDROID_MANIFEST_ENTRY was not found in APK")
+        val signatureEntry = entries.entryNames.firstSignatureEntry()
+        val signatureInfo = signatureEntry?.let { entryName ->
+            entries.entries[entryName]?.let { certBytes ->
+                parseSignatureInfo(entryName, certBytes).getOrNull()
+            }
+        }
+        AndroidBinaryXmlPackageNameParser.parseManifestInfo(manifest).getOrThrow()
+            .copy(
+                assetName = assetName,
+                fetchSource = source,
+                nativeAbis = entries.entryNames.extractNativeAbis(),
+                signatureInfo = signatureInfo
+            )
     }
 
     private suspend fun <T> readWithFallback(
@@ -240,6 +265,30 @@ internal class GitHubApkManifestReader(
         }
     }
 
+    private fun nestedApkEntryScore(entryName: String): Int {
+        val name = entryName.substringAfterLast('/').lowercase()
+        return when {
+            "universal" in name && "release" in name -> 0
+            "universal" in name -> 1
+            "release" in name -> 2
+            "debug" in name -> 4
+            else -> 3
+        }
+    }
+
+    private fun selectNestedApkEntryNames(entryNames: List<String>): List<String> {
+        return entryNames
+            .asSequence()
+            .filter { it.endsWith(".apk", ignoreCase = true) }
+            .sortedWith(
+                compareBy<String> { nestedApkEntryScore(it) }
+                    .thenBy { it.length }
+                    .thenBy { it.lowercase() }
+            )
+            .take(MAX_NESTED_APK_SCAN_CANDIDATES)
+            .toList()
+    }
+
     private data class ManifestReadPayload<T>(
         val value: T,
         val source: String
@@ -253,6 +302,7 @@ internal class GitHubApkManifestReader(
 
     companion object {
         private const val ANDROID_MANIFEST_ENTRY = "AndroidManifest.xml"
+        private const val MAX_NESTED_APK_SCAN_CANDIDATES = 4
     }
 }
 

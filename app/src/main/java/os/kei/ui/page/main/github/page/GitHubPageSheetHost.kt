@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.supportsManagedApkInstall
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -246,6 +247,9 @@ internal fun GitHubPageSheetHost(
         request = state.actionsArtifactDetailRequest,
         backdrop = backdrops.sheet,
         hasToken = state.lookupConfig.actionsArtifactDownloadsAvailable,
+        managedInstallEnabled = state.actionsArtifactDetailRequest
+            ?.artifactMatch
+            ?.supportsManagedApkInstall(state.lookupConfig) == true,
         downloading = state.actionsArtifactDetailRequest?.artifactMatch?.artifact?.id
             ?.let { state.actionsArtifactDownloadLoadingId == it } == true,
         sharing = state.actionsArtifactDetailRequest?.artifactMatch?.artifact?.id

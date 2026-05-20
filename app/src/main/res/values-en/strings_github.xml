@@ -139,7 +139,6 @@
     <string name="github_actions_action_open_run">Open run</string>
     <string name="github_actions_action_refresh_run">Refresh run</string>
     <string name="github_actions_action_load_more_runs">More runs (%1$d)</string>
-    <string name="github_actions_cd_copy_digest">Copy sha256</string>
     <string name="github_actions_cd_download_artifact">Download %1$s</string>
     <string name="github_actions_cd_share_artifact">Share %1$s</string>
     <string name="github_actions_share_artifact_title">Share Actions artifact link</string>
@@ -154,7 +153,6 @@
     <string name="github_actions_toast_download_failed">Actions artifact download failed: %1$s</string>
     <string name="github_actions_toast_share_started">Actions artifact link sent</string>
     <string name="github_actions_toast_share_failed">Actions artifact share failed: %1$s</string>
-    <string name="github_actions_toast_digest_copied">sha256 copied</string>
     <string name="github_actions_toast_refresh_run_failed">Run status refresh failed: %1$s</string>
     <string name="github_actions_error_download_url_invalid">Invalid download URL</string>
     <string name="github_actions_error_detail_token_required">A GitHub token is required to download Actions artifacts</string>

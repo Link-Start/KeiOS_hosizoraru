@@ -1,10 +1,6 @@
 package os.kei.ui.page.main.github.actions
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import os.kei.core.ext.showToast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,12 +17,13 @@ import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.assetRelativeTimeLabel
-import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
+import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -53,24 +50,20 @@ internal fun GitHubActionsArtifactCard(
     val busy = downloading || sharing
     val canDownload = hasToken && runMatch.traits.completed && !artifact.expired && !busy
     val canShare = hasToken && runMatch.traits.completed && !artifact.expired && !busy
-    val metadataTextColor = githubActionsSecondaryTextColor(isDark)
     val neutralPillColor = MiuixTheme.colorScheme.onBackgroundVariant
     val actionButtonSize = 48.dp
-    val copyDigestLabel = stringResource(R.string.github_actions_cd_copy_digest)
-    val digestCopiedToast = stringResource(R.string.github_actions_toast_digest_copied)
-    val hasDigest = artifact.digest.isNotBlank()
-    val digestText = if (hasDigest) {
-        shortArtifactDigest(artifact.digest)
-    } else {
-        formatReleaseUpdatedAtNoYear(artifact.updatedAtMillis)
-    }
-    val primaryActionDescription = stringResource(
+    val sizeLabel = formatAssetSize(artifact.sizeBytes, context)
+    val primaryActionLabel = stringResource(
         if (managedInstallEnabled) {
-            R.string.github_cd_install_asset
+            R.string.github_page_install_status_install
         } else {
-            R.string.github_actions_cd_download_artifact
-        },
-        artifact.name
+            R.string.common_download
+        }
+    )
+    val primaryActionText = stringResource(
+        R.string.github_actions_action_with_size,
+        primaryActionLabel,
+        sizeLabel
     )
     GitHubActionsSelectableCard(
         selected = false,
@@ -174,52 +167,25 @@ internal fun GitHubActionsArtifactCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (digestText != null) {
-                Text(
-                    text = digestText,
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(
-                            if (hasDigest) {
-                                Modifier.clickable(onClickLabel = copyDigestLabel) {
-                                    val clipboard =
-                                        context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                                as? ClipboardManager
-                                    clipboard?.setPrimaryClip(
-                                        ClipData.newPlainText("sha256", artifact.digest)
-                                    )
-                                    context.showToast(digestCopiedToast)
-                                }
-                            } else {
-                                Modifier
-                            }
-                        ),
-                    color = if (hasDigest) {
-                        MiuixTheme.colorScheme.primary
-                    } else {
-                        metadataTextColor
-                    },
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            } else {
-                Spacer(modifier = Modifier.weight(1f))
-            }
-            AppLiquidIconButton(
+            Spacer(modifier = Modifier.weight(1f))
+            AppLiquidTextButton(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
-                icon = if (managedInstallEnabled) {
+                text = primaryActionText,
+                leadingIcon = if (managedInstallEnabled) {
                     appLucidePackageIcon()
                 } else {
                     appLucideDownloadIcon()
                 },
-                contentDescription = primaryActionDescription,
                 enabled = canDownload,
+                textColor = if (canDownload) actionColor else neutralPillColor,
                 iconTint = if (canDownload) actionColor else neutralPillColor,
-                width = actionButtonSize,
-                height = actionButtonSize,
+                minHeight = actionButtonSize,
+                horizontalPadding = 12.dp,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+                textSize = AppTypographyTokens.Supporting.fontSize,
+                textLineHeight = AppTypographyTokens.Supporting.lineHeight,
                 onClick = onDownload,
             )
             AppLiquidIconButton(

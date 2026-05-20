@@ -4,17 +4,6 @@ import os.kei.feature.github.model.GitHubActionsArtifactKind
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import java.util.concurrent.ConcurrentHashMap
 
-internal fun shortArtifactDigest(digest: String): String {
-    val trimmed = digest.trim()
-    val prefix = trimmed.substringBefore(':', missingDelimiterValue = "")
-        .takeIf { ':' in trimmed }
-        ?.let { "$it:" }
-        .orEmpty()
-    val value = if (prefix.isBlank()) trimmed else trimmed.substringAfter(':')
-    if (value.length <= 18) return trimmed
-    return "$prefix${value.take(8)}...${value.takeLast(4)}"
-}
-
 internal fun artifactDisplayName(match: GitHubActionsArtifactMatch): String {
     val original = match.artifact.name.trim()
     val traits = match.traits

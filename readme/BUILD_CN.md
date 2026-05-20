@@ -5,9 +5,9 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.7.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.1)。
-- `master` 当前作为 v1.7.1 发布基线，覆盖 Liquid Glass sheet 稳定性、OS shell 快捷卡、
-  低打扰 Liquid Toast 提示和组件细节精修。
+- 当前公开标签基线为 [KeiOS v1.7.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.2)。
+- `master` 当前作为 v1.7.2 发布基线，覆盖 GitHub 安装路由、单项目更新间隔、
+  设置结构整理和 1.7.x 稳定性收口。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -77,7 +77,7 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.7.1 发布门禁
+### v1.7.2 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
@@ -90,11 +90,12 @@ git diff --check
 
 本次发布建议重点复查：
 
-- Liquid Glass sheet 在保存、编辑和返回手势后的关闭状态。
-- 状态栏通知图标数量、隐藏手势提示线等 OS 内置 shell card。
-- 只走 Liquid Toast 的成功类轻提示，以及减少轻提示打扰开关。
+- GitHub Release APK 与 Actions artifacts 的托管安装链路。
+- 安装确认、安装完成相关通知 / 超级岛动作。
+- 新增 / 编辑追踪 sheet 的单项目“检查更新”间隔 dropdown。
+- 设置页权限 / 外观 / 效果分组。
 - Release APK 签名、版本元数据和启动。
-- GitHub Release 发布文案可直接参考 [Release Notes v1.7.1](RELEASE_V1.7.1.md)。
+- GitHub Release 发布文案可直接参考 [Release Notes v1.7.2](RELEASE_V1.7.2.md)。
 
 ### 截图基线
 

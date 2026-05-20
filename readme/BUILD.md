@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.7.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.1).
-- `master` is the v1.7.1 release baseline for Liquid Glass sheet stability, OS shell shortcuts,
-  low-interruption Liquid Toast hints, and component polish.
+  is [KeiOS v1.7.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.2).
+- `master` is the v1.7.2 release baseline for GitHub install routing, per-project update
+  intervals, settings organization, and 1.7.x stability cleanup.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -82,7 +82,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.7.1 Release Gate
+### v1.7.2 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -95,11 +95,12 @@ git diff --check
 
 Recommended focused checks for this release:
 
-- Liquid Glass sheet close after save/edit and after back gestures.
-- Built-in OS shell cards for status-bar icon count and gesture-line hiding.
-- Liquid-only success hints and the reduce-toast-interruption setting.
+- GitHub managed install from release APKs and Actions artifacts.
+- Super Island / notification actions for install confirmation and completion.
+- Per-project GitHub update-check interval dropdown in add/edit tracking sheets.
+- Settings permissions / appearance / effects grouping.
 - Release APK signing, version metadata, and startup.
-- GitHub release upload notes copied from [Release Notes v1.7.1](RELEASE_V1.7.1.md).
+- GitHub release upload notes copied from [Release Notes v1.7.2](RELEASE_V1.7.2.md).
 
 ### Screenshot Baseline
 

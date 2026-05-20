@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.7.1`                                             |
+| Latest stable tag | `v1.7.2`                                             |
 
 ## Quick Links
 
@@ -84,18 +84,17 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.7.1 Highlights
+## v1.7.2 Highlights
 
-- Liquid Glass sheets received another closing-path cleanup, including smoother save/edit dismissal
-  and more stable overlay state after back gestures.
-- OS tools add built-in shell cards for status-bar notification icon count and gesture-line hiding,
-  plus the newer fullscreen settings shortcut metadata.
-- Shell and MCP success hints now use low-interruption Liquid Glass Toast only, while failures and
-  permission prompts stay visible.
-- Settings adds a `Reduce toast interruption` toggle for users who want completion/copy/clear hints
-  to stay silent.
-- The Liquid Glass component layer received focused polish for dialogs, switches, checkboxes,
-  progress bars, and toast presentation.
+- GitHub managed install is smoother across release APKs and Actions artifacts, with cleaner
+  Super Island / notification routing and fewer app-bounce interruptions.
+- GitHub tracking now supports per-project update-check intervals, so noisy or important projects
+  can refresh independently from the global schedule.
+- Actions artifact cards are easier to scan, and install/share actions use compact icon controls.
+- Settings organization is clearer: notification-related switches move into permissions, while
+  appearance and effect controls are separated.
+- The GitHub backend, core prefs/system boundaries, dependencies, and release tests received a
+  stability cleanup for the 1.7.x line.
 
 Read the full feature tour:
 
@@ -105,7 +104,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.7.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.1).
+- Current stable tag: [v1.7.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.2).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
   Compose `1.11.1`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
@@ -114,7 +113,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.7.1](readme/RELEASE_V1.7.1.md)
+- [Release Notes v1.7.2](readme/RELEASE_V1.7.2.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

@@ -50,6 +50,7 @@ internal fun OsPageOverlaySheets(
     shellCommandCardHasUnsavedChanges: Boolean,
     onDeleteShellCommandCard: () -> Unit,
     onDismissShellCommandCardEditor: () -> Unit,
+    onDismissShellCommandCardEditorFinished: () -> Unit,
     onSaveShellCommandCard: () -> Unit,
     showActivityShortcutEditor: Boolean,
     activityEditorTitle: String,
@@ -61,6 +62,7 @@ internal fun OsPageOverlaySheets(
     activityShortcutHasUnsavedChanges: Boolean,
     onDeleteActivityCard: () -> Unit,
     onDismissActivityEditor: () -> Unit,
+    onDismissActivityEditorFinished: () -> Unit,
     onSaveActivityEditor: () -> Unit,
     showActivitySuggestionSheet: Boolean,
     suggestionTarget: ShortcutSuggestionField,
@@ -140,6 +142,7 @@ internal fun OsPageOverlaySheets(
         hasUnsavedChanges = shellCommandCardHasUnsavedChanges,
         onDelete = onDeleteShellCommandCard,
         onDismissRequest = onDismissShellCommandCardEditor,
+        onDismissFinished = onDismissShellCommandCardEditorFinished,
         onSave = onSaveShellCommandCard
     )
     OsActivityShortcutEditorHost(
@@ -154,6 +157,7 @@ internal fun OsPageOverlaySheets(
         hasUnsavedChanges = activityShortcutHasUnsavedChanges,
         onDeleteEditor = onDeleteActivityCard,
         onDismissEditor = onDismissActivityEditor,
+        onDismissEditorFinished = onDismissActivityEditorFinished,
         onSaveEditor = onSaveActivityEditor,
         showSuggestionSheet = showActivitySuggestionSheet,
         suggestionTarget = suggestionTarget,

@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.system.ShizukuApiUtils
@@ -95,9 +96,27 @@ fun OsPage(
     val shellCommandCards = persistentState.shellCommandCards
     val shellCommandCardExpanded = remember { mutableStateMapOf<String, Boolean>() }
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
+    var overlaySearchSuppressed by remember { mutableStateOf(false) }
     val surfaceColor = uiContext.surfaceColor
     val backdrops = uiContext.backdrops
     val topBarMaterialBackdrop = uiContext.topBarMaterialBackdrop
+    val overlaySheetVisible =
+        overlayState.showCardManager ||
+            overlayState.showActivityVisibilityManager ||
+            overlayState.showShellCardVisibilityManager ||
+            overlayState.showShellCommandCardEditor ||
+            overlayState.showActivityShortcutEditor ||
+            overlayState.showActivitySuggestionSheet ||
+            overlayState.pendingCardImportPreview != null
+    LaunchedEffect(overlaySheetVisible) {
+        if (overlaySheetVisible) {
+            overlaySearchSuppressed = true
+            searchExpanded = false
+        } else {
+            delay(360)
+            overlaySearchSuppressed = false
+        }
+    }
     DisposableEffect(Unit) {
         onDispose {
             onActionBarInteractingChanged(false)
@@ -423,11 +442,15 @@ fun OsPage(
                         !overlayState.showShellCardVisibilityManager,
                 onOpenAddActivityShortcutCard = mainListActions.onOpenAddActivityShortcutCard,
                 bottomBarVisible = runtime.bottomBarVisible,
-                searchExpanded = enableSearchBar && searchExpanded,
+                searchExpanded = enableSearchBar && searchExpanded && !overlaySearchSuppressed,
                 queryInput = queryInput,
-                onQueryInputChange = osPageViewModel::updateQueryInput,
+                onQueryInputChange = { value ->
+                    if (!overlaySearchSuppressed) {
+                        osPageViewModel.updateQueryInput(value)
+                    }
+                },
                 onSearchExpandedChange = { expanded ->
-                    searchExpanded = enableSearchBar && expanded
+                    searchExpanded = enableSearchBar && expanded && !overlaySearchSuppressed
                 },
                 searchLabel = textBundle.searchLabel,
                 floatingDockSide = runtime.floatingDockSide,

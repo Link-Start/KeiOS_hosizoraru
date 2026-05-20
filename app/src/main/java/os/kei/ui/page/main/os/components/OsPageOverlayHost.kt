@@ -138,6 +138,7 @@ internal fun OsPageOverlayHost(
         shellCommandCardHasUnsavedChanges = shellCommandCardHasUnsavedChanges,
         onDeleteShellCommandCard = editorActions.onDeleteShellCommandCard,
         onDismissShellCommandCardEditor = editorActions.onDismissShellCommandCardEditor,
+        onDismissShellCommandCardEditorFinished = editorActions.onDismissShellCommandCardEditorFinished,
         onSaveShellCommandCard = editorActions.onSaveShellCommandCard,
         showActivityShortcutEditor = overlayState.showActivityShortcutEditor,
         activityEditorTitle = if (overlayState.activityCardEditMode == OsActivityCardEditMode.Add) {
@@ -154,6 +155,7 @@ internal fun OsPageOverlayHost(
         activityShortcutHasUnsavedChanges = activityShortcutHasUnsavedChanges,
         onDeleteActivityCard = editorActions.onDeleteActivityCard,
         onDismissActivityEditor = editorActions.onDismissActivityEditor,
+        onDismissActivityEditorFinished = editorActions.onDismissActivityEditorFinished,
         onSaveActivityEditor = editorActions.onSaveActivityEditor,
         showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
         suggestionTarget = overlayState.googleSystemServiceSuggestionTarget,

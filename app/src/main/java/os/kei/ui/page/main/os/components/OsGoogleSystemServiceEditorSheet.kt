@@ -50,6 +50,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
     hasUnsavedChanges: Boolean,
     onDelete: () -> Unit,
     onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
     onSave: () -> Unit
 ) {
     val intentExtraController = rememberOsGoogleSystemServiceIntentExtraController(
@@ -64,6 +65,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
         show = show,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
+        onDismissFinished = onDismissFinished,
         allowDismiss = dismissHandler.allowDismiss,
         onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {

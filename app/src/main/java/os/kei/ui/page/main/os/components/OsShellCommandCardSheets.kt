@@ -355,6 +355,7 @@ internal fun OsShellCommandCardEditorSheet(
     hasUnsavedChanges: Boolean,
     onDelete: () -> Unit,
     onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
     onSave: () -> Unit,
 ) {
     val dismissHandler =
@@ -366,6 +367,7 @@ internal fun OsShellCommandCardEditorSheet(
         show = show,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
+        onDismissFinished = onDismissFinished,
         allowDismiss = dismissHandler.allowDismiss,
         onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {

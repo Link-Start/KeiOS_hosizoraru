@@ -21,6 +21,7 @@ internal fun OsActivityShortcutEditorHost(
     hasUnsavedChanges: Boolean,
     onDeleteEditor: () -> Unit,
     onDismissEditor: () -> Unit,
+    onDismissEditorFinished: () -> Unit,
     onSaveEditor: () -> Unit,
     showSuggestionSheet: Boolean,
     suggestionTarget: ShortcutSuggestionField,
@@ -52,6 +53,7 @@ internal fun OsActivityShortcutEditorHost(
         hasUnsavedChanges = hasUnsavedChanges,
         onDelete = onDeleteEditor,
         onDismissRequest = onDismissEditor,
+        onDismissFinished = onDismissEditorFinished,
         onSave = onSaveEditor
     )
 

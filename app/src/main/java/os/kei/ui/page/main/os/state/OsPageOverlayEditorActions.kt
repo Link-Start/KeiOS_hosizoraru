@@ -2,13 +2,14 @@ package os.kei.ui.page.main.os.state
 
 import android.content.Context
 import android.content.Intent
-import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
+import os.kei.ui.page.main.os.shell.createDefaultShellCommandCardDraft
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
@@ -16,16 +17,19 @@ import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionItem
 import os.kei.ui.page.main.os.shortcut.applyGoogleSystemServiceSuggestion
 import os.kei.ui.page.main.os.shortcut.applyShortcutImplicitDefaults
+import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.os.shortcut.newOsActivityShortcutCardId
 import os.kei.ui.page.main.os.shortcut.normalizeActivityShortcutConfig
 
 internal data class OsPageOverlayEditorActions(
     val onDeleteShellCommandCard: () -> Unit,
     val onDismissShellCommandCardEditor: () -> Unit,
+    val onDismissShellCommandCardEditorFinished: () -> Unit,
     val onSaveShellCommandCard: () -> Unit,
     val onOpenActivitySuggestionSheet: (ShortcutSuggestionField) -> Unit,
     val onDeleteActivityCard: () -> Unit,
     val onDismissActivityEditor: () -> Unit,
+    val onDismissActivityEditorFinished: () -> Unit,
     val onSaveActivityEditor: () -> Unit,
     val onApplySuggestion: (ShortcutSuggestionItem) -> Unit,
     val onApplyExplicitActionRecommendation: () -> Unit,
@@ -35,7 +39,7 @@ internal data class OsPageOverlayEditorActions(
     val onDismissShellCardDeleteConfirm: () -> Unit,
     val onConfirmShellCardDelete: () -> Unit,
     val onDismissActivityCardDeleteConfirm: () -> Unit,
-    val onConfirmActivityCardDelete: () -> Unit
+    val onConfirmActivityCardDelete: () -> Unit,
 )
 
 @Composable
@@ -52,7 +56,7 @@ internal fun rememberOsPageOverlayEditorActions(
     shellCardCommandRequiredToast: String,
     shellCardSavedToast: String,
     shellCardDeletedToast: String,
-    activityCardDeletedToast: String
+    activityCardDeletedToast: String,
 ): OsPageOverlayEditorActions {
     return remember(
         context,
@@ -67,7 +71,7 @@ internal fun rememberOsPageOverlayEditorActions(
         shellCardCommandRequiredToast,
         shellCardSavedToast,
         shellCardDeletedToast,
-        activityCardDeletedToast
+        activityCardDeletedToast,
     ) {
         OsPageOverlayEditorActions(
             onDeleteShellCommandCard = {
@@ -83,18 +87,27 @@ internal fun rememberOsPageOverlayEditorActions(
                 overlayState.onShowShellCommandCardEditorChange(false)
                 overlayState.onShowShellCardDeleteConfirmChange(false)
             },
+            onDismissShellCommandCardEditorFinished = {
+                if (overlayState.showShellCommandCardEditor) {
+                    return@OsPageOverlayEditorActions
+                }
+                overlayState.onEditingShellCommandCardIdChange(null)
+                overlayState.onShellCommandCardDraftChange(createDefaultShellCommandCardDraft())
+                overlayState.onShowShellCardDeleteConfirmChange(false)
+            },
             onSaveShellCommandCard = {
                 val targetId = overlayState.editingShellCommandCardId.orEmpty().trim()
                 if (targetId.isBlank()) {
                     context.showToast(shellCardCommandRequiredToast)
                     return@OsPageOverlayEditorActions
                 }
-                val updated = OsShellCommandCardStore.updateCard(
-                    cardId = targetId,
-                    title = overlayState.shellCommandCardDraft.title,
-                    subtitle = overlayState.shellCommandCardDraft.subtitle,
-                    command = overlayState.shellCommandCardDraft.command
-                )
+                val updated =
+                    OsShellCommandCardStore.updateCard(
+                        cardId = targetId,
+                        title = overlayState.shellCommandCardDraft.title,
+                        subtitle = overlayState.shellCommandCardDraft.subtitle,
+                        command = overlayState.shellCommandCardDraft.command,
+                    )
                 if (updated == null) {
                     context.showToast(shellCardCommandRequiredToast)
                     return@OsPageOverlayEditorActions
@@ -115,7 +128,9 @@ internal fun rememberOsPageOverlayEditorActions(
                         overlayState.onGoogleSystemServiceClassSuggestionQueryChange("")
                     }
 
-                    else -> Unit
+                    else -> {
+                        Unit
+                    }
                 }
                 overlayState.onShowActivitySuggestionSheetChange(true)
             },
@@ -130,43 +145,64 @@ internal fun rememberOsPageOverlayEditorActions(
             },
             onDismissActivityEditor = {
                 overlayState.onShowActivityShortcutEditorChange(false)
+                overlayState.onShowActivitySuggestionSheetChange(false)
                 overlayState.onShowActivityCardDeleteConfirmChange(false)
                 overlayState.onEditingActivityShortcutBuiltInChange(false)
             },
-            onSaveActivityEditor = {
-                val normalized = normalizeActivityShortcutConfig(
-                    config = overlayState.activityShortcutDraft,
-                    defaults = googleSystemServiceDefaults
+            onDismissActivityEditorFinished = {
+                if (overlayState.showActivityShortcutEditor) {
+                    return@OsPageOverlayEditorActions
+                }
+                overlayState.onActivityCardEditModeChange(OsActivityCardEditMode.Edit)
+                overlayState.onEditingActivityShortcutCardIdChange(null)
+                overlayState.onEditingActivityShortcutBuiltInChange(false)
+                overlayState.onActivityShortcutDraftChange(
+                    createDefaultActivityShortcutDraft(googleSystemServiceDefaults),
                 )
-                val updatedCards = if (overlayState.activityCardEditMode == OsActivityCardEditMode.Add) {
-                    activityShortcutCards + OsActivityShortcutCard(
-                        id = newOsActivityShortcutCardId(),
-                        visible = true,
-                        isBuiltInSample = false,
-                        config = normalized
+                overlayState.onGoogleSystemServicePackageSuggestionQueryChange("")
+                overlayState.onGoogleSystemServiceClassSuggestionQueryChange("")
+                overlayState.onShowActivitySuggestionSheetChange(false)
+                overlayState.onShowActivityCardDeleteConfirmChange(false)
+            },
+            onSaveActivityEditor = {
+                val normalized =
+                    normalizeActivityShortcutConfig(
+                        config = overlayState.activityShortcutDraft,
+                        defaults = googleSystemServiceDefaults,
                     )
-                } else {
-                    val targetId = overlayState.editingActivityShortcutCardId
-                    if (targetId.isNullOrBlank()) {
-                        activityShortcutCards + OsActivityShortcutCard(
-                            id = newOsActivityShortcutCardId(),
-                            visible = true,
-                            isBuiltInSample = false,
-                            config = normalized
-                        )
+                val updatedCards =
+                    if (overlayState.activityCardEditMode == OsActivityCardEditMode.Add) {
+                        activityShortcutCards +
+                            OsActivityShortcutCard(
+                                id = newOsActivityShortcutCardId(),
+                                visible = true,
+                                isBuiltInSample = false,
+                                config = normalized,
+                            )
                     } else {
-                        activityShortcutCards.map { card ->
-                            if (card.id == targetId) card.copy(config = normalized) else card
+                        val targetId = overlayState.editingActivityShortcutCardId
+                        if (targetId.isNullOrBlank()) {
+                            activityShortcutCards +
+                                OsActivityShortcutCard(
+                                    id = newOsActivityShortcutCardId(),
+                                    visible = true,
+                                    isBuiltInSample = false,
+                                    config = normalized,
+                                )
+                        } else {
+                            activityShortcutCards.map { card ->
+                                if (card.id == targetId) card.copy(config = normalized) else card
+                            }
                         }
                     }
-                }
                 onActivityShortcutCardsChange(updatedCards)
                 OsActivityShortcutCardStore.saveCards(
                     cards = updatedCards,
-                    defaults = googleSystemServiceDefaults
+                    defaults = googleSystemServiceDefaults,
                 )
                 context.showToast(R.string.os_google_system_service_toast_saved)
                 overlayState.onShowActivityShortcutEditorChange(false)
+                overlayState.onShowActivitySuggestionSheetChange(false)
                 overlayState.onShowActivityCardDeleteConfirmChange(false)
                 overlayState.onEditingActivityShortcutBuiltInChange(false)
             },
@@ -176,35 +212,35 @@ internal fun rememberOsPageOverlayEditorActions(
                         draft = overlayState.activityShortcutDraft,
                         target = overlayState.googleSystemServiceSuggestionTarget,
                         item = suggestion,
-                        defaultIntentFlags = googleSystemServiceDefaultIntentFlags
-                    )
+                        defaultIntentFlags = googleSystemServiceDefaultIntentFlags,
+                    ),
                 )
                 overlayState.onShowActivitySuggestionSheetChange(false)
             },
             onApplyExplicitActionRecommendation = {
                 overlayState.onActivityShortcutDraftChange(
-                    overlayState.activityShortcutDraft.copy(intentAction = Intent.ACTION_VIEW)
+                    overlayState.activityShortcutDraft.copy(intentAction = Intent.ACTION_VIEW),
                 )
             },
             onApplyImplicitActionRecommendation = {
                 overlayState.onActivityShortcutDraftChange(
                     applyShortcutImplicitDefaults(
                         draft = overlayState.activityShortcutDraft,
-                        defaultIntentFlags = googleSystemServiceDefaultIntentFlags
-                    )
+                        defaultIntentFlags = googleSystemServiceDefaultIntentFlags,
+                    ),
                 )
             },
             onApplyExplicitCategoryRecommendation = {
                 overlayState.onActivityShortcutDraftChange(
-                    overlayState.activityShortcutDraft.copy(intentCategory = "")
+                    overlayState.activityShortcutDraft.copy(intentCategory = ""),
                 )
             },
             onApplyImplicitCategoryRecommendation = {
                 overlayState.onActivityShortcutDraftChange(
                     applyShortcutImplicitDefaults(
                         draft = overlayState.activityShortcutDraft,
-                        defaultIntentFlags = googleSystemServiceDefaultIntentFlags
-                    )
+                        defaultIntentFlags = googleSystemServiceDefaultIntentFlags,
+                    ),
                 )
             },
             onDismissShellCardDeleteConfirm = {
@@ -232,14 +268,14 @@ internal fun rememberOsPageOverlayEditorActions(
                 onRemoveActivityCardExpanded(targetId)
                 OsActivityShortcutCardStore.saveCards(
                     cards = updatedCards,
-                    defaults = googleSystemServiceDefaults
+                    defaults = googleSystemServiceDefaults,
                 )
                 overlayState.onEditingActivityShortcutCardIdChange(null)
                 overlayState.onShowActivityShortcutEditorChange(false)
                 overlayState.onShowActivitySuggestionSheetChange(false)
                 overlayState.onEditingActivityShortcutBuiltInChange(false)
                 context.showToast(activityCardDeletedToast)
-            }
+            },
         )
     }
 }

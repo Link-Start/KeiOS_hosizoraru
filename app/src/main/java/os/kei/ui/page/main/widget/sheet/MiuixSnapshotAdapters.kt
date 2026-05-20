@@ -33,7 +33,9 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -336,10 +338,22 @@ fun SnapshotWindowBottomSheet(
     onBlockedDismissRequest: (() -> Unit)? = null,
     enableNestedScroll: Boolean = true,
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
+    useLiquidGlassSheet: Boolean = os.kei.core.prefs.UiPrefs.isLiquidSheetEnabled(),
     content: @Composable () -> Unit,
 ) {
-    // Route to Liquid Glass BottomSheet when the user preference is enabled.
-    if (os.kei.core.prefs.UiPrefs.isLiquidSheetEnabled()) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var wasShown by remember { mutableStateOf(false) }
+    LaunchedEffect(show) {
+        if (show) {
+            wasShown = true
+        } else if (wasShown) {
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        }
+    }
+
+    if (useLiquidGlassSheet) {
         LiquidGlassBottomSheet(
             show = show,
             modifier = modifier,
@@ -351,7 +365,7 @@ fun SnapshotWindowBottomSheet(
             allowDismiss = allowDismiss,
             onBlockedDismissRequest = onBlockedDismissRequest,
             initialDetent = initialDetent,
-            content = content
+            content = content,
         )
         return
     }
@@ -385,7 +399,7 @@ fun SnapshotWindowBottomSheet(
         dragHandleColor = dragHandleColor,
         allowDismiss = allowDismiss,
         enableNestedScroll = enableNestedScroll,
-        content = content
+        content = content,
     )
 
     BackHandler(

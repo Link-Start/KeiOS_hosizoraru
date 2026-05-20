@@ -46,6 +46,7 @@ internal fun OsShellRunnerSaveSheet(
     shellSuccessAccentColor: Color,
     shellStoppedAccentColor: Color,
     onDismissRequest: () -> Unit,
+    onDismissFinished: () -> Unit,
     onConfirm: () -> Unit
 ) {
     val dismissHandler = rememberUnsavedSheetDismissHandler(
@@ -56,6 +57,7 @@ internal fun OsShellRunnerSaveSheet(
         show = show,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
+        onDismissFinished = onDismissFinished,
         allowDismiss = dismissHandler.allowDismiss,
         onBlockedDismissRequest = dismissHandler.requestDismiss,
         startAction = {

@@ -502,6 +502,13 @@ fun OsShellRunnerPage(
         shellSuccessAccentColor = shellSuccessAccentColor,
         shellStoppedAccentColor = shellStoppedAccentColor,
         onDismissRequest = { showSaveSheet = false },
+        onDismissFinished = {
+            if (!showSaveSheet) {
+                saveTitleInput = ""
+                saveSubtitleInput = ""
+                saveInitialSubtitleInput = ""
+            }
+        },
         onConfirm = { saveCommandToCard() }
     )
 

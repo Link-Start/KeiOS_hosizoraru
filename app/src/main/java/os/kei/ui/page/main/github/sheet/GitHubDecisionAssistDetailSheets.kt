@@ -60,7 +60,9 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
+import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
+import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -482,7 +484,7 @@ private fun GitHubReleaseNotesDetailContent(
             verticalSpacing = 10.dp
         ) {
             if (rawMarkdown.isNotBlank()) {
-                CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
+                CompositionLocalProvider(LocalTextCopyExpandedOverride provides true) {
                     AppMarkdownContent(
                         markdown = rawMarkdown,
                         titleColor = MiuixTheme.colorScheme.onBackground,
@@ -780,16 +782,22 @@ private fun DetailTextLine(
     accent: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = text,
-        modifier = modifier,
-        color = if (accent) MiuixTheme.colorScheme.onBackground else MiuixTheme.colorScheme.onBackgroundVariant,
-        fontSize = if (accent) AppTypographyTokens.Body.fontSize else AppTypographyTokens.Supporting.fontSize,
-        lineHeight = if (accent) AppTypographyTokens.Body.lineHeight else AppTypographyTokens.Supporting.lineHeight,
-        fontWeight = if (accent) AppTypographyTokens.BodyEmphasis.fontWeight else null,
-        maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis
-    )
+    CopyModeSelectionContainer(
+        modifier =
+            modifier.copyModeAwareRow(
+                copyPayload = text
+            )
+    ) {
+        Text(
+            text = text,
+            color = if (accent) MiuixTheme.colorScheme.onBackground else MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = if (accent) AppTypographyTokens.Body.fontSize else AppTypographyTokens.Supporting.fontSize,
+            lineHeight = if (accent) AppTypographyTokens.Body.lineHeight else AppTypographyTokens.Supporting.lineHeight,
+            fontWeight = if (accent) AppTypographyTokens.BodyEmphasis.fontWeight else null,
+            maxLines = maxLines,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 @Composable

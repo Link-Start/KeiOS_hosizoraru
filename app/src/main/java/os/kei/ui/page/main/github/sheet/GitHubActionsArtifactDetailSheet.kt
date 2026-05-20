@@ -71,6 +71,25 @@ internal fun GitHubActionsArtifactDetailSheet(
         )
     val busy = downloading || sharing
     val canAct = hasToken && detail.runMatch.traits.completed && !artifact.expired && !busy
+    val artifactSizeLabel =
+        artifact.sizeBytes
+            .takeIf { it > 0L }
+            ?.let { formatAssetSize(it, context) }
+            ?: stringResource(R.string.common_unknown)
+    val primaryActionLabel =
+        stringResource(
+            when {
+                managedInstallEnabled && downloading -> R.string.github_apk_info_action_installing
+                managedInstallEnabled -> R.string.github_page_install_status_install
+                else -> R.string.common_download
+            },
+        )
+    val primaryActionText =
+        stringResource(
+            R.string.github_actions_action_with_size,
+            primaryActionLabel,
+            artifactSizeLabel,
+        )
     SnapshotWindowBottomSheet(
         show = true,
         title = stringResource(R.string.github_actions_artifact_detail_title),
@@ -114,10 +133,7 @@ internal fun GitHubActionsArtifactDetailSheet(
                     ),
                 )
                 GitHubDecisionDetailTextLine(
-                    artifact.sizeBytes
-                        .takeIf { it > 0L }
-                        ?.let { formatAssetSize(it, context) }
-                        ?: stringResource(R.string.common_unknown),
+                    artifactSizeLabel,
                 )
                 artifact.expiresAtMillis?.let { expiresAt ->
                     GitHubDecisionDetailTextLine(
@@ -139,15 +155,6 @@ internal fun GitHubActionsArtifactDetailSheet(
                             ),
                         )
                     }
-                artifact.digest.takeIf { it.isNotBlank() }?.let { digest ->
-                    GitHubDecisionDetailTextLine(
-                        stringResource(
-                            R.string.github_actions_artifact_detail_digest,
-                            digest,
-                        ),
-                        maxLines = 2,
-                    )
-                }
             }
             TrustReasonSection(
                 reasons = trustSignal.reasons,
@@ -159,7 +166,6 @@ internal fun GitHubActionsArtifactDetailSheet(
                     buildArtifactCopyPayload(
                         runHeadSha = run.headSha,
                         artifactHeadSha = artifact.workflowRunHeadSha,
-                        digest = artifact.digest,
                     )
                 val copyToast =
                     stringResource(R.string.github_actions_toast_artifact_metadata_copied)
@@ -181,14 +187,7 @@ internal fun GitHubActionsArtifactDetailSheet(
                     AppLiquidTextButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
-                        text =
-                            stringResource(
-                                when {
-                                    managedInstallEnabled && downloading -> R.string.github_apk_info_action_installing
-                                    managedInstallEnabled -> R.string.github_page_install_status_install
-                                    else -> R.string.common_download
-                                },
-                            ),
+                        text = primaryActionText,
                         leadingIcon =
                             if (managedInstallEnabled) {
                                 appLucidePackageIcon()
@@ -217,14 +216,10 @@ internal fun GitHubActionsArtifactDetailSheet(
 private fun buildArtifactCopyPayload(
     runHeadSha: String,
     artifactHeadSha: String,
-    digest: String,
 ): String =
     buildList {
         artifactHeadSha.ifBlank { runHeadSha }.takeIf { it.isNotBlank() }?.let { sha ->
             add("commit: $sha")
-        }
-        digest.takeIf { it.isNotBlank() }?.let { value ->
-            add("digest: $value")
         }
     }.joinToString("\n")
 

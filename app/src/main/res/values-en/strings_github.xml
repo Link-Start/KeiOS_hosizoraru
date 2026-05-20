@@ -1186,7 +1186,7 @@
     <string name="github_profile_source_required">Required</string>
     <string name="github_actions_artifact_detail_expires_at">Expires at: %1$s</string>
     <string name="github_actions_artifact_detail_commit">Commit: %1$s</string>
-    <string name="github_actions_artifact_detail_digest">Digest: %1$s</string>
     <string name="github_actions_action_copy_metadata">Copy metadata</string>
     <string name="github_actions_toast_artifact_metadata_copied">Artifact metadata copied</string>
+    <string name="github_actions_action_with_size">%1$s · %2$s</string>
 </resources>

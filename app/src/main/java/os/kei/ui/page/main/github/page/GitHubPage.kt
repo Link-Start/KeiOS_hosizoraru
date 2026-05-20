@@ -69,7 +69,8 @@ fun GitHubPage(
     }
     val fullBackdropEffectsEnabled =
         runtime.isPageActive &&
-            !runtime.isPagerScrollInProgress
+            !runtime.isPagerScrollInProgress &&
+            !isListScrolling
     val topBarBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress

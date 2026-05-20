@@ -35,6 +35,8 @@ internal fun GitHubActionsSheet(
     onOpenRun: () -> Unit,
     onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit
 ) {
+    val refreshing = state.actionsLoading || state.actionsRunsLoading ||
+        state.actionsStatusRefreshingRunIds.any { it.value }
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.github_actions_sheet_title),
@@ -54,7 +56,14 @@ internal fun GitHubActionsSheet(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideRefreshIcon(),
-                contentDescription = stringResource(R.string.github_actions_sheet_cd_refresh),
+                contentDescription = stringResource(
+                    if (refreshing) {
+                        R.string.common_loading
+                    } else {
+                        R.string.github_actions_sheet_cd_refresh
+                    }
+                ),
+                enabled = !refreshing,
                 onClick = onRefresh
             )
         }

@@ -55,6 +55,7 @@ internal class GitHubActionsActions(
 
     fun refreshActionsSheet() {
         val item = state.actionsTargetItem ?: return
+        if (state.actionsLoading || state.actionsRunsLoading) return
         val selectedWorkflowId = state.actionsSelectedWorkflowId
         scope.launch {
             loadActionsOverview(item = item, preferredWorkflowId = selectedWorkflowId)

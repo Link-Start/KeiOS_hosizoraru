@@ -129,18 +129,27 @@ private fun targetAppId(): String {
 
 private const val RELEASE_APP_ID = "os.kei"
 private const val BENCHMARK_APP_ID = "os.kei.benchmark"
-private const val LAUNCHER_ACTIVITY = "os.kei.LauncherAppleDesigns"
 
 private fun MacrobenchmarkScope.launchHomeFromColdStart() {
     pressHome()
     grantRuntimePermissions()
+    val launcherComponent = resolveLauncherComponent()
     device.executeShellCommand("am force-stop ${targetAppId()}")
     device.executeShellCommand(
         "am start -W -a android.intent.action.MAIN " +
             "-c android.intent.category.LAUNCHER " +
-            "-n ${targetAppId()}/$LAUNCHER_ACTIVITY",
+            "-n $launcherComponent",
     )
     waitForHome()
+}
+
+private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
+    val output = device.executeShellCommand("cmd package resolve-activity --brief ${targetAppId()}")
+    return output
+        .lineSequence()
+        .map(String::trim)
+        .lastOrNull { line -> "/" in line }
+        ?: error("Unable to resolve launcher activity for ${targetAppId()}: $output")
 }
 
 private fun MacrobenchmarkScope.grantRuntimePermissions() {

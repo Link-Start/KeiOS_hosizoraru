@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.7.2`                                             |
+| Latest stable tag | `v1.7.3`                                             |
 
 ## Quick Links
 
@@ -84,17 +84,17 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.7.2 Highlights
+## v1.7.3 Highlights
 
-- GitHub managed install is smoother across release APKs and Actions artifacts, with cleaner
-  Super Island / notification routing and fewer app-bounce interruptions.
-- GitHub tracking now supports per-project update-check intervals, so noisy or important projects
-  can refresh independently from the global schedule.
-- Actions artifact cards are easier to scan, and install/share actions use compact icon controls.
-- Settings organization is clearer: notification-related switches move into permissions, while
-  appearance and effect controls are separated.
-- The GitHub backend, core prefs/system boundaries, dependencies, and release tests received a
-  stability cleanup for the 1.7.x line.
+- Actions artifact cards are quieter and easier to scan, with sha256 details removed from the
+  card body.
+- Artifact actions now show the file size directly on the download control, while the icon carries
+  the action meaning.
+- Managed APK artifacts now show install and download as separate actions, so users can install
+  through KeiOS or download the archive directly.
+- The download action stays visible for Actions artifacts, including GitHub web / token-required
+  cases where opening a download path is still useful.
+- The artifact detail sheet follows the same simplified metadata style.
 
 Read the full feature tour:
 
@@ -104,7 +104,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.7.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.2).
+- Current stable tag: [v1.7.3](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.3).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
   Compose `1.11.1`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
@@ -113,7 +113,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.7.2](readme/RELEASE_V1.7.2.md)
+- [Release Notes v1.7.3](readme/RELEASE_V1.7.3.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

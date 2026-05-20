@@ -5,9 +5,9 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.7.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.2)。
-- `master` 当前作为 v1.7.2 发布基线，覆盖 GitHub 安装路由、单项目更新间隔、
-  设置结构整理和 1.7.x 稳定性收口。
+- 当前公开标签基线为 [KeiOS v1.7.3](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.3)。
+- `master` 当前作为 v1.7.3 发布基线，覆盖 Actions artifact card 精简、安装 / 下载拆分
+  和 artifact 直接下载入口。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -77,7 +77,7 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.7.2 发布门禁
+### v1.7.3 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
@@ -90,12 +90,12 @@ git diff --check
 
 本次发布建议重点复查：
 
-- GitHub Release APK 与 Actions artifacts 的托管安装链路。
-- 安装确认、安装完成相关通知 / 超级岛动作。
-- 新增 / 编辑追踪 sheet 的单项目“检查更新”间隔 dropdown。
-- 设置页权限 / 外观 / 效果分组。
+- Actions artifact card 隐藏 digest 详情，并在下载动作上显示文件大小。
+- 支持托管安装的 Actions APK artifact 同时显示安装和下载控件。
+- Actions artifact 下载入口在 Token / Web 登录下载场景下保持可用。
+- Artifact 详情元数据与列表卡片保持一致。
 - Release APK 签名、版本元数据和启动。
-- GitHub Release 发布文案可直接参考 [Release Notes v1.7.2](RELEASE_V1.7.2.md)。
+- GitHub Release 发布文案可直接参考 [Release Notes v1.7.3](RELEASE_V1.7.3.md)。
 
 ### 截图基线
 

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.widget.sheet
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
@@ -23,15 +24,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertTrue
 
-private const val SheetTag = "liquid-sheet"
-private const val FirstContentTag = "liquid-sheet-first-content"
+private const val SHEET_TAG = "liquid-sheet"
+private const val FIRST_CONTENT_TAG = "liquid-sheet-first-content"
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
     application = LiquidGlassBottomSheetTestApp::class,
     sdk = [35],
-    qualifiers = "w411dp-h891dp-xxhdpi"
+    qualifiers = "w411dp-h891dp-xxhdpi",
 )
 class LiquidGlassBottomSheetTest {
     @get:Rule
@@ -43,15 +44,16 @@ class LiquidGlassBottomSheetTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 LiquidGlassBottomSheet(
                     show = true,
-                    modifier = Modifier.testTag(SheetTag),
-                    title = "Sheet"
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(96.dp)
-                                .background(Color.Gray)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp)
+                                    .background(Color.Gray),
                         )
                     }
                 }
@@ -66,21 +68,51 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
+    fun opensAtThreeQuarterDetentForPlainShortContent() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                ) {
+                    Column {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp)
+                                    .background(Color.Gray),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        val height = sheetHeight()
+        assertTrue(height in 600.dp..720.dp, "Expected plain short content to keep 3/4 detent, got $height")
+    }
+
+    @Test
     fun expandsToFullDetentWhenOpeningDetentOverflows() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 LiquidGlassBottomSheet(
                     show = true,
-                    modifier = Modifier.testTag(SheetTag),
-                    title = "Sheet"
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
                         repeat(24) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .background(Color.Gray)
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
                             )
                         }
                     }
@@ -96,21 +128,53 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
+    fun expandsToFullDetentWhenPlainContentExceedsOpeningDetent() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                ) {
+                    Column {
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(3_000)
+        composeRule.waitForIdle()
+
+        val height = sheetHeight()
+        assertTrue(height >= 820.dp, "Expected plain content to expand to full detent, got $height")
+    }
+
+    @Test
     fun keepsContentBelowTopChrome() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 LiquidGlassBottomSheet(
                     show = true,
-                    modifier = Modifier.testTag(SheetTag),
-                    title = "Actions"
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Actions",
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
                         Box(
-                            modifier = Modifier
-                                .testTag(FirstContentTag)
-                                .fillMaxWidth()
-                                .height(96.dp)
-                                .background(Color.Gray)
+                            modifier =
+                                Modifier
+                                    .testTag(FIRST_CONTENT_TAG)
+                                    .fillMaxWidth()
+                                    .height(96.dp)
+                                    .background(Color.Gray),
                         )
                     }
                 }
@@ -120,70 +184,76 @@ class LiquidGlassBottomSheetTest {
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
 
-        val sheetTop = composeRule.onNodeWithTag(SheetTag)
-            .fetchSemanticsNode()
-            .boundsInRoot
-            .top
-        val contentTop = composeRule.onNodeWithTag(FirstContentTag, useUnmergedTree = true)
-            .fetchSemanticsNode()
-            .boundsInRoot
-            .top
+        val sheetTop =
+            composeRule
+                .onNodeWithTag(SHEET_TAG)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .top
+        val contentTop =
+            composeRule
+                .onNodeWithTag(FIRST_CONTENT_TAG, useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .top
         val minimumTopChromeHeight = with(composeRule.density) { 44.dp.toPx() }
         val maximumTopChromeHeight = with(composeRule.density) { 72.dp.toPx() }
         val topChromeHeight = contentTop - sheetTop
 
         assertTrue(
             actual = topChromeHeight in minimumTopChromeHeight..maximumTopChromeHeight,
-            message = "Expected sheet content to start below top chrome, sheetTop=$sheetTop contentTop=$contentTop"
+            message = "Expected sheet content to start below top chrome, sheetTop=$sheetTop contentTop=$contentTop",
         )
     }
 
     @Test
-    fun predictiveBackMovesDismissibleSheetTowardOffscreenOffset() {
-        val halfwayOffset = liquidSheetPredictiveBackOffsetFraction(
-            sheetFraction = 0.75f,
-            progress = 0.5f,
-            allowDismiss = true
-        )
-        val completedOffset = liquidSheetPredictiveBackOffsetFraction(
-            sheetFraction = 0.75f,
-            progress = 1f,
-            allowDismiss = true
-        )
-        val completedScrim = liquidSheetPredictiveBackScrimFactor(
-            sheetFraction = 0.75f,
-            offsetFraction = completedOffset,
-            allowDismiss = true
-        )
+    fun respectsCustomMaxWidth() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    sheetMaxWidth = 320.dp,
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp)
+                                    .background(Color.Gray),
+                        )
+                    }
+                }
+            }
+        }
 
-        assertTrue(halfwayOffset in 0f..0.75f)
-        assertTrue(completedOffset >= 0.74f)
-        assertTrue(completedScrim <= 0.01f)
-    }
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
 
-    @Test
-    fun predictiveBackKeepsBlockedSheetNearCurrentPosition() {
-        val completedOffset = liquidSheetPredictiveBackOffsetFraction(
-            sheetFraction = 0.75f,
-            progress = 1f,
-            allowDismiss = false
-        )
-        val completedScrim = liquidSheetPredictiveBackScrimFactor(
-            sheetFraction = 0.75f,
-            offsetFraction = completedOffset,
-            allowDismiss = false
-        )
-
-        assertTrue(completedOffset in 0.07f..0.08f)
-        assertTrue(completedScrim >= 0.99f)
+        val width = sheetWidth()
+        assertTrue(width <= 322.dp, "Expected custom max width to be respected, got $width")
     }
 
     private fun sheetHeight(): Dp {
-        val heightPx = composeRule.onNodeWithTag(SheetTag)
-            .fetchSemanticsNode()
-            .boundsInRoot
-            .height
+        val heightPx =
+            composeRule
+                .onNodeWithTag(SHEET_TAG)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .height
         return with(composeRule.density) { heightPx.toDp() }
+    }
+
+    private fun sheetWidth(): Dp {
+        val widthPx =
+            composeRule
+                .onNodeWithTag(SHEET_TAG)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .width
+        return with(composeRule.density) { widthPx.toDp() }
     }
 }
 

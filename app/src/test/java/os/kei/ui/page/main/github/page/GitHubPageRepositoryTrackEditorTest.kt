@@ -7,6 +7,7 @@ import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -23,6 +24,7 @@ class GitHubPageRepositoryTrackEditorTest {
                 preferPreRelease = false,
                 alwaysShowLatestReleaseDownloadButton = false,
                 checkActionsUpdates = false,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.FollowGlobal,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
                 appList = emptyList()
@@ -42,6 +44,7 @@ class GitHubPageRepositoryTrackEditorTest {
                 preferPreRelease = true,
                 alwaysShowLatestReleaseDownloadButton = true,
                 checkActionsUpdates = true,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
                 appList = emptyList()
@@ -57,6 +60,7 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(true, item.preferPreRelease)
         assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, item.checkActionsUpdates)
+        assertEquals(GitHubTrackedUpdateIntervalMode.Hours6, item.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode

@@ -42,6 +42,7 @@ import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -111,6 +112,7 @@ internal class GitHubPageState(
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
     var checkActionsUpdatesInput by mutableStateOf(false)
+    var updateIntervalModeInput by mutableStateOf(GitHubTrackedUpdateIntervalMode.FollowGlobal)
     var actionsUpdateIntervalModeInput by mutableStateOf(
         GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
     )
@@ -487,6 +489,7 @@ internal class GitHubPageState(
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
         checkActionsUpdatesInput = false
+        updateIntervalModeInput = GitHubTrackedUpdateIntervalMode.FollowGlobal
         actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository

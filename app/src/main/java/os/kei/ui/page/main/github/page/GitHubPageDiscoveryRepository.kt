@@ -125,6 +125,7 @@ internal class GitHubPageDiscoveryRepository(
 
                         GitHubTrackedSourceMode.DirectApk -> false
                     },
+                    updateIntervalMode = draft.updateIntervalMode,
                     checkActionsUpdates = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.checkActionsUpdates
                         GitHubTrackedSourceMode.DirectApk -> false

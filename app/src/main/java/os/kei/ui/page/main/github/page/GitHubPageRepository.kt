@@ -33,6 +33,7 @@ import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.DownloaderOption
@@ -50,6 +51,7 @@ internal data class GitHubTrackEditorDraft(
     val preferPreRelease: Boolean,
     val alwaysShowLatestReleaseDownloadButton: Boolean,
     val checkActionsUpdates: Boolean,
+    val updateIntervalMode: GitHubTrackedUpdateIntervalMode,
     val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,
     val appList: List<InstalledAppItem>

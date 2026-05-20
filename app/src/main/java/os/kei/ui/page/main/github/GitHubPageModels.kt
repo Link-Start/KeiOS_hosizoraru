@@ -52,7 +52,8 @@ internal data class VersionCheckUi(
     val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
     val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
     val directApkRemoteHealthMessage: String = "",
-    val directApkRemoteCheckedAtMillis: Long = -1L
+    val directApkRemoteCheckedAtMillis: Long = -1L,
+    val checkedAtMillis: Long = -1L
 )
 
 @Immutable

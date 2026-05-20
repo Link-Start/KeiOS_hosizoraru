@@ -164,6 +164,41 @@ class GitHubLookupModelsTest {
     }
 
     @Test
+    fun `tracked update interval mode resolves storage ids`() {
+        assertEquals(
+            GitHubTrackedUpdateIntervalMode.FollowGlobal,
+            GitHubTrackedUpdateIntervalMode.fromStorageId("follow_global")
+        )
+        assertEquals(
+            GitHubTrackedUpdateIntervalMode.Hour1,
+            GitHubTrackedUpdateIntervalMode.fromStorageId("1h")
+        )
+        assertEquals(
+            GitHubTrackedUpdateIntervalMode.Hours6,
+            GitHubTrackedUpdateIntervalMode.fromStorageId("6h")
+        )
+        assertEquals(
+            GitHubTrackedUpdateIntervalMode.FollowGlobal,
+            GitHubTrackedUpdateIntervalMode.fromStorageId("missing")
+        )
+    }
+
+    @Test
+    fun `tracked update interval follows global or custom hours`() {
+        val global = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example"
+        )
+        val custom = global.copy(updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hour1)
+
+        assertEquals(3L * 60L * 60L * 1000L, global.updateIntervalMs(3))
+        assertEquals(1L * 60L * 60L * 1000L, custom.updateIntervalMs(3))
+    }
+
+    @Test
     fun `tracked actions update interval follows global or custom minutes`() {
         val global = GitHubTrackedApp(
             repoUrl = "https://github.com/owner/repo",

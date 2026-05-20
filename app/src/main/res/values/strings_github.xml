@@ -687,6 +687,11 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
     <string name="github_track_sheet_label_check_actions_updates">检查 Actions 更新</string>
     <string name="github_track_sheet_summary_check_actions_updates">按“更新间隔”自动检查此项目推荐的 Actions Run；发现新 Run 时发送实时通知/超级岛。</string>
+    <string name="github_track_sheet_label_update_interval">检查更新</string>
+    <string name="github_track_sheet_summary_update_interval_follow_global">跟随全局：当前为 %1$s</string>
+    <string name="github_track_sheet_summary_update_interval_custom">此项目会按单独间隔检查版本更新。</string>
+    <string name="github_track_sheet_update_interval_follow_global">跟随全局</string>
+    <string name="github_track_sheet_update_interval_follow_global_format">跟随全局（%1$s）</string>
     <string name="github_track_sheet_label_actions_update_interval">Actions 检查间隔</string>
     <string name="github_track_sheet_summary_actions_update_interval_follow_global">跟随全局：当前为 %1$s</string>
     <string name="github_track_sheet_summary_actions_update_interval_custom">Actions 构建变化更快，此项目会按更短间隔单独检查。</string>

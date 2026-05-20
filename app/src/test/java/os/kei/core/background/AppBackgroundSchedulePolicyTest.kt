@@ -114,6 +114,23 @@ class AppBackgroundSchedulePolicyTest {
     }
 
     @Test
+    fun `github tracked item due earlier than global refresh schedules earlier`() {
+        val itemDueAtMs = NOW_MS + 60L * 60L * 1000L
+        val schedule = AppBackgroundSchedulePolicy.nextGitHubRefreshSchedule(
+            trackedItemCount = 1,
+            lastRefreshMs = NOW_MS,
+            refreshIntervalHours = 6,
+            nextTrackedUpdateDueAtMs = itemDueAtMs,
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(itemDueAtMs, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
+        assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
+    }
+
+    @Test
     fun `ba ap threshold schedules exact threshold crossing event`() {
         val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
             snapshot = BaPageSnapshot(

@@ -28,6 +28,7 @@ import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -74,6 +75,7 @@ internal fun GitHubTrackEditSheet(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
+    updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     globalRefreshIntervalHours: Int,
@@ -94,6 +96,7 @@ internal fun GitHubTrackEditSheet(
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
     onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
+    onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
@@ -109,6 +112,7 @@ internal fun GitHubTrackEditSheet(
         preferPreReleaseInput = preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
         checkActionsUpdatesInput = checkActionsUpdatesInput,
+        updateIntervalModeInput = updateIntervalModeInput,
         actionsUpdateIntervalModeInput = actionsUpdateIntervalModeInput,
         preciseApkVersionModeInput = preciseApkVersionModeInput
     )
@@ -201,6 +205,7 @@ internal fun GitHubTrackEditSheet(
                     preferPreReleaseInput = preferPreReleaseInput,
                     alwaysShowLatestReleaseDownloadButtonInput = alwaysShowLatestReleaseDownloadButtonInput,
                     checkActionsUpdatesInput = checkActionsUpdatesInput,
+                    updateIntervalModeInput = updateIntervalModeInput,
                     actionsUpdateIntervalModeInput = actionsUpdateIntervalModeInput,
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
                     globalRefreshIntervalHours = globalRefreshIntervalHours,
@@ -216,6 +221,7 @@ internal fun GitHubTrackEditSheet(
                     onAlwaysShowLatestReleaseDownloadButtonInputChange =
                         onAlwaysShowLatestReleaseDownloadButtonInputChange,
                     onCheckActionsUpdatesInputChange = onCheckActionsUpdatesInputChange,
+                    onUpdateIntervalModeInputChange = onUpdateIntervalModeInputChange,
                     onActionsUpdateIntervalModeInputChange =
                         onActionsUpdateIntervalModeInputChange,
                     onPreciseApkVersionModeInputChange = onPreciseApkVersionModeInputChange
@@ -243,6 +249,7 @@ private fun GitHubTrackEditFormContent(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
+    updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     globalRefreshIntervalHours: Int,
@@ -257,11 +264,14 @@ private fun GitHubTrackEditFormContent(
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
     onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
+    onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit
 ) {
     var sourceModeExpanded by remember { mutableStateOf(false) }
     var sourceModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    var updateIntervalExpanded by remember { mutableStateOf(false) }
+    var updateIntervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var actionsIntervalExpanded by remember { mutableStateOf(false) }
     var actionsIntervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var preciseModeExpanded by remember { mutableStateOf(false) }
@@ -270,6 +280,24 @@ private fun GitHubTrackEditFormContent(
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
     val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
     val directApkMode = sourceModeInput == GitHubTrackedSourceMode.DirectApk
+    val updateIntervalModes = GitHubTrackedUpdateIntervalMode.entries
+    val updateIntervalOptions = updateIntervalModes.map { mode ->
+        updateIntervalModeLabel(
+            mode = mode,
+            globalRefreshIntervalHours = globalRefreshIntervalHours
+        )
+    }
+    val updateIntervalIndex = updateIntervalModes.indexOf(updateIntervalModeInput).coerceAtLeast(0)
+    val updateIntervalFollowsGlobal =
+        updateIntervalModeInput == GitHubTrackedUpdateIntervalMode.FollowGlobal
+    val updateIntervalSummary = if (updateIntervalFollowsGlobal) {
+        stringResource(
+            R.string.github_track_sheet_summary_update_interval_follow_global,
+            refreshIntervalLabel(globalRefreshIntervalHours)
+        )
+    } else {
+        stringResource(R.string.github_track_sheet_summary_update_interval_custom)
+    }
     val actionsIntervalModes = GitHubTrackedActionsUpdateIntervalMode.entries
     val actionsIntervalOptions = actionsIntervalModes.map { mode ->
         actionsUpdateIntervalModeLabel(
@@ -471,6 +499,26 @@ private fun GitHubTrackEditFormContent(
 
         SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
         SheetSectionCard {
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_update_interval),
+                summary = updateIntervalSummary
+            ) {
+                AppDropdownSelector(
+                    selectedText = updateIntervalOptions.getOrElse(updateIntervalIndex) {
+                        stringResource(R.string.github_track_sheet_update_interval_follow_global)
+                    },
+                    options = updateIntervalOptions,
+                    selectedIndex = updateIntervalIndex,
+                    expanded = updateIntervalExpanded,
+                    anchorBounds = updateIntervalAnchorBounds,
+                    onExpandedChange = { updateIntervalExpanded = it },
+                    onSelectedIndexChange = { index ->
+                        updateIntervalModes.getOrNull(index)?.let(onUpdateIntervalModeInputChange)
+                    },
+                    onAnchorBoundsChange = { updateIntervalAnchorBounds = it },
+                    backdrop = backdrop
+                )
+            }
             if (directApkMode) {
                 SheetControlRow(
                     label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
@@ -589,6 +637,32 @@ private fun preciseApkVersionModeLabel(mode: GitHubTrackedPreciseApkVersionMode)
 }
 
 @Composable
+private fun updateIntervalModeLabel(
+    mode: GitHubTrackedUpdateIntervalMode,
+    globalRefreshIntervalHours: Int
+): String {
+    return when (mode) {
+        GitHubTrackedUpdateIntervalMode.FollowGlobal ->
+            stringResource(
+                R.string.github_track_sheet_update_interval_follow_global_format,
+                refreshIntervalLabel(globalRefreshIntervalHours)
+            )
+
+        GitHubTrackedUpdateIntervalMode.Hour1 ->
+            stringResource(R.string.github_refresh_interval_1h)
+
+        GitHubTrackedUpdateIntervalMode.Hours3 ->
+            stringResource(R.string.github_refresh_interval_3h)
+
+        GitHubTrackedUpdateIntervalMode.Hours6 ->
+            stringResource(R.string.github_refresh_interval_6h)
+
+        GitHubTrackedUpdateIntervalMode.Hours12 ->
+            stringResource(R.string.github_refresh_interval_12h)
+    }
+}
+
+@Composable
 private fun actionsUpdateIntervalModeLabel(
     mode: GitHubTrackedActionsUpdateIntervalMode,
     globalRefreshIntervalHours: Int
@@ -627,4 +701,3 @@ private fun refreshIntervalLabel(hours: Int): String {
         else -> stringResource(R.string.github_refresh_interval_3h)
     }
 }
-

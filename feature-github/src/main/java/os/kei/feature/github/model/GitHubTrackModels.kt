@@ -19,6 +19,8 @@ data class GitHubTrackedApp(
     val preferPreRelease: Boolean = false,
     val alwaysShowLatestReleaseDownloadButton: Boolean = false,
     val checkActionsUpdates: Boolean = false,
+    val updateIntervalMode: GitHubTrackedUpdateIntervalMode =
+        GitHubTrackedUpdateIntervalMode.FollowGlobal,
     val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode =
         GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
@@ -206,6 +208,25 @@ enum class GitHubTrackedPreciseApkVersionMode(val storageId: String) {
     }
 }
 
+enum class GitHubTrackedUpdateIntervalMode(
+    val storageId: String,
+    val intervalHours: Int?
+) {
+    FollowGlobal("follow_global", null),
+    Hour1("1h", 1),
+    Hours3("3h", 3),
+    Hours6("6h", 6),
+    Hours12("12h", 12);
+
+    companion object {
+        fun fromStorageId(value: String?): GitHubTrackedUpdateIntervalMode {
+            val normalized = value.orEmpty().trim()
+            return entries.firstOrNull { it.storageId.equals(normalized, ignoreCase = true) }
+                ?: FollowGlobal
+        }
+    }
+}
+
 enum class GitHubTrackedActionsUpdateIntervalMode(
     val storageId: String,
     val intervalMinutes: Int?
@@ -224,6 +245,17 @@ enum class GitHubTrackedActionsUpdateIntervalMode(
                 ?: FollowGlobal
         }
     }
+}
+
+fun GitHubTrackedUpdateIntervalMode.effectiveIntervalMs(
+    globalRefreshIntervalHours: Int
+): Long {
+    val hours = intervalHours ?: globalRefreshIntervalHours.coerceIn(1, 12)
+    return hours.coerceIn(1, 12) * 60L * 60L * 1000L
+}
+
+fun GitHubTrackedApp.updateIntervalMs(globalRefreshIntervalHours: Int): Long {
+    return updateIntervalMode.effectiveIntervalMs(globalRefreshIntervalHours)
 }
 
 fun GitHubTrackedActionsUpdateIntervalMode.effectiveIntervalMs(
@@ -344,5 +376,6 @@ data class GitHubCheckCacheEntry(
     val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
     val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
     val directApkRemoteHealthMessage: String = "",
-    val directApkRemoteCheckedAtMillis: Long = -1L
+    val directApkRemoteCheckedAtMillis: Long = -1L,
+    val checkedAtMillis: Long = -1L
 )

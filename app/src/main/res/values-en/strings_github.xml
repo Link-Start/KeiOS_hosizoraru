@@ -687,6 +687,11 @@
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
     <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
+    <string name="github_track_sheet_label_update_interval">Check updates</string>
+    <string name="github_track_sheet_summary_update_interval_follow_global">Following global: currently %1$s</string>
+    <string name="github_track_sheet_summary_update_interval_custom">This project will check version updates on its own interval.</string>
+    <string name="github_track_sheet_update_interval_follow_global">Follow global</string>
+    <string name="github_track_sheet_update_interval_follow_global_format">Follow global (%1$s)</string>
     <string name="github_track_sheet_label_actions_update_interval">Actions check interval</string>
     <string name="github_track_sheet_summary_actions_update_interval_follow_global">Following global: currently %1$s</string>
     <string name="github_track_sheet_summary_actions_update_interval_custom">Actions builds change faster, so this project will be checked on a shorter interval.</string>

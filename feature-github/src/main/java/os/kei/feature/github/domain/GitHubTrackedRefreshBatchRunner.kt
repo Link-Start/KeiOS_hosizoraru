@@ -153,7 +153,9 @@ object GitHubTrackedRefreshBatchRunner {
         checks.forEach { result ->
             val item = result.item
             val check = result.check
-            cacheEntries[item.id] = GitHubReleaseCheckService.run { check.toCacheEntry() }
+            cacheEntries[item.id] = GitHubReleaseCheckService
+                .run { check.toCacheEntry() }
+                .copy(checkedAtMillis = refreshTimestampMs)
         }
 
         return GitHubTrackedRefreshBatchResult(

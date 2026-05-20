@@ -14,6 +14,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
@@ -49,6 +50,7 @@ data class GitHubTrackedItemsOptionCounts(
     val preferPreReleaseCount: Int = 0,
     val latestReleaseDownloadCount: Int = 0,
     val actionsUpdateCount: Int = 0,
+    val updateIntervalOverrideCount: Int = 0,
     val preciseApkVersionOverrideCount: Int = 0,
     val archivedOrForkCount: Int = 0
 )
@@ -413,6 +415,9 @@ object GitHubTrackStore {
                 it.alwaysShowLatestReleaseDownloadButton
             },
             actionsUpdateCount = normalizedItems.count { it.checkActionsUpdates },
+            updateIntervalOverrideCount = normalizedItems.count {
+                it.updateIntervalMode != GitHubTrackedUpdateIntervalMode.FollowGlobal
+            },
             preciseApkVersionOverrideCount = normalizedItems.count {
                 it.preciseApkVersionMode != GitHubTrackedPreciseApkVersionMode.FollowGlobal
             },
@@ -509,7 +514,8 @@ object GitHubTrackStore {
                             directApkRemoteCheckedAtMillis = item.optLong(
                                 "directApkRemoteCheckedAtMillis",
                                 -1L
-                            )
+                            ),
+                            checkedAtMillis = item.optLong("checkedAtMillis", ts)
                         )
                     )
                 }
@@ -631,6 +637,7 @@ object GitHubTrackStore {
                         "directApkRemoteCheckedAtMillis",
                         state.directApkRemoteCheckedAtMillis
                     )
+                    .put("checkedAtMillis", state.checkedAtMillis)
             )
             state.repositoryProfile?.let { profile ->
                 profileObj.put(id, profile.toCacheJson())

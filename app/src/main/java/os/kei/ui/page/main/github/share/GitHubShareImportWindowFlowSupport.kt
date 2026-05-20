@@ -245,12 +245,16 @@ internal suspend fun attachCandidateToTracked(
 
         if (prefetchLatestCheck) {
             runCatching {
-                val refreshedUi = GitHubReleaseCheckService.evaluateTrackedApp(context, trackedItem).toUi()
+                val nowMs = System.currentTimeMillis()
+                val refreshedUi = GitHubReleaseCheckService
+                    .evaluateTrackedApp(context, trackedItem)
+                    .toUi()
+                    .copy(checkedAtMillis = nowMs)
                 val (cache, _) = GitHubTrackStore.loadCheckCache()
                 val updatedCache = cache.toMutableMap().apply {
                     put(trackedItem.id, refreshedUi.toCacheEntry())
                 }
-                GitHubTrackStore.saveCheckCache(updatedCache, System.currentTimeMillis())
+                GitHubTrackStore.saveCheckCache(updatedCache, nowMs)
             }
         }
         GitHubTrackStoreSignals.requestTrackRefresh(trackedItem.id)

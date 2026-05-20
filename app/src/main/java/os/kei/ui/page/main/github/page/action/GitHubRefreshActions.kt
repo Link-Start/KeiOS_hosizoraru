@@ -15,6 +15,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.updateIntervalMs
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.isLocalAppUninstalled
@@ -216,12 +217,15 @@ internal class GitHubRefreshActions(
         val hasCachedForTracked = state.trackedItems.any { item ->
             state.checkStates.containsKey(item.id)
         }
-        val stale = hasTracked && state.lastRefreshMs > 0L &&
-            (System.currentTimeMillis() - state.lastRefreshMs) >=
-            state.refreshIntervalHours * 60L * 60L * 1000L
-        if (stale || (!hasCachedForTracked && hasTracked)) {
-            repository.consumeTrackRefreshRequests(state.trackedItems.mapTo(HashSet()) { it.id })
-            refreshAllTracked(showToast = false)
+        val dueItems = selectDueTrackedUpdateItems(nowMs = System.currentTimeMillis())
+        if (dueItems.isNotEmpty() || (!hasCachedForTracked && hasTracked)) {
+            val targets = dueItems.ifEmpty { state.trackedItems.toList() }
+            repository.consumeTrackRefreshRequests(targets.mapTo(HashSet()) { it.id })
+            if (targets.size == state.trackedItems.size) {
+                refreshAllTracked(showToast = false)
+            } else {
+                refreshTrackedBatch(targets = targets, showToast = false)
+            }
             return
         }
         val refreshedRequestedTracks =
@@ -435,7 +439,7 @@ internal class GitHubRefreshActions(
                 forceRefresh = forceRefresh
             ),
             previousState = previousState
-        )
+        ).copy(checkedAtMillis = System.currentTimeMillis())
         if (state.trackedItems.none { it.id == item.id }) return
         if (showToastOnError && itemState.failed) {
             env.toast(itemState.message)
@@ -581,7 +585,7 @@ internal class GitHubRefreshActions(
                                 item = item,
                                 resolvedState = resolved,
                                 previousState = previousState
-                            )
+                            ).copy(checkedAtMillis = System.currentTimeMillis())
                             var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
                             var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
                             progressMutex.withLock {
@@ -692,6 +696,20 @@ internal class GitHubRefreshActions(
         }
     }
 
+}
+
+private fun GitHubRefreshActions.selectDueTrackedUpdateItems(
+    nowMs: Long
+): List<GitHubTrackedApp> {
+    if (state.trackedItems.isEmpty()) return emptyList()
+    return state.trackedItems.filter { item ->
+        val checkedAtMillis = state.checkStates[item.id]?.checkedAtMillis
+            ?.takeIf { it > 0L }
+            ?: state.lastRefreshMs
+        checkedAtMillis <= 0L ||
+            (nowMs - checkedAtMillis).coerceAtLeast(0L) >=
+            item.updateIntervalMs(state.refreshIntervalHours)
+    }
 }
 
 internal fun selectImmediateTrackMutationRefreshIds(

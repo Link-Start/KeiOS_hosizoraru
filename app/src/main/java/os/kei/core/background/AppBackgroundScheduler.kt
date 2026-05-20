@@ -8,6 +8,7 @@ import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.actionsUpdateIntervalMs
+import os.kei.feature.github.model.updateIntervalMs
 import os.kei.ui.page.main.ba.support.BASettingsStore
 
 object AppBackgroundScheduler {
@@ -26,6 +27,10 @@ object AppBackgroundScheduler {
             trackedItemCount = snapshot.items.size,
             lastRefreshMs = snapshot.lastRefreshMs,
             refreshIntervalHours = snapshot.refreshIntervalHours,
+            nextTrackedUpdateDueAtMs = nextGitHubTrackedUpdateDueAtMs(
+                snapshot = snapshot,
+                nowMs = nowMs
+            ),
             nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
                 snapshot = snapshot,
                 nowMs = nowMs
@@ -38,6 +43,23 @@ object AppBackgroundScheduler {
             return
         }
         scheduleWithAlarmManager(alarmManager, schedule, pending)
+    }
+
+    private fun nextGitHubTrackedUpdateDueAtMs(
+        snapshot: GitHubTrackSnapshot,
+        nowMs: Long
+    ): Long? {
+        if (snapshot.items.isEmpty()) return null
+        return snapshot.items.minOfOrNull { item ->
+            val checkedAtMillis = snapshot.checkCache[item.id]?.checkedAtMillis
+                ?.takeIf { it > 0L }
+                ?: snapshot.lastRefreshMs
+            if (checkedAtMillis > 0L) {
+                checkedAtMillis + item.updateIntervalMs(snapshot.refreshIntervalHours)
+            } else {
+                nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS
+            }
+        }
     }
 
     private fun nextGitHubActionsUpdateDueAtMs(

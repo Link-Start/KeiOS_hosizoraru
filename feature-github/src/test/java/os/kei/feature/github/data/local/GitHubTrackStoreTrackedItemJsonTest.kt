@@ -7,6 +7,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import kotlin.test.assertEquals
 
 class GitHubTrackStoreTrackedItemJsonTest {
@@ -21,6 +22,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
             preferPreRelease = true,
             alwaysShowLatestReleaseDownloadButton = true,
             checkActionsUpdates = true,
+            updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30,
             preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled,
             localAppType = GitHubTrackedLocalAppType.System
@@ -39,6 +41,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
+        assertEquals(GitHubTrackedUpdateIntervalMode.Hours6, imported.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.Minutes30,
             imported.actionsUpdateIntervalMode
@@ -82,6 +85,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
             preferPreRelease = true,
             alwaysShowLatestReleaseDownloadButton = true,
             checkActionsUpdates = true,
+            updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hour1,
             preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled
         )
 
@@ -111,6 +115,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(GitHubTrackedUpdateIntervalMode.Hour1, imported.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             imported.actionsUpdateIntervalMode
@@ -172,6 +177,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
                       "preferPreRelease": true,
                       "alwaysShowLatestReleaseDownloadButton": true,
                       "checkActionsUpdates": true,
+                      "updateIntervalMode": "12h",
                       "actionsUpdateIntervalMode": "15m",
                       "preciseApkVersionMode": "enabled",
                       "localAppType": "system"
@@ -196,6 +202,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
+        assertEquals(GitHubTrackedUpdateIntervalMode.Hours12, imported.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.Minutes15,
             imported.actionsUpdateIntervalMode
@@ -219,6 +226,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
                     preferPreRelease = true,
                     alwaysShowLatestReleaseDownloadButton = true,
                     checkActionsUpdates = true,
+                    updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours3,
                     preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled
                 ),
                 GitHubTrackedApp(
@@ -234,6 +242,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(1, counts.preferPreReleaseCount)
         assertEquals(1, counts.latestReleaseDownloadCount)
         assertEquals(1, counts.actionsUpdateCount)
+        assertEquals(1, counts.updateIntervalOverrideCount)
         assertEquals(1, counts.preciseApkVersionOverrideCount)
     }
 

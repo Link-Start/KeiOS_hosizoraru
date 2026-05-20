@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.withSourceModeConstraints
 
@@ -85,6 +86,7 @@ fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {
         preferPreRelease = preferPreRelease,
         alwaysShowLatestReleaseDownloadButton = alwaysShowLatestReleaseDownloadButton,
         checkActionsUpdates = checkActionsUpdates,
+        updateIntervalMode = parseUpdateIntervalMode(obj),
         actionsUpdateIntervalMode = parseActionsUpdateIntervalMode(obj),
         preciseApkVersionMode = parsePreciseApkVersionMode(obj),
         repositoryArchived = when {
@@ -180,6 +182,23 @@ fun parsePreciseApkVersionMode(obj: JSONObject): GitHubTrackedPreciseApkVersionM
     }
 }
 
+fun parseUpdateIntervalMode(obj: JSONObject): GitHubTrackedUpdateIntervalMode {
+    val settings = obj.optJSONObject("settings")
+    return when {
+        settings?.has("updateIntervalMode") == true ->
+            GitHubTrackedUpdateIntervalMode.fromStorageId(
+                settings.optString("updateIntervalMode")
+            )
+
+        obj.has("updateIntervalMode") ->
+            GitHubTrackedUpdateIntervalMode.fromStorageId(
+                obj.optString("updateIntervalMode")
+            )
+
+        else -> GitHubTrackedUpdateIntervalMode.FollowGlobal
+    }
+}
+
 fun parseActionsUpdateIntervalMode(obj: JSONObject): GitHubTrackedActionsUpdateIntervalMode {
     val settings = obj.optJSONObject("settings")
     return when {
@@ -207,6 +226,7 @@ fun trackedItemToJson(item: GitHubTrackedApp): JSONObject {
             normalizedItem.alwaysShowLatestReleaseDownloadButton
         )
         .put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+        .put("updateIntervalMode", normalizedItem.updateIntervalMode.storageId)
         .put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
         .put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
         .put("localAppType", normalizedItem.localAppType.storageId)
@@ -240,6 +260,7 @@ fun trackedItemToJson(item: GitHubTrackedApp): JSONObject {
             normalizedItem.alwaysShowLatestReleaseDownloadButton
         )
         .put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+        .put("updateIntervalMode", normalizedItem.updateIntervalMode.storageId)
         .put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
         .put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
         .put("localAppType", normalizedItem.localAppType.storageId)
@@ -259,6 +280,7 @@ fun GitHubTrackedItemsOptionCounts.toJson(): JSONObject {
         .put("preferPreRelease", preferPreReleaseCount)
         .put("latestReleaseDownload", latestReleaseDownloadCount)
         .put("actionsUpdate", actionsUpdateCount)
+        .put("updateIntervalOverride", updateIntervalOverrideCount)
         .put("preciseApkVersionOverride", preciseApkVersionOverrideCount)
         .put("archivedOrFork", archivedOrForkCount)
 }

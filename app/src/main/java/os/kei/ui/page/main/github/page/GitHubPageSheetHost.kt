@@ -325,6 +325,7 @@ internal fun GitHubPageSheetHost(
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
         checkActionsUpdatesInput = state.checkActionsUpdatesInput,
+        updateIntervalModeInput = state.updateIntervalModeInput,
         actionsUpdateIntervalModeInput = state.actionsUpdateIntervalModeInput,
         preciseApkVersionModeInput = state.preciseApkVersionModeInput,
         globalRefreshIntervalHours = state.refreshIntervalHours,
@@ -385,6 +386,9 @@ internal fun GitHubPageSheetHost(
                 state.actionsUpdateIntervalModeInput =
                     GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
             }
+        },
+        onUpdateIntervalModeInputChange = {
+            state.updateIntervalModeInput = it
         },
         onActionsUpdateIntervalModeInputChange = {
             state.actionsUpdateIntervalModeInput = it

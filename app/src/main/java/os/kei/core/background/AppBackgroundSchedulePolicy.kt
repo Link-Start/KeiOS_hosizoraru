@@ -29,6 +29,7 @@ internal object AppBackgroundSchedulePolicy {
         trackedItemCount: Int,
         lastRefreshMs: Long,
         refreshIntervalHours: Int,
+        nextTrackedUpdateDueAtMs: Long? = null,
         nextActionsUpdateDueAtMs: Long? = null,
         nowMs: Long,
     ): BackgroundAlarmSchedule? {
@@ -39,7 +40,11 @@ internal object AppBackgroundSchedulePolicy {
         } else {
             nowMs + GITHUB_FIRST_TICK_DELAY_MS
         }
-        val dueAtMs = listOfNotNull(versionDueAtMs, nextActionsUpdateDueAtMs)
+        val dueAtMs = listOfNotNull(
+            nextTrackedUpdateDueAtMs,
+            versionDueAtMs,
+            nextActionsUpdateDueAtMs
+        )
             .minOrNull()
             ?: versionDueAtMs
         val triggerAtMs = dueAtMs.coerceAtLeast(nowMs + MIN_ALARM_DELAY_MS)

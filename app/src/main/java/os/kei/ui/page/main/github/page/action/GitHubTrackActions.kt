@@ -48,6 +48,7 @@ internal class GitHubTrackActions(
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.checkActionsUpdatesInput = item.checkActionsUpdates
+        state.updateIntervalModeInput = item.updateIntervalMode
         state.actionsUpdateIntervalModeInput = item.actionsUpdateIntervalMode
         state.preciseApkVersionModeInput = item.preciseApkVersionMode
         state.showAddSheet = true
@@ -228,6 +229,7 @@ internal class GitHubTrackActions(
                 GitHubTrackedSourceMode.GitHubRepository -> state.checkActionsUpdatesInput
                 GitHubTrackedSourceMode.DirectApk -> false
             },
+            updateIntervalMode = state.updateIntervalModeInput,
             actionsUpdateIntervalMode = when {
                 state.trackSourceModeInput == GitHubTrackedSourceMode.DirectApk ->
                     GitHubTrackedActionsUpdateIntervalMode.FollowGlobal

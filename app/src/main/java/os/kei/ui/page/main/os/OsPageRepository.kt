@@ -6,11 +6,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
-import os.kei.core.concurrency.AppDispatchers
 
 internal data class OsPagePersistentState(
     val uiSnapshot: OsUiSnapshot = OsUiSnapshot(),
@@ -29,6 +29,7 @@ internal class OsPageRepository(
     suspend fun loadPersistentState(
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) {
         val loaded =
             withContext(ioDispatcher) {
@@ -42,17 +43,22 @@ internal class OsPageRepository(
                                     ?: googleSystemServiceDefaults,
                             builtInActivityShortcutCards = builtInActivityShortcutCards,
                         ),
-                    shellCommandCards = OsShellCommandCardStore.loadCards(),
+                    shellCommandCards =
+                        OsShellCommandCardStore.loadCards(
+                            builtInShellCommandCards = builtInShellCommandCards,
+                        ),
                     loaded = true,
                 )
             }
         persistentState.value = loaded
     }
 
-    suspend fun reloadShellCommandCards() {
+    suspend fun reloadShellCommandCards(builtInShellCommandCards: List<OsShellCommandCard> = emptyList()) {
         val cards =
             withContext(ioDispatcher) {
-                OsShellCommandCardStore.loadCards()
+                OsShellCommandCardStore.loadCards(
+                    builtInShellCommandCards = builtInShellCommandCards,
+                )
             }
         persistentState.update { state -> state.copy(shellCommandCards = cards) }
     }

@@ -46,6 +46,10 @@
     <string name="os_shell_card_toast_command_required">Enter a valid shell command</string>
     <string name="os_shell_card_toast_run_failed">Run failed: %1$s</string>
     <string name="os_shell_card_toast_imported_summary">shell card import completed: added %1$d, updated %2$d, unchanged %3$d</string>
+    <string name="os_shell_builtin_get_status_bar_notification_icon_title">Get status bar notification icon count</string>
+    <string name="os_shell_builtin_set_status_bar_notification_icon_9_title">Set status bar notification icon count to 9</string>
+    <string name="os_shell_builtin_hide_gesture_line_title">Hide gesture hint line</string>
+    <string name="os_shell_builtin_hide_gesture_line_subtitle">Hide the bottom hint line while using full-screen gestures</string>
     <string name="os_shell_page_title">Shell</string>
     <string name="os_shell_input_title">shell input</string>
     <string name="os_shell_output_title">shell output</string>

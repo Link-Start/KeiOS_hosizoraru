@@ -68,11 +68,13 @@ fun OsPage(
         runtime.hasActivated,
         textBundle.googleSystemServiceDefaults,
         textBundle.builtInActivityShortcutCards,
+        textBundle.builtInShellCommandCards,
     ) {
         if (!runtime.hasActivated) return@LaunchedEffect
         osPageViewModel.loadPersistentState(
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             builtInActivityShortcutCards = textBundle.builtInActivityShortcutCards,
+            builtInShellCommandCards = textBundle.builtInShellCommandCards,
         )
     }
     val persistentState by osPageViewModel.persistentState.collectAsStateWithLifecycle()
@@ -131,7 +133,11 @@ fun OsPage(
     }
     BindOsShellCardReloadOnResume(
         lifecycleOwner = lifecycleOwner,
-        reloadCards = osPageViewModel::reloadShellCommandCards,
+        reloadCards = {
+            osPageViewModel.reloadShellCommandCards(
+                builtInShellCommandCards = textBundle.builtInShellCommandCards,
+            )
+        },
     )
     val cardTransferState =
         rememberOsPageCardTransferState(

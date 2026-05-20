@@ -2,9 +2,9 @@ package os.kei.ui.page.main.os.shell
 
 import androidx.compose.runtime.Immutable
 import com.tencent.mmkv.MMKV
-import os.kei.core.prefs.KeiMmkv
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.os.transfer.OS_CARD_EXPORT_SCHEMA_VERSION
 import os.kei.ui.page.main.os.transfer.OS_SHELL_CARD_EXPORT_SCHEMA
 import os.kei.ui.page.main.os.transfer.OsCardImportError
@@ -19,7 +19,7 @@ internal data class OsShellCardImportMergeResult(
     val cards: List<OsShellCommandCard>,
     val addedCount: Int,
     val updatedCount: Int,
-    val unchangedCount: Int
+    val unchangedCount: Int,
 )
 
 @Immutable
@@ -32,11 +32,16 @@ internal data class OsShellCommandCard(
     val runOutput: String = "",
     val lastRunAtMillis: Long = 0L,
     val createdAtMillis: Long = 0L,
-    val updatedAtMillis: Long = 0L
+    val updatedAtMillis: Long = 0L,
 )
 
 internal fun newOsShellCommandCardId(): String {
-    val compactUuid = UUID.randomUUID().toString().replace("-", "").take(12)
+    val compactUuid =
+        UUID
+            .randomUUID()
+            .toString()
+            .replace("-", "")
+            .take(12)
     return "shell-${compactUuid.lowercase(Locale.ROOT)}"
 }
 
@@ -57,13 +62,14 @@ internal fun createDefaultShellCommandCardDraft(command: String = ""): OsShellCo
         runOutput = "",
         lastRunAtMillis = 0L,
         createdAtMillis = 0L,
-        updatedAtMillis = 0L
+        updatedAtMillis = 0L,
     )
 }
 
 internal object OsShellCommandCardStore {
     private const val KV_ID = "os_ui_state"
     private const val KEY_SHELL_COMMAND_CARDS = "os_shell_command_cards_v1"
+    private const val KEY_DELETED_BUILT_IN_SHELL_COMMAND_CARD_IDS = "os_deleted_builtin_shell_command_card_ids_v1"
 
     private const val KEY_ID = "id"
     private const val KEY_VISIBLE = "visible"
@@ -84,9 +90,9 @@ internal object OsShellCommandCardStore {
     private val storeLock = Any()
     private var cachedCards: List<OsShellCommandCard>? = null
 
-    fun loadCards(): List<OsShellCommandCard> {
+    fun loadCards(builtInShellCommandCards: List<OsShellCommandCard> = emptyList()): List<OsShellCommandCard> {
         synchronized(storeLock) {
-            return readCachedCardsLocked().toList()
+            return readCachedCardsLocked(builtInShellCommandCards).toList()
         }
     }
 
@@ -100,23 +106,24 @@ internal object OsShellCommandCardStore {
         command: String,
         title: String,
         subtitle: String,
-        runOutput: String = ""
+        runOutput: String = "",
     ): OsShellCommandCard? {
         synchronized(storeLock) {
             val now = System.currentTimeMillis()
-            val card = normalizeCard(
-                OsShellCommandCard(
-                    id = newOsShellCommandCardId(),
-                    visible = true,
-                    title = title,
-                    subtitle = subtitle,
-                    command = command,
-                    runOutput = runOutput,
-                    lastRunAtMillis = if (runOutput.isBlank()) 0L else now,
-                    createdAtMillis = now,
-                    updatedAtMillis = now
-                )
-            ) ?: return null
+            val card =
+                normalizeCard(
+                    OsShellCommandCard(
+                        id = newOsShellCommandCardId(),
+                        visible = true,
+                        title = title,
+                        subtitle = subtitle,
+                        command = command,
+                        runOutput = runOutput,
+                        lastRunAtMillis = if (runOutput.isBlank()) 0L else now,
+                        createdAtMillis = now,
+                        updatedAtMillis = now,
+                    ),
+                ) ?: return null
             persistCardsLocked(readCachedCardsLocked() + card)
             return card
         }
@@ -126,7 +133,7 @@ internal object OsShellCommandCardStore {
         cardId: String,
         title: String,
         subtitle: String,
-        command: String
+        command: String,
     ): OsShellCommandCard? {
         val targetId = cardId.trim()
         if (targetId.isBlank()) return null
@@ -134,26 +141,31 @@ internal object OsShellCommandCardStore {
             val current = readCachedCardsLocked()
             val existing = current.firstOrNull { it.id == targetId } ?: return null
             val now = System.currentTimeMillis()
-            val updated = normalizeCard(
-                existing.copy(
-                    title = title,
-                    subtitle = subtitle,
-                    command = command,
-                    updatedAtMillis = now
-                )
-            ) ?: return null
+            val updated =
+                normalizeCard(
+                    existing.copy(
+                        title = title,
+                        subtitle = subtitle,
+                        command = command,
+                        updatedAtMillis = now,
+                    ),
+                ) ?: return null
             persistCardsLocked(current.map { card -> if (card.id == targetId) updated else card })
             return updated
         }
     }
 
-    fun setCardVisible(cardId: String, visible: Boolean): List<OsShellCommandCard> {
+    fun setCardVisible(
+        cardId: String,
+        visible: Boolean,
+    ): List<OsShellCommandCard> {
         val targetId = cardId.trim()
         if (targetId.isBlank()) return loadCards()
         synchronized(storeLock) {
-            val updated = readCachedCardsLocked().map { card ->
-                if (card.id == targetId) card.copy(visible = visible) else card
-            }
+            val updated =
+                readCachedCardsLocked().map { card ->
+                    if (card.id == targetId) card.copy(visible = visible) else card
+                }
             persistCardsLocked(updated)
             return updated
         }
@@ -163,7 +175,18 @@ internal object OsShellCommandCardStore {
         val targetId = cardId.trim()
         if (targetId.isBlank()) return loadCards()
         synchronized(storeLock) {
-            val updated = readCachedCardsLocked().filterNot { card -> card.id == targetId }
+            val current = readCachedCardsLocked()
+            val targetCard = current.firstOrNull { card -> card.id == targetId }
+            val deletedBuiltInId =
+                targetId
+                    .takeIf { id -> id in BUILT_IN_SHELL_COMMAND_CARD_IDS }
+                    ?: targetCard?.let { card -> builtInShellCommandCardIdForCommand(card.command) }
+            val updated = current.filterNot { card -> card.id == targetId }
+            if (deletedBuiltInId != null) {
+                persistDeletedBuiltInShellCardIdsLocked(
+                    readDeletedBuiltInShellCardIdsLocked() + deletedBuiltInId,
+                )
+            }
             persistCardsLocked(updated)
             return updated
         }
@@ -172,7 +195,7 @@ internal object OsShellCommandCardStore {
     fun updateCardRunResult(
         cardId: String,
         runOutput: String,
-        runAtMillis: Long = System.currentTimeMillis()
+        runAtMillis: Long = System.currentTimeMillis(),
     ): OsShellCommandCard? {
         val targetId = cardId.trim()
         if (targetId.isBlank()) return null
@@ -180,17 +203,19 @@ internal object OsShellCommandCardStore {
             val current = readCachedCardsLocked()
             val existing = current.firstOrNull { it.id == targetId } ?: return null
             val resolvedRunAt = runAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
-            val preservedUpdatedAt = existing.updatedAtMillis
-                .takeIf { it > 0L }
-                ?: existing.createdAtMillis.takeIf { it > 0L }
-                ?: resolvedRunAt
-            val updated = normalizeCard(
-                existing.copy(
-                    runOutput = runOutput,
-                    lastRunAtMillis = resolvedRunAt,
-                    updatedAtMillis = preservedUpdatedAt
-                )
-            ) ?: return null
+            val preservedUpdatedAt =
+                existing.updatedAtMillis
+                    .takeIf { it > 0L }
+                    ?: existing.createdAtMillis.takeIf { it > 0L }
+                    ?: resolvedRunAt
+            val updated =
+                normalizeCard(
+                    existing.copy(
+                        runOutput = runOutput,
+                        lastRunAtMillis = resolvedRunAt,
+                        updatedAtMillis = preservedUpdatedAt,
+                    ),
+                ) ?: return null
             persistCardsLocked(current.map { card -> if (card.id == targetId) updated else card })
             return updated
         }
@@ -204,26 +229,41 @@ internal object OsShellCommandCardStore {
         }
     }
 
-    private fun readCachedCardsLocked(): List<OsShellCommandCard> {
-        cachedCards?.let { return it }
-        val raw = store.decodeString(KEY_SHELL_COMMAND_CARDS).orEmpty().trim()
-        val decoded = if (raw.isNotBlank()) {
-            decodeCards(raw)
-        } else {
-            emptyList()
+    private fun readCachedCardsLocked(builtInShellCommandCards: List<OsShellCommandCard> = emptyList()): List<OsShellCommandCard> {
+        cachedCards?.let { cached ->
+            return appendMissingBuiltInShellCommandCardsLocked(
+                cards = cached,
+                builtInShellCommandCards = builtInShellCommandCards,
+            )
         }
+        val raw = store.decodeString(KEY_SHELL_COMMAND_CARDS).orEmpty().trim()
+        val decoded =
+            if (raw.isNotBlank()) {
+                decodeCards(raw)
+            } else {
+                emptyList()
+            }
         if (decoded.isNotEmpty()) {
-            cachedCards = decoded
-            return decoded
+            return appendMissingBuiltInShellCommandCardsLocked(
+                cards = decoded,
+                builtInShellCommandCards = builtInShellCommandCards,
+            )
         }
         val migrated = loadLegacySnapshot()?.let { legacy -> listOf(legacy) }.orEmpty()
         if (migrated.isNotEmpty()) {
-            persistCardsLocked(migrated)
+            val withBuiltIns =
+                appendMissingBuiltInShellCommandCardsLocked(
+                    cards = migrated,
+                    builtInShellCommandCards = builtInShellCommandCards,
+                )
+            persistCardsLocked(withBuiltIns)
             clearLegacySnapshot()
-            return migrated
+            return withBuiltIns
         }
-        cachedCards = emptyList()
-        return emptyList()
+        return appendMissingBuiltInShellCommandCardsLocked(
+            cards = emptyList(),
+            builtInShellCommandCards = builtInShellCommandCards,
+        )
     }
 
     private fun persistCardsLocked(cards: List<OsShellCommandCard>) {
@@ -251,7 +291,7 @@ internal object OsShellCommandCardStore {
             runOutput = normalizeRunOutput(card.runOutput),
             lastRunAtMillis = lastRunAt,
             createdAtMillis = createdAt,
-            updatedAtMillis = updatedAt
+            updatedAtMillis = updatedAt,
         )
     }
 
@@ -269,14 +309,14 @@ internal object OsShellCommandCardStore {
                     put(KEY_LAST_RUN_AT, card.lastRunAtMillis)
                     put(KEY_CREATED_AT, card.createdAtMillis)
                     put(KEY_UPDATED_AT, card.updatedAtMillis)
-                }
+                },
             )
         }
         return array.toString()
     }
 
-    private fun decodeCards(raw: String): List<OsShellCommandCard> {
-        return runCatching {
+    private fun decodeCards(raw: String): List<OsShellCommandCard> =
+        runCatching {
             val array = JSONArray(raw)
             buildList {
                 for (index in 0 until array.length()) {
@@ -291,13 +331,12 @@ internal object OsShellCommandCardStore {
                             runOutput = item.optString(KEY_RUN_OUTPUT),
                             lastRunAtMillis = item.optLong(KEY_LAST_RUN_AT, 0L),
                             createdAtMillis = item.optLong(KEY_CREATED_AT, 0L),
-                            updatedAtMillis = item.optLong(KEY_UPDATED_AT, 0L)
-                        )
+                            updatedAtMillis = item.optLong(KEY_UPDATED_AT, 0L),
+                        ),
                     )?.let(::add)
                 }
             }
         }.getOrDefault(emptyList())
-    }
 
     private fun loadLegacySnapshot(): OsShellCommandCard? {
         val command = store.decodeString(LEGACY_KEY_SHELL_COMMAND).orEmpty().trim()
@@ -317,8 +356,8 @@ internal object OsShellCommandCardStore {
                 runOutput = "",
                 lastRunAtMillis = 0L,
                 createdAtMillis = timestamp,
-                updatedAtMillis = timestamp
-            )
+                updatedAtMillis = timestamp,
+            ),
         )
     }
 
@@ -330,12 +369,67 @@ internal object OsShellCommandCardStore {
     }
 
     private fun normalizeRunOutput(output: String): String {
-        val normalized = output
-            .replace("\r\n", "\n")
-            .replace('\r', '\n')
-            .trim()
+        val normalized =
+            output
+                .replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .trim()
         if (normalized.length <= MAX_OUTPUT_LENGTH) return normalized
         return normalized.takeLast(MAX_OUTPUT_LENGTH)
+    }
+
+    private fun appendMissingBuiltInShellCommandCardsLocked(
+        cards: List<OsShellCommandCard>,
+        builtInShellCommandCards: List<OsShellCommandCard>,
+    ): List<OsShellCommandCard> {
+        val builtIns = builtInShellCommandCards.mapNotNull(::normalizeCard)
+        if (builtIns.isEmpty()) {
+            cachedCards = cards
+            return cards
+        }
+        val deletedBuiltInIds = readDeletedBuiltInShellCardIdsLocked()
+        val merged = cards.toMutableList()
+        builtIns.forEach { builtIn ->
+            val alreadyPresent =
+                merged.any { card ->
+                    card.id == builtIn.id || mergeKeyFor(card) == mergeKeyFor(builtIn)
+                }
+            if (!alreadyPresent && builtIn.id !in deletedBuiltInIds) {
+                merged += builtIn
+            }
+        }
+        val normalized = merged.mapNotNull(::normalizeCard)
+        if (normalized != cards) {
+            persistCardsLocked(normalized)
+        } else {
+            cachedCards = normalized
+        }
+        return normalized
+    }
+
+    private fun readDeletedBuiltInShellCardIdsLocked(): Set<String> {
+        val raw = store.decodeString(KEY_DELETED_BUILT_IN_SHELL_COMMAND_CARD_IDS).orEmpty().trim()
+        if (raw.isBlank()) return emptySet()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildSet {
+                for (index in 0 until array.length()) {
+                    val id = array.optString(index).trim()
+                    if (id in BUILT_IN_SHELL_COMMAND_CARD_IDS) add(id)
+                }
+            }
+        }.getOrDefault(emptySet())
+    }
+
+    private fun persistDeletedBuiltInShellCardIdsLocked(ids: Set<String>) {
+        val normalized = ids.filter { id -> id in BUILT_IN_SHELL_COMMAND_CARD_IDS }.sorted()
+        if (normalized.isEmpty()) {
+            store.removeValueForKey(KEY_DELETED_BUILT_IN_SHELL_COMMAND_CARD_IDS)
+            return
+        }
+        val array = JSONArray()
+        normalized.forEach(array::put)
+        store.encode(KEY_DELETED_BUILT_IN_SHELL_COMMAND_CARD_IDS, array.toString())
     }
 
     private const val MAX_OUTPUT_LENGTH = 24_000
@@ -347,17 +441,18 @@ internal object OsShellCommandCardStore {
 
     fun buildCardsExportJson(
         cards: List<OsShellCommandCard> = loadCards(),
-        exportedAtMillis: Long = System.currentTimeMillis()
+        exportedAtMillis: Long = System.currentTimeMillis(),
     ): String {
         val normalized = cards.mapNotNull(::normalizeCard)
         val items = JSONArray(encodeCards(normalized))
-        return JSONObject().apply {
-            put(KEY_EXPORT_SCHEMA, OS_SHELL_CARD_EXPORT_SCHEMA)
-            put(KEY_EXPORT_SCHEMA_VERSION, OS_CARD_EXPORT_SCHEMA_VERSION)
-            put(KEY_EXPORT_EXPORTED_AT, exportedAtMillis)
-            put(KEY_EXPORT_ITEM_COUNT, normalized.size)
-            put(KEY_EXPORT_ITEMS, items)
-        }.toString(2)
+        return JSONObject()
+            .apply {
+                put(KEY_EXPORT_SCHEMA, OS_SHELL_CARD_EXPORT_SCHEMA)
+                put(KEY_EXPORT_SCHEMA_VERSION, OS_CARD_EXPORT_SCHEMA_VERSION)
+                put(KEY_EXPORT_EXPORTED_AT, exportedAtMillis)
+                put(KEY_EXPORT_ITEM_COUNT, normalized.size)
+                put(KEY_EXPORT_ITEMS, items)
+            }.toString(2)
     }
 
     fun parseCardsImport(root: OsCardImportRoot): OsShellCardImportPayload {
@@ -369,34 +464,38 @@ internal object OsShellCommandCardStore {
                 duplicateCount = 0,
                 fileKind = root.fileKind,
                 schemaVersion = root.schemaVersion,
-                isLegacyFormat = root.isLegacyFormat
+                isLegacyFormat = root.isLegacyFormat,
             )
         }
-        val decoded = buildList {
-            for (index in 0 until root.items.length()) {
-                val item = root.items.optJSONObject(index) ?: continue
-                decodeCard(item)?.let(::add)
+        val decoded =
+            buildList {
+                for (index in 0 until root.items.length()) {
+                    val item = root.items.optJSONObject(index) ?: continue
+                    decodeCard(item)?.let(::add)
+                }
             }
-        }
         val deduplicated = mutableListOf<OsShellCommandCard>()
         var duplicateCount = 0
         decoded.forEach { imported ->
             val targetIndexById = deduplicated.indexOfFirst { it.id == imported.id }
-            val targetIndex = if (targetIndexById >= 0) {
-                targetIndexById
-            } else {
-                deduplicated.indexOfFirst { mergeKeyFor(it) == mergeKeyFor(imported) }
-            }
+            val targetIndex =
+                if (targetIndexById >= 0) {
+                    targetIndexById
+                } else {
+                    deduplicated.indexOfFirst { mergeKeyFor(it) == mergeKeyFor(imported) }
+                }
             if (targetIndex < 0) {
                 deduplicated += imported
             } else {
                 val existing = deduplicated[targetIndex]
-                deduplicated[targetIndex] = imported.copy(
-                    id = existing.id,
-                    createdAtMillis = existing.createdAtMillis.takeIf { it > 0L }
-                        ?: imported.createdAtMillis,
-                    updatedAtMillis = maxOf(existing.updatedAtMillis, imported.updatedAtMillis)
-                )
+                deduplicated[targetIndex] =
+                    imported.copy(
+                        id = existing.id,
+                        createdAtMillis =
+                            existing.createdAtMillis.takeIf { it > 0L }
+                                ?: imported.createdAtMillis,
+                        updatedAtMillis = maxOf(existing.updatedAtMillis, imported.updatedAtMillis),
+                    )
                 duplicateCount += 1
             }
         }
@@ -407,20 +506,18 @@ internal object OsShellCommandCardStore {
             duplicateCount = duplicateCount,
             fileKind = root.fileKind,
             schemaVersion = root.schemaVersion,
-            isLegacyFormat = root.isLegacyFormat
+            isLegacyFormat = root.isLegacyFormat,
         )
     }
 
     fun previewImportedCards(
         payload: OsShellCardImportPayload,
-        existingCards: List<OsShellCommandCard>
-    ): OsShellCardImportMergeResult {
-        return mergeImportedCards(existingCards = existingCards, importedCards = payload.cards)
-    }
+        existingCards: List<OsShellCommandCard>,
+    ): OsShellCardImportMergeResult = mergeImportedCards(existingCards = existingCards, importedCards = payload.cards)
 
     fun applyImportedCards(
         payload: OsShellCardImportPayload,
-        existingCards: List<OsShellCommandCard>
+        existingCards: List<OsShellCommandCard>,
     ): OsShellCardImportMergeResult {
         val result = mergeImportedCards(existingCards = existingCards, importedCards = payload.cards)
         saveCards(result.cards)
@@ -428,25 +525,30 @@ internal object OsShellCommandCardStore {
     }
 
     fun importCardsFromJsonMerged(raw: String): OsShellCardImportMergeResult {
-        val payload = parseCardsImport(root = os.kei.ui.page.main.os.transfer.parseOsCardImportRoot(raw))
+        val payload =
+            parseCardsImport(
+                root =
+                    os.kei.ui.page.main.os.transfer
+                        .parseOsCardImportRoot(raw),
+            )
         if (payload.cards.isEmpty()) {
             throw OsCardImportException(OsCardImportError.NoValidShellCards)
         }
         return applyImportedCards(payload = payload, existingCards = loadCards())
     }
 
-    private fun mergeKeyFor(card: OsShellCommandCard): String {
-        return card.command.trim().replace(Regex("\\s+"), " ")
-    }
+    private fun mergeKeyFor(card: OsShellCommandCard): String = card.command.trim().replace(Regex("\\s+"), " ")
 
-    private fun cardsEquivalent(old: OsShellCommandCard, new: OsShellCommandCard): Boolean {
-        return old.visible == new.visible &&
+    private fun cardsEquivalent(
+        old: OsShellCommandCard,
+        new: OsShellCommandCard,
+    ): Boolean =
+        old.visible == new.visible &&
             old.title == new.title &&
             old.subtitle == new.subtitle &&
             old.command == new.command &&
             old.runOutput == new.runOutput &&
             old.lastRunAtMillis == new.lastRunAtMillis
-    }
 
     private fun decodeCard(item: JSONObject): OsShellCommandCard? {
         if (!item.has(KEY_COMMAND)) return null
@@ -460,14 +562,14 @@ internal object OsShellCommandCardStore {
                 runOutput = item.optString(KEY_RUN_OUTPUT),
                 lastRunAtMillis = item.optLong(KEY_LAST_RUN_AT, 0L),
                 createdAtMillis = item.optLong(KEY_CREATED_AT, 0L),
-                updatedAtMillis = item.optLong(KEY_UPDATED_AT, 0L)
-            )
+                updatedAtMillis = item.optLong(KEY_UPDATED_AT, 0L),
+            ),
         )
     }
 
     private fun mergeImportedCards(
         existingCards: List<OsShellCommandCard>,
-        importedCards: List<OsShellCommandCard>
+        importedCards: List<OsShellCommandCard>,
     ): OsShellCardImportMergeResult {
         val mergedCards = existingCards.toMutableList()
         var addedCount = 0
@@ -475,22 +577,24 @@ internal object OsShellCommandCardStore {
         var unchangedCount = 0
         importedCards.forEach { imported ->
             val targetIndexById = mergedCards.indexOfFirst { it.id == imported.id }
-            val targetIndex = if (targetIndexById >= 0) {
-                targetIndexById
-            } else {
-                mergedCards.indexOfFirst { mergeKeyFor(it) == mergeKeyFor(imported) }
-            }
+            val targetIndex =
+                if (targetIndexById >= 0) {
+                    targetIndexById
+                } else {
+                    mergedCards.indexOfFirst { mergeKeyFor(it) == mergeKeyFor(imported) }
+                }
             if (targetIndex < 0) {
                 mergedCards += imported
                 addedCount += 1
                 return@forEach
             }
             val existing = mergedCards[targetIndex]
-            val resolved = imported.copy(
-                id = existing.id,
-                createdAtMillis = existing.createdAtMillis.takeIf { it > 0L } ?: imported.createdAtMillis,
-                updatedAtMillis = maxOf(existing.updatedAtMillis, imported.updatedAtMillis)
-            )
+            val resolved =
+                imported.copy(
+                    id = existing.id,
+                    createdAtMillis = existing.createdAtMillis.takeIf { it > 0L } ?: imported.createdAtMillis,
+                    updatedAtMillis = maxOf(existing.updatedAtMillis, imported.updatedAtMillis),
+                )
             if (cardsEquivalent(existing, resolved)) {
                 unchangedCount += 1
             } else {
@@ -502,7 +606,7 @@ internal object OsShellCommandCardStore {
             cards = mergedCards,
             addedCount = addedCount,
             updatedCount = updatedCount,
-            unchangedCount = unchangedCount
+            unchangedCount = unchangedCount,
         )
     }
 }

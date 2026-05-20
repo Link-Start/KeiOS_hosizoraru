@@ -6,6 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
+import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shell.rememberBuiltInShellCommandCards
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.rememberBuiltInActivityShortcutCards
 
@@ -41,6 +43,7 @@ internal data class OsPageTextBundle(
     val googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     val googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
     val builtInActivityShortcutCards: List<OsActivityShortcutCard>,
+    val builtInShellCommandCards: List<OsShellCommandCard>,
 )
 
 @Composable
@@ -128,6 +131,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
             defaults = googleSystemServiceDefaults,
             defaultIntentFlags = googleSystemServiceDefaultIntentFlags,
         )
+    val builtInShellCommandCards = rememberBuiltInShellCommandCards()
 
     return remember(
         exportSuccessText,
@@ -161,6 +165,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
         googleSystemServiceDefaults,
         googleSettingsBuiltInSampleDefaults,
         builtInActivityShortcutCards,
+        builtInShellCommandCards,
     ) {
         OsPageTextBundle(
             exportSuccessText = exportSuccessText,
@@ -194,6 +199,7 @@ internal fun rememberOsPageTextBundle(): OsPageTextBundle {
             googleSystemServiceDefaults = googleSystemServiceDefaults,
             googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
             builtInActivityShortcutCards = builtInActivityShortcutCards,
+            builtInShellCommandCards = builtInShellCommandCards,
         )
     }
 }

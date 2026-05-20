@@ -46,6 +46,10 @@
     <string name="os_shell_card_toast_command_required">有効な Shell コマンドを入力してください</string>
     <string name="os_shell_card_toast_run_failed">実行に失敗しました: %1$s</string>
     <string name="os_shell_card_toast_imported_summary">Shell カードのインポート完了: 追加 %1$d、更新 %2$d、変更なし %3$d</string>
+    <string name="os_shell_builtin_get_status_bar_notification_icon_title">ステータスバー通知アイコン数を取得</string>
+    <string name="os_shell_builtin_set_status_bar_notification_icon_9_title">ステータスバー通知アイコン数を 9 に設定</string>
+    <string name="os_shell_builtin_hide_gesture_line_title">ジェスチャーヒント線を非表示</string>
+    <string name="os_shell_builtin_hide_gesture_line_subtitle">全画面ジェスチャー使用時に下部のヒント線を隠します</string>
     <string name="os_shell_page_title">Shell</string>
     <string name="os_shell_input_title">Shell 入力</string>
     <string name="os_shell_output_title">Shell 出力</string>

@@ -32,6 +32,7 @@ import os.kei.ui.page.main.os.osLucideRunIcon
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.ShellCommandInputField
 import os.kei.ui.page.main.os.shell.defaultOsShellCommandCardTitle
+import os.kei.ui.page.main.os.shell.isBuiltInShellCommandCard
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
@@ -182,6 +183,8 @@ internal fun OsShellCommandVisibilityManagerSheet(
                         card.matchesShellVisibilityQuery(query)
                     }
                 }
+            val builtInCards = filteredCards.filter(::isBuiltInShellCommandCard)
+            val customCards = filteredCards.filterNot(::isBuiltInShellCommandCard)
             val showShellRunner =
                 shellRunnerTitle.contains(query.trim(), ignoreCase = true) ||
                     query.isBlank()
@@ -212,18 +215,37 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     )
                 }
             }
-            if (filteredCards.isNotEmpty()) {
+            if (builtInCards.isNotEmpty()) {
+                SheetSectionTitle(
+                    text =
+                        visibilityGroupTitle(
+                            title = stringResource(R.string.os_visibility_group_built_in),
+                            count = builtInCards.size,
+                        ),
+                )
+                SheetSectionCard(verticalSpacing = 10.dp) {
+                    builtInCards.forEach { item ->
+                        ShellCommandVisibilityRow(
+                            card = item,
+                            builtIn = true,
+                            onCardVisibilityChange = onCardVisibilityChange,
+                        )
+                    }
+                }
+            }
+            if (customCards.isNotEmpty()) {
                 SheetSectionTitle(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_custom),
-                            count = filteredCards.size,
+                            count = customCards.size,
                         ),
                 )
                 SheetSectionCard(verticalSpacing = 10.dp) {
-                    filteredCards.forEach { item ->
+                    customCards.forEach { item ->
                         ShellCommandVisibilityRow(
                             card = item,
+                            builtIn = false,
                             onCardVisibilityChange = onCardVisibilityChange,
                         )
                     }
@@ -314,17 +336,31 @@ private fun ShellRunnerVisibilityRow(
 @Composable
 private fun ShellCommandVisibilityRow(
     card: OsShellCommandCard,
+    builtIn: Boolean,
     onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SheetControlRow(
         labelContent = {
-            Text(
-                text = card.title.ifBlank { defaultOsShellCommandCardTitle(card.command) },
-                color = MiuixTheme.colorScheme.onBackground,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = card.title.ifBlank { defaultOsShellCommandCardTitle(card.command) },
+                    color = MiuixTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (builtIn) {
+                    StatusPill(
+                        label = stringResource(R.string.os_shell_card_builtin_badge),
+                        color = Color(0xFF3B82F6),
+                        size = AppStatusPillSize.Compact,
+                    )
+                }
+            }
         },
     ) {
         AppSwitch(

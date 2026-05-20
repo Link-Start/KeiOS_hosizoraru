@@ -46,6 +46,10 @@
     <string name="os_shell_card_toast_command_required">请填写有效的 shell 命令</string>
     <string name="os_shell_card_toast_run_failed">运行失败: %1$s</string>
     <string name="os_shell_card_toast_imported_summary">shell card 导入完成：新增 %1$d，更新 %2$d，保持 %3$d</string>
+    <string name="os_shell_builtin_get_status_bar_notification_icon_title">获取状态栏通知图标个数</string>
+    <string name="os_shell_builtin_set_status_bar_notification_icon_9_title">设置状态栏通知图标个数为 9个</string>
+    <string name="os_shell_builtin_hide_gesture_line_title">隐藏手势提示线</string>
+    <string name="os_shell_builtin_hide_gesture_line_subtitle">使用全面屏手势时隐藏底部的提示线</string>
     <string name="os_shell_page_title">Shell</string>
     <string name="os_shell_input_title">shell 输入</string>
     <string name="os_shell_output_title">shell 输出</string>

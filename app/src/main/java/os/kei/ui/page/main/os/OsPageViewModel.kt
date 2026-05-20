@@ -80,18 +80,22 @@ internal class OsPageViewModel : ViewModel() {
     fun loadPersistentState(
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) {
         viewModelScope.launch {
             repository.loadPersistentState(
                 googleSystemServiceDefaults = googleSystemServiceDefaults,
                 builtInActivityShortcutCards = builtInActivityShortcutCards,
+                builtInShellCommandCards = builtInShellCommandCards,
             )
         }
     }
 
-    fun reloadShellCommandCards() {
+    fun reloadShellCommandCards(builtInShellCommandCards: List<OsShellCommandCard> = emptyList()) {
         viewModelScope.launch {
-            repository.reloadShellCommandCards()
+            repository.reloadShellCommandCards(
+                builtInShellCommandCards = builtInShellCommandCards,
+            )
         }
     }
 

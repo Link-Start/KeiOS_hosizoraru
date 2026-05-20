@@ -51,8 +51,8 @@ private const val HOME_CARD_HORIZONTAL_PADDING_DP = 12
 internal fun Modifier.homeKeiHdrAccent(
     enabled: Boolean,
     sweepProgress: Float,
-    sweepAlpha: Float = 0.82f,
-    radialAlpha: Float = 0.30f,
+    sweepAlpha: Float = 0.62f,
+    radialAlpha: Float = 0.20f,
     radialRadiusScale: Float = 0.72f,
     radialCenterX: Float = 0.5f,
     radialCenterY: Float = 0.5f
@@ -64,31 +64,45 @@ internal fun Modifier.homeKeiHdrAccent(
         }
         .drawWithContent {
             drawContent()
-            drawRect(
-                brush = Brush.linearGradient(
-                    colorStops = arrayOf(
-                        0f to Color.Transparent,
-                        (sweepProgress - 0.16f).coerceIn(0f, 1f) to Color.Transparent,
-                        sweepProgress.coerceIn(0f, 1f) to Color.White.copy(alpha = sweepAlpha),
-                        (sweepProgress + 0.16f).coerceIn(0f, 1f) to Color.Transparent,
-                        1f to Color.Transparent
-                    )
-                ),
-                blendMode = BlendMode.SrcAtop
-            )
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = radialAlpha),
-                        Color.Transparent
+            val sweepVisibility = homeKeiHdrSweepVisibility(sweepProgress)
+            if (sweepVisibility > 0f) {
+                val visibleSweepAlpha = sweepAlpha * sweepVisibility
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colorStops = arrayOf(
+                            0f to Color.Transparent,
+                            (sweepProgress - HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
+                            sweepProgress.coerceIn(0f, 1f) to Color.White.copy(alpha = visibleSweepAlpha),
+                            (sweepProgress + HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
+                            1f to Color.Transparent
+                        )
                     ),
-                    center = Offset(size.width * radialCenterX, size.height * radialCenterY),
-                    radius = size.minDimension * radialRadiusScale
-                ),
-                blendMode = BlendMode.SrcAtop
-            )
+                    blendMode = BlendMode.SrcAtop
+                )
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = radialAlpha * sweepVisibility),
+                            Color.Transparent
+                        ),
+                        center = Offset(size.width * radialCenterX, size.height * radialCenterY),
+                        radius = size.minDimension * radialRadiusScale
+                    ),
+                    blendMode = BlendMode.SrcAtop
+                )
+            }
         }
 }
+
+internal fun homeKeiHdrSweepVisibility(sweepProgress: Float): Float {
+    if (sweepProgress <= 0f || sweepProgress >= 1f) return 0f
+    val fadeIn = (sweepProgress / HOME_KEI_HDR_EDGE_FADE_WIDTH).coerceIn(0f, 1f)
+    val fadeOut = ((1f - sweepProgress) / HOME_KEI_HDR_EDGE_FADE_WIDTH).coerceIn(0f, 1f)
+    return minOf(fadeIn, fadeOut)
+}
+
+private const val HOME_KEI_HDR_SWEEP_HALF_WIDTH = 0.16f
+private const val HOME_KEI_HDR_EDGE_FADE_WIDTH = 0.18f
 
 @Composable
 internal fun Modifier.homeHeroForegroundBlur(

@@ -129,14 +129,31 @@ internal fun MainPagerLayout(
     // when one of them crosses into / out of the Home slot. Keying the effect on the
     // boolean instead of the raw indices avoids running the JNI `Window.setColorMode`
     // call on every frame of every page swipe.
+    val homeIndex =
+        remember(coordinator.tabs) {
+            coordinator.tabs.indexOf(BottomPage.Home)
+        }
+    val homeHdrWindowActive =
+        remember(
+            homeIconHdrEnabled,
+            transitionAnimationsEnabled,
+            homeIndex,
+            coordinator.pagerState.settledPage,
+            coordinator.pagerState.isScrollInProgress,
+        ) {
+            homeIconHdrEnabled &&
+                transitionAnimationsEnabled &&
+                homeIndex >= 0 &&
+                coordinator.pagerState.settledPage == homeIndex &&
+                !coordinator.pagerState.isScrollInProgress
+        }
     val homeVisibleInPager =
         remember(
-            coordinator.tabs,
+            homeIndex,
             coordinator.pagerState.currentPage,
             coordinator.pagerState.targetPage,
             coordinator.pagerState.settledPage,
         ) {
-            val homeIndex = coordinator.tabs.indexOf(BottomPage.Home)
             homeIndex >= 0 &&
                 (
                     coordinator.pagerState.currentPage == homeIndex ||
@@ -144,11 +161,11 @@ internal fun MainPagerLayout(
                         coordinator.pagerState.settledPage == homeIndex
                 )
         }
-    DisposableEffect(context, homeIconHdrEnabled, homeVisibleInPager) {
+    DisposableEffect(context, homeHdrWindowActive) {
         val activity = context as? Activity
         runCatching {
             activity?.window?.colorMode =
-                if (homeIconHdrEnabled && homeVisibleInPager) {
+                if (homeHdrWindowActive) {
                     ActivityInfo.COLOR_MODE_HDR
                 } else {
                     ActivityInfo.COLOR_MODE_DEFAULT

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "PropertyName")
+
 package os.kei.ui.page.main.widget.sheet
 
 import androidx.activity.compose.BackHandler
@@ -52,11 +54,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.kyant.shapes.RoundedRectangle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.back.BackNavigationCommitGate
 import os.kei.ui.page.main.back.BackNavigationSource
@@ -134,7 +136,9 @@ private const val DETENT_SOLIDNESS_START = 0.75f
  * resting point for peeking at the background page, and [Full] stays available for callers that
  * know their content needs the largest surface immediately.
  */
-enum class LiquidSheetInitialDetent(internal val fraction: Float) {
+enum class LiquidSheetInitialDetent(
+    internal val fraction: Float,
+) {
     Half(DETENT_HALF),
     ThreeQuarter(DETENT_THREE_QUARTER),
     Full(DETENT_FULL),
@@ -181,7 +185,7 @@ fun LiquidGlassBottomSheet(
     allowDismiss: Boolean = true,
     onBlockedDismissRequest: (() -> Unit)? = null,
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     val scope = rememberCoroutineScope()
@@ -192,8 +196,9 @@ fun LiquidGlassBottomSheet(
     val runtimeController = LocalBackNavigationRuntimeController.current
     val runtimeState = LocalBackNavigationRuntimeState.current
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val sheetNavigationBackEnabled = runtimeState.policy?.frameworkAnimationsEnabled
-        ?: (transitionAnimationsEnabled && LocalPredictiveBackAnimationsEnabled.current)
+    val sheetNavigationBackEnabled =
+        runtimeState.policy?.frameworkAnimationsEnabled
+            ?: (transitionAnimationsEnabled && LocalPredictiveBackAnimationsEnabled.current)
     val backCommitGate = remember { BackNavigationCommitGate() }
 
     // heightFraction: 0 = off-screen, DETENT_HALF = half screen, DETENT_FULL = max height
@@ -218,14 +223,14 @@ fun LiquidGlassBottomSheet(
             // user-resizable across all three detents after this.
             heightFraction.animateTo(
                 targetValue = initialDetent.fraction,
-                animationSpec = spring(dampingRatio = 0.88f, stiffness = 350f)
+                animationSpec = spring(dampingRatio = 0.88f, stiffness = 350f),
             )
             openingDetentReady = true
         } else {
             if (isRendered) {
                 heightFraction.animateTo(
                     targetValue = 0f,
-                    animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f)
+                    animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
                 )
                 isRendered = false
                 currentOnDismissFinished?.invoke()
@@ -242,7 +247,7 @@ fun LiquidGlassBottomSheet(
         autoExpandedForContent = true
         heightFraction.animateTo(
             targetValue = DETENT_FULL,
-            animationSpec = spring(dampingRatio = 0.86f, stiffness = 360f)
+            animationSpec = spring(dampingRatio = 0.86f, stiffness = 360f),
         )
     }
 
@@ -256,17 +261,19 @@ fun LiquidGlassBottomSheet(
                 currentOnBlockedDismissRequest?.invoke()
             }
         },
-        properties = DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+        properties =
+            DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
     ) {
         // Remove the system's default dim background (FLAG_DIM_BEHIND) — we draw our own scrim.
         // Without this, closing the sheet leaves a residual gray overlay from the Dialog window
         // that persists until the Dialog composable is fully removed from the tree.
-        top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects()
+        top.yukonga.miuix.kmp.utils
+            .RemovePlatformDialogDefaultEffects()
 
         val fraction = heightFraction.value.coerceIn(0f, DETENT_FULL)
         val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
@@ -278,14 +285,16 @@ fun LiquidGlassBottomSheet(
         // Current sheet height based on fraction
         val sheetHeightDp = availableHeightDp * fraction
         // Scrim alpha scales with how much of the screen is covered
-        val predictiveBackScrimFactor = liquidSheetPredictiveBackScrimFactor(
-            sheetFraction = fraction,
-            offsetFraction = predictiveBackOffsetFraction.value,
-            allowDismiss = canDismissSheet
-        )
-        val scrimAlpha = LiquidSheetScrimAlpha *
-            (fraction / DETENT_FULL).coerceIn(0f, 1f) *
-            predictiveBackScrimFactor
+        val predictiveBackScrimFactor =
+            liquidSheetPredictiveBackScrimFactor(
+                sheetFraction = fraction,
+                offsetFraction = predictiveBackOffsetFraction.value,
+                allowDismiss = canDismissSheet,
+            )
+        val scrimAlpha =
+            LiquidSheetScrimAlpha *
+                (fraction / DETENT_FULL).coerceIn(0f, 1f) *
+                predictiveBackScrimFactor
         // Visibility progress for enter/exit animation (0 when hidden, 1 when at half or above)
         val visibilityProgress = (fraction / DETENT_HALF).coerceIn(0f, 1f)
 
@@ -293,72 +302,78 @@ fun LiquidGlassBottomSheet(
         // When sheet is NOT at full height: upward scroll EXPANDS the sheet (not scroll content).
         // When sheet IS at full height: upward scroll scrolls content normally.
         // Downward scroll at content top: SHRINKS the sheet first.
-        val sheetNestedScrollConnection = remember(canDismissSheet) {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    val dy = available.y
-                    val currentFraction = heightFraction.value
+        val sheetNestedScrollConnection =
+            remember(canDismissSheet) {
+                object : NestedScrollConnection {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource,
+                    ): Offset {
+                        val dy = available.y
+                        val currentFraction = heightFraction.value
 
-                    // User scrolling UP (dy < 0) and sheet is NOT at full → expand sheet first.
-                    // Content doesn't scroll until sheet is maximized.
-                    if (dy < 0f && currentFraction < DETENT_FULL) {
-                        userAdjustedDetent = true
-                        val consumed = -dy / availableHeightPx
-                        val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
-                        scope.launch { heightFraction.snapTo(newFraction) }
-                        val actualConsumed = (newFraction - currentFraction) * availableHeightPx
-                        return Offset(0f, -actualConsumed)
+                        // User scrolling UP (dy < 0) and sheet is NOT at full → expand sheet first.
+                        // Content doesn't scroll until sheet is maximized.
+                        if (dy < 0f && currentFraction < DETENT_FULL) {
+                            userAdjustedDetent = true
+                            val consumed = -dy / availableHeightPx
+                            val newFraction = (currentFraction + consumed).coerceAtMost(DETENT_FULL)
+                            scope.launch { heightFraction.snapTo(newFraction) }
+                            val actualConsumed = (newFraction - currentFraction) * availableHeightPx
+                            return Offset(0f, -actualConsumed)
+                        }
+
+                        // User scrolling DOWN (dy > 0): do NOT intercept here.
+                        // Let content scroll back to top first. Only after content can't scroll
+                        // anymore (onPostScroll receives leftover), we shrink the sheet.
+                        return Offset.Zero
                     }
 
-                    // User scrolling DOWN (dy > 0): do NOT intercept here.
-                    // Let content scroll back to top first. Only after content can't scroll
-                    // anymore (onPostScroll receives leftover), we shrink the sheet.
-                    return Offset.Zero
-                }
+                    override fun onPostScroll(
+                        consumed: Offset,
+                        available: Offset,
+                        source: NestedScrollSource,
+                    ): Offset {
+                        val dy = available.y
+                        val currentFraction = heightFraction.value
 
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource
-                ): Offset {
-                    val dy = available.y
-                    val currentFraction = heightFraction.value
+                        // Content has consumed what it can. Leftover dy > 0 means content is at
+                        // the top and can't scroll down anymore → now shrink the sheet.
+                        if (dy > 0f) {
+                            when {
+                                // Sheet above half → shrink toward half
+                                currentFraction > DETENT_HALF -> {
+                                    userAdjustedDetent = true
+                                    val delta = dy / availableHeightPx
+                                    val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_HALF)
+                                    scope.launch { heightFraction.snapTo(newFraction) }
+                                    return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                                }
 
-                    // Content has consumed what it can. Leftover dy > 0 means content is at
-                    // the top and can't scroll down anymore → now shrink the sheet.
-                    if (dy > 0f) {
-                        when {
-                            // Sheet above half → shrink toward half
-                            currentFraction > DETENT_HALF -> {
-                                userAdjustedDetent = true
-                                val delta = dy / availableHeightPx
-                                val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_HALF)
-                                scope.launch { heightFraction.snapTo(newFraction) }
-                                return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
-                            }
-                            // Sheet at or below half → dismiss zone
-                            canDismissSheet -> {
-                                userAdjustedDetent = true
-                                val delta = dy / availableHeightPx
-                                val newFraction = (currentFraction - delta).coerceAtLeast(0f)
-                                scope.launch { heightFraction.snapTo(newFraction) }
-                                return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
-                            }
-                            // Not dismissable: allow slight over-drag for bounce feedback
-                            currentFraction > DETENT_BOUNCE * 0.8f -> {
-                                userAdjustedDetent = true
-                                val delta = dy / availableHeightPx
-                                val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_BOUNCE * 0.8f)
-                                scope.launch { heightFraction.snapTo(newFraction) }
-                                return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                                // Sheet at or below half → dismiss zone
+                                canDismissSheet -> {
+                                    userAdjustedDetent = true
+                                    val delta = dy / availableHeightPx
+                                    val newFraction = (currentFraction - delta).coerceAtLeast(0f)
+                                    scope.launch { heightFraction.snapTo(newFraction) }
+                                    return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                                }
+
+                                // Not dismissable: allow slight over-drag for bounce feedback
+                                currentFraction > DETENT_BOUNCE * 0.8f -> {
+                                    userAdjustedDetent = true
+                                    val delta = dy / availableHeightPx
+                                    val newFraction = (currentFraction - delta).coerceAtLeast(DETENT_BOUNCE * 0.8f)
+                                    scope.launch { heightFraction.snapTo(newFraction) }
+                                    return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
+                                }
                             }
                         }
-                    }
 
-                    return Offset.Zero
+                        return Offset.Zero
+                    }
                 }
             }
-        }
 
         BackHandler(enabled = !sheetNavigationBackEnabled) {
             if (canDismissSheet) {
@@ -375,7 +390,7 @@ fun LiquidGlassBottomSheet(
             val resetPredictiveBackGesture: suspend () -> Unit = {
                 predictiveBackOffsetFraction.animateTo(
                     targetValue = 0f,
-                    animationSpec = spring(dampingRatio = 0.86f, stiffness = 420f)
+                    animationSpec = spring(dampingRatio = 0.86f, stiffness = 420f),
                 )
                 predictiveBackStartFraction = null
                 runtimeController.reset()
@@ -392,18 +407,13 @@ fun LiquidGlassBottomSheet(
                 onBackCompleted = {
                     scope.launch {
                         runtimeController.beginCommit(BackNavigationSource.Modal)
-                        val startFraction = predictiveBackStartFraction
-                            ?: heightFraction.value.coerceIn(0f, DETENT_FULL)
                         predictiveBackStartFraction = null
                         if (canDismissSheet) {
                             backCommitGate.reset()
-                            predictiveBackOffsetFraction.animateTo(
-                                targetValue = startFraction.coerceAtLeast(DETENT_DISMISS),
-                                animationSpec = spring(dampingRatio = 0.9f, stiffness = 520f),
-                            )
                             backCommitGate.tryCommit {
                                 currentOnDismissRequest?.invoke()
                             }
+                            predictiveBackOffsetFraction.snapTo(0f)
                         } else {
                             backCommitGate.reset()
                             backCommitGate.tryCommit {
@@ -411,12 +421,12 @@ fun LiquidGlassBottomSheet(
                             }
                             predictiveBackOffsetFraction.animateTo(
                                 targetValue = 0f,
-                                animationSpec = spring(dampingRatio = 0.82f, stiffness = 450f)
+                                animationSpec = spring(dampingRatio = 0.82f, stiffness = 450f),
                             )
                         }
                         runtimeController.reset()
                     }
-                }
+                },
             )
 
             LaunchedEffect(canDismissSheet, sheetNavigationBackEnabled) {
@@ -426,23 +436,24 @@ fun LiquidGlassBottomSheet(
                             transitionState is NavigationEventTransitionState.InProgress &&
                             transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
                         ) {
-                            val startFraction = predictiveBackStartFraction
-                                ?: heightFraction.value.coerceIn(0f, DETENT_FULL).also { fraction ->
-                                    predictiveBackStartFraction = fraction
-                                    backCommitGate.reset()
-                                    runtimeController.beginGesture(BackNavigationSource.Modal)
-                                }
+                            val startFraction =
+                                predictiveBackStartFraction
+                                    ?: heightFraction.value.coerceIn(0f, DETENT_FULL).also { fraction ->
+                                        predictiveBackStartFraction = fraction
+                                        backCommitGate.reset()
+                                        runtimeController.beginGesture(BackNavigationSource.Modal)
+                                    }
                             val event = transitionState.latestEvent
                             runtimeController.updateGestureProgress(
                                 progress = event.progress,
-                                source = BackNavigationSource.Modal
+                                source = BackNavigationSource.Modal,
                             )
                             predictiveBackOffsetFraction.snapTo(
                                 liquidSheetPredictiveBackOffsetFraction(
                                     sheetFraction = startFraction,
                                     progress = event.progress,
                                     allowDismiss = canDismissSheet,
-                                )
+                                ),
                             )
                         }
                     }
@@ -450,17 +461,18 @@ fun LiquidGlassBottomSheet(
         }
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = scrimAlpha))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    enabled = canDismissSheet
-                ) {
-                    currentOnDismissRequest?.invoke()
-                },
-            contentAlignment = Alignment.BottomCenter
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = scrimAlpha))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = canDismissSheet,
+                    ) {
+                        currentOnDismissRequest?.invoke()
+                    },
+            contentAlignment = Alignment.BottomCenter,
         ) {
             val sheetShape = RoundedRectangle(LiquidSheetCornerRadius)
 
@@ -473,153 +485,166 @@ fun LiquidGlassBottomSheet(
             // Smoothstep curve gives a natural ease so the transition feels organic during drag
             // rather than a linear fade.
             val solidnessLinear =
-                ((fraction - DETENT_SOLIDNESS_START) /
-                    (DETENT_FULL - DETENT_SOLIDNESS_START)).coerceIn(0f, 1f)
+                (
+                    (fraction - DETENT_SOLIDNESS_START) /
+                        (DETENT_FULL - DETENT_SOLIDNESS_START)
+                ).coerceIn(0f, 1f)
             val solidnessProgress = solidnessLinear * solidnessLinear * (3f - 2f * solidnessLinear)
 
             // Multi-layer frosted glass surface — simulates liquid glass without Backdrop's
             // drawBackdrop (which crashes on Xiaomi due to MiBackgroundBlurBlend SIGSEGV in Dialog).
             // Uses layered semi-transparent fills + border + sheen to create depth and glass feel.
             // Surface alpha lerps toward near-solid as the sheet expands toward full.
-            val surfaceColor = if (isDark) {
-                Color(0xFF141420).copy(alpha = lerp(0.88f, 0.985f, solidnessProgress))
-            } else {
-                Color(0xFFF8F9FC).copy(alpha = lerp(0.84f, 0.985f, solidnessProgress))
-            }
+            val surfaceColor =
+                if (isDark) {
+                    Color(0xFF141420).copy(alpha = lerp(0.88f, 0.985f, solidnessProgress))
+                } else {
+                    Color(0xFFF8F9FC).copy(alpha = lerp(0.84f, 0.985f, solidnessProgress))
+                }
             // Sheen and border fade as the sheet becomes solid — at full opacity there's no
             // backdrop to refract against, so glass highlights would just look like noise.
-            val sheenColor = if (isDark) {
-                Color.White.copy(alpha = lerp(0.06f, 0.02f, solidnessProgress))
-            } else {
-                Color.White.copy(alpha = lerp(0.28f, 0.08f, solidnessProgress))
-            }
-            val borderColor = if (isDark) {
-                Color.White.copy(alpha = lerp(0.12f, 0.04f, solidnessProgress))
-            } else {
-                Color.White.copy(alpha = lerp(0.65f, 0.18f, solidnessProgress))
-            }
-            val headerContentColor = if (isDark) {
-                Color.White.copy(alpha = 0.88f)
-            } else {
-                Color.Black.copy(alpha = 0.78f)
-            }
-            val dragHandleColor = if (isDark) {
-                Color.White.copy(alpha = lerp(0.34f, 0.26f, solidnessProgress))
-            } else {
-                Color.Black.copy(alpha = lerp(0.24f, 0.18f, solidnessProgress))
-            }
+            val sheenColor =
+                if (isDark) {
+                    Color.White.copy(alpha = lerp(0.06f, 0.02f, solidnessProgress))
+                } else {
+                    Color.White.copy(alpha = lerp(0.28f, 0.08f, solidnessProgress))
+                }
+            val borderColor =
+                if (isDark) {
+                    Color.White.copy(alpha = lerp(0.12f, 0.04f, solidnessProgress))
+                } else {
+                    Color.White.copy(alpha = lerp(0.65f, 0.18f, solidnessProgress))
+                }
+            val headerContentColor =
+                if (isDark) {
+                    Color.White.copy(alpha = 0.88f)
+                } else {
+                    Color.Black.copy(alpha = 0.78f)
+                }
+            val dragHandleColor =
+                if (isDark) {
+                    Color.White.copy(alpha = lerp(0.34f, 0.26f, solidnessProgress))
+                } else {
+                    Color.Black.copy(alpha = lerp(0.24f, 0.18f, solidnessProgress))
+                }
 
             Box(
-                modifier = modifier
-                    .widthIn(max = LiquidSheetMaxWidth)
-                    .fillMaxWidth()
-                    .height(sheetHeightDp.coerceAtLeast(0.dp))
-                    .graphicsLayer {
-                        // Subtle scale on enter for depth
-                        val scale = 0.95f + 0.05f * visibilityProgress
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = visibilityProgress
-                        translationY = availableHeightPx * predictiveBackOffsetFraction.value
-                        transformOrigin = TransformOrigin(0.5f, 1f)
-                    }
-                    .clip(sheetShape)
-                    .background(surfaceColor, sheetShape)
-                    .background(sheenColor, sheetShape)
-                    .border(width = 0.5.dp, color = borderColor, shape = sheetShape)
-                    // Block clicks from passing through to scrim
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {}
-                    // Drag gesture for resizing
-                    .pointerInput(canDismissSheet) {
-                        val availableHeightPx = with(density) { availableHeightDp.toPx() }
-                        var dragStartFraction = 0f
+                modifier =
+                    modifier
+                        .widthIn(max = LiquidSheetMaxWidth)
+                        .fillMaxWidth()
+                        .height(sheetHeightDp.coerceAtLeast(0.dp))
+                        .graphicsLayer {
+                            // Subtle scale on enter for depth
+                            val scale = 0.95f + 0.05f * visibilityProgress
+                            scaleX = scale
+                            scaleY = scale
+                            alpha = visibilityProgress
+                            translationY = availableHeightPx * predictiveBackOffsetFraction.value
+                            transformOrigin = TransformOrigin(0.5f, 1f)
+                        }.clip(sheetShape)
+                        .background(surfaceColor, sheetShape)
+                        .background(sheenColor, sheetShape)
+                        .border(width = 0.5.dp, color = borderColor, shape = sheetShape)
+                        // Block clicks from passing through to scrim
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {}
+                        // Drag gesture for resizing
+                        .pointerInput(canDismissSheet) {
+                            val availableHeightPx = with(density) { availableHeightDp.toPx() }
+                            var dragStartFraction = 0f
 
-                        detectVerticalDragGestures(
-                            onDragStart = {
-                                userAdjustedDetent = true
-                                dragStartFraction = heightFraction.value
-                            },
-                            onDragEnd = {
-                                val current = heightFraction.value
-                                val draggedUp = current > dragStartFraction
-                                scope.launch {
-                                    when {
-                                        // Dismiss zone
-                                        canDismissSheet && current < DETENT_DISMISS -> {
-                                            currentOnDismissRequest?.invoke()
-                                        }
-                                        // Below half: snap to half (or bounce if not dismissable)
-                                        current < DETENT_HALF -> {
-                                            if (!canDismissSheet && current < DETENT_BOUNCE) {
-                                                currentOnBlockedDismissRequest?.invoke()
+                            detectVerticalDragGestures(
+                                onDragStart = {
+                                    userAdjustedDetent = true
+                                    dragStartFraction = heightFraction.value
+                                },
+                                onDragEnd = {
+                                    val current = heightFraction.value
+                                    val draggedUp = current > dragStartFraction
+                                    scope.launch {
+                                        when {
+                                            // Dismiss zone
+                                            canDismissSheet && current < DETENT_DISMISS -> {
+                                                currentOnDismissRequest?.invoke()
                                             }
-                                            heightFraction.animateTo(
-                                                DETENT_HALF,
-                                                spring(dampingRatio = 0.82f, stiffness = 450f)
-                                            )
-                                        }
-                                        // Three-detent snapping based on position + direction:
-                                        // Between half and three-quarter midpoint
-                                        current < (DETENT_HALF + DETENT_THREE_QUARTER) / 2f -> {
-                                            // If dragging up, go to three-quarter; otherwise snap back to half
-                                            val target = if (draggedUp) DETENT_THREE_QUARTER else DETENT_HALF
-                                            heightFraction.animateTo(
-                                                target,
-                                                spring(dampingRatio = 0.85f, stiffness = 400f)
-                                            )
-                                        }
-                                        // Around three-quarter zone
-                                        current < (DETENT_THREE_QUARTER + DETENT_FULL) / 2f -> {
-                                            // Snap to three-quarter (closest detent)
-                                            val target = if (draggedUp) DETENT_FULL else DETENT_THREE_QUARTER
-                                            heightFraction.animateTo(
-                                                target,
-                                                spring(dampingRatio = 0.85f, stiffness = 400f)
-                                            )
-                                        }
-                                        // Above three-quarter-full midpoint: snap to full
-                                        else -> {
-                                            heightFraction.animateTo(
-                                                DETENT_FULL,
-                                                spring(dampingRatio = 0.85f, stiffness = 400f)
-                                            )
+
+                                            // Below half: snap to half (or bounce if not dismissable)
+                                            current < DETENT_HALF -> {
+                                                if (!canDismissSheet && current < DETENT_BOUNCE) {
+                                                    currentOnBlockedDismissRequest?.invoke()
+                                                }
+                                                heightFraction.animateTo(
+                                                    DETENT_HALF,
+                                                    spring(dampingRatio = 0.82f, stiffness = 450f),
+                                                )
+                                            }
+
+                                            // Three-detent snapping based on position + direction:
+                                            // Between half and three-quarter midpoint
+                                            current < (DETENT_HALF + DETENT_THREE_QUARTER) / 2f -> {
+                                                // If dragging up, go to three-quarter; otherwise snap back to half
+                                                val target = if (draggedUp) DETENT_THREE_QUARTER else DETENT_HALF
+                                                heightFraction.animateTo(
+                                                    target,
+                                                    spring(dampingRatio = 0.85f, stiffness = 400f),
+                                                )
+                                            }
+
+                                            // Around three-quarter zone
+                                            current < (DETENT_THREE_QUARTER + DETENT_FULL) / 2f -> {
+                                                // Snap to three-quarter (closest detent)
+                                                val target = if (draggedUp) DETENT_FULL else DETENT_THREE_QUARTER
+                                                heightFraction.animateTo(
+                                                    target,
+                                                    spring(dampingRatio = 0.85f, stiffness = 400f),
+                                                )
+                                            }
+
+                                            // Above three-quarter-full midpoint: snap to full
+                                            else -> {
+                                                heightFraction.animateTo(
+                                                    DETENT_FULL,
+                                                    spring(dampingRatio = 0.85f, stiffness = 400f),
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            onVerticalDrag = { _, dragAmount ->
-                                // Convert drag pixels to fraction change
-                                // Negative dragAmount = drag up = expand
-                                // Positive dragAmount = drag down = shrink
-                                val fractionDelta = -dragAmount / availableHeightPx
-                                val newFraction = (heightFraction.value + fractionDelta)
-                                    .coerceIn(
-                                        // Allow dragging below half for dismiss gesture feel,
-                                        // but clamp at 0 (fully hidden)
-                                        if (canDismissSheet) 0f else DETENT_DISMISS * 0.5f,
-                                        DETENT_FULL
-                                    )
-                                scope.launch {
-                                    heightFraction.snapTo(newFraction)
-                                }
-                            }
-                        )
-                    },
+                                },
+                                onVerticalDrag = { _, dragAmount ->
+                                    // Convert drag pixels to fraction change
+                                    // Negative dragAmount = drag up = expand
+                                    // Positive dragAmount = drag down = shrink
+                                    val fractionDelta = -dragAmount / availableHeightPx
+                                    val newFraction =
+                                        (heightFraction.value + fractionDelta)
+                                            .coerceIn(
+                                                // Allow dragging below half for dismiss gesture feel,
+                                                // but clamp at 0 (fully hidden)
+                                                if (canDismissSheet) 0f else DETENT_DISMISS * 0.5f,
+                                                DETENT_FULL,
+                                            )
+                                    scope.launch {
+                                        heightFraction.snapTo(newFraction)
+                                    }
+                                },
+                            )
+                        },
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Spacer(modifier = Modifier.height(LiquidSheetDragHandleTopPadding))
                     Box(
-                        modifier = Modifier
-                            .width(LiquidSheetDragHandleWidth)
-                            .height(LiquidSheetDragHandleHeight)
-                            .clip(RoundedRectangle(2.dp))
-                            .background(dragHandleColor)
+                        modifier =
+                            Modifier
+                                .width(LiquidSheetDragHandleWidth)
+                                .height(LiquidSheetDragHandleHeight)
+                                .clip(RoundedRectangle(2.dp))
+                                .background(dragHandleColor),
                     )
                     Spacer(modifier = Modifier.height(LiquidSheetTitleTopPadding))
 
@@ -629,10 +654,11 @@ fun LiquidGlassBottomSheet(
                     // visual balance of iOS sheets.
                     if (title != null || startAction != null || endAction != null) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
                             if (title != null) {
                                 Text(
@@ -644,7 +670,7 @@ fun LiquidGlassBottomSheet(
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                             if (startAction != null) {
@@ -665,17 +691,18 @@ fun LiquidGlassBottomSheet(
                     // Content — nested scroll connection allows content scroll to expand/shrink
                     // the sheet when at scroll boundaries (iOS-style behavior).
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .nestedScroll(sheetNestedScrollConnection)
-                            .padding(horizontal = 20.dp)
-                            .padding(top = LiquidSheetContentTopPadding, bottom = 16.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .nestedScroll(sheetNestedScrollConnection)
+                                .padding(horizontal = 20.dp)
+                                .padding(top = LiquidSheetContentTopPadding, bottom = 16.dp),
                     ) {
                         CompositionLocalProvider(
                             LocalLiquidSheetContentOverflowReporter provides { overflows ->
                                 contentOverflowsOpeningDetent = overflows
-                            }
+                            },
                         ) {
                             content()
                         }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,14 +21,12 @@ import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.assetRelativeTimeLabel
-import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -58,7 +55,7 @@ internal fun GitHubActionsArtifactCard(
     val canShare = hasToken && runMatch.traits.completed && !artifact.expired && !busy
     val metadataTextColor = githubActionsSecondaryTextColor(isDark)
     val neutralPillColor = MiuixTheme.colorScheme.onBackgroundVariant
-    val actionButtonHeight = 54.dp
+    val actionButtonSize = 48.dp
     val copyDigestLabel = stringResource(R.string.github_actions_cd_copy_digest)
     val digestCopiedToast = stringResource(R.string.github_actions_toast_digest_copied)
     val hasDigest = artifact.digest.isNotBlank()
@@ -67,9 +64,14 @@ internal fun GitHubActionsArtifactCard(
     } else {
         formatReleaseUpdatedAtNoYear(artifact.updatedAtMillis)
     }
-    val artifactSizeLabel = artifact.sizeBytes.takeIf { it > 0L }
-        ?.let { formatAssetSize(it, context) }
-        ?: stringResource(R.string.common_download)
+    val primaryActionDescription = stringResource(
+        if (managedInstallEnabled) {
+            R.string.github_cd_install_asset
+        } else {
+            R.string.github_actions_cd_download_artifact
+        },
+        artifact.name
+    )
     GitHubActionsSelectableCard(
         selected = false,
         isDark = isDark,
@@ -205,30 +207,20 @@ internal fun GitHubActionsArtifactCard(
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
-            AppLiquidTextButton(
+            AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
-                text = artifactDownloadLabel(
-                    hasToken = hasToken,
-                    completed = runMatch.traits.completed,
-                    expired = artifact.expired,
-                    downloading = downloading,
-                    managedInstallEnabled = managedInstallEnabled,
-                    readyLabel = artifactSizeLabel
-                ),
-                leadingIcon = if (managedInstallEnabled) {
+                icon = if (managedInstallEnabled) {
                     appLucidePackageIcon()
                 } else {
                     appLucideDownloadIcon()
                 },
+                contentDescription = primaryActionDescription,
                 enabled = canDownload,
-                textColor = actionColor,
-                iconTint = actionColor,
-                modifier = Modifier.widthIn(min = 104.dp),
-                minHeight = actionButtonHeight,
+                iconTint = if (canDownload) actionColor else neutralPillColor,
+                width = actionButtonSize,
+                height = actionButtonSize,
                 onClick = onDownload,
-                textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis
             )
             AppLiquidIconButton(
                 backdrop = backdrop,
@@ -239,8 +231,9 @@ internal fun GitHubActionsArtifactCard(
                     artifact.name
                 ),
                 iconTint = if (canShare) actionColor else neutralPillColor,
-                width = 54.dp,
-                height = actionButtonHeight,
+                enabled = canShare,
+                width = actionButtonSize,
+                height = actionButtonSize,
                 onClick = onShare
             )
         }

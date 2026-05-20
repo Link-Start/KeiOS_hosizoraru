@@ -14,7 +14,7 @@ import os.kei.BuildConfig
 import os.kei.R
 import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.core.security.AdvancedProtectionCompat
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
 import os.kei.ui.page.main.about.ui.AboutSectionCard
 import os.kei.ui.page.main.os.appLucideAlertIcon

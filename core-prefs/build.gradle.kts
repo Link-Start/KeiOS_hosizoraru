@@ -17,5 +17,12 @@ android {
 }
 
 dependencies {
+    implementation(project(":core-concurrency"))
+    implementation(project(":core-log"))
+
     api("com.tencent:mmkv:2.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
 }

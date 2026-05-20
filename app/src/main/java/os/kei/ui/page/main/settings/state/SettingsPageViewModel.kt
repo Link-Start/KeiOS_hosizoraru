@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
-import os.kei.core.prefs.CacheEntrySummary
+import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 
 @Immutable
 internal data class SettingsCacheUiState(

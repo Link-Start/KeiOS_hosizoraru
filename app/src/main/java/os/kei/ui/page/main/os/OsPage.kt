@@ -17,7 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.core.system.RuntimeCommandExecutor
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator

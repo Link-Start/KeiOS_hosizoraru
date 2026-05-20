@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropertiesSnapshot
 import os.kei.core.system.getAllJavaPropertiesSnapshotAsync
 import os.kei.core.system.getAllSystemPropertiesSnapshot

@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.CacheFreshnessSnapshot
-import os.kei.core.prefs.CacheStores
+import os.kei.ui.page.main.settings.cache.CacheStores
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.model.GitHubLookupStrategyOption

@@ -4,7 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import os.kei.R
-import os.kei.core.icon.LauncherIconDesign
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.settings.state.SettingsPageUiState
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle

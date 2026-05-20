@@ -42,10 +42,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
-import os.kei.core.icon.LauncherIconDesign
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.AppThemeMode
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent

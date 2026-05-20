@@ -1,6 +1,7 @@
 package os.kei.core.icon
 
 import android.content.pm.PackageManager
+import os.kei.core.prefs.LauncherIconDesign
 import org.junit.Test
 import org.w3c.dom.Element
 import java.io.File

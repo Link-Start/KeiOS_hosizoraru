@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import os.kei.core.icon.LauncherIconDesign
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot

@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import os.kei.R
-import os.kei.core.prefs.CacheEntrySummary
+import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoRow

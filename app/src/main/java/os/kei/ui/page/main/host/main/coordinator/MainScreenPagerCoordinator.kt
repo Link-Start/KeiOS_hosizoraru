@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.host.main
 
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 
 internal data class MainScreenPagerCoordinator(

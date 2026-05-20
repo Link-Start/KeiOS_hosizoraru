@@ -6,7 +6,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.system.RuntimeCommandExecutor
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.system.getAllJavaPropertiesSnapshot
 import os.kei.core.system.getAllJavaPropertiesSnapshotAsync
 import os.kei.core.system.getAllSystemPropertiesSnapshot

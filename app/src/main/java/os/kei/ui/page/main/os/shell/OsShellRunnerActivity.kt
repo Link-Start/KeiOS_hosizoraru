@@ -17,7 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled

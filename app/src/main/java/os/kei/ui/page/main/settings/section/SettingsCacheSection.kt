@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
-import os.kei.core.prefs.CacheEntrySummary
+import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.settings.support.SettingsCacheRow
 import os.kei.ui.page.main.settings.support.SettingsGroupCard

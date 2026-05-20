@@ -7,8 +7,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogStore
-import os.kei.core.prefs.CacheEntrySummary
-import os.kei.core.prefs.CacheStores
+import os.kei.ui.page.main.settings.cache.CacheEntrySummary
+import os.kei.ui.page.main.settings.cache.CacheStores
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

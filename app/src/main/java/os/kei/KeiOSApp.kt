@@ -23,6 +23,7 @@ import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
 import os.kei.core.perf.Android17AnomalyProfiler
 import os.kei.core.prefs.UiPrefs
+import os.kei.core.system.AppBuildEnv
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.remote.GitHubVersionUtils
@@ -84,10 +85,21 @@ class KeiOSApp : Application() {
         // First-frame critical path: keep this list as small as possible. Anything that touches
         // MMKV, AlarmManager, or scans tracked-app state should run via [applicationScope] below.
         MMKV.initialize(this)
+        AppBuildEnv.configure(
+            buildType = BuildConfig.BUILD_TYPE,
+            isDebugBuild = BuildConfig.DEBUG,
+            applicationId = BuildConfig.APPLICATION_ID,
+        )
+        UiPrefs.configureRuntimeDefaults(
+            buildType = BuildConfig.BUILD_TYPE,
+            defaultLogLevelId = BuildConfig.DEFAULT_LOG_LEVEL_ID,
+        )
         AppLogger.initialize(this, BuildConfig.DEFAULT_LOG_LEVEL_ID)
-        AppLogger.setLogLevel(UiPrefs.getLogLevel(
-            defaultValue = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)
-        ))
+        AppLogger.setLogLevel(
+            UiPrefs.getLogLevel(
+                defaultValue = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID),
+            ),
+        )
         SingletonImageLoader.setSafe { context ->
             ImageLoader.Builder(context)
                 .memoryCache {

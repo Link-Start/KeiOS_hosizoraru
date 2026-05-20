@@ -5,22 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.ComponentEnabledSetting
 import os.kei.BuildConfig
-
-enum class LauncherIconDesign(
-    val storageId: String,
-    val aliasClassName: String,
-) {
-    Apple("apple", "LauncherAppleDesigns"),
-    Android("android", "LauncherAndroidDesigns"),
-    ;
-
-    companion object {
-        fun fromStorageId(raw: String?): LauncherIconDesign {
-            val normalized = raw.orEmpty().trim()
-            return entries.firstOrNull { it.storageId == normalized } ?: Android
-        }
-    }
-}
+import os.kei.core.prefs.LauncherIconDesign
 
 object LauncherIconController {
     fun applyDesign(

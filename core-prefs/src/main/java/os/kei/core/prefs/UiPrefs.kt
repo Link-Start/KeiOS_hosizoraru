@@ -4,8 +4,6 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import os.kei.BuildConfig
-import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 
 data class UiPrefsSnapshot(
@@ -76,16 +74,27 @@ object UiPrefs {
     const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350
     private val DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES = setOf("Os", "Mcp", "GitHub", "Ba")
     private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
-    private val textCopyCapabilityExpandedState =
+    private val textCopyCapabilityExpandedState by lazy {
         MutableStateFlow(
             kv().decodeBool(KEY_TEXT_COPY_CAPABILITY_EXPANDED, false),
         )
+    }
 
     private fun kv(): MMKV = store
 
-    private fun buildTypeAwareLogDebugKey(): String = "${KEY_LOG_DEBUG}_${BuildConfig.BUILD_TYPE}"
+    fun configureRuntimeDefaults(
+        buildType: String,
+        defaultLogLevelId: String,
+    ) {
+        UiPrefsRuntimeDefaults.configure(
+            buildType = buildType,
+            defaultLogLevel = AppLogLevel.fromStorageId(defaultLogLevelId),
+        )
+    }
 
-    private fun buildTypeAwareLogLevelKey(): String = "${KEY_LOG_LEVEL}_${BuildConfig.BUILD_TYPE}"
+    private fun buildTypeAwareLogDebugKey(): String = "${KEY_LOG_DEBUG}_${UiPrefsRuntimeDefaults.buildType}"
+
+    private fun buildTypeAwareLogLevelKey(): String = "${KEY_LOG_LEVEL}_${UiPrefsRuntimeDefaults.buildType}"
 
     fun isLiquidBottomBarEnabled(defaultValue: Boolean = true): Boolean = kv().decodeBool(KEY_LIQUID_BOTTOM_BAR, defaultValue)
 
@@ -232,7 +241,7 @@ object UiPrefs {
         )
     }
 
-    fun getLogLevel(defaultValue: AppLogLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID)): AppLogLevel {
+    fun getLogLevel(defaultValue: AppLogLevel = UiPrefsRuntimeDefaults.defaultLogLevel): AppLogLevel {
         val store = kv()
         val levelKey = buildTypeAwareLogLevelKey()
         if (store.containsKey(levelKey)) {
@@ -257,7 +266,7 @@ object UiPrefs {
     }
 
     fun isLogDebugEnabled(
-        defaultValue: Boolean = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID) == AppLogLevel.Debug,
+        defaultValue: Boolean = UiPrefsRuntimeDefaults.defaultLogLevel == AppLogLevel.Debug,
     ): Boolean =
         getLogLevel(
             defaultValue = if (defaultValue) AppLogLevel.Debug else AppLogLevel.Off,
@@ -357,7 +366,7 @@ object UiPrefs {
             superIslandNotificationEnabled = false,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
-            logLevel = AppLogLevel.fromStorageId(BuildConfig.DEFAULT_LOG_LEVEL_ID),
+            logLevel = UiPrefsRuntimeDefaults.defaultLogLevel,
             textCopyCapabilityExpanded = false,
             cacheDiagnosticsEnabled = true,
             liquidToastEnabled = true,

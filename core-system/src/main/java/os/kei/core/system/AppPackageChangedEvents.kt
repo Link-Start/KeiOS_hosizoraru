@@ -8,13 +8,13 @@ data class AppPackageChangedEvent(
     val packageName: String,
     val action: String,
     val atMillis: Long = System.currentTimeMillis(),
-    val replacing: Boolean = false
+    val replacing: Boolean = false,
 )
 
 object AppPackageChangedEvents {
     private val _events = MutableSharedFlow<AppPackageChangedEvent>(
         replay = 0,
-        extraBufferCapacity = 32
+        extraBufferCapacity = 32,
     )
 
     val events: SharedFlow<AppPackageChangedEvent> = _events.asSharedFlow()

@@ -46,7 +46,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.about.section.AboutBuildSdkCardSection
 import os.kei.ui.page.main.about.section.AboutComponentCardSection

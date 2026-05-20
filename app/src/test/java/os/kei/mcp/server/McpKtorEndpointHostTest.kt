@@ -251,7 +251,7 @@ class McpKtorEndpointHostTest {
     private fun testEnvironment(): McpToolEnvironment {
         return McpToolEnvironment(
             appContext = androidx.test.core.app.ApplicationProvider.getApplicationContext(),
-            shizukuApiUtils = os.kei.core.system.ShizukuApiUtils(),
+            shizukuApiUtils = os.kei.core.shizuku.ShizukuApiUtils(),
             appVersionName = "test",
             appVersionCode = 1L,
             appPackageName = "os.kei.test",

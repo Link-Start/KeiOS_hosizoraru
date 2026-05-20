@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
-import os.kei.core.icon.LauncherIconDesign
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon

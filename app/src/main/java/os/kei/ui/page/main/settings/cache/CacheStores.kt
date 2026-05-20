@@ -1,8 +1,10 @@
-package os.kei.core.prefs
+package os.kei.ui.page.main.settings.cache
 
 import android.content.Context
 import com.tencent.mmkv.MMKV
 import os.kei.R
+import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.core.prefs.KeiMmkv
 import os.kei.core.system.AppBuildEnv
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore

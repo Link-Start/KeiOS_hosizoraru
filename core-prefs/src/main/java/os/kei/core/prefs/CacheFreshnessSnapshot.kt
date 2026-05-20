@@ -6,7 +6,7 @@ data class CacheFreshnessSnapshot(
     val stale: Boolean,
     val lastUpdatedAtMs: Long,
     val bytes: Long,
-    val rebuildable: Boolean
+    val rebuildable: Boolean,
 ) {
     companion object {
         val Empty = CacheFreshnessSnapshot(
@@ -15,7 +15,7 @@ data class CacheFreshnessSnapshot(
             stale = false,
             lastUpdatedAtMs = 0L,
             bytes = 0L,
-            rebuildable = false
+            rebuildable = false,
         )
 
         fun from(
@@ -23,7 +23,7 @@ data class CacheFreshnessSnapshot(
             bytes: Long,
             rebuildable: Boolean,
             ttlMs: Long? = null,
-            nowMs: Long = System.currentTimeMillis()
+            nowMs: Long = System.currentTimeMillis(),
         ): CacheFreshnessSnapshot {
             val normalizedBytes = bytes.coerceAtLeast(0L)
             val normalizedUpdatedAtMs = lastUpdatedAtMs.coerceAtLeast(0L)
@@ -31,7 +31,7 @@ data class CacheFreshnessSnapshot(
             val fresh = hasData && when (ttlMs) {
                 null -> true
                 else -> normalizedUpdatedAtMs > 0L &&
-                        (nowMs - normalizedUpdatedAtMs).coerceAtLeast(0L) <= ttlMs.coerceAtLeast(1L)
+                    (nowMs - normalizedUpdatedAtMs).coerceAtLeast(0L) <= ttlMs.coerceAtLeast(1L)
             }
             return CacheFreshnessSnapshot(
                 hasData = hasData,
@@ -39,7 +39,7 @@ data class CacheFreshnessSnapshot(
                 stale = hasData && !fresh,
                 lastUpdatedAtMs = normalizedUpdatedAtMs,
                 bytes = normalizedBytes,
-                rebuildable = rebuildable
+                rebuildable = rebuildable,
             )
         }
     }

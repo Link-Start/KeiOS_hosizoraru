@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.icon.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 
 class UiPrefsRepository(

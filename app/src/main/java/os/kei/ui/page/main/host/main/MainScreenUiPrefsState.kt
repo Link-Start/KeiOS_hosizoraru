@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import os.kei.core.icon.LauncherIconController
-import os.kei.core.icon.LauncherIconDesign
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefsSnapshot

@@ -1,7 +1,7 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 
 internal class McpRuntimeTools(
     private val environment: McpToolEnvironment

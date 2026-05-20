@@ -12,7 +12,7 @@ import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode

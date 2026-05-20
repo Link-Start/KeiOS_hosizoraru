@@ -24,7 +24,7 @@ import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
 import com.kyant.backdrop.backdrops.layerBackdrop
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator

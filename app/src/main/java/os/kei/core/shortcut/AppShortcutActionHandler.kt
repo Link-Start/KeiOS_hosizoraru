@@ -12,7 +12,7 @@ import os.kei.core.background.AppForegroundInfoHandler
 import os.kei.core.background.AppShortcutGitHubRefreshResult
 import os.kei.core.log.AppLogger
 import os.kei.core.platform.LocalNetworkPermissionCompat
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerRuntimeRegistry

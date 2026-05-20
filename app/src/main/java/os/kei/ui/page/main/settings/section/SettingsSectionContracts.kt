@@ -2,7 +2,7 @@ package os.kei.ui.page.main.settings.section
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntRect
-import os.kei.core.icon.LauncherIconDesign
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState

@@ -1,7 +1,7 @@
 package os.kei.mcp.server
 
 import android.content.Context
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import java.util.Locale
 
 internal class McpToolEnvironment(

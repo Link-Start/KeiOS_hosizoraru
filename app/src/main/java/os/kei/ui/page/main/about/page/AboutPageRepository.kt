@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.about.model.AboutComponentEntry
 import os.kei.ui.page.main.about.model.AboutPermissionEntry
 import os.kei.ui.page.main.about.model.buildComponentEntries

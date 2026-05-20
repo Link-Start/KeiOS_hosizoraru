@@ -18,7 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.system.findPropString
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.core.concurrency.AppDispatchers

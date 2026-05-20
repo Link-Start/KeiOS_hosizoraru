@@ -1,4 +1,4 @@
-package os.kei.core.system
+package os.kei.core.shizuku
 
 import android.content.pm.PackageManager
 import android.os.Handler
@@ -11,6 +11,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.ext.userMessage
 import os.kei.core.log.AppLogger
+import os.kei.core.system.AppBuildEnv
+import os.kei.core.system.AppCommandExecutor
+import os.kei.core.system.AppCommandResult
 import rikka.shizuku.Shizuku
 import java.io.ByteArrayOutputStream
 import java.io.InputStream

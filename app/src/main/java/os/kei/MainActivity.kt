@@ -35,7 +35,7 @@ import os.kei.core.platform.TransientExternalLaunchGuard
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager

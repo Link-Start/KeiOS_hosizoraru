@@ -15,7 +15,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
-import os.kei.core.system.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuApiUtils
 import kotlin.time.Duration.Companion.milliseconds
 import os.kei.core.concurrency.AppDispatchers
 

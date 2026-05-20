@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.mcp
 
 import android.content.Context
@@ -44,7 +46,15 @@ import os.kei.ui.page.main.mcp.dialog.McpResetTokenDialog
 import os.kei.ui.page.main.mcp.section.McpLogsSection
 import os.kei.ui.page.main.mcp.section.McpOverviewCardSection
 import os.kei.ui.page.main.mcp.section.McpServiceControlSection
-import os.kei.ui.page.main.mcp.section.McpToolsSection
+import os.kei.ui.page.main.mcp.section.McpToolAdvancedSection
+import os.kei.ui.page.main.mcp.section.McpToolBaSection
+import os.kei.ui.page.main.mcp.section.McpToolCodexSection
+import os.kei.ui.page.main.mcp.section.McpToolEntrypointsSection
+import os.kei.ui.page.main.mcp.section.McpToolGithubSection
+import os.kei.ui.page.main.mcp.section.McpToolRuntimeSection
+import os.kei.ui.page.main.mcp.section.McpToolSystemSection
+import os.kei.ui.page.main.mcp.section.McpToolWorkflowSection
+import os.kei.ui.page.main.mcp.section.mcpToolBuckets
 import os.kei.ui.page.main.mcp.sheet.McpEditServiceSheet
 import os.kei.ui.page.main.mcp.state.rememberMcpPageOverviewState
 import os.kei.ui.page.main.mcp.util.copyToClipboard
@@ -119,6 +129,10 @@ fun McpPage(
     val portText = pageUiState.portText
     val allowExternal = pageUiState.allowExternal
     val serverName = pageUiState.serverName
+    val mcpToolBuckets =
+        remember(uiState.tools, pageUiState.toolsSearchQuery) {
+            mcpToolBuckets(uiState, pageUiState.toolsSearchQuery)
+        }
     val serviceDraftChanged =
         serverName.trim() != uiState.serverName.trim() ||
             portText.trim() != uiState.port.toString() ||
@@ -491,17 +505,80 @@ fun McpPage(
                             onCopyWorkflowResource = copyWorkflowResource,
                         )
                     }
-                    item(key = "mcp-tools", contentType = "mcp_tools_section") {
-                        McpToolsSection(
+                    item(key = "mcp-tool-entrypoints", contentType = "mcp_tool_entrypoints_section") {
+                        McpToolEntrypointsSection(
                             backdrop = backdrops.content,
-                            expanded = pageUiState.configExpanded,
-                            onExpandedChange = mcpPageViewModel::updateConfigExpanded,
-                            uiState = uiState,
+                            buckets = mcpToolBuckets,
                             searchQuery = pageUiState.toolsSearchQuery,
                             onSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
-                            advancedExpanded = pageUiState.advancedToolsExpanded,
-                            onAdvancedExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
+                            expanded = pageUiState.toolEntrypointsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
                         )
+                    }
+                    item(key = "mcp-tool-runtime", contentType = "mcp_tool_runtime_section") {
+                        McpToolRuntimeSection(
+                            backdrop = backdrops.content,
+                            tools = mcpToolBuckets.runtimeTools,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            expanded = pageUiState.runtimeToolsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateRuntimeToolsExpanded,
+                        )
+                    }
+                    item(key = "mcp-tool-system", contentType = "mcp_tool_system_section") {
+                        McpToolSystemSection(
+                            backdrop = backdrops.content,
+                            tools = mcpToolBuckets.systemTools,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            expanded = pageUiState.systemToolsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateSystemToolsExpanded,
+                        )
+                    }
+                    item(key = "mcp-tool-github", contentType = "mcp_tool_github_section") {
+                        McpToolGithubSection(
+                            backdrop = backdrops.content,
+                            tools = mcpToolBuckets.githubTools,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            expanded = pageUiState.githubToolsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateGithubToolsExpanded,
+                        )
+                    }
+                    item(key = "mcp-tool-ba", contentType = "mcp_tool_ba_section") {
+                        McpToolBaSection(
+                            backdrop = backdrops.content,
+                            tools = mcpToolBuckets.baTools,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            expanded = pageUiState.baToolsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateBaToolsExpanded,
+                        )
+                    }
+                    item(key = "mcp-tool-codex", contentType = "mcp_tool_codex_section") {
+                        McpToolCodexSection(
+                            backdrop = backdrops.content,
+                            tools = mcpToolBuckets.codexTools,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            expanded = pageUiState.codexToolsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateCodexToolsExpanded,
+                        )
+                    }
+                    item(key = "mcp-tool-workflows", contentType = "mcp_tool_workflows_section") {
+                        McpToolWorkflowSection(
+                            backdrop = backdrops.content,
+                            tools = mcpToolBuckets.workflowTools,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            expanded = pageUiState.workflowToolsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateWorkflowToolsExpanded,
+                        )
+                    }
+                    if (mcpToolBuckets.advancedTools.isNotEmpty()) {
+                        item(key = "mcp-tool-advanced", contentType = "mcp_tool_advanced_section") {
+                            McpToolAdvancedSection(
+                                backdrop = backdrops.content,
+                                tools = mcpToolBuckets.advancedTools,
+                                searchQuery = pageUiState.toolsSearchQuery,
+                                expanded = pageUiState.advancedToolsExpanded,
+                                onExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
+                            )
+                        }
                     }
                     item(key = "mcp-logs", contentType = "mcp_logs_section") {
                         McpLogsSection(

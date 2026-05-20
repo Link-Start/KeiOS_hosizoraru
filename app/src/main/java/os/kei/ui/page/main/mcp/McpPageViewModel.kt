@@ -12,7 +12,7 @@ import os.kei.mcp.server.McpServerUiState
 
 internal data class McpLogsExportRequest(
     val generatedAt: String,
-    val fileName: String
+    val fileName: String,
 )
 
 internal data class McpPageUiState(
@@ -21,21 +21,28 @@ internal data class McpPageUiState(
     val serverName: String = "KeiOS MCP",
     val showEditSheet: Boolean = false,
     val controlExpanded: Boolean = true,
-    val configExpanded: Boolean = false,
+    val toolEntrypointsExpanded: Boolean = true,
+    val runtimeToolsExpanded: Boolean = false,
+    val systemToolsExpanded: Boolean = false,
+    val githubToolsExpanded: Boolean = false,
+    val baToolsExpanded: Boolean = false,
+    val codexToolsExpanded: Boolean = true,
+    val workflowToolsExpanded: Boolean = false,
     val advancedToolsExpanded: Boolean = false,
     val toolsSearchQuery: String = "",
     val logsExpanded: Boolean = false,
     val logsExporting: Boolean = false,
     val pendingLogsExport: McpLogsExportRequest? = null,
     val showResetTokenConfirm: Boolean = false,
-    val showResetConfigConfirm: Boolean = false
+    val showResetConfigConfirm: Boolean = false,
 ) {
     val serviceDraft: McpServiceDraft
-        get() = McpServiceDraft(
-            serverName = serverName,
-            portText = portText,
-            allowExternal = allowExternal
-        )
+        get() =
+            McpServiceDraft(
+                serverName = serverName,
+                portText = portText,
+                allowExternal = allowExternal,
+            )
 }
 
 internal class McpPageViewModel : ViewModel() {
@@ -45,14 +52,14 @@ internal class McpPageViewModel : ViewModel() {
 
     fun syncServiceDraft(
         serverState: McpServerUiState,
-        force: Boolean = false
+        force: Boolean = false,
     ) {
         _uiState.update { state ->
             if (state.showEditSheet && !force) return@update state
             state.copy(
                 portText = serverState.port.toString(),
                 allowExternal = serverState.allowExternal,
-                serverName = serverState.serverName
+                serverName = serverState.serverName,
             )
         }
     }
@@ -77,8 +84,32 @@ internal class McpPageViewModel : ViewModel() {
         _uiState.update { state -> state.copy(controlExpanded = value) }
     }
 
-    fun updateConfigExpanded(value: Boolean) {
-        _uiState.update { state -> state.copy(configExpanded = value) }
+    fun updateToolEntrypointsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(toolEntrypointsExpanded = value) }
+    }
+
+    fun updateRuntimeToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(runtimeToolsExpanded = value) }
+    }
+
+    fun updateSystemToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(systemToolsExpanded = value) }
+    }
+
+    fun updateGithubToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(githubToolsExpanded = value) }
+    }
+
+    fun updateBaToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(baToolsExpanded = value) }
+    }
+
+    fun updateCodexToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(codexToolsExpanded = value) }
+    }
+
+    fun updateWorkflowToolsExpanded(value: Boolean) {
+        _uiState.update { state -> state.copy(workflowToolsExpanded = value) }
     }
 
     fun updateAdvancedToolsExpanded(value: Boolean) {
@@ -101,14 +132,18 @@ internal class McpPageViewModel : ViewModel() {
         _uiState.update { state -> state.copy(showResetConfigConfirm = value) }
     }
 
-    fun beginLogsExport(generatedAt: String, fileName: String) {
+    fun beginLogsExport(
+        generatedAt: String,
+        fileName: String,
+    ) {
         _uiState.update { state ->
             state.copy(
                 logsExporting = true,
-                pendingLogsExport = McpLogsExportRequest(
-                    generatedAt = generatedAt,
-                    fileName = fileName
-                )
+                pendingLogsExport =
+                    McpLogsExportRequest(
+                        generatedAt = generatedAt,
+                        fileName = fileName,
+                    ),
             )
         }
     }
@@ -123,36 +158,30 @@ internal class McpPageViewModel : ViewModel() {
         _uiState.update { state ->
             state.copy(
                 logsExporting = false,
-                pendingLogsExport = null
+                pendingLogsExport = null,
             )
         }
     }
 
-    suspend fun toggleServer(manager: McpServerManager): McpToggleServerResult {
-        return repository.toggleServer(
+    suspend fun toggleServer(manager: McpServerManager): McpToggleServerResult =
+        repository.toggleServer(
             manager = manager,
-            draft = _uiState.value.serviceDraft
+            draft = _uiState.value.serviceDraft,
         )
-    }
 
-    suspend fun saveConfig(manager: McpServerManager): McpSaveConfigResult {
-        return repository.saveConfig(
+    suspend fun saveConfig(manager: McpServerManager): McpSaveConfigResult =
+        repository.saveConfig(
             manager = manager,
-            draft = _uiState.value.serviceDraft
+            draft = _uiState.value.serviceDraft,
         )
-    }
 
-    suspend fun resetConfigPreservingToken(manager: McpServerManager): Boolean {
-        return repository.resetConfigPreservingToken(manager)
-    }
+    suspend fun resetConfigPreservingToken(manager: McpServerManager): Boolean = repository.resetConfigPreservingToken(manager)
 
     suspend fun resetToken(manager: McpServerManager) {
         repository.resetToken(manager)
     }
 
-    suspend fun sendTestNotification(manager: McpServerManager): Result<Unit> {
-        return repository.sendTestNotification(manager)
-    }
+    suspend fun sendTestNotification(manager: McpServerManager): Result<Unit> = repository.sendTestNotification(manager)
 
     suspend fun refreshNow(manager: McpServerManager) {
         repository.refreshNow(manager)
@@ -164,26 +193,25 @@ internal class McpPageViewModel : ViewModel() {
 
     suspend fun buildConfigJson(
         manager: McpServerManager,
-        serverState: McpServerUiState
-    ): String {
-        return repository.buildConfigJson(
+        serverState: McpServerUiState,
+    ): String =
+        repository.buildConfigJson(
             manager = manager,
             serverState = serverState,
-            draft = _uiState.value.serviceDraft
+            draft = _uiState.value.serviceDraft,
         )
-    }
 
     suspend fun exportLogs(
         contentResolver: ContentResolver,
         uri: Uri,
         request: McpLogsExportRequest,
-        state: McpServerUiState
+        state: McpServerUiState,
     ) {
         repository.exportLogs(
             contentResolver = contentResolver,
             uri = uri,
             generatedAt = request.generatedAt,
-            state = state
+            state = state,
         )
     }
 }

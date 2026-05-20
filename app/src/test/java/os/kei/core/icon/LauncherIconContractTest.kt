@@ -1,5 +1,6 @@
 package os.kei.core.icon
 
+import android.content.pm.PackageManager
 import org.junit.Test
 import org.w3c.dom.Element
 import java.io.File
@@ -34,6 +35,19 @@ class LauncherIconContractTest {
         assertEquals("os.kei.LauncherAppleDesigns", appleDebugComponent.className)
         assertEquals("os.kei.benchmark", androidBenchmarkComponent.packageName)
         assertEquals("os.kei.LauncherAndroidDesigns", androidBenchmarkComponent.className)
+    }
+
+    @Test
+    fun `component state specs reapply selected design for benchmark package`() {
+        val specs = LauncherIconDesign.Apple.componentStateSpecs("os.kei.benchmark")
+
+        assertEquals(2, specs.size)
+        assertEquals("os.kei.benchmark", specs[0].component.packageName)
+        assertEquals("os.kei.LauncherAndroidDesigns", specs[0].component.className)
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED, specs[0].enabledState)
+        assertEquals("os.kei.benchmark", specs[1].component.packageName)
+        assertEquals("os.kei.LauncherAppleDesigns", specs[1].component.className)
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_ENABLED, specs[1].enabledState)
     }
 
     @Test

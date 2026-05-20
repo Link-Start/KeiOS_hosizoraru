@@ -102,8 +102,9 @@ internal class MainScreenUiPrefsState(
     }
 
     fun updateLauncherIconDesign(value: LauncherIconDesign) {
-        if (value == snapshot.launcherIconDesign) return
-        viewModel.updateLauncherIconDesign(value)
+        if (value != snapshot.launcherIconDesign) {
+            viewModel.updateLauncherIconDesign(value)
+        }
         LauncherIconController.applyDesign(appContext, value)
     }
 

@@ -76,12 +76,12 @@ fun AppInfoRow(
                 onLongClick = onLongClick,
             ).padding(vertical = rowVerticalPadding)
 
-    CopyModeSelectionContainer {
-        if (stacked) {
-            Column(
-                modifier = rowModifier,
-                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
-            ) {
+    if (stacked) {
+        Column(
+            modifier = rowModifier,
+            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
+        ) {
+            CopyModeSelectionContainer {
                 Text(
                     text = displayLabel,
                     color = labelColor,
@@ -90,6 +90,8 @@ fun AppInfoRow(
                     maxLines = labelMaxLines,
                     overflow = labelOverflow,
                 )
+            }
+            CopyModeSelectionContainer(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = displayValue,
                     color = valueColor,
@@ -102,47 +104,51 @@ fun AppInfoRow(
                     overflow = valueOverflow,
                 )
             }
-        } else {
-            Row(
-                modifier = rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val labelModifier =
-                    when {
-                        labelWeight != null -> {
-                            Modifier.weight(labelWeight)
-                        }
-
-                        labelMinWidth != Dp.Unspecified || labelMaxWidth != Dp.Unspecified -> {
-                            Modifier.widthIn(min = labelMinWidth, max = labelMaxWidth)
-                        }
-
-                        else -> {
-                            Modifier.wrapContentWidth()
-                        }
+        }
+    } else {
+        Row(
+            modifier = rowModifier,
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val labelModifier =
+                when {
+                    labelWeight != null -> {
+                        Modifier.weight(labelWeight)
                     }
-                val baseValueModifier =
-                    if (valueWeight > 0f) {
-                        Modifier.weight(valueWeight)
-                    } else {
+
+                    labelMinWidth != Dp.Unspecified || labelMaxWidth != Dp.Unspecified -> {
+                        Modifier.widthIn(min = labelMinWidth, max = labelMaxWidth)
+                    }
+
+                    else -> {
                         Modifier.wrapContentWidth()
                     }
-                val valueModifier =
-                    if (valueMinWidth != Dp.Unspecified) {
-                        baseValueModifier.widthIn(min = valueMinWidth)
-                    } else {
-                        baseValueModifier
-                    }
+                }
+            val baseValueModifier =
+                if (valueWeight > 0f) {
+                    Modifier.weight(valueWeight)
+                } else {
+                    Modifier.wrapContentWidth()
+                }
+            val valueModifier =
+                if (valueMinWidth != Dp.Unspecified) {
+                    baseValueModifier.widthIn(min = valueMinWidth)
+                } else {
+                    baseValueModifier
+                }
+            CopyModeSelectionContainer(modifier = labelModifier) {
                 Text(
                     text = displayLabel,
                     color = labelColor,
                     fontSize = labelFontSize,
                     lineHeight = labelLineHeight,
-                    modifier = labelModifier,
+                    modifier = if (labelWeight != null) Modifier.fillMaxWidth() else Modifier,
                     maxLines = labelMaxLines,
                     overflow = labelOverflow,
                 )
+            }
+            CopyModeSelectionContainer(modifier = valueModifier) {
                 Text(
                     text = displayValue,
                     color = valueColor,
@@ -150,7 +156,7 @@ fun AppInfoRow(
                     lineHeight = valueLineHeight,
                     fontWeight = if (emphasizedValue) FontWeight.Medium else FontWeight.Normal,
                     textAlign = valueTextAlign,
-                    modifier = valueModifier,
+                    modifier = Modifier.fillMaxWidth(),
                     maxLines = valueMaxLines,
                     overflow = valueOverflow,
                 )

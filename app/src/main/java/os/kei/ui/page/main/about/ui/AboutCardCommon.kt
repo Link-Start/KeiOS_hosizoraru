@@ -1,5 +1,8 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.about.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,11 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow.Companion.Clip
 import androidx.compose.ui.unit.dp
 import os.kei.R
-import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
-import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.buildTextCopyPayload
 import os.kei.ui.page.main.widget.support.rememberLightTextCopyAction
 import os.kei.ui.page.main.widget.support.rememberTextCopyExpandedEnabled
@@ -42,42 +45,53 @@ fun AboutCompactRow(
     titleIcon: ImageVector? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    valueContent: @Composable RowScope.() -> Unit
+    valueContent: @Composable RowScope.() -> Unit,
 ) {
-    val clickableModifier = if (onClick != null || onLongClick != null) {
-        val interactionSource = remember { MutableInteractionSource() }
-        Modifier.combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            role = Role.Button,
-            onClick = { onClick?.invoke() },
-            onLongClick = onLongClick
-        )
-    } else {
-        Modifier
-    }
+    val clickableModifier =
+        if (onClick != null || onLongClick != null) {
+            val interactionSource = remember { MutableInteractionSource() }
+            if (onLongClick != null) {
+                Modifier.combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick,
+                )
+            } else {
+                Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = { onClick?.invoke() },
+                )
+            }
+        } else {
+            Modifier
+        }
     BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(clickableModifier)
-            .padding(vertical = CardLayoutRhythm.compactSectionGap)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(clickableModifier)
+                .padding(vertical = CardLayoutRhythm.compactSectionGap),
     ) {
         val maxTitleWidth = (maxWidth * 0.44f).coerceAtLeast(96.dp)
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap)
+            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
         ) {
             Row(
                 modifier = Modifier.widthIn(min = 70.dp, max = maxTitleWidth),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (titleIcon != null) {
                     Icon(
                         imageVector = titleIcon,
                         contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onBackgroundVariant
+                        tint = MiuixTheme.colorScheme.onBackgroundVariant,
                     )
                 }
                 Text(
@@ -86,14 +100,14 @@ fun AboutCompactRow(
                     fontSize = AppTypographyTokens.Supporting.fontSize,
                     lineHeight = AppTypographyTokens.Supporting.lineHeight,
                     maxLines = Int.MAX_VALUE,
-                    overflow = Clip
+                    overflow = Clip,
                 )
             }
             Row(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
-                content = valueContent
+                content = valueContent,
             )
         }
     }
@@ -108,12 +122,13 @@ fun AboutCompactInfoRow(
     valueColor: Color = MiuixTheme.colorScheme.onBackground,
     onClick: (() -> Unit)? = null,
     enableLongPressCopy: Boolean = true,
-    onLongClick: (() -> Unit)? = null
+    onLongClick: (() -> Unit)? = null,
 ) {
     val displayValue = value.ifBlank { stringResource(R.string.common_na) }
-    val copyPayload = remember(title, displayValue) {
-        buildTextCopyPayload(title, displayValue)
-    }
+    val copyPayload =
+        remember(title, displayValue) {
+            buildTextCopyPayload(title, displayValue)
+        }
     val quickCopyAction = rememberLightTextCopyAction(copyPayload)
     val expandedCopyMode = rememberTextCopyExpandedEnabled()
     AboutCompactRow(
@@ -121,9 +136,9 @@ fun AboutCompactInfoRow(
         modifier = modifier,
         titleIcon = titleIcon,
         onClick = onClick,
-        onLongClick = onLongClick ?: if (enableLongPressCopy && !expandedCopyMode) quickCopyAction else null
+        onLongClick = onLongClick ?: if (enableLongPressCopy && !expandedCopyMode) quickCopyAction else null,
     ) {
-        CopyModeSelectionContainer {
+        CopyModeSelectionContainer(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = displayValue,
                 color = valueColor,
@@ -132,7 +147,7 @@ fun AboutCompactInfoRow(
                 maxLines = Int.MAX_VALUE,
                 overflow = Clip,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End
+                textAlign = TextAlign.End,
             )
         }
     }
@@ -144,16 +159,16 @@ fun AboutCompactPillRow(
     label: String,
     color: Color,
     titleIcon: ImageVector? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
 ) {
     AboutCompactRow(
         title = title,
         titleIcon = titleIcon,
-        onClick = onClick
+        onClick = onClick,
     ) {
         StatusPill(
             label = label,
-            color = color
+            color = color,
         )
     }
 }
@@ -169,7 +184,7 @@ fun AboutSectionCard(
     collapsible: Boolean = false,
     expanded: Boolean = true,
     onExpandedChange: (Boolean) -> Unit = {},
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     AppFeatureCard(
         title = title,
@@ -181,6 +196,6 @@ fun AboutSectionCard(
         collapsible = collapsible,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
-        content = content
+        content = content,
     )
 }

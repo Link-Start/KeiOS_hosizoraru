@@ -14,8 +14,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
@@ -28,6 +26,8 @@ import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.NavDisplayTransitionEffects
 import androidx.navigation3.ui.defaultPredictivePopTransitionSpec
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.mcp.server.McpServerManager
@@ -45,13 +45,14 @@ import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.AppToastBridge
 import os.kei.ui.page.main.widget.glass.BindLiquidToastBridge
 import os.kei.ui.page.main.widget.glass.LiquidToastHost
+import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.rememberLiquidToastState
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 
 @Composable
 internal fun MainScreenNavHost(
@@ -248,6 +249,7 @@ internal fun MainScreenNavHost(
         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
         LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled,
+        LocalTextCopyExpandedOverride provides prefsState.textCopyCapabilityExpanded,
     ) {
         // Liquid Glass Toast host — overlays all navigation content.
         val liquidToastState = rememberLiquidToastState()
@@ -255,30 +257,30 @@ internal fun MainScreenNavHost(
         BindLiquidToastBridge(liquidToastState)
         Box(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().layerBackdrop(liquidToastBackdrop)) {
-        if (routePredictiveBackEnabled) {
-            NavigationBackHandler(
-                sceneState = sceneState,
-                state = navigationEventState,
-                onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
-            )
-        }
-        NavDisplay(
-            sceneState = sceneState,
-            navigationEventState = navigationEventState,
-            predictivePopTransitionSpec = predictivePopTransitionSpec,
-            transitionEffects = transitionEffects,
-            modifier = Modifier.fillMaxSize(),
-        )
-        KeiOSBackNavigationHandler(
-            enabled = !routePredictiveBackEnabled && backStack.size > 1,
-            source = BackNavigationSource.MainRoute,
-        ) {
-            handleMainScreenBack(backStack, navigator, pagerCoordinator)
-        }
+                if (routePredictiveBackEnabled) {
+                    NavigationBackHandler(
+                        sceneState = sceneState,
+                        state = navigationEventState,
+                        onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+                    )
+                }
+                NavDisplay(
+                    sceneState = sceneState,
+                    navigationEventState = navigationEventState,
+                    predictivePopTransitionSpec = predictivePopTransitionSpec,
+                    transitionEffects = transitionEffects,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                KeiOSBackNavigationHandler(
+                    enabled = !routePredictiveBackEnabled && backStack.size > 1,
+                    source = BackNavigationSource.MainRoute,
+                ) {
+                    handleMainScreenBack(backStack, navigator, pagerCoordinator)
+                }
             }
             LiquidToastHost(
                 state = liquidToastState,
-                backdrop = liquidToastBackdrop
+                backdrop = liquidToastBackdrop,
             )
         }
     }

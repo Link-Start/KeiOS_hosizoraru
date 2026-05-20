@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.markdown
 
 import androidx.compose.foundation.background
@@ -42,24 +44,26 @@ internal fun AppMarkdownContent(
     emptyText: String? = null,
     preserveLineBreaks: Boolean = false,
     sourceKey: String? = null,
-    onOpenLink: ((String) -> Unit)? = null
+    onOpenLink: ((String) -> Unit)? = null,
 ) {
-    val blocksState = produceState<List<AppMarkdownBlock>>(
-        initialValue = emptyList(),
-        markdown,
-        preserveLineBreaks,
-        sourceKey
-    ) {
-        if (markdown.isBlank()) {
-            value = emptyList()
-            return@produceState
+    val blocksState =
+        produceState<List<AppMarkdownBlock>>(
+            initialValue = emptyList(),
+            markdown,
+            preserveLineBreaks,
+            sourceKey,
+        ) {
+            if (markdown.isBlank()) {
+                value = emptyList()
+                return@produceState
+            }
+            value =
+                parseCachedAppMarkdownBlocks(
+                    markdown = markdown,
+                    preserveLineBreaks = preserveLineBreaks,
+                    sourceKey = sourceKey,
+                )
         }
-        value = parseCachedAppMarkdownBlocks(
-            markdown = markdown,
-            preserveLineBreaks = preserveLineBreaks,
-            sourceKey = sourceKey
-        )
-    }
     AppMarkdownBlocksContent(
         blocks = blocksState.value,
         titleColor = titleColor,
@@ -69,7 +73,7 @@ internal fun AppMarkdownContent(
         modifier = modifier,
         paragraphMarker = paragraphMarker,
         emptyText = emptyText,
-        onOpenLink = onOpenLink
+        onOpenLink = onOpenLink,
     )
 }
 
@@ -83,11 +87,11 @@ internal fun AppMarkdownBlocksContent(
     modifier: Modifier = Modifier,
     paragraphMarker: String? = null,
     emptyText: String? = null,
-    onOpenLink: ((String) -> Unit)? = null
+    onOpenLink: ((String) -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (blocks.isEmpty()) {
             if (!emptyText.isNullOrBlank()) {
@@ -109,7 +113,7 @@ internal fun AppMarkdownBlocksContent(
                     titleColor = titleColor,
                     subtitleColor = subtitleColor,
                     accentColor = accentColor,
-                    onOpenLink = onOpenLink
+                    onOpenLink = onOpenLink,
                 )
                 continue
             }
@@ -120,7 +124,7 @@ internal fun AppMarkdownBlocksContent(
                 accentColor = accentColor,
                 codeContainerColor = codeContainerColor,
                 paragraphMarker = paragraphMarker,
-                onOpenLink = onOpenLink
+                onOpenLink = onOpenLink,
             )
             index += 1
         }
@@ -135,16 +139,18 @@ private fun AppMarkdownBlockView(
     accentColor: Color,
     codeContainerColor: Color,
     paragraphMarker: String?,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
     when (block) {
-        is AppMarkdownBlock.Heading -> AppMarkdownHeading(
-            level = block.level,
-            text = block.text,
-            titleColor = titleColor,
-            accentColor = accentColor,
-            onOpenLink = onOpenLink
-        )
+        is AppMarkdownBlock.Heading -> {
+            AppMarkdownHeading(
+                level = block.level,
+                text = block.text,
+                titleColor = titleColor,
+                accentColor = accentColor,
+                onOpenLink = onOpenLink,
+            )
+        }
 
         is AppMarkdownBlock.Paragraph -> {
             if (paragraphMarker.isNullOrBlank()) {
@@ -152,7 +158,7 @@ private fun AppMarkdownBlockView(
                     text = block.text,
                     subtitleColor = subtitleColor,
                     accentColor = accentColor,
-                    onOpenLink = onOpenLink
+                    onOpenLink = onOpenLink,
                 )
             } else {
                 AppMarkdownMarkedLine(
@@ -160,60 +166,74 @@ private fun AppMarkdownBlockView(
                     text = block.text,
                     subtitleColor = subtitleColor,
                     accentColor = accentColor,
-                    onOpenLink = onOpenLink
+                    onOpenLink = onOpenLink,
                 )
             }
         }
 
-        is AppMarkdownBlock.Bullet -> AppMarkdownMarkedLine(
-            marker = "•",
-            text = block.text,
-            subtitleColor = subtitleColor,
-            accentColor = accentColor,
-            onOpenLink = onOpenLink
-        )
+        is AppMarkdownBlock.Bullet -> {
+            AppMarkdownMarkedLine(
+                marker = "•",
+                text = block.text,
+                subtitleColor = subtitleColor,
+                accentColor = accentColor,
+                onOpenLink = onOpenLink,
+            )
+        }
 
-        is AppMarkdownBlock.Task -> AppMarkdownMarkedLine(
-            marker = if (block.checked) "✓" else "□",
-            text = block.text,
-            subtitleColor = subtitleColor,
-            accentColor = accentColor,
-            onOpenLink = onOpenLink
-        )
+        is AppMarkdownBlock.Task -> {
+            AppMarkdownMarkedLine(
+                marker = if (block.checked) "✓" else "□",
+                text = block.text,
+                subtitleColor = subtitleColor,
+                accentColor = accentColor,
+                onOpenLink = onOpenLink,
+            )
+        }
 
-        is AppMarkdownBlock.Ordered -> AppMarkdownMarkedLine(
-            marker = "${block.index}.",
-            text = block.text,
-            subtitleColor = subtitleColor,
-            accentColor = accentColor,
-            onOpenLink = onOpenLink
-        )
+        is AppMarkdownBlock.Ordered -> {
+            AppMarkdownMarkedLine(
+                marker = "${block.index}.",
+                text = block.text,
+                subtitleColor = subtitleColor,
+                accentColor = accentColor,
+                onOpenLink = onOpenLink,
+            )
+        }
 
-        is AppMarkdownBlock.Quote -> AppMarkdownMarkedLine(
-            marker = "›",
-            text = block.text,
-            subtitleColor = subtitleColor,
-            accentColor = accentColor,
-            onOpenLink = onOpenLink
-        )
+        is AppMarkdownBlock.Quote -> {
+            AppMarkdownMarkedLine(
+                marker = "›",
+                text = block.text,
+                subtitleColor = subtitleColor,
+                accentColor = accentColor,
+                onOpenLink = onOpenLink,
+            )
+        }
 
-        is AppMarkdownBlock.TableRow -> AppMarkdownTable(
-            rows = listOf(block),
-            titleColor = titleColor,
-            subtitleColor = subtitleColor,
-            accentColor = accentColor,
-            onOpenLink = onOpenLink
-        )
+        is AppMarkdownBlock.TableRow -> {
+            AppMarkdownTable(
+                rows = listOf(block),
+                titleColor = titleColor,
+                subtitleColor = subtitleColor,
+                accentColor = accentColor,
+                onOpenLink = onOpenLink,
+            )
+        }
 
-        AppMarkdownBlock.HorizontalRule -> AppMarkdownHorizontalRule(
-            color = subtitleColor.copy(alpha = 0.22f)
-        )
+        AppMarkdownBlock.HorizontalRule -> {
+            AppMarkdownHorizontalRule(
+                color = subtitleColor.copy(alpha = 0.22f),
+            )
+        }
 
-        is AppMarkdownBlock.Code -> AppMarkdownCodeBlock(
-            text = block.text,
-            titleColor = titleColor,
-            codeContainerColor = codeContainerColor
-        )
+        is AppMarkdownBlock.Code -> {
+            AppMarkdownCodeBlock(
+                text = block.text,
+                titleColor = titleColor,
+                codeContainerColor = codeContainerColor,
+            )
+        }
     }
 }
 
@@ -223,36 +243,42 @@ private fun AppMarkdownHeading(
     text: String,
     titleColor: Color,
     accentColor: Color,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
-    val size = when (level) {
-        1 -> 18.sp
-        2 -> 17.sp
-        3 -> 16.sp
-        else -> 15.sp
-    }
-    CopyModeSelectionContainer {
+    val size =
+        when (level) {
+            1 -> 18.sp
+            2 -> 17.sp
+            3 -> 16.sp
+            else -> 15.sp
+        }
+    CopyModeSelectionContainer(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .markdownCopyAwareRow(copyPayload = text, linksEnabled = onOpenLink != null),
+    ) {
         AppMarkdownInlineText(
             text = text,
             color = titleColor,
             fontSize = size,
             fontWeight = FontWeight.SemiBold,
             lineHeight = (size.value + 6f).sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .markdownCopyAwareRow(copyPayload = text, linksEnabled = onOpenLink != null),
+            modifier = Modifier.fillMaxWidth(),
             baseStyle = SpanStyle(color = titleColor, fontWeight = FontWeight.SemiBold),
-            accentStyle = SpanStyle(
-                color = accentColor,
-                background = accentColor.copy(alpha = 0.10f),
-                fontWeight = FontWeight.Medium
-            ),
-            linkStyle = SpanStyle(
-                color = accentColor,
-                textDecoration = TextDecoration.Underline,
-                fontWeight = FontWeight.Medium
-            ),
-            onOpenLink = onOpenLink
+            accentStyle =
+                SpanStyle(
+                    color = accentColor,
+                    background = accentColor.copy(alpha = 0.10f),
+                    fontWeight = FontWeight.Medium,
+                ),
+            linkStyle =
+                SpanStyle(
+                    color = accentColor,
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = FontWeight.Medium,
+                ),
+            onOpenLink = onOpenLink,
         )
     }
 }
@@ -263,14 +289,15 @@ private fun AppMarkdownMarkedLine(
     text: String,
     subtitleColor: Color,
     accentColor: Color,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .markdownCopyAwareRow(copyPayload = text, linksEnabled = onOpenLink != null),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .markdownCopyAwareRow(copyPayload = text, linksEnabled = onOpenLink != null),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
     ) {
         Text(marker, color = subtitleColor, fontSize = 15.sp, lineHeight = 22.sp)
         AppMarkdownTextLine(
@@ -278,7 +305,7 @@ private fun AppMarkdownMarkedLine(
             subtitleColor = subtitleColor,
             accentColor = accentColor,
             modifier = Modifier.weight(1f),
-            onOpenLink = onOpenLink
+            onOpenLink = onOpenLink,
         )
     }
 }
@@ -289,29 +316,34 @@ private fun AppMarkdownTextLine(
     subtitleColor: Color,
     accentColor: Color,
     modifier: Modifier = Modifier,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
-    CopyModeSelectionContainer {
+    CopyModeSelectionContainer(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .markdownCopyAwareRow(copyPayload = text, linksEnabled = onOpenLink != null),
+    ) {
         AppMarkdownInlineText(
             text = text,
             color = subtitleColor,
             fontSize = 15.sp,
             lineHeight = 22.sp,
-            modifier = modifier
-                .fillMaxWidth()
-                .markdownCopyAwareRow(copyPayload = text, linksEnabled = onOpenLink != null),
+            modifier = Modifier.fillMaxWidth(),
             baseStyle = SpanStyle(color = subtitleColor),
-            accentStyle = SpanStyle(
-                color = accentColor,
-                background = accentColor.copy(alpha = 0.10f),
-                fontWeight = FontWeight.Medium
-            ),
-            linkStyle = SpanStyle(
-                color = accentColor,
-                textDecoration = TextDecoration.Underline,
-                fontWeight = FontWeight.Medium
-            ),
-            onOpenLink = onOpenLink
+            accentStyle =
+                SpanStyle(
+                    color = accentColor,
+                    background = accentColor.copy(alpha = 0.10f),
+                    fontWeight = FontWeight.Medium,
+                ),
+            linkStyle =
+                SpanStyle(
+                    color = accentColor,
+                    textDecoration = TextDecoration.Underline,
+                    fontWeight = FontWeight.Medium,
+                ),
+            onOpenLink = onOpenLink,
         )
     }
 }
@@ -322,34 +354,35 @@ private fun AppMarkdownTable(
     titleColor: Color,
     subtitleColor: Color,
     accentColor: Color,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
     val shape = RoundedCornerShape(8.dp)
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = subtitleColor.copy(alpha = 0.06f),
-                shape = shape
-            )
-            .border(
-                width = 0.6.dp,
-                color = subtitleColor.copy(alpha = 0.12f),
-                shape = shape
-            )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    color = subtitleColor.copy(alpha = 0.06f),
+                    shape = shape,
+                ).border(
+                    width = 0.6.dp,
+                    color = subtitleColor.copy(alpha = 0.12f),
+                    shape = shape,
+                ),
     ) {
         rows.forEachIndexed { rowIndex, row ->
             val cells = row.cells.filter { it.isNotBlank() }
             val textColor = if (row.header) titleColor else subtitleColor
-            val rowModifier = Modifier
-                .fillMaxWidth()
-                .background(if (row.header) accentColor.copy(alpha = 0.12f) else Color.Transparent)
-                .padding(horizontal = 10.dp, vertical = 8.dp)
+            val rowModifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(if (row.header) accentColor.copy(alpha = 0.12f) else Color.Transparent)
+                    .padding(horizontal = 10.dp, vertical = 8.dp)
             if (cells.size <= 3) {
                 Row(
                     modifier = rowModifier,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.Top,
                 ) {
                     cells.forEach { cell ->
                         AppMarkdownTableCell(
@@ -358,14 +391,14 @@ private fun AppMarkdownTable(
                             accentColor = accentColor,
                             header = row.header,
                             modifier = Modifier.weight(1f),
-                            onOpenLink = onOpenLink
+                            onOpenLink = onOpenLink,
                         )
                     }
                 }
             } else {
                 Column(
                     modifier = rowModifier,
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     cells.forEach { cell ->
                         AppMarkdownTableCell(
@@ -374,17 +407,18 @@ private fun AppMarkdownTable(
                             accentColor = accentColor,
                             header = row.header,
                             modifier = Modifier.fillMaxWidth(),
-                            onOpenLink = onOpenLink
+                            onOpenLink = onOpenLink,
                         )
                     }
                 }
             }
             if (rowIndex < rows.lastIndex) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(0.6.dp)
-                        .background(subtitleColor.copy(alpha = 0.10f))
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(0.6.dp)
+                            .background(subtitleColor.copy(alpha = 0.10f)),
                 )
             }
         }
@@ -398,7 +432,7 @@ private fun AppMarkdownTableCell(
     accentColor: Color,
     header: Boolean,
     modifier: Modifier,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
     AppMarkdownInlineText(
         text = cell,
@@ -407,32 +441,36 @@ private fun AppMarkdownTableCell(
         lineHeight = 20.sp,
         fontWeight = if (header) FontWeight.SemiBold else FontWeight.Normal,
         modifier = modifier,
-        baseStyle = SpanStyle(
-            color = textColor,
-            fontWeight = if (header) FontWeight.SemiBold else FontWeight.Normal
-        ),
-        accentStyle = SpanStyle(
-            color = accentColor,
-            background = accentColor.copy(alpha = 0.10f),
-            fontWeight = FontWeight.Medium
-        ),
-        linkStyle = SpanStyle(
-            color = accentColor,
-            textDecoration = TextDecoration.Underline,
-            fontWeight = FontWeight.Medium
-        ),
-        onOpenLink = onOpenLink
+        baseStyle =
+            SpanStyle(
+                color = textColor,
+                fontWeight = if (header) FontWeight.SemiBold else FontWeight.Normal,
+            ),
+        accentStyle =
+            SpanStyle(
+                color = accentColor,
+                background = accentColor.copy(alpha = 0.10f),
+                fontWeight = FontWeight.Medium,
+            ),
+        linkStyle =
+            SpanStyle(
+                color = accentColor,
+                textDecoration = TextDecoration.Underline,
+                fontWeight = FontWeight.Medium,
+            ),
+        onOpenLink = onOpenLink,
     )
 }
 
 @Composable
 private fun AppMarkdownHorizontalRule(color: Color) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .height(1.dp)
-            .background(color)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp)
+                .height(1.dp)
+                .background(color),
     )
 }
 
@@ -447,15 +485,16 @@ private fun AppMarkdownInlineText(
     accentStyle: SpanStyle,
     linkStyle: SpanStyle,
     fontWeight: FontWeight? = null,
-    onOpenLink: ((String) -> Unit)?
+    onOpenLink: ((String) -> Unit)?,
 ) {
-    val annotated = buildAppMarkdownInlineText(
-        text = text,
-        baseStyle = baseStyle,
-        accentStyle = accentStyle,
-        linkStyle = linkStyle,
-        onOpenLink = onOpenLink
-    )
+    val annotated =
+        buildAppMarkdownInlineText(
+            text = text,
+            baseStyle = baseStyle,
+            accentStyle = accentStyle,
+            linkStyle = linkStyle,
+            onOpenLink = onOpenLink,
+        )
     if (onOpenLink == null) {
         Text(
             text = annotated,
@@ -463,64 +502,62 @@ private fun AppMarkdownInlineText(
             fontSize = fontSize,
             fontWeight = fontWeight,
             lineHeight = lineHeight,
-            modifier = modifier
+            modifier = modifier,
         )
     } else {
         val firstLink = remember(annotated) { annotated.firstMarkdownUrlOrNull() }
         BasicText(
             text = annotated,
-            modifier = if (firstLink == null) {
-                modifier
-            } else {
-                modifier.clickable { onOpenLink(firstLink) }
-            },
-            style = TextStyle(
-                color = color,
-                fontSize = fontSize,
-                fontWeight = fontWeight,
-                lineHeight = lineHeight
-            )
+            modifier =
+                if (firstLink == null) {
+                    modifier
+                } else {
+                    modifier.clickable { onOpenLink(firstLink) }
+                },
+            style =
+                TextStyle(
+                    color = color,
+                    fontSize = fontSize,
+                    fontWeight = fontWeight,
+                    lineHeight = lineHeight,
+                ),
         )
     }
 }
 
-private fun androidx.compose.ui.text.AnnotatedString.firstMarkdownUrlOrNull(): String? {
-    return getLinkAnnotations(0, length)
+private fun androidx.compose.ui.text.AnnotatedString.firstMarkdownUrlOrNull(): String? =
+    getLinkAnnotations(0, length)
         .firstOrNull()
         ?.item
         ?.markdownUrlOrNull()
-}
 
-private fun LinkAnnotation.markdownUrlOrNull(): String? {
-    return when (this) {
+private fun LinkAnnotation.markdownUrlOrNull(): String? =
+    when (this) {
         is LinkAnnotation.Url -> url
         is LinkAnnotation.Clickable -> tag
         else -> null
     }
-}
 
 private fun Modifier.markdownCopyAwareRow(
     copyPayload: String,
-    linksEnabled: Boolean
-): Modifier {
-    return if (linksEnabled) this else copyModeAwareRow(copyPayload = copyPayload)
-}
+    linksEnabled: Boolean,
+): Modifier = if (linksEnabled) this else copyModeAwareRow(copyPayload = copyPayload)
 
 @Composable
 private fun AppMarkdownCodeBlock(
     text: String,
     titleColor: Color,
-    codeContainerColor: Color
+    codeContainerColor: Color,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = codeContainerColor,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp)
-            .copyModeAwareRow(copyPayload = text)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    color = codeContainerColor,
+                    shape = RoundedCornerShape(8.dp),
+                ).padding(horizontal = 12.dp, vertical = 10.dp)
+                .copyModeAwareRow(copyPayload = text),
     ) {
         CopyModeSelectionContainer {
             Text(
@@ -529,7 +566,7 @@ private fun AppMarkdownCodeBlock(
                 fontSize = 13.sp,
                 lineHeight = 19.sp,
                 fontFamily = FontFamily.Monospace,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

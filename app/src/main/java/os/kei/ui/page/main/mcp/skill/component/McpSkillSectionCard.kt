@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.mcp.skill.component
 
 import androidx.compose.foundation.layout.Arrangement
@@ -31,43 +33,48 @@ internal fun SkillSectionCard(
     subtitleColor: Color,
     accentColor: Color,
     codeColor: Color,
-    emptyItemText: String
+    emptyItemText: String,
 ) {
-    val titleSize = when (section.level) {
-        1 -> 20.sp
-        2 -> 18.sp
-        else -> 17.sp
-    }
+    val titleSize =
+        when (section.level) {
+            1 -> 20.sp
+            2 -> 18.sp
+            else -> 17.sp
+        }
 
     AppSurfaceCard(
         contentColor = titleColor,
-        showIndication = false
+        showIndication = false,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = buildInlineStyledText(
-                    text = section.title,
-                    baseStyle = SpanStyle(color = titleColor, fontWeight = FontWeight.SemiBold),
-                    accentStyle = SpanStyle(
-                        color = accentColor,
-                        background = accentColor.copy(alpha = 0.12f),
-                        fontWeight = FontWeight.Medium
+                text =
+                    buildInlineStyledText(
+                        text = section.title,
+                        baseStyle = SpanStyle(color = titleColor, fontWeight = FontWeight.SemiBold),
+                        accentStyle =
+                            SpanStyle(
+                                color = accentColor,
+                                background = accentColor.copy(alpha = 0.12f),
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        linkStyle =
+                            SpanStyle(
+                                color = accentColor,
+                                textDecoration = TextDecoration.Underline,
+                                fontWeight = FontWeight.Medium,
+                            ),
                     ),
-                    linkStyle = SpanStyle(
-                        color = accentColor,
-                        textDecoration = TextDecoration.Underline,
-                        fontWeight = FontWeight.Medium
-                    )
-                ),
                 color = titleColor,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = titleSize,
-                lineHeight = (titleSize.value + 6f).sp
+                lineHeight = (titleSize.value + 6f).sp,
             )
 
             if (section.items.isEmpty()) {
@@ -79,7 +86,7 @@ internal fun SkillSectionCard(
                         titleColor = titleColor,
                         subtitleColor = subtitleColor,
                         accentColor = accentColor,
-                        codeColor = codeColor
+                        codeColor = codeColor,
                     )
                     if (index < section.items.lastIndex) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -96,34 +103,39 @@ private fun SkillSectionItemView(
     titleColor: Color,
     subtitleColor: Color,
     accentColor: Color,
-    codeColor: Color
+    codeColor: Color,
 ) {
     when (item) {
         is SkillSectionItem.SubHeading -> {
             val size = if (item.level <= 3) 16.sp else 15.sp
-            CopyModeSelectionContainer {
+            CopyModeSelectionContainer(
+                modifier =
+                    Modifier
+                        .padding(top = 2.dp)
+                        .copyModeAwareRow(copyPayload = item.text),
+            ) {
                 Text(
-                    text = buildInlineStyledText(
-                        text = item.text,
-                        baseStyle = SpanStyle(color = titleColor, fontWeight = FontWeight.Medium),
-                        accentStyle = SpanStyle(
-                            color = accentColor,
-                            background = accentColor.copy(alpha = 0.10f),
-                            fontWeight = FontWeight.Medium
+                    text =
+                        buildInlineStyledText(
+                            text = item.text,
+                            baseStyle = SpanStyle(color = titleColor, fontWeight = FontWeight.Medium),
+                            accentStyle =
+                                SpanStyle(
+                                    color = accentColor,
+                                    background = accentColor.copy(alpha = 0.10f),
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                            linkStyle =
+                                SpanStyle(
+                                    color = accentColor,
+                                    textDecoration = TextDecoration.Underline,
+                                    fontWeight = FontWeight.Medium,
+                                ),
                         ),
-                        linkStyle = SpanStyle(
-                            color = accentColor,
-                            textDecoration = TextDecoration.Underline,
-                            fontWeight = FontWeight.Medium
-                        )
-                    ),
                     color = titleColor,
                     fontSize = size,
                     fontWeight = FontWeight.Medium,
                     lineHeight = (size.value + 6f).sp,
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .copyModeAwareRow(copyPayload = item.text)
                 )
             }
         }
@@ -133,7 +145,7 @@ private fun SkillSectionItemView(
                 marker = "·",
                 text = item.text,
                 subtitleColor = subtitleColor,
-                accentColor = accentColor
+                accentColor = accentColor,
             )
         }
 
@@ -142,7 +154,7 @@ private fun SkillSectionItemView(
                 marker = "•",
                 text = item.text,
                 subtitleColor = subtitleColor,
-                accentColor = accentColor
+                accentColor = accentColor,
             )
         }
 
@@ -151,7 +163,7 @@ private fun SkillSectionItemView(
                 marker = "${item.index}.",
                 text = item.text,
                 subtitleColor = subtitleColor,
-                accentColor = accentColor
+                accentColor = accentColor,
             )
         }
 
@@ -159,18 +171,21 @@ private fun SkillSectionItemView(
             AppSurfaceCard(
                 containerColor = codeColor,
                 contentColor = titleColor,
-                showIndication = false
+                showIndication = false,
             ) {
-                CopyModeSelectionContainer {
-                    Text(
-                        text = item.text,
-                        modifier = Modifier
+                CopyModeSelectionContainer(
+                    modifier =
+                        Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 10.dp)
                             .copyModeAwareRow(copyPayload = item.text),
+                ) {
+                    Text(
+                        text = item.text,
+                        modifier = Modifier.fillMaxWidth(),
                         color = titleColor,
                         fontSize = 13.sp,
-                        lineHeight = 19.sp
+                        lineHeight = 19.sp,
                     )
                 }
             }
@@ -183,36 +198,40 @@ private fun SkillParagraphLine(
     marker: String,
     text: String,
     subtitleColor: Color,
-    accentColor: Color
+    accentColor: Color,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .copyModeAwareRow(copyPayload = text),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .copyModeAwareRow(copyPayload = text),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
     ) {
         Text(marker, color = subtitleColor, fontSize = 15.sp)
-        CopyModeSelectionContainer {
+        CopyModeSelectionContainer(modifier = Modifier.weight(1f)) {
             Text(
-                text = buildInlineStyledText(
-                    text = text,
-                    baseStyle = SpanStyle(color = subtitleColor),
-                    accentStyle = SpanStyle(
-                        color = accentColor,
-                        background = accentColor.copy(alpha = 0.10f),
-                        fontWeight = FontWeight.Medium
+                text =
+                    buildInlineStyledText(
+                        text = text,
+                        baseStyle = SpanStyle(color = subtitleColor),
+                        accentStyle =
+                            SpanStyle(
+                                color = accentColor,
+                                background = accentColor.copy(alpha = 0.10f),
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        linkStyle =
+                            SpanStyle(
+                                color = accentColor,
+                                textDecoration = TextDecoration.Underline,
+                                fontWeight = FontWeight.Medium,
+                            ),
                     ),
-                    linkStyle = SpanStyle(
-                        color = accentColor,
-                        textDecoration = TextDecoration.Underline,
-                        fontWeight = FontWeight.Medium
-                    )
-                ),
                 color = subtitleColor,
                 fontSize = 15.sp,
                 lineHeight = 22.sp,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

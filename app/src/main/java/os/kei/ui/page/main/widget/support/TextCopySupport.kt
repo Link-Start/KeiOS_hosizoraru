@@ -1,10 +1,12 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.support
 
 import android.content.ClipData
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -21,11 +23,15 @@ import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.prefs.UiPrefs
 
 internal val LocalTextCopyExpandedOverride = compositionLocalOf<Boolean?> { null }
 
-internal fun buildTextCopyPayload(key: String, value: String): String {
+internal fun buildTextCopyPayload(
+    key: String,
+    value: String,
+): String {
     val title = key.trim().ifBlank { "Info" }
     val content = value.trim().ifBlank { "-" }
     return "$title: $content"
@@ -36,7 +42,7 @@ internal fun rememberTextCopyExpandedEnabled(): Boolean {
     LocalTextCopyExpandedOverride.current?.let { return it }
     val copyFlow = remember { UiPrefs.observeTextCopyCapabilityExpanded() }
     val enabled by copyFlow.collectAsStateWithLifecycle(
-        initialValue = UiPrefs.isTextCopyCapabilityExpanded()
+        initialValue = UiPrefs.isTextCopyCapabilityExpanded(),
     )
     return enabled
 }
@@ -61,45 +67,51 @@ internal fun rememberLightTextCopyAction(copyPayload: String): (() -> Unit)? {
 internal fun Modifier.copyModeAwareRow(
     copyPayload: String,
     onClick: (() -> Unit)? = null,
-    onLongClick: (() -> Unit)? = null
-): Modifier = composed {
-    val expandedCopyMode = rememberTextCopyExpandedEnabled()
-    val copyLabel = stringResource(R.string.common_copy)
-    if (expandedCopyMode) {
-        if (onClick != null) {
-            this.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                role = Role.Button,
-                onClick = onClick
-            )
+    onLongClick: (() -> Unit)? = null,
+): Modifier =
+    composed {
+        val expandedCopyMode = rememberTextCopyExpandedEnabled()
+        val copyLabel = stringResource(R.string.common_copy)
+        if (expandedCopyMode) {
+            if (onClick != null) {
+                this.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick,
+                )
+            } else {
+                this
+            }
         } else {
-            this
-        }
-    } else {
-        val quickCopyAction = rememberLightTextCopyAction(copyPayload)
-        val resolvedLongClick = onLongClick ?: quickCopyAction
-        if (onClick != null || resolvedLongClick != null) {
-            this.combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                role = Role.Button,
-                onClick = { onClick?.invoke() },
-                onLongClickLabel = if (resolvedLongClick != null) copyLabel else null,
-                onLongClick = { resolvedLongClick?.invoke() }
-            )
-        } else {
-            this
+            val quickCopyAction = rememberLightTextCopyAction(copyPayload)
+            val resolvedLongClick = onLongClick ?: quickCopyAction
+            if (onClick != null || resolvedLongClick != null) {
+                this.combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    role = Role.Button,
+                    onClick = { onClick?.invoke() },
+                    onLongClickLabel = if (resolvedLongClick != null) copyLabel else null,
+                    onLongClick = { resolvedLongClick?.invoke() },
+                )
+            } else {
+                this
+            }
         }
     }
-}
 
 @Composable
 internal fun CopyModeSelectionContainer(
-    content: @Composable () -> Unit
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
     if (rememberTextCopyExpandedEnabled()) {
-        SelectionContainer {
+        SelectionContainer(modifier = modifier) {
+            content()
+        }
+    } else if (modifier !== Modifier) {
+        Box(modifier = modifier) {
             content()
         }
     } else {

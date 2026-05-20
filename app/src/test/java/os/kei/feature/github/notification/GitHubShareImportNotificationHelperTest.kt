@@ -3,6 +3,7 @@ package os.kei.feature.github.notification
 import android.app.Application
 import android.app.Notification
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -124,10 +125,7 @@ class GitHubShareImportNotificationHelperTest {
                 false
             )
         )
-        assertEquals(
-            GitHubShareImportActivity.ACTION_SEND_INSTALL_SHARE_IMPORT,
-            shadowOf(notification.actions[1].actionIntent).savedIntent.action
-        )
+        assertSendInstallReceiverAction(context, notification.actions[1])
     }
 
     @Test
@@ -324,6 +322,7 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Send install", notification.actions[1].title.toString())
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Send install", focusCancelAction.title.toString())
+        assertSendInstallReceiverAction(context, focusCancelAction)
         assertTrue(focusParam.contains("\"title\":\"Ready\""))
         assertTrue(focusParam.contains("v1.2.3"))
         assertTrue(focusParam.contains("\"progress\":32"))
@@ -559,8 +558,10 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals(2, modern.actions.size)
         assertEquals("Open flow", modern.actions[0].title.toString())
         assertEquals("Continue install", modern.actions[1].title.toString())
+        assertSendInstallReceiverAction(context, modern.actions[1])
         assertEquals("Open flow", focusOpenAction.title.toString())
         assertEquals("Continue install", focusContinueAction.title.toString())
+        assertSendInstallReceiverAction(context, focusContinueAction)
         assertTrue(focusParam.contains("\"title\":\"Ready\""))
         assertFalse(focusParam.contains("\"title\":\"repo\""))
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
@@ -784,6 +785,22 @@ class GitHubShareImportNotificationHelperTest {
         val actions = extras.getBundle("miui.focus.actions")
         assertNotNull(actions, "Focus actions bundle should be present")
         return actions.getActionCompat(key)
+    }
+
+    private fun assertSendInstallReceiverAction(
+        context: Context,
+        action: Notification.Action,
+    ) {
+        val intent = shadowOf(action.actionIntent).savedIntent
+        assertEquals(
+            GitHubShareImportActionReceiver::class.java.name,
+            intent.component?.className,
+        )
+        assertEquals(
+            GitHubShareImportActionReceiver.actionSendInstallShareImport(context),
+            intent.action,
+        )
+        assertTrue(intent.flags and Intent.FLAG_RECEIVER_FOREGROUND != 0)
     }
 
     @Suppress("DEPRECATION")

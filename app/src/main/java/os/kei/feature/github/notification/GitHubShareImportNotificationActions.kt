@@ -175,11 +175,11 @@ internal object GitHubShareImportNotificationActions {
     }
 
     private fun buildSendInstallPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, GitHubShareImportActivity::class.java).apply {
-            action = GitHubShareImportActivity.ACTION_SEND_INSTALL_SHARE_IMPORT
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
+            action = GitHubShareImportActionReceiver.actionSendInstallShareImport(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
-        return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
+        return PendingIntent.getBroadcast(
             context,
             REQUEST_SEND_INSTALL,
             intent,

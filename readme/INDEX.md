@@ -6,7 +6,7 @@
 - [功能完整介绍 (CN)](FEATURES_CN.md)
 - [Build Guide (EN)](BUILD.md)
 - [构建指南 (CN)](BUILD_CN.md)
-- [Release Notes v1.6.0](RELEASE_V1.6.0.md)
+- [Release Notes v1.7.0](RELEASE_V1.7.0.md)
 - [Todo List (EN)](TODO.md)
 - [待办清单 (CN)](TODO_CN.md)
 - [Code of Conduct](../CODE_OF_CONDUCT.md)
@@ -15,16 +15,16 @@
 
 ## Map
 
-- `../README.md`: public project overview, latest stable tag, v1.6.0 highlights,
+- `../README.md`: public project overview, latest stable tag, v1.7.0 highlights,
   install links, and quick feature summary.
-- `CN.md`: Chinese public project overview, latest stable tag, v1.6.0 highlights,
+- `CN.md`: Chinese public project overview, latest stable tag, v1.7.0 highlights,
   install links, and quick feature summary.
 - `FEATURES.md` / `FEATURES_CN.md`: fuller feature tour for Home, OS, MCP, GitHub
   tracking/subscription projects/discovery/Star import, Blue Archive, Student Guide, settings, and
   i18n.
 - `BUILD.md` / `BUILD_CN.md`: local build, versioning, CI APK, signing, nightly.link, live GitHub
   strategy/subscription tests, and screenshot-baseline workflow.
-- `RELEASE_V1.6.0.md`: copy-ready GitHub Release notes and final v1.6.0 release gates.
+- `RELEASE_V1.7.0.md`: copy-ready GitHub Release notes and final v1.7.0 release gates.
 - `TODO.md` / `TODO_CN.md`: Android 17, OEM beta, and large-screen roadmap items.
 - `../CODE_OF_CONDUCT.md`, `../CONTRIBUTING.md`, `../SECURITY.md`: GitHub Community Standards files
   for contributors and security reporters.

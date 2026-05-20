@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0).
-- `master` is the v1.6.0 release baseline for subscription-project tracking, MCP productization, BA
-  guide parsing, MIUIX navigation mode, TopInfo refinement, and release hardening.
+  is [KeiOS v1.7.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.0).
+- `master` is the v1.7.0 release baseline for Liquid Glass sheet polish, GitHub tracking recovery,
+  OS shortcut maintenance, MCP Codex helpers, icon switching, and release hardening.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -82,7 +82,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.6.0 Release Gate
+### v1.7.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -95,11 +95,12 @@ git diff --check
 
 Recommended focused checks for this release:
 
-- Student Guide catalog filters, NPC/satellite school filter, and sort/filter dropdown widths.
-- OS TopInfo readable summary cards plus raw Android Properties fallback.
-- Classic and MIUIX navigation modes on a small phone profile and a higher-DPI profile.
+- Liquid Glass bottom sheet close, predictive back, detent sizing, and Actions sheet first layout.
+- GitHub failed-item filter recovery, Actions update notifications, and release-notes copy action.
+- OS built-in activity cards, activity-card sheet search/category, and Shell-card sheet search/category.
+- Android Designs / Apple Designs icon switching in debug, benchmark, and release-style builds.
 - Release and benchmark APK startup, with generated Baseline Profiles included.
-- GitHub release upload notes copied from [Release Notes v1.6.0](RELEASE_V1.6.0.md).
+- GitHub release upload notes copied from [Release Notes v1.7.0](RELEASE_V1.7.0.md).
 
 ### Screenshot Baseline
 

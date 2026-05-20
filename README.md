@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.6.0`                                             |
+| Latest stable tag | `v1.7.0`                                             |
 
 ## Quick Links
 
@@ -84,32 +84,27 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.6.0 Highlights
+## v1.7.0 Highlights
 
-- GitHub tracking treats direct APK, JSON feed, companion JSON, versioned directory, and APK
-  directory-index sources as subscription projects, with remote health, stable/prerelease channels,
-  release notes, install actions, and Shizuku-backed managed install handoff.
-- GitHub page state keeps remembered sort/filter/order settings, visible-list batch refresh from the
-  floating dock, full-refresh shortcuts, edit/settings unsaved-change confirmation, and independent
-  Actions update intervals including 2h / 3h choices.
-- MCP is organized around entrypoint, workflow, and advanced tools, with typed catalog metadata, JSON
-  schemas, structured outputs, workflow blueprints, resource/help registries, a redesigned MCP Skill
-  page, and lighter runtime-log/session monitoring.
-- OS TopInfo now presents device, build, CPU, runtime, memory, storage, locale, developer-state, and
-  verified-boot signals as readable summaries, while raw properties stay available in the Android
-  Properties tables. Activity and shell card sheets gained search and grouped sections for heavier
-  personal card sets.
-- BA Student Guide adapts NPC and satellite entries with leaner profile labels, related-role
-  grouping, broader gallery parsing, media export, favorite-data migration, and older GameKee page
-  compatibility. Catalog filters now cover implemented-student attributes, school filtering for
-  NPC/satellite entries, and tighter dropdown sizing for sort/filter menus.
-- Settings can switch between the existing bottom bar / pager path and the MIUIX iOS-like bottom bar
-  / pager path, with shared sizing fixes for different display densities.
-- App icon selection keeps Android Designs as the default icon set and offers Apple Designs as the
-  refreshed alternate set.
-- Release hardening covered About/Settings chrome visibility, dark search readability, benchmark
-  package startup, Gradle configuration-cache hygiene, Ktor 3.5.0, broader Baseline Profiles, test
-  coverage, R8 keep-rule review, and release/benchmark mapping verification.
+- Liquid Glass bottom sheets now use a cleaner detent model: most sheets open at three-quarter
+  height, expand for overflowing content, preserve visible content around the top and bottom chrome,
+  and support predictive back with a smoother close path.
+- GitHub tracking received daily-use polish: failed refresh filters return to all items after
+  recovery, Actions update notifications stay separated per tracked project, release notes can be
+  copied as Markdown, and update wording is shorter.
+- OS tools add more useful built-in activity shortcuts, including HyperOS fullscreen settings,
+  language settings, app memory usage, notification settings, app management, low-brightness
+  settings, battery usage, and cross-device services.
+- Activity and Shell card sheets now include search and categories, making larger personal shortcut
+  sets easier to maintain.
+- MCP pages and packaged skills now include Codex-oriented development helpers, split dense tool
+  groups into clearer cards, and keep BA-specific tools separate from general tool entrypoints.
+- Settings and navigation polish covered bottom-bar recovery from short pages, title-card tap
+  recovery, copy-extension text selection behavior, release-note text selection, and darker search
+  field readability.
+- Release hardening covered Apple Designs icon switching in benchmark builds, R8 startup-profile
+  warning cleanup, MMKV native-symbol packaging, Gradle memory settings, baseline-profile refresh,
+  and focused tests for the changed chains.
 
 Read the full feature tour:
 
@@ -119,7 +114,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0).
+- Current stable tag: [v1.7.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
   Compose `1.11.1`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
@@ -128,7 +123,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.6.0](readme/RELEASE_V1.6.0.md)
+- [Release Notes v1.7.0](readme/RELEASE_V1.7.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

@@ -5,9 +5,9 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.6.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.6.0)。
-- `master` 当前作为 v1.6.0 发布基线，覆盖订阅项目追踪、MCP 产品化、BA 图鉴解析、MIUIX 导航模式、TopInfo
-  精修和发布前收口。
+- 当前公开标签基线为 [KeiOS v1.7.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.0)。
+- `master` 当前作为 v1.7.0 发布基线，覆盖 Liquid Glass sheet 精修、GitHub 追踪恢复、OS 快捷入口维护、
+  MCP Codex 辅助、图标切换和发布前收口。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -77,7 +77,7 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.6.0 发布门禁
+### v1.7.0 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
@@ -90,11 +90,12 @@ git diff --check
 
 本次发布建议重点复查：
 
-- 学生图鉴目录筛选、NPC / 卫星学园筛选、排序 / 筛选下拉菜单宽度。
-- OS TopInfo 可读摘要卡与原始 Android Properties 兜底。
-- 小屏与高 DPI 配置下的经典导航模式和 MIUIX 导航模式。
+- Liquid Glass bottom sheet 关闭、预测式返回、档位尺寸和 Actions sheet 首次布局。
+- GitHub 失败项目过滤恢复、Actions 更新通知和发行日志复制按钮。
+- OS 内置活动卡、活动 card sheet 搜索分类和 Shell card sheet 搜索分类。
+- Android Designs / Apple Designs 图标在 debug、benchmark 和 release 风格构建中的切换。
 - Release 与 Benchmark APK 启动，以及已生成 Baseline Profiles 的打包情况。
-- GitHub Release 发布文案可直接参考 [Release Notes v1.6.0](RELEASE_V1.6.0.md)。
+- GitHub Release 发布文案可直接参考 [Release Notes v1.7.0](RELEASE_V1.7.0.md)。
 
 ### 截图基线
 

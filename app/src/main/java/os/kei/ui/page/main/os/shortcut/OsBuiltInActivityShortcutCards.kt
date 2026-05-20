@@ -36,6 +36,8 @@ internal fun rememberBuiltInActivityShortcutCards(
     val appMemorySubtitle = stringResource(R.string.os_activity_builtin_app_memory_usage_subtitle)
     val languageSettingsTitle = stringResource(R.string.os_activity_builtin_language_settings_title)
     val languageSettingsSubtitle = stringResource(R.string.os_activity_builtin_language_settings_subtitle)
+    val fullScreenDisplayTitle = stringResource(R.string.os_activity_builtin_fullscreen_display_title)
+    val fullScreenDisplaySubtitle = stringResource(R.string.os_activity_builtin_fullscreen_display_subtitle)
     val crossDeviceTitle = stringResource(R.string.os_activity_builtin_cross_device_services_title)
     val crossDeviceSubtitle = stringResource(R.string.os_activity_builtin_cross_device_services_subtitle)
 
@@ -61,6 +63,8 @@ internal fun rememberBuiltInActivityShortcutCards(
         appMemorySubtitle,
         languageSettingsTitle,
         languageSettingsSubtitle,
+        fullScreenDisplayTitle,
+        fullScreenDisplaySubtitle,
         crossDeviceTitle,
         crossDeviceSubtitle,
     ) {
@@ -143,6 +147,45 @@ internal fun rememberBuiltInActivityShortcutCards(
                 defaults = defaults,
             ),
             builtInActivityShortcutCard(
+                id = BUILTIN_FULLSCREEN_DISPLAY_SETTINGS_CARD_ID,
+                title = fullScreenDisplayTitle,
+                subtitle = fullScreenDisplaySubtitle,
+                appName = androidSettingsAppName,
+                packageName = SETTINGS_PACKAGE,
+                className = "com.android.settings.SubSettings",
+                intentAction = Intent.ACTION_MAIN,
+                defaultIntentFlags = defaultIntentFlags,
+                defaults = defaults,
+                intentExtras =
+                    listOf(
+                        ShortcutIntentExtra(
+                            key = "settings:show_fragment_title",
+                            type = ShortcutIntentExtraType.String,
+                            value = "全面屏设置",
+                        ),
+                        ShortcutIntentExtra(
+                            key = ":android:no_headers",
+                            type = ShortcutIntentExtraType.Boolean,
+                            value = "true",
+                        ),
+                        ShortcutIntentExtra(
+                            key = "innerApp",
+                            type = ShortcutIntentExtraType.Boolean,
+                            value = "false",
+                        ),
+                        ShortcutIntentExtra(
+                            key = "fromActivity",
+                            type = ShortcutIntentExtraType.Boolean,
+                            value = "false",
+                        ),
+                        ShortcutIntentExtra(
+                            key = ":settings:show_fragment",
+                            type = ShortcutIntentExtraType.String,
+                            value = "com.android.settings.FullScreenDisplaySettings",
+                        ),
+                    ),
+            ),
+            builtInActivityShortcutCard(
                 id = BUILTIN_CROSS_DEVICE_SERVICES_CARD_ID,
                 title = crossDeviceTitle,
                 subtitle = crossDeviceSubtitle,
@@ -168,6 +211,7 @@ internal fun builtInActivityShortcutCard(
     intentUriData: String = "",
     defaultIntentFlags: String,
     defaults: OsGoogleSystemServiceConfig,
+    intentExtras: List<ShortcutIntentExtra> = emptyList(),
 ): OsActivityShortcutCard =
     OsActivityShortcutCard(
         id = id,
@@ -183,5 +227,6 @@ internal fun builtInActivityShortcutCard(
                 intentAction = intentAction,
                 intentFlags = defaultIntentFlags,
                 intentUriData = intentUriData,
+                intentExtras = intentExtras,
             ).normalized(defaults),
     )

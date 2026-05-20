@@ -14,6 +14,7 @@ internal const val BUILTIN_NOTIFICATION_SETTINGS_CARD_ID = "builtin-settings-not
 internal const val BUILTIN_APP_MANAGEMENT_CARD_ID = "builtin-settings-app-management"
 internal const val BUILTIN_APP_MEMORY_USAGE_CARD_ID = "builtin-settings-app-memory-usage"
 internal const val BUILTIN_LANGUAGE_SETTINGS_CARD_ID = "builtin-settings-language-settings"
+internal const val BUILTIN_FULLSCREEN_DISPLAY_SETTINGS_CARD_ID = "builtin-settings-fullscreen-display"
 internal const val BUILTIN_CROSS_DEVICE_SERVICES_CARD_ID = "builtin-gms-cross-device-services"
 
 internal enum class OsActivityCardEditMode {

@@ -5,10 +5,13 @@ import org.junit.Test
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.BUILTIN_EXTRA_DIM_CARD_ID
+import os.kei.ui.page.main.os.shortcut.BUILTIN_FULLSCREEN_DISPLAY_SETTINGS_CARD_ID
 import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.BUILTIN_LANGUAGE_SETTINGS_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
+import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
+import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtraType
 import os.kei.ui.page.main.os.shortcut.builtInActivityShortcutCard
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,9 +19,9 @@ import kotlin.test.assertTrue
 
 class OsCardTransferServiceTest {
     private companion object {
-        const val DeprecatedDefaultAppsCardId = "builtin-settings-default-apps"
-        const val DeprecatedAppLanguageCardId = "builtin-settings-app-language"
-        const val DeprecatedRunningServicesCardId = "builtin-settings-running-services"
+        const val DEPRECATED_DEFAULT_APPS_CARD_ID = "builtin-settings-default-apps"
+        const val DEPRECATED_APP_LANGUAGE_CARD_ID = "builtin-settings-app-language"
+        const val DEPRECATED_RUNNING_SERVICES_CARD_ID = "builtin-settings-running-services"
     }
 
     @Test
@@ -236,20 +239,66 @@ class OsCardTransferServiceTest {
                 defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
                 defaults = defaults,
             )
+        val fullScreenExtras =
+            listOf(
+                ShortcutIntentExtra(
+                    key = "settings:show_fragment_title",
+                    type = ShortcutIntentExtraType.String,
+                    value = "全面屏设置",
+                ),
+                ShortcutIntentExtra(
+                    key = ":android:no_headers",
+                    type = ShortcutIntentExtraType.Boolean,
+                    value = "true",
+                ),
+                ShortcutIntentExtra(
+                    key = "innerApp",
+                    type = ShortcutIntentExtraType.Boolean,
+                    value = "false",
+                ),
+                ShortcutIntentExtra(
+                    key = "fromActivity",
+                    type = ShortcutIntentExtraType.Boolean,
+                    value = "false",
+                ),
+                ShortcutIntentExtra(
+                    key = ":settings:show_fragment",
+                    type = ShortcutIntentExtraType.String,
+                    value = "com.android.settings.FullScreenDisplaySettings",
+                ),
+            )
+        val fullScreen =
+            builtInActivityShortcutCard(
+                id = BUILTIN_FULLSCREEN_DISPLAY_SETTINGS_CARD_ID,
+                title = "Full screen display",
+                subtitle = "SubSettings",
+                appName = "Android Settings",
+                packageName = "com.android.settings",
+                className = "com.android.settings.SubSettings",
+                intentAction = "android.intent.action.MAIN",
+                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
+                defaults = defaults,
+                intentExtras = fullScreenExtras,
+            )
 
         val migrated =
             OsActivityShortcutCardStore.migrateBuiltInActivityShortcutCards(
                 cards = listOf(google),
                 builtInSampleDefaults = google.config,
-                builtInActivityShortcutCards = listOf(google, extraDim),
+                builtInActivityShortcutCards = listOf(google, extraDim, fullScreen),
                 appendMissingBuiltIns = true,
             )
 
         assertEquals(
-            listOf(BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID, BUILTIN_EXTRA_DIM_CARD_ID),
+            listOf(
+                BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID,
+                BUILTIN_EXTRA_DIM_CARD_ID,
+                BUILTIN_FULLSCREEN_DISPLAY_SETTINGS_CARD_ID,
+            ),
             migrated.map { it.id },
         )
         assertTrue(migrated.all { it.isBuiltInSample })
+        assertEquals(fullScreenExtras, migrated.last().config.intentExtras)
     }
 
     @Test
@@ -257,9 +306,9 @@ class OsCardTransferServiceTest {
         val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
         val dropped =
             listOf(
-                DeprecatedDefaultAppsCardId,
-                DeprecatedAppLanguageCardId,
-                DeprecatedRunningServicesCardId,
+                DEPRECATED_DEFAULT_APPS_CARD_ID,
+                DEPRECATED_APP_LANGUAGE_CARD_ID,
+                DEPRECATED_RUNNING_SERVICES_CARD_ID,
             ).map { id ->
                 builtInActivityShortcutCard(
                     id = id,

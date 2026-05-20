@@ -438,6 +438,8 @@
     <string name="os_activity_builtin_app_memory_usage_subtitle">AOSP アプリメモリ使用量リスト入口</string>
     <string name="os_activity_builtin_language_settings_title">言語設定</string>
     <string name="os_activity_builtin_language_settings_subtitle">AOSP LanguageSettings 互換入口</string>
+    <string name="os_activity_builtin_fullscreen_display_title">全画面表示設定</string>
+    <string name="os_activity_builtin_fullscreen_display_subtitle">全画面表示コントロール向け Settings SubSettings 入口</string>
     <string name="os_activity_builtin_cross_device_services_title">クロスデバイス サービス</string>
     <string name="os_activity_builtin_cross_device_services_subtitle">Google Play services のクロスデバイス接続入口</string>
     <string name="os_google_system_service_toast_invalid_target">ショートカット先が不完全です。パッケージ名を確認してください。</string>

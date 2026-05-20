@@ -438,6 +438,8 @@
     <string name="os_activity_builtin_app_memory_usage_subtitle">AOSP app memory usage list entry</string>
     <string name="os_activity_builtin_language_settings_title">Language settings</string>
     <string name="os_activity_builtin_language_settings_subtitle">AOSP LanguageSettings compatibility entry</string>
+    <string name="os_activity_builtin_fullscreen_display_title">Full screen display</string>
+    <string name="os_activity_builtin_fullscreen_display_subtitle">Settings SubSettings entry for full screen display controls</string>
     <string name="os_activity_builtin_cross_device_services_title">Cross-device services</string>
     <string name="os_activity_builtin_cross_device_services_subtitle">Google Play services cross-device link entry</string>
     <string name="os_google_system_service_toast_invalid_target">Shortcut target incomplete. Check package name.</string>

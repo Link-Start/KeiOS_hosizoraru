@@ -438,6 +438,8 @@
     <string name="os_activity_builtin_app_memory_usage_subtitle">AOSP 应用内存用量列表入口</string>
     <string name="os_activity_builtin_language_settings_title">语言设置</string>
     <string name="os_activity_builtin_language_settings_subtitle">AOSP LanguageSettings 兼容入口</string>
+    <string name="os_activity_builtin_fullscreen_display_title">全面屏设置</string>
+    <string name="os_activity_builtin_fullscreen_display_subtitle">Settings SubSettings 全面屏显示入口</string>
     <string name="os_activity_builtin_cross_device_services_title">跨设备服务</string>
     <string name="os_activity_builtin_cross_device_services_subtitle">Google Play 服务的跨设备连接入口</string>
     <string name="os_google_system_service_toast_invalid_target">快捷方式目标不完整，请检查包名</string>

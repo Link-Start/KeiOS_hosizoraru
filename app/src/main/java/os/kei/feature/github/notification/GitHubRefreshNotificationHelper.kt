@@ -13,10 +13,11 @@ import androidx.core.graphics.toColorInt
 import com.xzakota.hyper.notification.focus.FocusNotification
 import os.kei.MainActivity
 import os.kei.R
+import os.kei.core.notification.focus.MI_FOCUS_DEFAULT_BUSINESS
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
-import os.kei.feature.notification.NotificationActionReceiver
+import os.kei.feature.notification.MiFocusNotificationActions
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.notification.McpNotificationHelper
 import kotlin.math.roundToInt
@@ -58,9 +59,6 @@ object GitHubRefreshNotificationHelper {
 
         val shortText: String
             get() = "$safeCurrent/$safeTotal"
-
-        val keepUntilRead: Boolean
-            get() = !running && !cancelled
     }
 
     private enum class RenderStyle {
@@ -368,10 +366,11 @@ object GitHubRefreshNotificationHelper {
             .setContentIntent(openPendingIntent)
             .setOnlyAlertOnce(onlyAlertOnce)
             .setSilent(true)
-            .setOngoing(state.running || state.keepUntilRead)
-            .setRequestPromotedOngoing(state.running || state.keepUntilRead)
+            .setOngoing(state.running)
+            .setRequestPromotedOngoing(state.running)
             .setStyle(progressStyle)
             .setShortCriticalText(state.shortText)
+            .setDeleteIntent(readPendingIntent)
             .addAction(0, context.getString(R.string.common_open), openPendingIntent)
             .addAction(0, context.getString(R.string.common_acknowledge), readPendingIntent)
             .build()
@@ -398,11 +397,12 @@ object GitHubRefreshNotificationHelper {
             )
             .setColorized(true)
             .setColor(0xFF2563EB.toInt())
-            .setOngoing(state.running || state.keepUntilRead)
+            .setOngoing(state.running)
             .setOnlyAlertOnce(onlyAlertOnce)
             .setAutoCancel(false)
             .setSilent(onlyAlertOnce)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .setDeleteIntent(readPendingIntent)
             .setProgress(100, state.progressPercent, false)
             .addAction(0, context.getString(R.string.common_open), openPendingIntent)
             .addAction(0, context.getString(R.string.common_acknowledge), readPendingIntent)
@@ -418,6 +418,7 @@ object GitHubRefreshNotificationHelper {
         val title = resolveTitle(context, state)
         val content = resolveContent(context, state)
         val openPendingIntent = buildOpenPendingIntent(context)
+        val readPendingIntent = buildMarkReadPendingIntent(context)
         val shortCriticalText = if (state.running) {
             resolveCompactProgressText(context, state)
         } else {
@@ -435,11 +436,12 @@ object GitHubRefreshNotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setColorized(true)
             .setColor(MI_PROGRESS_COLOR.toColorInt())
-            .setOngoing(state.running || state.keepUntilRead)
+            .setOngoing(state.running)
             .setOnlyAlertOnce(onlyAlertOnce)
             .setAutoCancel(false)
-            .setRequestPromotedOngoing(state.running || state.keepUntilRead)
+            .setRequestPromotedOngoing(state.running)
             .setShortCriticalText(shortCriticalText)
+            .setDeleteIntent(readPendingIntent)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setProgress(
                 if (state.running) 100 else 0,
@@ -453,7 +455,8 @@ object GitHubRefreshNotificationHelper {
             title = title,
             content = content,
             iconResId = iconResId,
-            focusOpenPendingIntent = buildFocusOpenPendingIntent(context)
+            focusOpenPendingIntent = buildFocusOpenPendingIntent(context),
+            markReadPendingIntent = readPendingIntent
         )?.let(baseBuilder::addExtras)
         return baseBuilder.build()
     }
@@ -464,7 +467,8 @@ object GitHubRefreshNotificationHelper {
         title: String,
         content: String,
         iconResId: Int,
-        focusOpenPendingIntent: PendingIntent
+        focusOpenPendingIntent: PendingIntent,
+        markReadPendingIntent: PendingIntent
     ) = runCatching {
         val progressPercent = state.progressPercent.coerceIn(0, 100)
         val progressText = resolveCompactProgressText(context, state)
@@ -484,6 +488,9 @@ object GitHubRefreshNotificationHelper {
             islandFirstFloat = true
             enableFloat = !state.running
             updatable = true
+            business = MI_FOCUS_DEFAULT_BUSINESS
+            notifyId = NOTIFICATION_ID.toString()
+            orderId = "github_refresh"
             ticker = title
             tickerPic = light
             tickerPicDark = dark
@@ -584,7 +591,7 @@ object GitHubRefreshNotificationHelper {
                         val nativeAction = Notification.Action.Builder(
                             Icon.createWithResource(context, iconResId),
                             context.getString(R.string.common_acknowledge),
-                            buildMarkReadPendingIntent(context)
+                            markReadPendingIntent
                         ).build()
                         action = createAction("github_action_read", nativeAction)
                         actionTitle = context.getString(R.string.common_acknowledge)
@@ -630,16 +637,10 @@ object GitHubRefreshNotificationHelper {
         )
     }
 
-    private fun buildMarkReadPendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = NotificationActionReceiver.ACTION_MARK_READ
-            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, NOTIFICATION_ID)
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            2002,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    private fun buildMarkReadPendingIntent(context: Context): PendingIntent =
+        MiFocusNotificationActions.markReadPendingIntent(
+            context = context,
+            notificationId = NOTIFICATION_ID,
+            requestCode = 2002
         )
-    }
 }

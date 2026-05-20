@@ -24,7 +24,7 @@ import os.kei.core.notification.focus.MiFocusPictureSource
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
-import os.kei.feature.notification.NotificationActionReceiver
+import os.kei.feature.notification.MiFocusNotificationActions
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.notification.McpNotificationHelper
 
@@ -98,6 +98,7 @@ object GitHubActionsUpdateNotificationHelper {
         val title = title(context)
         val content = content(context, snapshot)
         val openPendingIntent = buildOpenPendingIntent(context, snapshot, notificationId)
+        val markReadPendingIntent = buildMarkReadPendingIntent(context, notificationId)
         val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
         return NotificationCompat
             .Builder(context, GitHubRefreshNotificationHelper.CHANNEL_ID)
@@ -111,14 +112,15 @@ object GitHubActionsUpdateNotificationHelper {
             .setColor(GITHUB_ACTIONS_COLOR.toColorInt())
             .setOnlyAlertOnce(onlyAlertOnce)
             .setAutoCancel(false)
-            .setOngoing(true)
+            .setOngoing(false)
             .setSilent(onlyAlertOnce)
             .setShortCriticalText(snapshot.runLabel)
+            .setDeleteIntent(markReadPendingIntent)
             .addAction(0, context.getString(R.string.common_open), openPendingIntent)
             .addAction(
                 0,
                 context.getString(R.string.common_mark_read),
-                buildMarkReadPendingIntent(context, notificationId),
+                markReadPendingIntent,
             ).apply {
                 appIconBitmap?.let(::setLargeIcon)
             }.build()
@@ -133,6 +135,7 @@ object GitHubActionsUpdateNotificationHelper {
         val title = title(context)
         val content = content(context, snapshot)
         val openPendingIntent = buildOpenPendingIntent(context, snapshot, notificationId)
+        val markReadPendingIntent = buildMarkReadPendingIntent(context, notificationId)
         val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
         val builder =
             NotificationCompat
@@ -147,15 +150,16 @@ object GitHubActionsUpdateNotificationHelper {
                 .setColor(GITHUB_ACTIONS_COLOR.toColorInt())
                 .setOnlyAlertOnce(onlyAlertOnce)
                 .setAutoCancel(false)
-                .setOngoing(true)
+                .setOngoing(false)
                 .setSilent(onlyAlertOnce)
-                .setRequestPromotedOngoing(true)
+                .setRequestPromotedOngoing(false)
                 .setShortCriticalText(snapshot.runLabel)
+                .setDeleteIntent(markReadPendingIntent)
                 .addAction(0, context.getString(R.string.common_open), openPendingIntent)
                 .addAction(
                     0,
                     context.getString(R.string.common_mark_read),
-                    buildMarkReadPendingIntent(context, notificationId),
+                    markReadPendingIntent,
                 ).apply {
                     appIconBitmap?.let(::setLargeIcon)
                 }
@@ -210,11 +214,7 @@ object GitHubActionsUpdateNotificationHelper {
                                                     MiFocusNotificationAction(
                                                         key = "github_actions_update_read",
                                                         title = context.getString(R.string.common_mark_read),
-                                                        pendingIntent =
-                                                            buildMarkReadPendingIntent(
-                                                                context,
-                                                                notificationId,
-                                                            ),
+                                                        pendingIntent = markReadPendingIntent,
                                                         collapsePanel = true,
                                                     ),
                                                 ),
@@ -286,19 +286,7 @@ object GitHubActionsUpdateNotificationHelper {
     private fun buildMarkReadPendingIntent(
         context: Context,
         notificationId: Int,
-    ): PendingIntent {
-        val intent =
-            Intent(context, NotificationActionReceiver::class.java).apply {
-                action = NotificationActionReceiver.ACTION_MARK_READ
-                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
-            }
-        return PendingIntent.getBroadcast(
-            context,
-            notificationId + 1,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
+    ): PendingIntent = MiFocusNotificationActions.markReadPendingIntent(context, notificationId)
 
     @SuppressLint("InlinedApi")
     private fun notificationsGranted(context: Context): Boolean =

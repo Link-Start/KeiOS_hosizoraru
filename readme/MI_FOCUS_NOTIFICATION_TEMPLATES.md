@@ -12,6 +12,15 @@
 
 展开态用于承载完整标题、正文、进度和操作。项目内按钮最多放 2 个，主操作高亮，次操作普通。
 
+## Action 约束
+
+- 超级岛展开态按钮需要同时写入模板 JSON 和 `miui.focus.actions`，项目内通过 `MiFocusNotificationAction` +
+  `MiFocusNotificationTemplate.build(...)` 统一注册。
+- Broadcast action 需要使用 `Intent.FLAG_RECEIVER_FOREGROUND`，部分 HyperOS 机型依赖该 flag 稳定投递点击事件。
+- 自定义 action 指向的 Receiver/Service 需要在 Manifest 显式导出；通用已读/关闭 action 统一走
+  `MiFocusNotificationActionReceiver`。
+- 可被用户划掉的完成态通知需要设置 `deleteIntent`，让通知栏清除和超级岛按钮共用同一条关闭链路。
+
 ## 摘要态模板
 
 大岛模板，对应 `MiFocusIslandBigTemplate`：

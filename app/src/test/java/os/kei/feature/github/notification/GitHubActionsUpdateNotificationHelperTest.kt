@@ -73,7 +73,9 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("\"actionTitle\":\"${context.getString(R.string.common_open)}\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"actionTitleColor\":\"#FFFFFF\""))
+        assertTrue(focusParam.contains("\"business\":\"keios\""))
         assertTrue(focusParam.contains("\"notifyId\":\"$notificationId\""))
+        assertTrue(focusParam.contains("\"orderId\":\"${snapshot.trackId}\""))
         assertFalse(
             focusParam.contains(
                 "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\"",

@@ -6,6 +6,8 @@ import android.graphics.drawable.Icon
 import androidx.annotation.DrawableRes
 import os.kei.R
 
+internal const val MI_FOCUS_DEFAULT_BUSINESS = "keios"
+
 internal data class MiFocusNotificationSpec(
     val title: String,
     val content: String,
@@ -39,7 +41,7 @@ internal data class MiFocusNotificationSpec(
     val filterWhenNoPermission: Boolean? = null,
     val hideDeco: Boolean? = null,
     val sequence: Long? = null,
-    val business: String? = null,
+    val business: String? = MI_FOCUS_DEFAULT_BUSINESS,
     val notifyId: String? = null,
     val orderId: String? = null
 )

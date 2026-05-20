@@ -59,7 +59,9 @@ class MiIslandNotificationBuilderTest {
                 onlyAlertOnce = true,
                 openPendingIntent = notificationOpenPendingIntent,
                 stopPendingIntent = stopPendingIntent,
-                focusOpenPendingIntent = focusOpenPendingIntent
+                focusOpenPendingIntent = focusOpenPendingIntent,
+                notificationId = 38888,
+                miFocusOrderId = "mcp_keepalive"
             ),
             settings = UserSettings(miIslandOuterGlow = true),
             environment = EnvironmentContext(
@@ -78,6 +80,9 @@ class MiIslandNotificationBuilderTest {
         assertEquals(stopPendingIntent, focusStopAction.actionIntent)
         assertTrue(focusParam.contains("mcp_action_open"))
         assertTrue(focusParam.contains("mcp_action_stop"))
+        assertTrue(focusParam.contains("\"business\":\"keios\""))
+        assertTrue(focusParam.contains("\"notifyId\":\"38888\""))
+        assertTrue(focusParam.contains("\"orderId\":\"mcp_keepalive\""))
     }
 
     @Test

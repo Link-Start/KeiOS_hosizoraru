@@ -24,7 +24,9 @@ data class McpNotificationPayload(
     val overrideOnlineText: String? = null,
     val overrideShortText: String? = null,
     val overrideProgressPercent: Int? = null,
-    val deadlineAtMs: Long? = null
+    val deadlineAtMs: Long? = null,
+    val notificationId: Int = 0,
+    val miFocusOrderId: String? = null
 ) {
     companion object {
         const val BA_AP_SERVER_NAME = "BlueArchive AP"

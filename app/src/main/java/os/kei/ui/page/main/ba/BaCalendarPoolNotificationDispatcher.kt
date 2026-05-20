@@ -8,7 +8,7 @@ import android.content.pm.PackageManager
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
-import os.kei.feature.notification.NotificationActionReceiver
+import os.kei.feature.notification.MiFocusNotificationActions
 import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.SessionNotifierImpl
 import os.kei.mcp.notification.McpNotificationHelper
@@ -323,16 +323,10 @@ internal object BaCalendarPoolNotificationDispatcher {
         )
     }
 
-    private fun acknowledgePendingIntent(context: Context, notificationId: Int): PendingIntent {
-        val intent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = NotificationActionReceiver.ACTION_MARK_READ
-            putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            521_100 + notificationId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    private fun acknowledgePendingIntent(context: Context, notificationId: Int): PendingIntent =
+        MiFocusNotificationActions.markReadPendingIntent(
+            context = context,
+            notificationId = notificationId,
+            requestCode = 521_100 + notificationId
         )
-    }
 }

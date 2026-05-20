@@ -158,7 +158,7 @@ internal object MiFocusNotificationTemplate {
         filterWhenNoPermission = spec.filterWhenNoPermission
         hideDeco = spec.hideDeco
         sequence = spec.sequence
-        business = spec.business
+        business = spec.business?.ifBlank { MI_FOCUS_DEFAULT_BUSINESS } ?: MI_FOCUS_DEFAULT_BUSINESS
         notifyId = spec.notifyId
         orderId = spec.orderId
         ticker = spec.ticker ?: spec.compactTicker ?: spec.title

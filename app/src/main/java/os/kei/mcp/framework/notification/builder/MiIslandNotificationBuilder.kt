@@ -10,6 +10,7 @@ import androidx.core.graphics.toColorInt
 import com.xzakota.hyper.notification.focus.FocusNotification
 import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
 import os.kei.R
+import os.kei.core.notification.focus.MI_FOCUS_DEFAULT_BUSINESS
 import os.kei.core.log.AppLogger
 import os.kei.mcp.notification.McpNotificationPayload
 import kotlin.math.roundToInt
@@ -160,6 +161,9 @@ class MiIslandNotificationBuilder(
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .applyDeadline(state.deadlineAtMs)
 
+        if (!presentation.notificationOngoing && state.stopPendingIntent != state.openPendingIntent) {
+            builder.setDeleteIntent(state.stopPendingIntent)
+        }
         presentation.notificationAccentColor?.let { accentColor ->
             builder
                 .setColorized(true)
@@ -242,6 +246,9 @@ class MiIslandNotificationBuilder(
             islandFirstFloat = true
             enableFloat = presentation.allowFloat
             updatable = presentation.focusUpdatable
+            business = MI_FOCUS_DEFAULT_BUSINESS
+            notifyId = state.notificationId.takeIf { it > 0 }?.toString()
+            orderId = state.miFocusOrderId
             focusShowNotification(presentation.focusShowNotification)
             ticker = state.title(context)
             tickerPic = lightLogoKey

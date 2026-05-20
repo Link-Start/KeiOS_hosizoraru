@@ -125,6 +125,7 @@ internal object GitHubShareImportNotificationActions {
     private fun buildMarkReadPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
             action = GitHubShareImportActionReceiver.actionMarkReadShareImport(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -137,6 +138,7 @@ internal object GitHubShareImportNotificationActions {
     private fun buildCancelImportPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
             action = GitHubShareImportActionReceiver.actionCancelShareImport(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -149,6 +151,7 @@ internal object GitHubShareImportNotificationActions {
     private fun buildRefreshImportPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
             action = GitHubShareImportActionReceiver.actionRefreshShareImport(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -161,6 +164,7 @@ internal object GitHubShareImportNotificationActions {
     private fun buildConfirmImportPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
             action = GitHubShareImportActionReceiver.actionConfirmShareImport(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         return PendingIntent.getBroadcast(
             context,

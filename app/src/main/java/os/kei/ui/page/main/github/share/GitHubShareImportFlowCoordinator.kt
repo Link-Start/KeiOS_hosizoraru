@@ -725,7 +725,8 @@ internal object GitHubShareImportPendingScheduler {
 
     private fun tickPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
-            action = GitHubShareImportActionReceiver.ACTION_REFRESH_SHARE_IMPORT
+            action = GitHubShareImportActionReceiver.actionRefreshShareImport(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         }
         return PendingIntent.getBroadcast(
             context,

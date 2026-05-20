@@ -14,6 +14,7 @@ import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
+import os.kei.feature.notification.MiFocusNotificationActions
 import os.kei.feature.notification.NotificationActionReceiver
 import os.kei.mcp.domain.notification.SessionNotifier
 import os.kei.mcp.framework.notification.NotificationHelper
@@ -196,15 +197,10 @@ object McpNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val (stopPendingIntent, secondaryActionLabel) = if (secondaryActionMode == SecondaryActionMode.MARK_READ) {
-            val readIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-                action = NotificationActionReceiver.ACTION_MARK_READ
-                putExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
-            }
-            PendingIntent.getBroadcast(
-                context,
-                210_200 + notificationId,
-                readIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            MiFocusNotificationActions.markReadPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                requestCode = 210_200 + notificationId
             ) to context.getString(
                 if (isBlueArchiveNotification) {
                     R.string.common_mark_read
@@ -226,6 +222,7 @@ object McpNotificationHelper {
         } else {
             val stopIntent = Intent(context, NotificationActionReceiver::class.java).apply {
                 action = NotificationActionReceiver.ACTION_STOP_MCP_SERVER
+                addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
             }
             PendingIntent.getBroadcast(
                 context,
@@ -246,7 +243,9 @@ object McpNotificationHelper {
             openPendingIntent = openPendingIntent,
             stopPendingIntent = stopPendingIntent,
             focusOpenPendingIntent = focusOpenPendingIntent,
-            secondaryActionLabel = secondaryActionLabel
+            secondaryActionLabel = secondaryActionLabel,
+            notificationId = notificationId,
+            miFocusOrderId = buildMiFocusOrderId(serverName, notificationId)
         )
         val notifier = SessionNotifierImpl(NotificationHelper(context))
         return notifier.build(payload)
@@ -520,6 +519,15 @@ object McpNotificationHelper {
 
             else -> SecondaryActionMode.DEFAULT
         }
+    }
+
+    private fun buildMiFocusOrderId(serverName: String, notificationId: Int): String {
+        val normalizedServerName = serverName.trim().ifBlank { "keios" }
+            .lowercase()
+            .replace(Regex("[^a-z0-9._-]+"), "_")
+            .trim('_')
+            .ifBlank { "notification" }
+        return "$normalizedServerName-$notificationId"
     }
 
     private fun notifyWithResolvedDispatcher(

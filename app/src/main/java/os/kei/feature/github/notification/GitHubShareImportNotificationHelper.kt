@@ -536,7 +536,9 @@ object GitHubShareImportNotificationHelper {
             overrideContent = content,
             overrideOnlineText = islandTitle.ifBlank { shortText },
             overrideShortText = islandSubtitle.ifBlank { shortText },
-            overrideProgressPercent = overrideProgressPercent
+            overrideProgressPercent = overrideProgressPercent,
+            notificationId = NOTIFICATION_ID,
+            miFocusOrderId = "github_share_import"
         )
     }
 

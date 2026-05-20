@@ -33,6 +33,9 @@ class GitHubRefreshNotificationHelperTest {
         assertEquals(notificationOpenPendingIntent, notification.contentIntent)
         assertEquals(focusOpenPendingIntent, focusOpenAction.actionIntent)
         assertTrue(focusParam.contains("github_action_open"))
+        assertTrue(focusParam.contains("\"business\":\"keios\""))
+        assertTrue(focusParam.contains("\"notifyId\":\"38990\""))
+        assertTrue(focusParam.contains("\"orderId\":\"github_refresh\""))
     }
 
     @Test

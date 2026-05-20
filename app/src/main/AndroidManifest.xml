@@ -237,9 +237,14 @@
             android:exported="false" />
 
         <receiver
+            android:name=".feature.notification.MiFocusNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="true" />
+
+        <receiver
             android:name=".feature.github.notification.GitHubShareImportActionReceiver"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="true" />
 
         <receiver
             android:name=".feature.github.install.GitHubShizukuInstallResultReceiver"

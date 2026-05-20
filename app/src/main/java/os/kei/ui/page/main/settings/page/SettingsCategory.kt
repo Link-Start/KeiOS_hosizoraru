@@ -10,7 +10,7 @@ import com.composables.icons.lucide.R as LucideR
 internal enum class SettingsCategory {
     Access,
     Appearance,
-    Notify,
+    Effects,
     Data
 }
 
@@ -20,7 +20,7 @@ internal fun SettingsCategory.label(): String {
         when (this) {
             SettingsCategory.Access -> R.string.settings_category_access
             SettingsCategory.Appearance -> R.string.settings_category_appearance
-            SettingsCategory.Notify -> R.string.settings_category_notify
+            SettingsCategory.Effects -> R.string.settings_category_effects
             SettingsCategory.Data -> R.string.settings_category_data
         }
     )
@@ -31,7 +31,7 @@ internal fun SettingsCategory.icon(): ImageVector {
     val drawableRes = when (this) {
         SettingsCategory.Access -> LucideR.drawable.lucide_ic_shield_check
         SettingsCategory.Appearance -> LucideR.drawable.lucide_ic_palette
-        SettingsCategory.Notify -> LucideR.drawable.lucide_ic_bell
+        SettingsCategory.Effects -> LucideR.drawable.lucide_ic_sliders_horizontal
         SettingsCategory.Data -> LucideR.drawable.lucide_ic_database
     }
     return ImageVector.vectorResource(drawableRes)

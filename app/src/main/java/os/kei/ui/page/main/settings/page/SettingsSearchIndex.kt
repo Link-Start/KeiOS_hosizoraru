@@ -69,9 +69,10 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> =
         ),
         SettingsSearchTarget(
             card = SettingsSearchCard.Animation,
-            category = SettingsCategory.Appearance,
+            category = SettingsCategory.Effects,
             tokens =
                 settingsTokens(
+                    stringResource(R.string.settings_category_effects),
                     stringResource(R.string.settings_group_animation_title),
                     stringResource(R.string.settings_transition_animations_title),
                     stringResource(R.string.settings_predictive_back_animations_title),
@@ -79,9 +80,10 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> =
         ),
         SettingsSearchTarget(
             card = SettingsSearchCard.ComponentEffects,
-            category = SettingsCategory.Appearance,
+            category = SettingsCategory.Effects,
             tokens =
                 settingsTokens(
+                    stringResource(R.string.settings_category_effects),
                     stringResource(R.string.settings_group_component_effects_title),
                     stringResource(R.string.settings_bottom_bar_title),
                     stringResource(R.string.settings_miuix_main_navigation_title),
@@ -108,10 +110,10 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> =
         ),
         SettingsSearchTarget(
             card = SettingsSearchCard.Notify,
-            category = SettingsCategory.Notify,
+            category = SettingsCategory.Access,
             tokens =
                 settingsTokens(
-                    stringResource(R.string.settings_category_notify),
+                    stringResource(R.string.settings_category_access),
                     stringResource(R.string.settings_group_notify_title),
                     stringResource(R.string.settings_super_island_style_title),
                     stringResource(R.string.settings_super_island_bypass_title),

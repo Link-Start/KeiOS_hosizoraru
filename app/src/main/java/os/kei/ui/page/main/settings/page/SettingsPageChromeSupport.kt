@@ -54,5 +54,5 @@ internal fun settingsPagerSwitchDurationMillis(distance: Int): Int {
 }
 
 internal fun SettingsCategory.keepsChromeVisibleOnBounds(): Boolean {
-    return this == SettingsCategory.Access || this == SettingsCategory.Notify
+    return this == SettingsCategory.Access
 }

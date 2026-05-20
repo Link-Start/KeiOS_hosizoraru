@@ -252,7 +252,7 @@ fun SettingsPage(
         )
     val accessListState = rememberLazyListState()
     val appearanceListState = rememberLazyListState()
-    val notifyListState = rememberLazyListState()
+    val effectsListState = rememberLazyListState()
     val dataListState = rememberLazyListState()
     val searchListState = rememberLazyListState()
     var sliderInteractionActive by remember { mutableStateOf(false) }
@@ -279,7 +279,7 @@ fun SettingsPage(
         when (activeCategory) {
             SettingsCategory.Access -> accessListState
             SettingsCategory.Appearance -> appearanceListState
-            SettingsCategory.Notify -> notifyListState
+            SettingsCategory.Effects -> effectsListState
             SettingsCategory.Data -> dataListState
         }
     val currentActivePageListState = rememberUpdatedState(activePageListState)
@@ -535,7 +535,7 @@ fun SettingsPage(
                         when (category) {
                             SettingsCategory.Access -> accessListState
                             SettingsCategory.Appearance -> appearanceListState
-                            SettingsCategory.Notify -> notifyListState
+                            SettingsCategory.Effects -> effectsListState
                             SettingsCategory.Data -> dataListState
                         }
                     val pageNestedScrollConnection =

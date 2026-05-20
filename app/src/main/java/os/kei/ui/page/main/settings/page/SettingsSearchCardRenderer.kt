@@ -146,20 +146,24 @@ internal fun LazyListScope.settingsCategoryItems(
 private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsSearchCard> =
     when (category) {
         SettingsCategory.Access -> {
-            listOf(SettingsSearchCard.Permissions)
+            listOf(
+                SettingsSearchCard.Permissions,
+                SettingsSearchCard.Notify,
+            )
         }
 
         SettingsCategory.Appearance -> {
             listOf(
                 SettingsSearchCard.Visual,
-                SettingsSearchCard.Animation,
-                SettingsSearchCard.ComponentEffects,
                 SettingsSearchCard.Background,
             )
         }
 
-        SettingsCategory.Notify -> {
-            listOf(SettingsSearchCard.Notify)
+        SettingsCategory.Effects -> {
+            listOf(
+                SettingsSearchCard.Animation,
+                SettingsSearchCard.ComponentEffects,
+            )
         }
 
         SettingsCategory.Data -> {

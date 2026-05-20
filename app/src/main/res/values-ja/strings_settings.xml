@@ -3,7 +3,7 @@
     <string name="settings_search_placeholder">設定を検索</string>
     <string name="settings_category_access">権限</string>
     <string name="settings_category_appearance">外観</string>
-    <string name="settings_category_notify">通知</string>
+    <string name="settings_category_effects">効果</string>
     <string name="settings_category_data">データ</string>
     <string name="settings_theme_mode_header">テーマ</string>
     <string name="settings_theme_mode_title">アプリテーマ</string>

@@ -438,6 +438,8 @@ private fun GitHubReleaseNotesDetailContent(
         }
         val translateLabel = stringResource(R.string.github_release_notes_action_translate)
         val translateFailed = stringResource(R.string.github_release_notes_translate_failed)
+        val copyLabel = stringResource(R.string.common_copy)
+        val copiedToast = stringResource(R.string.github_release_notes_toast_copied)
         val translatePayload = releaseNotesTranslationPayload(
             title = selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
                 ?: assetBundle?.releaseName.orEmpty(),
@@ -454,6 +456,26 @@ private fun GitHubReleaseNotesDetailContent(
             SheetSectionTitle(
                 text = stringResource(R.string.github_release_notes_detail_body_title),
                 modifier = Modifier.weight(1f)
+            )
+            AppLiquidTextButton(
+                backdrop = backdrop,
+                variant = GlassVariant.Bar,
+                text = copyLabel,
+                leadingIcon = osLucideCopyIcon(),
+                enabled = translatePayload.isNotBlank(),
+                minHeight = 32.dp,
+                horizontalPadding = 10.dp,
+                verticalPadding = 4.dp,
+                textSize = AppTypographyTokens.Supporting.fontSize,
+                textLineHeight = AppTypographyTokens.Supporting.lineHeight,
+                onClick = {
+                    copyTextToClipboard(
+                        context = context,
+                        label = "github_release_notes_markdown",
+                        text = translatePayload
+                    )
+                    context.showToast(copiedToast)
+                }
             )
             AppLiquidTextButton(
                 backdrop = backdrop,

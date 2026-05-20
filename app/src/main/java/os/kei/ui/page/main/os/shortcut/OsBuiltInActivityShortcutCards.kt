@@ -159,7 +159,7 @@ internal fun rememberBuiltInActivityShortcutCards(
                 intentExtras =
                     listOf(
                         ShortcutIntentExtra(
-                            key = "settings:show_fragment_title",
+                            key = ":settings:show_fragment_title",
                             type = ShortcutIntentExtraType.String,
                             value = "全面屏设置",
                         ),

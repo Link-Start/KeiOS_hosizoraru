@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.7.3](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.3).
-- `master` is the v1.7.3 release baseline for Actions artifact card cleanup, split
-  install/download actions, and direct artifact download access.
+  is [KeiOS v1.8.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.0).
+- `master` is the v1.8.0 release baseline for GitHub Actions artifact cleanup, nightly.link/API
+  download access, managed install fixes, per-track update intervals, and Settings regrouping.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -82,7 +82,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.7.3 Release Gate
+### v1.8.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -97,10 +97,11 @@ Recommended focused checks for this release:
 
 - Actions artifact cards hide digest details and show file size on the download action.
 - Managed Actions APK artifacts expose install and download as separate controls.
-- Actions artifact download remains available in token-required/web login flows.
-- Artifact detail metadata matches the simplified card layout.
+- Actions artifact download remains visible in nightly.link and GitHub API Token modes.
+- Per-track GitHub update intervals save and refresh correctly.
+- Settings permission / appearance grouping matches the current UI structure.
 - Release APK signing, version metadata, and startup.
-- GitHub release upload notes copied from [Release Notes v1.7.3](RELEASE_V1.7.3.md).
+- GitHub release upload notes copied from [Release Notes v1.8.0](RELEASE_V1.8.0.md).
 
 ### Screenshot Baseline
 
